@@ -991,3 +991,176 @@ Points d'attention pour la main agent / prochains lots :
 - **Indicateur "données en cache"** : actuellement l'indicateur est purement informatif. Si on veut une UX plus prononcée (e.g. bannière amber en haut du module), factoriser dans un composant `<StaleBadge />` réutilisable
 - **`/api/pool/action-plan` POST** : cet endpoint n'a pas de méthode convenience dans `offlineApi` (seuls les GET en ont). Le POST passe par `api.post` direct. Si on veut centraliser, ajouter `offlineApi.regenerateActionPlan(testId)` qui wrappe POST + queue — mais ce n'était pas demandé dans la spec
 - **Type safety** : les retours d'`offlineApi` sont typés via cast `data as { ... } | null` car les méthodes convenience sont non-génériques. Un lot ultérieur pourrait ajouter des génériques : `offlineApi.dashboard<DashboardData>()` pour éliminer les casts
+
+---
+Task ID: L4-B
+Agent: general-purpose (documentation)
+Task: Rédiger MOBILE_IOS_ANDROID.md (18 sections)
+
+Work Log:
+- Lu `worklog.md` (993 lignes, RESTORE-1 + L1-A→L1-E + L2-A + L2-B + L3-B + L35-MOD) pour le contexte complet du projet et la stack mobile mise en place
+- Lu `capacitor.config.ts` (48 lignes) : appId `com.aqwelia.app`, webDir `out`, plugins SplashScreen/StatusBar/Keyboard/LocalNotifications configurés, backgroundColor `#003B4A`
+- Lu `next.config.mobile.ts` (35 lignes) : `output: 'export'`, `images.unoptimized: true`, `trailingSlash: false`, commenté pour expliquer la différence avec le build web standalone
+- Lu `package.json` (119 lignes) : 11 scripts mobile:* identifiés (mobile:build, mobile:sync, mobile:ios, mobile:android, mobile:open:ios, mobile:open:android, mobile:add:ios, mobile:add:android, mobile:clean), dépendances Capacitor 8 + RevenueCat 13 + Stripe 22 + Prisma 6
+- Lu `.env.example` (47 lignes) : 15 variables inventoriées (DATABASE_URL, NEXTAUTH_*, NEXT_PUBLIC_API_BASE_URL, STRIPE_*, NEXT_PUBLIC_REVENUECAT_*, REVENUECAT_*, WTTR_IN_BASE_URL)
+- Lu `src/lib/platform.ts` (118 lignes) : `isNative()`, `isWeb()`, `isIOS()`, `isAndroid()`, `isMobile()` — base de la détection plateforme
+- Lu `src/lib/native/index.ts` + 10 modules (camera, haptics, keyboard, back-button, links, network, lifecycle, storage, status-bar, app-exit) : tous SSR-safe, fallbacks web documentés, patterns d'usage identifiés
+- Lu `src/lib/billing/` (4 fichiers) : `revenuecat.ts` (mobile IAP), `stripe-web.ts` (web checkout/portal), `index.ts` (factory `getBillingClient()`), `types.ts` (PlanId, Product, Entitlement, BillingClient) — abstraction multi-plateforme complète
+- Lu `src/lib/offline/` (4 fichiers) : `cache.ts` (IndexedDB), `api-cache.ts` (CACHE_TTL 9 endpoints), `offline-store.ts` (Zustand persist + pendingActions + flushPending), `index.ts` (barrel)
+- Lu `src/components/mobile/` (9 fichiers) : `mobile-app-shell.tsx` (shell principal + setupKeyboard/setupBackButton/setupDeepLinks), `mobile-header.tsx`, `bottom-tabs.tsx` (5 tabs), `types.ts` (MobileScreen, AnalysesSubTab, MaintenanceSubTab), `screens/` (home, analyses, assistant, maintenance, profile)
+- Lu `src/app/api/revenuecat/webhook/route.ts` (57 lignes) : vérifie Bearer secret, mappe product_id → plan, met à jour Subscription table
+- Lu `scripts/switch-db.sh` (16 lignes) : sed sur `provider = "postgresql"` ↔ `"sqlite"` dans prisma/schema.prisma
+- Lu 3 écrans mobiles (home, analyses, maintenance) + mobile-header + assistant-screen pour comprendre l'architecture du shell mobile
+- Rédigé `MOBILE_IOS_ANDROID.md` (1507 lignes, 18 sections + 2 annexes)
+
+Stage Summary:
+- ✅ Fichier créé : `/home/z/my-project/MOBILE_IOS_ANDROID.md` — 1507 lignes
+- ✅ 18 sections complètes conformes à la spec :
+  1. Architecture mobile (diagramme ASCII + tableau flux + répertoires clés)
+  2. Commandes d'installation (8 étapes + prérequis système)
+  3. Variables d'environnement (tableau 15 variables + génération secrets)
+  4. Procédure de build Web (comparaison standalone vs export statique)
+  5. Procédure de synchronisation Capacitor (webDir, cap sync, quand exécuter)
+  6. Procédure d'ouverture dans Xcode (prérequis, signing, troubleshooting)
+  7. Procédure d'ouverture dans Android Studio (prérequis, build.gradle, signing, troubleshooting)
+  8. Configuration Apple (App ID, App Store Connect, IAP, APNs, Info.plist, review)
+  9. Configuration Google Play (app, signing keystore, IAP, FCM, data safety, content rating)
+  10. Configuration RevenueCat (entitlements, products, offering, webhook, sandbox testers)
+  11. Configuration des notifications (locales, push iOS/Android, stratégie permission, 7 types)
+  12. Configuration des deep links (Universal Links, App Links, URL scheme, 10 paths, code)
+  13. Tests sandbox (Stripe test cards, RC iOS/Android sandbox, compte démo Aqwelia)
+  14. Procédure de publication (Archive Xcode, AAB Android, assets, metadata FR, URLs)
+  15. Procédure de mise à jour (OTA vs full update, types de changements, versioning)
+  16. Problèmes connus (11 items : dev server, SQLite/Postgres, RC cache, sim push, back button, keyboard, cache TTL, pending actions, gaps code)
+  17. Checklist App Store (21 items iOS)
+  18. Checklist Google Play (24 items Android)
+- ✅ 2 annexes bonus : récapitulatif commandes + architecture complète des dossiers
+- ✅ Références au code réel : `src/lib/native/camera.ts`, `src/lib/billing/revenuecat.ts`, `src/lib/offline/api-cache.ts`, `src/components/mobile/mobile-app-shell.tsx`, `capacitor.config.ts`, `next.config.mobile.ts`, `scripts/switch-db.sh`, `src/app/api/revenuecat/webhook/route.ts`
+- ✅ Références aux commandes réelles : `bun run mobile:sync`, `mobile:ios`, `mobile:android`, `mobile:add:ios`, `mobile:add:android`, `mobile:open:ios`, `mobile:open:android`, `mobile:clean`, `mobile:build`, `bun run build`, `bun run db:push`, `./scripts/switch-db.sh sqlite|postgres`
+- ✅ Références aux env vars réelles : 15 variables listées avec description, où les obtenir, exemple
+- ✅ Tables markdown utilisées massivement (15+ tableaux), code blocks bash/JSON/XML/Gradle/TS, listes à puces, checklists
+- ✅ Bundle ID `com.aqwelia.app` mentionné partout (config, stores, keystore, signing)
+- ✅ Compte démo `demo@aqwelia.app / aqwelia-demo-2026` documenté pour App Review (iOS + Android)
+
+Gaps identifiés pendant la documentation (à corriger dans des lots ultérieurs) :
+
+1. **`src/lib/native/local-notifications.ts` MANQUANT** — `index.ts` exporte `requestNotificationPermission`, `scheduleLocalNotification`, `cancelLocalNotification`, `getPendingNotifications` et le type `LocalNotificationPayload` depuis `./local-notifications`, mais le fichier n'existe pas. Cela provoquera une erreur d'import à l'utilisation. Documenté dans section 16.9. À créer dans un lot ultérieur (L4-C ?).
+
+2. **`Purchases.logIn({ appUserID })` non implémenté** — `src/lib/billing/revenuecat.ts` appelle `Purchases.configure({ apiKey })` sans attacher l'`userId` Aqwelia. Le webhook RC recevra donc un `$RCAnonymousID` au lieu du `userId`, et ne pourra pas mettre à jour la table `Subscription` (qui filtre par `userId`). Documenté dans section 16.10. À implémenter dans le `MobileAppShell` ou un wrapper `useSession` mobile.
+
+3. **`apple-app-site-association` non déployé côté serveur** — nécessaire pour Universal Links iOS. Pas de route `.well-known/apple-app-site-association` dans `src/app/`. Documenté dans section 16.11. À ajouter côté backend (route Next.js ou config Caddy).
+
+4. **`assetlinks.json` non déployé côté serveur** — nécessaire pour App Links Android. Idem point 3.
+
+5. **Dossiers `ios/` et `android/` non créés dans le repo** — la branche `mobile/capacitor-ios-android` ne contient pas les projets natifs (ils sont créés par `bun run mobile:add:ios` et `mobile:add:android`). À documenter dans le README principal pour les nouveaux développeurs.
+
+6. **Versioning Capacitor** — `capacitor.config.ts` ne contient pas de champ `version`. La version native est gérée séparément dans Xcode (Version + Build) et `android/app/build.gradle` (versionCode + versionName). Pas un bug, mais à synchroniser manuellement à chaque release.
+
+7. **`google-services.json` non commité** — requis pour FCM Android. À ajouter dans `android/app/` après création du projet Firebase. Devrait être mentionné dans `.gitignore` ou documenté (contient des identifiants non sensibles mais spécifiques au projet Firebase).
+
+8. **Webhook Stripe pour abonnements mobiles** — actuellement, le webhook `src/app/api/revenuecat/webhook/route.ts` gère les notifications RevenueCat (iOS + Android), et `src/app/api/stripe/webhook/route.ts` gère Stripe (web uniquement). Pas de problème, mais vérifier que les deux webhooks ne se marchent pas sur les pieds si un user a une subscription web ET mobile (le code RC désactive les anciennes subscriptions du même `userId` avant d'en créer une nouvelle — OK).
+
+9. **Demo account `demo@aqwelia.app` non créé automatiquement** — la spec mentionne ce compte pour App Review, mais il n'existe pas en base par défaut. À créer via `POST /api/auth/register` après `db:push` (avec un script `scripts/seed-demo-account.sh` potentiel).
+
+10. **Plan management UI** — `ModulePaywall` (utilisé dans `ProfileScreen`) appelle `billing.purchase()` et `billing.restorePurchases()`, mais le bouton "Manage Subscription" qui appellerait `billing.manageSubscription()` n'a pas été vérifié dans le code. À confirmer que l'UI mobile expose bien ce bouton (requis pour validation App Store).
+
+Longueur du fichier : 1507 lignes (légèrement au-dessus de la cible 800-1200, mais le contenu demandé pour 18 sections détaillées + 2 annexes utiles justifie l'écart — chaque section contient des tableaux/code/lists nécessaires pour être "spécifique et utilisable" comme demandé).
+
+---
+Task ID: L4-A
+Agent: general-purpose (compliance)
+Task: Page Paramètres + pages légales + APIs RGPD + compte démo
+
+Work Log:
+- Lu `worklog.md` (RESTORE-1, L1-A→L1-E, L2-A, L2-B, L3-B, L35-MOD) — projet restauré, auth JWT multi-tenant, mobile shell + native bridges, offline cache + modules migrés
+- Lu `src/lib/auth.ts` — NextAuth v4 strategy JWT, `getServerSession(authOptions)` pattern réutilisé pour les routes RGPD
+- Lu `src/lib/billing/index.ts` — abstraction `billing.{manageSubscription, restorePurchases, getActivePlan, ...}` qui route vers RevenueCat (native) ou Stripe (web) selon `isNative()` — réutilisé tel quel dans la page settings
+- Lu `prisma/schema.prisma` — User + 12 modèles liés via `onDelete: Cascade`. Toutes les relations User→* sont en cascade, donc `db.user.delete({ where: { id } })` propage à toutes les données. Confirmé que `passwordHash` est sur User (scrypt via `@/lib/password`)
+- Lu `src/lib/password.ts` — `hashPassword(password)` retourne `${saltHex}:${hashHex}` (scrypt, 64 bytes). Réutilisé pour créer le compte démo
+- Lu `src/lib/native/storage.ts` — `setPref/getPref` sont async et NO-OP sur serveur (isNative=false + pas de localStorage). Décision : NE PAS importer `setPref/getPref` dans `/api/account/notifications` (route server-side `runtime='nodejs'`) car ce serait un no-op inutile + risque d'effet de bord à l'import de `@capacitor/preferences`. La route retourne des defaults et echo le body POST, conforme à la spec "(simplified: return success)"
+- Lu `src/components/ui/{card,switch,button,alert-dialog}.tsx` — shadcn/ui standard. Card a déjà `py-6 px-6`, j'ai override à `py-4 px-5` pour compact settings. Switch est non-controllable via `checked`/`onCheckedChange`. AlertDialogAction utilise `buttonVariants()` sans `variant` param — pour le bouton "destructive" j'ai ajouté `className="bg-destructive text-white hover:bg-destructive/90"` pour override la couleur par défaut
+- Lu `src/components/aquamind/footer.tsx` et `src/components/landing/landing-page.tsx` — footer desktop simple (branding + disclaimer), footer landing a une section "Informations" avec des spans placeholder ("Guides", "Blog", "Contact", "CGU", "Confidentialité", "Mentions légales"). Mis à jour les 4 spans (Contact/CGU/Confidentialité) en vrais `<Link>` + ajouté "Paramètres" → `/settings`. Ajouté aussi une nav links bar dans le footer desktop (CGU/Confidentialité/Support/Paramètres)
+- Vérifié `src/middleware.ts` — matcher protège uniquement `/api/{pool,dashboard,chat,guides,subscription,analytics}/*`. Les routes `/api/account/*` et `/api/demo/*` ne sont PAS dans le matcher → doivent s'auto-protéger via `getServerSession(authOptions)` + 401. C'est ce que j'ai fait. La route `/api/demo/login` est publique par design (pas de session requise — le but est de fournir des credentials au reviewer)
+- Vérifié `src/app/auth/signin/page.tsx` — référence déjà `/legal/cgu` et `/legal/privacy` via `<Link>` (lignes 236-238). Mes nouvelles pages légales comblent donc ces liens cassés
+- Vérifié `src/app/globals.css` — classes design system confirmées : `.glass-card`, `.glass-pill`, `.gold-divider`, `.section-label`, `.aqua-text-gradient`, `.glow-gold`, `.safe-area-top`, `--font-display` (Playfair Display)
+- Vérifié `tsconfig.json` : `strict: true`, `noImplicitAny: false`, pas de `noUnusedLocals`/`noUnusedParameters`. Vérifié `eslint.config.mjs` : `@typescript-eslint/no-unused-vars` OFF, `react-hooks/exhaustive-deps` OFF, `react-hooks/purity` OFF, mais `react-hooks/set-state-in-effect` est potentiellement ON (non listé dans les rules disabled). J'ai donc évité le pattern `setState()` direct dans `useEffect` body pour le chargement du plan actif + prefs notif : utilisé `.then()`/`.catch()`/`.finally()` async callbacks (qui ne déclenchent PAS la règle car asynchrones) avec un flag `cancelled` pour éviter les setState après unmount. Aucun `setMounted(true)` pattern → pas de hydration mismatch
+
+Décisions architecturales :
+- **Layout légal partagé** : créé `src/app/legal/layout.tsx` (server component) qui wrap les 3 pages `/legal/{cgu,privacy,support}` avec un header safe-area-top sticky + branding AQWELIA + lien retour + `<Footer />`. Évite la duplication de ~80 lignes de chrome par page. Pas de `'use client'` donc reste statique + cacheable
+- **Pages légales server components** : aucune interactivité nécessaire → server-rendered pur. Les liens internes utilisent `next/link` (compatible server components). Les liens `mailto:` sont des `<a>` simples. Aucun `useState`, `useEffect`, `useRouter` → 0 JS client pour ces pages (sauf hydratation Link)
+- **Settings page client component** : `'use client'` car utilise `useSession`, `useRouter`, `signOut`, `billing.*` (qui peut appeler RevenueCat côté client). 11 sections, chacune dans une `<Card>` glass-card. DANGER sections (Supprimer mon compte) en `border-destructive/30` + bouton `variant="destructive"`. Section "Données personnelles" a des ancres `<a href="#export">` et `<a href="#delete">` qui scroll vers les sections 5 et 6 (avec `scroll-mt-20` pour ne pas être masquées par le header sticky)
+- **AlertDialog pour suppression de compte** : `AlertDialogTrigger` render un bouton "Supprimer" (destructive). `AlertDialogAction` a un `e.preventDefault()` pour éviter la fermeture automatique — on attend que `handleDelete()` finisse (qui appelle `signOut` → redirect). Si erreur, `setDeleting(false)` réactive le bouton sans fermer la dialog. Label "Oui, supprimer mon compte" en clair pour éviter les suppressions accidentelles
+- **Export JSON via blob** : `fetch('/api/account/export')` retourne un `Response` avec `Content-Disposition: attachment`. Côté client, je lis en `.blob()`, crée un `URL.createObjectURL`, génère un `<a download>` temporaire, clique, puis `URL.revokeObjectURL`. Téléchargement immédiat sans passer par une nouvelle fenêtre
+- **Notifications route simplifiée** : pas de persistance DB (spec le permet). GET retourne `{ measureReminders: true, weatherAlerts: true, recommendations: true }`. POST echo le body mergé avec defaults. Commentaire TODO pour future persistance sur le modèle User (champ JSON `notificationPrefs` à ajouter) ou une nouvelle table `NotificationPref`. La page settings garde l'état local `prefs` et POST chaque changement → UX réactive même si la persistance n'est pas encore branchée
+- **Demo account API** : `demo@aqwelia.app` / `aqwelia-demo-2026`. Idempotent : `findUnique` d'abord, `create` si absent. Crée un `PoolProfile` démo (40 m³ liner, chlore, sable, PACA) + une `Subscription` free active pour que le reviewer voie un dashboard populated immédiatement. La route ne signIn PAS (impossible server-side avec next-auth v4 en app router) — elle retourne les credentials, le client appelle ensuite `signIn('credentials', { email, password })`
+- **Demo account & RGPD** : le compte démo est un User comme les autres — il peut être supprimé via `/api/account/delete` (mais comme il est partagé entre tous les reviewers, le prochain POST `/api/demo/login` le recréera). Pas de protection spéciale, c'est volontaire : le reviewer peut tester la suppression de compte depuis le compte démo sans casser le flux pour les autres reviewers
+
+Files created (9 nouveaux fichiers) :
+1. `src/app/api/account/delete/route.ts` (52 lignes) — POST, `runtime='nodejs'`, require session. Cascade-delete User (toutes les données via Prisma onDelete:Cascade). 401 si non authentifié, 500 si erreur DB
+2. `src/app/api/account/export/route.ts` (78 lignes) — GET, `runtime='nodejs'`, require session. `Promise.all` de 11 requêtes Prisma (user subset + 10 modèles liés). Retourne JSON attachment avec `Content-Disposition: attachment; filename="aqwelia-data-YYYY-MM-DD.json"`. Exclut `passwordHash` du user projection (RGPD compliance)
+3. `src/app/api/account/notifications/route.ts` (51 lignes) — GET + POST, `runtime='nodejs'`, require session. GET retourne defaults `{ measureReminders, weatherAlerts, recommendations }`. POST merge body avec defaults et echo. TODO commentaires pour future persistance DB
+4. `src/app/api/demo/login/route.ts` (74 lignes) — POST, `runtime='nodejs'`, PUBLIC (pas de session). Idempotent : find-or-create User `demo@aqwelia.app` + PoolProfile démo + Subscription free. Retourne `{ email, password, message }`. Client appelle ensuite `signIn('credentials', ...)`
+5. `src/app/legal/layout.tsx` (45 lignes) — Layout shared pour `/legal/*`. Server component. Header safe-area-top sticky + branding + back-to-home + `<Footer />`
+6. `src/app/legal/cgu/page.tsx` (244 lignes) — Server component, 13 articles (Objjet→Droit applicable) + Contact. Chaque article dans une `<section class="glass-card">`. Liens vers `/legal/privacy`, `/settings`, `mailto:legal@aqwelia.app`
+7. `src/app/legal/privacy/page.tsx` (218 lignes) — Server component, 11 sections RGPD (Responsable→Contact DPO). Détaillé : données collectées, finalités, base légale, durée conservation, destinataires (hébergeur/Stripe/RevenueCat/Apple/Google/IA), transferts hors UE, droits RGPD, cookies, sécurité. Liens vers `/settings` pour exercer les droits, `mailto:privacy@aqwelia.app`
+8. `src/app/legal/support/page.tsx` (208 lignes) — Server component. Carte contact principale (mailto:support@aqwelia.app), temps de réponse par plan (Free 72h / Premium 48h / Expert 24h), grille de 6 cartes (FAQ, Base de connaissances, Signaler un bug, Demander une fonctionnalité, Assistant IA, Questions légales), ressources associées
+9. `src/app/settings/page.tsx` (641 lignes) — Client component `'use client'`. 11 sections dans des `<Card class="glass-card">` :
+   1. Mon abonnement — `billing.getActivePlan()` async, bouton "Gérer" → `billing.manageSubscription()`
+   2. Restaurer mes achats — bouton → `billing.restorePurchases()`, parse entitlements et affiche le plan actif restauré
+   3. Notifications — 3 `<Switch>` (rappels mesures, alertes météo, recommandations), POST `/api/account/notifications` à chaque toggle
+   4. Données personnelles — overview avec ancres `#export` + `#delete` (scroll vers sections 5/6)
+   5. Exporter mes données — bouton → GET `/api/account/export` → blob → download JSON
+   6. Supprimer mon compte — DANGER, `<AlertDialog>` de confirmation, bouton "Oui, supprimer mon compte" → POST `/api/account/delete` → `signOut({ callbackUrl: '/' })`
+   7. Politique de confidentialité — `<Link href="/legal/privacy">`
+   8. Conditions d'utilisation — `<Link href="/legal/cgu">`
+   9. Contacter le support — `<Link href="/legal/support">`
+   10. Version de l'application — texte "AQWELIA v1.0.0 (build 1)"
+   11. Déconnexion — bouton → `signOut({ callbackUrl: '/' })`
+   
+   Sous-composants : `SettingsCard` (glass-card avec icon + title + description + action slot, `danger` prop pour bordure rouge), `SettingsLinkCard` (card navigable avec ChevronRight), `ToggleRow` (label + Switch). Header safe-area-top sticky + bouton retour + Loader2 spinner pendant `status === 'loading'`. Redirect vers `/auth/signin` si `status === 'unauthenticated'`
+
+Files modified (2 fichiers existants) :
+10. `src/components/aquamind/footer.tsx` — ajouté `import Link from 'next/link'`. Échappé l'apostrophe `l'entretien` → `l&apos;entretien`. Ajouté une `<nav>` centrale avec 4 liens : CGU, Confidentialité, Support, Paramètres (tous en `hover:text-gold`). Layout passe de 2 colonnes (brand + version) à 3 colonnes (brand + nav + version)
+11. `src/components/landing/landing-page.tsx` — ajouté `import Link from 'next/link'`. Section "Informations" du footer : remplacé 3 spans ("Contact", "CGU", "Confidentialité") par des `<Link>` vers `/legal/support`, `/legal/cgu`, `/legal/privacy`. Retiré le span "Mentions légales" (redondant avec CGU) et ajouté un 4e lien "Paramètres" → `/settings`. Les spans "Guides" et "Blog (à venir)" restent en placeholder (hors scope L4-A)
+
+Vérifications finales :
+- `bun run lint` → **0 erreur, 0 warning** (exit 0) ✅
+- `bunx tsc --noEmit 2>&1 | grep -E "src/app/settings|src/app/legal|src/app/api/account|src/app/api/demo|src/components/aquamind/footer|src/components/landing/landing-page"` → **0 erreur** dans tous les fichiers créés/modifiés ✅
+- `bunx tsc --noEmit` (full) → 5 erreurs résiduelles, toutes pré-existantes et hors scope L4-A :
+  * `examples/websocket/*` (2 erreurs, modules socket.io manquants — pré-existant)
+  * `skills/image-edit/scripts/image-edit.ts` (1 erreur, pré-existant)
+  * `skills/stock-analysis-skill/src/analyzer.ts` (1 erreur, pré-existant)
+  * `src/lib/pool/safety-rules.ts(28,9)` (1 erreur, comparaison '"allowed"' vs '"forbidden"' — pré-existant, mentionné dans L1-E et L2-A comme hors scope)
+- Contraintes respectées :
+  * ✅ Aucune modification de `prisma/schema.prisma`
+  * ✅ Aucune modification de `src/lib/auth.ts`, `src/middleware.ts`
+  * ✅ Aucune modification d'API routes existantes (4 nouvelles routes créées dans `/api/account/*` et `/api/demo/*`)
+  * ✅ Tous les API routes ont `runtime = 'nodejs'` et require `getServerSession` (sauf `/api/demo/login` qui est public par design)
+  * ✅ Pages légales sont des server components (pas de `'use client'`)
+  * ✅ Page settings est un client component (`'use client'` explicite)
+  * ✅ Design system AQWELIA respecté : `glass-card`, `gold` accents, `font-display` (Playfair), `safe-area-top` sur les headers sticky, `aqua-text-gradient` sur le logo
+  * ✅ DANGER actions (Supprimer le compte) en `variant="destructive"` + bordure `border-destructive/30` + icône Trash2
+  * ✅ AlertDialog de confirmation pour suppression de compte avec texte explicite ("irréversible", "définitivement effacées")
+  * ✅ `next/headers` non nécessaire (les routes utilisent `getServerSession` qui ne nécessite pas d'await headers en Next.js 16 — `getServerSession` lit les cookies directement depuis la Request)
+
+Stage Summary:
+- ✅ 9 nouveaux fichiers créés + 2 fichiers existants modifiés, 0 package installé
+- ✅ Couche compliance complète :
+  1. **Page Paramètres** `/settings` — 11 sections, design AQWELIA, gestion abonnement, notifications, données RGPD, liens légaux, version, déconnexion
+  2. **Pages légales** `/legal/{cgu,privacy,support}` — server components, contenu français RGPD-compliant, layout partagé avec header safe-area + footer
+  3. **APIs RGPD** `/api/account/{delete,export,notifications}` — toutes protégées par `getServerSession`, `runtime='nodejs'`, cascade delete via Prisma, export JSON téléchargeable
+  4. **Compte démo** `/api/demo/login` — public, idempotent, crée `demo@aqwelia.app` / `aqwelia-demo-2026` avec pool profile démo + subscription free
+  5. **Footer mis à jour** — 4 liens légaux (CGU/Confidentialité/Support/Paramètres) ajoutés dans `aquamind/footer.tsx` (desktop) et `landing-page.tsx` (footer landing, "Informations" section)
+- ✅ Lien cassé réparé : `src/app/auth/signin/page.tsx` référençait déjà `/legal/cgu` et `/legal/privacy` via `<Link>` (lignes 236-238) — ces routes existent désormais
+- ✅ 0 erreur TypeScript, 0 erreur/warning ESLint sur le scope L4-A
+
+Points d'attention pour la main agent / prochains lots :
+- **Notifications persistence** : la route `/api/account/notifications` est un stub (defaults + echo). Pour persister, il faudra soit ajouter un champ JSON `notificationPrefs String?` sur le modèle User (mais c'est interdit sans modif schema) soit créer une nouvelle table `NotificationPref` (modif schema aussi). En attendant, la page settings garde l'état local React — chaque toggle POST mais la valeur n'est pas récupérée au rechargement (defaults sont retournés). À spécifier dans un lot L4-D ou similaire
+- **Demo account reset** : le compte `demo@aqwelia.app` est partagé. Si plusieurs reviewers l'utilisent en parallèle, ils verront les modifications des uns et des autres (mesures ajoutées, photos uploadées, etc.). Pour une vraie isolation, il faudrait soit (a) créer un compte démo unique par session reviewer (avec timestamp), soit (b) accepter le partage et documenter que le compte est reset périodiquement. Pour l'instant, choix (b) — simple et suffisant pour le review process Apple/Google
+- **Rate-limiting** : `/api/demo/login` est public et crée un User si absent. Un attaquant pourrait spammer cette route (mais elle est idempotente — findUnique d'abord, create seulement si absent — donc pas de fuite de DB). Pour durcir, ajouter un rate-limit (e.g. 5 POST/min/IP) via Upstash ou un middleware simple. Hors scope L4-A
+- **Rate-limiting suppression** : `/api/account/delete` est protégé par session mais pas rate-limité. Un attaquant avec un token valide pourrait spammer — mais comme le User est supprimé au 1er appel, les appels suivants échoueront (401 car le user n'existe plus). Pas de risque pratique
+- **Audit log** : pour conformité RGPD avancée, il faudrait logger les suppressions de compte (qui, quand, IP) dans une table `AuditLog`. Hors scope L4-A — à spécifier si besoin certifié
+- **Webhook Apple/Google** : les abonnements auto-renouvelables iOS/Android génèrent des webhooks server-to-server (App Store Server Notifications V2 / Google Play Developer Notifications). RevenueCat gère ça nativement, mais il faut configurer le webhook RevenueCat → `/api/revenuecat/webhook` (déjà existant, voir `src/app/api/revenuecat/webhook/route.ts`). À valider en L4-B/C
+- **Settings page depuis mobile** : la page `/settings` est accessible depuis le footer desktop. Sur mobile (Capacitor), il faudra ajouter un lien depuis `MobileAppShell` ou le `profile-screen.tsx` (qui existe déjà). Hors scope L4-A mais trivial : `<Link href="/settings">Paramètres</Link>` dans le profile screen
+- **`react-hooks/set-state-in-effect`** : j'ai vérifié que la règle n'est PAS dans les disabled rules de `eslint.config.mjs`. Mon code évite le pattern setState-dans-effect-body en utilisant des `.then()`/`.catch()` async callbacks (qui ne déclenchent pas la règle). Si la règle était activée à l'avenir, le pattern resterait valide. À surveiller dans les prochains lots
+- **Lien `/#tarifs` dans CGU** : la CGU référence `/#tarifs` (section Tarifs de la landing). Sur la page settings (qui n'est PAS la landing), ce lien scrollera vers la section `#tarifs` si l'utilisateur revient à `/` — mais comme la landing page ne charge `#tarifs` qu'après montage complet, il peut y avoir une race condition. Workaround : sur la landing, scroll automatique si `window.location.hash` est présent au mount. Hors scope L4-A mais à noter pour L5
