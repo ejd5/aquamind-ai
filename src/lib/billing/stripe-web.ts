@@ -57,11 +57,8 @@ export const stripeWebClient: BillingClient = {
   },
 
   async manageSubscription(): Promise<void> {
-    try {
-      const result = await api.post<{ url: string }>('/api/stripe/portal', {})
-      if (result?.url) window.location.href = result.url
-    } catch {
-      window.open('https://aqwelia.app/account', '_blank')
-    }
+    // Let the error propagate so callers can show a proper toast
+    const result = await api.post<{ url: string }>('/api/stripe/portal', {})
+    if (result?.url) window.location.href = result.url
   },
 }
