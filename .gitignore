@@ -60,6 +60,8 @@ db/*.db
 db/*.db-journal
 *.png
 !public/**/*.png
+!src/app/icon.png
+!src/app/apple-icon.png
 !docs/**/*.png
 upload/
 tool-results/
