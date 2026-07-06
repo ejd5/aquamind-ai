@@ -42,7 +42,7 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
                 className="h-10 w-10 object-cover"
               />
             </div>
-            <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-gold to-[oklch(0.65_0.12_85)] shadow-md shadow-gold/40">
+            <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-gold to-[oklch(0.55_0.10_195)] shadow-md shadow-gold/40">
               <Sparkles className="h-2.5 w-2.5 text-white" />
             </div>
           </div>
@@ -113,7 +113,7 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
           <span className="glass-pill hidden items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-foreground/80 sm:flex">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-gold shadow-[0_0_8px_oklch(0.75_0.13_85)]" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-gold shadow-[0_0_8px_oklch(0.65_0.11_195)]" />
             </span>
             IA en ligne
           </span>

@@ -136,7 +136,7 @@ const EMERGENCIES: Emergency[] = [
     id: 'chlorine_smell',
     label: 'Odeur forte chlore',
     icon: Wind,
-    color: 'from-[oklch(0.7_0.13_85)] to-[oklch(0.55_0.13_85)]',
+    color: 'from-[oklch(0.55_0.10_195)] to-[oklch(0.45_0.10_200)]',
     prompt: "Mon piscine sent très fort le chlore, et pourtant le chlore libre est normal. Que se passe-t-il ?",
     checklist: {
       title: 'Odeur forte = chloramines',
@@ -195,7 +195,7 @@ const EMERGENCIES: Emergency[] = [
     id: 'unstable_ph',
     label: 'pH instable',
     icon: Beaker,
-    color: 'from-[oklch(0.7_0.13_85)] to-[oklch(0.55_0.13_195)]',
+    color: 'from-[oklch(0.55_0.10_195)] to-[oklch(0.55_0.13_195)]',
     prompt: "Mon pH ne tient pas, il remonte ou descend tout le temps. Comment le stabiliser ?",
     checklist: {
       title: 'pH instable — régler le TAC',

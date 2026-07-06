@@ -220,7 +220,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
       />
       <div
         className="aurora-orb"
-        style={{ width: 320, height: 320, bottom: -80, right: -60, background: 'oklch(0.75 0.13 85)', animationDelay: '-8s' }}
+        style={{ width: 320, height: 320, bottom: -80, right: -60, background: 'oklch(0.65 0.11 195)', animationDelay: '-8s' }}
       />
 
       <div className="relative z-10 mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-4 py-10 sm:px-6">

@@ -38,13 +38,13 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
                   key={d.id}
                   onClick={() => setDuration(d.id)}
                   className={`relative rounded-full px-4 py-2 text-xs font-semibold transition-colors sm:text-sm ${
-                    active ? 'text-[oklch(0.18_0.04_85)]' : 'text-muted-foreground hover:text-foreground'
+                    active ? 'text-[oklch(0.99_0.01_195)]' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   {active && (
                     <motion.span
                       layoutId="duration-pill"
-                      className="absolute inset-0 -z-10 rounded-full bg-gradient-to-r from-gold via-[oklch(0.78_0.13_85)] to-[oklch(0.7_0.12_85)] shadow-md shadow-gold/30"
+                      className="absolute inset-0 -z-10 rounded-full bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] shadow-md shadow-gold/30"
                       transition={{ type: 'spring', stiffness: 400, damping: 32 }}
                     />
                   )}
@@ -53,7 +53,7 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
                     {'save' in d && d.save && (
                       <span
                         className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
-                          active ? 'bg-white/25 text-[oklch(0.18_0.04_85)]' : 'bg-gold/15 text-gold'
+                          active ? 'bg-white/25 text-[oklch(0.99_0.01_195)]' : 'bg-gold/15 text-gold'
                         }`}
                       >
                         -{d.save}
@@ -77,14 +77,14 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
                 <div
                   className={`relative h-full overflow-hidden rounded-2xl backdrop-blur-xl transition-all duration-300 ${
                     isPremium
-                      ? 'border-2 border-gold/60 bg-gradient-to-br from-gold/[0.12] via-white/60 to-white/40 shadow-[0_25px_60px_-20px_oklch(0.75_0.13_85/0.5)] md:-translate-y-3 md:scale-[1.03] dark:via-white/[0.04] dark:to-white/[0.02]'
+                      ? 'border-2 border-gold/60 bg-gradient-to-br from-gold/[0.12] via-white/60 to-white/40 shadow-[0_25px_60px_-20px_oklch(0.65_0.11_195/0.5)] md:-translate-y-3 md:scale-[1.03] dark:via-white/[0.04] dark:to-white/[0.02]'
                       : 'border border-white/40 bg-white/60 hover:-translate-y-1 hover:shadow-xl dark:border-white/10 dark:bg-white/[0.03]'
                   }`}
                 >
                   {isPremium && (
                     <>
                       <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
-                      <span className="absolute -right-12 top-5 rotate-45 bg-gradient-to-r from-gold to-[oklch(0.7_0.12_85)] px-12 py-1 text-center text-[10px] font-bold uppercase tracking-widest text-[oklch(0.18_0.04_85)] shadow-md">
+                      <span className="absolute -right-12 top-5 rotate-45 bg-gradient-to-r from-gold to-[oklch(0.55_0.10_195)] px-12 py-1 text-center text-[10px] font-bold uppercase tracking-widest text-[oklch(0.99_0.01_195)] shadow-md">
                         Populaire
                       </span>
                       <div className="pointer-events-none absolute -inset-1 -z-10 rounded-2xl bg-gold/10 blur-2xl" />
@@ -123,7 +123,7 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
                       onClick={onEnterApp}
                       className={`mt-5 flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold transition-all ${
                         isPremium
-                          ? 'bg-gradient-to-r from-gold via-[oklch(0.78_0.13_85)] to-[oklch(0.7_0.12_85)] text-[oklch(0.18_0.04_85)] shadow-lg shadow-gold/30 hover:scale-[1.02] hover:shadow-[0_0_40px_-6px_oklch(0.75_0.13_85/0.6)]'
+                          ? 'bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] text-[oklch(0.99_0.01_195)] shadow-lg shadow-gold/30 hover:scale-[1.02] hover:shadow-[0_0_40px_-6px_oklch(0.65_0.11_195/0.6)]'
                           : 'border border-primary/30 bg-primary/5 text-foreground hover:border-primary/60 hover:bg-primary/10'
                       }`}
                     >

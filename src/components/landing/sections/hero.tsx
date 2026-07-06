@@ -34,7 +34,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
         aria-hidden="true"
       />
       <div
-        className="aurora-orb right-0 top-32 h-80 w-80 bg-[oklch(0.75_0.13_85/0.45)]"
+        className="aurora-orb right-0 top-32 h-80 w-80 bg-[oklch(0.65_0.11_195/0.45)]"
         style={{ animationDelay: '-6s' }}
         aria-hidden="true"
       />
@@ -90,7 +90,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
           >
             <button
               onClick={onEnterApp}
-              className="glow-gold group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold via-[oklch(0.78_0.13_85)] to-[oklch(0.7_0.12_85)] px-7 py-3.5 text-sm font-bold text-[oklch(0.18_0.04_85)] shadow-lg transition-all hover:scale-[1.02] hover:shadow-[0_0_50px_-8px_oklch(0.75_0.13_85/0.7)] sm:w-auto"
+              className="glow-gold group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] px-7 py-3.5 text-sm font-bold text-[oklch(0.99_0.01_195)] shadow-lg transition-all hover:scale-[1.02] hover:shadow-[0_0_50px_-8px_oklch(0.65_0.11_195/0.7)] sm:w-auto"
             >
               {hasProfile ? 'Accéder à mon espace' : 'Démarrer gratuitement'}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />

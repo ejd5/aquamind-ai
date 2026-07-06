@@ -18,7 +18,7 @@ export function FinalCta({ hasProfile, onEnterApp }: FinalCtaProps) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.7 }}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[oklch(0.45_0.12_195)] via-[oklch(0.5_0.1_170)] to-[oklch(0.75_0.13_85)] p-8 text-center shadow-2xl shadow-primary/30 sm:p-14"
+          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[oklch(0.45_0.12_195)] via-[oklch(0.5_0.1_170)] to-[oklch(0.65_0.11_195)] p-8 text-center shadow-2xl shadow-primary/30 sm:p-14"
         >
           {/* Decorative orbs */}
           <div
