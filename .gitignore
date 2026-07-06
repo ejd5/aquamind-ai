@@ -54,6 +54,7 @@ server.log
 /skills/
 # AquaMind — local artifacts (ne pas pousser)
 .env
+!.env.example
 .env.local
 db/*.db
 db/*.db-journal
