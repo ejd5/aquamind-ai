@@ -11,15 +11,15 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
-    "mobile:build": "MOBILE_BUILD=true next build -c next.config.mobile.ts",
-    "mobile:sync": "next build -c next.config.mobile.ts && npx cap sync ios android",
-    "mobile:ios": "next build -c next.config.mobile.ts && npx cap sync ios && npx cap open ios",
-    "mobile:android": "next build -c next.config.mobile.ts && npx cap sync android && npx cap open android",
+    "mobile:build": "bash scripts/mobile-build.sh",
+    "mobile:sync": "bash scripts/mobile-build.sh && npx cap sync ios android",
+    "mobile:ios": "bash scripts/mobile-build.sh && npx cap sync ios && npx cap open ios",
+    "mobile:android": "bash scripts/mobile-build.sh && npx cap sync android && npx cap open android",
     "mobile:open:ios": "npx cap open ios",
     "mobile:open:android": "npx cap open android",
     "mobile:add:ios": "npx cap add ios",
     "mobile:add:android": "npx cap add android",
-    "mobile:clean": "rm -rf out .next && next build -c next.config.mobile.ts && npx cap sync"
+    "mobile:clean": "rm -rf out .next && bash scripts/mobile-build.sh && npx cap sync"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.0",

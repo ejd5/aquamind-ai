@@ -1,0 +1,18 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["TEAMID.com.aqwelia.app"],
+        "components": [
+          {
+            "/": "/?tab=*"
+          },
+          {
+            "/": "/?sub=*"
+          }
+        ]
+      }
+    ]
+  }
+}

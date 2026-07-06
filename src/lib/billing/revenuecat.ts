@@ -8,6 +8,7 @@ const RC_API_KEYS = {
 }
 
 let _initialized = false
+let _loggedInUserId: string | null = null
 
 async function ensureInitialized() {
   if (_initialized || !isNative()) return
@@ -18,6 +19,38 @@ async function ensureInitialized() {
   await Purchases.configure({ apiKey })
   await Purchases.setLogLevel({ level: LOG_LEVEL.INFO })
   _initialized = true
+}
+
+/**
+ * Link the current NextAuth user to RevenueCat.
+ * Must be called after login so that purchases are attributed to the right user.
+ * The webhook uses app_user_id (== userId) to sync entitlements to our DB.
+ */
+export async function loginRevenueCatUser(userId: string): Promise<void> {
+  if (!isNative() || !userId) return
+  await ensureInitialized()
+  if (_loggedInUserId === userId) return  // already logged in
+  try {
+    await Purchases.logIn({ appUserID: userId })
+    _loggedInUserId = userId
+  } catch {
+    // User may already exist in RC — try restore instead
+    try {
+      await Purchases.restorePurchases()
+      _loggedInUserId = userId
+    } catch {}
+  }
+}
+
+/**
+ * Unlink the current user from RevenueCat (on logout).
+ */
+export async function logoutRevenueCatUser(): Promise<void> {
+  if (!isNative() || !_loggedInUserId) return
+  try {
+    await Purchases.logOut()
+  } catch {}
+  _loggedInUserId = null
 }
 
 function mapPackageToProduct(pkg: any): Product | null {
