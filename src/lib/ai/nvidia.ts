@@ -24,8 +24,10 @@ export interface VisionResult {
 
 const NVIDIA_BASE_URL = process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1'
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY || ''
+// GLM-5.2 = flagship LLM (text only) — perfect for the chat assistant
+// For vision (photo diagnostic), use a multimodal model like Llama 3.2 Vision
 const NVIDIA_VISION_MODEL = process.env.NVIDIA_VISION_MODEL || 'meta/llama-3.2-90b-vision-instruct'
-const NVIDIA_CHAT_MODEL = process.env.NVIDIA_CHAT_MODEL || 'meta/llama-3.1-70b-instruct'
+const NVIDIA_CHAT_MODEL = process.env.NVIDIA_CHAT_MODEL || 'z-ai/glm-5.2'
 
 function ensureApiKey(): string {
   if (!NVIDIA_API_KEY) {
