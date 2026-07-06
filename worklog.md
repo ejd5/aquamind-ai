@@ -570,3 +570,317 @@ Points d'attention pour la main agent / prochains lots:
 - Si la main agent veut brancher un deep-link `?tab=analyses&sub=photo`, ajouter un `useEffect` dans `MobileAppShell` qui parse `window.location.search` et appelle `handleModuleNavigate()` avec le TabId desktop correspondant
 - Les 4 lignes "Paramètres" du ProfileScreen sont des placeholders — il faudra créer `src/app/settings/notifications`, `privacy`, `help` dans un lot ultérieur (L3 ou plus)
 - Le composant `Onboarding` est réutilisé tel quel (desktop) — il est responsive et fonctionne sur mobile, mais un audit UX mobile dédié pourrait être pertinent dans un lot L2-B
+
+---
+Task ID: L3-D
+Agent: general-purpose (stripe)
+Task: Stripe Checkout web + webhooks Stripe
+
+Work Log:
+- Lu `worklog.md` (RESTORE-1, L1-A→L1-E, L2-A) : projet restauré, auth JWT, 13 routes API sécurisées userId, mobile shell créé. 1 erreur TS résiduelle pré-existante dans `safety-rules.ts(28,9)` (hors scope).
+- Lu `src/app/api/subscription/route.ts` : route existante GET/POST, plan/duration, startedAt/expiresAt/active — modèle de données à synchroniser depuis Stripe.
+- Lu `src/lib/pool/freemium.ts` : 3 plans `free|premium|expert`, 4 durations `week|month|quarter|halfyear`. `getPlanFromProductId` mappe `expert_*` → 'expert', `premium_*` → 'premium'.
+- Lu `prisma/schema.prisma` : `Subscription { id, userId, plan String default 'free', duration String?, startedAt, expiresAt?, active Boolean default false }` — champ `plan` est string libre, `duration` nullable. Stripe doit écrire `premium|expert` dans `plan`, `month|halfyear` dans `duration`.
+- Lu `src/lib/auth.ts` : `authOptions` exporté, `getServerSession(authOptions)` pattern standard, `session.user.id` peuplé via callback `session`.
+- Lu `src/lib/db.ts` : singleton Prisma `db` exporté.
+- Lu `.env.example` : placeholders `STRIPE_SECRET_KEY=` et `STRIPE_WEBHOOK_SECRET=` déjà présents mais vides — à compléter avec 4 Price IDs.
+- Lu `package.json` : Next 16.1.1, next-auth 4.24.11, Prisma 6.11.1, React 19. Pas de stripe installé.
+- Vérifié les types Stripe SDK installés (`node_modules/stripe/esm/`) :
+  * Version 22.3.0 installée
+  * `LatestApiVersion = "2026-06-24.dahlia"` (apiVersion.ts) — diffère du spec `'2025-06-30.basil'`, donc cast `as any` nécessaire
+  * `StripeConfig.apiVersion?: LatestApiVersion` (lib.d.ts) — d'où le cast `as any` requis
+  * `Event` est une union discriminée sur `event.type` (Events.d.ts) — `event.data.object` est typé fortement selon le variant, le switch narrow automatiquement
+
+Étapes d'implémentation:
+
+1. Installation du package Stripe
+   - `bun add stripe` → stripe@22.3.0 installé, lockfile mis à jour
+
+2. `src/lib/stripe.ts` (nouveau, 51 lignes)
+   - Singleton `_stripe` créé paresseusement via `getStripe()`
+   - Throw si `STRIPE_SECRET_KEY` manquant (fail-fast)
+   - `new Stripe(key, { apiVersion: '2025-06-30.basil' as any, typescript: true })`
+   * Note: `as any` requis car le SDK installé pin à `"2026-06-24.dahlia"` (valeur string littérale)
+   - `STRIPE_PRICES` map: 4 clés `premium_monthly|premium_yearly|expert_monthly|expert_yearly` → env vars
+   - Type `StripeProductId` dérivé
+   - `isValidProductId(id): id is StripeProductId` (type guard)
+   - `getPlanFromProductId(id): 'premium' | 'expert'` (extrait 'expert' du productId, sinon 'premium')
+   - Commentaire en tête: "server-side only, never expose to client" + mention RevenueCat pour mobile
+
+3. `src/app/api/stripe/checkout/route.ts` (nouveau, 64 lignes)
+   - `export const runtime = 'nodejs'`
+   - POST handler:
+     * Auth: `getServerSession(authOptions)` → 401 si pas de `session.user.id`
+     * Parse JSON body: `{ productId }` → 400 si invalide (`isValidProductId` type guard)
+     * Récupère `STRIPE_PRICES[productId]` → 500 si non configuré (env var vide)
+     * `stripe.checkout.sessions.create()`:
+       - `mode: 'subscription'`
+       - `payment_method_types: ['card']`
+       - `line_items: [{ price: priceId, quantity: 1 }]`
+       - `customer_email: session.user.email || undefined`
+       - `client_reference_id: session.user.id`
+       - `metadata: { userId, productId, plan }` (sur la session)
+       - `success_url: ${NEXTAUTH_URL}/?subscription=success`
+       - `cancel_url: ${NEXTAUTH_URL}/?subscription=cancelled`
+       - `allow_promotion_codes: true`
+       - `subscription_data: { metadata: { userId, productId, plan } }` (sur la souscription Stripe — repris dans les webhooks `customer.subscription.*`)
+     * Retourne `{ url: checkoutSession.url }` (client redirige vers Stripe Checkout)
+   - Catch global: log + 500 générique
+
+4. `src/app/api/stripe/portal/route.ts` (nouveau, 41 lignes)
+   - `export const runtime = 'nodejs'`
+   - POST handler (paramètre préfixé `_req` car non utilisé, évite warning eslint `no-unused-vars`):
+     * Auth: `getServerSession(authOptions)` → 401 si pas de session
+     * `stripe.customers.list({ email: session.user.email, limit: 1 })` → 404 si aucun client
+     * `stripe.billingPortal.sessions.create({ customer, return_url: ${NEXTAUTH_URL}/ })`
+     * Retourne `{ url: portalSession.url }`
+   - Import `db` NON inclus (présent dans le spec mais inutilisé → supprimé pour lint propre)
+   - Catch global: log + 500 générique
+
+5. `src/app/api/stripe/webhook/route.ts` (nouveau, 127 lignes)
+   - `export const runtime = 'nodejs'`
+   - `export const dynamic = 'force-dynamic'` (route dynamique, jamais cached)
+   - POST handler **sans auth session** (Stripe → serveur, secret remplace l'auth):
+     * `const body = await req.text()` — **raw body obligatoire** pour vérification signature Stripe
+     * `const signature = (await headers()).get('stripe-signature')` — adaptation Next.js 16: `headers()` est async (retourne `Promise<ReadonlyHeaders>`)
+     * 400 si pas de signature
+     * 500 si `STRIPE_WEBHOOK_SECRET` non configuré
+     * `stripe.webhooks.constructEvent(body, signature, webhookSecret)` — vérifie signature + parse event
+     * Catch: 400 si signature invalide
+   - Switch sur `event.type` (discriminated union — `event.data.object` est typé automatiquement):
+     * `checkout.session.completed`:
+       - Extrait `userId` depuis `cs.metadata?.userId || cs.client_reference_id` (double source de sécurité)
+       - Extrait `productId` et `plan` depuis `cs.metadata`
+       - Si userId + plan présents: `updateMany` désactive les anciennes souscriptions actives, `create` nouvelle avec `duration` mappée (`yearly` → `halfyear`, sinon `month`), `expiresAt: null` (mis à jour par la suite via `invoice.paid` ou `customer.subscription.updated`)
+     * `customer.subscription.updated` | `customer.subscription.deleted` (cases combinés):
+       - Extrait `userId` depuis `sub.metadata?.userId`
+       - Si deleted: `updateMany` désactive
+       - Si updated: `updateMany` met à jour `expiresAt` depuis `sub.current_period_end * 1000` (Stripe timestamp → Date JS)
+     * `invoice.paid`:
+       - Extrait `userId` depuis `invoice.metadata?.userId`
+       - `updateMany` met à jour `expiresAt` depuis `invoice.lines?.data?.[0]?.period?.end * 1000`
+     * `default`: ignore (les autres event types ne sont pas subscription-relevant)
+   - Retourne `{ received: true }` (200) en cas de succès
+   - Catch: log + 500 générique
+
+6. `.env.example` (modifié)
+   - Ancien bloc: `STRIPE_SECRET_KEY=` + `STRIPE_WEBHOOK_SECRET=` (placeholders vides)
+   - Nouveau bloc commenté + 6 vars avec valeurs placeholder:
+     ```
+     # Stripe (web subscriptions)
+     # Dashboard: https://dashboard.stripe.com/products → create 4 recurring prices
+     # (premium_monthly, premium_yearly, expert_monthly, expert_yearly)
+     STRIPE_SECRET_KEY=sk_test_xxxxxxxxxxxxx
+     STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxx
+     STRIPE_PRICE_PREMIUM_MONTHLY=price_xxxxxxxxxxxxx
+     STRIPE_PRICE_PREMIUM_YEARLY=price_xxxxxxxxxxxxx
+     STRIPE_PRICE_EXPERT_MONTHLY=price_xxxxxxxxxxxxx
+     STRIPE_PRICE_EXPERT_YEARLY=price_xxxxxxxxxxxxx
+     ```
+
+Décisions de conception:
+- **`as any` sur apiVersion**: le SDK stripe@22.3.0 pin `LatestApiVersion = "2026-06-24.dahlia"`. La spec demandait `'2025-06-30.basil'`. Sans cast, TS échouerait (le type est une string littérale, pas `string`). Le cast `as any` évite ce friction au runtime (Stripe accepte n'importe quelle version d'API active côté compte). Note: en production il faudra aligner la version d'API Stripe Dashboard avec la valeur passée au SDK.
+- **`await headers()` au lieu de `headers().get()`**: la spec du brief utilisait `headers().get(...)` mais Next.js 16 a rendu `headers()` asynchrone (retourne `Promise<ReadonlyHeaders>`). Sans `await`, `.get()` n'existerait pas sur le Promise → erreur TS. Adaptation nécessaire.
+- **Import `db` supprimé du portal route**: la spec originale importait `db` mais ne l'utilisait pas. Supprimé pour maintenir lint à 0 warning.
+- **Paramètre `_req` dans le portal route**: la spec utilisait `req` non utilisé. Préfixé `_req` pour satisfaire `@typescript-eslint/no-unused-vars` (convention ESLint standard).
+- **Import `getPlanFromProductId` supprimé du webhook**: la spec l'importait mais ne l'utilisait pas (le `plan` est lu directement depuis metadata). Supprimé pour lint propre.
+- **Webhook sans auth session**: la spec le précisait explicitement, et c'est correct — Stripe est server-to-server, le `STRIPE_WEBHOOK_SECRET` remplace l'auth. `constructEvent` vérifie cryptographiquement que la requête vient bien de Stripe.
+- **Raw body via `req.text()`**: critique pour Stripe. `req.json()` buffer le body et expose un objet parsé, ce qui casserait la signature. `req.text()` donne le raw string envoyé par Stripe. Le webhook route n'est PAS passé par `bodyParser`.
+- **`force-dynamic`**: empêche Next.js de cache la route webhook (chaque requête doit être traitée fraîche).
+- **`runtime = 'nodejs'`**: Stripe SDK utilise `crypto` Node natif pour HMAC, pas disponible en `edge` runtime. Obligatoire sur les 3 routes.
+- **Mapping `yearly` → `halfyear`**: le schéma Prisma ne définit que 4 durations (`week|month|quarter|halfyear`), pas `yearly`. Choix: `yearly` Stripe (12 mois) → `halfyear` (6 mois) côté DB. Pas parfait mais évite de modifier le schéma. L'`expiresAt` réel est calculé depuis `current_period_end` Stripe — donc la durée factuelle est correcte, seul le label `duration` est imparfait.
+
+Vérifications finales:
+- `bun run lint` → **0 erreur, 0 warning, exit code 0** ✅
+- `bunx tsc --noEmit 2>&1 | grep -E "src/lib/stripe|src/app/api/stripe"` → **0 erreur** dans les 4 nouveaux fichiers ✅
+- `bunx tsc --noEmit 2>&1 | grep -vE "^examples/|^skills/"` → **1 erreur résiduelle pré-existante**: `src/lib/pool/safety-rules.ts(28,9)` (comparaison '"allowed"' vs '"forbidden"' — mentionnée L1-E comme hors scope, NON causée par L3-D)
+
+Stage Summary:
+- ✅ Package `stripe@22.3.0` installé (`bun add stripe`)
+- ✅ 4 fichiers créés:
+  1. `src/lib/stripe.ts` — singleton client, 4 Price IDs, type guards, plan mapping
+  2. `src/app/api/stripe/checkout/route.ts` — Checkout Session (auth requise, mode subscription)
+  3. `src/app/api/stripe/portal/route.ts` — Customer Portal (auth requise, resolve customer by email)
+  4. `src/app/api/stripe/webhook/route.ts` — webhook handler (PAS d'auth, raw body, signature verification, 4 event types: checkout.session.completed, customer.subscription.updated, customer.subscription.deleted, invoice.paid)
+- ✅ `.env.example` mis à jour avec 6 vars Stripe (1 secret + 1 webhook + 4 prices) + commentaire Dashboard
+- ✅ Lint: 0 erreur, 0 warning (exit 0)
+- ✅ TypeScript: 0 erreur sur le scope `src/lib/stripe*` + `src/app/api/stripe*`
+- ✅ 1 erreur TS résiduelle pré-existante (`safety-rules.ts:28`) — hors scope, documentée L1-E
+- ✅ Contraintes respectées: `prisma/schema.prisma` NON touché, `src/lib/pool/freemium.ts` NON touché, routes API existantes NON touchées (15 routes intactes: 13 routes user-owned + /api/ + /api/auth/*)
+- ✅ Toutes les routes Stripe: `runtime = 'nodejs'` (Stripe SDK utilise crypto Node)
+- ✅ Webhook: raw body via `req.text()`, signature verification via `stripe.webhooks.constructEvent`, headers() awaited (Next.js 16 async)
+- ✅ Checkout + Portal: `getServerSession(authOptions)` + 401 si pas de session
+- ✅ Webhook: PAS de session (server-to-server, secret remplace l'auth)
+- ✅ Code stub-ready: les fonctionnalités Stripe réelles nécessitent des clés API Stripe valides (sk_test_*, whsec_*, price_*) configurées dans `.env`. Le code se compile, passe lint, et est prêt à recevoir les vraies clés sans modification.
+- ⚠️ Note production: créer les 4 Price IDs dans Stripe Dashboard (premium_monthly $12.99/mo, premium_yearly ~$57.99/6mo, expert_monthly $24.99/mo, expert_yearly ~$109.99/6mo — voir `freemium.ts` PLANS[].price). Configurer l'endpoint webhook dans Stripe Dashboard → Developers → Webhooks → Add endpoint → URL `${NEXTAUTH_URL}/api/stripe/webhook` → events `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`. Le `STRIPE_WEBHOOK_SECRET` est affiché sur la page de l'endpoint après création.
+
+Prochaines étapes recommandées:
+1. Brancher le bouton "S'abonner" du `ModulePaywall` (desktop) et `ProfileScreen` (mobile) sur `POST /api/stripe/checkout` avec `{ productId: 'premium_monthly' | 'premium_yearly' | 'expert_monthly' | 'expert_yearly' }` et rediriger vers l'`url` retournée (`window.location.href = url`)
+2. Ajouter un lien "Gérer mon abonnement" qui appelle `POST /api/stripe/portal` et redirige vers le Customer Portal Stripe
+3. Configurer le webhook endpoint Stripe en production (et tester avec `stripe listen --forward-to localhost:3000/api/stripe/webhook` en dev local)
+4. Lot 3-E (RevenueCat mobile) — schéma symétrique pour iOS/Android, doit écrire dans le même modèle `Subscription` Prisma via webhook RevenueCat
+5. Optionnel: ajouter un job cron ou un endpoint `/api/stripe/sync` qui rafraîchit `expiresAt` pour toutes les souscriptions actives (au cas où un webhook serait manqué)
+
+---
+Task ID: L3-A
+Agent: general-purpose (native-layer)
+Task: Créer couche native src/lib/native/ (caméra, haptics, keyboard, etc.)
+
+Work Log:
+- Lu `worklog.md` (RESTORE-1, RB-1, L1-A→L1-E, L2-A) : projet restauré, auth JWT, 13 routes API sécurisées userId, MobileAppShell + 5 écrans mobile créés par L2-A (architecture desktop/mobile en place, modules aquamind réutilisés)
+- Lu `src/lib/platform.ts` : détection Capacitor centralisée — `isNative()` / `isIOS()` / `isAndroid()` / `isWeb()` / `isMobile()` SSR-safe (retournent false sur server). Cette fonction est le pivot de toute la couche native : chaque module l'appelle avant d'invoquer un plugin Capacitor
+- Lu `capacitor.config.ts` : appId `com.aqwelia.app`, webDir `out`, plugins configurés (SplashScreen, StatusBar `#003B4A`, Keyboard `resize: body style: LIGHT`, LocalNotifications `smallIcon: ic_stat_icon, iconColor: #004D5A, sound: bell.wav`). Couleur de marque `#003B4A` réutilisée dans `status-bar.ts`
+- Lu `package.json` : 11 plugins Capacitor déjà installés en Lot 2 (`@capacitor/app@8.1`, `browser@8.0`, `camera@8.2`, `cli@8.4`, `core@8.4`, `haptics@8.0`, `keyboard@8.0`, `local-notifications@8.2`, `network@8.0`, `preferences@8.0`, `splash-screen@8.0`, `status-bar@8.0`) — aucun package à installer
+- Vérifié les types des plugins dans `node_modules/@capacitor/*/dist/esm/definitions.d.ts` :
+  * `local-notifications` : `Schedule` n'a QUE `{ at?, repeats?, allowWhileIdle?, on?, every?, count? }` — pas de `in` (la spec L3-A proposait `{ in seconds: 1 }` qui est syntaxe invalide + propriété inexistante). Corrigé en `{ at: new Date(Date.now() + 1000) }` pour "immédiat"
+  * `app.getLaunchUrl()` retourne `Promise<AppLaunchUrl | undefined>` — la spec déstructurait `({ url }) => ...` ce qui aurait jeté si `undefined`. Corrigé en `(result) => { if (result?.url) handler(result.url) }`
+  * `keyboard.KeyboardStyle` : enum a `Light = "LIGHT"` (membre PascalCase, valeur SCREAMING_SNAKE). La spec utilisait `KeyboardStyle.LIGHT` (membre inexistant). Corrigé en `KeyboardStyle.Light`
+  * `app.exitApp()`, `getState()`, `addListener('appStateChange'|'backButton'|'appUrlOpen')`, `Browser.open({ url, presentationStyle })` — tous vérifiés conformes à la spec
+- Lu `eslint.config.mjs` : règles permissives (`no-empty: off`, `no-unused-vars: off`, `@typescript-eslint/no-explicit-any: off`, etc.) — empty catch blocks OK, imports inutilisés OK
+- Lu `tsconfig.json` : `strict: true`, `target: ES2017`, paths `@/*` → `./src/*` — `@/lib/platform` résoud correctement
+
+Architecture decisions:
+- **SSR-safety en 2 couches** : (1) `isNative()` court-circuite tous les appels Capacitor (retourne `false` sur le serveur car `window` undefined), (2) les fallbacks web gardent aussi `typeof document/window/navigator/localStorage !== 'undefined'` car `isNative() === false` ne distingue pas web browser vs Node SSR. Sans cette 2e garde, `localStorage.getItem` sur serveur ferait crasher le render
+- **Graceful degradation systématique** : tous les appels `await Capacitor.xxx()` wrappés dans `try/catch {}` — un plugin défaillant (permissions refusées, plugin absent, erreur native) ne crash jamais l'UI, retourne `null` / `false` / valeur par défaut
+- **Web fallbacks complets** : chaque feature a un équivalent navigateur — Camera → `<input type="file" accept="image/*" capture="environment">`, Haptics → no-op (pas d'équivalent web), Keyboard → no-op (pas d'équivalent web), BackButton → no-op (Android-only), Links → `window.open(..., '_blank', 'noopener,noreferrer')`, Network → `navigator.onLine` + `window.online/offline`, Lifecycle → `document.visibilitychange`, LocalNotifications → `Notification` API (avec `setTimeout` pour simuler `scheduleAt`), Storage → `localStorage`, StatusBar → no-op, AppExit → no-op (Android-only)
+- **Fan-out single-listener pour Network** : `onNetworkChange()` peut être appelée par N composants mais n'enregistre qu'UN seul `Network.addListener('networkStatusChange')` natif — tracké via `_nativeListenerCleanup`. Le dernier unsubscribe déclenche `listener.remove()` et libère le handle. Évite les fuites de listeners sur les mounts/unmounts répétés
+- **Cleanup functions everywhere** : toutes les fonctions `setup*()` et `on*Change()` retournent `() => void` pour usage direct dans `useEffect(() => setupX(), [])` React. Les listeners Capacitor (qui retournent `Promise<PluginListenerHandle>`) sont nettoyés via `.then(l => l.remove())`
+- **Pas de `as any` sur Schedule** : la spec utilisait `schedule: schedule as any` à cause du `{ in seconds: 1 }` invalide. En utilisant `{ at: Date }` qui est un champ valide du type `Schedule`, plus besoin de cast — code strictement typé
+- **Camera web fallback** : amélioré par rapport à la spec — input hidden hors écran (`position: fixed; left: -9999px`), nettoyage DOM systématique (`input.remove()` après change/cancel), détection best-effort du cancel via `focus` event (sinon le Promise reste pending indéfiniment si l'utilisateur ferme le picker sans choisir), `reader.onerror` pour ne jamais bloquer
+
+Files created (12 nouveaux fichiers dans `src/lib/native/`):
+1. `index.ts` (~80 lignes) — Barrel export : re-exporte toutes les fonctions + types (`PhotoResult`, `BackButtonHandler`, `DeepLinkHandler`, `NetworkState`, `AppLifecycleState`, `LocalNotificationPayload`). Pattern d'import : `import { takePhoto, hapticSuccess, setupKeyboard, onAppStateChange } from '@/lib/native'`
+2. `camera.ts` (~140 lignes) — `takePhoto()`, `pickFromGallery()`, `requestCameraPermission()`, `PhotoResult` interface. Native: `Camera.getPhoto({ quality: 85, resultType: DataUrl, source: Camera|Photos, correctOrientation: true })`. Web: `<input type="file" accept="image/*" capture="environment">` + `FileReader.readAsDataURL`
+3. `haptics.ts` (~75 lignes) — `hapticLight/Medium/Heavy()` (ImpactStyle), `hapticSuccess/Error/Warning()` (NotificationType). Toutes async, no-op sur web/server
+4. `keyboard.ts` (~70 lignes) — `setupKeyboard()` (retourne cleanup) : `Keyboard.setStyle(Light)` + `setResizeMode(Body)` + listeners `keyboardWillShow/Hide` qui posent `--keyboard-height` CSS var et toggle `.keyboard-open` sur `<body>`. `hideKeyboard()`
+5. `back-button.ts` (~45 lignes) — `setupBackButton(handler)` : Android-only. Handler contract : `return true` = handled (stop), `return false|void` = webview back si `canGoBack`, sinon `App.exitApp()`. `BackButtonHandler` type
+6. `links.ts` (~75 lignes) — `openExternalLink(url)` : native `Browser.open({ url, presentationStyle: 'fullscreen' })`, fallback `window.open(..., '_blank', 'noopener,noreferrer')`. `setupDeepLinks(handler)` : `appUrlOpen` listener + cold-start via `getLaunchUrl()` (avec guard `result?.url` car peut être `undefined`). Parse le `path` via `new URL(url).pathname` si l'URL est valide
+7. `network.ts` (~105 lignes) — `getNetworkState()` (native `Network.getStatus()`, web `navigator.onLine`, server `'online'`). `onNetworkChange(cb)` : single native listener fan-out à N callbacks via `_listeners[]`, cleanup libère le listener natif quand le dernier subscriber part. `NetworkState = 'online' | 'offline'`
+8. `lifecycle.ts` (~75 lignes) — `onAppStateChange(cb)` (native `appStateChange { isActive }`, web `visibilitychange` + `document.hidden`). `getCurrentAppState()` (native `App.getState()`, web `document.hidden`). `AppLifecycleState = 'active' | 'inactive' | 'background'`
+9. `local-notifications.ts` (~135 lignes) — `requestNotificationPermission()` (native `requestPermissions().display === 'granted'`, web `true`). `scheduleLocalNotification({ id, title, body, scheduleAt?, sound? })` : native `LocalNotifications.schedule({ notifications: [{ id, title, body, schedule: { at: scheduleAt ?? now+1s }, sound }] })`, web `new Notification(title, { body })` avec `setTimeout(delay)` si `scheduleAt` futur. `cancelLocalNotification(id)` (no-op web). `getPendingNotifications()` (`[]` sur web). `LocalNotificationPayload` interface
+10. `storage.ts` (~105 lignes) — `setPref/getPref/removePref/clearPrefs` : native `Preferences.set/get/remove/clear` (UserDefaults iOS / SharedPreferences Android), web `localStorage`, server no-op/null. Wrappé try/catch pour quota / private mode
+11. `status-bar.ts` (~70 lignes) — `setStatusBarDark()` (`Style.Dark` + `setBackgroundColor(#003B4A)` sur iOS), `setStatusBarLight()` (`Style.Light` + `setBackgroundColor(#003B4A)`), `showStatusBar()`, `hideStatusBar()`. Constante `AQWELIA_BG = '#003B4A'` alignée sur `capacitor.config.ts`
+12. `app-exit.ts` (~25 lignes) — `exitApp()` : `App.exitApp()` Android-only (no-op iOS/web/server). Utilisé par `back-button.ts` comme escape hatch
+
+Vérifications finales:
+- `bunx tsc --noEmit 2>&1 | grep "src/lib/native"` → **0 erreur** dans tous les 12 fichiers ✅
+- `bunx tsc --noEmit 2>&1 | grep -c "error TS"` → 7 erreurs résiduelles dans le projet, AUCUNE dans `src/lib/native/` :
+  * `capacitor.config.ts(35,7)` + `(36,7)` : `resize: 'body'` et `style: 'LIGHT'` assignés comme string literals au lieu des enums (pré-existant Lot 2, HORS scope L3-A — n'impacte pas l'exécution car Capacitor parse ces strings au runtime)
+  * `examples/websocket/frontend.tsx` + `server.ts` : `socket.io-client` / `socket.io` non installés (pré-existant, HORS scope)
+  * `skills/image-edit/scripts/image-edit.ts` + `skills/stock-analysis-skill/src/analyzer.ts` : erreurs dans les skills (pré-existant, HORS scope)
+  * `src/lib/pool/safety-rules.ts(28,9)` : comparaison `'allowed'` vs `'forbidden'` (pré-existant L1-E, HORS scope)
+- `bun run lint` → exit code 0, **0 erreur, 0 warning** ✅
+
+Stage Summary:
+- ✅ 12 nouveaux fichiers créés dans `src/lib/native/` (1 barrel `index.ts` + 11 modules métier : camera, haptics, keyboard, back-button, links, network, lifecycle, local-notifications, storage, status-bar, app-exit)
+- ✅ Tous les 11 plugins Capacitor installés en Lot 2 sont wrappés : `@capacitor/app` (back-button, lifecycle, links, app-exit), `@capacitor/browser` (links), `@capacitor/camera` (camera), `@capacitor/haptics` (haptics), `@capacitor/keyboard` (keyboard), `@capacitor/local-notifications` (local-notifications), `@capacitor/network` (network), `@capacitor/preferences` (storage), `@capacitor/status-bar` (status-bar). (`@capacitor/core` et `@capacitor/cli` sont infra, `@capacitor/splash-screen` est géré par config seule — pas de wrapper runtime requis)
+- ✅ SSR-safety en 2 couches : (1) `isNative()` court-circuite tous les appels Capacitor (false sur serveur), (2) fallbacks web gardent aussi `typeof document/window/navigator/localStorage !== 'undefined'` car `isNative() === false` ne distingue pas web browser vs Node SSR
+- ✅ Graceful degradation systématique : 100% des appels `await Capacitor.xxx()` wrappés dans `try/catch` — un plugin défaillant retourne `null`/`false`/no-op plutôt que de crasher l'UI
+- ✅ Web fallbacks complets pour 7/11 modules : Camera (FileReader + `<input type="file">`), Links (window.open), Network (navigator.onLine + window.online/offline), Lifecycle (document.visibilitychange), LocalNotifications (Notification API + setTimeout pour scheduleAt), Storage (localStorage), Haptics/Keyboard/StatusBar/BackButton/AppExit (no-op — pas d'équivalent web)
+- ✅ Pattern React-friendly : toutes les fonctions `setup*()` et `on*Change()` retournent une cleanup `() => void` directement utilisable dans `useEffect(() => setupX(), [])` sans wrapper
+- ✅ Anti-fuite listeners : `network.ts` utilise un fan-out single-listener (1 listener Capacitor partagé par N subscribers, libéré quand le dernier part) — évite les leaks sur mounts/unmounts répétés
+- ✅ Couleur de marque `#003B4A` (depuis `capacitor.config.ts`) centralisée dans `status-bar.ts` via `AQWELIA_BG`
+- ✅ Bugs de spec corrigés :
+  * `local-notifications.ts` : `{ in seconds: 1 }` (syntaxe invalide + propriété inexistante) → `{ at: new Date(Date.now() + 1000) }` (champ valide du type `Schedule`), suppression du cast `as any`
+  * `links.ts` : `getLaunchUrl().then(({ url }) => ...)` aurait jeté si `undefined` → `.then((result) => { if (result?.url) handler(result.url) })`
+  * `keyboard.ts` : `KeyboardStyle.LIGHT` (membre enum inexistant) → `KeyboardStyle.Light` (membre PascalCase correct, valeur `"LIGHT"`)
+- ✅ TypeScript strict : 0 erreur dans `src/lib/native/` (les 7 erreurs résiduelles du projet sont toutes pré-existantes et hors scope — capacitor.config.ts, examples/, skills/, src/lib/pool/safety-rules.ts)
+- ✅ ESLint : 0 erreur, 0 warning (exit code 0)
+- ✅ Contraintes respectées : AUCUN package installé (plugins déjà présents Lot 2), AUCUN fichier hors `src/lib/native/` modifié, AUCUN fichier existant modifié, `capacitor.config.ts` non touché (les 2 erreurs TS sont pré-existantes et seront traitées par un autre lot si besoin), `src/lib/platform.ts` non touché (uniquement importé)
+
+Points d'attention pour la main agent / prochains lots:
+- **Intégration React** : pour exploiter la couche native, créer un hook `useNativeFeatures()` (L3-B?) qui mount les setups dans un `useEffect` :
+  ```ts
+  useEffect(() => {
+    const cleanups = [
+      setupKeyboard(),
+      setupBackButton(() => handleBack()),
+      setupDeepLinks((url) => router.push(url)),
+      onAppStateChange((s) => { if (s === 'background') flushAnalytics() }),
+      onNetworkChange((s) => setOffline(s === 'offline')),
+    ]
+    return () => cleanups.forEach(fn => fn())
+  }, [])
+  ```
+- **Splash screen** : `@capacitor/splash-screen` est configuré via `capacitor.config.ts` seul (show 1500ms, hide auto) — pas de wrapper runtime requis. Si on veut un hide/show programmatique (e.g. après fetch initial), créer `splash.ts` avec `hideSplash()` / `showSplash()`
+- **Status bar au boot** : `capacitor.config.ts` déjà configure `StatusBar.style: 'LIGHT'` + `backgroundColor: #003B4A` + `overlaysWebView: false`. Les helpers `setStatusBarDark/Light()` sont pour des changements runtime (e.g. dark mode toggle)
+- **`capacitor.config.ts` erreurs TS** : 2 erreurs pré-existantes (`resize: 'body'` et `style: 'LIGHT'` devraient utiliser `KeyboardResize.Body` et `KeyboardStyle.Light`). Non-bloquantes (Capacitor parse les strings au runtime) mais à corriger dans un lot L3-C pour propre TypeScript. Solution :
+  ```ts
+  import { KeyboardStyle, KeyboardResize } from '@capacitor/keyboard'
+  Keyboard: { resize: KeyboardResize.Body, style: KeyboardStyle.Light, resizeOnFullScreen: true }
+  ```
+- **Routing deep-link** : `setupDeepLinks` parse `url` et extrait `path` via `new URL(url).pathname`. La main agent devra mapper ce path vers les écrans mobile (`?tab=analyses&sub=photo` → `MobileScreen.analyses + subTab.photo`), comme suggéré par L2-A
+- **Local-notifications web** : la web `Notification` API ne supporte pas le scheduling natif — on simule avec `setTimeout`. Si l'app n'est pas ouverte, la notif ne se déclenche pas (web limitation). Pour iOS/Android natif, `schedule.at` déclenche même app fermée — c'est l'usage prévu pour les rappels Aqwelia
+- **Sensibilité storage** : `storage.ts` est pour données NON-sensibles uniquement (theme, last-tab, onboarding). Pour tokens/sessions, continuer à utiliser NextAuth + httpOnly cookies (déjà en place L1-B). NE PAS y stocker de JWT ou userId
+
+---
+Task ID: L3-B
+Agent: general-purpose (offline)
+Task: Mode hors connexion (cache + state management)
+
+Work Log:
+- Lu `worklog.md` (RESTORE-1, L1-A→L1-E, L2-A, L2-B) : projet restauré, auth JWT multi-tenant, mobile shell + native bridges déjà en place
+- Lu `src/lib/platform.ts` : détection Capacitor (iOS/Android/web), `isMobile()`, `isNative()` — fallbacks SSR OK
+- Lu `src/lib/api-client.ts` : wrapper fetch unique web+mobile, `api.get/post/patch/delete`, `ApiError` class — base parfaite pour le cache layer
+- Lu `src/app/api/dashboard/route.ts` : shape de réponse complexe (profile, latestTest, latestPlan, trend, counts) — aucune adaptation nécessaire côté offline (le cache est agnostique au shape)
+- Lu `src/app/api/pool/profile/route.ts` : GET + POST, return `{ profile }` — idem
+- Vérifié `package.json` : `zustand@5.0.6` + `@capacitor/network@8.0.1` déjà installés, `lucide-react@0.525.0` (icônes CloudOff, RefreshCw disponibles — CloudUp existe mais inutilisé, retiré de l'import)
+- Vérifié l'ESLINT config : règles `@typescript-eslint/no-explicit-any`, `no-unused-vars`, `no-empty` OFF — mais `react-hooks/set-state-in-effect` ON (piège détecté tôt, voir ci-dessous)
+- Vérifié `tsconfig.json` : `strict: true`, `noImplicitAny: false`, paths `@/*` → `./src/*`
+- Vérifié que `src/lib/native/network.ts` n'existe PAS (le worklog L2-B mentionne `capacitor.config.ts` + helpers `splash/status-bar/deep-links/notifications/storage` mais pas de wrapper `@capacitor/network`). Décision : utiliser directement `navigator.onLine` + window events (voir "Decision: native bridge" ci-dessous) plutôt que créer `src/lib/native/network.ts` hors scope
+
+Architecture decisions:
+- **Cache strategy : network-first, cache-fallback** : `apiGetCached()` essaie le réseau d'abord, cache la réponse si succès, fallback sur cache si échec. Retourne toujours `{ data, stale, error? }` — jamais de throw. Cela permet aux composants d'utiliser une seule code path sans try/catch
+- **Cache key = request path** : `'/api/dashboard'` est la clé, pas de hash. Simple, lisible, et les paths API sont déjà uniques par endpoint. TTL différencié par catégorie (5 min pour dashboard, 1h pour profile, 24h pour guides — cf. `CACHE_TTL`)
+- **Lazy expiration** : `getCached()` vérifie `expiresAt` à la lecture et supprime l'entrée si expirée (pas de timer en arrière-plan). Plus simple, pas de fuite mémoire, et l'UX reste acceptable (le cache est lu seulement quand on en a besoin)
+- **SSR-safety** : tous les accès IndexedDB sont wrappés dans `try/catch` qui résolvent à `null`/no-op si `typeof indexedDB === 'undefined'` (SSR, old browsers, private mode). Le store Zustand utilise `createSafeStorage()` qui retourne `localStorage` sur client et stubs no-op sur serveur
+- **Decision: native bridge** : la spec mentionne `import { getNetworkState, onNetworkChange } from '@/lib/native/network'`. Ce module n'existe pas (hors scope L3-B — probablement un autre lot L3). J'ai implémenté `useNetworkStatus()` avec `useSyncExternalStore` sur `navigator.onLine` + window events, qui fonctionne sur web ET native (Capacitor WebView forward les events online/offline). Commentaire ajouté dans le hook pour documenter l'intégration future du bridge natif
+- **Lint pitfall : `react-hooks/set-state-in-effect`** : le pattern `setMounted(true)` dans `useEffect` (utilisé dans la spec du banner pour éviter le hydration mismatch) déclenche cette règle. Solution : remplacer par `useSyncExternalStore(() => () => {}, () => true, () => false)` qui retourne `false` en SSR et `true` après hydration — pattern React officiel pour "isHydrated" sans setState-in-effect
+- **Idem pour `useNetworkStatus`** : la spec faisait `applyState(navigator.onLine)` synchronously dans `useEffect` → même erreur lint. Solution : `useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)` pour `isOnline`, puis un `useEffect` minimal qui sync vers le store Zustand (l'appel à `setStoreOnline` est OK car c'est un setter externe Zustand, pas un setter React — ne déclenche pas la règle)
+- **Promesse non awaited** : `flushPending()` retourne une Promise. Dans le banner, wrappé dans `handleSync` qui `.catch(() => {})` pour éviter unhandled rejection. Idem dans le hook
+- **Zustand persist SSR** : `createJSONStorage(() => createSafeStorage())` au lieu de `createJSONStorage(() => localStorage)` direct — évite crash SSR car `localStorage` n'existe pas sur serveur. La spec avait déjà un guard `typeof window !== 'undefined'` mais retournait des stubs incomplets (pas de `clear`/`key`/`length`) — corrigé avec un objet `Storage` complet
+- **Cache async ergonomics** : `tx.objectStore(STORE_NAME).put(entry)` est fire-and-forget dans la spec d'origine, mais le `await new Promise(resolve => tx.oncomplete = ...)` assure que l'écriture est durable avant de résoudre. Important pour ne pas perdre des données si le tab se ferme juste après
+
+Files created (6 nouveaux fichiers, 0 fichier modifié) :
+1. `src/lib/offline/cache.ts` (172 lignes) — wrapper IndexedDB : `openDB()`, `CacheEntry<T>`, `setCached<T>(key, data, ttlMs=24h)`, `getCached<T>(key)` (lazy expiration via `deleteCached`), `deleteCached(key)`, `clearAllCache()`. DB name `aqwelia-cache`, store `responses`, keyPath `key`. Toutes les fonctions sont async et never-throw (try/catch résout à null/no-op)
+2. `src/lib/offline/api-cache.ts` (88 lignes) — `CACHE_TTL` (9 endpoints : dashboard 5min, profile 1h, waterTests 5min, guides 24h, weather 30min, reminders 5min, equipment 1h, inventory 1h, subscription 1h), `CachedResult<T>` interface (`{ data, stale, error? }`), `apiGetCached<T>(path, ttlKey?)` (network-first, cache-fallback), `offlineApi` objet avec 9 méthodes de convenance
+3. `src/lib/offline/offline-store.ts` (122 lignes) — store Zustand persisté : `isOnline`, `lastOnlineAt`, `pendingActions: PendingAction[]`, actions `setOnline`, `queueAction` (génère id+createdAt), `flushPending` (replay POST/PATCH/DELETE via `api.*`, garde les failed dans la queue), `clearPending`. Persist vers `localStorage` sous `aqwelia-offline` via `createSafeStorage()` (SSR-safe)
+4. `src/lib/offline/index.ts` (11 lignes) — barrel `export * from './cache' | './api-cache' | './offline-store'`
+5. `src/components/offline-banner.tsx` (96 lignes) — banner `position: fixed top-0 z-[60]` bg-amber-500, affiche "Hors connexion — données en cache" + bouton "Synchroniser (N)" si `pendingActions.length > 0`. `useIsClient()` via `useSyncExternalStore` (SSR-safe, évite le lint `set-state-in-effect`). Auto-hide quand `isOnline === true`. Icônes lucide `CloudOff` + `RefreshCw`. Classe `safe-area-top` (déjà définie par L2-A dans globals.css). `role="status"` + `aria-live="polite"` pour a11y
+6. `src/hooks/use-network-status.ts` (104 lignes) — hook `useNetworkStatus(): { isOnline, isOffline }`. `useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)` sur `navigator.onLine` + window online/offline events. `useEffect` sync vers `useOfflineStore.setOnline` + déclenche `flushPending()` quand online retourne. Commentaire JSDoc documente l'intégration future du bridge `@capacitor/network`
+
+Vérifications finales:
+- `bun run lint` → **0 erreur, 0 warning** (exit 0) ✅
+- `bunx tsc --noEmit 2>&1 | grep -E "src/lib/offline|src/components/offline-banner|src/hooks/use-network"` → **0 erreur** dans les 6 nouveaux fichiers ✅
+- `bunx tsc --noEmit` (full) → 5 erreurs résiduelles, toutes hors scope L3-B :
+  * `examples/websocket/*` (2 erreurs) — modules socket.io manquants (pré-existant, exemples)
+  * `skills/image-edit/scripts/image-edit.ts` (1 erreur) — `images` vs `image` dans `CreateImageEditBody` (pré-existant, skills)
+  * `skills/stock-analysis-skill/src/analyzer.ts` (1 erreur) — type mismatch (pré-existant, skills)
+  * `src/lib/pool/safety-rules.ts(28,9)` (1 erreur) — comparaison `'"allowed"'` vs `'"forbidden"'` (pré-existant, mentionné dans L1-E et L2-A comme hors scope)
+- Contraintes respectées :
+  * ✅ Aucun fichier existant modifié (6 nouveaux fichiers uniquement)
+  * ✅ Aucun package installé (Zustand 5.0.6 déjà présent)
+  * ✅ Tous les fichiers SSR-safe (`typeof window/indexedDB !== 'undefined'` guards partout)
+  * ✅ TypeScript strict (types explicites sur tous les generics, `CacheEntry<T>`, `CachedResult<T>`, `PendingAction`, `OfflineState`, `NetworkStatus`)
+  * ✅ Toutes les fonctions async ont try/catch (cache.ts, offline-store.ts `flushPending`)
+  * ✅ Règle `react-hooks/set-state-in-effect` respectée (utilisation de `useSyncExternalStore` au lieu de `setState` dans `useEffect`)
+
+Stage Summary:
+- ✅ 6 nouveaux fichiers créés, 0 fichier modifié, 0 package installé
+- ✅ Architecture offline en 3 couches :
+  1. **Cache layer** (`cache.ts`) — IndexedDB wrapper SSR-safe, lazy expiration, never-throw
+  2. **API layer** (`api-cache.ts`) — `offlineApi.{dashboard,profile,waterTests,weather,reminders,guides,equipment,inventory,subscription}` avec TTL différencié par endpoint, retourne toujours `{ data, stale, error? }`
+  3. **State layer** (`offline-store.ts`) — Zustand+persist pour `isOnline` + `pendingActions` (write queue replayed on reconnect)
+- ✅ UX : banner amber en haut quand offline, bouton "Synchroniser (N)" pour replayer manuellement les writes en attente, auto-hide quand online
+- ✅ Hook `useNetworkStatus()` utilisable partout dans l'app (mount une fois dans `AppShell` desktop + `MobileAppShell` mobile), sync vers le store, déclenche `flushPending()` automatiquement au retour du réseau
+- ✅ 0 erreur TypeScript, 0 erreur/warning ESLint sur le scope offline
+- ✅ Lint pitfall `react-hooks/set-state-in-effect` détecté et résolu proprement avec `useSyncExternalStore` (pattern React officiel pour "isHydrated" et pour souscrire à `navigator.onLine`)
+
+Points d'attention pour la main agent / prochains lots:
+- **Brancher le hook** : `useNetworkStatus()` doit être mount une fois dans `src/components/aquamind/app-shell.tsx` ET dans `src/components/mobile/mobile-app-shell.tsx` (un `useNetworkStatus()` call suffit, le state remonte au store Zustand partagé). Sans cela, le banner ne saura jamais qu'on est offline
+- **Brancher le banner** : `<OfflineBanner />` à ajouter en haut du layout desktop et mobile (après le header, avant le content). Le banner est `position: fixed top-0 z-[60]` donc n'affecte pas le layout, mais il faut prévoir `padding-top` sur le content quand offline pour ne pas masquer le header (ou utiliser `safe-area-top` + height dynamique)
+- **Brancher le cache** : remplacer les `api.get('/api/dashboard')` par `offlineApi.dashboard()` dans les modules aquamind (L3-C ou lot ultérieur). Le retour `{ data, stale, error? }` nécessite une adaptation : si `stale === true`, afficher un indicateur "données en cache" dans le module. Si `data === null` (jamais caché + offline), afficher un état vide "Aucune donnée — connectez-vous"
+- **Queue writes** : pour les modules qui font des POST/PATCH/DELETE (water-test, action-plan, equipment, inventory, reminders, chat), ajouter une logique "if offline, queueAction() + optimistically update UI". Plus complexe que le cache read — à spécifier dans un lot L3-D potentiel
+- **Native bridge** : quand `src/lib/native/network.ts` sera créé (autre lot L3), le hook `useNetworkStatus` peut être étendu pour utiliser `@capacitor/network` (plus précis que `navigator.onLine` sur native — détecte le type de connexion cell/wifi/none, et les changements de type). Pour l'instant, `navigator.onLine` + window events fonctionne sur les deux plateformes (WebView forward les events)
+- **Storage natif** : `createSafeStorage()` utilise `localStorage`. Sur Capacitor native, `localStorage` fonctionne mais est volatile (clear au cache clear). Pour persistence native durable, remplacer par `@capacitor/preferences` (déjà installé) — wrap dans un adapter async-compatible avec `createJSONStorage`. À faire dans un lot L3-C/D
+- **Cache size** : IndexedDB n'a pas de limite stricte côté navigateur (au-delà de ~50MB le navigateur peut prompter l'utilisateur). Pour l'instant, on ne prune jamais les entries expirées non lues — un `clearAllCache()` manuel est exposé pour reset. À terme, ajouter un prune périodique (e.g. au démarrage de l'app, delete toutes les entries `expiresAt < now`)
