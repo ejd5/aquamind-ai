@@ -18,6 +18,11 @@ import {
   type MaintenanceSubTab,
   mapDesktopTabToMobile,
 } from './types'
+import { useNetworkStatus } from '@/hooks/use-network-status'
+import { OfflineBanner } from '@/components/offline-banner'
+import { setupKeyboard } from '@/lib/native/keyboard'
+import { setupBackButton } from '@/lib/native/back-button'
+import { setupDeepLinks } from '@/lib/native/links'
 
 interface MobileAppShellProps {
   /** Optional: initial preset question for the assistant (e.g. deep link). */
@@ -58,6 +63,43 @@ export function MobileAppShell({ initialPresetQuestion, onBackToLanding }: Mobil
 
   // ---- Assistant preset question side-channel ---------------------------
   const [presetQuestion, setPresetQuestion] = useState<string | undefined>(initialPresetQuestion)
+
+  // ---- Native features: network, keyboard, back button, deep links ------
+  useNetworkStatus()
+  useEffect(() => {
+    // Setup keyboard (safe-area adjustments, scroll-to-focused input)
+    const cleanupKeyboard = setupKeyboard()
+    // Setup Android back button (navigate back between screens)
+    const cleanupBack = setupBackButton(() => {
+      if (emergencyOpen) {
+        setEmergencyOpen(false)
+        return true
+      }
+      if (activeScreen !== 'home') {
+        setActiveScreen('home')
+        return true
+      }
+      return false // Let app exit if on home
+    })
+    // Setup deep links (aqwelia://screen?tab=...)
+    const cleanupDeepLinks = setupDeepLinks((url) => {
+      try {
+        const u = new URL(url)
+        const tab = u.searchParams.get('tab') as MobileScreen | null
+        if (tab && ['home', 'analyses', 'assistant', 'maintenance', 'profile'].includes(tab)) {
+          setActiveScreen(tab)
+          const sub = u.searchParams.get('sub') as AnalysesSubTab | MaintenanceSubTab | null
+          if (tab === 'analyses' && sub) setAnalysesSubTab(sub as AnalysesSubTab)
+          if (tab === 'maintenance' && sub) setMaintenanceSubTab(sub as MaintenanceSubTab)
+        }
+      } catch {}
+    })
+    return () => {
+      cleanupKeyboard?.()
+      cleanupBack?.()
+      cleanupDeepLinks?.()
+    }
+  }, [activeScreen, emergencyOpen])
 
   // ---- Load pool profile on mount ---------------------------------------
   useEffect(() => {
@@ -150,6 +192,7 @@ export function MobileAppShell({ initialPresetQuestion, onBackToLanding }: Mobil
   // ---- Main shell --------------------------------------------------------
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <OfflineBanner />
       <MobileHeader profile={profile} onBackToLanding={onBackToLanding} />
 
       <main className="mobile-scroll flex-1">

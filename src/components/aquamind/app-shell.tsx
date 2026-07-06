@@ -38,6 +38,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet'
+import { useNetworkStatus } from '@/hooks/use-network-status'
+import { OfflineBanner } from '@/components/offline-banner'
 
 export type TabId =
   | 'today'
@@ -95,6 +97,8 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
   const [profile, setProfile] = useState<PoolProfileLite | null | undefined>(undefined)
   const [activeTab, setActiveTab] = useState<TabId>('today')
   const [emergencyOpen, setEmergencyOpen] = useState(false)
+  // Mount network status listener (auto-updates offline store + banner)
+  useNetworkStatus()
   const [presetQuestion, setPresetQuestion] = useState<string | undefined>(undefined)
   const [moreOpen, setMoreOpen] = useState(false)
 
@@ -159,6 +163,7 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <OfflineBanner />
       <Header
         profile={profile}
         activeTab={activeTab}

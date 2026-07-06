@@ -31,6 +31,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { TabId } from './app-shell'
 import { evaluateParam } from '@/lib/pool/targets'
+import { offlineApi } from '@/lib/offline/api-cache'
 
 interface DashboardData {
   profile: any
@@ -220,19 +221,22 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
   const [weather, setWeather] = useState<WeatherLite | null>(null)
   const [reminders, setReminders] = useState<ReminderLite[]>([])
   const [loading, setLoading] = useState(true)
+  const [stale, setStale] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [dashRes, wxRes, remRes] = await Promise.allSettled([
-        fetch('/api/dashboard').then((r) => r.json()),
-        fetch('/api/pool/weather').then((r) => (r.ok ? r.json() : null)),
-        fetch('/api/pool/reminders').then((r) => (r.ok ? r.json() : null)),
+      const [dashRes, wxRes, remRes] = await Promise.all([
+        offlineApi.dashboard(),
+        offlineApi.weather(),
+        offlineApi.reminders(),
       ])
-      if (dashRes.status === 'fulfilled') setData(dashRes.value)
-      else setData(null)
-      setWeather(wxRes.status === 'fulfilled' ? wxRes.value : null)
-      const remData = remRes.status === 'fulfilled' ? remRes.value : null
+      const dashData = dashRes.data as DashboardData | null
+      setData(dashData)
+      setWeather((wxRes.data as WeatherLite | null) ?? null)
+      const remData = remRes.data as
+        | { reminders?: ReminderLite[]; manualReminders?: ReminderLite[] }
+        | null
       const all = [...(remData?.reminders || []), ...(remData?.manualReminders || [])]
       // Sort by priority then dueInHours
       const prio: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 }
@@ -241,8 +245,10 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
         return a.dueInHours - b.dueInHours
       })
       setReminders(all)
+      setStale(dashRes.stale || wxRes.stale || remRes.stale)
     } catch {
       setData(null)
+      setStale(false)
     } finally {
       setLoading(false)
     }
@@ -326,10 +332,15 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
             Votre piscine aujourd'hui
           </h1>
         </div>
-        <Button variant="outline" size="sm" onClick={load} className="border-border/60">
-          <RefreshCw className="h-3.5 w-3.5" />
-          Actualiser
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={load} className="border-border/60">
+            <RefreshCw className="h-3.5 w-3.5" />
+            Actualiser
+          </Button>
+          {stale && (
+            <span className="text-[10px] italic text-muted-foreground">données en cache</span>
+          )}
+        </div>
       </div>
 
       {!latestTest ? (

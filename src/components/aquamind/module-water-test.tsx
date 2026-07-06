@@ -25,6 +25,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/hooks/use-toast'
 import { TARGETS, evaluateParam, type ParamStatus } from '@/lib/pool/targets'
 import type { TabId } from './app-shell'
+import { offlineApi } from '@/lib/offline/api-cache'
+import { api } from '@/lib/api-client'
+import { useOfflineStore } from '@/lib/offline/offline-store'
 
 interface Props {
   onNavigate: (tab: TabId) => void
@@ -141,15 +144,21 @@ export function ModuleWaterTest({ onNavigate }: Props) {
   const [plan, setPlan] = useState<ActionPlanResult | null>(null)
   const [tests, setTests] = useState<WaterTestRow[]>([])
   const [loadingHistory, setLoadingHistory] = useState(true)
+  const [stale, setStale] = useState(false)
+
+  const isOnline = useOfflineStore((s) => s.isOnline)
+  const queueAction = useOfflineStore((s) => s.queueAction)
 
   const loadHistory = useCallback(async () => {
     setLoadingHistory(true)
     try {
-      const res = await fetch('/api/pool/water-test')
-      const data = await res.json()
-      setTests(data.tests || [])
+      const { data, stale } = await offlineApi.waterTests()
+      const d = data as { tests?: WaterTestRow[] } | null
+      setTests(d?.tests || [])
+      setStale(stale)
     } catch {
       setTests([])
+      setStale(false)
     } finally {
       setLoadingHistory(false)
     }
@@ -171,19 +180,27 @@ export function ModuleWaterTest({ onNavigate }: Props) {
     }
     setSaving(true)
     setPlan(null)
+    const body: Record<string, unknown> = { ph, source, note: note.trim() || undefined }
+    for (const f of FIELDS) {
+      if (f.key === 'ph') continue
+      if (values[f.key] !== '') body[f.key] = values[f.key]
+    }
     try {
-      const body: Record<string, unknown> = { ph, source, note: note.trim() || undefined }
-      for (const f of FIELDS) {
-        if (f.key === 'ph') continue
-        if (values[f.key] !== '') body[f.key] = values[f.key]
+      if (!isOnline) {
+        queueAction({ method: 'POST', path: '/api/pool/water-test', body })
+        toast({
+          title: 'Mesure enregistrée',
+          description: 'Sera synchronisée quand vous serez en ligne.',
+        })
+        // reset required fields, keep optionals
+        setValues((v) => ({ ...v, ph: '' }))
+        setNote('')
+        return
       }
-      const res = await fetch('/api/pool/water-test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
+      const data = await api.post<{ actionPlan?: ActionPlanResult; error?: string }>(
+        '/api/pool/water-test',
+        body,
+      )
       setPlan(data.actionPlan || null)
       toast({
         title: 'Mesure enregistrée',
@@ -208,7 +225,16 @@ export function ModuleWaterTest({ onNavigate }: Props) {
 
   async function removeTest(id: string) {
     try {
-      await fetch(`/api/pool/water-test?id=${id}`, { method: 'DELETE' })
+      if (!isOnline) {
+        queueAction({ method: 'DELETE', path: `/api/pool/water-test?id=${id}` })
+        setTests((t) => t.filter((x) => x.id !== id))
+        toast({
+          title: 'Suppression enregistrée',
+          description: 'Sera synchronisée quand vous serez en ligne.',
+        })
+        return
+      }
+      await api.delete(`/api/pool/water-test?id=${id}`)
       setTests((t) => t.filter((x) => x.id !== id))
       toast({ title: 'Mesure supprimée' })
     } catch {
@@ -517,6 +543,11 @@ export function ModuleWaterTest({ onNavigate }: Props) {
           <CardTitle className="flex items-center gap-2 font-display text-base">
             <Clock className="h-4 w-4 text-primary" />
             Mesures récentes
+            {stale && (
+              <span className="text-[10px] font-normal italic text-muted-foreground">
+                données en cache
+              </span>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
