@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import ZAI from 'z-ai-web-dev-sdk'
 import { db } from '@/lib/db'
 import { VISION_DIAGNOSTIC_PROMPT } from '@/lib/pool/ai-context'
@@ -6,11 +8,23 @@ import { VISION_DIAGNOSTIC_PROMPT } from '@/lib/pool/ai-context'
 export const runtime = 'nodejs'
 
 export async function GET() {
-  const diagnostics = await db.photoDiagnostic.findMany({ take: 30, orderBy: { createdAt: 'desc' } })
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
+  const diagnostics = await db.photoDiagnostic.findMany({ where: { userId }, take: 30, orderBy: { createdAt: 'desc' } })
   return NextResponse.json({ diagnostics })
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
   try {
     const { image, typeHint } = await req.json()
     if (!image) return NextResponse.json({ error: 'Image base64 requise' }, { status: 400 })
@@ -21,6 +35,7 @@ export async function POST(req: NextRequest) {
 
     const zai = await ZAI.create()
     const response = await zai.chat.completions.createVision({
+      model: 'glm-4.6v',
       messages: [
         {
           role: 'user',
@@ -44,6 +59,7 @@ export async function POST(req: NextRequest) {
 
     const saved = await db.photoDiagnostic.create({
       data: {
+        userId,
         type: parsed?.imageType || typeHint || 'unknown',
         imageUrl: image.substring(0, 500),
         detectedIssues: JSON.stringify(parsed?.detectedIssues || []),

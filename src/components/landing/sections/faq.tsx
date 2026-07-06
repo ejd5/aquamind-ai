@@ -31,7 +31,7 @@ const FAQ = [
   },
   {
     q: 'Et si j\'ai plusieurs piscines ?',
-    a: 'Le plan Cristal permet 3 piscines, le plan Gardien est illimité (pour piscinistes pro).',
+    a: 'Le plan Premium permet 3 piscines, le plan Expert est illimité (pour piscinistes pro).',
   },
   {
     q: 'Puis-je annuler à tout moment ?',

@@ -16,8 +16,8 @@ type DurationId = (typeof DURATIONS)[number]['id']
 export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
   const [duration, setDuration] = useState<DurationId>('month')
 
-  const paidPlans = PLANS.filter((p) => p.id !== 'surface')
-  const surfacePlan = PLANS.find((p) => p.id === 'surface')!
+  const paidPlans = PLANS.filter((p) => p.id !== 'free')
+  const freePlan = PLANS.find((p) => p.id === 'free')!
 
   return (
     <section id="tarifs" className="relative py-20 sm:py-28">
@@ -50,7 +50,7 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
                   )}
                   <span className="relative flex items-center gap-1.5">
                     {d.label}
-                    {d.save && (
+                    {'save' in d && d.save && (
                       <span
                         className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
                           active ? 'bg-white/25 text-[oklch(0.18_0.04_85)]' : 'bg-gold/15 text-gold'
@@ -69,19 +69,19 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
         {/* Paid plan cards */}
         <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-3">
           {paidPlans.map((plan, idx) => {
-            const isCristal = plan.id === 'cristal'
+            const isPremium = plan.id === 'premium'
             const price = plan.price[duration]
             const suffix = DURATIONS.find((d) => d.id === duration)!.suffix
             return (
               <Reveal key={plan.id} delay={idx * 0.08}>
                 <div
                   className={`relative h-full overflow-hidden rounded-2xl backdrop-blur-xl transition-all duration-300 ${
-                    isCristal
+                    isPremium
                       ? 'border-2 border-gold/60 bg-gradient-to-br from-gold/[0.12] via-white/60 to-white/40 shadow-[0_25px_60px_-20px_oklch(0.75_0.13_85/0.5)] md:-translate-y-3 md:scale-[1.03] dark:via-white/[0.04] dark:to-white/[0.02]'
                       : 'border border-white/40 bg-white/60 hover:-translate-y-1 hover:shadow-xl dark:border-white/10 dark:bg-white/[0.03]'
                   }`}
                 >
-                  {isCristal && (
+                  {isPremium && (
                     <>
                       <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
                       <span className="absolute -right-12 top-5 rotate-45 bg-gradient-to-r from-gold to-[oklch(0.7_0.12_85)] px-12 py-1 text-center text-[10px] font-bold uppercase tracking-widest text-[oklch(0.18_0.04_85)] shadow-md">
@@ -122,7 +122,7 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
                     <button
                       onClick={onEnterApp}
                       className={`mt-5 flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold transition-all ${
-                        isCristal
+                        isPremium
                           ? 'bg-gradient-to-r from-gold via-[oklch(0.78_0.13_85)] to-[oklch(0.7_0.12_85)] text-[oklch(0.18_0.04_85)] shadow-lg shadow-gold/30 hover:scale-[1.02] hover:shadow-[0_0_40px_-6px_oklch(0.75_0.13_85/0.6)]'
                           : 'border border-primary/30 bg-primary/5 text-foreground hover:border-primary/60 hover:bg-primary/10'
                       }`}
@@ -139,7 +139,7 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
                         >
                           <Check
                             className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${
-                              isCristal ? 'text-gold' : 'text-primary'
+                              isPremium ? 'text-gold' : 'text-primary'
                             }`}
                           />
                           <span>{f}</span>
@@ -153,18 +153,18 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
           })}
         </div>
 
-        {/* Surface plan — smaller below */}
+        {/* Free plan — smaller below */}
         <Reveal delay={0.1} className="mt-5">
           <div className="mx-auto flex max-w-3xl flex-col items-center justify-between gap-4 rounded-2xl border border-white/40 bg-white/40 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.03] sm:flex-row">
             <div className="flex items-center gap-3">
               <span className="text-2xl" aria-hidden="true">
-                {surfacePlan.icon}
+                {freePlan.icon}
               </span>
               <div>
                 <p className="font-display text-base font-bold">
-                  {surfacePlan.name} <span className="text-gold">— Gratuit</span>
+                  {freePlan.name} <span className="text-gold">— Gratuit</span>
                 </p>
-                <p className="text-xs text-muted-foreground">{surfacePlan.tagline}</p>
+                <p className="text-xs text-muted-foreground">{freePlan.tagline}</p>
               </div>
             </div>
             <button

@@ -1,18 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 
 export const runtime = 'nodejs'
 
 export async function GET() {
-  const profile = await db.poolProfile.findFirst({ orderBy: { createdAt: 'desc' } })
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
+  const profile = await db.poolProfile.findFirst({ where: { userId }, orderBy: { createdAt: 'desc' } })
   return NextResponse.json({ profile })
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
   try {
     const body = await req.json()
-    const existing = await db.poolProfile.findFirst()
+    const existing = await db.poolProfile.findFirst({ where: { userId } })
     const data = {
+      userId,
       name: body.name || 'Ma piscine',
       volume: Number(body.volume) || 40,
       unit: body.unit === 'gal' ? 'gal' : 'm3',

@@ -310,10 +310,10 @@ export function Onboarding({ onDone }: OnboardingProps) {
                 {TREATMENTS.map((t) => (
                   <button
                     key={t.value}
-                    onClick={() =>
-                      update('treatmentType', t.value) &&
+                    onClick={() => {
+                      update('treatmentType', t.value)
                       update('saltSystem', t.value === 'salt')
-                    }
+                    }}
                     className={`flex flex-col items-start gap-0.5 rounded-lg border p-3 text-left transition-all ${
                       form.treatmentType === t.value
                         ? 'border-gold/60 bg-gold/10 shadow-sm'

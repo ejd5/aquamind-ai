@@ -19,7 +19,7 @@ const MONEY_BREAKDOWN = [
 ]
 
 const BARS = [
-  { label: 'AQWELIA Cristal', value: 96, color: 'from-primary to-gold', highlight: true },
+  { label: 'AQWELIA Premium', value: 96, color: 'from-primary to-gold', highlight: true },
   { label: 'Pisciniste seul', value: 1000, color: 'from-amber-400 to-amber-600', highlight: false },
   { label: 'Pisciniste + erreurs', value: 1500, color: 'from-rose-400 to-rose-600', highlight: false },
 ]
@@ -99,7 +99,7 @@ export function Savings() {
             <div className="flex items-center gap-3">
               <TrendingUp className="h-6 w-6 shrink-0 text-gold" />
               <p className="font-display text-base leading-relaxed text-foreground sm:text-lg">
-                Pour <span className="font-bold">~96€/an</span> (plan Cristal), vous économisez{' '}
+                Pour <span className="font-bold">~96€/an</span> (plan Premium), vous économisez{' '}
                 <span className="font-bold text-gold">550€</span>.{' '}
                 <span className="gradient-text-premium font-bold">ROI x5,7</span>. Et vous récupérez
                 25h de temps libre.

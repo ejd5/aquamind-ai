@@ -1,18 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { generateActionPlan } from '@/lib/pool/action-plan'
 import { calculateClearWaterIndex, calculateLSI, lsiInterpretation } from '@/lib/pool/water-balance'
 import { assessSwimSafety } from '@/lib/pool/safety-rules'
-import { evaluateParam } from '@/lib/pool/targets'
 
 export const runtime = 'nodejs'
 
 export async function GET() {
-  const tests = await db.waterTest.findMany({ take: 50, orderBy: { createdAt: 'desc' }, include: { actionPlans: true } })
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
+  const tests = await db.waterTest.findMany({
+    where: { userId },
+    take: 50,
+    orderBy: { createdAt: 'desc' },
+    include: { actionPlans: true },
+  })
   return NextResponse.json({ tests })
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
   try {
     const body = await req.json()
     const ph = Number(body.ph)
@@ -45,6 +63,7 @@ export async function POST(req: NextRequest) {
     const created = await db.waterTest.create({
       data: {
         ...test,
+        userId,
         status,
         clearWaterIndex: cwi,
         swimSafety: swim.status,
@@ -53,8 +72,8 @@ export async function POST(req: NextRequest) {
     })
 
     // Générer plan d'action déterministe si profil existe
-    const profile = await db.poolProfile.findFirst()
-    let actionPlan = null
+    const profile = await db.poolProfile.findFirst({ where: { userId } })
+    let actionPlan: Awaited<ReturnType<typeof db.actionPlan.create>> | null = null
     if (profile) {
       const plan = generateActionPlan(test as any, {
         volume: profile.volume,
@@ -87,9 +106,21 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
-  if (id) await db.waterTest.delete({ where: { id } })
+  if (id) {
+    // Only delete if it belongs to the authenticated user
+    const existing = await db.waterTest.findFirst({ where: { id, userId } })
+    if (existing) {
+      await db.waterTest.delete({ where: { id } })
+    }
+  }
   return NextResponse.json({ success: true })
 }
 

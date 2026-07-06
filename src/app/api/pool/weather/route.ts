@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { assessWeather, wttrCodeToFr, isStormCode, type WeatherData } from '@/lib/pool/weather-engine'
 
@@ -54,12 +56,18 @@ async function fetchWeather(location: string): Promise<WeatherData | null> {
 }
 
 export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
   const { searchParams } = new URL(req.url)
   const explicitLoc = searchParams.get('location')
 
   // Si location non fournie, utiliser la région du profil
   let location = explicitLoc || 'Paris'
-  const profile = await db.poolProfile.findFirst()
+  const profile = await db.poolProfile.findFirst({ where: { userId } })
   if (!explicitLoc && profile?.region) {
     location = profile.region
   }
@@ -70,7 +78,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Calculer le nombre de jours depuis le dernier test
-  const lastTest = await db.waterTest.findFirst({ orderBy: { createdAt: 'desc' } })
+  const lastTest = await db.waterTest.findFirst({ where: { userId }, orderBy: { createdAt: 'desc' } })
   let lastTestDaysAgo = 999
   if (lastTest) {
     lastTestDaysAgo = Math.floor((Date.now() - lastTest.createdAt.getTime()) / 86400000)
