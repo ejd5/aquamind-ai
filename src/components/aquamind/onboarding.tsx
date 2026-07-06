@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Waves, Sparkles, ChevronLeft, ChevronRight, Check, Clock } from 'lucide-react'
+import { Waves, Sparkles, ChevronLeft, ChevronRight, Check, Clock, Crosshair, MapPin, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -68,20 +68,13 @@ const USAGE_LEVELS = [
   { value: 'high', label: 'Intensive (voisinage)' },
 ]
 
-const REGIONS = [
-  { value: 'north', label: 'Nord / Hauts-de-France' },
-  { value: 'west', label: 'Ouest / Bretagne' },
-  { value: 'east', label: 'Est / Grand-Est' },
-  { value: 'south_east', label: 'Sud-Est / PACA' },
-  { value: 'south_west', label: 'Sud-Ouest / Nouvelle-Aquitaine' },
-  { value: 'center', label: 'Centre' },
-  { value: 'overseas', label: 'Outre-mer' },
-  { value: 'other', label: 'Autre' },
-]
+// Régions climatiques supprimées : on utilise désormais la géolocalisation GPS
+// ou la saisie manuelle d'une ville (stockée dans profile.region).
 
 export function Onboarding({ onDone }: OnboardingProps) {
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
+  const [locating, setLocating] = useState(false)
   const [form, setForm] = useState({
     name: 'Ma piscine',
     volume: '40',
@@ -92,7 +85,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
     saltSystem: false,
     filterType: 'sand',
     pumpType: '',
-    region: 'south_east',
+    region: '', // ville saisie ou "lat,lon" — vide = géoloc IP à la prochaine requête
     sunExposure: 'medium',
     covered: false,
     usageLevel: 'medium',
@@ -100,6 +93,42 @@ export function Onboarding({ onDone }: OnboardingProps) {
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }))
+  }
+
+  // Géolocalisation GPS navigateur (ou Capacitor sur mobile)
+  function handleGeolocate() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      toast({
+        title: 'Géolocalisation non supportée',
+        description: 'Saisissez votre ville manuellement.',
+        variant: 'destructive',
+      })
+      return
+    }
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords
+        update('region', `${latitude.toFixed(4)},${longitude.toFixed(4)}`)
+        setLocating(false)
+        toast({
+          title: 'Position détectée',
+          description: 'Votre ville sera utilisée pour la météo.',
+        })
+      },
+      (err) => {
+        setLocating(false)
+        const msg = err.code === err.PERMISSION_DENIED
+          ? 'Autorisez la géolocalisation ou saisissez votre ville manuellement.'
+          : 'Impossible de récupérer votre position. Saisissez votre ville.'
+        toast({
+          title: 'Localisation refusée',
+          description: msg,
+          variant: 'destructive',
+        })
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    )
   }
 
   function next() {
@@ -378,20 +407,41 @@ export function Onboarding({ onDone }: OnboardingProps) {
 
           {step === 4 && (
             <div className="space-y-4">
+              {/* Localisation pour la météo : GPS + saisie manuelle */}
               <div className="space-y-1.5">
-                <Label>Région / climat</Label>
-                <Select value={form.region} onValueChange={(v) => update('region', v)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {REGIONS.map((r) => (
-                      <SelectItem key={r.value} value={r.value}>
-                        {r.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Votre ville (pour la météo)</Label>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <Button
+                    type="button"
+                    onClick={handleGeolocate}
+                    variant="outline"
+                    size="sm"
+                    disabled={locating}
+                    className="border-gold/40 text-gold hover:bg-gold/10"
+                  >
+                    {locating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Crosshair className="h-4 w-4" />
+                    )}
+                    {locating ? 'Localisation…' : 'Me localiser'}
+                  </Button>
+                  <div className="flex flex-1 items-center gap-2">
+                    <Input
+                      placeholder="Ex : Marseille, Lyon…"
+                      value={form.region}
+                      onChange={(e) => update('region', e.target.value)}
+                      className="h-9"
+                      disabled={locating}
+                    />
+                    {form.region && (
+                      <MapPin className="h-4 w-4 shrink-0 text-gold" />
+                    )}
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Optionnel : si vous laissez vide, AQWELIA utilisera la géolocalisation par IP ou vous demandera plus tard.
+                </p>
               </div>
 
               <div className="space-y-1.5">

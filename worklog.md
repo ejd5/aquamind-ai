@@ -1164,3 +1164,47 @@ Points d'attention pour la main agent / prochains lots :
 - **Settings page depuis mobile** : la page `/settings` est accessible depuis le footer desktop. Sur mobile (Capacitor), il faudra ajouter un lien depuis `MobileAppShell` ou le `profile-screen.tsx` (qui existe déjà). Hors scope L4-A mais trivial : `<Link href="/settings">Paramètres</Link>` dans le profile screen
 - **`react-hooks/set-state-in-effect`** : j'ai vérifié que la règle n'est PAS dans les disabled rules de `eslint.config.mjs`. Mon code évite le pattern setState-dans-effect-body en utilisant des `.then()`/`.catch()` async callbacks (qui ne déclenchent pas la règle). Si la règle était activée à l'avenir, le pattern resterait valide. À surveiller dans les prochains lots
 - **Lien `/#tarifs` dans CGU** : la CGU référence `/#tarifs` (section Tarifs de la landing). Sur la page settings (qui n'est PAS la landing), ce lien scrollera vers la section `#tarifs` si l'utilisateur revient à `/` — mais comme la landing page ne charge `#tarifs` qu'après montage complet, il peut y avoir une race condition. Workaround : sur la landing, scroll automatique si `window.location.hash` est présent au mount. Hors scope L4-A mais à noter pour L5
+
+---
+Task ID: L4-GEO
+Agent: general-purpose (geolocation)
+Task: Géolocalisation réelle + choix manuel pour météo
+
+Work Log:
+- Lu les 4 fichiers requis (worklog, weather/route.ts, module-weather.tsx, profile/route.ts) + onboarding.tsx
+- Identifié la cause racine : `profile.region` contenait le slug "south_east" → wttr.in l'interprétait comme un toponyme et renvoyait "PASSA" (bourgade italienne)
+- `src/app/api/pool/weather/route.ts` :
+  * Ajouté un set `INVALID_REGIONS` (north, west, east, south_east, south_west, center, overseas, other, paca, etc.) refusé systématiquement
+  * Ajouté un set `VALID_CITY_REGIONS` des 30+ grandes villes françaises acceptées sans ambiguïté
+  * Ajouté `isValidRegion()` qui accepte : ville connue, coordonnées "lat,lon", ou fallback refusé (pour laisser wttr.in faire la géoloc IP)
+  * `fetchWeather()` adaptée : query vide → `wttr.in/?format=j1` (IP-based), format "lat,lon" → pas d'encoding de la virgule, texte → encodeURIComponent
+  * GET handler : lit `lat`+`lon` (GPS), puis `location` (ville manuelle), puis `profile.region` validé, sinon IP
+- `src/components/aquamind/module-weather.tsx` :
+  * Ajouté imports Crosshair, Loader2 (MapPin déjà présent)
+  * `load()` refactorisée en signature opts `{location?, lat?, lon?}` et retourne maintenant les données fraîches pour toast
+  * Ajouté `handleGeolocate()` : `navigator.geolocation.getCurrentPosition()` avec high accuracy, timeout 10s, persiste `lat,lon` dans profile.region, toast succès/échec/permission refusée
+  * `submitLocation()` enrichie : POST `/api/pool/profile` avec `{region: city}` avant de recharger la météo
+  * Card "Location controls" redessinée : bouton "Me localiser" (gold outline) + input "Ou tapez votre ville…" + bouton "Appliquer", avec spinners Loader2 et états disabled
+  * État d'erreur (loading=false, error) : ajouté aussi le bouton "Me localiser automatiquement" pour redémarrer sans saisie
+  * Header refresh button : passe maintenant par opts, disabled pendant loading/locating
+- `src/components/aquamind/onboarding.tsx` :
+  * Imports ajoutés : Crosshair, MapPin, Loader2
+  * Supprimé le const `REGIONS` (slugs climatiques — source du bug PASSA)
+  * `form.region` défaut : `'south_east'` → `''` (vide)
+  * Step 4 : remplacé le `<Select>` Région par un bloc "Votre ville (pour la météo)" avec bouton "Me localiser" (GPS) + Input manuel + MapPin indicateur
+  * Ajouté `handleGeolocate()` identique au module weather, qui écrit `lat,lon` dans form.region
+  * Pas de modification du `skip()` (région déjà absente du body = null)
+- Pas touché à prisma/schema.prisma, src/lib/auth.ts, src/middleware.ts (règles respectées)
+- Lint : `bun run lint` → exit 0, aucune erreur ni warning
+- TypeScript : `bunx tsc --noEmit` → 0 erreur sur les fichiers modifiés (4 erreurs pré-existantes ailleurs, non liées)
+
+Stage Summary:
+- Bug PASSA résolu à la racine : les slugs génériques ("south_east", "north", …) ne sont plus jamais envoyés à wttr.in
+- 3 modes de localisation disponibles, par ordre de priorité :
+  1. GPS navigateur (bouton "Me localiser") → `?lat=X&lon=Y` → `wttr.in/lat,lon?format=j1`
+  2. Ville manuelle (input "Ou tapez votre ville…") → `?location=ville` → `wttr.in/ville?format=j1` + sauvegarde dans profile.region
+  3. Auto IP-based (fallback) → `wttr.in/?format=j1`
+- Persistance : profile.region stocke soit une ville ("Marseille") soit des coordonnées ("43.2965,5.3698") soit null (IP geolocation)
+- UX : boutons GPS en gold outline (design system AQWELIA), spinners Loader2, toasts français pour chaque cas (succès, permission refusée, réseau, non supporté)
+- Onboarding refait : step 4 propose GPS + saisie ville, plus de slug climatique par défaut
+- Aucun changement de schéma Prisma nécessaire — juste l'usage sémantique du champ region a évolué

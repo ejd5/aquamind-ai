@@ -1,4 +1,7 @@
-import { Sparkles, Droplets, ArrowLeft } from 'lucide-react'
+import { Sparkles, Droplets, ArrowLeft, Settings, LogOut, ChevronDown } from 'lucide-react'
+import { useSession, signOut } from 'next-auth/react'
+import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import type { TabId, PoolProfileLite } from './app-shell'
 
 interface HeaderProps {
@@ -9,6 +12,19 @@ interface HeaderProps {
 }
 
 export function Header({ profile, activeTab, onNavigate, onBackToLanding }: HeaderProps) {
+  const { data: session } = useSession()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/70 backdrop-blur-2xl">
       {/* Subtle gold line at the bottom */}
@@ -101,6 +117,49 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
             </span>
             IA en ligne
           </span>
+
+          {/* User menu */}
+          {session?.user && (
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                className="glass-pill flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-foreground/90 transition-colors hover:border-gold/40"
+                aria-label="Menu utilisateur"
+              >
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-primary to-gold text-[10px] font-bold text-white">
+                  {(session.user.name || session.user.email || 'U').charAt(0).toUpperCase()}
+                </div>
+                <span className="hidden max-w-[120px] truncate sm:inline">
+                  {session.user.name || session.user.email?.split('@')[0]}
+                </span>
+                <ChevronDown className="h-3 w-3 text-muted-foreground" />
+              </button>
+
+              {menuOpen && (
+                <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-border/60 bg-background/95 shadow-xl backdrop-blur-xl">
+                  <div className="border-b border-border/40 px-4 py-3">
+                    <p className="text-sm font-semibold text-foreground">{session.user.name || 'Utilisateur'}</p>
+                    <p className="truncate text-[11px] text-muted-foreground">{session.user.email}</p>
+                  </div>
+                  <Link
+                    href="/settings"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-secondary/60"
+                  >
+                    <Settings className="h-4 w-4 text-muted-foreground" />
+                    Paramètres
+                  </Link>
+                  <button
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                    className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-destructive transition-colors hover:bg-destructive/5"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Déconnexion
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </header>

@@ -6,11 +6,52 @@ import { assessWeather, wttrCodeToFr, isStormCode, type WeatherData } from '@/li
 
 export const runtime = 'nodejs'
 
+// Régions "climatiques" génériques qui ne sont PAS des villes réelles.
+// wttr.in les interprète comme des noms de lieu et renvoie des résultats absurdes
+// (ex : "south_east" → PASSA). On les ignore systématiquement.
+const INVALID_REGIONS = new Set([
+  'north', 'west', 'east', 'south_east', 'south_west', 'center',
+  'centre', 'overseas', 'other', 'paca', 'hauts-de-france',
+  'bretagne', 'grand-est', 'nouvelle-aquitaine', '',
+])
+
+// Villes françaises principales acceptées sans ambiguïté comme fallback region.
+const VALID_CITY_REGIONS = new Set([
+  'paris', 'marseille', 'lyon', 'toulouse', 'nice', 'bordeaux',
+  'lille', 'nantes', 'strasbourg', 'montpellier', 'rennes', 'toulon',
+  'brest', 'dijon', 'clermont-ferrand', 'aix-en-provence', 'aix en provence',
+  'biarritz', 'cannes', 'antibes', 'perpignan', 'la rochelle', 'le havre',
+  'rouen', 'tours', 'amiens', 'metz', 'besancon', 'limoges', 'caen',
+  'annecy', 'grenoble', 'avignon', 'la rochelle', 'saint-etienne',
+])
+
+function isValidRegion(region: string): boolean {
+  const r = region.trim().toLowerCase()
+  if (!r || INVALID_REGIONS.has(r)) return false
+  // Coordonnées "lat,lon" stockées dans region
+  if (/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(r)) return true
+  // Ville connue
+  if (VALID_CITY_REGIONS.has(r)) return true
+  // Sinon on refuse : on laisse wttr.in faire la géoloc IP plutôt que
+  // d'envoyer un slug générique qui sera mal interprété.
+  return false
+}
+
 // Fetch météo réelle depuis wttr.in (gratuit, sans clé API)
-async function fetchWeather(location: string): Promise<WeatherData | null> {
+// - query vide  → géolocalisation par IP (dernier recours)
+// - "lat,lon"   → coordonnées GPS (pas d'encoding du séparateur)
+// - texte       → nom de ville encodé
+async function fetchWeather(query: string): Promise<WeatherData | null> {
   try {
-    const q = encodeURIComponent(location || 'Paris')
-    const url = `https://wttr.in/${q}?format=j1`
+    let url: string
+    if (!query) {
+      url = 'https://wttr.in/?format=j1' // IP-based geolocation
+    } else if (/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(query)) {
+      // Coordonnées GPS : ne pas encoder la virgule
+      url = `https://wttr.in/${query}?format=j1`
+    } else {
+      url = `https://wttr.in/${encodeURIComponent(query)}?format=j1`
+    }
     const res = await fetch(url, { headers: { 'Accept-Language': 'fr' }, signal: AbortSignal.timeout(8000) })
     if (!res.ok) return null
     const data = await res.json()
@@ -34,7 +75,7 @@ async function fetchWeather(location: string): Promise<WeatherData | null> {
     )
 
     return {
-      location: data.nearest_area?.[0]?.areaName?.[0]?.value || location,
+      location: data.nearest_area?.[0]?.areaName?.[0]?.value || (query || 'Position actuelle'),
       currentTempC: parseInt(cur.temp_C, 10),
       feelsLikeC: parseInt(cur.FeelsLikeC, 10),
       humidity: parseInt(cur.humidity, 10),
@@ -63,18 +104,33 @@ export async function GET(req: NextRequest) {
   const userId = session.user.id
 
   const { searchParams } = new URL(req.url)
+  const lat = searchParams.get('lat')
+  const lon = searchParams.get('lon')
   const explicitLoc = searchParams.get('location')
 
-  // Si location non fournie, utiliser la région du profil
-  let location = explicitLoc || 'Paris'
-  const profile = await db.poolProfile.findFirst({ where: { userId } })
-  if (!explicitLoc && profile?.region) {
-    location = profile.region
+  let query = ''
+  if (lat && lon) {
+    // Coordonnées GPS — priorité maximale (géolocalisation navigateur / Capacitor)
+    query = `${lat},${lon}`
+  } else if (explicitLoc) {
+    // Ville saisie manuellement
+    query = explicitLoc
+  } else {
+    // Fallback : région du profil, mais seulement si c'est une vraie ville.
+    // On évite les slugs génériques ("south_east" → PASSA).
+    const profile = await db.poolProfile.findFirst({ where: { userId } })
+    if (profile?.region && isValidRegion(profile.region)) {
+      query = profile.region.trim()
+    }
+    // Sinon : query reste vide → wttr.in fait la géoloc par IP
   }
 
-  const weather = await fetchWeather(location)
+  const weather = await fetchWeather(query)
   if (!weather) {
-    return NextResponse.json({ error: 'Météo indisponible', location }, { status: 502 })
+    return NextResponse.json(
+      { error: 'Météo indisponible', location: query || 'auto' },
+      { status: 502 },
+    )
   }
 
   // Calculer le nombre de jours depuis le dernier test
