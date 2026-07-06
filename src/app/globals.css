@@ -68,7 +68,8 @@
   --accent: oklch(0.88 0.17 95);
   --accent-foreground: oklch(0.20 0.04 95);
   /* AQWELIA tokens */
-  --gold: oklch(0.88 0.17 95);
+  --gold: oklch(0.72 0.18 70);          /* amber gold — readable on white */
+  --gold-light: oklch(0.88 0.17 95);    /* light gold — for button backgrounds */
   --gold-foreground: oklch(0.20 0.04 95);
   --ocean: oklch(0.69 0.10 195);          /* #00A8B0 */
   --ocean-deep: oklch(0.30 0.07 200);     /* #003B4A */
@@ -109,7 +110,8 @@
   --primary-foreground: oklch(0.15 0.03 200);
   --accent: oklch(0.88 0.17 95);
   --accent-foreground: oklch(0.18 0.04 95);
-  --gold: oklch(0.88 0.17 95);
+  --gold: oklch(0.72 0.18 70);          /* amber gold — readable on white */
+  --gold-light: oklch(0.88 0.17 95);    /* light gold — for button backgrounds */
   --gold-foreground: oklch(0.18 0.04 95);
   --ocean: oklch(0.69 0.10 195);
   --ocean-deep: oklch(0.18 0.02 200);
@@ -149,7 +151,7 @@
     text-rendering: optimizeLegibility;
   }
   ::selection {
-    background: oklch(0.88 0.17 95 / 0.30);
+    background: oklch(0.72 0.18 70 / 0.30);
     color: oklch(0.20 0.04 200);
   }
 }
@@ -266,7 +268,7 @@
 
 /* Animated shimmer text — AQWELIA ocean + gold */
 .aqua-text-gradient {
-  background: linear-gradient(90deg, oklch(0.39 0.08 200), oklch(0.88 0.17 95), oklch(0.39 0.08 200));
+  background: linear-gradient(90deg, oklch(0.39 0.08 200), oklch(0.72 0.18 70), oklch(0.39 0.08 200));
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
@@ -286,11 +288,11 @@
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: oklch(0.88 0.17 95);
+  color: var(--gold);
 }
 
 .dark .section-label {
-  color: oklch(0.88 0.17 95);
+  color: var(--gold-light);
 }
 
 /* Glow effects */
