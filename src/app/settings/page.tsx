@@ -307,7 +307,7 @@ export default function SettingsPage() {
                 onClick={handleManage}
                 disabled={managing}
                 size="sm"
-                className="rounded-full bg-gradient-to-r from-gold via-[oklch(0.78_0.13_85)] to-[oklch(0.7_0.12_85)] text-[oklch(0.18_0.04_85)] hover:opacity-90"
+                className="rounded-full bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] text-[oklch(0.99_0.01_195)] hover:opacity-90"
               >
                 {managing ? (
                   <>

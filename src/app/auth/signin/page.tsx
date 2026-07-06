@@ -67,7 +67,7 @@ function AuthPageContent() {
         aria-hidden="true"
       />
       <div
-        className="aurora-orb right-0 top-32 h-80 w-80 bg-[oklch(0.88_0.17_95/0.4)]"
+        className="aurora-orb right-0 top-32 h-80 w-80 bg-[oklch(0.65_0.11_195/0.4)]"
         style={{ animationDelay: '-6s' }}
         aria-hidden="true"
       />
@@ -90,7 +90,7 @@ function AuthPageContent() {
               <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl shadow-lg shadow-primary/30">
                 <img src="/icon-aqwelia-48.png" alt="AQWELIA" className="h-12 w-12 object-cover" />
               </div>
-              <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-gold to-[oklch(0.65_0.12_85)] shadow-md shadow-gold/40">
+              <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-gold to-[oklch(0.55_0.10_195)] shadow-md shadow-gold/40">
                 <Sparkles className="h-2.5 w-2.5 text-white" />
               </div>
             </div>
@@ -201,7 +201,7 @@ function AuthPageContent() {
             <button
               type="submit"
               disabled={loading}
-              className="group flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold via-[oklch(0.78_0.13_85)] to-[oklch(0.7_0.12_85)] px-6 py-3 text-sm font-bold text-[oklch(0.18_0.04_85)] shadow-lg transition-all hover:scale-[1.01] hover:shadow-[0_0_40px_-8px_oklch(0.88_0.17_95/0.7)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="group flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] px-6 py-3 text-sm font-bold text-[oklch(0.99_0.01_195)] shadow-lg transition-all hover:scale-[1.01] hover:shadow-[0_0_40px_-8px_oklch(0.65_0.11_195/0.7)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? (
                 <>

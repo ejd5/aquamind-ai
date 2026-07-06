@@ -69,7 +69,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
               <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl shadow-lg shadow-primary/30">
                 <img src="/icon-aqwelia-48.png" alt="AQWELIA" className="h-10 w-10 object-cover" />
               </div>
-              <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-gold to-[oklch(0.65_0.12_85)] shadow-md shadow-gold/40">
+              <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-gold to-[oklch(0.55_0.10_195)] shadow-md shadow-gold/40">
                 <Sparkles className="h-2.5 w-2.5 text-white" />
               </div>
             </div>
@@ -108,7 +108,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
             )}
             <button
               onClick={onEnterApp}
-              className="glow-gold group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-gold via-[oklch(0.78_0.13_85)] to-[oklch(0.7_0.12_85)] px-4 py-2 text-sm font-bold text-[oklch(0.18_0.04_85)] shadow-md transition-all hover:scale-[1.03] hover:shadow-[0_0_35px_-6px_oklch(0.75_0.13_85/0.6)]"
+              className="glow-gold group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] px-4 py-2 text-sm font-bold text-[oklch(0.99_0.01_195)] shadow-md transition-all hover:scale-[1.03] hover:shadow-[0_0_35px_-6px_oklch(0.65_0.11_195/0.6)]"
             >
               {hasProfile ? 'Mon espace' : 'Démarrer gratuitement'}
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -154,7 +154,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
                     onEnterApp()
                     setMobileOpen(false)
                   }}
-                  className="mt-2 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold via-[oklch(0.78_0.13_85)] to-[oklch(0.7_0.12_85)] px-4 py-2.5 text-sm font-bold text-[oklch(0.18_0.04_85)] shadow-md"
+                  className="mt-2 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] px-4 py-2.5 text-sm font-bold text-[oklch(0.99_0.01_195)] shadow-md"
                 >
                   {hasProfile ? 'Accéder à mon espace' : 'Démarrer gratuitement'}
                   <ArrowRight className="h-3.5 w-3.5" />

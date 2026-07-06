@@ -65,12 +65,12 @@
   --primary: oklch(0.39 0.08 200);
   --primary-foreground: oklch(0.99 0.01 195);
   /* Premium gold accent — #FFD700 */
-  --accent: oklch(0.88 0.17 95);
-  --accent-foreground: oklch(0.20 0.04 95);
+  --accent: oklch(0.65 0.11 195);
+  --accent-foreground: oklch(0.99 0.01 195);
   /* AQWELIA tokens */
-  --gold: oklch(0.72 0.18 70);          /* amber gold — readable on white */
-  --gold-light: oklch(0.88 0.17 95);    /* light gold — for button backgrounds */
-  --gold-foreground: oklch(0.20 0.04 95);
+  --gold: oklch(0.45 0.10 200);          /* turquoise foncé #006064 — readable on white */
+  --gold-light: oklch(0.65 0.11 195);    /* turquoise moyen #26A69A — for button backgrounds */
+  --gold-foreground: oklch(0.99 0.01 195); /* white text on turquoise bg */
   --ocean: oklch(0.69 0.10 195);          /* #00A8B0 */
   --ocean-deep: oklch(0.30 0.07 200);     /* #003B4A */
   --ocean-light: oklch(0.76 0.11 195);    /* #00C2D1 */
@@ -84,7 +84,7 @@
   --input: oklch(0.92 0.015 195);
   --ring: oklch(0.39 0.08 200);
   --chart-1: oklch(0.39 0.08 200);          /* deep teal */
-  --chart-2: oklch(0.88 0.17 95);           /* gold */
+  --chart-2: oklch(0.65 0.11 195);           /* gold */
   --chart-3: oklch(0.69 0.10 195);          /* ocean */
   --chart-4: oklch(0.76 0.11 195);          /* ocean-light */
   --chart-5: oklch(0.55 0.10 195);          /* mid teal */
@@ -108,10 +108,10 @@
   --popover-foreground: oklch(0.96 0.01 195);
   --primary: oklch(0.76 0.11 195);          /* ocean-light brighter in dark */
   --primary-foreground: oklch(0.15 0.03 200);
-  --accent: oklch(0.88 0.17 95);
-  --accent-foreground: oklch(0.18 0.04 95);
-  --gold: oklch(0.72 0.18 70);          /* amber gold — readable on white */
-  --gold-light: oklch(0.88 0.17 95);    /* light gold — for button backgrounds */
+  --accent: oklch(0.65 0.11 195);
+  --accent-foreground: oklch(0.99 0.01 195);
+  --gold: oklch(0.45 0.10 200);          /* amber gold — readable on white */
+  --gold-light: oklch(0.65 0.11 195);    /* light gold — for button backgrounds */
   --gold-foreground: oklch(0.18 0.04 95);
   --ocean: oklch(0.69 0.10 195);
   --ocean-deep: oklch(0.18 0.02 200);
@@ -126,7 +126,7 @@
   --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.76 0.11 195);
   --chart-1: oklch(0.76 0.11 195);
-  --chart-2: oklch(0.88 0.17 95);
+  --chart-2: oklch(0.65 0.11 195);
   --chart-3: oklch(0.69 0.10 195);
   --chart-4: oklch(0.55 0.10 195);
   --chart-5: oklch(0.65 0.08 195);
@@ -151,7 +151,7 @@
     text-rendering: optimizeLegibility;
   }
   ::selection {
-    background: oklch(0.72 0.18 70 / 0.30);
+    background: oklch(0.65 0.11 195 / 0.30);
     color: oklch(0.20 0.04 200);
   }
 }
@@ -177,8 +177,8 @@
 }
 
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 30px -10px oklch(0.88 0.17 95 / 0.4); }
-  50% { box-shadow: 0 0 55px -8px oklch(0.88 0.17 95 / 0.65); }
+  0%, 100% { box-shadow: 0 0 30px -10px oklch(0.65 0.11 195 / 0.4); }
+  50% { box-shadow: 0 0 55px -8px oklch(0.65 0.11 195 / 0.65); }
 }
 
 @keyframes premium-rise {
@@ -194,7 +194,7 @@
 .aurora-bg {
   background:
     radial-gradient(ellipse 60% 50% at 15% 20%, oklch(0.69 0.10 195 / 0.42) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 85% 25%, oklch(0.88 0.17 95 / 0.32) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 25%, oklch(0.65 0.11 195 / 0.32) 0%, transparent 60%),
     radial-gradient(ellipse 70% 60% at 50% 80%, oklch(0.39 0.08 200 / 0.38) 0%, transparent 60%),
     radial-gradient(ellipse 40% 30% at 75% 70%, oklch(0.76 0.11 195 / 0.28) 0%, transparent 60%);
 }
@@ -202,7 +202,7 @@
 .dark .aurora-bg {
   background:
     radial-gradient(ellipse 60% 50% at 15% 20%, oklch(0.69 0.10 195 / 0.35) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 85% 25%, oklch(0.88 0.17 95 / 0.22) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 25%, oklch(0.65 0.11 195 / 0.22) 0%, transparent 60%),
     radial-gradient(ellipse 70% 60% at 50% 80%, oklch(0.30 0.07 200 / 0.55) 0%, transparent 60%),
     radial-gradient(ellipse 40% 30% at 75% 70%, oklch(0.55 0.10 195 / 0.20) 0%, transparent 60%);
 }
@@ -251,7 +251,7 @@
 
 /* Premium gradient text (deep teal → ocean-light → gold) */
 .gradient-text-premium {
-  background: linear-gradient(95deg, oklch(0.39 0.08 200) 0%, oklch(0.69 0.10 195) 45%, oklch(0.88 0.17 95) 100%);
+  background: linear-gradient(95deg, oklch(0.45 0.10 200) 0%, oklch(0.65 0.11 195) 50%, oklch(0.76 0.11 195) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -259,7 +259,7 @@
 }
 
 .dark .gradient-text-premium {
-  background: linear-gradient(95deg, oklch(0.76 0.11 195) 0%, oklch(0.69 0.10 195) 45%, oklch(0.88 0.17 95) 100%);
+  background: linear-gradient(95deg, oklch(0.76 0.11 195) 0%, oklch(0.65 0.11 195) 50%, oklch(0.85 0.10 195) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -268,7 +268,7 @@
 
 /* Animated shimmer text — AQWELIA ocean + gold */
 .aqua-text-gradient {
-  background: linear-gradient(90deg, oklch(0.39 0.08 200), oklch(0.72 0.18 70), oklch(0.39 0.08 200));
+  background: linear-gradient(90deg, oklch(0.39 0.08 200), oklch(0.65 0.11 195), oklch(0.39 0.08 200));
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
@@ -279,7 +279,7 @@
 /* Gold accent divider — 1px gold-to-transparent */
 .gold-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, oklch(0.88 0.17 95 / 0.65), transparent);
+  background: linear-gradient(90deg, transparent, oklch(0.65 0.11 195 / 0.65), transparent);
 }
 
 /* Premium section label */
@@ -297,7 +297,7 @@
 
 /* Glow effects */
 .glow-primary { box-shadow: 0 0 40px -10px oklch(0.39 0.08 200 / 0.5); }
-.glow-gold { box-shadow: 0 0 40px -10px oklch(0.88 0.17 95 / 0.5); }
+.glow-gold { box-shadow: 0 0 40px -10px oklch(0.65 0.11 195 / 0.5); }
 .glow-pulse-anim { animation: glow-pulse 4s ease-in-out infinite; }
 
 /* Premium rise-in animation */
@@ -307,11 +307,11 @@
 .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
 .custom-scroll::-webkit-scrollbar-track { background: transparent; }
 .custom-scroll::-webkit-scrollbar-thumb {
-  background: oklch(0.88 0.17 95 / 0.3);
+  background: oklch(0.65 0.11 195 / 0.3);
   border-radius: 9999px;
 }
 .custom-scroll::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.88 0.17 95 / 0.55);
+  background: oklch(0.65 0.11 195 / 0.55);
 }
 
 /* Nav link underline animation */
@@ -325,7 +325,7 @@
   right: 12px;
   bottom: 4px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, oklch(0.88 0.17 95), transparent);
+  background: linear-gradient(90deg, transparent, oklch(0.65 0.11 195), transparent);
   transform: scaleX(0);
   transition: transform 0.35s ease;
 }
