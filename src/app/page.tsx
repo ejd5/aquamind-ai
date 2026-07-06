@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { LandingPage } from '@/components/landing/landing-page'
 import { AppShell } from '@/components/aquamind/app-shell'
+import { MobileAppShell } from '@/components/mobile/mobile-app-shell'
+import { isMobile, isNative } from '@/lib/platform'
 
 type View = 'landing' | 'app'
 
@@ -10,27 +12,35 @@ export default function Home() {
   const [view, setView] = useState<View>('landing')
   const [hasProfile, setHasProfile] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const [mobile, setMobile] = useState(false)
+  const [native, setNative] = useState(false)
 
   useEffect(() => {
     let cancelled = false
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('aquamind_view') : null
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('aqwelia_view') : null
+    // Compute platform values once (client-side only)
+    const mobileVal = isMobile()
+    const nativeVal = isNative()
 
     fetch('/api/pool/profile')
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return
         const profileExists = !!d?.profile
+        setMobile(mobileVal)
+        setNative(nativeVal)
         setHasProfile(profileExists)
-        // Default = 'landing'. Only switch to 'app' if the user explicitly
-        // chose it before (persisted). The "Accéder à l'app" button is shown
-        // on the landing page when a profile exists.
-        setView(saved === 'app' ? 'app' : 'landing')
+        // In native app, skip landing and go directly to app
+        // On web, default to landing unless user previously chose app
+        setView(nativeVal ? 'app' : (saved === 'app' ? 'app' : 'landing'))
         setLoaded(true)
       })
       .catch(() => {
         if (cancelled) return
+        setMobile(mobileVal)
+        setNative(nativeVal)
         setHasProfile(false)
-        setView(saved === 'app' ? 'app' : 'landing')
+        setView(nativeVal ? 'app' : (saved === 'app' ? 'app' : 'landing'))
         setLoaded(true)
       })
 
@@ -40,13 +50,13 @@ export default function Home() {
   }, [])
 
   function enterApp() {
-    if (typeof window !== 'undefined') localStorage.setItem('aquamind_view', 'app')
+    if (typeof window !== 'undefined') localStorage.setItem('aqwelia_view', 'app')
     setView('app')
     if (typeof window !== 'undefined') window.scrollTo({ top: 0 })
   }
 
   function backToLanding() {
-    if (typeof window !== 'undefined') localStorage.setItem('aquamind_view', 'landing')
+    if (typeof window !== 'undefined') localStorage.setItem('aqwelia_view', 'landing')
     setView('landing')
     if (typeof window !== 'undefined') window.scrollTo({ top: 0 })
   }
@@ -77,9 +87,21 @@ export default function Home() {
     )
   }
 
+  // Native app (Capacitor) → always MobileAppShell, no landing
+  if (native) {
+    return <MobileAppShell onBackToLanding={backToLanding} />
+  }
+
+  // Mobile browser + app view → MobileAppShell
+  if (mobile && view === 'app') {
+    return <MobileAppShell onBackToLanding={backToLanding} />
+  }
+
+  // Desktop + app view → desktop AppShell
   if (view === 'app') {
     return <AppShell onBackToLanding={backToLanding} />
   }
 
+  // Default: landing page (desktop or mobile browser)
   return <LandingPage hasProfile={hasProfile} onEnterApp={enterApp} />
 }
