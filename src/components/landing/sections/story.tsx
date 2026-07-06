@@ -17,6 +17,30 @@ export function Story() {
             <span className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-gold/10 blur-3xl" />
             <span className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
 
+            {/* Etymology signature — AQWELIA = Aqua + Well + IA */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="relative mb-8 flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-gold/30 bg-gold/5 px-6 py-4 text-center"
+            >
+              <span className="font-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+                AQWELIA
+              </span>
+              <span className="text-gold">=</span>
+              <span className="text-sm font-semibold text-foreground/80 sm:text-base">
+                <span className="text-primary">AQ</span>
+                <span className="text-muted-foreground"> (aqua)</span>
+                <span className="mx-1 text-gold">·</span>
+                <span className="text-ocean-light">WEL</span>
+                <span className="text-muted-foreground"> (well)</span>
+                <span className="mx-1 text-gold">·</span>
+                <span className="text-gold">IA</span>
+                <span className="text-muted-foreground"> (intelligence)</span>
+              </span>
+            </motion.div>
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -24,6 +48,9 @@ export function Story() {
               transition={{ duration: 0.6 }}
               className="relative space-y-5 font-display text-lg leading-relaxed text-foreground/90 sm:text-xl"
             >
+              <p>
+                « Trois racines, une promesse&nbsp;: une eau qui va bien, pilotée par l&apos;IA. »
+              </p>
               <p>
                 « Après 15 ans, 3 piscines différentes (béton, coque, hors-sol), 2 électrolyseurs,
                 un filtre à sable et un à cartouche, des centaines de tests, des dizaines de

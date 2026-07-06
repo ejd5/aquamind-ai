@@ -46,7 +46,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="mx-auto max-w-4xl text-center">
-          {/* Eyebrow badge */}
+          {/* Eyebrow badge — signature AQWELIA */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -54,7 +54,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
             className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-white/70 px-4 py-1.5 text-xs font-semibold text-foreground backdrop-blur-md dark:bg-white/5"
           >
             <Sparkles className="h-3.5 w-3.5 text-gold" />
-            <span>L&apos;assistant IA n°1 pour votre piscine</span>
+            <span className="tracking-[0.18em]">AQUA · WELL · IA</span>
           </motion.div>
 
           {/* Headline */}
@@ -69,16 +69,16 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
             <span className="gradient-text-premium italic">sans gaspillage.</span>
           </motion.h1>
 
-          {/* Subtitle */}
+          {/* Subtitle — promise AQWELIA (Option B) */}
           <motion.p
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15 }}
             className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg"
           >
-            AQWELIA est le copilote IA qui vous dit exactement quoi tester, quoi ajouter,
-            combien, dans quel ordre, et quand vous baigner. Photo + mesures + météo +
-            historique = un plan d&apos;action précis en 30 secondes.
+            Trois racines, une promesse&nbsp;: <span className="font-semibold text-foreground">une eau qui va bien, pilotée par l&apos;IA.</span>{' '}
+            AQWELIA est le copilote intelligent qui veille sur votre piscine 24/7 —
+            diagnostic prudent, plan d&apos;action exact, eau toujours cristalline.
           </motion.p>
 
           {/* Dual CTA */}
