@@ -122,14 +122,31 @@ export default function SettingsPage() {
   async function handleManage() {
     setManaging(true)
     try {
+      // Check if user has an active subscription first
+      const entitlements = await billing.getEntitlements()
+      const active = entitlements.find((e) => e.isActive)
+      if (!active) {
+        toast({
+          title: 'Aucun abonnement actif',
+          description: 'Vous êtes sur le plan Free. Souscrivez à Premium ou Expert pour gérer votre abonnement.',
+        })
+        return
+      }
       await billing.manageSubscription()
-      toast({ title: 'Portail d\'abonnement ouvert' })
     } catch (err) {
-      toast({
-        title: 'Impossible d\'ouvrir le portail',
-        description: err instanceof Error ? err.message : undefined,
-        variant: 'destructive',
-      })
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue'
+      if (msg.includes('not configured') || msg.includes('STRIPE')) {
+        toast({
+          title: 'Gestion indisponible en dev',
+          description: 'Stripe n\'est pas configuré en local. En production, ce bouton ouvrira le portail Stripe.',
+        })
+      } else {
+        toast({
+          title: 'Impossible d\'ouvrir le portail',
+          description: msg,
+          variant: 'destructive',
+        })
+      }
     } finally {
       setManaging(false)
     }
