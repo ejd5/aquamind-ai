@@ -17,7 +17,9 @@ import {
   Umbrella,
   Snowflake,
   MapPin,
+  Crosshair,
   Sparkles,
+  Loader2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -126,24 +128,42 @@ function alertTypeIcon(type: WeatherAlert['type']) {
   }
 }
 
+interface LoadOpts {
+  location?: string
+  lat?: number
+  lon?: number
+}
+
 export function ModuleWeather({ onNavigate }: Props) {
   const [data, setData] = useState<WeatherResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [locationInput, setLocationInput] = useState('')
+  const [locating, setLocating] = useState(false)
+  const [savingLocation, setSavingLocation] = useState(false)
 
-  const load = useCallback(async (location?: string) => {
+  const load = useCallback(async (opts?: LoadOpts): Promise<WeatherResponse | null> => {
     setLoading(true)
     setError(null)
     try {
-      const url = location ? `/api/pool/weather?location=${encodeURIComponent(location)}` : '/api/pool/weather'
+      const params = new URLSearchParams()
+      if (typeof opts?.lat === 'number' && typeof opts?.lon === 'number') {
+        params.set('lat', String(opts.lat))
+        params.set('lon', String(opts.lon))
+      } else if (opts?.location) {
+        params.set('location', opts.location)
+      }
+      const qs = params.toString()
+      const url = qs ? `/api/pool/weather?${qs}` : '/api/pool/weather'
       const res = await fetch(url)
       const d = await res.json()
       if (!res.ok) throw new Error(d.error || 'Météo indisponible')
       setData(d)
+      return d
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Météo indisponible')
       setData(null)
+      return null
     } finally {
       setLoading(false)
     }
@@ -153,10 +173,80 @@ export function ModuleWeather({ onNavigate }: Props) {
     load()
   }, [load])
 
-  function submitLocation() {
-    if (!locationInput.trim()) return
-    load(locationInput.trim())
-    toast({ title: 'Localisation mise à jour', description: `Météo pour ${locationInput.trim()}` })
+  // Géolocalisation GPS du navigateur (ou Capacitor Geolocation sur mobile)
+  function handleGeolocate() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      toast({
+        title: 'Géolocalisation non supportée',
+        description: 'Saisissez votre ville manuellement ci-dessous.',
+        variant: 'destructive',
+      })
+      return
+    }
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords
+        try {
+          const fresh = await load({ lat: latitude, lon: longitude })
+          // Persiste les coordonnées dans le profil pour les prochaines visites
+          await fetch('/api/pool/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ region: `${latitude.toFixed(4)},${longitude.toFixed(4)}` }),
+          }).catch(() => {/* non bloquant */})
+          toast({
+            title: 'Position détectée',
+            description: fresh?.weather?.location || 'Météo mise à jour selon votre position GPS.',
+          })
+        } catch {
+          toast({
+            title: 'Météo indisponible',
+            description: 'Impossible de récupérer la météo pour votre position.',
+            variant: 'destructive',
+          })
+        } finally {
+          setLocating(false)
+        }
+      },
+      (err) => {
+        setLocating(false)
+        const msg = err.code === err.PERMISSION_DENIED
+          ? 'Autorisez la géolocalisation ou saisissez votre ville manuellement.'
+          : 'Impossible de récupérer votre position. Réessayez ou saisissez votre ville.'
+        toast({
+          title: 'Localisation refusée',
+          description: msg,
+          variant: 'destructive',
+        })
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    )
+  }
+
+  // Sauvegarde la ville saisie dans le profil + recharge la météo
+  async function submitLocation() {
+    const city = locationInput.trim()
+    if (!city) return
+    setSavingLocation(true)
+    try {
+      await fetch('/api/pool/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ region: city }),
+      }).catch(() => {/* non bloquant */})
+      await load({ location: city })
+      toast({ title: 'Ville enregistrée', description: `Météo pour ${city}` })
+      setLocationInput('')
+    } catch {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'appliquer cette ville.',
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingLocation(false)
+    }
   }
 
   if (loading) {
@@ -201,6 +291,20 @@ export function ModuleWeather({ onNavigate }: Props) {
                 <MapPin className="h-4 w-4" />
               </Button>
             </div>
+            <Button
+              onClick={handleGeolocate}
+              variant="outline"
+              size="sm"
+              disabled={locating}
+              className="border-gold/40 text-gold hover:bg-gold/10"
+            >
+              {locating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Crosshair className="h-4 w-4" />
+              )}
+              Me localiser automatiquement
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -216,32 +320,60 @@ export function ModuleWeather({ onNavigate }: Props) {
     <div className="space-y-5">
       <Header
         right={
-          <Button variant="outline" size="sm" onClick={() => load(locationInput || undefined)} className="border-border/60">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => load(locationInput.trim() ? { location: locationInput.trim() } : undefined)}
+            className="border-border/60"
+            disabled={loading || locating}
+          >
             <RefreshCw className="h-3.5 w-3.5" />
             Actualiser
           </Button>
         }
       />
 
-      {/* Location search */}
+      {/* Location controls : GPS + saisie manuelle */}
       <Card className="glass-card">
-        <CardContent className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center">
+        <CardContent className="flex flex-col gap-3 py-3">
           <div className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4 text-gold" />
             <span className="font-medium text-foreground">{weather.location}</span>
             <span className="text-xs">· météo réelle via wttr.in</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Changer de ville…"
-              value={locationInput}
-              onChange={(e) => setLocationInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && submitLocation()}
-              className="h-9 w-full sm:w-44"
-            />
-            <Button onClick={submitLocation} size="sm" className="bg-gradient-to-r from-primary to-gold text-primary-foreground">
-              Appliquer
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Button
+              onClick={handleGeolocate}
+              variant="outline"
+              size="sm"
+              disabled={locating || savingLocation}
+              className="border-gold/40 text-gold hover:bg-gold/10"
+            >
+              {locating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Crosshair className="h-4 w-4" />
+              )}
+              {locating ? 'Localisation…' : 'Me localiser'}
             </Button>
+            <div className="flex flex-1 items-center gap-2">
+              <Input
+                placeholder="Ou tapez votre ville…"
+                value={locationInput}
+                onChange={(e) => setLocationInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && submitLocation()}
+                className="h-9"
+                disabled={savingLocation}
+              />
+              <Button
+                onClick={submitLocation}
+                size="sm"
+                disabled={savingLocation || !locationInput.trim()}
+                className="bg-gradient-to-r from-primary to-gold text-primary-foreground"
+              >
+                {savingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Appliquer'}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
