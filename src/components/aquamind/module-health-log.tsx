@@ -16,6 +16,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/hooks/use-toast'
+import { offlineApi, apiGetCached } from '@/lib/offline/api-cache'
+import { api } from '@/lib/api-client'
+import { useOfflineStore } from '@/lib/offline/offline-store'
 
 interface WaterTestRow {
   id: string
@@ -72,21 +75,26 @@ export function ModuleHealthLog() {
   const [tests, setTests] = useState<WaterTestRow[]>([])
   const [diags, setDiags] = useState<DiagnosticRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [stale, setStale] = useState(false)
+
+  const isOnline = useOfflineStore((s) => s.isOnline)
+  const queueAction = useOfflineStore((s) => s.queueAction)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const [tRes, dRes] = await Promise.all([
-        fetch('/api/pool/water-test'),
-        fetch('/api/pool/photo-diagnostic'),
+        offlineApi.waterTests(),
+        apiGetCached<{ diagnostics?: DiagnosticRow[] }>('/api/pool/photo-diagnostic'),
       ])
-      const tData = await tRes.json()
-      const dData = await dRes.json()
-      setTests(tData.tests || [])
-      setDiags(dData.diagnostics || [])
+      const tData = tRes.data as { tests?: WaterTestRow[] } | null
+      setTests(tData?.tests || [])
+      setDiags(dRes.data?.diagnostics || [])
+      setStale(tRes.stale || dRes.stale)
     } catch {
       setTests([])
       setDiags([])
+      setStale(false)
     } finally {
       setLoading(false)
     }
@@ -98,7 +106,16 @@ export function ModuleHealthLog() {
 
   async function removeTest(id: string) {
     try {
-      await fetch(`/api/pool/water-test?id=${id}`, { method: 'DELETE' })
+      if (!isOnline) {
+        queueAction({ method: 'DELETE', path: `/api/pool/water-test?id=${id}` })
+        setTests((t) => t.filter((x) => x.id !== id))
+        toast({
+          title: 'Suppression enregistrée',
+          description: 'Sera synchronisée quand vous serez en ligne.',
+        })
+        return
+      }
+      await api.delete(`/api/pool/water-test?id=${id}`)
       setTests((t) => t.filter((x) => x.id !== id))
       toast({ title: 'Mesure supprimée' })
     } catch {
@@ -125,7 +142,7 @@ export function ModuleHealthLog() {
             bientôt disponible.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={load}>
             <RefreshCw className="h-3.5 w-3.5" />
             Actualiser
@@ -140,6 +157,9 @@ export function ModuleHealthLog() {
             <FileDown className="h-3.5 w-3.5" />
             Export PDF
           </Button>
+          {stale && (
+            <span className="text-[10px] italic text-muted-foreground">données en cache</span>
+          )}
         </div>
       </div>
 

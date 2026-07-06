@@ -34,6 +34,9 @@ import {
 } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/hooks/use-toast'
+import { offlineApi } from '@/lib/offline/api-cache'
+import { api } from '@/lib/api-client'
+import { useOfflineStore } from '@/lib/offline/offline-store'
 
 interface EquipmentRow {
   id: string
@@ -145,6 +148,7 @@ function EquipmentPanel() {
   const [items, setItems] = useState<EquipmentRow[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [stale, setStale] = useState(false)
   const [form, setForm] = useState({
     type: 'pump',
     brand: '',
@@ -156,14 +160,19 @@ function EquipmentPanel() {
     notes: '',
   })
 
+  const isOnline = useOfflineStore((s) => s.isOnline)
+  const queueAction = useOfflineStore((s) => s.queueAction)
+
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/pool/equipment')
-      const data = await res.json()
-      setItems(data.equipment || [])
+      const { data, stale } = await offlineApi.equipment()
+      const d = data as { equipment?: EquipmentRow[] } | null
+      setItems(d?.equipment || [])
+      setStale(stale)
     } catch {
       setItems([])
+      setStale(false)
     } finally {
       setLoading(false)
     }
@@ -178,20 +187,34 @@ function EquipmentPanel() {
       toast({ title: 'Type requis', variant: 'destructive' })
       return
     }
+    const body = {
+      ...form,
+      installedAt: form.installedAt || undefined,
+      lastMaintenanceAt: form.lastMaintenanceAt || undefined,
+      nextMaintenanceAt: form.nextMaintenanceAt || undefined,
+      notes: form.notes || undefined,
+    }
     try {
-      const res = await fetch('/api/pool/equipment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          installedAt: form.installedAt || undefined,
-          lastMaintenanceAt: form.lastMaintenanceAt || undefined,
-          nextMaintenanceAt: form.nextMaintenanceAt || undefined,
-          notes: form.notes || undefined,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
+      if (!isOnline) {
+        queueAction({ method: 'POST', path: '/api/pool/equipment', body })
+        toast({
+          title: 'Action enregistrée',
+          description: 'Sera synchronisée quand vous serez en ligne.',
+        })
+        setForm({
+          type: 'pump',
+          brand: '',
+          model: '',
+          installedAt: '',
+          lastMaintenanceAt: '',
+          nextMaintenanceAt: '',
+          status: 'ok',
+          notes: '',
+        })
+        setShowForm(false)
+        return
+      }
+      await api.post('/api/pool/equipment', body)
       toast({ title: 'Équipement ajouté' })
       setForm({
         type: 'pump',
@@ -215,27 +238,44 @@ function EquipmentPanel() {
   }
 
   async function markMaintained(id: string) {
+    const body = {
+      id,
+      lastMaintenanceAt: new Date().toISOString(),
+      status: 'ok',
+    }
     try {
-      const res = await fetch('/api/pool/equipment', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id,
-          lastMaintenanceAt: new Date().toISOString(),
-          status: 'ok',
-        }),
-      })
-      if (!res.ok) throw new Error('Erreur')
+      if (!isOnline) {
+        queueAction({ method: 'PATCH', path: '/api/pool/equipment', body })
+        toast({
+          title: 'Action enregistrée',
+          description: 'Sera synchronisée quand vous serez en ligne.',
+        })
+        return
+      }
+      await api.patch('/api/pool/equipment', body)
       toast({ title: 'Marqué comme entretenu', description: 'Dernière maintenance mise à jour.' })
       load()
-    } catch {
-      toast({ title: 'Erreur', variant: 'destructive' })
+    } catch (e) {
+      toast({
+        title: 'Erreur',
+        description: e instanceof Error ? e.message : 'Échec',
+        variant: 'destructive',
+      })
     }
   }
 
   async function remove(id: string) {
     try {
-      await fetch(`/api/pool/equipment?id=${id}`, { method: 'DELETE' })
+      if (!isOnline) {
+        queueAction({ method: 'DELETE', path: `/api/pool/equipment?id=${id}` })
+        setItems((it) => it.filter((x) => x.id !== id))
+        toast({
+          title: 'Suppression enregistrée',
+          description: 'Sera synchronisée quand vous serez en ligne.',
+        })
+        return
+      }
+      await api.delete(`/api/pool/equipment?id=${id}`)
       setItems((it) => it.filter((x) => x.id !== id))
       toast({ title: 'Équipement supprimé' })
     } catch {
@@ -250,6 +290,11 @@ function EquipmentPanel() {
           <CardTitle className="flex items-center gap-2 font-display text-base">
             <Wrench className="h-4 w-4 text-primary" />
             Équipements ({items.length})
+            {stale && (
+              <span className="text-[10px] font-normal italic text-muted-foreground">
+                données en cache
+              </span>
+            )}
           </CardTitle>
           <Button size="sm" onClick={() => setShowForm((s) => !s)}>
             <Plus className="h-3.5 w-3.5" />
@@ -418,6 +463,7 @@ function InventoryPanel() {
   const [items, setItems] = useState<ProductRow[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [stale, setStale] = useState(false)
   const [form, setForm] = useState({
     productName: '',
     category: 'ph_minus',
@@ -428,14 +474,19 @@ function InventoryPanel() {
     instructions: '',
   })
 
+  const isOnline = useOfflineStore((s) => s.isOnline)
+  const queueAction = useOfflineStore((s) => s.queueAction)
+
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/pool/inventory')
-      const data = await res.json()
-      setItems(data.products || [])
+      const { data, stale } = await offlineApi.inventory()
+      const d = data as { products?: ProductRow[] } | null
+      setItems(d?.products || [])
+      setStale(stale)
     } catch {
       setItems([])
+      setStale(false)
     } finally {
       setLoading(false)
     }
@@ -450,20 +501,33 @@ function InventoryPanel() {
       toast({ title: 'Nom du produit requis', variant: 'destructive' })
       return
     }
+    const body = {
+      ...form,
+      concentration: form.concentration || undefined,
+      quantity: Number(form.quantity) || 0,
+      price: form.price || undefined,
+      instructions: form.instructions || undefined,
+    }
     try {
-      const res = await fetch('/api/pool/inventory', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          concentration: form.concentration || undefined,
-          quantity: Number(form.quantity) || 0,
-          price: form.price || undefined,
-          instructions: form.instructions || undefined,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
+      if (!isOnline) {
+        queueAction({ method: 'POST', path: '/api/pool/inventory', body })
+        toast({
+          title: 'Action enregistrée',
+          description: 'Sera synchronisée quand vous serez en ligne.',
+        })
+        setForm({
+          productName: '',
+          category: 'ph_minus',
+          concentration: '',
+          quantity: '',
+          unit: 'kg',
+          price: '',
+          instructions: '',
+        })
+        setShowForm(false)
+        return
+      }
+      await api.post('/api/pool/inventory', body)
       toast({ title: 'Produit ajouté', description: 'Stock mis à jour.' })
       setForm({
         productName: '',
@@ -487,7 +551,16 @@ function InventoryPanel() {
 
   async function remove(id: string) {
     try {
-      await fetch(`/api/pool/inventory?id=${id}`, { method: 'DELETE' })
+      if (!isOnline) {
+        queueAction({ method: 'DELETE', path: `/api/pool/inventory?id=${id}` })
+        setItems((it) => it.filter((x) => x.id !== id))
+        toast({
+          title: 'Suppression enregistrée',
+          description: 'Sera synchronisée quand vous serez en ligne.',
+        })
+        return
+      }
+      await api.delete(`/api/pool/inventory?id=${id}`)
       setItems((it) => it.filter((x) => x.id !== id))
       toast({ title: 'Produit supprimé' })
     } catch {
@@ -502,6 +575,11 @@ function InventoryPanel() {
           <CardTitle className="flex items-center gap-2 font-display text-base">
             <Package className="h-4 w-4 text-primary" />
             Inventaire produits ({items.length})
+            {stale && (
+              <span className="text-[10px] font-normal italic text-muted-foreground">
+                données en cache
+              </span>
+            )}
           </CardTitle>
           <Button size="sm" onClick={() => setShowForm((s) => !s)}>
             <Plus className="h-3.5 w-3.5" />
@@ -681,15 +759,18 @@ function InventoryPanel() {
 function RemindersPanel() {
   const [equipment, setEquipment] = useState<EquipmentRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [stale, setStale] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/pool/equipment')
-      const data = await res.json()
-      setEquipment(data.equipment || [])
+      const { data, stale } = await offlineApi.equipment()
+      const d = data as { equipment?: EquipmentRow[] } | null
+      setEquipment(d?.equipment || [])
+      setStale(stale)
     } catch {
       setEquipment([])
+      setStale(false)
     } finally {
       setLoading(false)
     }
@@ -745,6 +826,11 @@ function RemindersPanel() {
         <CardTitle className="flex items-center gap-2 font-display text-base">
           <Settings2 className="h-4 w-4 text-primary" />
           Rappels d'entretien
+          {stale && (
+            <span className="text-[10px] font-normal italic text-muted-foreground">
+              données en cache
+            </span>
+          )}
         </CardTitle>
         <CardDescription className="text-xs">
           Générés automatiquement à partir de vos équipements enregistrés.

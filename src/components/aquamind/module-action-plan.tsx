@@ -19,6 +19,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/hooks/use-toast'
+import { offlineApi } from '@/lib/offline/api-cache'
+import { api } from '@/lib/api-client'
+import { useOfflineStore } from '@/lib/offline/offline-store'
 import type { TabId } from './app-shell'
 
 interface Props {
@@ -70,15 +73,20 @@ export function ModuleActionPlan({ onNavigate }: Props) {
   const [plan, setPlan] = useState<LatestPlan | null>(null)
   const [loading, setLoading] = useState(true)
   const [regenerating, setRegenerating] = useState(false)
+  const [stale, setStale] = useState(false)
+
+  const isOnline = useOfflineStore((s) => s.isOnline)
+  const queueAction = useOfflineStore((s) => s.queueAction)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/dashboard')
-      const data = await res.json()
-      setPlan(data.latestPlan || null)
+      const { data, stale } = await offlineApi.dashboard()
+      setPlan((data as { latestPlan?: LatestPlan } | null)?.latestPlan || null)
+      setStale(stale)
     } catch {
       setPlan(null)
+      setStale(false)
     } finally {
       setLoading(false)
     }
@@ -91,14 +99,17 @@ export function ModuleActionPlan({ onNavigate }: Props) {
   async function regenerate() {
     if (!plan?.waterTestId) return
     setRegenerating(true)
+    const payload = { testId: plan.waterTestId }
     try {
-      const res = await fetch('/api/pool/action-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ testId: plan.waterTestId }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
+      if (!isOnline) {
+        queueAction({ method: 'POST', path: '/api/pool/action-plan', body: payload })
+        toast({
+          title: 'Action enregistrée',
+          description: 'Le plan sera régénéré quand vous serez en ligne.',
+        })
+        return
+      }
+      await api.post('/api/pool/action-plan', payload)
       toast({ title: 'Plan régénéré', description: 'Le plan a été recalculé.' })
       load()
     } catch (e) {
@@ -164,10 +175,15 @@ export function ModuleActionPlan({ onNavigate }: Props) {
             l'ordre.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={regenerate} disabled={regenerating}>
-          <RefreshCw className={`h-3.5 w-3.5 ${regenerating ? 'animate-spin' : ''}`} />
-          Régénérer
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={regenerate} disabled={regenerating}>
+            <RefreshCw className={`h-3.5 w-3.5 ${regenerating ? 'animate-spin' : ''}`} />
+            Régénérer
+          </Button>
+          {stale && (
+            <span className="text-[10px] italic text-muted-foreground">données en cache</span>
+          )}
+        </div>
       </div>
 
       {/* Diagnosis card */}

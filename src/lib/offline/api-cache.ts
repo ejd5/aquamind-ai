@@ -81,6 +81,7 @@ export const offlineApi = {
   dashboard: () => apiGetCached('/api/dashboard', 'dashboard'),
   profile: () => apiGetCached('/api/pool/profile', 'profile'),
   waterTests: () => apiGetCached('/api/pool/water-test', 'waterTests'),
+  photoDiagnostic: () => apiGetCached('/api/pool/photo-diagnostic', 'waterTests'),
   weather: () => apiGetCached('/api/pool/weather', 'weather'),
   reminders: () => apiGetCached('/api/pool/reminders', 'reminders'),
   guides: () => apiGetCached('/api/guides', 'guides'),

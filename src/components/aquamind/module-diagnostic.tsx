@@ -18,6 +18,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/hooks/use-toast'
+import { takePhoto, pickFromGallery, requestCameraPermission } from '@/lib/native/camera'
+import { isNative } from '@/lib/platform'
+import { offlineApi } from '@/lib/offline/api-cache'
+import { api } from '@/lib/api-client'
+import { useOfflineStore } from '@/lib/offline/offline-store'
+import { hapticSuccess, hapticError } from '@/lib/native/haptics'
 
 interface DiagnosticResult {
   imageType?: string
@@ -72,13 +78,14 @@ export function ModuleDiagnostic() {
   const [history, setHistory] = useState<SavedDiagnostic[]>([])
   const [loadingHistory, setLoadingHistory] = useState(true)
   const fileRef = useRef<HTMLInputElement>(null)
+  const queueAction = useOfflineStore((s) => s.queueAction)
+  const isOnline = useOfflineStore((s) => s.isOnline)
 
   const loadHistory = useCallback(async () => {
     setLoadingHistory(true)
     try {
-      const res = await fetch('/api/pool/photo-diagnostic')
-      const data = await res.json()
-      setHistory(data.diagnostics || [])
+      const { data } = await offlineApi.photoDiagnostic()
+      setHistory((data as any)?.diagnostics || [])
     } catch {
       setHistory([])
     } finally {
@@ -111,25 +118,51 @@ export function ModuleDiagnostic() {
     reader.readAsDataURL(file)
   }
 
+  // Native camera capture (iOS/Android via Capacitor)
+  async function handleTakePhoto() {
+    const granted = await requestCameraPermission()
+    if (!granted) {
+      toast({ title: 'Permission refusée', description: 'Autorisez la caméra dans les réglages.', variant: 'destructive' })
+      hapticError()
+      return
+    }
+    const photo = await takePhoto()
+    if (photo?.dataUrl) {
+      setImage(photo.dataUrl)
+      setResult(null)
+      hapticSuccess()
+    }
+  }
+
+  // Native gallery picker (iOS/Android via Capacitor)
+  async function handlePickFromGallery() {
+    const photo = await pickFromGallery()
+    if (photo?.dataUrl) {
+      setImage(photo.dataUrl)
+      setResult(null)
+    }
+  }
+
   async function analyze() {
     if (!image) return
     setLoading(true)
     setResult(null)
     try {
-      const res = await fetch('/api/pool/photo-diagnostic', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image, typeHint }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
+      if (!isOnline) {
+        toast({ title: 'Hors connexion', description: 'L\'analyse IA nécessite Internet.', variant: 'destructive' })
+        hapticError()
+        return
+      }
+      const data = await api.post<{ diagnostic: DiagnosticResult }>('/api/pool/photo-diagnostic', { image, typeHint })
       setResult(data.diagnostic || null)
+      hapticSuccess()
       toast({
         title: 'Analyse terminée',
         description: 'Diagnostic IA disponible ci-dessous.',
       })
       loadHistory()
     } catch (e) {
+      hapticError()
       toast({
         title: 'Erreur',
         description: e instanceof Error ? e.message : 'Analyse impossible',
@@ -195,34 +228,56 @@ export function ModuleDiagnostic() {
             </div>
 
             {!image ? (
-              <label
-                htmlFor="diag-upload"
-                className="group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-gold/30 bg-gold/5 px-6 py-10 text-center transition-all hover:border-gold/60 hover:bg-gold/10"
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-gold shadow-md shadow-primary/30">
-                  <Upload className="h-6 w-6 text-primary-foreground" />
-                </div>
-                <div>
-                  <p className="font-display text-sm font-semibold">
-                    Cliquez ou déposez une photo
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    JPG / PNG / WEBP — max 6 Mo
-                  </p>
-                </div>
-                <input
-                  id="diag-upload"
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0]
-                    if (f) handleFile(f)
-                  }}
-                />
-              </label>
+              <div className="space-y-3">
+                {/* Native camera buttons (iOS/Android only) */}
+                {isNative() && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      onClick={handleTakePhoto}
+                      className="gap-2 bg-gradient-to-r from-primary to-ocean-light text-primary-foreground"
+                    >
+                      <Camera className="h-4 w-4" />
+                      Prendre une photo
+                    </Button>
+                    <Button
+                      onClick={handlePickFromGallery}
+                      variant="outline"
+                      className="gap-2 border-border/60"
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                      Galerie
+                    </Button>
+                  </div>
+                )}
+                <label
+                  htmlFor="diag-upload"
+                  className="group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-gold/30 bg-gold/5 px-6 py-10 text-center transition-all hover:border-gold/60 hover:bg-gold/10"
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-gold shadow-md shadow-primary/30">
+                    <Upload className="h-6 w-6 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-display text-sm font-semibold">
+                      {isNative() ? 'Ou importez un fichier' : 'Cliquez ou déposez une photo'}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      JPG / PNG / WEBP — max 6 Mo
+                    </p>
+                  </div>
+                  <input
+                    id="diag-upload"
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0]
+                      if (f) handleFile(f)
+                    }}
+                  />
+                </label>
+              </div>
             ) : (
               <div className="relative overflow-hidden rounded-2xl border border-border/60">
                 <img src={image} alt="À analyser" className="max-h-72 w-full object-cover" />

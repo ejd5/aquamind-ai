@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
 import type { TabId } from './app-shell'
+import { offlineApi, apiGetCached } from '@/lib/offline/api-cache'
 
 type CategoryId =
   | 'getting_started'
@@ -83,6 +84,7 @@ export function ModuleGuides({ onNavigate }: Props) {
   const [recommended, setRecommended] = useState<Guide[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [stale, setStale] = useState(false)
 
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState<CategoryId | 'all'>('all')
@@ -95,19 +97,21 @@ export function ModuleGuides({ onNavigate }: Props) {
     setError(null)
     try {
       const [listRes, recRes, subRes] = await Promise.all([
-        fetch('/api/guides'),
-        fetch('/api/guides?recommend=1&new=1&salt=1'),
-        fetch('/api/subscription'),
+        offlineApi.guides(),
+        apiGetCached<{ guides?: Guide[] }>('/api/guides?recommend=1&new=1&salt=1', 'guides'),
+        offlineApi.subscription(),
       ])
-      const listData = await listRes.json()
-      const recData = await recRes.json()
-      const subData = await subRes.ok ? await subRes.json() : null
-      setGuides(listData.guides || [])
-      setCategories(listData.categories || [])
-      setRecommended(recData.guides || [])
+      const listData = listRes.data as { guides?: Guide[]; categories?: Category[] } | null
+      const recData = recRes.data
+      const subData = subRes.data as { plan?: { id?: string } } | null
+      setGuides(listData?.guides || [])
+      setCategories(listData?.categories || [])
+      setRecommended(recData?.guides || [])
       if (subData?.plan?.id) setCurrentPlanId(subData.plan.id)
+      setStale(listRes.stale || recRes.stale || subRes.stale)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur de chargement')
+      setStale(false)
     } finally {
       setLoading(false)
     }
@@ -130,9 +134,11 @@ export function ModuleGuides({ onNavigate }: Props) {
     }
     setOpeningGuide(true)
     try {
-      const res = await fetch(`/api/guides?id=${encodeURIComponent(g.id)}`)
-      const data = await res.json()
-      setSelectedGuide(data.guide || g)
+      const { data } = await apiGetCached<{ guide?: Guide }>(
+        `/api/guides?id=${encodeURIComponent(g.id)}`,
+        'guides',
+      )
+      setSelectedGuide(data?.guide || g)
     } catch {
       setSelectedGuide(g)
     } finally {
@@ -202,6 +208,9 @@ export function ModuleGuides({ onNavigate }: Props) {
   return (
     <div className="space-y-5">
       <Header />
+      {stale && (
+        <p className="-mt-3 text-[11px] italic text-muted-foreground">données en cache</p>
+      )}
 
       {/* Search */}
       <div className="relative">

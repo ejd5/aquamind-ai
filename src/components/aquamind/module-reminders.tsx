@@ -39,6 +39,9 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import type { TabId } from './app-shell'
+import { offlineApi } from '@/lib/offline/api-cache'
+import { api } from '@/lib/api-client'
+import { useOfflineStore } from '@/lib/offline/offline-store'
 
 type ReminderType =
   | 'test_water'
@@ -114,6 +117,7 @@ export function ModuleReminders({ onNavigate }: Props) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [planId, setPlanId] = useState<string>('free')
+  const [stale, setStale] = useState(false)
 
   // Add form
   const [addOpen, setAddOpen] = useState(false)
@@ -127,25 +131,35 @@ export function ModuleReminders({ onNavigate }: Props) {
   })
   const [saving, setSaving] = useState(false)
 
+  const isOnline = useOfflineStore((s) => s.isOnline)
+  const queueAction = useOfflineStore((s) => s.queueAction)
+
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
       const [remRes, subRes] = await Promise.all([
-        fetch('/api/pool/reminders'),
-        fetch('/api/subscription'),
+        offlineApi.reminders(),
+        offlineApi.subscription(),
       ])
-      const remData = await remRes.json()
-      if (!remRes.ok) throw new Error(remData.error || 'Erreur')
-      setReminders(remData.reminders || [])
-      setManualReminders(remData.manualReminders || [])
-      setContext(remData.context || null)
-      if (subRes.ok) {
-        const subData = await subRes.json()
-        if (subData?.plan?.id) setPlanId(subData.plan.id)
-      }
+      const remData = remRes.data as
+        | {
+            reminders?: Reminder[]
+            manualReminders?: Reminder[]
+            context?: ReminderContext
+            error?: string
+          }
+        | null
+      if (remRes.error && !remData) throw new Error(remRes.error)
+      setReminders(remData?.reminders || [])
+      setManualReminders(remData?.manualReminders || [])
+      setContext(remData?.context || null)
+      const subData = subRes.data as { plan?: { id?: string } } | null
+      if (subData?.plan?.id) setPlanId(subData.plan.id)
+      setStale(remRes.stale || subRes.stale)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur')
+      setStale(false)
     } finally {
       setLoading(false)
     }
@@ -168,12 +182,20 @@ export function ModuleReminders({ onNavigate }: Props) {
   ]
 
   async function patchReminder(id: string, patch: { done?: boolean; snoozed?: boolean }) {
+    const body = { id, ...patch }
     try {
-      await fetch('/api/pool/reminders', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, ...patch }),
-      })
+      if (!isOnline) {
+        queueAction({ method: 'PATCH', path: '/api/pool/reminders', body })
+        // Remove from local state (snoozed also hides it for now)
+        setReminders((r) => r.filter((x) => x.id !== id))
+        setManualReminders((r) => r.filter((x) => x.id !== id))
+        toast({
+          title: patch.done ? 'Rappel terminé' : 'Rappel reporté',
+          description: 'Sera synchronisé quand vous serez en ligne.',
+        })
+        return
+      }
+      await api.patch('/api/pool/reminders', body)
       // Remove from local state (snoozed also hides it for now)
       setReminders((r) => r.filter((x) => x.id !== id))
       setManualReminders((r) => r.filter((x) => x.id !== id))
@@ -188,7 +210,16 @@ export function ModuleReminders({ onNavigate }: Props) {
 
   async function deleteReminder(id: string) {
     try {
-      await fetch(`/api/pool/reminders?id=${id}`, { method: 'DELETE' })
+      if (!isOnline) {
+        queueAction({ method: 'DELETE', path: `/api/pool/reminders?id=${id}` })
+        setManualReminders((r) => r.filter((x) => x.id !== id))
+        toast({
+          title: 'Suppression enregistrée',
+          description: 'Sera synchronisée quand vous serez en ligne.',
+        })
+        return
+      }
+      await api.delete(`/api/pool/reminders?id=${id}`)
       setManualReminders((r) => r.filter((x) => x.id !== id))
       toast({ title: 'Rappel supprimé' })
     } catch {
@@ -202,24 +233,42 @@ export function ModuleReminders({ onNavigate }: Props) {
       return
     }
     setSaving(true)
+    const body = {
+      title: form.title.trim(),
+      detail: form.detail.trim(),
+      action: form.action.trim(),
+      type: form.type,
+      priority: form.priority,
+      dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : undefined,
+    }
     try {
-      const res = await fetch('/api/pool/reminders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: form.title.trim(),
-          detail: form.detail.trim(),
-          action: form.action.trim(),
-          type: form.type,
-          priority: form.priority,
-          dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : undefined,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
+      if (!isOnline) {
+        queueAction({ method: 'POST', path: '/api/pool/reminders', body })
+        setManualReminders((r) => [
+          {
+            id: `local-${Date.now()}`,
+            type: form.type,
+            title: form.title.trim(),
+            detail: form.detail.trim(),
+            action: form.action.trim(),
+            priority: form.priority,
+            dueInHours: form.dueAt ? Math.max(0, Math.round((new Date(form.dueAt).getTime() - Date.now()) / 3600000)) : 24,
+            source: 'manual',
+          },
+          ...r,
+        ])
+        setForm({ title: '', detail: '', action: '', type: 'test_water', priority: 'medium', dueAt: '' })
+        setAddOpen(false)
+        toast({
+          title: 'Rappel ajouté',
+          description: 'Sera synchronisé quand vous serez en ligne.',
+        })
+        return
+      }
+      const data = await api.post<{ reminder?: { id: string } }>('/api/pool/reminders', body)
       setManualReminders((r) => [
         {
-          id: data.reminder.id,
+          id: data.reminder?.id || `local-${Date.now()}`,
           type: form.type,
           title: form.title.trim(),
           detail: form.detail.trim(),
@@ -258,7 +307,7 @@ export function ModuleReminders({ onNavigate }: Props) {
   if (error) {
     return (
       <div className="space-y-5">
-        <Header urgentCount={0} highCount={0} onRefresh={load} />
+        <Header urgentCount={0} highCount={0} onRefresh={load} stale={stale} />
         <Card className="glass-card">
           <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
             <AlertTriangle className="h-8 w-8 text-destructive" />
@@ -274,7 +323,7 @@ export function ModuleReminders({ onNavigate }: Props) {
 
   return (
     <div className="space-y-5">
-      <Header urgentCount={urgentCount} highCount={highCount} onRefresh={load} />
+      <Header urgentCount={urgentCount} highCount={highCount} onRefresh={load} stale={stale} />
 
       {/* Info banner */}
       <div className="flex items-start gap-2 rounded-xl border border-border/60 bg-secondary/30 p-3 text-xs text-foreground/80">
@@ -558,10 +607,12 @@ function Header({
   urgentCount,
   highCount,
   onRefresh,
+  stale,
 }: {
   urgentCount: number
   highCount: number
   onRefresh: () => void
+  stale?: boolean
 }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-3">
@@ -589,6 +640,9 @@ function Header({
             <span className="flex items-center gap-1.5 text-orange-600 dark:text-orange-300">
               · {highCount} aujourd'hui
             </span>
+          )}
+          {stale && (
+            <span className="text-[10px] italic text-muted-foreground">· données en cache</span>
           )}
         </div>
       </div>

@@ -26,6 +26,11 @@ import {
 } from '@/components/ui/accordion'
 import { toast } from '@/hooks/use-toast'
 import type { PlanId } from '@/lib/pool/freemium'
+import { billing } from '@/lib/billing'
+import { isNative } from '@/lib/platform'
+import { offlineApi } from '@/lib/offline/api-cache'
+import { api } from '@/lib/api-client'
+import { useOfflineStore } from '@/lib/offline/offline-store'
 
 type Duration = 'week' | 'month' | 'quarter' | 'halfyear'
 
@@ -99,15 +104,22 @@ export function ModulePaywall() {
   const [loading, setLoading] = useState(true)
   const [duration, setDuration] = useState<Duration>('month')
   const [activating, setActivating] = useState<PlanId | null>(null)
+  const [restoring, setRestoring] = useState(false)
+  const queueAction = useOfflineStore((s) => s.queueAction)
+  const isOnline = useOfflineStore((s) => s.isOnline)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/subscription')
-      const data = await res.json()
-      setPlans(data.allPlans || [])
-      setCurrentPlanId(data.plan?.id || 'free')
-      setSubscription(data.subscription || null)
+      const { data } = await offlineApi.subscription()
+      setPlans((data as any)?.allPlans || [])
+      setCurrentPlanId((data as any)?.plan?.id || 'free')
+      setSubscription((data as any)?.subscription || null)
+      // On native, also refresh entitlements from RevenueCat
+      if (isNative()) {
+        const activePlan = await billing.getActivePlan()
+        if (activePlan) setCurrentPlanId(activePlan)
+      }
     } catch {
       // noop
     } finally {
@@ -125,20 +137,41 @@ export function ModulePaywall() {
   async function activate(planId: PlanId) {
     setActivating(planId)
     try {
-      const res = await fetch('/api/subscription', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: planId, duration }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
-      setCurrentPlanId(planId)
-      setSubscription({ expiresAt: data.subscription?.expiresAt })
-      const plan = plans.find((p) => p.id === planId)
-      toast({
-        title: 'Abonnement activé !',
-        description: `Plan ${plan?.name || planId} activé pour ${DURATIONS.find((d) => d.id === duration)?.label}.`,
-      })
+      if (planId === 'free') {
+        // Downgrade — no billing needed
+        await api.post('/api/subscription', { plan: planId, duration })
+        setCurrentPlanId(planId)
+        setSubscription(null)
+        toast({ title: 'Plan Gratuit activé', description: 'Vous êtes sur le plan Free.' })
+        return
+      }
+
+      if (isNative()) {
+        // Native: use RevenueCat IAP
+        const productId = `aqwelia_${planId}_${duration === 'halfyear' ? 'yearly' : 'monthly'}`
+        const result = await billing.purchase(productId)
+        if (result.userCancelled) {
+          toast({ title: 'Achat annulé', description: 'Vous avez annulé l\'achat.' })
+          return
+        }
+        if (!result.success) {
+          throw new Error(result.error || 'Échec de l\'achat')
+        }
+        setCurrentPlanId(planId)
+        setSubscription({ expiresAt: result.entitlement?.expiresAt?.toISOString() })
+        toast({ title: 'Abonnement activé !', description: `Plan ${planId} activé.` })
+      } else {
+        // Web: redirect to Stripe Checkout
+        if (!isOnline) {
+          toast({ title: 'Hors connexion', description: 'Connectez-vous pour souscrire.', variant: 'destructive' })
+          return
+        }
+        const productId = `stripe_${planId}_${duration === 'halfyear' ? 'yearly' : 'monthly'}`
+        const result = await api.post<{ url: string }>('/api/stripe/checkout', { productId })
+        if (result?.url) {
+          window.location.href = result.url
+        }
+      }
     } catch (e) {
       toast({
         title: 'Erreur',
@@ -147,6 +180,33 @@ export function ModulePaywall() {
       })
     } finally {
       setActivating(null)
+    }
+  }
+
+  async function restorePurchases() {
+    setRestoring(true)
+    try {
+      const entitlements = await billing.restorePurchases()
+      const active = entitlements.find((e) => e.isActive)
+      if (active) {
+        setCurrentPlanId(active.plan)
+        setSubscription({ expiresAt: active.expiresAt?.toISOString() })
+        toast({ title: 'Achats restaurés', description: `Plan ${active.plan} actif.` })
+      } else {
+        toast({ title: 'Aucun achat trouvé', description: 'Aucun abonnement actif trouvé.' })
+      }
+    } catch (e) {
+      toast({ title: 'Erreur', description: 'Restauration impossible.', variant: 'destructive' })
+    } finally {
+      setRestoring(false)
+    }
+  }
+
+  async function manageSubscription() {
+    try {
+      await billing.manageSubscription()
+    } catch {
+      toast({ title: 'Erreur', description: 'Impossible d\'ouvrir la gestion.', variant: 'destructive' })
     }
   }
 
@@ -355,6 +415,31 @@ export function ModulePaywall() {
             <p className="text-[10px] text-muted-foreground">{t.sub}</p>
           </div>
         ))}
+      </div>
+
+      {/* Restore + Manage buttons (required for App Store / Google Play) */}
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={restorePurchases}
+          disabled={restoring}
+          className="border-border/60 text-xs"
+        >
+          {restoring ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+          Restaurer mes achats
+        </Button>
+        {currentPlanId !== 'free' && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={manageSubscription}
+            className="border-border/60 text-xs"
+          >
+            <CreditCard className="h-3.5 w-3.5" />
+            Gérer mon abonnement
+          </Button>
+        )}
       </div>
 
       {/* Feature comparison table */}

@@ -884,3 +884,110 @@ Points d'attention pour la main agent / prochains lots:
 - **Native bridge** : quand `src/lib/native/network.ts` sera créé (autre lot L3), le hook `useNetworkStatus` peut être étendu pour utiliser `@capacitor/network` (plus précis que `navigator.onLine` sur native — détecte le type de connexion cell/wifi/none, et les changements de type). Pour l'instant, `navigator.onLine` + window events fonctionne sur les deux plateformes (WebView forward les events)
 - **Storage natif** : `createSafeStorage()` utilise `localStorage`. Sur Capacitor native, `localStorage` fonctionne mais est volatile (clear au cache clear). Pour persistence native durable, remplacer par `@capacitor/preferences` (déjà installé) — wrap dans un adapter async-compatible avec `createJSONStorage`. À faire dans un lot L3-C/D
 - **Cache size** : IndexedDB n'a pas de limite stricte côté navigateur (au-delà de ~50MB le navigateur peut prompter l'utilisateur). Pour l'instant, on ne prune jamais les entries expirées non lues — un `clearAllCache()` manuel est exposé pour reset. À terme, ajouter un prune périodique (e.g. au démarrage de l'app, delete toutes les entries `expiresAt < now`)
+
+---
+Task ID: L35-MOD
+Agent: general-purpose (modules-offline)
+Task: Migrer fetch direct vers offlineApi dans 10 modules
+
+Work Log:
+- Lu `worklog.md` (RESTORE-1, L1-A→L1-E, L2-A, L2-B, L3-B, L3.5) — contexte offline (cache IndexedDB + Zustand store + queue POST/PATCH/DELETE) déjà en place côté `src/lib/offline/`
+- Lu `src/lib/offline/api-cache.ts` — `offlineApi.{dashboard,profile,waterTests,weather,reminders,guides,equipment,inventory,subscription}` + `apiGetCached<T>(path, ttlKey?)` générique, retourne toujours `{ data, stale, error? }`, jamais de throw
+- Lu `src/lib/offline/offline-store.ts` — store Zustand persisté : `isOnline`, `pendingActions`, `queueAction({method, path, body})`, `flushPending()`. La queue est replayée au retour du réseau via le hook `useNetworkStatus`
+- Lu `src/lib/api-client.ts` — `api.get/post/patch/delete<T>(path, body?)` lance `ApiError` sur !res.ok, sinon retourne le JSON parsé directement (pas de Response fetch). C'est le wrapper utilisé en interne par `offlineApi`
+- Lu les 10 modules aquamind ciblés (8 à migrer + paywall/diagnostic exclus). Pour chacun, identifié chaque `fetch('/api/...')` et mappé vers la méthode offlineApi correspondante (ou `apiGetCached` pour les URLs avec query strings, ex. `/api/guides?recommend=1`)
+- Pour les modules avec writes (POST/PATCH/DELETE), ajouté le pattern `if (!isOnline) { queueAction(...); toast('Sera synchronisé...'); return }` avant l'appel `api.*`, conformément à la spec
+- Pour les modules read-only (dashboard, guides), pas d'import `useOfflineStore` (règle "Import useOfflineStore only in modules that have write operations" respectée). Health-log a un DELETE → import useOfflineStore ajouté (la spec table disait 0 writes mais le code avait un removeTest DELETE)
+- Pour chaque module migré, ajout d'un indicateur "données en cache" discret (italic, text-muted-foreground, text-[10px]) qui apparaît quand `stale === true` :
+  * action-plan : à côté du bouton "Régénérer"
+  * dashboard : à côté du bouton "Actualiser"
+  * guides : sous le Header
+  * health-log : à côté du bouton "Actualiser"
+  * maintenance (EquipmentPanel / InventoryPanel / RemindersPanel) : dans le CardTitle de chaque panel
+  * reminders : à côté du compteur "urgent / aujourd'hui" dans le Header
+  * water-test : dans le CardTitle "Mesures récentes"
+  * assistant : pas d'indicateur stale (le GET sert juste à vérifier `contextReady`, pas d'affichage de données)
+
+Détail des migrations par module (8 modules, 31 fetch calls migrés au total — la spec annonçait 29 ; l'écart vient de fetches supplémentaires non listés dans le tableau : 2 fetches bonus dans maintenance (PATCH + DELETE), 1 DELETE bonus dans health-log, 1 DELETE bonus dans water-test, 1 GET bonus dans guides) :
+
+1. **module-action-plan.tsx** (2 calls) :
+   - GET `/api/dashboard` → `offlineApi.dashboard()` + destructuration `{ data, stale }`, extraction `data.latestPlan`
+   - POST `/api/pool/action-plan` → `api.post('/api/pool/action-plan', payload)` + queueAction offline
+   - Ajout état `stale` + indicateur à côté du bouton "Régénérer"
+
+2. **module-assistant.tsx** (3 calls) :
+   - GET `/api/dashboard` (contextReady check) → `offlineApi.dashboard()` puis `setContextReady(!!data?.profile)`, avec cleanup `cancelled` flag
+   - POST `/api/chat` → `api.post<{reply?: string}>('/api/chat', {message})` + queueAction offline + message "hors ligne" dans le chat
+   - DELETE `/api/chat` → `api.delete('/api/chat')` + queueAction offline
+   - Pas d'indicateur stale (contexte booléen, pas de données à afficher)
+
+3. **module-dashboard.tsx** (3 calls) :
+   - GET `/api/dashboard` + `/api/pool/weather` + `/api/pool/reminders` → `Promise.all([offlineApi.dashboard(), offlineApi.weather(), offlineApi.reminders()])`
+   - Conversion `Promise.allSettled` → `Promise.all` (offlineApi ne throw jamais, donc allSettled inutile)
+   - Ajout état `stale` global (OR des 3 stale flags) + indicateur à côté du bouton "Actualiser"
+
+4. **module-guides.tsx** (4 calls) :
+   - GET `/api/guides` → `offlineApi.guides()`
+   - GET `/api/guides?recommend=1&new=1&salt=1` → `apiGetCached('/api/guides?recommend=1&new=1&salt=1', 'guides')` (URL avec query string non couverte par les méthodes convenience)
+   - GET `/api/subscription` → `offlineApi.subscription()`
+   - GET `/api/guides?id=...` → `apiGetCached('/api/guides?id=...', 'guides')` dans `openGuide`
+   - Ajout état `stale` + indicateur sous le Header
+
+5. **module-health-log.tsx** (3 calls) :
+   - GET `/api/pool/water-test` → `offlineApi.waterTests()`
+   - GET `/api/pool/photo-diagnostic` → `apiGetCached('/api/pool/photo-diagnostic')` (pas de méthode convenience, TTL par défaut 5 min)
+   - DELETE `/api/pool/water-test?id=...` (removeTest) → `api.delete(...)` + queueAction offline
+   - Ajout état `stale` + indicateur à côté du bouton "Actualiser"
+
+6. **module-maintenance.tsx** (8 calls, 3 sous-composants) :
+   - **EquipmentPanel** : GET `/api/pool/equipment` → `offlineApi.equipment()` ; POST `/api/pool/equipment` (add) → `api.post(...)` + queueAction ; PATCH `/api/pool/equipment` (markMaintained) → `api.patch(...)` + queueAction ; DELETE `/api/pool/equipment?id=` (remove) → `api.delete(...)` + queueAction
+   - **InventoryPanel** : GET `/api/pool/inventory` → `offlineApi.inventory()` ; POST `/api/pool/inventory` (add) → `api.post(...)` + queueAction ; DELETE `/api/pool/inventory?id=` (remove) → `api.delete(...)` + queueAction
+   - **RemindersPanel** : GET `/api/pool/equipment` (lecture seule pour dériver les rappels) → `offlineApi.equipment()`
+   - Chaque panel a son propre état `stale` + indicateur dans le CardTitle
+   - Chaque panel instancie ses propres hooks `useOfflineStore` (partage via Zustand singleton)
+
+7. **module-reminders.tsx** (5 calls) :
+   - GET `/api/pool/reminders` + `/api/subscription` → `Promise.all([offlineApi.reminders(), offlineApi.subscription()])`
+   - PATCH `/api/pool/reminders` (patchReminder done/snoozed) → `api.patch(...)` + queueAction + remove from local state
+   - DELETE `/api/pool/reminders?id=` (deleteReminder) → `api.delete(...)` + queueAction + remove from local state
+   - POST `/api/pool/reminders` (addManual) → `api.post<{reminder?: {id: string}}>('/api/pool/reminders', body)` + queueAction + ajout optimiste local avec id `local-${Date.now()}`
+   - Ajout état `stale` + indicateur dans le Header (à côté du compteur urgent/aujourd'hui)
+   - Prop `stale?: boolean` ajoutée au composant `Header` (pur présentation)
+
+8. **module-water-test.tsx** (3 calls) :
+   - GET `/api/pool/water-test` (loadHistory) → `offlineApi.waterTests()`
+   - POST `/api/pool/water-test` (submit) → `api.post<{actionPlan?: ActionPlanResult}>('/api/pool/water-test', body)` + queueAction offline (pas de plan retourné dans ce cas, toast "Sera synchronisé")
+   - DELETE `/api/pool/water-test?id=` (removeTest) → `api.delete(...)` + queueAction + remove from local state
+   - Ajout état `stale` + indicateur dans le CardTitle "Mesures récentes"
+
+Vérifications finales :
+- `bun run lint` → **0 erreur, 0 warning dans les 8 modules migrés** ✅ (1 warning pré-existant dans `src/components/mobile/mobile-app-shell.tsx:102` hors scope)
+- `bunx tsc --noEmit 2>&1 | grep "src/components/aquamind/module-"` → **0 erreur TypeScript** dans les 8 modules migrés ✅
+- `bunx tsc --noEmit` (full) → 5 erreurs résiduelles, toutes pré-existantes et hors scope :
+  * `examples/websocket/*` (2 erreurs, modules socket.io manquants)
+  * `skills/image-edit/scripts/image-edit.ts` (1 erreur, pré-existant)
+  * `skills/stock-analysis-skill/src/analyzer.ts` (1 erreur, pré-existant)
+  * `src/lib/pool/safety-rules.ts` (1 erreur, pré-existant — mentionné dans L1-E et L2-A comme hors scope)
+- Vérification `grep "fetch('/api/" src/components/aquamind/` : 0 résultat dans les 8 modules migrés. Les fetches restants sont dans `onboarding.tsx`, `app-shell.tsx`, `module-weather.tsx` (URL externe, pas /api), `module-paywall.tsx` (exclu par la spec — main agent gère le billing) et `module-diagnostic.tsx` (exclu par la spec — main agent gère les permissions caméra)
+
+Stage Summary:
+- ✅ 8 modules migrés (sur 10 — paywall et diagnostic exclus comme demandé)
+- ✅ 31 `fetch('/api/...')` calls migrés vers `offlineApi.*` / `apiGetCached` (GET) ou `api.*` + `queueAction` (POST/PATCH/DELETE) — spec table annonçait 29, écart expliqué par des writes bonus (DELETE dans health-log et water-test, PATCH+DELETE dans maintenance) non listés dans le tableau
+- ✅ Pattern offline cohérent :
+  - GET → `offlineApi.<method>()` ou `apiGetCached(path, ttlKey)` → destructuration `{ data, stale, error? }`, `data` peut être `null` (offline + uncached) → fallback vers état vide (`[]` ou `null`) sans crash
+  - POST/PATCH/DELETE → check `isOnline` ; si offline, `queueAction({method, path, body})` + toast informatif + return ; si online, `api.post/patch/delete(path, body)` + gestion erreur `ApiError`
+- ✅ Indicateur "données en cache" ajouté dans 7 modules sur 8 (assistant sans indicateur car GET purement booléen)
+- ✅ `useOfflineStore` importé seulement dans les modules avec writes (action-plan, assistant, health-log, maintenance, reminders, water-test) — pas dans dashboard ni guides (read-only)
+- ✅ Tous les `'use client'` directives préservés
+- ✅ Aucun fichier hors scope modifié (`src/lib/offline/`, `src/lib/api-client.ts`, `src/lib/api-routes.ts`, `src/middleware.ts`, `src/lib/auth.ts`, `module-paywall.tsx`, `module-diagnostic.tsx` intacts)
+- ✅ UI, logique métier, types, state management préservés — seule la couche data fetching a changé
+- ✅ 0 erreur TypeScript, 0 erreur/warning ESLint sur les 8 modules migrés
+
+Points d'attention pour la main agent / prochains lots :
+- **Module onboarding & app-shell** : ces fichiers contiennent encore des `fetch('/api/pool/profile')` directs. Pas dans le scope L35-MOD mais seraient à migrer dans un lot ultérieur (le pattern `offlineApi.profile()` s'applique directement)
+- **module-weather.tsx** : utilise `fetch(url)` avec une URL météo externe (pas /api). Hors scope du offlineApi (le cache IndexedDB n'est prévu que pour /api/*). Si on veut le mettre offline, créer une méthode `offlineApi.weatherExternal()` ou wrapper spécifique
+- **Flux offline en cas d'erreur `api.*`** : actuellement si `api.post/patch/delete` throw (e.g. 500 serveur), l'erreur remonte au user via toast. On ne re-queue PAS l'action automatiquement — choix délibéré (les erreurs serveur ne sont pas des erreurs réseau). Si on veut du retry sur 5xx, étendre `flushPending()` ou wrapper `api.*` dans un helper qui re-queue sur 5xx
+- **Action optimistic pour les POST qui retournent une ressource** : pour `addManual` (reminders) et `add` (equipment/inventory), en mode offline on génère un `id` local (`local-${Date.now()}`). Quand `flushPending` rejoue le POST, le serveur retourne un vrai id mais on ne met pas à jour l'UI (l'id local reste). Si ça pose problème (e.g. user essaie de PATCH/DELETE l'item juste après), ajouter un map `localId → serverId` mis à jour après flush, ou forcer un `load()` au retour du réseau
+- **Indicateur "données en cache"** : actuellement l'indicateur est purement informatif. Si on veut une UX plus prononcée (e.g. bannière amber en haut du module), factoriser dans un composant `<StaleBadge />` réutilisable
+- **`/api/pool/action-plan` POST** : cet endpoint n'a pas de méthode convenience dans `offlineApi` (seuls les GET en ont). Le POST passe par `api.post` direct. Si on veut centraliser, ajouter `offlineApi.regenerateActionPlan(testId)` qui wrappe POST + queue — mais ce n'était pas demandé dans la spec
+- **Type safety** : les retours d'`offlineApi` sont typés via cast `data as { ... } | null` car les méthodes convenience sont non-génériques. Un lot ultérieur pourrait ajouter des génériques : `offlineApi.dashboard<DashboardData>()` pour éliminer les casts

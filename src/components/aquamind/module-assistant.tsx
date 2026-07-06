@@ -15,6 +15,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/hooks/use-toast'
+import { offlineApi } from '@/lib/offline/api-cache'
+import { api } from '@/lib/api-client'
+import { useOfflineStore } from '@/lib/offline/offline-store'
 
 interface Msg {
   role: 'user' | 'assistant'
@@ -98,12 +101,24 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
   const [contextReady, setContextReady] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  const isOnline = useOfflineStore((s) => s.isOnline)
+  const queueAction = useOfflineStore((s) => s.queueAction)
+
   // Check that a profile/test exists for context
   useEffect(() => {
-    fetch('/api/dashboard')
-      .then((r) => r.json())
-      .then((d) => setContextReady(!!d?.profile))
-      .catch(() => setContextReady(false))
+    let cancelled = false
+    offlineApi
+      .dashboard()
+      .then(({ data }) => {
+        if (cancelled) return
+        setContextReady(!!(data as { profile?: unknown } | null)?.profile)
+      })
+      .catch(() => {
+        if (!cancelled) setContextReady(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   useEffect(() => {
@@ -128,14 +143,26 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
     setLoading(true)
 
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: trimmed }),
+      if (!isOnline) {
+        queueAction({ method: 'POST', path: '/api/chat', body: { message: trimmed } })
+        setMessages((m) => [
+          ...m,
+          {
+            role: 'assistant',
+            content:
+              'Vous êtes hors ligne. Votre question a été enregistrée et sera traitée à la reconnexion.',
+          },
+        ])
+        toast({
+          title: 'Action enregistrée',
+          description: 'Sera synchronisée quand vous serez en ligne.',
+        })
+        return
+      }
+      const data = await api.post<{ reply?: string; error?: string }>('/api/chat', {
+        message: trimmed,
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
-      setMessages((m) => [...m, { role: 'assistant', content: data.reply }])
+      setMessages((m) => [...m, { role: 'assistant', content: data.reply || '' }])
     } catch (e) {
       toast({
         title: 'Erreur',
@@ -153,7 +180,16 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
 
   async function clearHistory() {
     try {
-      await fetch('/api/chat', { method: 'DELETE' })
+      if (!isOnline) {
+        queueAction({ method: 'DELETE', path: '/api/chat' })
+        setMessages([])
+        toast({
+          title: 'Historique effacé',
+          description: 'Sera synchronisé quand vous serez en ligne.',
+        })
+        return
+      }
+      await api.delete('/api/chat')
       setMessages([])
       toast({ title: 'Historique effacé', description: 'Nouvelle conversation.' })
     } catch {
