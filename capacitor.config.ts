@@ -1,4 +1,5 @@
 import type { CapacitorConfig } from '@capacitor/cli'
+import { KeyboardResize, KeyboardStyle } from '@capacitor/keyboard'
 
 const config: CapacitorConfig = {
   appId: 'com.aqwelia.app',
@@ -32,8 +33,8 @@ const config: CapacitorConfig = {
       overlaysWebView: false,
     },
     Keyboard: {
-      resize: 'body',
-      style: 'LIGHT',
+      resize: KeyboardResize.Body,
+      style: KeyboardStyle.Light,
       resizeOnFullScreen: true,
     },
     LocalNotifications: {
