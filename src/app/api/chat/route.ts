@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import ZAI from 'z-ai-web-dev-sdk'
+import { nvidiaChat, type ChatMessage } from '@/lib/ai/nvidia'
 import { db } from '@/lib/db'
 import { buildPoolContext, ASSISTANT_SYSTEM_PROMPT } from '@/lib/pool/ai-context'
 
@@ -28,18 +28,14 @@ export async function POST(req: NextRequest) {
     const context = buildPoolContext(profile as any, latestTest as any)
     const systemPrompt = `${ASSISTANT_SYSTEM_PROMPT}\n\n${context}`
 
-    const messages: { role: string; content: string }[] = [
-      { role: 'assistant', content: systemPrompt },
+    const messages: ChatMessage[] = [
+      { role: 'system', content: systemPrompt },
     ]
-    for (const m of history) messages.push({ role: m.role, content: m.content })
+    for (const m of history) messages.push({ role: m.role as ChatMessage['role'], content: m.content })
     messages.push({ role: 'user', content: message })
 
-    const zai = await ZAI.create()
-    const completion = await zai.chat.completions.create({
-      messages: messages as any,
-      thinking: { type: 'disabled' },
-    })
-    const reply = completion.choices[0]?.message?.content || "Désolé, je n'ai pas pu générer de réponse."
+    const result = await nvidiaChat(messages)
+    const reply = result.content || "Désolé, je n'ai pas pu générer de réponse."
 
     await db.chatMessage.createMany({
       data: [

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import ZAI from 'z-ai-web-dev-sdk'
+import { nvidiaVision } from '@/lib/ai/nvidia'
 import { db } from '@/lib/db'
 import { VISION_DIAGNOSTIC_PROMPT } from '@/lib/pool/ai-context'
 
@@ -33,22 +33,8 @@ export async function POST(req: NextRequest) {
       ? `${VISION_DIAGNOSTIC_PROMPT}\n\nIndice utilisateur: cette photo montre probablement "${typeHint}".`
       : VISION_DIAGNOSTIC_PROMPT
 
-    const zai = await ZAI.create()
-    const response = await zai.chat.completions.createVision({
-      model: 'glm-4.6v',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            { type: 'image_url', image_url: { url: image } },
-          ],
-        } as any,
-      ],
-      thinking: { type: 'disabled' },
-    })
-
-    const content = response.choices[0]?.message?.content || ''
+    const zai = await nvidiaVision(prompt, image)
+    const content = zai.content
     let parsed: any = null
     try {
       const m = content.match(/\{[\s\S]*\}/)
