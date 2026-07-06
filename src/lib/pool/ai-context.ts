@@ -70,7 +70,7 @@ export function buildPoolContext(profile: PoolProfileLike | null, latestTest: Wa
   return lines.join('\n')
 }
 
-export const ASSISTANT_SYSTEM_PROMPT = `Tu es AquaMind, expert pisciniste IA français. Tu aides propriétaires et techniciens à maintenir une eau claire, saine et équilibrée.
+export const ASSISTANT_SYSTEM_PROMPT = `Tu es AQWELIA, expert pisciniste IA français. Tu aides propriétaires et techniciens à maintenir une eau claire, saine et équilibrée.
 
 PRINCIPES:
 - Réponds en français, clair, structuré (Markdown).

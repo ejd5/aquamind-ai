@@ -1,4 +1,4 @@
-# AquaMind — Store Readiness (iOS / Android)
+# AQWELIA — Store Readiness (iOS / Android)
 
 > Préparation au lancement App Store + Google Play. L'app web actuelle sert de MVP produit ; la future app native reprendra l'architecture ci-dessous.
 

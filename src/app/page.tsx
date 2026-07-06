@@ -72,7 +72,7 @@ export default function Home() {
             </svg>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">Chargement d&apos;AquaMind…</p>
+        <p className="text-sm text-muted-foreground">Chargement d&apos;AQWELIA…</p>
       </div>
     )
   }

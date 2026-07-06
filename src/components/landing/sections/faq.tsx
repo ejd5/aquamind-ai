@@ -6,15 +6,15 @@ import { Reveal, SectionHeading, staggerContainer, fadeUpVariants } from '../lan
 
 const FAQ = [
   {
-    q: 'AquaMind remplace-t-il le pisciniste ?',
-    a: "Non. Il le complète. Le pisciniste vient 1 fois/semaine ; AquaMind couvre les 6 autres jours, gère les urgences, et vous apprend à comprendre votre piscine. Beaucoup d'utilisateurs gardent un pisciniste + AquaMind.",
+    q: 'AQWELIA remplace-t-il le pisciniste ?',
+    a: "Non. Il le complète. Le pisciniste vient 1 fois/semaine ; AQWELIA couvre les 6 autres jours, gère les urgences, et vous apprend à comprendre votre piscine. Beaucoup d'utilisateurs gardent un pisciniste + AQWELIA.",
   },
   {
     q: 'L\'IA peut-elle se tromper ?',
-    a: "L'IA est prudente et affiche toujours un niveau de confiance. Les calculs de dosage critiques ne sont PAS faits par l'IA mais par un moteur déterministe. En cas de doute, AquaMind dit « consultez un professionnel ».",
+    a: "L'IA est prudente et affiche toujours un niveau de confiance. Les calculs de dosage critiques ne sont PAS faits par l'IA mais par un moteur déterministe. En cas de doute, AQWELIA dit « consultez un professionnel ».",
   },
   {
-    q: 'Puis-je utiliser AquaMind sans pisciniste ?',
+    q: 'Puis-je utiliser AQWELIA sans pisciniste ?',
     a: "Oui, c'est même le cas le plus fréquent. L'app vous guide pas à pas comme le ferait un bon pisciniste.",
   },
   {
@@ -26,7 +26,7 @@ const FAQ = [
     a: "Le mode web nécessite une connexion. L'app mobile native (à venir) aura un mode offline pour les tests et le carnet.",
   },
   {
-    q: 'AquaMind gère-t-il les spas ?',
+    q: 'AQWELIA gère-t-il les spas ?',
     a: 'Oui. Profil spa, brome, spécificités eau chaude.',
   },
   {

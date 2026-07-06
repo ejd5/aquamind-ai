@@ -25,7 +25,7 @@ const FEATURES: { label: string; cells: Cell[] }[] = [
   { label: 'Coût mensuel', cells: ['yes', 'yes', 'yes', 'yes', 'yes', 'yes'] },
 ]
 
-const COLS = ['AquaMind', 'PoolMath', 'Pooli', 'Clorox Pool', "Leslie's", 'Pisciniste']
+const COLS = ['AQWELIA', 'PoolMath', 'Pooli', 'Clorox Pool', "Leslie's", 'Pisciniste']
 
 const CELL_TEXT: Record<string, string> = {
   // Availability row text
@@ -73,7 +73,7 @@ export function Comparator() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <SectionHeading
           eyebrow="05 — Comparatif"
-          title={<>AquaMind vs tout le reste</>}
+          title={<>AQWELIA vs tout le reste</>}
         />
 
         <Reveal delay={0.1} className="mt-12">
@@ -155,7 +155,7 @@ export function Comparator() {
         <Reveal delay={0.1} className="mt-6">
           <p className="mx-auto max-w-3xl text-center text-sm italic text-muted-foreground">
             Aucune application ne combine moteur déterministe + VLM multimodale + météo temps
-            réel + rappels contextuels. <span className="font-semibold text-gold not-italic">AquaMind est la seule.</span>
+            réel + rappels contextuels. <span className="font-semibold text-gold not-italic">AQWELIA est la seule.</span>
           </p>
         </Reveal>
       </div>

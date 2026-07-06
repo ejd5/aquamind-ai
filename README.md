@@ -1,4 +1,4 @@
-# AquaMind AI — Assistant IA Piscine
+# AQWELIA — Assistant IA Piscine
 
 > Le copilote piscine qui vous dit exactement quoi faire pour garder une eau claire, saine et équilibrée, sans surdoser ni perdre du temps.
 
@@ -140,4 +140,4 @@ Au premier chargement : onboarding profil piscine → dashboard.
 
 ## 📝 Licence & responsabilité
 
-AquaMind aide au diagnostic et à l'entretien mais **ne remplace pas un professionnel**. Les dosages doivent respecter les notices produits. En cas de doute, danger électrique, fuite ou irritation, contacter un professionnel.
+AQWELIA aide au diagnostic et à l'entretien mais **ne remplace pas un professionnel**. Les dosages doivent respecter les notices produits. En cas de doute, danger électrique, fuite ou irritation, contacter un professionnel.

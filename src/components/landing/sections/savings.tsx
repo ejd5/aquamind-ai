@@ -19,7 +19,7 @@ const MONEY_BREAKDOWN = [
 ]
 
 const BARS = [
-  { label: 'AquaMind Cristal', value: 96, color: 'from-primary to-gold', highlight: true },
+  { label: 'AQWELIA Cristal', value: 96, color: 'from-primary to-gold', highlight: true },
   { label: 'Pisciniste seul', value: 1000, color: 'from-amber-400 to-amber-600', highlight: false },
   { label: 'Pisciniste + erreurs', value: 1500, color: 'from-rose-400 to-rose-600', highlight: false },
 ]

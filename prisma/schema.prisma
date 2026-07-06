@@ -1,4 +1,4 @@
-// AquaMind AI — Schéma de données complet pour copilote piscine
+// AQWELIA — Schéma de données complet pour copilote piscine
 generator client {
   provider = "prisma-client-js"
 }

@@ -71,7 +71,7 @@ const NAV: NavItem[] = [
   { id: 'weather', label: 'Météo intelligente', short: 'Météo', icon: CloudSun },
   { id: 'guides', label: 'Ressources & guides', short: 'Guides', icon: BookOpen },
   { id: 'reminders', label: 'Rappels', short: 'Rappels', icon: Bell },
-  { id: 'paywall', label: 'AquaMind Premium', short: 'Premium', icon: Crown },
+  { id: 'paywall', label: 'AQWELIA Premium', short: 'Premium', icon: Crown },
 ]
 
 const PRIMARY_NAV = NAV.filter((n) => n.primary)
@@ -147,7 +147,7 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
             <Waves className="h-6 w-6 animate-pulse text-primary-foreground" />
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">Chargement d'AquaMind…</p>
+        <p className="text-sm text-muted-foreground">Chargement d'AQWELIA…</p>
       </div>
     )
   }

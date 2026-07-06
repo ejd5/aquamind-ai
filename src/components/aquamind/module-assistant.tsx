@@ -208,7 +208,7 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-gold shadow-md shadow-primary/30">
                 <Sparkles className="h-4 w-4 text-primary-foreground" />
               </span>
-              AquaMind Assistant
+              AQWELIA Assistant
             </CardTitle>
           </div>
           <CardDescription className="text-xs">

@@ -158,7 +158,7 @@ export function ModuleDiagnostic() {
             Diagnostic par photo
           </h1>
           <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
-            Photographiez l'eau, une paroi, le filtre ou une bandelette. AquaMind identifie les
+            Photographiez l'eau, une paroi, le filtre ou une bandelette. AQWELIA identifie les
             problèmes probables et propose la prochaine étape.
           </p>
         </div>

@@ -344,7 +344,7 @@ export function ModuleWaterTest({ onNavigate }: Props) {
           <CardHeader className="pb-3">
             <CardTitle className="font-display text-base">Plages idéales</CardTitle>
             <CardDescription className="text-xs">
-              Référence pour vos mesures (mode propriétaire AquaMind).
+              Référence pour vos mesures (mode propriétaire AQWELIA).
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-1.5">

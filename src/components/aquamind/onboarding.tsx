@@ -136,7 +136,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur')
-      toast({ title: 'Profil créé !', description: 'Bienvenue dans AquaMind. 🌊' })
+      toast({ title: 'Profil créé !', description: 'Bienvenue dans AQWELIA. 🌊' })
       onDone()
     } catch (e) {
       toast({
@@ -202,7 +202,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
             Configuration en 2 minutes
           </div>
           <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">
-            Bienvenue sur <span className="gradient-text-premium">AquaMind</span>
+            Bienvenue sur <span className="gradient-text-premium">AQWELIA</span>
           </h1>
           <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
             Décrivez votre piscine pour activer le copilote : conseils personnalisés, dosages exacts,
@@ -331,7 +331,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
               {form.treatmentType === 'salt' && (
                 <div className="rounded-lg border border-gold/30 bg-gold/5 p-3 text-xs text-gold-foreground">
                   <Sparkles className="mb-1 inline h-3.5 w-3.5 text-gold" />{' '}
-                  <strong className="text-gold">Électrolyse au sel activée.</strong> AquaMind
+                  <strong className="text-gold">Électrolyse au sel activée.</strong> AQWELIA
                   surveillera le niveau de sel pour votre électrolyseur.
                 </div>
               )}
@@ -370,7 +370,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
               </div>
 
               <div className="rounded-lg border border-border/60 bg-secondary/40 p-3 text-xs text-muted-foreground">
-                Ces informations permettent à AquaMind de calculer la durée de filtration recommandée
+                Ces informations permettent à AQWELIA de calculer la durée de filtration recommandée
                 et de programmer les rappels d'entretien (lavage de filtre, etc.).
               </div>
             </div>
@@ -491,7 +491,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
                   ) : (
                     <>
                       <Check className="h-4 w-4" />
-                      Activer AquaMind
+                      Activer AQWELIA
                     </>
                   )}
                 </Button>

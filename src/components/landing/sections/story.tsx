@@ -42,7 +42,7 @@ export function Story() {
                 »
               </p>
               <p>
-                « AquaMind est né de cette frustration. Pas par une équipe de marketers. Par des
+                « AQWELIA est né de cette frustration. Pas par une équipe de marketers. Par des
                 utilisateurs assidus qui en avaient marre de l&apos;eau verte. »
               </p>
             </motion.div>
@@ -54,7 +54,7 @@ export function Story() {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="relative mt-6 text-right text-sm uppercase tracking-widest text-gold"
             >
-              — L&apos;équipe AquaMind
+              — L&apos;équipe AQWELIA
             </motion.p>
           </div>
         </Reveal>

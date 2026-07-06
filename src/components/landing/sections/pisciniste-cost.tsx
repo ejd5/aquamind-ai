@@ -91,7 +91,7 @@ export function PiscinisteCost() {
             <p className="font-display text-base leading-relaxed text-foreground sm:text-lg">
               Avec un pisciniste, vous restez seul{' '}
               <span className="font-bold text-gold">6 jours sur 7</span>.{' '}
-              <span className="gradient-text-premium font-bold">AquaMind couvre ces 6 jours.</span>
+              <span className="gradient-text-premium font-bold">AQWELIA couvre ces 6 jours.</span>
             </p>
           </div>
         </Reveal>

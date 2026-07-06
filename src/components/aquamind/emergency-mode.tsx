@@ -356,7 +356,7 @@ export function EmergencyMode({ open, onOpenChange, onAskAssistant, onNavigate }
                 J'ai un problème
               </DialogTitle>
               <DialogDescription>
-                Sélectionnez votre situation : AquaMind propose un protocole guidé et peut préparer
+                Sélectionnez votre situation : AQWELIA propose un protocole guidé et peut préparer
                 une question pour l'assistant IA.
               </DialogDescription>
             </DialogHeader>

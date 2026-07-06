@@ -448,7 +448,7 @@ function Header() {
         <span className="h-px w-8 bg-gold/40" />
       </div>
       <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-        Ressources AquaMind
+        Ressources AQWELIA
       </h1>
       <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
         Guides experts, tutoriels et fiches pratiques pour une eau claire toute l'année.

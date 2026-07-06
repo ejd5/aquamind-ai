@@ -185,11 +185,11 @@ export function ModulePaywall() {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <span className="section-label">AquaMind Premium</span>
+                <span className="section-label">AQWELIA Premium</span>
                 <span className="h-px w-8 bg-gold/40" />
               </div>
               <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-                Passez à <span className="gradient-text-premium italic">AquaMind Premium</span>
+                Passez à <span className="gradient-text-premium italic">AQWELIA Premium</span>
               </h1>
               <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
                 Des conseils illimités, des rappels intelligents, des rapports PDF et bien plus.

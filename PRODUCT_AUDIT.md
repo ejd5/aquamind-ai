@@ -1,4 +1,4 @@
-# AquaMind AI — Product Audit
+# AQWELIA — Product Audit
 
 > Audit honnête de l'état du produit après les itérations successives.
 

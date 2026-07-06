@@ -669,7 +669,7 @@ function InventoryPanel() {
         {items.length > 0 && (
           <div className="flex items-start gap-2 rounded-lg border border-border/40 bg-secondary/30 p-3 text-[11px] text-muted-foreground">
             <RefreshCw className="mt-0.5 h-3 w-3 shrink-0 text-gold" />
-            Avant d'acheter, vérifiez votre inventaire : AquaMind vous indique les stocks bas pour
+            Avant d'acheter, vérifiez votre inventaire : AQWELIA vous indique les stocks bas pour
             éviter les doublons.
           </div>
         )}

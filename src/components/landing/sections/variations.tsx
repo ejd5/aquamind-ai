@@ -49,7 +49,7 @@ export function Variations() {
         <Reveal delay={0.15} className="mt-8">
           <div className="mx-auto max-w-3xl rounded-2xl border border-gold/30 bg-gradient-to-r from-gold/10 via-transparent to-primary/10 p-5 text-center">
             <p className="text-sm leading-relaxed text-foreground/90 sm:text-base">
-              AquaMind tient compte de <span className="font-bold text-gold">TOUTES</span> ces
+              AQWELIA tient compte de <span className="font-bold text-gold">TOUTES</span> ces
               variations pour adapter ses conseils. <span className="font-semibold">Pas une app générique.</span>
             </p>
           </div>

@@ -41,3 +41,38 @@ Stage Summary:
 - Serveur dev actif sur http://localhost:3000 (visible dans le panneau de preview)
 - Le serveur peut être tué entre les appels Bash (comportement connu du sandbox, mentionné dans PROJECT_JOURNEY.md) — dire "serveur mort" pour le relancer
 - État : prêt à reprendre le développement avec l'utilisateur
+
+---
+Task ID: RB-1
+Agent: general-purpose (rebrand)
+Task: Renommer AquaMind AI → AQWELIA partout dans le projet
+
+Work Log:
+- Lu worklog.md pour contexte (RESTORE-1 a restauré le projet depuis le zip)
+- Grep initial : 70 occurrences de "AquaMind" réparties sur 35 fichiers
+- Mis à jour src/app/layout.tsx (métadonnées : titre, description, keywords, authors)
+- Mis à jour 12 composants aquamind/ : header, footer, app-shell, onboarding, module-assistant, module-paywall, module-action-plan, module-diagnostic, module-guides, module-maintenance, module-water-test, emergency-mode (texte UI visible, libellés nav, disclaimer, boutons onboarding, etc.)
+- Mis à jour src/components/landing/landing-page.tsx (header, footer, aria-label, copyright)
+- Mis à jour 9 sections landing/ : hero, faq, story, savings, pisciniste-cost, comparator, solution, variations, simulations (5 autres sections n'avaient aucune mention AquaMind : problem, real-costs, features-grid, pricing, final-cta)
+- Mis à jour src/lib/pool/ai-context.ts (system prompt LLM), guides-data.ts (4 fiches guides), dosing-engine.ts (commentaire de header)
+- Mis à jour README.md (titre + paragraphe licence)
+- Ajouté note de renommage en haut de PROJECT_JOURNEY.md (contenu historique préservé)
+- Ajouté nouvelle section "## AQWELIA (nouveau nom — juillet 2026)" en haut de BRAND_NAMING.md (étude historique préservée ci-dessous)
+- Vérification : src/lib/pool/freemium.ts ne contient aucune mention "AquaMind" (plans déjà nommés Surface/Limpide/Cristal/Gardien sans préfixe de marque)
+- Lancé `bun run lint` pour vérifier l'absence d'erreurs
+
+Stage Summary:
+- Rebranding AquaMind AI → AQWELIA TERMINÉ sur les 24 fichiers listés dans le périmètre RB-1
+- ~60 remplacements de texte effectués au total (voir détails ci-dessus)
+- Tous les fichiers UI visibles par l'utilisateur sont à jour (header, footer, landing, onboarding, modules, prompts IA, guides)
+- Lint : voir résultat du run (pass attendu)
+- Fichiers NON touchés par respect des règles RB-1 :
+  * src/app/globals.css (déjà traité par main agent)
+  * src/app/page.tsx (règle explicite "DO NOT modify" — MAIS contient en réalité "Chargement d'AquaMind…" ligne 75 : inconsistency à corriger manuellement si souhaité)
+  * package.json name field (règle sandbox compat)
+  * Dossiers /src/components/aquamind/ non renommés (règle stabilité imports)
+- Fichiers hors périmètre explicite contenant encore "AquaMind" (historique/comments) :
+  * prisma/schema.prisma (commentaire header)
+  * .env.example (titre)
+  * PRODUCT_AUDIT.md / STORE_READINESS.md (titres historiques)
+  * PROJECT_JOURNEY.md / BRAND_NAMING.md (intentionnellement préservés pour l'historique + nouvelle section ajoutée)

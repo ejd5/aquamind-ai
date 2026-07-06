@@ -1,4 +1,4 @@
-import { Waves, Sparkles, Droplets, ArrowLeft } from 'lucide-react'
+import { Sparkles, Droplets, ArrowLeft } from 'lucide-react'
 import type { TabId, PoolProfileLite } from './app-shell'
 
 interface HeaderProps {
@@ -16,13 +16,17 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
 
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-2.5">
-          {/* Logo with gold gradient ring */}
+          {/* AQWELIA logo icon with gold gradient ring */}
           <div className="relative">
-            <div className="absolute -inset-[3px] rounded-[14px] bg-gradient-to-br from-gold via-[oklch(0.7_0.1_170)] to-primary opacity-80 blur-[2px]" />
-            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-[oklch(0.35_0.1_195)] shadow-lg shadow-primary/30">
-              <Waves className="h-5 w-5 text-primary-foreground" />
+            <div className="absolute -inset-[3px] rounded-[14px] bg-gradient-to-br from-gold via-ocean-light to-primary opacity-80 blur-[2px]" />
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-lg shadow-primary/30">
+              <img
+                src="/icon-aqwelia-48.png"
+                alt="AQWELIA"
+                className="h-10 w-10 object-cover"
+              />
             </div>
-            <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-[oklch(0.85_0.14_85)] to-[oklch(0.65_0.12_85)] shadow-md shadow-gold/40">
+            <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-gold to-[oklch(0.65_0.12_85)] shadow-md shadow-gold/40">
               <Sparkles className="h-2.5 w-2.5 text-white" />
             </div>
           </div>
@@ -30,8 +34,7 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
           <div className="leading-tight">
             <div className="flex items-center gap-1.5 text-base font-bold tracking-tight">
               <button onClick={() => onNavigate('today')} className="hover:opacity-80">
-                <span>AquaMind</span>
-                <span className="aqua-text-gradient">AI</span>
+                <span className="aqua-text-gradient">AQWELIA</span>
               </button>
               <span className="ml-0.5 rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-gold">
                 Pro

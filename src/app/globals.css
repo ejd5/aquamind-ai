@@ -38,10 +38,12 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  /* Premium Oceanic Luxury tokens */
+  /* AQWELIA — Premium Oceanic & Gold tokens */
   --color-gold: var(--gold);
   --color-gold-foreground: var(--gold-foreground);
   --color-ocean: var(--ocean);
+  --color-ocean-deep: var(--ocean-deep);
+  --color-ocean-light: var(--ocean-light);
   --color-pearl: var(--pearl);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -52,84 +54,88 @@
 
 :root {
   --radius: 0.875rem;
-  /* Oceanic Luxury — pearl background with warm undertones */
-  --background: oklch(0.99 0.005 195);
-  --foreground: oklch(0.18 0.03 200);
-  --card: oklch(1 0.003 195);
-  --card-foreground: oklch(0.18 0.03 200);
-  --popover: oklch(1 0.003 195);
-  --popover-foreground: oklch(0.18 0.03 200);
-  /* Deep ocean teal */
-  --primary: oklch(0.45 0.12 195);
+  /* AQWELIA — pearl background with subtle ocean undertone */
+  --background: oklch(0.99 0.006 195);
+  --foreground: oklch(0.20 0.04 200);
+  --card: oklch(1 0.004 195);
+  --card-foreground: oklch(0.20 0.04 200);
+  --popover: oklch(1 0.004 195);
+  --popover-foreground: oklch(0.20 0.04 200);
+  /* Deep ocean teal — primary #004D5A */
+  --primary: oklch(0.39 0.08 200);
   --primary-foreground: oklch(0.99 0.01 195);
-  /* Champagne gold accent */
-  --accent: oklch(0.75 0.13 85);
-  --accent-foreground: oklch(0.18 0.04 85);
-  /* Premium tokens */
-  --gold: oklch(0.75 0.13 85);
-  --gold-foreground: oklch(0.18 0.04 85);
-  --ocean: oklch(0.45 0.12 195);
-  --pearl: oklch(0.99 0.005 195);
-  --secondary: oklch(0.95 0.015 195);
-  --secondary-foreground: oklch(0.25 0.05 195);
-  --muted: oklch(0.96 0.012 195);
-  --muted-foreground: oklch(0.5 0.025 195);
+  /* Premium gold accent — #FFD700 */
+  --accent: oklch(0.88 0.17 95);
+  --accent-foreground: oklch(0.20 0.04 95);
+  /* AQWELIA tokens */
+  --gold: oklch(0.88 0.17 95);
+  --gold-foreground: oklch(0.20 0.04 95);
+  --ocean: oklch(0.69 0.10 195);          /* #00A8B0 */
+  --ocean-deep: oklch(0.30 0.07 200);     /* #003B4A */
+  --ocean-light: oklch(0.76 0.11 195);    /* #00C2D1 */
+  --pearl: oklch(0.99 0.006 195);
+  --secondary: oklch(0.95 0.018 195);
+  --secondary-foreground: oklch(0.28 0.05 200);
+  --muted: oklch(0.96 0.014 195);
+  --muted-foreground: oklch(0.50 0.03 200);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.012 195);
-  --input: oklch(0.93 0.012 195);
-  --ring: oklch(0.45 0.12 195);
-  --chart-1: oklch(0.55 0.12 195);
-  --chart-2: oklch(0.75 0.13 85);
-  --chart-3: oklch(0.45 0.12 195);
-  --chart-4: oklch(0.7 0.16 60);
-  --chart-5: oklch(0.6 0.1 170);
-  --sidebar: oklch(0.985 0.008 195);
-  --sidebar-foreground: oklch(0.18 0.03 200);
-  --sidebar-primary: oklch(0.45 0.12 195);
+  --border: oklch(0.91 0.015 195);
+  --input: oklch(0.92 0.015 195);
+  --ring: oklch(0.39 0.08 200);
+  --chart-1: oklch(0.39 0.08 200);          /* deep teal */
+  --chart-2: oklch(0.88 0.17 95);           /* gold */
+  --chart-3: oklch(0.69 0.10 195);          /* ocean */
+  --chart-4: oklch(0.76 0.11 195);          /* ocean-light */
+  --chart-5: oklch(0.55 0.10 195);          /* mid teal */
+  --sidebar: oklch(0.985 0.010 195);
+  --sidebar-foreground: oklch(0.20 0.04 200);
+  --sidebar-primary: oklch(0.39 0.08 200);
   --sidebar-primary-foreground: oklch(0.99 0.01 195);
-  --sidebar-accent: oklch(0.95 0.03 195);
-  --sidebar-accent-foreground: oklch(0.25 0.05 195);
-  --sidebar-border: oklch(0.9 0.02 195);
-  --sidebar-ring: oklch(0.45 0.12 195);
+  --sidebar-accent: oklch(0.95 0.035 195);
+  --sidebar-accent-foreground: oklch(0.28 0.05 200);
+  --sidebar-border: oklch(0.90 0.025 195);
+  --sidebar-ring: oklch(0.39 0.08 200);
 }
 
 .dark {
-  /* Deep ocean night */
-  --background: oklch(0.15 0.015 200);
-  --foreground: oklch(0.96 0.008 195);
-  --card: oklch(0.19 0.02 200);
-  --card-foreground: oklch(0.96 0.008 195);
-  --popover: oklch(0.19 0.02 200);
-  --popover-foreground: oklch(0.96 0.008 195);
-  --primary: oklch(0.68 0.13 195);
-  --primary-foreground: oklch(0.12 0.03 200);
-  --accent: oklch(0.8 0.13 85);
-  --accent-foreground: oklch(0.15 0.03 85);
-  --gold: oklch(0.8 0.13 85);
-  --gold-foreground: oklch(0.15 0.03 85);
-  --ocean: oklch(0.45 0.12 195);
-  --pearl: oklch(0.15 0.015 200);
-  --secondary: oklch(0.26 0.025 200);
-  --secondary-foreground: oklch(0.96 0.008 195);
-  --muted: oklch(0.24 0.02 200);
-  --muted-foreground: oklch(0.72 0.018 195);
+  /* AQWELIA — Deep ocean night (#003B4A based) */
+  --background: oklch(0.18 0.02 200);
+  --foreground: oklch(0.96 0.01 195);
+  --card: oklch(0.22 0.025 200);
+  --card-foreground: oklch(0.96 0.01 195);
+  --popover: oklch(0.22 0.025 200);
+  --popover-foreground: oklch(0.96 0.01 195);
+  --primary: oklch(0.76 0.11 195);          /* ocean-light brighter in dark */
+  --primary-foreground: oklch(0.15 0.03 200);
+  --accent: oklch(0.88 0.17 95);
+  --accent-foreground: oklch(0.18 0.04 95);
+  --gold: oklch(0.88 0.17 95);
+  --gold-foreground: oklch(0.18 0.04 95);
+  --ocean: oklch(0.69 0.10 195);
+  --ocean-deep: oklch(0.18 0.02 200);
+  --ocean-light: oklch(0.76 0.11 195);
+  --pearl: oklch(0.18 0.02 200);
+  --secondary: oklch(0.28 0.03 200);
+  --secondary-foreground: oklch(0.96 0.01 195);
+  --muted: oklch(0.26 0.025 200);
+  --muted-foreground: oklch(0.72 0.02 195);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.68 0.13 195);
-  --chart-1: oklch(0.68 0.13 195);
-  --chart-2: oklch(0.8 0.13 85);
-  --chart-3: oklch(0.55 0.12 195);
-  --chart-4: oklch(0.72 0.16 60);
-  --chart-5: oklch(0.65 0.1 170);
-  --sidebar: oklch(0.19 0.022 200);
-  --sidebar-foreground: oklch(0.96 0.008 195);
-  --sidebar-primary: oklch(0.68 0.13 195);
-  --sidebar-primary-foreground: oklch(0.12 0.03 200);
-  --sidebar-accent: oklch(0.3 0.03 200);
-  --sidebar-accent-foreground: oklch(0.96 0.008 195);
+  --ring: oklch(0.76 0.11 195);
+  --chart-1: oklch(0.76 0.11 195);
+  --chart-2: oklch(0.88 0.17 95);
+  --chart-3: oklch(0.69 0.10 195);
+  --chart-4: oklch(0.55 0.10 195);
+  --chart-5: oklch(0.65 0.08 195);
+  --sidebar: oklch(0.22 0.028 200);
+  --sidebar-foreground: oklch(0.96 0.01 195);
+  --sidebar-primary: oklch(0.76 0.11 195);
+  --sidebar-primary-foreground: oklch(0.15 0.03 200);
+  --sidebar-accent: oklch(0.32 0.035 200);
+  --sidebar-accent-foreground: oklch(0.96 0.01 195);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.68 0.13 195);
+  --sidebar-ring: oklch(0.76 0.11 195);
 }
 
 @layer base {
@@ -143,13 +149,13 @@
     text-rendering: optimizeLegibility;
   }
   ::selection {
-    background: oklch(0.75 0.13 85 / 0.28);
-    color: oklch(0.18 0.03 200);
+    background: oklch(0.88 0.17 95 / 0.30);
+    color: oklch(0.20 0.04 200);
   }
 }
 
 /* ===========================================================
-   PREMIUM ANIMATIONS — Oceanic Luxury
+   AQWELIA — Premium Oceanic & Gold animations
    =========================================================== */
 
 @keyframes aurora-float {
@@ -169,8 +175,8 @@
 }
 
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 30px -10px oklch(0.75 0.13 85 / 0.4); }
-  50% { box-shadow: 0 0 55px -8px oklch(0.75 0.13 85 / 0.65); }
+  0%, 100% { box-shadow: 0 0 30px -10px oklch(0.88 0.17 95 / 0.4); }
+  50% { box-shadow: 0 0 55px -8px oklch(0.88 0.17 95 / 0.65); }
 }
 
 @keyframes premium-rise {
@@ -182,21 +188,21 @@
    PREMIUM UTILITIES
    =========================================================== */
 
-/* Aurora gradient mesh background for hero */
+/* Aurora gradient mesh background — AQWELIA ocean + gold */
 .aurora-bg {
   background:
-    radial-gradient(ellipse 60% 50% at 15% 20%, oklch(0.6 0.13 195 / 0.45) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 85% 25%, oklch(0.75 0.13 85 / 0.38) 0%, transparent 60%),
-    radial-gradient(ellipse 70% 60% at 50% 80%, oklch(0.45 0.12 195 / 0.4) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 75% 70%, oklch(0.7 0.1 170 / 0.25) 0%, transparent 60%);
+    radial-gradient(ellipse 60% 50% at 15% 20%, oklch(0.69 0.10 195 / 0.42) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 25%, oklch(0.88 0.17 95 / 0.32) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 60% at 50% 80%, oklch(0.39 0.08 200 / 0.38) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 75% 70%, oklch(0.76 0.11 195 / 0.28) 0%, transparent 60%);
 }
 
 .dark .aurora-bg {
   background:
-    radial-gradient(ellipse 60% 50% at 15% 20%, oklch(0.45 0.13 195 / 0.38) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 85% 25%, oklch(0.7 0.13 85 / 0.28) 0%, transparent 60%),
-    radial-gradient(ellipse 70% 60% at 50% 80%, oklch(0.3 0.1 195 / 0.55) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 75% 70%, oklch(0.5 0.08 170 / 0.2) 0%, transparent 60%);
+    radial-gradient(ellipse 60% 50% at 15% 20%, oklch(0.69 0.10 195 / 0.35) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 25%, oklch(0.88 0.17 95 / 0.22) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 60% at 50% 80%, oklch(0.30 0.07 200 / 0.55) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 75% 70%, oklch(0.55 0.10 195 / 0.20) 0%, transparent 60%);
 }
 
 .aurora-orb {
@@ -211,13 +217,13 @@
 
 /* Glassmorphism card */
 .glass-card {
-  background: oklch(1 0.003 195 / 0.55);
+  background: oklch(1 0.004 195 / 0.55);
   backdrop-filter: blur(22px) saturate(180%);
   -webkit-backdrop-filter: blur(22px) saturate(180%);
   border: 1px solid oklch(1 0 0 / 0.4);
   box-shadow:
     0 1px 0 0 oklch(1 0 0 / 0.5) inset,
-    0 20px 45px -20px oklch(0.45 0.12 195 / 0.18);
+    0 20px 45px -20px oklch(0.39 0.08 200 / 0.18);
 }
 
 .dark .glass-card {
@@ -241,9 +247,9 @@
   border: 1px solid oklch(1 0 0 / 0.1);
 }
 
-/* Premium gradient text (teal → gold) */
+/* Premium gradient text (deep teal → ocean-light → gold) */
 .gradient-text-premium {
-  background: linear-gradient(95deg, oklch(0.55 0.13 195) 0%, oklch(0.5 0.1 170) 42%, oklch(0.78 0.14 85) 100%);
+  background: linear-gradient(95deg, oklch(0.39 0.08 200) 0%, oklch(0.69 0.10 195) 45%, oklch(0.88 0.17 95) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -251,16 +257,16 @@
 }
 
 .dark .gradient-text-premium {
-  background: linear-gradient(95deg, oklch(0.72 0.13 195) 0%, oklch(0.65 0.1 170) 42%, oklch(0.85 0.14 85) 100%);
+  background: linear-gradient(95deg, oklch(0.76 0.11 195) 0%, oklch(0.69 0.10 195) 45%, oklch(0.88 0.17 95) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
 }
 
-/* Animated shimmer text */
+/* Animated shimmer text — AQWELIA ocean + gold */
 .aqua-text-gradient {
-  background: linear-gradient(90deg, oklch(0.55 0.13 195), oklch(0.75 0.13 85), oklch(0.55 0.13 195));
+  background: linear-gradient(90deg, oklch(0.39 0.08 200), oklch(0.88 0.17 95), oklch(0.39 0.08 200));
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
@@ -271,7 +277,7 @@
 /* Gold accent divider — 1px gold-to-transparent */
 .gold-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, oklch(0.75 0.13 85 / 0.6), transparent);
+  background: linear-gradient(90deg, transparent, oklch(0.88 0.17 95 / 0.65), transparent);
 }
 
 /* Premium section label */
@@ -280,16 +286,16 @@
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: oklch(0.75 0.13 85);
+  color: oklch(0.88 0.17 95);
 }
 
 .dark .section-label {
-  color: oklch(0.8 0.13 85);
+  color: oklch(0.88 0.17 95);
 }
 
 /* Glow effects */
-.glow-primary { box-shadow: 0 0 40px -10px oklch(0.45 0.12 195 / 0.5); }
-.glow-gold { box-shadow: 0 0 40px -10px oklch(0.75 0.13 85 / 0.5); }
+.glow-primary { box-shadow: 0 0 40px -10px oklch(0.39 0.08 200 / 0.5); }
+.glow-gold { box-shadow: 0 0 40px -10px oklch(0.88 0.17 95 / 0.5); }
 .glow-pulse-anim { animation: glow-pulse 4s ease-in-out infinite; }
 
 /* Premium rise-in animation */
@@ -299,11 +305,11 @@
 .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
 .custom-scroll::-webkit-scrollbar-track { background: transparent; }
 .custom-scroll::-webkit-scrollbar-thumb {
-  background: oklch(0.75 0.13 85 / 0.3);
+  background: oklch(0.88 0.17 95 / 0.3);
   border-radius: 9999px;
 }
 .custom-scroll::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.75 0.13 85 / 0.55);
+  background: oklch(0.88 0.17 95 / 0.55);
 }
 
 /* Nav link underline animation */
@@ -317,7 +323,7 @@
   right: 12px;
   bottom: 4px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, oklch(0.75 0.13 85), transparent);
+  background: linear-gradient(90deg, transparent, oklch(0.88 0.17 95), transparent);
   transform: scaleX(0);
   transition: transform 0.35s ease;
 }

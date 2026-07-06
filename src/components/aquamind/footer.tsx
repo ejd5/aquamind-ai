@@ -1,4 +1,4 @@
-import { Waves, Sparkles, ShieldAlert } from 'lucide-react'
+import { Sparkles, ShieldAlert } from 'lucide-react'
 
 export function Footer() {
   return (
@@ -22,7 +22,7 @@ export function Footer() {
         <div className="mb-6 flex items-start gap-3 rounded-xl border border-gold/20 bg-white/5 p-3.5">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
           <p className="text-[11px] leading-relaxed text-white/70">
-            <strong className="text-white/90">Avis de prudence.</strong> AquaMind aide au diagnostic
+            <strong className="text-white/90">Avis de prudence.</strong> AQWELIA aide au diagnostic
             et à l'entretien mais ne remplace pas un professionnel. Respectez les notices produits.
             En cas de doute, danger électrique, fuite ou irritation, contactez un professionnel.
           </p>
@@ -30,12 +30,12 @@ export function Footer() {
 
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center gap-2.5">
-            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-gold shadow-md shadow-primary/30">
-              <Waves className="h-4 w-4 text-white" />
+            <div className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-md shadow-primary/30">
+              <img src="/icon-aqwelia-48.png" alt="AQWELIA" className="h-9 w-9 object-cover" />
               <Sparkles className="absolute -right-1 -top-1 h-3 w-3 text-gold" />
             </div>
             <div className="text-sm">
-              <span className="font-display font-bold tracking-tight text-white">AquaMind AI</span>
+              <span className="font-display font-bold tracking-tight text-white">AQWELIA</span>
               <span className="ml-2 text-white/45">© {new Date().getFullYear()}</span>
             </div>
           </div>

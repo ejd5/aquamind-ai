@@ -1,4 +1,4 @@
-// Moteur de dosage DÉTERMINISTE (non-IA) — l'IP critique d'AquaMind
+// Moteur de dosage DÉTERMINISTE (non-IA) — l'IP critique d'AQWELIA
 // Calcule la quantité de produit à ajouter pour passer d'une valeur courante à une cible.
 // Approximations prudentes basées sur les standards piscine.
 // Toujours rappeler de respecter la notice produit.

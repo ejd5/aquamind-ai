@@ -22,12 +22,13 @@ const playfairDisplay = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "AquaMind AI — Assistant Intelligent pour Piscine",
-  description: "L'application révolutionnaire de gestion de piscine propulsée par l'IA : assistant expert, analyse visuelle de l'eau, générateur de design, assistant vocal et plus encore.",
-  keywords: ["piscine", "IA", "entretien", "qualité eau", "assistant intelligent", "AquaMind"],
-  authors: [{ name: "AquaMind AI" }],
+  title: "AQWELIA — Copilote Intelligent pour Piscine",
+  description: "AQWELIA — l'application révolutionnaire de gestion de piscine propulsée par l'IA : assistant expert, analyse visuelle de l'eau, plan d'action déterministe et plus encore.",
+  keywords: ["piscine", "IA", "entretien", "qualité eau", "assistant intelligent", "AQWELIA", "aqua", "well"],
+  authors: [{ name: "AQWELIA" }],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/icon.png",
+    apple: "/apple-touch-icon.png",
   },
 };
 

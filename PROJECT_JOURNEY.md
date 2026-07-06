@@ -1,5 +1,7 @@
 # AquaMind AI — Journal de parcours complet
 
+> Note: projet renommé AquaMind AI → AQWELIA le 6 juillet 2026.
+
 > Ce document capture l'historique complet de la construction d'AquaMind AI, étape par étape, pour archive et reprise en main.
 
 ## 📅 Sessions de développement

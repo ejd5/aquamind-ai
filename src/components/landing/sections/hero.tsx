@@ -76,7 +76,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
             transition={{ duration: 0.7, delay: 0.15 }}
             className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg"
           >
-            AquaMind est le copilote IA qui vous dit exactement quoi tester, quoi ajouter,
+            AQWELIA est le copilote IA qui vous dit exactement quoi tester, quoi ajouter,
             combien, dans quel ordre, et quand vous baigner. Photo + mesures + météo +
             historique = un plan d&apos;action précis en 30 secondes.
           </motion.p>
@@ -141,7 +141,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-gold">
                       <Droplets className="h-3.5 w-3.5 text-white" />
                     </div>
-                    <span className="text-xs font-bold">AquaMind</span>
+                    <span className="text-xs font-bold">AQWELIA</span>
                   </div>
                   <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[9px] font-bold text-gold">
                     IA EN LIGNE

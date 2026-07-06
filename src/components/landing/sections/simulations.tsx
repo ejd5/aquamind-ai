@@ -44,7 +44,7 @@ const SCENARIOS: Scenario[] = [
     without:
       "« Trop de chlore » → on coupe le chlore → eau verte 3 jours après.",
     withText:
-      "AquaMind explique « chloramines » (chlore combiné). Recommande un choc pour les casser. Diagnostic juste, action juste.",
+      "AQWELIA explique « chloramines » (chlore combiné). Recommande un choc pour les casser. Diagnostic juste, action juste.",
   },
   {
     emoji: '🌡️',
@@ -76,7 +76,7 @@ export function Simulations() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <SectionHeading
           eyebrow="06 — Simulations concrètes"
-          title={<>Ce que AquaMind change, scène par scène.</>}
+          title={<>Ce que AQWELIA change, scène par scène.</>}
         />
 
         <Reveal delay={0.1} className="mt-12">
@@ -145,7 +145,7 @@ function ScenarioCard({ scenario, index }: { scenario: Scenario; index: number }
       <div className="mt-4 space-y-3">
         <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3">
           <p className="text-[10px] font-bold uppercase tracking-wider text-destructive">
-            ❌ Sans AquaMind
+            ❌ Sans AQWELIA
           </p>
           <p className="mt-1 text-xs leading-relaxed text-foreground/80">
             {scenario.without}
@@ -153,7 +153,7 @@ function ScenarioCard({ scenario, index }: { scenario: Scenario; index: number }
         </div>
         <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
           <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
-            ✅ Avec AquaMind
+            ✅ Avec AQWELIA
           </p>
           <p className="mt-1 text-xs leading-relaxed text-foreground/80">
             {scenario.withText}

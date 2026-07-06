@@ -37,7 +37,7 @@ export function Solution() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <SectionHeading
           eyebrow="04 — La solution"
-          title={<>AquaMind : votre pisciniste intelligent, 24/7.</>}
+          title={<>AQWELIA : votre pisciniste intelligent, 24/7.</>}
         />
 
         {/* Steps */}

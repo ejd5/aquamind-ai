@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Waves, Sparkles, Menu, X, ShieldAlert, ArrowRight } from 'lucide-react'
+import { Sparkles, Menu, X, ShieldAlert, ArrowRight } from 'lucide-react'
 import { Hero } from './sections/hero'
 import { Problem } from './sections/problem'
 import { RealCosts } from './sections/real-costs'
@@ -61,21 +61,20 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
           <button
             onClick={() => scrollToId('top')}
             className="flex items-center gap-2.5"
-            aria-label="AquaMind AI — retour en haut"
+            aria-label="AQWELIA — retour en haut"
           >
             <div className="relative">
-              <div className="absolute -inset-[3px] rounded-[14px] bg-gradient-to-br from-gold via-[oklch(0.7_0.1_170)] to-primary opacity-80 blur-[2px]" />
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-[oklch(0.35_0.1_195)] shadow-lg shadow-primary/30">
-                <Waves className="h-5 w-5 text-primary-foreground" />
+              <div className="absolute -inset-[3px] rounded-[14px] bg-gradient-to-br from-gold via-ocean-light to-primary opacity-80 blur-[2px]" />
+              <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl shadow-lg shadow-primary/30">
+                <img src="/icon-aqwelia-48.png" alt="AQWELIA" className="h-10 w-10 object-cover" />
               </div>
-              <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-[oklch(0.85_0.14_85)] to-[oklch(0.65_0.12_85)] shadow-md shadow-gold/40">
+              <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-gold to-[oklch(0.65_0.12_85)] shadow-md shadow-gold/40">
                 <Sparkles className="h-2.5 w-2.5 text-white" />
               </div>
             </div>
             <div className="leading-tight">
               <div className="flex items-center gap-1.5 text-base font-bold tracking-tight">
-                <span>AquaMind</span>
-                <span className="aqua-text-gradient">AI</span>
+                <span className="aqua-text-gradient">AQWELIA</span>
               </div>
               <div className="hidden text-[10px] uppercase tracking-[0.22em] text-muted-foreground sm:block">
                 Copilote piscine
@@ -201,7 +200,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
           <div className="mb-8 flex items-start gap-3 rounded-xl border border-gold/20 bg-white/5 p-4">
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
             <p className="text-[11px] leading-relaxed text-white/70">
-              <strong className="text-white/90">Avis de prudence.</strong> AquaMind aide au
+              <strong className="text-white/90">Avis de prudence.</strong> AQWELIA aide au
               diagnostic et à l&apos;entretien mais ne remplace pas un professionnel. Les dosages
               doivent respecter les notices produits. En cas de doute, danger électrique, fuite ou
               irritation, contactez un professionnel.
@@ -212,13 +211,13 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
             {/* Brand */}
             <div className="md:col-span-2">
               <div className="flex items-center gap-2.5">
-                <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-gold shadow-md shadow-primary/30">
-                  <Waves className="h-4 w-4 text-white" />
+                <div className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-md shadow-primary/30">
+                  <img src="/icon-aqwelia-48.png" alt="AQWELIA" className="h-9 w-9 object-cover" />
                   <Sparkles className="absolute -right-1 -top-1 h-3 w-3 text-gold" />
                 </div>
                 <div>
                   <div className="font-display text-base font-bold tracking-tight text-white">
-                    AquaMind <span className="aqua-text-gradient">AI</span>
+                    <span className="aqua-text-gradient">AQWELIA</span>
                   </div>
                   <div className="text-[10px] uppercase tracking-[0.22em] text-white/45">
                     Copilote piscine
@@ -278,7 +277,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
 
           <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 sm:flex-row">
             <p className="text-xs text-white/50">
-              © {new Date().getFullYear()} AquaMind AI. Eau toujours cristalline.
+              © {new Date().getFullYear()} AQWELIA. Eau toujours cristalline.
             </p>
             <div className="flex items-center gap-3 text-xs text-white/50">
               <span className="rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 font-semibold text-gold">

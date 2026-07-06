@@ -384,7 +384,7 @@ export function ModuleActionPlan({ onNavigate }: Props) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-gold" />
-          AquaMind aide au diagnostic et à l'entretien mais ne remplace pas un professionnel.
+          AQWELIA aide au diagnostic et à l'entretien mais ne remplace pas un professionnel.
           Respectez les notices produits.
         </p>
         <div className="flex flex-wrap gap-2">

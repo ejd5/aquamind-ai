@@ -1,5 +1,33 @@
 # AquaMind AI — Étude de naming
 
+## AQWELIA (nouveau nom — juillet 2026)
+
+**Étymologie :** AQ (aqua, l'eau) + WEL (well, le bien-être anglais) + IA (intelligence artificielle).
+
+**Promesse :** "L'eau qui va bien, par l'intelligence."
+
+**Raison du changement :** 
+- Plus mémorable et différenciant (5 lettres + suffixe IA)
+- Multilingue (aqua/well fonctionnent en FR et EN)
+- Signal clair de l'IA sans jargon
+- Sonorité douce et aquatique (fluidité, douceur)
+
+**Logo :** Q cerclé de doré avec vague + étoiles (eau pure + clarté) + A final avec lignes dorées (structure technique + IA).
+
+**Couleurs marque :**
+- Bleu-vert foncé #004D5A (profondeur, confiance)
+- Bleu-vert clair #00A8B0 (eau vive, dynamisme)
+- Bleu-vert très clair #00C2D1 (clarté, transparence)
+- Doré #FFD700 (premium, excellence)
+- Fond nuit #003B4A (sérénité, profondeur)
+
+**Taglines possibles :**
+- "L'eau qui va bien, par l'intelligence."
+- "Aqua. Well. IA."
+- "L'intelligence de l'eau claire."
+
+---
+
 ## Contexte
 Nom actuel : **AquaMind AI**. Fonctionnel mais générique ("Aqua" + "Mind" = combinatoire usuelle). Pour un produit leader,Distinctif, international, mémorable.
 
