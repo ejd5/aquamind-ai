@@ -8,6 +8,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-playfair-display);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -37,79 +38,98 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  /* Premium Oceanic Luxury tokens */
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-ocean: var(--ocean);
+  --color-pearl: var(--pearl);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 10px);
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --radius: 0.875rem;
+  /* Oceanic Luxury — pearl background with warm undertones */
+  --background: oklch(0.99 0.005 195);
+  --foreground: oklch(0.18 0.03 200);
+  --card: oklch(1 0.003 195);
+  --card-foreground: oklch(0.18 0.03 200);
+  --popover: oklch(1 0.003 195);
+  --popover-foreground: oklch(0.18 0.03 200);
+  /* Deep ocean teal */
+  --primary: oklch(0.45 0.12 195);
+  --primary-foreground: oklch(0.99 0.01 195);
+  /* Champagne gold accent */
+  --accent: oklch(0.75 0.13 85);
+  --accent-foreground: oklch(0.18 0.04 85);
+  /* Premium tokens */
+  --gold: oklch(0.75 0.13 85);
+  --gold-foreground: oklch(0.18 0.04 85);
+  --ocean: oklch(0.45 0.12 195);
+  --pearl: oklch(0.99 0.005 195);
+  --secondary: oklch(0.95 0.015 195);
+  --secondary-foreground: oklch(0.25 0.05 195);
+  --muted: oklch(0.96 0.012 195);
+  --muted-foreground: oklch(0.5 0.025 195);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --border: oklch(0.92 0.012 195);
+  --input: oklch(0.93 0.012 195);
+  --ring: oklch(0.45 0.12 195);
+  --chart-1: oklch(0.55 0.12 195);
+  --chart-2: oklch(0.75 0.13 85);
+  --chart-3: oklch(0.45 0.12 195);
+  --chart-4: oklch(0.7 0.16 60);
+  --chart-5: oklch(0.6 0.1 170);
+  --sidebar: oklch(0.985 0.008 195);
+  --sidebar-foreground: oklch(0.18 0.03 200);
+  --sidebar-primary: oklch(0.45 0.12 195);
+  --sidebar-primary-foreground: oklch(0.99 0.01 195);
+  --sidebar-accent: oklch(0.95 0.03 195);
+  --sidebar-accent-foreground: oklch(0.25 0.05 195);
+  --sidebar-border: oklch(0.9 0.02 195);
+  --sidebar-ring: oklch(0.45 0.12 195);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  /* Deep ocean night */
+  --background: oklch(0.15 0.015 200);
+  --foreground: oklch(0.96 0.008 195);
+  --card: oklch(0.19 0.02 200);
+  --card-foreground: oklch(0.96 0.008 195);
+  --popover: oklch(0.19 0.02 200);
+  --popover-foreground: oklch(0.96 0.008 195);
+  --primary: oklch(0.68 0.13 195);
+  --primary-foreground: oklch(0.12 0.03 200);
+  --accent: oklch(0.8 0.13 85);
+  --accent-foreground: oklch(0.15 0.03 85);
+  --gold: oklch(0.8 0.13 85);
+  --gold-foreground: oklch(0.15 0.03 85);
+  --ocean: oklch(0.45 0.12 195);
+  --pearl: oklch(0.15 0.015 200);
+  --secondary: oklch(0.26 0.025 200);
+  --secondary-foreground: oklch(0.96 0.008 195);
+  --muted: oklch(0.24 0.02 200);
+  --muted-foreground: oklch(0.72 0.018 195);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.68 0.13 195);
+  --chart-1: oklch(0.68 0.13 195);
+  --chart-2: oklch(0.8 0.13 85);
+  --chart-3: oklch(0.55 0.12 195);
+  --chart-4: oklch(0.72 0.16 60);
+  --chart-5: oklch(0.65 0.1 170);
+  --sidebar: oklch(0.19 0.022 200);
+  --sidebar-foreground: oklch(0.96 0.008 195);
+  --sidebar-primary: oklch(0.68 0.13 195);
+  --sidebar-primary-foreground: oklch(0.12 0.03 200);
+  --sidebar-accent: oklch(0.3 0.03 200);
+  --sidebar-accent-foreground: oklch(0.96 0.008 195);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: oklch(0.68 0.13 195);
 }
 
 @layer base {
@@ -118,5 +138,197 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: oklch(0.75 0.13 85 / 0.28);
+    color: oklch(0.18 0.03 200);
+  }
+}
+
+/* ===========================================================
+   PREMIUM ANIMATIONS — Oceanic Luxury
+   =========================================================== */
+
+@keyframes aurora-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.06); }
+  66% { transform: translate(-20px, 20px) scale(0.97); }
+}
+
+@keyframes aqua-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes aqua-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 30px -10px oklch(0.75 0.13 85 / 0.4); }
+  50% { box-shadow: 0 0 55px -8px oklch(0.75 0.13 85 / 0.65); }
+}
+
+@keyframes premium-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===========================================================
+   PREMIUM UTILITIES
+   =========================================================== */
+
+/* Aurora gradient mesh background for hero */
+.aurora-bg {
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 20%, oklch(0.6 0.13 195 / 0.45) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 25%, oklch(0.75 0.13 85 / 0.38) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 60% at 50% 80%, oklch(0.45 0.12 195 / 0.4) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 75% 70%, oklch(0.7 0.1 170 / 0.25) 0%, transparent 60%);
+}
+
+.dark .aurora-bg {
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 20%, oklch(0.45 0.13 195 / 0.38) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 25%, oklch(0.7 0.13 85 / 0.28) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 60% at 50% 80%, oklch(0.3 0.1 195 / 0.55) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 75% 70%, oklch(0.5 0.08 170 / 0.2) 0%, transparent 60%);
+}
+
+.aurora-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.6;
+  animation: aurora-float 22s ease-in-out infinite;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* Glassmorphism card */
+.glass-card {
+  background: oklch(1 0.003 195 / 0.55);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid oklch(1 0 0 / 0.4);
+  box-shadow:
+    0 1px 0 0 oklch(1 0 0 / 0.5) inset,
+    0 20px 45px -20px oklch(0.45 0.12 195 / 0.18);
+}
+
+.dark .glass-card {
+  background: oklch(0.2 0.025 200 / 0.5);
+  border: 1px solid oklch(1 0 0 / 0.1);
+  box-shadow:
+    0 1px 0 0 oklch(1 0 0 / 0.05) inset,
+    0 20px 45px -20px oklch(0 0 0 / 0.5);
+}
+
+/* Glass pill */
+.glass-pill {
+  background: oklch(1 0.003 195 / 0.7);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid oklch(1 0 0 / 0.5);
+}
+
+.dark .glass-pill {
+  background: oklch(0.2 0.025 200 / 0.55);
+  border: 1px solid oklch(1 0 0 / 0.1);
+}
+
+/* Premium gradient text (teal → gold) */
+.gradient-text-premium {
+  background: linear-gradient(95deg, oklch(0.55 0.13 195) 0%, oklch(0.5 0.1 170) 42%, oklch(0.78 0.14 85) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.dark .gradient-text-premium {
+  background: linear-gradient(95deg, oklch(0.72 0.13 195) 0%, oklch(0.65 0.1 170) 42%, oklch(0.85 0.14 85) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Animated shimmer text */
+.aqua-text-gradient {
+  background: linear-gradient(90deg, oklch(0.55 0.13 195), oklch(0.75 0.13 85), oklch(0.55 0.13 195));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: aqua-shimmer 5s linear infinite;
+}
+
+/* Gold accent divider — 1px gold-to-transparent */
+.gold-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, oklch(0.75 0.13 85 / 0.6), transparent);
+}
+
+/* Premium section label */
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: oklch(0.75 0.13 85);
+}
+
+.dark .section-label {
+  color: oklch(0.8 0.13 85);
+}
+
+/* Glow effects */
+.glow-primary { box-shadow: 0 0 40px -10px oklch(0.45 0.12 195 / 0.5); }
+.glow-gold { box-shadow: 0 0 40px -10px oklch(0.75 0.13 85 / 0.5); }
+.glow-pulse-anim { animation: glow-pulse 4s ease-in-out infinite; }
+
+/* Premium rise-in animation */
+.rise-in { animation: premium-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Custom premium scrollbar */
+.custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scroll::-webkit-scrollbar-track { background: transparent; }
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: oklch(0.75 0.13 85 / 0.3);
+  border-radius: 9999px;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.75 0.13 85 / 0.55);
+}
+
+/* Nav link underline animation */
+.nav-link {
+  position: relative;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 4px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, oklch(0.75 0.13 85), transparent);
+  transform: scaleX(0);
+  transition: transform 0.35s ease;
+}
+.nav-link:hover::after { transform: scaleX(1); }
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .aurora-orb,
+  .aqua-text-gradient,
+  .glow-pulse-anim,
+  .rise-in {
+    animation: none !important;
   }
 }

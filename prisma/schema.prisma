@@ -1,9 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
+// AquaMind AI — Schéma de données complet pour copilote piscine
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,20 +8,183 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// Profil de la piscine (obligatoire pour conseils personnalisés)
+model PoolProfile {
+  id            String   @id @default(cuid())
+  name          String   @default("Ma piscine")
+  volume        Float    // volume en m³
+  unit          String   @default("m3") // m3 | gal
+  shape         String   @default("rectangular") // rectangular | round | oval | free
+  surfaceType   String   @default("liner") // liner | shell | concrete | tile
+  treatmentType String   @default("chlorine") // chlorine | salt | bromine | active_oxygen | uv | other
+  filterType    String   @default("sand") // sand | cartridge | glass | diatom
+  pumpType      String?  // marque/modèle pompe
+  saltSystem    Boolean  @default(false)
+  region        String?  // région / climat
+  sunExposure   String   @default("medium") // low | medium | high
+  covered       Boolean  @default(false)
+  usageLevel    String   @default("medium") // low | medium | high
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
-model Post {
+// Test / mesure d'eau complet
+model WaterTest {
+  id               String   @id @default(cuid())
+  ph               Float
+  freeChlorine     Float?
+  totalChlorine    Float?
+  combinedChlorine Float?
+  alkalinity       Float? // TAC mg/L
+  calciumHardness  Float? // TH mg/L
+  cyanuricAcid     Float? // CYA mg/L
+  salt             Float? // g/L
+  bromine          Float?
+  phosphates       Float? // mg/L
+  temperature      Float? // °C
+  source           String   @default("manual") // manual | strip_photo | device | imported
+  note             String?
+  status           String   @default("ok") // ok | warning | critical
+  clearWaterIndex  Int      @default(80) // 0-100
+  swimSafety       String   @default("allowed") // allowed | avoid | forbidden | unknown
+  lsi              Float?   // Langelier Saturation Index
+  createdAt        DateTime @default(now())
+
+  actionPlans ActionPlan[]
+}
+
+// Diagnostic photo IA (VLM structuré)
+model PhotoDiagnostic {
+  id                    String   @id @default(cuid())
+  type                  String   // water | wall | filter | electrolyzer | pump | strip | product | equipment
+  imageUrl              String
+  detectedIssues        String   // JSON string array
+  probableIssues        String   // JSON string array
+  confidence            Float    @default(0)
+  aiSummary             String
+  missingData           String   // JSON string array
+  recommendedNextStep   String?
+  safetyWarnings        String   // JSON string array
+  createdAt             DateTime @default(now())
+}
+
+// Plan d'action généré (déterministe + IA)
+model ActionPlan {
+  id                     String   @id @default(cuid())
+  waterTestId            String
+  diagnosis              String
+  severity               String   @default("low") // low | medium | high | urgent
+  confidence             Float    @default(0.8)
+  immediateActions       String   // JSON string array (ordonnées)
+  chemicalDosages        String   // JSON string array
+  filtrationHours        Float    @default(0)
+  retestInHours          Float    @default(24)
+  swimSafety             String   @default("unknown")
+  doNotDo                String   // JSON string array
+  estimatedCost          String?
+  whenToCallProfessional String?
+  createdAt              DateTime @default(now())
+
+  waterTest WaterTest @relation(fields: [waterTestId], references: [id], onDelete: Cascade)
+}
+
+// Équipements de la piscine
+model Equipment {
+  id                 String    @id @default(cuid())
+  type               String    // pump | filter | electrolyzer | cell | phProbe | robot | cover | heatpump | skimmer
+  brand              String?
+  model              String?
+  installedAt        DateTime?
+  lastMaintenanceAt  DateTime?
+  nextMaintenanceAt  DateTime?
+  photoUrl           String?
+  status             String    @default("ok") // ok | warning | issue
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+// Inventaire produits
+model ProductInventory {
+  id           String   @id @default(cuid())
+  productName  String
+  category     String   // ph_minus | ph_plus | chlorine_slow | chlorine_shock | salt | alkalinity_plus | stabilizer | flocculant | anti_algae | filter_cleaner | other
+  concentration Float?
+  quantity     Float
+  unit         String   @default("kg") // kg | L | tablet
+  price        Float?
+  instructions String?
+  createdAt    DateTime @default(now())
+}
+
+// Historique conversations assistant
+model ChatMessage {
   id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
+  role      String   // user | assistant
+  content   String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+}
+
+// Tâches de maintenance (liées à un équipement optionnellement)
+model MaintenanceTask {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  type        String    @default("cleaning")
+  priority    String    @default("medium")
+  status      String    @default("pending")
+  dueDate     DateTime?
+  doneAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Designs générés (studio IA)
+model PoolDesign {
+  id        String   @id @default(cuid())
+  prompt    String
+  imageUrl  String
+  style     String?
+  createdAt DateTime @default(now())
+}
+
+// Rappels intelligents (générés et manuels)
+model Reminder {
+  id        String   @id @default(cuid())
+  type      String   // test_water, retest_after_product, after_storm, filter_clean, cell_clean, ...
+  title     String
+  detail    String
+  action    String
+  priority  String   @default("medium") // low, medium, high, urgent
+  source    String   @default("schedule") // weather, test_history, inventory, equipment, schedule, manual
+  dueAt     DateTime?
+  done      Boolean  @default(false)
+  doneAt    DateTime?
+  snoozed   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// Vue de guide (tracking analytics + recommendation)
+model GuideView {
+  id        String   @id @default(cuid())
+  guideId   String
+  viewedAt  DateTime @default(now())
+}
+
+// Abonnement freemium
+model Subscription {
+  id        String   @id @default(cuid())
+  plan      String   @default("surface") // surface, limpide, cristal, gardien
+  duration  String?  // week, month, quarter, halfyear
+  startedAt DateTime @default(now())
+  expiresAt DateTime?
+  active    Boolean  @default(false)
+}
+
+// Événements analytics (funnel, rétention)
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  event     String   // first_scan, first_test, first_plan, guide_opened, video_viewed, paywall_viewed, ...
+  props     String?  // JSON
+  createdAt DateTime @default(now())
 }
