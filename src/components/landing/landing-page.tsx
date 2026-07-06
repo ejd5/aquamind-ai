@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Menu, X, ShieldAlert, ArrowRight } from 'lucide-react'
 import { Hero } from './sections/hero'
@@ -267,10 +268,26 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
               <ul className="mt-3 space-y-2 text-sm">
                 <li><span className="text-white/70">Guides</span></li>
                 <li><span className="text-white/70">Blog <span className="text-white/35">(à venir)</span></span></li>
-                <li><span className="text-white/70">Contact</span></li>
-                <li><span className="text-white/70">CGU</span></li>
-                <li><span className="text-white/70">Confidentialité</span></li>
-                <li><span className="text-white/70">Mentions légales</span></li>
+                <li>
+                  <Link href="/legal/support" className="text-white/70 transition-colors hover:text-gold">
+                    Contact
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/legal/cgu" className="text-white/70 transition-colors hover:text-gold">
+                    CGU
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/legal/privacy" className="text-white/70 transition-colors hover:text-gold">
+                    Confidentialité
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/settings" className="text-white/70 transition-colors hover:text-gold">
+                    Paramètres
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>

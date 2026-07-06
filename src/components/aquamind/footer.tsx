@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Sparkles, ShieldAlert } from 'lucide-react'
 
 export function Footer() {
@@ -23,7 +24,7 @@ export function Footer() {
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
           <p className="text-[11px] leading-relaxed text-white/70">
             <strong className="text-white/90">Avis de prudence.</strong> AQWELIA aide au diagnostic
-            et à l'entretien mais ne remplace pas un professionnel. Respectez les notices produits.
+            et à l&apos;entretien mais ne remplace pas un professionnel. Respectez les notices produits.
             En cas de doute, danger électrique, fuite ou irritation, contactez un professionnel.
           </p>
         </div>
@@ -39,6 +40,22 @@ export function Footer() {
               <span className="ml-2 text-white/45">© {new Date().getFullYear()}</span>
             </div>
           </div>
+
+          {/* Legal + settings links */}
+          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-white/65">
+            <Link href="/legal/cgu" className="transition-colors hover:text-gold">
+              CGU
+            </Link>
+            <Link href="/legal/privacy" className="transition-colors hover:text-gold">
+              Confidentialité
+            </Link>
+            <Link href="/legal/support" className="transition-colors hover:text-gold">
+              Support
+            </Link>
+            <Link href="/settings" className="transition-colors hover:text-gold">
+              Paramètres
+            </Link>
+          </nav>
 
           <div className="flex items-center gap-3 text-xs text-white/65">
             <span className="rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 font-semibold text-gold">
