@@ -113,7 +113,7 @@ export function ModuleReminders({ onNavigate }: Props) {
   const [context, setContext] = useState<ReminderContext | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [planId, setPlanId] = useState<string>('surface')
+  const [planId, setPlanId] = useState<string>('free')
 
   // Add form
   const [addOpen, setAddOpen] = useState(false)
@@ -281,7 +281,7 @@ export function ModuleReminders({ onNavigate }: Props) {
         <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold" />
         <p>
           Rappels intelligents générés à partir de votre historique, météo et équipements.{' '}
-          {planId === 'surface' && (
+          {planId === 'free' && (
             <span className="font-semibold text-gold">
               Plan gratuit : rappels de base seulement.{' '}
               {onNavigate && (
@@ -523,8 +523,8 @@ export function ModuleReminders({ onNavigate }: Props) {
         </div>
       )}
 
-      {/* Surface plan upsell */}
-      {planId === 'surface' && (
+      {/* Free plan upsell */}
+      {planId === 'free' && (
         <Card className="border-gold/30 bg-gradient-to-br from-gold/5 to-primary/5">
           <CardContent className="flex flex-col items-start gap-3 py-4 sm:flex-row sm:items-center">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold/15">
@@ -533,7 +533,7 @@ export function ModuleReminders({ onNavigate }: Props) {
             <div className="flex-1">
               <p className="font-display text-sm font-bold text-gold">Débloquez les rappels intelligents</p>
               <p className="text-xs text-foreground/80">
-                Rappels météo, ré-ajustement après traitement, stock bas… Passez à Limpide.
+                Rappels météo, ré-ajustement après traitement, stock bas… Passez à Premium.
               </p>
             </div>
             {onNavigate && (

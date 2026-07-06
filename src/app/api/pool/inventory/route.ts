@@ -1,18 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 
 export const runtime = 'nodejs'
 
 export async function GET() {
-  const products = await db.productInventory.findMany({ orderBy: { createdAt: 'desc' } })
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
+  const products = await db.productInventory.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } })
   return NextResponse.json({ products })
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
   try {
     const body = await req.json()
     const p = await db.productInventory.create({
       data: {
+        userId,
         productName: body.productName,
         category: body.category || 'other',
         concentration: numOrNull(body.concentration),
@@ -29,9 +44,21 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
-  if (id) await db.productInventory.delete({ where: { id } })
+  if (id) {
+    // Only delete if it belongs to the authenticated user
+    const existing = await db.productInventory.findFirst({ where: { id, userId } })
+    if (existing) {
+      await db.productInventory.delete({ where: { id } })
+    }
+  }
   return NextResponse.json({ success: true })
 }
 

@@ -74,7 +74,7 @@ const LEVEL_CFG: Record<string, { label: string; cls: string }> = {
   expert: { label: 'Expert', cls: 'border-primary/30 bg-primary/10 text-primary' },
 }
 
-// Free categories for the surface plan: only getting_started + faq
+// Free categories for the free plan: only getting_started + faq
 const FREE_CATEGORIES: CategoryId[] = ['getting_started', 'faq']
 
 export function ModuleGuides({ onNavigate }: Props) {
@@ -88,7 +88,7 @@ export function ModuleGuides({ onNavigate }: Props) {
   const [activeCategory, setActiveCategory] = useState<CategoryId | 'all'>('all')
   const [selectedGuide, setSelectedGuide] = useState<Guide | null>(null)
   const [openingGuide, setOpeningGuide] = useState(false)
-  const [currentPlanId, setCurrentPlanId] = useState<string>('surface')
+  const [currentPlanId, setCurrentPlanId] = useState<string>('free')
 
   const loadAll = useCallback(async () => {
     setLoading(true)
@@ -118,12 +118,12 @@ export function ModuleGuides({ onNavigate }: Props) {
   }, [loadAll])
 
   async function openGuide(g: Guide) {
-    // Premium gate: if user is on surface plan and guide is in a paid category, show upsell
+    // Premium gate: if user is on free plan and guide is in a paid category, show upsell
     const isPremium = !FREE_CATEGORIES.includes(g.category)
-    if (isPremium && currentPlanId === 'surface') {
+    if (isPremium && currentPlanId === 'free') {
       toast({
         title: 'Guide Premium',
-        description: 'Ce guide est réservé aux abonnés Limpide ou supérieur.',
+        description: 'Ce guide est réservé aux abonnés Premium ou supérieur.',
       })
       if (onNavigate) onNavigate('paywall')
       return
@@ -145,7 +145,7 @@ export function ModuleGuides({ onNavigate }: Props) {
   }
 
   function isGuideLocked(g: Guide) {
-    return isGuidePremium(g) && currentPlanId === 'surface'
+    return isGuidePremium(g) && currentPlanId === 'free'
   }
 
   // Filtered list (client-side search + category)

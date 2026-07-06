@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import ZAI from 'z-ai-web-dev-sdk'
 import { db } from '@/lib/db'
 import { buildPoolContext, ASSISTANT_SYSTEM_PROMPT } from '@/lib/pool/ai-context'
@@ -6,14 +8,20 @@ import { buildPoolContext, ASSISTANT_SYSTEM_PROMPT } from '@/lib/pool/ai-context
 export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
   try {
     const { message } = await req.json()
     if (!message) return NextResponse.json({ error: 'Message requis' }, { status: 400 })
 
     const [profile, latestTest, history] = await Promise.all([
-      db.poolProfile.findFirst(),
-      db.waterTest.findFirst({ orderBy: { createdAt: 'desc' } }),
-      db.chatMessage.findMany({ take: 10, orderBy: { createdAt: 'desc' } }),
+      db.poolProfile.findFirst({ where: { userId } }),
+      db.waterTest.findFirst({ where: { userId }, orderBy: { createdAt: 'desc' } }),
+      db.chatMessage.findMany({ where: { userId }, take: 10, orderBy: { createdAt: 'desc' } }),
     ])
     history.reverse()
 
@@ -35,8 +43,8 @@ export async function POST(req: NextRequest) {
 
     await db.chatMessage.createMany({
       data: [
-        { role: 'user', content: message },
-        { role: 'assistant', content: reply },
+        { userId, role: 'user', content: message },
+        { userId, role: 'assistant', content: reply },
       ],
     })
 
@@ -47,6 +55,12 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE() {
-  await db.chatMessage.deleteMany({})
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
+  await db.chatMessage.deleteMany({ where: { userId } })
   return NextResponse.json({ success: true })
 }

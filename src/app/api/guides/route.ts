@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { GUIDES, CATEGORIES, recommendGuides } from '@/lib/pool/guides-data'
 import { db } from '@/lib/db'
 
@@ -10,11 +12,19 @@ export async function GET(req: NextRequest) {
   const category = searchParams.get('category')
   const recommend = searchParams.get('recommend')
 
+  // Auth optional — catalog is public, but GuideView tracking requires userId.
+  // We use `.catch(() => null)` so the route keeps working even if session
+  // resolution fails (e.g. on static / pre-rendered contexts).
+  const session = await getServerSession(authOptions).catch(() => null)
+  const userId = session?.user?.id
+
   if (id) {
     const guide = GUIDES.find((g) => g.id === id)
     if (!guide) return NextResponse.json({ error: 'Guide introuvable' }, { status: 404 })
-    // Track view
-    await db.guideView.create({ data: { guideId: id } })
+    // Track view only if user is authenticated
+    if (userId) {
+      await db.guideView.create({ data: { userId, guideId: id } }).catch(() => null)
+    }
     return NextResponse.json({ guide })
   }
 

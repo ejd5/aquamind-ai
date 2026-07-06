@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { clarityLabel, calculateClearWaterIndex } from '@/lib/pool/water-balance'
 import { assessSwimSafety } from '@/lib/pool/safety-rules'
@@ -6,21 +8,37 @@ import { assessSwimSafety } from '@/lib/pool/safety-rules'
 export const runtime = 'nodejs'
 
 export async function GET() {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
   const [profile, latestTest, latestPlan, tests, diagnostics, equipment, products, chatCount] = await Promise.all([
-    db.poolProfile.findFirst(),
-    db.waterTest.findFirst({ orderBy: { createdAt: 'desc' }, include: { actionPlans: true } }),
-    db.actionPlan.findFirst({ orderBy: { createdAt: 'desc' } }),
-    db.waterTest.findMany({ take: 30, orderBy: { createdAt: 'desc' } }),
-    db.photoDiagnostic.findMany({ take: 5, orderBy: { createdAt: 'desc' } }),
-    db.equipment.count(),
-    db.productInventory.count(),
-    db.chatMessage.count(),
+    db.poolProfile.findFirst({ where: { userId } }),
+    db.waterTest.findFirst({ where: { userId }, orderBy: { createdAt: 'desc' }, include: { actionPlans: true } }),
+    db.actionPlan.findFirst({
+      where: { waterTest: { userId } },
+      orderBy: { createdAt: 'desc' },
+    }),
+    db.waterTest.findMany({ where: { userId }, take: 30, orderBy: { createdAt: 'desc' } }),
+    db.photoDiagnostic.findMany({ where: { userId }, take: 5, orderBy: { createdAt: 'desc' } }),
+    db.equipment.count({ where: { userId } }),
+    db.productInventory.count({ where: { userId } }),
+    db.chatMessage.count({ where: { userId } }),
   ])
 
-  let clearWaterIndex = null
-  let clarity = null
-  let swim = null
-  let latestPlanParsed = null
+  let clearWaterIndex: number | null = null
+  let clarity: ReturnType<typeof clarityLabel> | null = null
+  let swim: ReturnType<typeof assessSwimSafety> | null = null
+  // latestPlanParsed overrides 3 string fields (JSON columns) with parsed arrays,
+  // so it is intentionally NOT the raw ActionPlan type.
+  let latestPlanParsed: {
+    immediateActions: any[]
+    chemicalDosages: any[]
+    doNotDo: any[]
+    [k: string]: any
+  } | null = null
 
   if (latestTest) {
     clearWaterIndex = latestTest.clearWaterIndex || calculateClearWaterIndex(latestTest as any)

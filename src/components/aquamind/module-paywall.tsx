@@ -25,8 +25,8 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { toast } from '@/hooks/use-toast'
+import type { PlanId } from '@/lib/pool/freemium'
 
-type PlanId = 'surface' | 'limpide' | 'cristal' | 'gardien'
 type Duration = 'week' | 'month' | 'quarter' | 'halfyear'
 
 interface Plan {
@@ -64,7 +64,7 @@ const COMPARISON: {
   values: (p: Plan) => { ok: boolean; text?: string }
 }[] = [
   { label: 'Scans photo / mois', values: (p) => ({ ok: p.limits.maxPhotoScansPerMonth >= 999, text: p.limits.maxPhotoScansPerMonth >= 999 ? 'Illimité' : `${p.limits.maxPhotoScansPerMonth}` }) },
-  { label: 'Météo avancée + alertes', values: (p) => ({ ok: p.limits.weatherEnabled && p.id !== 'surface' }) },
+  { label: 'Météo avancée + alertes', values: (p) => ({ ok: p.limits.weatherEnabled && p.id !== 'free' }) },
   { label: 'Rappels intelligents', values: (p) => ({ ok: p.limits.smartReminders }) },
   { label: 'Guides premium', values: (p) => ({ ok: p.limits.guidesAccess !== 'basic' }) },
   { label: 'Multi-piscines', values: (p) => ({ ok: p.limits.multiPool, text: p.limits.maxPools >= 999 ? 'Illimité' : `${p.limits.maxPools}` }) },
@@ -80,7 +80,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Que se passe-t-il à la fin de l'abonnement ?",
-    a: "À la fin de la période payée, vous repassez automatiquement sur le plan Surface (gratuit). Vos données sont conservées ; seules les fonctionnalités premium sont suspendues.",
+    a: "À la fin de la période payée, vous repassez automatiquement sur le plan Free (gratuit). Vos données sont conservées ; seules les fonctionnalités premium sont suspendues.",
   },
   {
     q: 'Une formule annuelle est-elle disponible ?',
@@ -94,7 +94,7 @@ const FAQ_ITEMS = [
 
 export function ModulePaywall() {
   const [plans, setPlans] = useState<Plan[]>([])
-  const [currentPlanId, setCurrentPlanId] = useState<PlanId>('surface')
+  const [currentPlanId, setCurrentPlanId] = useState<PlanId>('free')
   const [subscription, setSubscription] = useState<{ expiresAt?: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
   const [duration, setDuration] = useState<Duration>('month')
@@ -106,7 +106,7 @@ export function ModulePaywall() {
       const res = await fetch('/api/subscription')
       const data = await res.json()
       setPlans(data.allPlans || [])
-      setCurrentPlanId(data.plan?.id || 'surface')
+      setCurrentPlanId(data.plan?.id || 'free')
       setSubscription(data.subscription || null)
     } catch {
       // noop
@@ -119,8 +119,8 @@ export function ModulePaywall() {
     load()
   }, [load])
 
-  const paidPlans = useMemo(() => plans.filter((p) => p.id !== 'surface'), [plans])
-  const surfacePlan = plans.find((p) => p.id === 'surface')
+  const paidPlans = useMemo(() => plans.filter((p) => p.id !== 'free'), [plans])
+  const freePlan = plans.find((p) => p.id === 'free')
 
   async function activate(planId: PlanId) {
     setActivating(planId)
@@ -195,7 +195,7 @@ export function ModulePaywall() {
                 Des conseils illimités, des rappels intelligents, des rapports PDF et bien plus.
               </p>
             </div>
-            {currentPlanId !== 'surface' && (
+            {currentPlanId !== 'free' && (
               <Badge variant="outline" className="border-gold/40 bg-gold/10 px-3 py-1 text-xs font-bold text-gold">
                 <Crown className="mr-1 h-3 w-3" />
                 Plan actuel : {plans.find((p) => p.id === currentPlanId)?.name}
@@ -303,8 +303,8 @@ export function ModulePaywall() {
         })}
       </div>
 
-      {/* Surface plan (free) — smaller */}
-      {surfacePlan && (
+      {/* Free plan — smaller */}
+      {freePlan && (
         <Card className="glass-card">
           <CardContent className="flex flex-col items-start gap-3 py-4 sm:flex-row sm:items-center">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary/70">
@@ -312,27 +312,27 @@ export function ModulePaywall() {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <p className="font-display text-sm font-bold">{surfacePlan.name}</p>
+                <p className="font-display text-sm font-bold">{freePlan.name}</p>
                 <span className="text-xs text-muted-foreground">— Gratuit, pour découvrir</span>
-                {currentPlanId === 'surface' && (
+                {currentPlanId === 'free' && (
                   <Badge variant="outline" className="border-border bg-secondary/60 text-[9px] text-muted-foreground">
                     Votre plan
                   </Badge>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                {surfacePlan.features.slice(0, 3).join(' · ')}
+                {freePlan.features.slice(0, 3).join(' · ')}
               </p>
             </div>
-            {currentPlanId !== 'surface' && (
+            {currentPlanId !== 'free' && (
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => activate('surface')}
-                disabled={activating === 'surface'}
+                onClick={() => activate('free')}
+                disabled={activating === 'free'}
                 className="border-border/60"
               >
-                {activating === 'surface' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Revenir à Gratuit'}
+                {activating === 'free' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Revenir à Gratuit'}
               </Button>
             )}
           </CardContent>
@@ -444,7 +444,7 @@ export function ModulePaywall() {
         </CardContent>
       </Card>
 
-      {subscription?.expiresAt && currentPlanId !== 'surface' && (
+      {subscription?.expiresAt && currentPlanId !== 'free' && (
         <p className="text-center text-[11px] text-muted-foreground">
           Votre abonnement est actif jusqu'au{' '}
           {new Date(subscription.expiresAt).toLocaleDateString('fr-FR', {

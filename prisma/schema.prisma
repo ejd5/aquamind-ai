@@ -1,36 +1,101 @@
 // AQWELIA — Schéma de données complet pour copilote piscine
+// Provider: PostgreSQL (production + mobile backend)
+// Auth: NextAuth.js (JWT strategy) — User + Account models, pas de Session
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// AUTHENTIFICATION (NextAuth.js)
+// ───────────────────────────────────────────────────────────────────────────
+
+// Utilisateur AQWELIA (propriétaire de toutes les données ci-dessous)
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations vers les données possédées
+  poolProfiles     PoolProfile[]
+  waterTests       WaterTest[]
+  photoDiagnostics PhotoDiagnostic[]
+  equipment        Equipment[]
+  inventory        ProductInventory[]
+  chatMessages     ChatMessage[]
+  maintenanceTasks MaintenanceTask[]
+  poolDesigns      PoolDesign[]
+  reminders        Reminder[]
+  guideViews       GuideView[]
+  subscriptions    Subscription[]
+  analyticsEvents  AnalyticsEvent[]
+
+  // OAuth / comptes liés (NextAuth future-proof)
+  accounts Account[]
+}
+
+// Compte OAuth (Google, Apple, etc.) pour NextAuth — structure simple
+// Permet d'ajouter l'auth sociale plus tard sans casser le schéma
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// DONNÉES UTILISATEUR (toutes liées à User via userId)
+// ───────────────────────────────────────────────────────────────────────────
 
 // Profil de la piscine (obligatoire pour conseils personnalisés)
 model PoolProfile {
   id            String   @id @default(cuid())
+  userId        String
   name          String   @default("Ma piscine")
-  volume        Float    // volume en m³
+  volume        Float // volume en m³
   unit          String   @default("m3") // m3 | gal
   shape         String   @default("rectangular") // rectangular | round | oval | free
   surfaceType   String   @default("liner") // liner | shell | concrete | tile
   treatmentType String   @default("chlorine") // chlorine | salt | bromine | active_oxygen | uv | other
   filterType    String   @default("sand") // sand | cartridge | glass | diatom
-  pumpType      String?  // marque/modèle pompe
+  pumpType      String? // marque/modèle pompe
   saltSystem    Boolean  @default(false)
-  region        String?  // région / climat
+  region        String? // région / climat
   sunExposure   String   @default("medium") // low | medium | high
   covered       Boolean  @default(false)
   usageLevel    String   @default("medium") // low | medium | high
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Test / mesure d'eau complet
 model WaterTest {
   id               String   @id @default(cuid())
+  userId           String
   ph               Float
   freeChlorine     Float?
   totalChlorine    Float?
@@ -47,40 +112,49 @@ model WaterTest {
   status           String   @default("ok") // ok | warning | critical
   clearWaterIndex  Int      @default(80) // 0-100
   swimSafety       String   @default("allowed") // allowed | avoid | forbidden | unknown
-  lsi              Float?   // Langelier Saturation Index
+  lsi              Float? // Langelier Saturation Index
   createdAt        DateTime @default(now())
 
   actionPlans ActionPlan[]
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Diagnostic photo IA (VLM structuré)
 model PhotoDiagnostic {
-  id                    String   @id @default(cuid())
-  type                  String   // water | wall | filter | electrolyzer | pump | strip | product | equipment
-  imageUrl              String
-  detectedIssues        String   // JSON string array
-  probableIssues        String   // JSON string array
-  confidence            Float    @default(0)
-  aiSummary             String
-  missingData           String   // JSON string array
-  recommendedNextStep   String?
-  safetyWarnings        String   // JSON string array
-  createdAt             DateTime @default(now())
+  id                  String   @id @default(cuid())
+  userId              String
+  type                String // water | wall | filter | electrolyzer | pump | strip | product | equipment
+  imageUrl            String
+  detectedIssues      String // JSON string array
+  probableIssues      String // JSON string array
+  confidence          Float    @default(0)
+  aiSummary           String
+  missingData         String // JSON string array
+  recommendedNextStep String?
+  safetyWarnings      String // JSON string array
+  createdAt           DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Plan d'action généré (déterministe + IA)
+// Pas de userId direct — hérite du userId du WaterTest parent (cascade)
 model ActionPlan {
   id                     String   @id @default(cuid())
   waterTestId            String
   diagnosis              String
   severity               String   @default("low") // low | medium | high | urgent
   confidence             Float    @default(0.8)
-  immediateActions       String   // JSON string array (ordonnées)
-  chemicalDosages        String   // JSON string array
+  immediateActions       String // JSON string array (ordonnées)
+  chemicalDosages        String // JSON string array
   filtrationHours        Float    @default(0)
   retestInHours          Float    @default(24)
   swimSafety             String   @default("unknown")
-  doNotDo                String   // JSON string array
+  doNotDo                String // JSON string array
   estimatedCost          String?
   whenToCallProfessional String?
   createdAt              DateTime @default(now())
@@ -90,44 +164,60 @@ model ActionPlan {
 
 // Équipements de la piscine
 model Equipment {
-  id                 String    @id @default(cuid())
-  type               String    // pump | filter | electrolyzer | cell | phProbe | robot | cover | heatpump | skimmer
-  brand              String?
-  model              String?
-  installedAt        DateTime?
-  lastMaintenanceAt  DateTime?
-  nextMaintenanceAt  DateTime?
-  photoUrl           String?
-  status             String    @default("ok") // ok | warning | issue
-  notes              String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  userId            String
+  type              String // pump | filter | electrolyzer | cell | phProbe | robot | cover | heatpump | skimmer
+  brand             String?
+  model             String?
+  installedAt       DateTime?
+  lastMaintenanceAt DateTime?
+  nextMaintenanceAt DateTime?
+  photoUrl          String?
+  status            String    @default("ok") // ok | warning | issue
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Inventaire produits
 model ProductInventory {
-  id           String   @id @default(cuid())
-  productName  String
-  category     String   // ph_minus | ph_plus | chlorine_slow | chlorine_shock | salt | alkalinity_plus | stabilizer | flocculant | anti_algae | filter_cleaner | other
+  id            String   @id @default(cuid())
+  userId        String
+  productName   String
+  category      String // ph_minus | ph_plus | chlorine_slow | chlorine_shock | salt | alkalinity_plus | stabilizer | flocculant | anti_algae | filter_cleaner | other
   concentration Float?
-  quantity     Float
-  unit         String   @default("kg") // kg | L | tablet
-  price        Float?
-  instructions String?
-  createdAt    DateTime @default(now())
+  quantity      Float
+  unit          String   @default("kg") // kg | L | tablet
+  price         Float?
+  instructions  String?
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Historique conversations assistant
 model ChatMessage {
   id        String   @id @default(cuid())
-  role      String   // user | assistant
+  userId    String
+  role      String // user | assistant
   content   String
   createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Tâches de maintenance (liées à un équipement optionnellement)
 model MaintenanceTask {
   id          String    @id @default(cuid())
+  userId      String
   title       String
   description String?
   type        String    @default("cleaning")
@@ -137,54 +227,83 @@ model MaintenanceTask {
   doneAt      DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Designs générés (studio IA)
 model PoolDesign {
   id        String   @id @default(cuid())
+  userId    String
   prompt    String
   imageUrl  String
   style     String?
   createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Rappels intelligents (générés et manuels)
 model Reminder {
-  id        String   @id @default(cuid())
-  type      String   // test_water, retest_after_product, after_storm, filter_clean, cell_clean, ...
+  id        String    @id @default(cuid())
+  userId    String
+  type      String // test_water, retest_after_product, after_storm, filter_clean, cell_clean, ...
   title     String
   detail    String
   action    String
-  priority  String   @default("medium") // low, medium, high, urgent
-  source    String   @default("schedule") // weather, test_history, inventory, equipment, schedule, manual
+  priority  String    @default("medium") // low, medium, high, urgent
+  source    String    @default("schedule") // weather, test_history, inventory, equipment, schedule, manual
   dueAt     DateTime?
-  done      Boolean  @default(false)
+  done      Boolean   @default(false)
   doneAt    DateTime?
-  snoozed   Boolean  @default(false)
-  createdAt DateTime @default(now())
+  snoozed   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Vue de guide (tracking analytics + recommendation)
 model GuideView {
-  id        String   @id @default(cuid())
-  guideId   String
-  viewedAt  DateTime @default(now())
+  id       String   @id @default(cuid())
+  userId   String
+  guideId  String
+  viewedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Abonnement freemium
 model Subscription {
-  id        String   @id @default(cuid())
-  plan      String   @default("surface") // surface, limpide, cristal, gardien
-  duration  String?  // week, month, quarter, halfyear
-  startedAt DateTime @default(now())
+  id        String    @id @default(cuid())
+  userId    String
+  plan      String    @default("free") // free, premium, expert
+  duration  String? // week, month, quarter, halfyear
+  startedAt DateTime  @default(now())
   expiresAt DateTime?
-  active    Boolean  @default(false)
+  active    Boolean   @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Événements analytics (funnel, rétention)
 model AnalyticsEvent {
   id        String   @id @default(cuid())
-  event     String   // first_scan, first_test, first_plan, guide_opened, video_viewed, paywall_viewed, ...
-  props     String?  // JSON
+  userId    String
+  event     String // first_scan, first_test, first_plan, guide_opened, video_viewed, paywall_viewed, ...
+  props     String? // JSON
   createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

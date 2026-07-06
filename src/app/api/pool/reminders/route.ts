@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { generateReminders, getCurrentSeason, type ReminderContext } from '@/lib/pool/reminders'
 import { assessWeather } from '@/lib/pool/weather-engine'
@@ -6,13 +8,19 @@ import { assessWeather } from '@/lib/pool/weather-engine'
 export const runtime = 'nodejs'
 
 export async function GET() {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
   try {
     const [profile, lastTest, savedReminders, equipment, products] = await Promise.all([
-      db.poolProfile.findFirst(),
-      db.waterTest.findFirst({ orderBy: { createdAt: 'desc' }, include: { actionPlans: true } }),
-      db.reminder.findMany({ where: { done: false }, orderBy: { createdAt: 'desc' }, take: 30 }),
-      db.equipment.findMany(),
-      db.productInventory.findMany(),
+      db.poolProfile.findFirst({ where: { userId } }),
+      db.waterTest.findFirst({ where: { userId }, orderBy: { createdAt: 'desc' }, include: { actionPlans: true } }),
+      db.reminder.findMany({ where: { userId, done: false }, orderBy: { createdAt: 'desc' }, take: 30 }),
+      db.equipment.findMany({ where: { userId } }),
+      db.productInventory.findMany({ where: { userId } }),
     ])
 
     // Dernier test : jours + si produit ajouté
@@ -74,11 +82,18 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
   try {
     const body = await req.json()
     // Créer un rappel manuel
     const r = await db.reminder.create({
       data: {
+        userId,
         type: body.type || 'test_water',
         title: body.title || 'Rappel personnalisé',
         detail: body.detail || '',
@@ -95,10 +110,20 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
   try {
     const body = await req.json()
     const { id, done, snoozed } = body
     if (!id) return NextResponse.json({ error: 'id requis' }, { status: 400 })
+    // Only update if it belongs to the authenticated user
+    const existing = await db.reminder.findFirst({ where: { id, userId } })
+    if (!existing) return NextResponse.json({ error: 'Rappel introuvable' }, { status: 404 })
+
     const r = await db.reminder.update({
       where: { id },
       data: {
@@ -114,8 +139,20 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
-  if (id) await db.reminder.delete({ where: { id } })
+  if (id) {
+    // Only delete if it belongs to the authenticated user
+    const existing = await db.reminder.findFirst({ where: { id, userId } })
+    if (existing) {
+      await db.reminder.delete({ where: { id } })
+    }
+  }
   return NextResponse.json({ success: true })
 }
