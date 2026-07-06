@@ -511,3 +511,62 @@ Routes tricky à gérer :
 - /api/guides : auth optionnelle + tracking conditionnel — `getServerSession(authOptions).catch(() => null)` + `if (userId)` autour du `db.guideView.create` pour éviter 401 sur le catalogue public
 - /api/pool/equipment PATCH : `delete data.userId` pour empêcher override malveillant du userId via le body de la requête PATCH
 
+
+---
+Task ID: L2-A
+Agent: general-purpose (mobile-shell)
+Task: Créer MobileAppShell + bottom tabs + 5 écrans mobile
+
+Work Log:
+- Lu `worklog.md` (RESTORE-1, L1-A→L1-E) : projet restauré, auth JWT, Prisma multi-tenant, 12 routes API sécurisées
+- Lu `src/lib/platform.ts` : détection Capacitor (iOS/Android/web), `isMobile()`, `isNative()` — déjà prête pour le routing mobile/desktop côté `page.tsx` (main agent)
+- Lu `src/components/aquamind/app-shell.tsx` : desktop shell 11 tabs, types `TabId` et `PoolProfileLite` exportés, pattern `useEffect` fetch profile + `Onboarding` fallback
+- Lu `src/components/aquamind/module-dashboard.tsx` (829 lignes) : props `{ onNavigate, onOpenEmergency, onAskAssistant }` — je peux réutiliser tel quel
+- Lu `src/components/aquamind/header.tsx` : pour aligner le style du mobile header (logo, aqua-text-gradient, glass-pill, gold divider)
+- Lu `src/app/globals.css` (340 lignes) : design system Oceanic Luxury complet (tokens gold/ocean/pearl, glass-card, glass-pill, gold-divider, aqua-text-gradient, custom-scroll). Aucune utilitaire safe-area n'existait — j'en ai ajouté 6
+- Vérifié que tous les modules aquamind ont des props compatibles avec mon wrapping (ModuleDiagnostic, ModuleHealthLog, ModuleMaintenance, ModulePaywall = pas de props ; ModuleWaterTest, ModuleActionPlan, ModuleWeather, ModuleReminders, ModuleGuides = `{ onNavigate }` ; ModuleAssistant = `{ presetQuestion, onConsumePreset }` ; ModuleDashboard = `{ onNavigate, onOpenEmergency, onAskAssistant }`)
+
+Architecture decisions:
+- **Contrôle** : les sous-onglets Analyses/Maintenance sont contrôlés par le shell (state `analysesSubTab`/`maintenanceSubTab` dans `MobileAppShell`), pas internes aux screens. Cela permet (a) aux deep links depuis le dashboard de commuter le sous-onglet, (b) de préserver le dernier choix de l'utilisateur quand il change d'onglet bottom tab et revient
+- **Mapping desktop→mobile** : les modules existants émettent `onNavigate(tab: TabId)` avec les 11 TabId desktop. J'ai créé `mapDesktopTabToMobile()` dans `types.ts` qui convertit vers `{ screen, analysesSubTab?, maintenanceSubTab? }` — c'est le pont entre les 2 modèles de navigation. Exemples : `'water'→{analyses, mesures}`, `'weather'→{maintenance, meteo}`, `'paywall'→{profile}`, `'guides'→{home}` (fallback, pas de tab guides sur mobile)
+- **Side-channel preset question** : le dashboard appelle `onAskAssistant(q)` qui stocke la question dans l'état du shell et commute vers l'écran assistant. Le `<ModuleAssistant presetQuestion={presetQuestion} onConsumePreset={...} />` consomme la question via son prop existant
+- **Réutilisation modules** : aucun module aquamind n'a été réécrit — les 5 screens sont des wrappers minces (padding + titre + sub-tabs) qui importent les modules existants via `../../aquamind/module-*`
+- **Safe areas** : utilities CSS ajoutées (`safe-area-top/bottom/left/right/all`, `.mobile-bottom-tabs`, `.mobile-header`, `.mobile-scroll`) + `@media (hover: none)` pour désactiver les hover effects sur touch devices + `-webkit-tap-highlight-color: transparent` + `-webkit-text-size-adjust: 100%`
+- **Pas de hover** sur les boutons mobile : utilisent `active:opacity-70` pour le feedback tactile, `transition-colors` (pas de `transition-all` ni scale)
+
+Files created (7 nouveaux fichiers + 1 modifié):
+1. `src/components/mobile/types.ts` — types `MobileScreen`, `AnalysesSubTab`, `MaintenanceSubTab`, `MobileNavigation`, re-export `TabId`/`PoolProfileLite`, fonction `mapDesktopTabToMobile()`
+2. `src/components/mobile/mobile-header.tsx` — header compact h-14 + safe-area-top, logo 32×32 + "AQWELIA" (aqua-text-gradient) + badge "Pro" (gold) + Sparkles icon, à droite glass-pill avec nom + volume de la piscine (ou "Non configuré"), bouton gauche = retour landing, gold divider en bas
+3. `src/components/mobile/bottom-tabs.tsx` — 5 onglets fixes (Accueil/Analyses/Assistant/Entretien/Profil), `position: fixed` via `.mobile-bottom-tabs`, `padding-bottom: env(safe-area-inset-bottom)`, `min-h-[56px]` par bouton, icônes 20px (`strokeWidth` 2.4 actif / 1.8 inactif, `fill="currentColor" fillOpacity={0.18}` actif), labels 10px, `text-gold` actif / `text-muted-foreground` inactif, `bg-background/95 backdrop-blur-lg`, `border-t border-border/40`
+4. `src/components/mobile/screens/home-screen.tsx` — wrapper `<ModuleDashboard />` dans `px-4 pb-24 pt-4`, titre "Aujourd'hui" avec icône Sun gold, transmet `onNavigate`/`onOpenEmergency`/`onAskAssistant` au module
+5. `src/components/mobile/screens/analyses-screen.tsx` — 3 sous-onglets pill-style (Mesures/Photo/Carnet), scrollable horizontalement, active = `border-gold/60 bg-gold/10 text-gold`. Render conditionnel de `<ModuleWaterTest />` / `<ModuleDiagnostic />` / `<ModuleHealthLog />`. Sous-onglet contrôlé par le shell via `subTab`/`onSubTabChange`
+6. `src/components/mobile/screens/assistant-screen.tsx` — `<ModuleAssistant />` pleine hauteur, `pb-24` pour clear les bottom tabs, transmet `presetQuestion`/`onConsumePreset`
+7. `src/components/mobile/screens/maintenance-screen.tsx` — 3 sous-onglets (Actions/Rappels/Météo), même style pill que AnalysesScreen. Render `<ModuleMaintenance />` / `<ModuleReminders onNavigate />` / `<ModuleWeather onNavigate />`
+8. `src/components/mobile/screens/profile-screen.tsx` — carte récap piscine (glass-card), section Abonnement avec `<ModulePaywall />`, section Paramètres avec 4 lignes (Notifications/Confidentialité/Aide/Landing) — placeholder "Bientôt disponible" pour les pages futures. Footer "v1.0.0-mobile"
+9. `src/components/mobile/mobile-app-shell.tsx` — orchestrateur : state `profile` (load on mount + Onboarding fallback comme desktop), `activeScreen`, `analysesSubTab`, `maintenanceSubTab`, `emergencyOpen`, `presetQuestion`. Handlers : `handleScreenChange` (bottom tabs), `handleModuleNavigate` (mapping desktop TabId → mobile intent), `handleAskAssistant` (preset + switch), `handleConsumePreset`. Loading state identique au desktop (Waves pulse). `<EmergencyMode />` réutilisé avec `onAskAssistant` + `onNavigate` bridge
+10. `src/app/globals.css` (modifié, +65 lignes) — ajout du bloc "AQWELIA — Mobile safe areas + native adaptations" après le bloc reduced-motion : 6 classes safe-area, `.mobile-bottom-tabs`, `.mobile-header`, `@media (hover: none)` désactive `hover:scale-105/110` et `hover:bg-secondary`, `html { -webkit-text-size-adjust: 100% }`, `* { -webkit-tap-highlight-color: transparent }`, `.mobile-scroll { -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain }`
+
+Vérifications finales:
+- `bunx tsc --noEmit 2>&1 | grep "src/components/mobile"` → **0 erreur** dans tous les fichiers mobile ✅
+- `bunx tsc --noEmit 2>&1 | grep -vE "^examples/|^skills/"` → 1 erreur résiduelle pré-existante `src/lib/pool/safety-rules.ts(28,9)` (comparaison '"allowed"' vs '"forbidden"' — HORS scope L2-A, mentionnée dans L1-E comme pré-existante)
+- `bun run lint` → **0 erreur, 0 warning** ✅ (exit code 0)
+
+Stage Summary:
+- ✅ 9 nouveaux fichiers créés (1 types + 1 header + 1 bottom-tabs + 5 screens + 1 shell) + 1 fichier CSS modifié
+- ✅ Architecture en couches : `MobileAppShell` (orchestrateur) → `MobileHeader` + `BottomTabs` + 5 screens (wrappers) → modules aquamind existants (réutilisés tels quels, jamais modifiés)
+- ✅ Pattern de navigation hybride : 5 écrans mobile (bottom tabs) avec 2 sous-onglets pilules (Analyses: Mesures/Photo/Carnet ; Maintenance: Actions/Rappels/Météo), mapping bidirectionnel desktop TabId ↔ MobileScreen via `mapDesktopTabToMobile()`
+- ✅ Safe areas iOS/Android via `env(safe-area-inset-*)` (notch, home indicator, gesture edges) — header padding-top, bottom tabs padding-bottom, utilitaires réutilisables `.safe-area-{top,bottom,left,right,all}`
+- ✅ Touch-friendly : `min-h-[44px]` sur pills de sous-onglets, `min-h-[56px]` sur bottom tabs, `active:opacity-70` au lieu de `:hover`, `-webkit-tap-highlight-color: transparent`, `@media (hover: none)` désactive les hover effects
+- ✅ Design system cohérent : tokens AQWELIA (gold, primary, ocean-light, pearl), classes existantes réutilisées (`glass-pill`, `glass-card`, `aqua-text-gradient`, `gold-divider`, `section-label`, `custom-scroll`, `font-display`, `backdrop-blur-xl`), aucune nouvelle couleur introduite
+- ✅ Composants desktop `src/components/aquamind/*` INTACTS (aucune modification) — règle respectée
+- ✅ `src/app/page.tsx` NON touché — la main agent branchera `MobileAppShell` vs `AppShell` selon `isMobile()`/`isNative()` depuis `src/lib/platform.ts`
+- ✅ `prisma/schema.prisma`, `src/lib/auth.ts`, `src/middleware.ts` NON touchés
+- ✅ `'use client'` sur tous les 8 composants mobile (header, tabs, 5 screens, shell) — utilise hooks/state
+- ✅ 0 erreur TypeScript, 0 erreur/0 warning ESLint sur le scope mobile
+- ✅ Icons lucide-react valides : Home, Droplets, MessageCircle, Wrench, User, Sparkles, Sun, Camera, BookOpen, FlaskConical, Bell, CloudSun, Crown, Settings, ChevronRight, Shield, HelpCircle, Waves
+
+Points d'attention pour la main agent / prochains lots:
+- Le routing desktop vs mobile devra être fait dans `src/app/page.tsx` en utilisant `isMobile()` de `@/lib/platform`. Une approche recommandée est un guard client-side (`useEffect` + `useState`) pour éviter le flash SSR, OU détecter via user-agent server-side et rendre conditionnellement
+- Si la main agent veut brancher un deep-link `?tab=analyses&sub=photo`, ajouter un `useEffect` dans `MobileAppShell` qui parse `window.location.search` et appelle `handleModuleNavigate()` avec le TabId desktop correspondant
+- Les 4 lignes "Paramètres" du ProfileScreen sont des placeholders — il faudra créer `src/app/settings/notifications`, `privacy`, `help` dans un lot ultérieur (L3 ou plus)
+- Le composant `Onboarding` est réutilisé tel quel (desktop) — il est responsive et fonctionne sur mobile, mais un audit UX mobile dédié pourrait être pertinent dans un lot L2-B
