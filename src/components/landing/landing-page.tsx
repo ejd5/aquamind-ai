@@ -225,9 +225,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
           <div className="mb-8 flex items-start gap-3 rounded-xl border border-gold/20 bg-white/5 p-4">
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
             <p className="text-[11px] leading-relaxed text-white/70">
-              <strong className="text-white/90">Avis de prudence.</strong> AQWELIA aide au
-              diagnostic et à l&apos;entretien mais ne remplace pas un professionnel. Les dosages
-              {t('disclaimer')}
+              <strong className="text-white/90">{t('disclaimerLabel')}</strong> {t('disclaimer')}
               
             </p>
           </div>
