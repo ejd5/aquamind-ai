@@ -4,10 +4,6 @@
  * URL: /settings
  *
  * Client component (uses useSession, useRouter, billing, signOut).
- * Lists 11 sections in glass cards with the AQWELIA design system:
- *   1. Mon abonnement          → billing.manageSubscription()
- *   2. Restaurer mes achats    → billing.restorePurchases()
- *   3. Notifications           → 3 toggle switches (rappels, météo, reco)
  * Lists 15 sections in glass cards with the AQWELIA design system:
  *   1. Mon abonnement          → billing.manageSubscription()
  *   2. Restaurer mes achats    → billing.restorePurchases()
@@ -87,11 +83,9 @@ import {
   Info,
   LogOut,
   ChevronRight,
-  Sparkles,
-  ArrowLeft,
-  Loader2,
   ChevronDown,
   Sparkles,
+  ArrowLeft,
   Loader2,
   Globe,
   MapPin,

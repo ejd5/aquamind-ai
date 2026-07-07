@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { useState } from 'react'
 import { Waves, Sparkles, ChevronLeft, ChevronRight, Check, Clock, Crosshair, MapPin, Loader2, Droplets, Thermometer, Users, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -16,8 +15,6 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { SPA_SPECIFICS } from '@/lib/pool/spa-data'
-import { getCountryList } from '@/lib/countries'
-import { detectCountryConfig } from '@/lib/countries/detect'
 
 interface OnboardingProps {
   onDone: () => void
@@ -116,7 +113,6 @@ export function Onboarding({ onDone }: OnboardingProps) {
     filterType: 'sand',
     pumpType: '',
     region: '', // ville saisie ou "lat,lon" — vide = géoloc IP à la prochaine requête
-    country: 'FR', // code ISO 3166-1 alpha-2 — utilisé pour les normes eau locales
     sunExposure: 'medium',
     covered: false,
     usageLevel: 'medium',
@@ -151,24 +147,6 @@ export function Onboarding({ onDone }: OnboardingProps) {
       }))
     }
   }
-
-  // Détection automatique du pays au montage du composant.
-  // On lance la cascade (profile → IP → navigateur → défaut FR) en arrière-plan
-  // et on pré-remplit le champ `country` si l'utilisateur n'a pas déjà choisi.
-  useEffect(() => {
-    let cancelled = false
-    detectCountryConfig()
-      .then((detected) => {
-        if (cancelled) return
-        setForm((f) => (f.country ? f : { ...f, country: detected.config.code }))
-      })
-      .catch(() => {
-        // Silently ignore — the user can still pick a country manually.
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   // Géolocalisation GPS navigateur (ou Capacitor sur mobile)
   function handleGeolocate() {
@@ -234,7 +212,6 @@ export function Onboarding({ onDone }: OnboardingProps) {
     try {
       const body = {
         ...form,
-        country: form.country,
         volume: Number(form.volume),
         saltSystem: form.treatmentType === 'salt' || form.saltSystem,
       }
@@ -276,7 +253,6 @@ export function Onboarding({ onDone }: OnboardingProps) {
           sunExposure: 'medium',
           usageLevel: 'medium',
           covered: false,
-          country: 'FR',
         }),
       })
       if (!res.ok) throw new Error('Erreur')
@@ -684,28 +660,6 @@ export function Onboarding({ onDone }: OnboardingProps) {
 
           {step === 4 && (
             <div className="space-y-4">
-              {/* Pays — détermine les normes eau locales (pH, chlore, brome…) */}
-              <div className="space-y-1.5">
-                <Label htmlFor="country">📍 Pays</Label>
-                <select
-                  id="country"
-                  value={form.country}
-                  onChange={(e) => update('country', e.target.value)}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {getCountryList().map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.flag} {c.name}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-[11px] text-muted-foreground">
-                  Détecté automatiquement. Détermine les normes qualité d'eau et les boutiques partenaires.
-                </p>
-              </div>
-
-              {/* Localisation pour la météo : GPS + saisie manuelle */}
-              <div className="space-y-1.5">
               {/* Localisation pour la météo : GPS + saisie manuelle */}
               <div className="space-y-1.5">
                 <Label>Votre ville (pour la météo)</Label>

@@ -4,10 +4,6 @@ import { KeyboardResize, KeyboardStyle } from '@capacitor/keyboard'
 const config: CapacitorConfig = {
   appId: 'com.aqwelia.app',
   appName: 'Aqwelia',
-<<<<<<< HEAD
-  version: '1.0.0',
-=======
->>>>>>> main
   webDir: 'out',
   backgroundColor: '#003B4A',
   ios: {
