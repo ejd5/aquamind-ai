@@ -12,7 +12,6 @@ interface FinalCtaProps {
 
 export function FinalCta({ hasProfile, onEnterApp }: FinalCtaProps) {
   const t = useTranslations('landing')
-  const t = useTranslations('landing')
 
   return (
     <section id="final-cta" className="relative py-20 sm:py-28">

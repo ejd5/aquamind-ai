@@ -30,7 +30,6 @@ const DURATION_SUFFIX_KEY: Record<DurationId, string> = {
 
 export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
   const t = useTranslations('landing')
-  const t = useTranslations('landing')
   const tPlans = useTranslations('plans')
 
   const [duration, setDuration] = useState<DurationId>('month')

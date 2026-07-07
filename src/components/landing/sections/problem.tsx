@@ -7,7 +7,6 @@ import { GlassCard, Reveal, SectionHeading, staggerContainer, fadeUpVariants } f
 
 export function Problem() {
   const t = useTranslations('landing')
-  const t = useTranslations('landing')
 
   const PAINS = [
     { emoji: '🟢', title: t('problemGreenWater'), text: t('problemGreenWaterText') },
