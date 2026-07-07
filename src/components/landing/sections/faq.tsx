@@ -3,7 +3,6 @@
 import { motion } from 'framer-motion'
 import { useTranslations } from 'next-intl'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import { useTranslations } from 'next-intl'
 import { Reveal, SectionHeading, staggerContainer, fadeUpVariants } from '../landing-utils'
 
 export function Faq() {
