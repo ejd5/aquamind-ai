@@ -13,6 +13,7 @@ import {
   History,
   RefreshCw,
   ShieldAlert,
+  Trash2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -577,6 +578,24 @@ export function ModuleDiagnostic() {
                         </p>
                       )}
                     </div>
+                    {/* Delete button */}
+                    <button
+                      onClick={async () => {
+                        if (!confirm('Supprimer ce diagnostic ?')) return
+                        try {
+                          await api.delete(`/api/pool/photo-diagnostic?id=${d.id}`)
+                          toast({ title: 'Diagnostic supprimé' })
+                          loadHistory()
+                        } catch {
+                          toast({ title: 'Erreur', description: 'Suppression impossible', variant: 'destructive' })
+                        }
+                      }}
+                      className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      title="Supprimer"
+                      aria-label="Supprimer ce diagnostic"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 )
               })}

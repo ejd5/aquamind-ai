@@ -80,3 +80,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Erreur' }, { status: 500 })
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+  const userId = session.user.id
+  const { searchParams } = new URL(req.url)
+  const id = searchParams.get('id')
+  if (!id) {
+    return NextResponse.json({ error: 'ID requis' }, { status: 400 })
+  }
+
+  // Verify ownership before deleting
+  const diag = await db.photoDiagnostic.findFirst({ where: { id, userId } })
+  if (!diag) {
+    return NextResponse.json({ error: 'Non trouvé' }, { status: 404 })
+  }
+
+  await db.photoDiagnostic.delete({ where: { id } })
+  return NextResponse.json({ success: true })
+}
