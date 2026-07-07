@@ -15,6 +15,7 @@ import { SPA_BRANDS, SPA_TREATMENTS, SPA_MAINTENANCE } from '@/lib/pool/spa-data
 
 export function SpaSection() {
   const t = useTranslations('landing')
+  const td = useTranslations('spaData')
 
   const drainageTasks = SPA_MAINTENANCE.filter((task) => task.isDrainage)
 
