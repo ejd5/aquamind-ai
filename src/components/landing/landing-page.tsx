@@ -113,12 +113,12 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
             )}
             {/* Language switcher */}
             <LanguageSwitcher />
-            {/* Bouton {t('common.signIn')} — toujours visible */}
+            {/* Bouton Connexion — toujours visible */}
             <a
               href="/auth/signin"
               className="rounded-full border border-gold/40 bg-background/80 px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-gold hover:text-gold"
             >
-              {t('common.signIn')}
+              Connexion
             </a>
             <button
               onClick={onEnterApp}
@@ -177,7 +177,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
                   href="/auth/signin"
                   className="mt-2 flex items-center justify-center gap-2 rounded-full border border-gold/40 bg-background/80 px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-gold hover:text-gold"
                 >
-                  {t('common.signIn')}
+                  Connexion
                 </a>
                 <div className="mt-2 flex items-center justify-center">
                 </div>

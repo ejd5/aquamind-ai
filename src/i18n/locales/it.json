@@ -404,7 +404,8 @@
     "footerCopyright": "Always crystal-clear water.",
     "footerVersion": "v2.0 Copilot",
     "footerMadeInFrance": "Made in France 🇫🇷",
-    "footerTagline2": "Pool copilot"
+    "footerTagline2": "Pool copilot",
+    "signIn": "Sign in"
   },
   "plans": {
     "free": {
