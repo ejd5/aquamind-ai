@@ -10,22 +10,23 @@ interface HeroProps {
   onEnterApp: () => void
 }
 
-const STATS = [
-  { value: 11, suffix: '', label: t('statModules'), decimals: 0 },
-  { value: 20, suffix: '+', label: t('statGuides'), decimals: 0 },
-  { value: 550, prefix: '-', suffix: '€', label: t('statSavings'), decimals: 0 },
-  { value: 25, suffix: 'h', label: t('statHours'), decimals: 0 },
-]
-
-const TRUST = [
-  { icon: Gift, label: t('trustNoCard') },
-  { icon: ShieldCheck, label: t('trustNoCommitment') },
-  { icon: Lock, label: t('trustPrivate') },
-  { icon: Sparkles, label: t('trustFrance') },
-]
-
 export function Hero({ hasProfile, onEnterApp }: HeroProps) {
   const t = useTranslations('landing')
+
+  const STATS = [
+    { value: 11, suffix: '', label: t('statModules'), decimals: 0 },
+    { value: 20, suffix: '+', label: t('statGuides'), decimals: 0 },
+    { value: 550, prefix: '-', suffix: '€', label: t('statSavings'), decimals: 0 },
+    { value: 25, suffix: 'h', label: t('statHours'), decimals: 0 },
+  ]
+
+  const TRUST = [
+    { icon: Gift, label: t('trustNoCard') },
+    { icon: ShieldCheck, label: t('trustNoCommitment') },
+    { icon: Lock, label: t('trustPrivate') },
+    { icon: Sparkles, label: t('trustFrance') },
+  ]
+
   return (
     <section id="top" className="relative isolate overflow-hidden pt-28 pb-24 sm:pt-32 sm:pb-32">
       {/* Aurora mesh background */}
