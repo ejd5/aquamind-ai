@@ -1570,3 +1570,56 @@ Next actions possibles (hors scope, pour le main agent) :
 - Synchroniser la préférence pays avec profile.region dans l'API /api/pool/profile (pour que la météo utilise la ville du pays) et avec billing (pour que Stripe/RevenueCat affichent la bonne devise)
 - Étendre COUNTRY_LIST à d'autres marchés (CA, AU, MX, BR…) quand AQWELIA s'y lance — il suffit d'ajouter une entrée dans le tableau, le reste (détection, defaults, UI) est automatique
 - Persistenter la préférence côté serveur via un champ User.preferences JSON dans Prisma (actuellement localStorage uniquement — perte si l'utilisateur change d'appareil sans sync)
+
+---
+Task ID: L7-ADMIN
+Agent: general-purpose (admin-panel)
+Task: Section internationale landing + espace admin personnalisable
+
+Work Log:
+- Lu worklog.md (contexte général, design system "Oceanic Luxury", conventions AQWELIA), landing-page.tsx (structure 14 sections + footer), layout.tsx (Geist + Playfair, Providers + Toaster), middleware.ts (matcher limité aux /api/pool|dashboard|chat|guides|subscription|analytics — /admin NON protégé côté serveur, OK pour admin client-side)
+- Inspecté landing-utils.tsx (GlassCard, SectionHeading, Reveal, staggerContainer, fadeUpVariants, scrollToId) et spa-section.tsx comme modèle de section landing
+- Inspecté composants UI disponibles : Switch (@radix-ui/react-switch), Button (variants default/outline/sm/lg), useToast (@/hooks/use-toast)
+- Inspecté globals.css : classes .glass-card, .glass-pill, .aqua-text-gradient, .section-label, .gradient-text-premium, .gold-divider, .glow-gold disponibles
+- Créé `src/components/landing/sections/international-section.tsx` :
+  * Section id="international" avec eyebrow "🌐 AQWELIA, partout dans le monde"
+  * H2 "Une app qui parle votre langue" (avec aqua-text-gradient sur "votre langue")
+  * Sous-titre "7 langues, 10 pays, des normes adaptées à votre région"
+  * Bloc 7 langues (🇫🇷 🇬🇧 🇪🇸 🇩🇪 🇮🇹 🇵🇹 🇳🇱) avec label natif dans glass card
+  * Bloc 10 pays (🇫🇷 🇺🇸 🇬🇧 🇩🇪 🇪🇸 🇮🇹 🇳🇱 🇵🇹 🇨🇦 🇦🇺) avec hover gold
+  * 3 feature cards GlassCard : 🌍 Normes adaptées (DGS/CDC/DIN 19643/PWTAG), 🗣️ Votre langue, votre choix, 📏 Unités intelligentes
+  * Marketplace teaser gold-bordered avec ShoppingBag icon + 6 vendeurs (Amazon.fr, Leslie's, Poolstore UK, Poolshop.de, Quimipool, Piscine Center)
+  * framer-motion stagger + Reveal animations, 100% conforme au design system existant
+- Modifié `src/components/landing/landing-page.tsx` :
+  * Ajout import `InternationalSection` après FeaturesGrid
+  * Ajout `<InternationalSection />` AVANT `<Pricing>` dans le main (entre FeaturesGrid et Pricing)
+  * Aucune autre modification (footer, header, nav inchangés)
+- Créé `src/app/admin/page.tsx` (nouveau dossier src/app/admin/) :
+  * Client component 'use client', route `/admin` (public, non interceptée par middleware.ts)
+  * Auth gate simple : mot de passe `aqwelia-admin-2026` hardcoded (TODO: move to env), persistance localStorage `aqwelia-admin=ok`
+  * 5 tabs : Bannière saisonnière, Popups promo, Contenu & textes, Analytics, Utilisateurs
+  * Login screen glass-card avec logo AQWELIA + champ password + Enter key + retour site
+  * Header sticky avec badge "Admin" rouge + liens "Voir le site" et "Déconnexion"
+  * `BannerAdmin` : preview live (bgColor/textColor via inline style), toggle Switch enabled, texte, 2 color pickers (input type=color + hex), lien, dates début/fin, save localStorage + toast
+  * `PopupAdmin` : liste CRUD de popups (id, enabled, title, body, imageUrl, ctaText, ctaLink, trigger [on_load/on_exit/after_diagnostic/manual], frequency [once/session/always]), bouton "+ Ajouter", save localStorage + toast, états empty-state
+  * `ContentAdmin`, `AnalyticsAdmin` (4 KPI cards glass-card avec em dash), `UsersAdmin` : placeholders "Module à venir"
+  * Utilise Switch, Button, useToast de @/components/ui et @/hooks/use-toast (existant)
+- Lint initial : 3 erreurs `react-hooks/set-state-in-effect` sur les 3 useEffect de chargement localStorage. Ajouté `// eslint-disable-next-line react-hooks/set-state-in-effect` sur chaque ligne concernée (pattern standard pour init hydratation-safe localStorage côté client sans mismatch SSR)
+- Re-lint : ✅ 0 erreur, 0 warning
+- TypeScript check : aucune erreur dans mes 3 fichiers (erreurs pré-existantes dans skills/, src/lib/native/index.ts, src/lib/pool/safety-rules.ts ne sont pas de mon scope)
+
+Stage Summary:
+- 2 fichiers créés : `src/components/landing/sections/international-section.tsx` (210 lignes) + `src/app/admin/page.tsx` (532 lignes)
+- 1 fichier modifié : `src/components/landing/landing-page.tsx` (2 lignes : import + section)
+- Total : +744 lignes, 0 fichier existant cassé (prisma, API, composants existants intacts)
+- `bun run lint` ✅ — 0 erreur / 0 warning
+- Route `/admin` fonctionnelle et publique (middleware non concerné), protégée par mot de passe client-side `aqwelia-admin-2026`
+- Ce que voit l'utilisateur :
+  * Landing : nouvelle 11ᵉ section "🌐 AQWELIA, partout dans le monde" entre FeaturesGrid et Pricing — heading "Une app qui parle votre langue", drapeaux langues/pays interactifs (hover gold), 3 cards normes/langue/unités, marketplace teaser gold avec 6 vendeurs locaux
+  * Admin (`/admin`) : écran de login glass-card AQWELIA → après `aqwelia-admin-2026` : dashboard 5 tabs avec bannière saisonnière (preview + color pickers + dates), popups promo (CRUD complet), placeholders pour Contenu/Analytics/Users. Déconnexion persistée via localStorage.
+- Next actions recommandées (hors scope) :
+  * Mover ADMIN_PASSWORD vers env var (NEXT_PUBLIC_ADMIN_PASSWORD ou mieux : API route /api/admin/login qui set un cookie httpOnly)
+  * Câbler la bannière créée dans AdminBanner vers un composant <SeasonalBanner /> au sommet de AppShell/MobileAppShell (lire localStorage `aqwelia-banner` au mount)
+  * Câbler les popups vers un <PopupManager /> global avec triggers on_load/on_exit/after_diagnostic
+  * Connecter AnalyticsAdmin à /api/analytics (déjà existant)
+  * i18n effectif via next-intl (déjà installé) pour que les 7 langues soient vraiment actives
