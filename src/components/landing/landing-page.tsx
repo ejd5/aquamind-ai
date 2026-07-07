@@ -108,7 +108,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
                 onClick={onEnterApp}
                 className="rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-gold/50 hover:text-gold"
               >
-                Accéder à l&apos;app
+                {t('navApp')}
               </button>
             )}
             {/* Language switcher */}
