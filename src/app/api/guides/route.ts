@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { GUIDES, CATEGORIES, recommendGuides } from '@/lib/pool/guides-data'
 import { db } from '@/lib/db'
+import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
 
@@ -17,10 +18,14 @@ export async function GET(req: NextRequest) {
   // resolution fails (e.g. on static / pre-rendered contexts).
   const session = await getServerSession(authOptions).catch(() => null)
   const userId = session?.user?.id
+  const locale = pickLocale(req)
 
   if (id) {
     const guide = GUIDES.find((g) => g.id === id)
-    if (!guide) return NextResponse.json({ error: 'Guide introuvable' }, { status: 404 })
+    if (!guide) {
+      const msg = await translate(locale, 'common.errors.guideNotFound', 'Guide introuvable')
+      return NextResponse.json({ error: msg }, { status: 404 })
+    }
     // Track view only if user is authenticated
     if (userId) {
       await db.guideView.create({ data: { userId, guideId: id } }).catch(() => null)

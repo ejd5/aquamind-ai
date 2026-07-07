@@ -210,10 +210,25 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number, t: TFun
   const probableIssues = diagnostic.probableIssues || []
   const allText = [...issues, summary, ...probableIssues].join(' ').toLowerCase()
 
+  // Multilingual detection patterns (fr/en/es/de/it/pt/nl) — AI may generate
+  // text in any locale, so we match all supported language variants.
+  const GREEN_WATER_PATTERNS = [
+    'eau verte', 'green water', 'agua verde', 'água verde',
+    'grünes wasser', 'gruenes wasser', 'acqua verde', 'groen water',
+  ]
+  const CLOUDY_WATER_PATTERNS = [
+    'eau trouble', 'cloudy', 'agua turbia', 'água turva',
+    'trübes wasser', 'truebes wasser', 'acqua torbida', 'troebel water',
+  ]
+  const DEPOSIT_PATTERNS = [
+    'particul', 'dépôt', 'depot', 'deposit',
+    'depósito', 'deposito', 'ablagerung', 'afzetting',
+  ]
+
   const hasGreenWater =
     issues.some((i) => i.toLowerCase().includes('vert')) ||
     summary.includes('vert') ||
-    allText.includes('eau verte')
+    GREEN_WATER_PATTERNS.some((p) => allText.includes(p))
   const hasAlgae =
     issues.some((i) => i.toLowerCase().includes('alg')) ||
     summary.includes('alg') ||
@@ -221,8 +236,8 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number, t: TFun
   const hasCloudy =
     issues.some((i) => i.toLowerCase().includes('trouble')) ||
     summary.includes('trouble') ||
-    allText.includes('eau trouble')
-  const hasParticles = allText.includes('particul') || allText.includes('dépôt')
+    CLOUDY_WATER_PATTERNS.some((p) => allText.includes(p))
+  const hasParticles = DEPOSIT_PATTERNS.some((p) => allText.includes(p))
 
   const phField: InputField = {
     name: 'ph',

@@ -173,7 +173,7 @@ function Gauge({ value, label, color }: { value: number; label: string; color: s
 }
 
 interface WeatherLite {
-  weather?: { location?: string; currentTempC?: number; weatherDesc?: string } | null
+  weather?: { location?: string; currentTempC?: number; weatherDesc?: string; weatherCode?: number } | null
   assessment?: {
     alerts: {
       id: string
@@ -750,7 +750,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                 </div>
                 <p className="text-[11px] text-muted-foreground">
                   {weather?.weather?.currentTempC != null
-                    ? `${weather.weather.currentTempC}°C · ${weather.weather.weatherDesc || ''}`
+                    ? `${weather.weather.currentTempC}°C · ${weather.weather.weatherCode ? tWeather(`codes.${weather.weather.weatherCode}` as any) : ''}`
                     : t('noWeatherAlert')}
                 </p>
                 <Button

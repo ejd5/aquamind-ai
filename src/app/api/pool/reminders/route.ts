@@ -4,13 +4,16 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { generateReminders, getCurrentSeason, type ReminderContext } from '@/lib/pool/reminders'
 import { assessWeather } from '@/lib/pool/weather-engine'
+import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const locale = pickLocale(req)
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
 
@@ -83,19 +86,26 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
+  const locale = pickLocale(req)
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
 
   try {
     const body = await req.json()
     // Créer un rappel manuel
+    const defaultReminderTitle = await translate(
+      locale,
+      'common.errors.defaultReminder',
+      'Rappel personnalisé'
+    )
     const r = await db.reminder.create({
       data: {
         userId,
         type: body.type || 'test_water',
-        title: body.title || 'Rappel personnalisé',
+        title: body.title || defaultReminderTitle,
         detail: body.detail || '',
         action: body.action || '',
         priority: body.priority || 'medium',
@@ -111,8 +121,10 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions)
+  const locale = pickLocale(req)
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
 
@@ -122,7 +134,14 @@ export async function PATCH(req: NextRequest) {
     if (!id) return NextResponse.json({ error: 'id requis' }, { status: 400 })
     // Only update if it belongs to the authenticated user
     const existing = await db.reminder.findFirst({ where: { id, userId } })
-    if (!existing) return NextResponse.json({ error: 'Rappel introuvable' }, { status: 404 })
+    if (!existing) {
+      const msg = await translate(
+        locale,
+        'common.errors.reminderNotFound',
+        'Rappel introuvable'
+      )
+      return NextResponse.json({ error: msg }, { status: 404 })
+    }
 
     const r = await db.reminder.update({
       where: { id },
@@ -141,7 +160,9 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const locale = pickLocale(req)
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
 

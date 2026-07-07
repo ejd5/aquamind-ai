@@ -55,6 +55,11 @@ export async function POST(req: Request) {
       'common.demoPoolName',
       DEMO_POOL_NAME_FALLBACK
     )
+    const demoRegion = await translate(
+      locale,
+      'common.errors.regionSudEst',
+      'Sud-Est / PACA'
+    )
 
     // Find or create the demo user.
     let user = await db.user.findUnique({ where: { email: DEMO_EMAIL } })
@@ -83,7 +88,7 @@ export async function POST(req: Request) {
           sunExposure: 'high',
           usageLevel: 'medium',
           covered: false,
-          region: 'Sud-Est / PACA',
+          region: demoRegion,
         },
       })
 
@@ -97,19 +102,24 @@ export async function POST(req: Request) {
       })
     }
 
+    const demoLoginMessage = await translate(
+      locale,
+      'common.errors.demoLoginMessage',
+      'Utilisez ces identifiants pour vous connecter'
+    )
     return NextResponse.json({
       email: DEMO_EMAIL,
       password: DEMO_PASSWORD,
-      // TODO: i18n — return a translation key for the client to localise.
-      message: 'Utilisez ces identifiants pour vous connecter',
+      message: demoLoginMessage,
     })
   } catch (err) {
     console.error('[demo/login] error:', err)
-    // TODO: i18n — return a translation key (common.errors.demoCreateError)
-    // for the client to localise. French fallback kept for now.
-    return NextResponse.json(
-      { error: 'Erreur lors de la création du compte démo' },
-      { status: 500 }
+    const locale = pickLocale(req)
+    const msg = await translate(
+      locale,
+      'common.errors.demoCreateError',
+      'Erreur lors de la création du compte démo'
     )
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

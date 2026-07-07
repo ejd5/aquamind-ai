@@ -85,6 +85,48 @@ function safeParse<T>(s: string | null | undefined, fallback: T): T {
   }
 }
 
+// Multilingual detection patterns (fr/en/es/de/it/pt/nl) — AI may generate
+// text in any locale, so we match all supported language variants to detect
+// "resolved" diagnostics and AI refusal messages.
+const RESOLVED_PATTERNS = [
+  // FR
+  'résolu', 'resolu', 'sain', 'clair',
+  // EN
+  'resolved', 'healthy', 'clean', 'clear',
+  // ES
+  'resuelto', 'sano', 'limpio', 'claro',
+  // DE
+  'gelöst', 'geloest', 'gesund', 'sauber', 'klar',
+  // IT
+  'risolto', 'sano', 'pulito', 'chiaro',
+  // PT
+  'resolvido', 'saudável', 'saudavel', 'limpo', 'claro',
+  // NL
+  'opgelost', 'gezond', 'schoon', 'helder',
+]
+
+const REFUSAL_PATTERNS = [
+  'je ne peux pas',          // FR
+  "i can't", 'i cannot',     // EN
+  'no puedo',                // ES
+  'ich kann nicht',          // DE
+  'non posso',               // IT
+  'não posso', 'nao posso',  // PT
+  'ik kan niet',             // NL
+]
+
+function isRefusalText(text: string | null | undefined): boolean {
+  if (!text) return false
+  const lower = text.toLowerCase()
+  return REFUSAL_PATTERNS.some((p) => lower.includes(p))
+}
+
+function isResolvedText(text: string | null | undefined): boolean {
+  if (!text) return false
+  const lower = text.toLowerCase()
+  return RESOLVED_PATTERNS.some((p) => lower.includes(p))
+}
+
 export function ModuleDiagnostic() {
   const t = useTranslations('diagnostic')
   const locale = useLocale()
@@ -547,13 +589,7 @@ export function ModuleDiagnostic() {
                 const summaryLower = (d.aiSummary || '').toLowerCase()
                 const isResolved =
                   detected.length === 0 ||
-                  summaryLower.includes('résolu') ||
-                  summaryLower.includes('resolu') ||
-                  summaryLower.includes('resolved') ||
-                  summaryLower.includes('sain') ||
-                  summaryLower.includes('healthy') ||
-                  summaryLower.includes('clean') ||
-                  summaryLower.includes('clair')
+                  isResolvedText(summaryLower)
                 return (
                   <div
                     key={d.id}
@@ -608,7 +644,7 @@ export function ModuleDiagnostic() {
                           )}
                         </div>
                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                          {d.aiSummary && !d.aiSummary.toLowerCase().includes('je ne peux pas') && !d.aiSummary.toLowerCase().includes("i can't") && !d.aiSummary.toLowerCase().includes('i cannot')
+                          {d.aiSummary && !isRefusalText(d.aiSummary)
                             ? d.aiSummary
                             : t('noAnalysis')}
                         </p>
@@ -665,7 +701,7 @@ export function ModuleDiagnostic() {
                                 {d.type} · {new Date(d.createdAt).toLocaleDateString(locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                               </p>
                               <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                                {d.aiSummary && !d.aiSummary.toLowerCase().includes('je ne peux pas') && !d.aiSummary.toLowerCase().includes("i can't") && !d.aiSummary.toLowerCase().includes('i cannot')
+                                {d.aiSummary && !isRefusalText(d.aiSummary)
                                   ? d.aiSummary
                                   : t('noAnalysis')}
                               </p>

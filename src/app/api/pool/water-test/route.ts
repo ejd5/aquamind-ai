@@ -5,14 +5,16 @@ import { db } from '@/lib/db'
 import { generateActionPlan } from '@/lib/pool/action-plan'
 import { calculateClearWaterIndex, calculateLSI, lsiInterpretation } from '@/lib/pool/water-balance'
 import { assessSwimSafety } from '@/lib/pool/safety-rules'
+import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    // TODO: i18n — return a translation key for the client to localise.
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const locale = pickLocale(req)
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
 
@@ -27,9 +29,10 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
+  const locale = pickLocale(req)
   if (!session?.user?.id) {
-    // TODO: i18n — return a translation key for the client to localise.
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
 
@@ -37,9 +40,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const ph = Number(body.ph)
     if (isNaN(ph)) {
-      // TODO: i18n — return a translation key (common.errors.phRequired)
-      // for the client to localise. French fallback kept for now.
-      return NextResponse.json({ error: 'pH requis' }, { status: 400 })
+      const msg = await translate(
+        locale,
+        'common.errors.phRequired',
+        'pH requis'
+      )
+      return NextResponse.json({ error: msg }, { status: 400 })
     }
 
     const test = {
@@ -115,8 +121,9 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    // TODO: i18n — return a translation key for the client to localise.
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const locale = pickLocale(req)
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
 

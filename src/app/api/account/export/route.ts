@@ -27,13 +27,16 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const locale = pickLocale(req)
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
 
   const userId = session.user.id
@@ -95,9 +98,12 @@ export async function GET() {
     })
   } catch (err) {
     console.error('[account/export] error:', err)
-    return NextResponse.json(
-      { error: 'Erreur lors de l’export des données' },
-      { status: 500 }
+    const locale = pickLocale(req)
+    const msg = await translate(
+      locale,
+      'common.errors.exportError',
+      'Erreur lors de l’export des données'
     )
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

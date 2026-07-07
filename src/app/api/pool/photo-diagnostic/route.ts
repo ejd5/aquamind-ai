@@ -4,13 +4,16 @@ import { authOptions } from '@/lib/auth'
 import { nvidiaVision } from '@/lib/ai/nvidia'
 import { db } from '@/lib/db'
 import { VISION_DIAGNOSTIC_PROMPT } from '@/lib/pool/ai-context'
+import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const locale = pickLocale(req)
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
 
@@ -21,7 +24,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const locale = pickLocale(req)
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
 
@@ -83,8 +88,10 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const session = await getServerSession(authOptions)
+  const locale = pickLocale(req)
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
   const { searchParams } = new URL(req.url)
@@ -96,7 +103,8 @@ export async function DELETE(req: NextRequest) {
   // Verify ownership before deleting
   const diag = await db.photoDiagnostic.findFirst({ where: { id, userId } })
   if (!diag) {
-    return NextResponse.json({ error: 'Non trouvé' }, { status: 404 })
+    const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
+    return NextResponse.json({ error: msg }, { status: 404 })
   }
 
   await db.photoDiagnostic.delete({ where: { id } })

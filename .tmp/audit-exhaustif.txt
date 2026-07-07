@@ -1,0 +1,1270 @@
+=== AUDIT EXHAUSTIF : 596 chaînes françaises hardcoded ===
+
+
+--- src/app/api/account/delete/route.ts (2 chaînes) ---
+  L31: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L46: 'Erreur lors de la suppression du compte'
+         { error: 'Erreur lors de la suppression du compte' },
+
+--- src/app/api/account/export/route.ts (2 chaînes) ---
+  L36: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L99: 'Erreur lors de l’export des données'
+         { error: 'Erreur lors de l’export des données' },
+
+--- src/app/api/account/notifications/route.ts (2 chaînes) ---
+  L34: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L44: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+--- src/app/api/analytics/route.ts (2 chaînes) ---
+  L11: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L41: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+--- src/app/api/auth/register/route.ts (4 chaînes) ---
+  L30: 'Email invalide'
+         return NextResponse.json({ error: 'Email invalide' }, { status: 400 })
+  L35: 'Le mot de passe doit contenir au moins 8 caractères'
+         { error: 'Le mot de passe doit contenir au moins 8 caractères' },
+  L46: 'Un compte existe déjà avec cet email'
+         return NextResponse.json({ error: 'Un compte existe déjà avec cet email' }, { status: 409 })
+  L65: 'Erreur lors de la création du compte'
+         return NextResponse.json({ error: 'Erreur lors de la création du compte' }, { status: 500 })
+
+--- src/app/api/chat/route.ts (3 chaînes) ---
+  L13: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L38: "Désolé, je n'ai pas pu générer de réponse."
+         const reply = result.content || "Désolé, je n'ai pas pu générer de réponse."
+  L56: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+--- src/app/api/dashboard/route.ts (1 chaînes) ---
+  L13: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+--- src/app/api/demo/login/route.ts (5 chaînes) ---
+  L39: 'Compte Démonstration'
+         const DEMO_NAME_FALLBACK = 'Compte Démonstration'
+  L40: 'Piscine démo'
+         const DEMO_POOL_NAME_FALLBACK = 'Piscine démo'
+  L86: 'Sud-Est / PACA'
+         region: 'Sud-Est / PACA',
+  L104: 'Utilisez ces identifiants pour vous connecter'
+         message: 'Utilisez ces identifiants pour vous connecter',
+  L111: 'Erreur lors de la création du compte démo'
+         { error: 'Erreur lors de la création du compte démo' },
+
+--- src/app/api/guides/route.ts (1 chaînes) ---
+  L23: 'Guide introuvable'
+         if (!guide) return NextResponse.json({ error: 'Guide introuvable' }, { status: 404 })
+
+--- src/app/api/pool/action-plan/route.ts (2 chaînes) ---
+  L14: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L37: 'Profil piscine requis'
+         return NextResponse.json({ error: 'Profil piscine requis' }, { status: 400 })
+
+--- src/app/api/pool/equipment/route.ts (5 chaînes) ---
+  L11: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L22: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L51: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L61: 'Équipement introuvable'
+         if (!existing) return NextResponse.json({ error: 'Équipement introuvable' }, { status: 404 })
+  L78: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+--- src/app/api/pool/inventory/route.ts (3 chaînes) ---
+  L11: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L22: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L49: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+--- src/app/api/pool/photo-diagnostic/route.ts (4 chaînes) ---
+  L13: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L24: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L87: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L99: 'Non trouvé'
+         return NextResponse.json({ error: 'Non trouvé' }, { status: 404 })
+
+--- src/app/api/pool/profile/route.ts (3 chaînes) ---
+  L13: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L25: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L39: 'Ma piscine'
+         'Ma piscine'
+
+--- src/app/api/pool/reminders/route.ts (6 chaînes) ---
+  L13: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L87: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L98: 'Rappel personnalisé'
+         title: body.title || 'Rappel personnalisé',
+  L115: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L125: 'Rappel introuvable'
+         if (!existing) return NextResponse.json({ error: 'Rappel introuvable' }, { status: 404 })
+  L144: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+--- src/app/api/pool/water-test/route.ts (4 chaînes) ---
+  L15: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L32: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L42: 'pH requis'
+         return NextResponse.json({ error: 'pH requis' }, { status: 400 })
+  L119: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+--- src/app/api/pool/weather/route.ts (5 chaînes) ---
+  L23: 'la rochelle'
+         'biarritz', 'cannes', 'antibes', 'perpignan', 'la rochelle', 'le havre',
+  L23: 'le havre'
+         'biarritz', 'cannes', 'antibes', 'perpignan', 'la rochelle', 'le havre',
+  L25: 'la rochelle'
+         'annecy', 'grenoble', 'avignon', 'la rochelle', 'saint-etienne',
+  L106: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L135: 'Météo indisponible'
+         { error: 'Météo indisponible', location: query || 'auto' },
+
+--- src/app/api/stripe/checkout/route.ts (4 chaînes) ---
+  L13: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L18: 'Produit invalide'
+         return NextResponse.json({ error: 'Produit invalide' }, { status: 400 })
+  L23: 'Prix non configuré'
+         return NextResponse.json({ error: 'Prix non configuré' }, { status: 500 })
+  L54: 'Erreur Stripe'
+         return NextResponse.json({ error: 'Erreur Stripe' }, { status: 500 })
+
+--- src/app/api/stripe/portal/route.ts (3 chaînes) ---
+  L14: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L27: 'Aucun client Stripe trouvé'
+         return NextResponse.json({ error: 'Aucun client Stripe trouvé' }, { status: 404 })
+  L38: 'Erreur Stripe'
+         return NextResponse.json({ error: 'Erreur Stripe' }, { status: 500 })
+
+--- src/app/api/subscription/route.ts (3 chaînes) ---
+  L16: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L29: 'Non autorisé'
+         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L36: 'Plan invalide'
+         if (!validPlan) return NextResponse.json({ error: 'Plan invalide' }, { status: 400 })
+
+--- src/app/layout.tsx (1 chaînes) ---
+  L10: '--font-geist-sans'
+         variable: "--font-geist-sans",
+
+--- src/components/aquamind/diagnostic-action-plan.tsx (3 chaînes) ---
+  L216: 'eau verte'
+         allText.includes('eau verte')
+  L224: 'eau trouble'
+         allText.includes('eau trouble')
+  L225: 'dépôt'
+         const hasParticles = allText.includes('particul') || allText.includes('dépôt')
+
+--- src/components/aquamind/module-diagnostic.tsx (3 chaînes) ---
+  L550: 'résolu'
+         summaryLower.includes('résolu') ||
+  L611: 'je ne peux pas'
+         {d.aiSummary && !d.aiSummary.toLowerCase().includes('je ne peux pas') && !d.aiSummary.toLowerCase().includes("i can't") 
+  L668: 'je ne peux pas'
+         {d.aiSummary && !d.aiSummary.toLowerCase().includes('je ne peux pas') && !d.aiSummary.toLowerCase().includes("i can't") 
+
+--- src/components/aquamind/module-weather.tsx (1 chaînes) ---
+  L130: 'ensoleillé'
+         if (d.includes('ensoleillé') || d.includes('soleil')) return <Sun className="h-8 w-8 text-gold" />
+
+--- src/components/landing/sections/international-section.tsx (2 chaînes) ---
+  L41: 'Poolshop.de'
+         { country: '🇩🇪 DE', store: 'Poolshop.de' },
+  L43: 'Piscine Center'
+         { country: '🇮🇹 IT', store: 'Piscine Center' },
+
+--- src/lib/auth.ts (1 chaînes) ---
+  L29: 'Mot de passe'
+         password: { label: 'Mot de passe', type: 'password' },
+
+--- src/lib/pool/action-plan.ts (27 chaînes) ---
+  L149: 'Baisser le pH'
+         action: 'Baisser le pH',
+  L161: 'Monter le pH'
+         action: 'Monter le pH',
+  L173: 'pH correct'
+         action: 'pH correct',
+  L194: 'Chlore choc'
+         product: 'Chlore choc',
+  L197: 'Ne pas se baigner pendant au moins 8h après le choc.'
+         doNotDo.push('Ne pas se baigner pendant au moins 8h après le choc.')
+  L203: 'Ajouter chlore lent'
+         action: 'Ajouter chlore lent',
+  L208: 'Chlore lent'
+         product: 'Chlore lent',
+  L218: 'Traitement chloramines'
+         action: 'Traitement chloramines',
+  L224: 'Ne pas masquer l\\'
+         doNotDo.push('Ne pas masquer l\'odeur de chlore avec du parfum : c\'est un signe de chloramines.')
+  L224: 'est un signe de chloramines.'
+         doNotDo.push('Ne pas masquer l\'odeur de chlore avec du parfum : c\'est un signe de chloramines.')
+  L235: 'Ajouter stabilisant'
+         action: 'Ajouter stabilisant',
+  L250: 'Ne pas ajouter de stabilisant : le niveau est déjà trop élevé.'
+         doNotDo.push('Ne pas ajouter de stabilisant : le niveau est déjà trop élevé.')
+  L262: 'Ajouter du sel'
+         action: 'Ajouter du sel',
+  L275: 'Traiter les phosphates'
+         action: 'Traiter les phosphates',
+  L287: 'Maintenir la filtration'
+         action: 'Maintenir la filtration',
+  L296: 'Maintenir la filtration'
+         action: 'Maintenir la filtration',
+  L298: 'Filtration normale (moitié de la température de l\\'
+         detail: 'Filtration normale (moitié de la température de l\'eau en heures).',
+  L307: 'Re-tester l\\'
+         action: 'Re-tester l\'eau',
+  L316: 'Re-tester l\\'
+         action: 'Re-tester l\'eau',
+  L318: 'Refaire un test dans 24-48h.'
+         detail: 'Refaire un test dans 24-48h.',
+  L398: ', test.ph) !== '
+         if (evaluateParam('ph', test.ph) !== 'ok') {
+  L427: 'Action recommandée'
+         const sevLabel = severity === 'urgent' ? 'URGENT' : severity === 'high' ? 'Action recommandée' : 'À surveiller'
+  L427: 'À surveiller'
+         const sevLabel = severity === 'urgent' ? 'URGENT' : severity === 'high' ? 'Action recommandée' : 'À surveiller'
+  L430: ')}. Suivez le plan d'
+         diagnosis: `Diagnostic (${sevLabel}) — indice eau claire ${cwi}/100. Points à traiter : ${issues.join(', ')}. Suivez le 
+  L445: 'autorisée'
+         case 'allowed': return 'autorisée'
+  L446: 'déconseillée'
+         case 'avoid': return 'déconseillée'
+  L448: 'à confirmer après mesures'
+         default: return 'à confirmer après mesures'
+
+--- src/lib/pool/ai-context.ts (10 chaînes) ---
+  L32: 'Électrolyse au sel'
+         salt: 'Électrolyse au sel',
+  L34: 'Oxygène actif'
+         active_oxygen: 'Oxygène actif',
+  L94: 'image fournie. Décris ce que tu vois, même si l'
+         IMPORTANT: Tu DOIS analyser l'image fournie. Décris ce que tu vois, même si l'image n'est pas parfaite. Ne refuse jamais
+  L94: 'est pas parfaite. Ne refuse jamais d'
+         IMPORTANT: Tu DOIS analyser l'image fournie. Décris ce que tu vois, même si l'image n'est pas parfaite. Ne refuse jamais
+  L96: 'image, réponds au format JSON (essaie de respecter ce format, mais si tu n'
+         Après avoir analysé l'image, réponds au format JSON (essaie de respecter ce format, mais si tu n'y arrives pas, réponds 
+  L101: 'problème probable 1'
+         "probableIssues": ["problème probable 1", "..."],
+  L103: 'ce qui manque pour confirmer'
+         "missingData": ["ce qui manque pour confirmer"],
+  L104: 'prochaine action concrète'
+         "recommendedNextStep": "prochaine action concrète",
+  L105: 'alerte sécurité éventuelle'
+         "safetyWarnings": ["alerte sécurité éventuelle"],
+  L106: "résumé en 1-2 phrases de ce que tu vois dans l'image"
+         "userFriendlySummary": "résumé en 1-2 phrases de ce que tu vois dans l'image"
+
+--- src/lib/pool/dosing-engine.ts (27 chaînes) ---
+  L72: 'pH- (acide)'
+         product: 'pH- (acide)',
+  L76: 'Diluer dans un seau d\\'
+         method: 'Diluer dans un seau d\'eau de la piscine, répartir devant les refoulements, filtration en marche.',
+  L94: 'pH+ (carbonate de sodium)'
+         product: 'pH+ (carbonate de sodium)',
+  L98: 'Diluer dans un seau, répartir devant les refoulements, filtration en marche.'
+         method: 'Diluer dans un seau, répartir devant les refoulements, filtration en marche.',
+  L114: 'Chlore choc (65% actif)'
+         product: 'Chlore choc (65% actif)',
+  L118: 'Dissoudre dans un seau d\\'
+         method: 'Dissoudre dans un seau d\'eau, verser devant les refoulements. Préférer le soir, sans baigneurs.',
+  L124: 'ATTENTION : chloration choc. Aucune baignade pendant au moins 8h.'
+         'ATTENTION : chloration choc. Aucune baignade pendant au moins 8h.',
+  L125: 'Ne jamais mélanger chlore choc et pH-.'
+         'Ne jamais mélanger chlore choc et pH-.',
+  L126: 'Vérifier le pH AVANT le choc (idéal 7.2-7.4).'
+         'Vérifier le pH AVANT le choc (idéal 7.2-7.4).',
+  L140: 'Chlore lent (pastilles 20g)'
+         product: 'Chlore lent (pastilles 20g)',
+  L144: 'Placer dans le skimmer ou diffuseur. Renouveler selon consommation.'
+         method: 'Placer dans le skimmer ou diffuseur. Renouveler selon consommation.',
+  L149: 'Ne pas placer dans le skimmer si traitement anti-algues simultané.'
+         warnings: ['Ne pas placer dans le skimmer si traitement anti-algues simultané.'],
+  L159: 'TAC+ (bicarbonate de sodium)'
+         product: 'TAC+ (bicarbonate de sodium)',
+  L163: 'Diluer, répartir, filtration en marche. Attendre avant de retoucher le pH.'
+         method: 'Diluer, répartir, filtration en marche. Attendre avant de retoucher le pH.',
+  L168: 'Ajuster le TAC AVANT le pH.'
+         warnings: ['Ajuster le TAC AVANT le pH.'],
+  L182: 'Diluer dans un seau, verser lentement devant les refoulements.'
+         method: 'Diluer dans un seau, verser lentement devant les refoulements.',
+  L197: 'Stabilisant (acide cyanurique)'
+         product: 'Stabilisant (acide cyanurique)',
+  L201: 'Verser lentement dans le skimmer, filtration en marche. Dissolution lente (24-48'
+         method: 'Verser lentement dans le skimmer, filtration en marche. Dissolution lente (24-48h).',
+  L206: 'Ne pas dépasser 50 mg/L. Trop de stabilisant bloque le chlore.'
+         warnings: ['Ne pas dépasser 50 mg/L. Trop de stabilisant bloque le chlore.'],
+  L216: 'Sel piscine (NaCl)'
+         product: 'Sel piscine (NaCl)',
+  L220: 'Verser le sel directement dans la piscine, filtration en marche jusqu\\'
+         method: 'Verser le sel directement dans la piscine, filtration en marche jusqu\'à dissolution complète.',
+  L225: 'Vérifier le sel requis par votre électrolyseur avant ajout.'
+         warnings: ['Vérifier le sel requis par votre électrolyseur avant ajout.'],
+  L234: 'Anti-algues (curatif)'
+         product: 'Anti-algues (curatif)',
+  L238: 'Verser devant les refoulements, filtration en marche. Brosser les parois.'
+         method: 'Verser devant les refoulements, filtration en marche. Brosser les parois.',
+  L243: 'Le pH doit être équilibré AVANT. Efficace surtout en prévention.'
+         warnings: ['Le pH doit être équilibré AVANT. Efficace surtout en prévention.'],
+  L256: 'Verser devant les refoulements, filtration 1h puis coupure 12h pour décantation,'
+         method: 'Verser devant les refoulements, filtration 1h puis coupure 12h pour décantation, puis aspiration.',
+  L261: 'Compatible avec filtre à sable uniquement. Ne pas utiliser avec filtre cartouche'
+         warnings: ['Compatible avec filtre à sable uniquement. Ne pas utiliser avec filtre cartouche.'],
+
+--- src/lib/pool/freemium.ts (28 chaînes) ---
+  L44: 'Gratuit — pour découvrir'
+         tagline: 'Gratuit — pour découvrir',
+  L49: "Test d'eau illimité (manuel)"
+         "Test d'eau illimité (manuel)",
+  L50: 'Indice eau claire + sécurité baignade'
+         'Indice eau claire + sécurité baignade',
+  L51: '2 scans photo / mois'
+         '2 scans photo / mois',
+  L52: 'Météo simple'
+         'Météo simple',
+  L53: '5 guides de base'
+         '5 guides de base',
+  L85: 'Le copilote complet'
+         tagline: 'Le copilote complet',
+  L90: 'Scans photo illimités'
+         'Scans photo illimités',
+  L91: 'Météo avancée + alertes'
+         'Météo avancée + alertes',
+  L92: 'Tous les guides + vidéos'
+         'Tous les guides + vidéos',
+  L93: 'Rappels intelligents'
+         'Rappels intelligents',
+  L95: 'Mode pro (LSI avancé)'
+         'Mode pro (LSI avancé)',
+  L96: 'Spa et eau chaude (brome, oxygène actif)'
+         'Spa et eau chaude (brome, oxygène actif)',
+  L97: 'Historique illimité'
+         'Historique illimité',
+  L133: 'Pour piscinistes et techniciens'
+         tagline: 'Pour piscinistes et techniciens',
+  L137: 'Tout Premium'
+         'Tout Premium',
+  L138: 'Multi-clients illimité'
+         'Multi-clients illimité',
+  L140: 'Photos avant/après'
+         'Photos avant/après',
+  L141: 'Notes techniques avancées'
+         'Notes techniques avancées',
+  L143: 'API + intégrations'
+         'API + intégrations',
+  L220: 'Météo avancée réservée aux plans payants.'
+         : { allowed: false, reason: 'Météo avancée réservée aux plans payants.', reasonKey: 'gates.weather_advanced', ctaPlan: P
+  L224: 'Rappels intelligents réservés aux plans payants.'
+         : { allowed: false, reason: 'Rappels intelligents réservés aux plans payants.', reasonKey: 'gates.smart_reminders', ctaP
+  L228: 'Guides premium réservés aux plans payants.'
+         : { allowed: false, reason: 'Guides premium réservés aux plans payants.', reasonKey: 'gates.guides_premium', ctaPlan: PL
+  L232: 'Multi-piscines réservé à Premium et Expert.'
+         : { allowed: false, reason: 'Multi-piscines réservé à Premium et Expert.', reasonKey: 'gates.multi_pool', ctaPlan: PLANS
+  L236: 'Rapport PDF réservé à Premium et Expert.'
+         : { allowed: false, reason: 'Rapport PDF réservé à Premium et Expert.', reasonKey: 'gates.pdf_report', ctaPlan: PLANS[1]
+  L240: 'Mode pro réservé à Premium et Expert.'
+         : { allowed: false, reason: 'Mode pro réservé à Premium et Expert.', reasonKey: 'gates.pro_mode', ctaPlan: PLANS[1].id }
+  L244: 'Historique étendu réservé aux plans payants.'
+         : { allowed: false, reason: 'Historique étendu réservé aux plans payants.', reasonKey: 'gates.history_extended', ctaPlan
+  L248: 'Le support des spas est réservé au plan Premium.'
+         : { allowed: false, reason: 'Le support des spas est réservé au plan Premium.', reasonKey: 'gates.spa_support', ctaPlan:
+
+--- src/lib/pool/guides-data.ts (285 chaînes) ---
+  L38: 'Débuter'
+         { id: 'getting_started', label: 'Débuter', labelKey: 'cat_getting_started', icon: '🚀' },
+  L39: "Problèmes d'eau"
+         { id: 'problems', label: "Problèmes d'eau", labelKey: 'cat_problems', icon: '⚠️' },
+  L40: 'Produits & dosages'
+         { id: 'products', label: 'Produits & dosages', labelKey: 'cat_products', icon: '⚗️' },
+  L41: 'Équipements'
+         { id: 'equipment', label: 'Équipements', labelKey: 'cat_equipment', icon: '🔧' },
+  L42: 'Météo & saisons'
+         { id: 'weather_seasons', label: 'Météo & saisons', labelKey: 'cat_weather_seasons', icon: '🌤️' },
+  L43: 'Sécurité & baignade'
+         { id: 'safety', label: 'Sécurité & baignade', labelKey: 'cat_safety', icon: '🛟' },
+  L44: 'Traitements (chlore/sel/brome)'
+         { id: 'treatments', label: 'Traitements (chlore/sel/brome)', labelKey: 'cat_treatments', icon: '💊' },
+  L56: "Eau verte : diagnostic et plan d'action"
+         title: "Eau verte : diagnostic et plan d'action",
+  L60: "Identifier la cause d'une eau verte et la traiter étape par étape sans surdoser."
+         summary: "Identifier la cause d'une eau verte et la traiter étape par étape sans surdoser.",
+  L67: 'Mesurer pH et chlore libre'
+         title: 'Mesurer pH et chlore libre',
+  L69: 'Une eau verte est presque toujours due à un manque de désinfectant ou un pH désé'
+         detail: 'Une eau verte est presque toujours due à un manque de désinfectant ou un pH déséquilibré.',
+  L71: "Ne jamais ajouter d'anti-algues avant d'avoir équilibré le pH."
+         warning: "Ne jamais ajouter d'anti-algues avant d'avoir équilibré le pH.",
+  L75: 'Équilibrer le pH (7.0-7.4)'
+         title: 'Équilibrer le pH (7.0-7.4)',
+  L77: 'Si le pH est > 7.4, ajoutez du pH- dilué. Attendez 2-3h de filtration.'
+         detail: 'Si le pH est > 7.4, ajoutez du pH- dilué. Attendez 2-3h de filtration.',
+  L79: 'Le chlore est 10x plus efficace à pH 7.2 qu\\'
+         tip: 'Le chlore est 10x plus efficace à pH 7.2 qu\'à pH 8.0.',
+  L83: 'Brosser les parois et le fond'
+         title: 'Brosser les parois et le fond',
+  L85: 'Décrocher les algues aide le traitement à pénétrer.'
+         detail: "Décrocher les algues aide le traitement à pénétrer.",
+  L89: 'Faire un traitement choc'
+         title: 'Faire un traitement choc',
+  L91: 'Chlore choc (après pH équilibré). Filtration continue 24h.'
+         detail: 'Chlore choc (après pH équilibré). Filtration continue 24h.',
+  L93: 'Baignade interdite 8h minimum après le choc.'
+         warning: 'Baignade interdite 8h minimum après le choc.',
+  L97: 'Ajouter un anti-algues curatif'
+         title: 'Ajouter un anti-algues curatif',
+  L99: "Après le choc, l'anti-algues prévient la repousse."
+         detail: "Après le choc, l'anti-algues prévient la repousse.",
+  L105: 'La filtration est aussi importante que les produits.'
+         detail: 'La filtration est aussi importante que les produits.',
+  L109: 'Re-tester après 24h'
+         title: 'Re-tester après 24h',
+  L111: "Vérifiez pH et chlore. Si l'eau reste verte, le filtre est peut-être à nettoyer."
+         detail: "Vérifiez pH et chlore. Si l'eau reste verte, le filtre est peut-être à nettoyer.",
+  L119: 'Eau trouble ou laiteuse'
+         title: 'Eau trouble ou laiteuse',
+  L123: "Distinguer les causes d'une eau trouble et appliquer le bon traitement."
+         summary: "Distinguer les causes d'une eau trouble et appliquer le bon traitement.",
+  L130: 'Vérifier la filtration'
+         title: 'Vérifier la filtration',
+  L132: "80% des eaux troubles viennent d'un problème de filtration. Vérifiez pression, d"
+         detail: "80% des eaux troubles viennent d'un problème de filtration. Vérifiez pression, durée, propreté du filtre.",
+  L136: 'Tester pH et chlore'
+         title: 'Tester pH et chlore',
+  L138: 'pH hors plage ou chlore bas = eau trouble.'
+         detail: 'pH hors plage ou chlore bas = eau trouble.',
+  L142: 'Nettoyer ou backwash le filtre'
+         title: 'Nettoyer ou backwash le filtre',
+  L144: 'Filtre encrassé = eau trouble.'
+         detail: 'Filtre encrassé = eau trouble.',
+  L148: 'Utiliser un floculant (si filtre à sable)'
+         title: 'Utiliser un floculant (si filtre à sable)',
+  L150: 'Le floculant agglomère les particules fines pour que le filtre les retienne.'
+         detail: 'Le floculant agglomère les particules fines pour que le filtre les retienne.',
+  L152: 'Floculant uniquement avec filtre à sable. Pas avec cartouche.'
+         warning: 'Floculant uniquement avec filtre à sable. Pas avec cartouche.',
+  L156: 'Filtrer 24h puis aspirer les dépôts'
+         title: 'Filtrer 24h puis aspirer les dépôts',
+  L158: 'Après floculation, des dépôts se forment au fond : aspirez-les.'
+         detail: 'Après floculation, des dépôts se forment au fond : aspirez-les.',
+  L166: 'Quand et comment faire un chlore choc'
+         title: 'Quand et comment faire un chlore choc',
+  L170: 'Le traitement choc : indications, dosage, sécurité, délais baignade.'
+         summary: 'Le traitement choc : indications, dosage, sécurité, délais baignade.',
+  L174: 'sécurité'
+         tags: ['chlore', 'choc', 'sécurité'],
+  L177: 'Vérifier le pH AVANT'
+         title: 'Vérifier le pH AVANT',
+  L179: "Un choc est inefficace si le pH > 7.6. Équilibrez d'abord."
+         detail: "Un choc est inefficace si le pH > 7.6. Équilibrez d'abord.",
+  L181: 'Ne JAMAIS faire un choc sans avoir vérifié le pH.'
+         warning: 'Ne JAMAIS faire un choc sans avoir vérifié le pH.',
+  L185: 'Choisir le bon moment'
+         title: 'Choisir le bon moment',
+  L187: 'Le soir, sans baigneurs, filtration en marche.'
+         detail: 'Le soir, sans baigneurs, filtration en marche.',
+  L191: 'Doser selon le volume'
+         title: 'Doser selon le volume',
+  L193: 'AQWELIA calcule la quantité selon votre volume de bassin.'
+         detail: 'AQWELIA calcule la quantité selon votre volume de bassin.',
+  L197: 'Dissoudre dans un seau'
+         title: 'Dissoudre dans un seau',
+  L199: 'Ne jamais verser le choc en poudre directement au bord.'
+         detail: 'Ne jamais verser le choc en poudre directement au bord.',
+  L205: 'Le chlore doit être bien réparti.'
+         detail: 'Le chlore doit être bien réparti.',
+  L209: 'Attendre 8h avant baignade'
+         title: 'Attendre 8h avant baignade',
+  L211: 'Vérifiez le chlore libre avant de se baigner (doit être < 3 mg/L).'
+         detail: 'Vérifiez le chlore libre avant de se baigner (doit être < 3 mg/L).',
+  L213: 'Baignade interdite pendant 8h minimum.'
+         warning: 'Baignade interdite pendant 8h minimum.',
+  L221: 'Odeur forte de chlore et yeux qui piquent'
+         title: 'Odeur forte de chlore et yeux qui piquent',
+  L225: "Comprendre les chloramines et comment s'en débarrasser."
+         summary: "Comprendre les chloramines et comment s'en débarrasser.",
+  L232: 'Comprendre la cause'
+         title: 'Comprendre la cause',
+  L234: "L'odeur forte de chlore n'est PAS un excès de chlore : ce sont les chloramines ("
+         detail: "L'odeur forte de chlore n'est PAS un excès de chlore : ce sont les chloramines (chlore combiné), sous-produits 
+  L238: 'Mesurer chlore libre ET total'
+         title: 'Mesurer chlore libre ET total',
+  L240: 'Chlore combiné = chlore total - chlore libre. Si > 0.4 mg/L, traitement nécessai'
+         detail: 'Chlore combiné = chlore total - chlore libre. Si > 0.4 mg/L, traitement nécessaire.',
+  L244: 'Faire un traitement choc'
+         title: 'Faire un traitement choc',
+  L246: 'Le choc casse les chloramines et libère du chlore libre actif.'
+         detail: 'Le choc casse les chloramines et libère du chlore libre actif.',
+  L250: 'Vérifier le pH'
+         title: 'Vérifier le pH',
+  L252: 'Un pH haut aggrave les chloramines.'
+         detail: 'Un pH haut aggrave les chloramines.',
+  L260: 'Backwash (contre-lavage) du filtre à sable'
+         title: 'Backwash (contre-lavage) du filtre à sable',
+  L261: 'filter-backwash.title'
+         titleKey: 'filter-backwash.title',
+  L264: 'Quand et comment faire un backwash efficacement.'
+         summary: 'Quand et comment faire un backwash efficacement.',
+  L265: 'filter-backwash.summary'
+         summaryKey: 'filter-backwash.summary',
+  L271: 'Quand backwash ?'
+         title: 'Quand backwash ?',
+  L273: 'Quand la pression monte de 0.3-0.5 bar au-dessus de la pression de service, ou t'
+         detail: "Quand la pression monte de 0.3-0.5 bar au-dessus de la pression de service, ou toutes les 2-4 semaines.",
+  L277: 'Éteindre la pompe'
+         title: 'Éteindre la pompe',
+  L279: 'TOUJOURS éteindre la pompe avant de manipuler la vanne.'
+         detail: 'TOUJOURS éteindre la pompe avant de manipuler la vanne.',
+  L281: 'Risque électrique et matériel.'
+         warning: 'Risque électrique et matériel.',
+  L285: 'Placer la vanne sur BACKWASH'
+         title: 'Placer la vanne sur BACKWASH',
+  L291: 'Rallumer la pompe 2-3 min'
+         title: 'Rallumer la pompe 2-3 min',
+  L293: "L'eau s'écoule à l'égout jusqu'à ce qu'elle redevienne claire."
+         detail: "L'eau s'écoule à l'égout jusqu'à ce qu'elle redevienne claire.",
+  L297: 'Éteindre, vanne sur RINSE 30s'
+         title: 'Éteindre, vanne sur RINSE 30s',
+  L299: 'Le rinçage re-tasse le sable et évite le retour de saletés.'
+         detail: 'Le rinçage re-tasse le sable et évite le retour de saletés.',
+  L305: 'Remettre la vanne en filtration normale.'
+         detail: 'Remettre la vanne en filtration normale.',
+  L313: 'Nettoyer un filtre à cartouche'
+         title: 'Nettoyer un filtre à cartouche',
+  L317: "Démontage et rinçage d'une cartouche de filtration."
+         summary: "Démontage et rinçage d'une cartouche de filtration.",
+  L324: 'Éteindre la pompe'
+         title: 'Éteindre la pompe',
+  L326: "Couper l'alimentation électrique."
+         detail: "Couper l'alimentation électrique.",
+  L328: 'Sécurité électrique obligatoire.'
+         warning: 'Sécurité électrique obligatoire.',
+  L332: 'Démonter la cartouche'
+         title: 'Démonter la cartouche',
+  L334: 'Ouvrir le corps du filtre selon le modèle.'
+         detail: 'Ouvrir le corps du filtre selon le modèle.',
+  L338: 'Rincer au jet'
+         title: 'Rincer au jet',
+  L344: 'Tremper dans un nettoyant filtre (optionnel)'
+         title: 'Tremper dans un nettoyant filtre (optionnel)',
+  L346: 'Tous les 2-3 nettoyages, dégraissage et détartrage.'
+         detail: 'Tous les 2-3 nettoyages, dégraissage et détartrage.',
+  L350: 'Remonter et redémarrer'
+         title: 'Remonter et redémarrer',
+  L360: "Nettoyer la cellule de l'électrolyseur"
+         title: "Nettoyer la cellule de l'électrolyseur",
+  L364: "Détartrer la cellule d'électrolyseur au sel pour maintenir la production de chlo"
+         summary: "Détartrer la cellule d'électrolyseur au sel pour maintenir la production de chlore.",
+  L368: 'électrolyseur'
+         tags: ['électrolyseur', 'sel', 'cellule', 'tartre'],
+  L373: 'Éteindre l\\'
+         detail: 'Éteindre l\'électrolyseur et la pompe.',
+  L375: 'Sécurité électrique. Ne jamais manipuler la cellule sous tension.'
+         warning: "Sécurité électrique. Ne jamais manipuler la cellule sous tension.",
+  L379: 'Démonter la cellule'
+         title: 'Démonter la cellule',
+  L381: 'Dévisser selon le modèle. Vérifier l\\'
+         detail: 'Dévisser selon le modèle. Vérifier l\'état des électrodes.',
+  L385: 'Préparer une solution acide diluée'
+         title: 'Préparer une solution acide diluée',
+  L387: '1/3 acide chlorhydrique + 2/3 eau dans un récipient plastique.'
+         detail: '1/3 acide chlorhydrique + 2/3 eau dans un récipient plastique.',
+  L389: "TOUJOURS verser l'acide dans l'eau, jamais l'inverse. Gants et lunettes obligato"
+         warning: "TOUJOURS verser l'acide dans l'eau, jamais l'inverse. Gants et lunettes obligatoires. Aération.",
+  L395: 'Le tartre se dissout. Ne pas laisser trop longtemps.'
+         detail: "Le tartre se dissout. Ne pas laisser trop longtemps.",
+  L401: "À l'eau claire jusqu'à disparition de l'odeur."
+         detail: "À l'eau claire jusqu'à disparition de l'odeur.",
+  L405: 'Remonter et redémarrer'
+         title: 'Remonter et redémarrer',
+  L407: "Vérifier la production sur l'afficheur."
+         detail: "Vérifier la production sur l'afficheur.",
+  L415: 'Comprendre son électrolyseur au sel'
+         title: 'Comprendre son électrolyseur au sel',
+  L419: 'Principe, taux de sel, production, entretien courant.'
+         summary: 'Principe, taux de sel, production, entretien courant.',
+  L423: 'électrolyseur'
+         tags: ['sel', 'électrolyseur', 'traitement'],
+  L426: 'Le principe'
+         title: 'Le principe',
+  L428: 'Le sel (NaCl) est électrolysé en chlore actif in-situ. Pas de stockage de chlore'
+         detail: "Le sel (NaCl) est électrolysé en chlore actif in-situ. Pas de stockage de chlore, eau plus douce.",
+  L432: 'Taux de sel requis'
+         title: 'Taux de sel requis',
+  L434: 'Selon le modèle : généralement 3-7 g/L. Vérifiez la notice. Trop bas = pas de pr'
+         detail: 'Selon le modèle : généralement 3-7 g/L. Vérifiez la notice. Trop bas = pas de production ; trop haut = surconso
+  L438: 'Stabilisant (CYA) indispensable'
+         title: 'Stabilisant (CYA) indispensable',
+  L440: 'Sans stabilisant, le chlore produit est détruit par le soleil en 2h.'
+         detail: 'Sans stabilisant, le chlore produit est détruit par le soleil en 2h.',
+  L444: 'Surveiller le pH'
+         title: 'Surveiller le pH',
+  L446: "L'électrolyseur fait monter le pH. Régulation fréquente nécessaire."
+         detail: "L'électrolyseur fait monter le pH. Régulation fréquente nécessaire.",
+  L450: 'Production selon température'
+         title: 'Production selon température',
+  L452: "En eau froide (< 15°C), la production chute. Ne pas s'inquiéter en hiver."
+         detail: "En eau froide (< 15°C), la production chute. Ne pas s'inquiéter en hiver.",
+  L458: "Nettoyage acide tous les 3-6 mois selon dureté de l'eau."
+         detail: "Nettoyage acide tous les 3-6 mois selon dureté de l'eau.",
+  L466: 'Maîtriser son pH'
+         title: 'Maîtriser son pH',
+  L467: 'ph-control.title'
+         titleKey: 'ph-control.title',
+  L470: "Pourquoi le pH est le paramètre n°1, comment l'ajuster."
+         summary: "Pourquoi le pH est le paramètre n°1, comment l'ajuster.",
+  L471: 'ph-control.summary'
+         summaryKey: 'ph-control.summary',
+  L474: 'équilibrage'
+         tags: ['ph', 'équilibrage'],
+  L477: 'Le pH est prioritaire'
+         title: 'Le pH est prioritaire',
+  L479: 'Tout part du pH : efficacité du chlore, confort baignade, protection équipements'
+         detail: "Tout part du pH : efficacité du chlore, confort baignade, protection équipements.",
+  L483: 'Plage idéale 7.0-7.4'
+         title: 'Plage idéale 7.0-7.4',
+  L485: 'Plus près de 7.2 = chlore optimal.'
+         detail: 'Plus près de 7.2 = chlore optimal.',
+  L489: 'Ajuster le TAC avant le pH si instable'
+         title: 'Ajuster le TAC avant le pH si instable',
+  L491: 'Un TAC bas rend le pH instable.'
+         detail: 'Un TAC bas rend le pH instable.',
+  L495: 'Doser par petite quantité'
+         title: 'Doser par petite quantité',
+  L497: 'Ne jamais modifier le pH de plus de 0.3 d\\'
+         detail: 'Ne jamais modifier le pH de plus de 0.3 d\'un coup.',
+  L501: 'Filtrer 2-3h puis re-tester'
+         title: 'Filtrer 2-3h puis re-tester',
+  L503: 'Le mélange doit être homogène.'
+         detail: 'Le mélange doit être homogène.',
+  L511: "Comprendre l'alcalinité (TAC)"
+         title: "Comprendre l'alcalinité (TAC)",
+  L512: 'tac-control.title'
+         titleKey: 'tac-control.title',
+  L515: 'Le TAC est le tampon du pH. Sans bon TAC, le pH devient instable.'
+         summary: 'Le TAC est le tampon du pH. Sans bon TAC, le pH devient instable.',
+  L516: 'tac-control.summary'
+         summaryKey: 'tac-control.summary',
+  L519: 'alcalinité'
+         tags: ['tac', 'alcalinité', 'ph'],
+  L522: 'Rôle du TAC'
+         title: 'Rôle du TAC',
+  L524: 'Le TAC (alcalinité totale) stabilise le pH. Sans lui, le pH saute à chaque ajout'
+         detail: "Le TAC (alcalinité totale) stabilise le pH. Sans lui, le pH saute à chaque ajout de produit.",
+  L528: 'Plage idéale 80-120 mg/L'
+         title: 'Plage idéale 80-120 mg/L',
+  L534: 'Ajuster AVANT le pH'
+         title: 'Ajuster AVANT le pH',
+  L536: "Toujours équilibrer le TAC d'abord, sinon le pH ne tiendra pas."
+         detail: "Toujours équilibrer le TAC d'abord, sinon le pH ne tiendra pas.",
+  L540: 'Pour remonter : bicarbonate de sodium'
+         title: 'Pour remonter : bicarbonate de sodium',
+  L542: 'Diluer, répartir, filtration 3h.'
+         detail: 'Diluer, répartir, filtration 3h.',
+  L546: 'Pour baisser : acide'
+         title: 'Pour baisser : acide',
+  L548: 'Plus complexe, se fait lentement avec un pH-.'
+         detail: 'Plus complexe, se fait lentement avec un pH-.',
+  L556: 'Que faire après un orage ?'
+         title: 'Que faire après un orage ?',
+  L560: "L'orage dilue le chlore et modifie le pH. Routine post-orage."
+         summary: "L'orage dilue le chlore et modifie le pH. Routine post-orage.",
+  L564: 'météo'
+         tags: ['orage', 'météo', 'chlore'],
+  L567: 'Tester pH et chlore'
+         title: 'Tester pH et chlore',
+  L569: "L'orage acidifie souvent l'eau et dilue le chlore."
+         detail: "L'orage acidifie souvent l'eau et dilue le chlore.",
+  L573: 'Nettoyer skimmer et panier'
+         title: 'Nettoyer skimmer et panier',
+  L575: 'Débris apportés par la pluie et le vent.'
+         detail: 'Débris apportés par la pluie et le vent.',
+  L579: 'Ajuster le pH si nécessaire'
+         title: 'Ajuster le pH si nécessaire',
+  L581: 'Priorité au pH avant tout ajout de chlore.'
+         detail: "Priorité au pH avant tout ajout de chlore.",
+  L585: 'Compléter le chlore si bas'
+         title: 'Compléter le chlore si bas',
+  L587: 'Chlore lent ou choc selon l\\'
+         detail: 'Chlore lent ou choc selon l\'écart.',
+  L593: 'Bien répartir les corrections.'
+         detail: 'Bien répartir les corrections.',
+  L601: 'Avant de partir en vacances'
+         title: 'Avant de partir en vacances',
+  L605: 'Préparer sa piscine pour une absence de plusieurs jours/semaines.'
+         summary: 'Préparer sa piscine pour une absence de plusieurs jours/semaines.',
+  L609: 'prévention'
+         tags: ['vacances', 'absence', 'prévention'],
+  L612: 'Faire un test complet'
+         title: 'Faire un test complet',
+  L614: 'Tout équilibrer avant le départ : pH, chlore, TAC.'
+         detail: 'Tout équilibrer avant le départ : pH, chlore, TAC.',
+  L618: 'Chlore choc la veille'
+         title: 'Chlore choc la veille',
+  L620: 'Désinfecter en profondeur.'
+         detail: 'Désinfecter en profondeur.',
+  L624: 'Remplir le distributeur de chlore lent'
+         title: 'Remplir le distributeur de chlore lent',
+  L626: 'Pour une absence < 1 semaine.'
+         detail: "Pour une absence < 1 semaine.",
+  L630: 'Régler la minuterie filtration'
+         title: 'Régler la minuterie filtration',
+  L632: 'Au moins 4-6h/jour, de préférence la nuit.'
+         detail: "Au moins 4-6h/jour, de préférence la nuit.",
+  L636: 'Couvrir la piscine'
+         title: 'Couvrir la piscine',
+  L638: 'Bâche ou volet : limite débris et évaporation.'
+         detail: 'Bâche ou volet : limite débris et évaporation.',
+  L642: 'Pour une longue absence : voisin ou robot'
+         title: 'Pour une longue absence : voisin ou robot',
+  L644: 'Faites vérifier ou installez un robot.'
+         detail: 'Faites vérifier ou installez un robot.',
+  L648: 'Selon saison : hivernage actif ou passif'
+         title: 'Selon saison : hivernage actif ou passif',
+  L650: 'En été, filtration réduite suffit. En hiver, hivernage complet.'
+         detail: 'En été, filtration réduite suffit. En hiver, hivernage complet.',
+  L658: 'Hiverner sa piscine'
+         title: 'Hiverner sa piscine',
+  L662: "Mettre la piscine en hivernage pour l'hiver sans abîmer les équipements."
+         summary: "Mettre la piscine en hivernage pour l'hiver sans abîmer les équipements.",
+  L669: 'Choisir hivernage actif ou passif'
+         title: 'Choisir hivernage actif ou passif',
+  L671: 'Actif : filtration réduite. Passif : arrêt total. Dépend du climat.'
+         detail: 'Actif : filtration réduite. Passif : arrêt total. Dépend du climat.',
+  L677: 'Eau, parois, fond, filtre, ligne d\\'
+         detail: 'Eau, parois, fond, filtre, ligne d\'eau.',
+  L681: "Faire un traitement d'hiver"
+         title: "Faire un traitement d'hiver",
+  L683: "Produit d'hivernage anti-algues et anticalcaire."
+         detail: "Produit d'hivernage anti-algues et anticalcaire.",
+  L689: '10-15 cm sous les buses pour passif.'
+         detail: '10-15 cm sous les buses pour passif.',
+  L695: 'Protéger du gel.'
+         detail: 'Protéger du gel.',
+  L699: 'Couvrir la piscine'
+         title: 'Couvrir la piscine',
+  L701: "Bâche d'hiver ou volet."
+         detail: "Bâche d'hiver ou volet.",
+  L705: 'Hivernage actif : filtration 2-3h/jour'
+         title: 'Hivernage actif : filtration 2-3h/jour',
+  L707: 'Surtout pendant les périodes de gel.'
+         detail: 'Surtout pendant les périodes de gel.',
+  L715: 'Remise en route au printemps'
+         title: 'Remise en route au printemps',
+  L719: "Réveiller sa piscine après l'hiver en douceur."
+         summary: "Réveiller sa piscine après l'hiver en douceur.",
+  L726: 'Retirer la couverture et nettoyer'
+         title: 'Retirer la couverture et nettoyer',
+  L728: 'Enlever feuilles et débris accumulés.'
+         detail: 'Enlever feuilles et débris accumulés.',
+  L732: 'Remettre en eau si niveau bas'
+         title: 'Remettre en eau si niveau bas',
+  L734: 'Refaire le niveau.'
+         detail: 'Refaire le niveau.',
+  L738: 'Démarrer la filtration'
+         title: 'Démarrer la filtration',
+  L740: 'Vérifier le filtre (backwash si nécessaire).'
+         detail: 'Vérifier le filtre (backwash si nécessaire).',
+  L744: 'Tester l\\'
+         title: 'Tester l\'eau',
+  L746: 'pH, chlore, TAC, stabilisant.'
+         detail: 'pH, chlore, TAC, stabilisant.',
+  L750: 'Équilibrer progressivement'
+         title: 'Équilibrer progressivement',
+  L752: 'TAC → pH → chlore. Pas de précipitation.'
+         detail: 'TAC → pH → chlore. Pas de précipitation.',
+  L756: 'Faire un traitement choc'
+         title: 'Faire un traitement choc',
+  L758: 'Pour repartir sur une base saine.'
+         detail: 'Pour repartir sur une base saine.',
+  L762: 'Vérifier les équipements'
+         title: 'Vérifier les équipements',
+  L764: 'Pompe, électrolyseur, joints, manomètre.'
+         detail: 'Pompe, électrolyseur, joints, manomètre.',
+  L772: 'Sécurité baignade : quand peut-on se baigner ?'
+         title: 'Sécurité baignade : quand peut-on se baigner ?',
+  L776: 'Critères de sécurité pour une baignade sans risque.'
+         summary: 'Critères de sécurité pour une baignade sans risque.',
+  L780: 'sécurité'
+         tags: ['sécurité', 'baignade'],
+  L783: 'pH entre 7.0 et 7.6'
+         title: 'pH entre 7.0 et 7.6',
+  L785: 'Hors de cette plage : irritation possible.'
+         detail: 'Hors de cette plage : irritation possible.',
+  L789: 'Chlore libre entre 1 et 3 mg/L'
+         title: 'Chlore libre entre 1 et 3 mg/L',
+  L791: 'Moins = désinfection insuffisante. Plus = irritation.'
+         detail: 'Moins = désinfection insuffisante. Plus = irritation.',
+  L795: 'Chlore combiné < 0.4 mg/L'
+         title: 'Chlore combiné < 0.4 mg/L',
+  L797: 'Au-dessus : odeur forte, yeux qui piquent.'
+         detail: 'Au-dessus : odeur forte, yeux qui piquent.',
+  L801: 'Respecter les délais après traitement'
+         title: 'Respecter les délais après traitement',
+  L803: '2h après pH, 8h après chlore choc.'
+         detail: '2h après pH, 8h après chlore choc.',
+  L807: 'En cas de doute : ne pas se baigner'
+         title: 'En cas de doute : ne pas se baigner',
+  L809: "Mieux vaut attendre un test qu'aller dans une eau douteuse."
+         detail: "Mieux vaut attendre un test qu'aller dans une eau douteuse.",
+  L817: 'Sécurité produits chimiques'
+         title: 'Sécurité produits chimiques',
+  L821: "Les règles d'or pour manipuler et stocker les produits piscine."
+         summary: "Les règles d'or pour manipuler et stocker les produits piscine.",
+  L825: 'sécurité'
+         tags: ['sécurité', 'produits', 'stockage'],
+  L828: 'Ne JAMAIS mélanger les produits'
+         title: 'Ne JAMAIS mélanger les produits',
+  L830: 'Chlore + acide = gaz toxique mortel. Toujours diluer séparément.'
+         detail: 'Chlore + acide = gaz toxique mortel. Toujours diluer séparément.',
+  L832: 'Règle absolue de survie.'
+         warning: 'Règle absolue de survie.',
+  L836: "Toujours ajouter le produit dans l'eau"
+         title: "Toujours ajouter le produit dans l'eau",
+  L838: "Jamais l'eau dans le produit acide (projection)."
+         detail: "Jamais l'eau dans le produit acide (projection).",
+  L844: 'Surtout pour les acides et le chlore concentré.'
+         detail: 'Surtout pour les acides et le chlore concentré.',
+  L848: 'Stocker au sec, frais, ventilé'
+         title: 'Stocker au sec, frais, ventilé',
+  L850: 'Séparer acides et chlores. Hors portée des enfants.'
+         detail: 'Séparer acides et chlores. Hors portée des enfants.',
+  L854: 'Respecter les notices'
+         title: 'Respecter les notices',
+  L856: "Chaque produit a ses règles de dosage et d'application."
+         detail: "Chaque produit a ses règles de dosage et d'application.",
+  L860: "En cas d'incident : appeler le 15 ou le centre antipoison"
+         title: "En cas d'incident : appeler le 15 ou le centre antipoison",
+  L862: 'Ne pas faire vomir, consulter immédiatement.'
+         detail: 'Ne pas faire vomir, consulter immédiatement.',
+  L869: 'Débuter avec sa piscine'
+         title: 'Débuter avec sa piscine',
+  L873: "Les 10 premières choses à savoir quand on devient propriétaire d'une piscine."
+         summary: "Les 10 premières choses à savoir quand on devient propriétaire d'une piscine.",
+  L877: 'débutant'
+         tags: ['débutant', 'base', 'parcours'],
+  L880: 'Connaître le volume de sa piscine'
+         title: 'Connaître le volume de sa piscine',
+  L882: 'Indispensable pour tout dosage. AQWELIA le calcule à partir des dimensions.'
+         detail: "Indispensable pour tout dosage. AQWELIA le calcule à partir des dimensions.",
+  L886: 'Comprendre le pH'
+         title: 'Comprendre le pH',
+  L888: 'Le paramètre n°1. Tout part de là.'
+         detail: 'Le paramètre n°1. Tout part de là.',
+  L892: 'Comprendre le chlore'
+         title: 'Comprendre le chlore',
+  L894: 'Libre, total, combiné. AQWELIA vous guide.'
+         detail: 'Libre, total, combiné. AQWELIA vous guide.',
+  L900: "Moitié de la température de l'eau en heures."
+         detail: "Moitié de la température de l'eau en heures.",
+  L904: 'Tester 1-2x par semaine'
+         title: 'Tester 1-2x par semaine',
+  L906: 'Plus souvent par forte chaleur.'
+         detail: 'Plus souvent par forte chaleur.',
+  L910: 'Entretenir le filtre'
+         title: 'Entretenir le filtre',
+  L912: 'Backwash ou rinçage régulier.'
+         detail: 'Backwash ou rinçage régulier.',
+  L918: 'Trop bas = pompe en danger ; trop haut = skimmer inefficace.'
+         detail: 'Trop bas = pompe en danger ; trop haut = skimmer inefficace.',
+  L922: 'Brosser et nettoyer la ligne d\\'
+         title: 'Brosser et nettoyer la ligne d\'eau',
+  L924: 'Évite algues et dépôts.'
+         detail: 'Évite algues et dépôts.',
+  L928: 'Anticiper la météo'
+         title: 'Anticiper la météo',
+  L930: 'Orage, canicule, vacances : prévenir plutôt que guérir.'
+         detail: 'Orage, canicule, vacances : prévenir plutôt que guérir.',
+  L934: 'Garder un carnet'
+         title: 'Garder un carnet',
+  L944: 'Spécificités du spa'
+         title: 'Spécificités du spa',
+  L948: 'Le spa a ses règles : eau chaude, volume réduit, brome plutôt que chlore.'
+         summary: 'Le spa a ses règles : eau chaude, volume réduit, brome plutôt que chlore.',
+  L955: 'Volume réduit = réactions rapides'
+         title: 'Volume réduit = réactions rapides',
+  L957: "L'eau tourne vite. Tests plus fréquents."
+         detail: "L'eau tourne vite. Tests plus fréquents.",
+  L961: 'Préférer le brome au chlore'
+         title: 'Préférer le brome au chlore',
+  L963: 'Le brome est plus stable à chaud et moins odorant.'
+         detail: 'Le brome est plus stable à chaud et moins odorant.',
+  L967: 'Température et pH'
+         title: 'Température et pH',
+  L969: 'Le pH bouge avec la température. Tester à température de bain.'
+         detail: 'Le pH bouge avec la température. Tester à température de bain.',
+  L975: 'Plus nécessaire qu\\'
+         detail: 'Plus nécessaire qu\'en piscine.',
+  L979: 'Vidange périodique'
+         title: 'Vidange périodique',
+  L981: 'Tous les 3-4 mois selon usage.'
+         detail: 'Tous les 3-4 mois selon usage.',
+  L988: 'À quelle fréquence tester son eau ?'
+         title: 'À quelle fréquence tester son eau ?',
+  L992: 'Rythme recommandé selon saison et usage.'
+         summary: 'Rythme recommandé selon saison et usage.',
+  L996: 'fréquence'
+         tags: ['test', 'fréquence', 'faq'],
+  L1001: '2 fois par semaine minimum, plus si forte chaleur.'
+         detail: '2 fois par semaine minimum, plus si forte chaleur.',
+  L1005: 'En saison froide (hivernage actif)'
+         title: 'En saison froide (hivernage actif)',
+  L1007: '1 fois tous les 15 jours.'
+         detail: '1 fois tous les 15 jours.',
+  L1011: 'Après tout traitement'
+         title: 'Après tout traitement',
+  L1013: 'Re-test dans les 3-24h selon produit.'
+         detail: 'Re-test dans les 3-24h selon produit.',
+  L1017: 'Après orage'
+         title: 'Après orage',
+  L1019: 'Test systématique.'
+         detail: 'Test systématique.',
+  L1023: 'Avant baignade si doute'
+         title: 'Avant baignade si doute',
+  L1032: 'Mon stabilisant (CYA) est trop haut'
+         title: 'Mon stabilisant (CYA) est trop haut',
+  L1036: 'Que faire quand le CYA dépasse 50-60 mg/L ?'
+         summary: 'Que faire quand le CYA dépasse 50-60 mg/L ?',
+  L1043: 'Pourquoi c\\'
+         title: 'Pourquoi c\'est un problème',
+  L1045: 'Un CYA trop haut "bloque" le chlore : il est présent mais inactif. Risque algues'
+         detail: 'Un CYA trop haut "bloque" le chlore : il est présent mais inactif. Risque algues malgré un chlore normal.',
+  L1055: 'Renouveler 20-30% de l\\'
+         title: 'Renouveler 20-30% de l\'eau',
+  L1057: 'Vidange partielle puis complément.'
+         detail: 'Vidange partielle puis complément.',
+  L1061: 'Re-tester après renouvellement'
+         title: 'Re-tester après renouvellement',
+  L1063: 'Vérifier la nouvelle valeur.'
+         detail: 'Vérifier la nouvelle valeur.',
+  L1067: 'À l\\'
+         title: 'À l\'avenir : utiliser moins de chlore stabilisé',
+  L1069: 'Préférer chlore non stabilisé ou électrolyseur.'
+         detail: 'Préférer chlore non stabilisé ou électrolyseur.',
+
+--- src/lib/pool/reminders.ts (32 chaînes) ---
+  L62: "Test d'eau à refaire"
+         title: "Test d'eau à refaire",
+  L67: 'Faites un test complet pH + chlore + TAC.'
+         action: 'Faites un test complet pH + chlore + TAC.',
+  L77: 'Test de routine'
+         title: 'Test de routine',
+  L82: 'Vérifiez pH et chlore libre.'
+         action: 'Vérifiez pH et chlore libre.',
+  L93: "Premier test d'eau"
+         title: "Premier test d'eau",
+  L95: 'Aucun test enregistré. Activez le suivi.'
+         detail: 'Aucun test enregistré. Activez le suivi.',
+  L97: 'Entrez votre premier test (pH minimum).'
+         action: 'Entrez votre premier test (pH minimum).',
+  L110: 'Re-test après traitement'
+         title: 'Re-test après traitement',
+  L112: "Vous avez ajouté un produit récemment. Vérifiez l'effet."
+         detail: "Vous avez ajouté un produit récemment. Vérifiez l'effet.",
+  L114: 'Refaire un test pH + chlore dans les heures qui suivent.'
+         action: 'Refaire un test pH + chlore dans les heures qui suivent.',
+  L146: 'Test recommandé (météo)'
+         title: 'Test recommandé (météo)',
+  L151: 'Testez pH et chlore.'
+         action: 'Testez pH et chlore.',
+  L171: 'Nettoyage du filtre'
+         title: 'Nettoyage du filtre',
+  L174: 'Backwash du filtre à sable recommandé.'
+         ? 'Backwash du filtre à sable recommandé.'
+  L176: 'Rinçage de la cartouche recommandé.'
+         ? 'Rinçage de la cartouche recommandé.'
+  L177: 'Vérification du filtre recommandée.'
+         : 'Vérification du filtre recommandée.',
+  L179: 'Faites un backwash (contre-lavage).'
+         action: ctx.filterType === 'sand' ? 'Faites un backwash (contre-lavage).' : 'Démontez et rincez la cartouche.',
+  L179: 'Démontez et rincez la cartouche.'
+         action: ctx.filterType === 'sand' ? 'Faites un backwash (contre-lavage).' : 'Démontez et rincez la cartouche.',
+  L191: 'Nettoyage cellule électrolyseur'
+         title: 'Nettoyage cellule électrolyseur',
+  L193: "La cellule s'entartre avec le temps. Nettoyage acide tous les 3-6 mois."
+         detail: "La cellule s'entartre avec le temps. Nettoyage acide tous les 3-6 mois.",
+  L195: 'Démontez la cellule, trempez dans solution acide diluée 10-15 min, rincez.'
+         action: 'Démontez la cellule, trempez dans solution acide diluée 10-15 min, rincez.',
+  L207: 'Vérifier skimmer et panier'
+         title: 'Vérifier skimmer et panier',
+  L209: 'Débris, feuilles, insectes à retirer régulièrement.'
+         detail: 'Débris, feuilles, insectes à retirer régulièrement.',
+  L211: 'Videz le panier du skimmer et celui de la pompe.'
+         action: 'Videz le panier du skimmer et celui de la pompe.',
+  L226: 'Il reste peu de ce produit.'
+         detail: 'Il reste peu de ce produit.',
+  L228: 'Pensez à racheter avant de manquer.'
+         action: 'Pensez à racheter avant de manquer.',
+  L246: 'Planifiez une maintenance de cet équipement.'
+         action: 'Planifiez une maintenance de cet équipement.',
+  L261: 'Le printemps arrive : préparez la piscine pour la saison.'
+         detail: 'Le printemps arrive : préparez la piscine pour la saison.',
+  L263: 'Suivez le guide remise en route : nettoyage, traitement, filtration.'
+         action: 'Suivez le guide remise en route : nettoyage, traitement, filtration.',
+  L273: "Préparer l'hivernage"
+         title: "Préparer l'hivernage",
+  L275: "L'automne est là : anticipez l'hivernage."
+         detail: "L'automne est là : anticipez l'hivernage.",
+  L277: "Suivez le guide hivernage : eau froide, produits d'hiver, couverture."
+         action: "Suivez le guide hivernage : eau froide, produits d'hiver, couverture.",
+
+--- src/lib/pool/safety-rules.ts (14 chaînes) ---
+  L58: 'Chlore libre insuffisant : désinfection non assurée.'
+         reasons.push('Chlore libre insuffisant : désinfection non assurée.')
+  L74: 'Chlore libre non mesuré.'
+         reasons.push('Chlore libre non mesuré.')
+  L90: 'Ne jamais mélanger deux produits chimiques différents (chlore + acide = gaz toxi'
+         'Ne jamais mélanger deux produits chimiques différents (chlore + acide = gaz toxique).',
+  L91: 'Ne jamais verser du produit pur directement dans la piscine sans dilution (sauf '
+         'Ne jamais verser du produit pur directement dans la piscine sans dilution (sauf sel).',
+  L92: 'Ne jamais ajouter de l\\'
+         'Ne jamais ajouter de l\'eau dans un produit acide : toujours ajouter le produit dans l\'eau.',
+  L93: 'Ne jamais faire une chloration choc sans avoir vérifié le pH au préalable.'
+         'Ne jamais faire une chloration choc sans avoir vérifié le pH au préalable.',
+  L94: 'Ne jamais se baigner pendant ou juste après un traitement choc.'
+         'Ne jamais se baigner pendant ou juste après un traitement choc.',
+  L95: 'Ne jamais stocker chlore et acide côte à côte.'
+         'Ne jamais stocker chlore et acide côte à côte.',
+  L96: 'Ne pas dépasser 50 mg/L de stabilisant (CYA) : le chlore devient inefficace.'
+         'Ne pas dépasser 50 mg/L de stabilisant (CYA) : le chlore devient inefficace.',
+  L116: 'Ne jamais mélanger pH- et chlore : dégagement de gaz toxique.'
+         w.push('Ne jamais mélanger pH- et chlore : dégagement de gaz toxique.')
+  L119: 'Toujours vérifier pH avant choc. Baignade interdite 8h minimum.'
+         w.push('Toujours vérifier pH avant choc. Baignade interdite 8h minimum.')
+  L140: 'pH extrême : un professionnel peut aider à rééquilibrer sans risque.'
+         message: 'pH extrême : un professionnel peut aider à rééquilibrer sans risque.',
+  L146: 'Surchloration massive : envisagez une dilution partielle ou un pro.'
+         message: 'Surchloration massive : envisagez une dilution partielle ou un pro.',
+  L152: 'Chloramines très élevées : choc nécessaire, un pro peut piloter l\\'
+         message: 'Chloramines très élevées : choc nécessaire, un pro peut piloter l\'opération.',
+
+--- src/lib/pool/spa-data.ts (10 chaînes) ---
+  L37: 'Autre / Générique'
+         { id: 'other', name: 'Autre / Générique', origin: 'Chine', category: 'budget', notes: 'brand_other_notes' },
+  L117: 'Tous les 3-4 mois'
+         frequency: 'Tous les 3-4 mois',
+  L140: 'À chaque vidange'
+         frequency: 'À chaque vidange',
+  L159: 'Occasionnel (1-2x/semaine)'
+         usageFrequencyOptions: ['Occasionnel (1-2x/semaine)', 'Régulier (3-4x/semaine)', 'Intensif (5+/semaine)'],
+  L159: 'Régulier (3-4x/semaine)'
+         usageFrequencyOptions: ['Occasionnel (1-2x/semaine)', 'Régulier (3-4x/semaine)', 'Intensif (5+/semaine)'],
+  L159: 'Intensif (5+/semaine)'
+         usageFrequencyOptions: ['Occasionnel (1-2x/semaine)', 'Régulier (3-4x/semaine)', 'Intensif (5+/semaine)'],
+  L212: 'Usage intensif détecté — vidange recommandée tous les '
+         ? 'Usage intensif détecté — vidange recommandée tous les ' + months + ' mois pour éviter la saturation en produits.'
+  L212: ' mois pour éviter la saturation en produits.'
+         ? 'Usage intensif détecté — vidange recommandée tous les ' + months + ' mois pour éviter la saturation en produits.'
+  L213: 'Vidange recommandée tous les '
+         : 'Vidange recommandée tous les ' + months + ' mois (plus économique que sur-traitement).',
+  L213: ' mois (plus économique que sur-traitement).'
+         : 'Vidange recommandée tous les ' + months + ' mois (plus économique que sur-traitement).',
+
+--- src/lib/pool/targets.ts (21 chaînes) ---
+  L39: 'Eau acide : irritation, corrosion équipements, chlore instable.'
+         consequenceLow: 'Eau acide : irritation, corrosion équipements, chlore instable.',
+  L41: 'Eau basique : chlore moins efficace, tartre, eau trouble.'
+         consequenceHigh: 'Eau basique : chlore moins efficace, tartre, eau trouble.',
+  L50: 'Chlore libre'
+         label: 'Chlore libre',
+  L54: 'Désinfection insuffisante : risque algues et bactéries.'
+         consequenceLow: 'Désinfection insuffisante : risque algues et bactéries.',
+  L65: 'Chlore combiné'
+         label: 'Chlore combiné',
+  L70: 'Chlore combiné élevé : odeur forte, irritation yeux, chloramines.'
+         consequenceHigh: 'Chlore combiné élevé : odeur forte, irritation yeux, chloramines.',
+  L79: 'Alcalinité (TAC)'
+         label: 'Alcalinité (TAC)',
+  L85: 'pH difficile à ajuster, eau trouble.'
+         consequenceHigh: 'pH difficile à ajuster, eau trouble.',
+  L94: 'Dureté calcium (TH)'
+         label: 'Dureté calcium (TH)',
+  L100: 'Tartre, dépôts, eau trouble.'
+         consequenceHigh: 'Tartre, dépôts, eau trouble.',
+  L109: 'Stabilisant (CYA)'
+         label: 'Stabilisant (CYA)',
+  L113: 'Chlore dégradé vite par le soleil.'
+         consequenceLow: 'Chlore dégradé vite par le soleil.',
+  L115: 'Chlore bloqué : traitement inefficace, risque algues.'
+         consequenceHigh: 'Chlore bloqué : traitement inefficace, risque algues.',
+  L128: 'Électrolyseur ne produit pas assez de chlore.'
+         consequenceLow: 'Électrolyseur ne produit pas assez de chlore.',
+  L130: 'Surconsommation électrolyseur, goût.'
+         consequenceHigh: 'Surconsommation électrolyseur, goût.',
+  L143: 'Désinfection insuffisante.'
+         consequenceLow: 'Désinfection insuffisante.',
+  L145: 'Surdosage, irritation.'
+         consequenceHigh: 'Surdosage, irritation.',
+  L159: 'Nourrit les algues : risque eau verte élevé.'
+         consequenceHigh: 'Nourrit les algues : risque eau verte élevé.',
+  L168: 'Température'
+         label: 'Température',
+  L172: 'Eau froide, faible activité chimique.'
+         consequenceLow: 'Eau froide, faible activité chimique.',
+  L174: 'Évaporation, algues, surconsommation chlore.'
+         consequenceHigh: 'Évaporation, algues, surconsommation chlore.',
+
+--- src/lib/pool/water-balance.ts (13 chaînes) ---
+  L65: 'Manque de données (TH, TAC, température).'
+         advice: 'Manque de données (TH, TAC, température).',
+  L71: 'Eau agressive'
+         label: 'Eau agressive',
+  L74: 'Risque corrosion. Augmenter TAC/TH ou pH.'
+         advice: 'Risque corrosion. Augmenter TAC/TH ou pH.',
+  L80: 'Légèrement agressive'
+         label: 'Légèrement agressive',
+  L83: 'Léger déséquilibre.'
+         advice: 'Léger déséquilibre.',
+  L89: 'Équilibrée'
+         label: 'Équilibrée',
+  L92: 'Équilibre idéal.'
+         advice: 'Équilibre idéal.',
+  L98: 'Légèrement entartrante'
+         label: 'Légèrement entartrante',
+  L101: 'Léger risque tartre.'
+         advice: 'Léger risque tartre.',
+  L109: 'Risque tartre. Baisser pH/TAC.'
+         advice: 'Risque tartre. Baisser pH/TAC.',
+  L147: 'Eau parfaite'
+         if (score >= 85) return { label: 'Eau parfaite', labelKey: 'clarityPerfect', status: 'ok', color: 'accent' }
+  L148: 'À surveiller'
+         if (score >= 65) return { label: 'À surveiller', labelKey: 'clarityWatch', status: 'warning', color: 'yellow' }
+  L149: 'Action recommandée'
+         if (score >= 40) return { label: 'Action recommandée', labelKey: 'clarityAction', status: 'warning', color: 'orange' }
+
+--- src/lib/pool/weather-engine.ts (53 chaînes) ---
+  L81: 'Orage prévu demain'
+         title: 'Orage prévu demain',
+  L86: "Vérifiez le chlore libre ce soir avant l'orage. Renforcez la filtration demain."
+         action: "Vérifiez le chlore libre ce soir avant l'orage. Renforcez la filtration demain.",
+  L88: 'Ce soir avant 20h'
+         when: 'Ce soir avant 20h',
+  L93: "Test recommandé avant l'orage prévu demain."
+         testReason = "Test recommandé avant l'orage prévu demain."
+  L103: 'Canicule prévue'
+         title: 'Canicule prévue',
+  L108: 'Augmentez la filtration de 2h/jour. Vérifiez le chlore chaque matin. Envisagez a'
+         action: 'Augmentez la filtration de 2h/jour. Vérifiez le chlore chaque matin. Envisagez anti-algues préventif.',
+  L110: 'Dès maintenant et pendant la vague'
+         when: 'Dès maintenant et pendant la vague',
+  L115: 'Test quotidien recommandé pendant la canicule.'
+         testReason = 'Test quotidien recommandé pendant la canicule.'
+  L122: 'Forte chaleur prévue'
+         title: 'Forte chaleur prévue',
+  L127: "Augmentez la filtration d'1h/jour et testez le chlore demain."
+         action: "Augmentez la filtration d'1h/jour et testez le chlore demain.",
+  L129: 'Demain matin'
+         when: 'Demain matin',
+  L143: 'La pluie dilue les produits, fait baisser le pH et apporte des débris.'
+         message: 'La pluie dilue les produits, fait baisser le pH et apporte des débris.',
+  L145: 'Après la pluie : vérifiez pH et chlore, nettoyez skimmer et panier de pompe.'
+         action: 'Après la pluie : vérifiez pH et chlore, nettoyez skimmer et panier de pompe.',
+  L147: 'Après la pluie'
+         when: 'Après la pluie',
+  L152: 'Test pH + chlore recommandé après la pluie.'
+         testReason = 'Test pH + chlore recommandé après la pluie.'
+  L163: 'Vent fort prévu'
+         title: 'Vent fort prévu',
+  L168: "Vérifiez skimmer et panier de pompe. Nettoyez la ligne d'eau."
+         action: "Vérifiez skimmer et panier de pompe. Nettoyez la ligne d'eau.",
+  L170: 'Après le vent'
+         when: 'Après le vent',
+  L181: 'UV très élevés'
+         title: 'UV très élevés',
+  L183: 'Le soleil dégrade le chlore non stabilisé plus vite.'
+         message: 'Le soleil dégrade le chlore non stabilisé plus vite.',
+  L185: 'Vérifiez votre stabilisant (CYA) et le chlore libre.'
+         action: 'Vérifiez votre stabilisant (CYA) et le chlore libre.',
+  L187: 'Cette semaine'
+         when: 'Cette semaine',
+  L198: 'Risque de gel'
+         title: 'Risque de gel',
+  L200: 'Température négative prévue. Risque pour les équipements et canalisations.'
+         message: 'Température négative prévue. Risque pour les équipements et canalisations.',
+  L202: 'Protégez le local technique. Laissez tourner la filtration la nuit pour éviter l'
+         action: 'Protégez le local technique. Laissez tourner la filtration la nuit pour éviter le gel. Hivernez si pas fait.',
+  L204: 'Cette nuit'
+         when: 'Cette nuit',
+  L224: 'eau est généralement plus fraîche que l'
+         const estWaterTemp = (w.currentTempC + w.tomorrowMaxC) / 2 - 3 // l'eau est généralement plus fraîche que l'air le jour
+  L232: "Préférez la filtration nocturne (moins d'évaporation, meilleure efficacité chlor"
+         ? "Préférez la filtration nocturne (moins d'évaporation, meilleure efficacité chlore)."
+  L233: 'Filtration diurne recommandée.'
+         : 'Filtration diurne recommandée.',
+  L271: 'Ensoleillé'
+         113: 'Ensoleillé',
+  L274: 'Très nuageux'
+         122: 'Très nuageux',
+  L276: 'Pluies éparses'
+         176: 'Pluies éparses',
+  L277: 'Neige éparses'
+         179: 'Neige éparses',
+  L278: 'Grésil épars'
+         182: 'Grésil épars',
+  L279: 'Pluie verglaçante éparses'
+         185: 'Pluie verglaçante éparses',
+  L285: 'Pluie légère'
+         263: 'Pluie légère',
+  L286: 'Pluie légère'
+         266: 'Pluie légère',
+  L287: 'Pluie verglaçante'
+         281: 'Pluie verglaçante',
+  L288: 'Forte pluie verglaçante'
+         284: 'Forte pluie verglaçante',
+  L289: 'Pluies éparses'
+         293: 'Pluies éparses',
+  L292: 'Très forte pluie'
+         302: 'Très forte pluie',
+  L295: 'Pluie verglaçante'
+         311: 'Pluie verglaçante',
+  L296: 'Pluie verglaçante forte'
+         314: 'Pluie verglaçante forte',
+  L297: 'Grésil'
+         317: 'Grésil',
+  L299: 'Neige éparses'
+         323: 'Neige éparses',
+  L303: 'Très fortes chutes'
+         335: 'Très fortes chutes',
+  L305: 'Grésil'
+         350: 'Grésil',
+  L309: 'Averse grésil'
+         362: 'Averse grésil',
+  L310: 'Forte averse grésil'
+         365: 'Forte averse grésil',
+  L313: 'Averse grésil'
+         374: 'Averse grésil',
+  L314: 'Averse pluie verglaçante'
+         377: 'Averse pluie verglaçante',
+  L315: 'Orage épars'
+         386: 'Orage épars',
+  L320: 'Indéterminé'
+         return map[code] || 'Indéterminé'
+
+--- src/lib/preferences/store.ts (1 chaînes) ---
+  L251: 'États-Unis'
+         name: 'États-Unis',

@@ -4,15 +4,19 @@ import { authOptions } from '@/lib/auth'
 import { nvidiaChat, type ChatMessage } from '@/lib/ai/nvidia'
 import { db } from '@/lib/db'
 import { buildPoolContext, ASSISTANT_SYSTEM_PROMPT } from '@/lib/pool/ai-context'
+import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const locale = pickLocale(req)
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
+  const locale = pickLocale(req)
 
   try {
     const { message } = await req.json()
@@ -35,7 +39,12 @@ export async function POST(req: NextRequest) {
     messages.push({ role: 'user', content: message })
 
     const result = await nvidiaChat(messages)
-    const reply = result.content || "Désolé, je n'ai pas pu générer de réponse."
+    const fallbackReply = await translate(
+      locale,
+      'common.errors.chatError',
+      "Désolé, je n'ai pas pu générer de réponse."
+    )
+    const reply = result.content || fallbackReply
 
     await db.chatMessage.createMany({
       data: [
@@ -50,10 +59,12 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const locale = pickLocale(req)
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
 

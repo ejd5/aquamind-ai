@@ -3,15 +3,17 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { generateActionPlan } from '@/lib/pool/action-plan'
+import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
 
 // Régénère un plan d'action à partir d'un test existant (id) ou de valeurs inline
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
+  const locale = pickLocale(req)
   if (!session?.user?.id) {
-    // TODO: i18n — return a translation key for the client to localise.
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
 
@@ -32,9 +34,12 @@ export async function POST(req: NextRequest) {
 
     const profile = await db.poolProfile.findFirst({ where: { userId } })
     if (!profile) {
-      // TODO: i18n — return a translation key (common.errors.poolProfileRequired)
-      // for the client to localise. French fallback kept for now.
-      return NextResponse.json({ error: 'Profil piscine requis' }, { status: 400 })
+      const msg = await translate(
+        locale,
+        'common.errors.poolProfileRequired',
+        'Profil piscine requis'
+      )
+      return NextResponse.json({ error: msg }, { status: 400 })
     }
 
     const plan = generateActionPlan(test as any, {

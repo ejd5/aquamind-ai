@@ -6,11 +6,12 @@ import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    // TODO: i18n — return a translation key for the client to localise.
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const locale = pickLocale(req)
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
 
@@ -20,9 +21,10 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
+  const locale = pickLocale(req)
   if (!session?.user?.id) {
-    // TODO: i18n — return a translation key for the client to localise.
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
 
@@ -32,7 +34,6 @@ export async function POST(req: NextRequest) {
     // Localised default pool name ("Ma piscine" / "My pool" / "Mi piscina" …)
     // based on the user's UI language at creation time. The middleware has
     // already resolved Accept-Language to a 2-letter code on the request.
-    const locale = pickLocale(req)
     const defaultPoolName = await translate(
       locale,
       'common.defaultPoolName',

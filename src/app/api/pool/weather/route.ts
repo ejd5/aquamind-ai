@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { assessWeather, wttrCodeToFr, isStormCode, type WeatherData } from '@/lib/pool/weather-engine'
+import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
 
@@ -102,8 +103,10 @@ async function fetchWeather(query: string): Promise<WeatherData | null> {
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
+  const locale = pickLocale(req)
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
 
@@ -131,8 +134,13 @@ export async function GET(req: NextRequest) {
 
   const weather = await fetchWeather(query)
   if (!weather) {
+    const msg = await translate(
+      locale,
+      'common.errors.weatherUnavailable',
+      'Météo indisponible'
+    )
     return NextResponse.json(
-      { error: 'Météo indisponible', location: query || 'auto' },
+      { error: msg, location: query || 'auto' },
       { status: 502 },
     )
   }

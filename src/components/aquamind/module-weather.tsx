@@ -120,14 +120,22 @@ const SWIM_CFG: Record<SwimKey, { emoji: string; cls: string; labelKey: 'ideal' 
   too_cold: { emoji: '❄️', cls: 'border-primary/50 bg-primary/20 text-primary', labelKey: 'tooCold' },
 }
 
-function descToIcon(desc: string) {
-  const d = desc.toLowerCase()
-  if (d.includes('orage')) return <CloudLightning className="h-8 w-8 text-gold" />
-  if (d.includes('pluie') || d.includes('averse')) return <CloudRain className="h-8 w-8 text-primary" />
-  if (d.includes('neige') || d.includes('gel')) return <Snowflake className="h-8 w-8 text-primary" />
-  if (d.includes('brouillard') || d.includes('brume')) return <CloudSun className="h-8 w-8 text-muted-foreground" />
-  if (d.includes('nuageux') || d.includes('couvert')) return <CloudSun className="h-8 w-8 text-muted-foreground" />
-  if (d.includes('ensoleillé') || d.includes('soleil')) return <Sun className="h-8 w-8 text-gold" />
+function codeToIcon(code?: number) {
+  if (!code) return <CloudSun className="h-8 w-8 text-muted-foreground" />
+  // Storm codes: 200, 386, 389, 392, 395
+  if ([200, 386, 389, 392, 395].includes(code)) return <CloudLightning className="h-8 w-8 text-gold" />
+  // Rain codes: 176, 185, 263, 266, 281, 284, 293, 296, 299, 302, 305, 308, 311, 314, 353, 356, 359, 362, 365, 374, 377
+  if ([176, 185, 263, 266, 281, 284, 293, 296, 299, 302, 305, 308, 311, 314, 353, 356, 359, 362, 365, 374, 377].includes(code)) return <CloudRain className="h-8 w-8 text-primary" />
+  // Snow/ice codes: 179, 182, 227, 230, 230, 260, 317, 320, 323, 326, 329, 332, 335, 338, 350, 368, 371
+  if ([179, 182, 227, 230, 260, 317, 320, 323, 326, 329, 332, 335, 338, 350, 368, 371].includes(code)) return <Snowflake className="h-8 w-8 text-primary" />
+  // Fog/mist codes: 143, 248, 260
+  if ([143, 248, 260].includes(code)) return <CloudSun className="h-8 w-8 text-muted-foreground" />
+  // Cloudy codes: 119, 122
+  if ([119, 122].includes(code)) return <CloudSun className="h-8 w-8 text-muted-foreground" />
+  // Sunny codes: 113
+  if (code === 113) return <Sun className="h-8 w-8 text-gold" />
+  // Partly cloudy: 116
+  if (code === 116) return <CloudSun className="h-8 w-8 text-muted-foreground" />
   return <CloudSun className="h-8 w-8 text-muted-foreground" />
 }
 
@@ -438,7 +446,7 @@ export function ModuleWeather({ onNavigate }: Props) {
             <CardDescription>{t('currentConditions')}</CardDescription>
             <CardTitle className="flex items-center justify-between font-display text-base">
               <span>{t('nowAt', { location: weather.location })}</span>
-              {descToIcon(weather.weatherDesc)}
+              {codeToIcon(weather.weatherCode)}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -595,14 +603,14 @@ export function ModuleWeather({ onNavigate }: Props) {
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                   {i === 0 ? t('today') : i === 1 ? t('tomorrow') : new Date(d.date).toLocaleDateString(locale, { weekday: 'short' })}
                 </span>
-                <span className="text-2xl">{descToIcon(d.desc)}</span>
+                <span className="text-2xl">{codeToIcon(d.code)}</span>
                 <span className="font-display text-lg font-bold text-primary">{d.maxC}°C</span>
                 <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
                   <CloudRain className="h-3 w-3" />
                   {d.chanceRain}%
                 </span>
                 <span className="text-[10px] text-muted-foreground">
-                  {d.code ? t(`codes.${d.code}`) : d.desc}
+                  {d.code ? t(`codes.${d.code}`) : ''}
                 </span>
               </div>
             ))}

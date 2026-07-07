@@ -21,14 +21,16 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
 
-export async function POST() {
+export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    // TODO: i18n — return a translation key for the client to localise.
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const locale = pickLocale(req)
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
   }
 
   const userId = session.user.id
@@ -40,11 +42,12 @@ export async function POST() {
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[account/delete] error:', err)
-    // TODO: i18n — return a translation key (common.errors.accountDeleteError)
-    // for the client to localise. French fallback kept for now.
-    return NextResponse.json(
-      { error: 'Erreur lors de la suppression du compte' },
-      { status: 500 }
+    const locale = pickLocale(req)
+    const msg = await translate(
+      locale,
+      'common.errors.accountDeleteError',
+      'Erreur lors de la suppression du compte'
     )
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
