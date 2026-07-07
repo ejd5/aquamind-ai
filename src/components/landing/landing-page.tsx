@@ -16,6 +16,7 @@ import { Story } from './sections/story'
 import { Variations } from './sections/variations'
 import { SpaSection } from './sections/spa-section'
 import { FeaturesGrid } from './sections/features-grid'
+import { InternationalSection } from './sections/international-section'
 import { Pricing } from './sections/pricing'
 import { Faq } from './sections/faq'
 import { FinalCta } from './sections/final-cta'
@@ -193,6 +194,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
         <Variations />
         <SpaSection />
         <FeaturesGrid />
+        <InternationalSection />
         <Pricing hasProfile={hasProfile} onEnterApp={onEnterApp} />
         <Faq />
         <FinalCta hasProfile={hasProfile} onEnterApp={onEnterApp} />
