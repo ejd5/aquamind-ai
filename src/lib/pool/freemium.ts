@@ -21,6 +21,7 @@ export interface Plan {
     pdfReport: boolean
     proMode: boolean
     historyDays: number
+    spaSupport: boolean
   }
   highlighted?: boolean
   color: string
@@ -53,6 +54,7 @@ export const PLANS: Plan[] = [
       pdfReport: false,
       proMode: false,
       historyDays: 14,
+      spaSupport: false,
     },
     color: 'muted',
     icon: '🌊',
@@ -70,6 +72,7 @@ export const PLANS: Plan[] = [
       'Rappels intelligents',
       'Rapport PDF partageable',
       'Mode pro (LSI avancé)',
+      'Spa et eau chaude (brome, oxygène actif)',
       'Historique illimité',
       'Support prioritaire',
     ],
@@ -84,6 +87,7 @@ export const PLANS: Plan[] = [
       pdfReport: true,
       proMode: true,
       historyDays: 9999,
+      spaSupport: true,
     },
     highlighted: true,
     color: 'accent',
@@ -114,6 +118,7 @@ export const PLANS: Plan[] = [
       pdfReport: true,
       proMode: true,
       historyDays: 9999,
+      spaSupport: true,
     },
     color: 'primary',
     icon: '🛡️',
@@ -136,6 +141,7 @@ export type FeatureGate =
   | 'pdf_report'
   | 'pro_mode'
   | 'history_extended'
+  | 'spa_support'
 
 // Vérifie si une feature est accessible selon le plan.
 // ctaPlan pointe vers le plan minimum pour débloquer la feature :
@@ -164,6 +170,8 @@ export function canAccess(plan: PlanId, feature: FeatureGate, usage?: { photoSca
       return p.limits.proMode ? { allowed: true } : { allowed: false, reason: 'Mode pro réservé à Premium et Expert.', ctaPlan: PLANS[1].id }
     case 'history_extended':
       return p.limits.historyDays >= 90 ? { allowed: true } : { allowed: false, reason: 'Historique étendu réservé aux plans payants.', ctaPlan: PLANS[1].id }
+    case 'spa_support':
+      return p.limits.spaSupport ? { allowed: true } : { allowed: false, reason: 'Le support des spas est réservé au plan Premium.', ctaPlan: PLANS[1].id }
     default:
       return { allowed: true }
   }

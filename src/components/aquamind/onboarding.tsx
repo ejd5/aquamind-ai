@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Waves, Sparkles, ChevronLeft, ChevronRight, Check, Clock, Crosshair, MapPin, Loader2 } from 'lucide-react'
+import { Waves, Sparkles, ChevronLeft, ChevronRight, Check, Clock, Crosshair, MapPin, Loader2, Droplets, Thermometer, Users, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,10 +14,31 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
+import { SPA_SPECIFICS } from '@/lib/pool/spa-data'
 
 interface OnboardingProps {
   onDone: () => void
 }
+
+type WaterBodyType = 'pool' | 'spa' | 'both'
+
+const WATER_BODY_OPTIONS: { value: WaterBodyType; label: string; emoji: string }[] = [
+  { value: 'pool', label: 'Piscine', emoji: '🏊' },
+  { value: 'spa', label: 'Spa', emoji: '♨️' },
+  { value: 'both', label: 'Les deux', emoji: '🌊' },
+]
+
+const SPA_TREATMENT_OPTIONS = [
+  { value: 'bromine', label: 'Brome', desc: 'Recommandé pour spa. Stable en eau chaude, sans odeur.' },
+  { value: 'active_oxygen', label: 'Oxygène actif', desc: 'Écologique, sans chlore. Idéal sous 35°C.' },
+  { value: 'chlorine', label: 'Chlore (déconseillé)', desc: 'S\'évapore vite en eau chaude, irritant.' },
+]
+
+const SPA_USAGE_LEVELS = [
+  { value: 'low', label: 'Occasionnel', desc: '1-2x/semaine' },
+  { value: 'medium', label: 'Régulier', desc: '3-4x/semaine' },
+  { value: 'high', label: 'Intensif', desc: '5+/semaine' },
+]
 
 const STEPS = [
   { id: 1, label: 'Bassin', subtitle: 'Type et dimensions' },
@@ -25,6 +46,11 @@ const STEPS = [
   { id: 3, label: 'Équipements', subtitle: 'Filtration & pompe' },
   { id: 4, label: 'Environnement', subtitle: 'Climat & usage' },
 ]
+
+// Helper : le type de bassin sélectionné est-il un spa (ou les deux) ?
+function isSpaFlow(type: WaterBodyType): boolean {
+  return type === 'spa' || type === 'both'
+}
 
 const SHAPES = [
   { value: 'rectangular', label: 'Rectangulaire' },
@@ -77,6 +103,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
   const [locating, setLocating] = useState(false)
   const [form, setForm] = useState({
     name: 'Ma piscine',
+    waterBodyType: 'pool' as WaterBodyType,
     volume: '40',
     unit: 'm3',
     shape: 'rectangular',
@@ -89,10 +116,36 @@ export function Onboarding({ onDone }: OnboardingProps) {
     sunExposure: 'medium',
     covered: false,
     usageLevel: 'medium',
+    // Champs spécifiques au spa (Premium+)
+    spaSeats: 4,
+    spaTemperature: 37,
+    spaUsageFrequency: 'medium',
+    spaBrand: '',
   })
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }))
+  }
+
+  // Bascule Piscine ↔ Spa : adapte le volume par défaut, le traitement par défaut,
+  // et le nom proposé.
+  function selectWaterBodyType(type: WaterBodyType) {
+    if (type === 'spa' || type === 'both') {
+      setForm((f) => ({
+        ...f,
+        waterBodyType: type,
+        volume: f.volume === '40' || Number(f.volume) > 10 ? '1.5' : f.volume,
+        name: f.name === 'Ma piscine' ? 'Mon spa' : f.name,
+        treatmentType: f.treatmentType === 'chlorine' ? 'bromine' : f.treatmentType,
+      }))
+    } else {
+      setForm((f) => ({
+        ...f,
+        waterBodyType: type,
+        volume: Number(f.volume) < 5 ? '40' : f.volume,
+        name: f.name === 'Mon spa' ? 'Ma piscine' : f.name,
+      }))
+    }
   }
 
   // Géolocalisation GPS navigateur (ou Capacitor sur mobile)
@@ -135,11 +188,15 @@ export function Onboarding({ onDone }: OnboardingProps) {
     if (step === 1) {
       const v = Number(form.volume)
       if (!form.name.trim()) {
-        toast({ title: 'Nom requis', description: 'Donnez un nom à votre piscine.', variant: 'destructive' })
+        toast({ title: 'Nom requis', description: 'Donnez un nom à votre bassin.', variant: 'destructive' })
         return
       }
       if (!v || v <= 0) {
         toast({ title: 'Volume invalide', description: 'Entrez un volume positif.', variant: 'destructive' })
+        return
+      }
+      if (isSpaFlow(form.waterBodyType) && v > 10) {
+        toast({ title: 'Volume spa ?', description: 'Volume élevé pour un spa (généralement 0,8 à 3 m³). Vérifiez l\'unité.', variant: 'destructive' })
         return
       }
     }
@@ -234,8 +291,8 @@ export function Onboarding({ onDone }: OnboardingProps) {
             Bienvenue sur <span className="gradient-text-premium">AQWELIA</span>
           </h1>
           <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
-            Décrivez votre piscine pour activer le copilote : conseils personnalisés, dosages exacts,
-            plans d'action ordonnés et alertes sécurité.
+            Décrivez votre piscine ou spa pour activer le copilote : conseils personnalisés, dosages
+            exacts, plans d&apos;action ordonnés et alertes sécurité.
           </p>
         </div>
 
@@ -256,24 +313,69 @@ export function Onboarding({ onDone }: OnboardingProps) {
           {/* Step content */}
           {step === 1 && (
             <div className="space-y-4">
+              {/* Toggle Piscine / Spa / Les deux — tout en haut de l'étape 1 */}
               <div className="space-y-1.5">
-                <Label htmlFor="name">Nom de la piscine</Label>
+                <Label>Je gère une :</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {WATER_BODY_OPTIONS.map((opt) => {
+                    const active = form.waterBodyType === opt.value
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => selectWaterBodyType(opt.value)}
+                        className={`flex flex-col items-center gap-1 rounded-xl border px-3 py-3 text-xs font-semibold transition-all ${
+                          active
+                            ? 'border-gold/60 bg-gold/10 text-gold shadow-sm'
+                            : 'border-border bg-background hover:border-gold/30'
+                        }`}
+                      >
+                        <span className="text-xl" aria-hidden="true">
+                          {opt.emoji}
+                        </span>
+                        {opt.label}
+                      </button>
+                    )
+                  })}
+                </div>
+                {isSpaFlow(form.waterBodyType) && (
+                  <div className="mt-1 flex items-start gap-2 rounded-lg border border-gold/30 bg-gold/5 p-2.5 text-[11px] text-gold-foreground">
+                    <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold" />
+                    <span>
+                      <strong className="text-gold">Support Spa Premium.</strong> La configuration
+                      du spa est enregistrée mais les recommandations spa avancées (brome, vidange,
+                      programmes pompe) nécessitent le plan <span className="text-gold">Premium</span>.
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="name">
+                  {isSpaFlow(form.waterBodyType) ? 'Nom du spa' : 'Nom de la piscine'}
+                </Label>
                 <Input
                   id="name"
                   value={form.name}
                   onChange={(e) => update('name', e.target.value)}
-                  placeholder="Ex : Piscine du jardin"
+                  placeholder={isSpaFlow(form.waterBodyType) ? 'Ex : Spa de la terrasse' : 'Ex : Piscine du jardin'}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="volume">Volume</Label>
+                  <Label htmlFor="volume">
+                    Volume {isSpaFlow(form.waterBodyType) && (
+                      <span className="text-[10px] font-normal text-muted-foreground">
+                        ({SPA_SPECIFICS.volumeRange.min}-{SPA_SPECIFICS.volumeRange.max} {SPA_SPECIFICS.volumeRange.unit})
+                      </span>
+                    )}
+                  </Label>
                   <Input
                     id="volume"
                     type="number"
-                    min="1"
-                    step="1"
+                    min={isSpaFlow(form.waterBodyType) ? '0.1' : '1'}
+                    step={isSpaFlow(form.waterBodyType) ? '0.1' : '1'}
                     value={form.volume}
                     onChange={(e) => update('volume', e.target.value)}
                   />
@@ -292,77 +394,228 @@ export function Onboarding({ onDone }: OnboardingProps) {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <Label>Forme</Label>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {SHAPES.map((s) => (
-                    <button
-                      key={s.value}
-                      onClick={() => update('shape', s.value)}
-                      className={`rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
-                        form.shape === s.value
-                          ? 'border-gold/60 bg-gold/10 text-gold shadow-sm'
-                          : 'border-border bg-background hover:border-gold/30'
-                      }`}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* Champs spécifiques au spa : places, température, fréquence d'usage */}
+              {isSpaFlow(form.waterBodyType) && (
+                <div className="space-y-3 rounded-xl border border-gold/20 bg-gold/[0.04] p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gold">
+                    ♨️ Détails du spa
+                  </p>
 
-              <div className="space-y-1.5">
-                <Label>Revêtement</Label>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {SURFACES.map((s) => (
-                    <button
-                      key={s.value}
-                      onClick={() => update('surfaceType', s.value)}
-                      className={`rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
-                        form.surfaceType === s.value
-                          ? 'border-gold/60 bg-gold/10 text-gold shadow-sm'
-                          : 'border-border bg-background hover:border-gold/30'
-                      }`}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1.5 text-xs">
+                      <Users className="h-3.5 w-3.5 text-gold" />
+                      {SPA_SPECIFICS.seatsRange.label} : <strong className="text-gold">{form.spaSeats}</strong>
+                    </Label>
+                    <input
+                      type="range"
+                      min={SPA_SPECIFICS.seatsRange.min}
+                      max={SPA_SPECIFICS.seatsRange.max}
+                      step={1}
+                      value={form.spaSeats}
+                      onChange={(e) => update('spaSeats', Number(e.target.value))}
+                      className="w-full accent-[oklch(0.45_0.12_195)]"
+                    />
+                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <span>{SPA_SPECIFICS.seatsRange.min} places</span>
+                      <span>{SPA_SPECIFICS.seatsRange.max} places</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1.5 text-xs">
+                      <Thermometer className="h-3.5 w-3.5 text-gold" />
+                      Température cible : <strong className="text-gold">{form.spaTemperature}°C</strong>
+                    </Label>
+                    <input
+                      type="range"
+                      min={SPA_SPECIFICS.temperatureRange.min}
+                      max={SPA_SPECIFICS.temperatureRange.max}
+                      step={1}
+                      value={form.spaTemperature}
+                      onChange={(e) => update('spaTemperature', Number(e.target.value))}
+                      className="w-full accent-[oklch(0.45_0.12_195)]"
+                    />
+                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <span>{SPA_SPECIFICS.temperatureRange.min}°C</span>
+                      <span>Idéal : {SPA_SPECIFICS.temperatureRange.ideal}°C</span>
+                      <span>{SPA_SPECIFICS.temperatureRange.max}°C</span>
+                    </div>
+                    {form.spaTemperature > 38 && (
+                      <p className="text-[11px] text-red-500">
+                        ⚠️ Au-delà de 38°C, limitez les sessions à 15-20 min (risque cardiovasculaire).
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1.5 text-xs">
+                      <Droplets className="h-3.5 w-3.5 text-gold" />
+                      Fréquence d&apos;usage
+                    </Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {SPA_USAGE_LEVELS.map((u) => (
+                        <button
+                          key={u.value}
+                          type="button"
+                          onClick={() => update('spaUsageFrequency', u.value)}
+                          className={`flex flex-col items-center rounded-lg border px-2 py-2 text-center transition-all ${
+                            form.spaUsageFrequency === u.value
+                              ? 'border-gold/60 bg-gold/10 shadow-sm'
+                              : 'border-border bg-background hover:border-gold/30'
+                          }`}
+                        >
+                          <span className={`text-xs font-semibold ${form.spaUsageFrequency === u.value ? 'text-gold' : ''}`}>
+                            {u.label}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">{u.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {!isSpaFlow(form.waterBodyType) && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label>Forme</Label>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {SHAPES.map((s) => (
+                        <button
+                          key={s.value}
+                          onClick={() => update('shape', s.value)}
+                          className={`rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
+                            form.shape === s.value
+                              ? 'border-gold/60 bg-gold/10 text-gold shadow-sm'
+                              : 'border-border bg-background hover:border-gold/30'
+                          }`}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label>Revêtement</Label>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {SURFACES.map((s) => (
+                        <button
+                          key={s.value}
+                          onClick={() => update('surfaceType', s.value)}
+                          className={`rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
+                            form.surfaceType === s.value
+                              ? 'border-gold/60 bg-gold/10 text-gold shadow-sm'
+                              : 'border-border bg-background hover:border-gold/30'
+                          }`}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
           {step === 2 && (
             <div className="space-y-3">
-              <Label>Méthode de traitement</Label>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {TREATMENTS.map((t) => (
-                  <button
-                    key={t.value}
-                    onClick={() => {
-                      update('treatmentType', t.value)
-                      update('saltSystem', t.value === 'salt')
-                    }}
-                    className={`flex flex-col items-start gap-0.5 rounded-lg border p-3 text-left transition-all ${
-                      form.treatmentType === t.value
-                        ? 'border-gold/60 bg-gold/10 shadow-sm'
-                        : 'border-border bg-background hover:border-gold/30'
-                    }`}
-                  >
-                    <span className={`text-sm font-semibold ${form.treatmentType === t.value ? 'text-gold' : ''}`}>
-                      {t.label}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">{t.desc}</span>
-                  </button>
-                ))}
-              </div>
+              <Label>
+                Méthode de traitement
+                {isSpaFlow(form.waterBodyType) && (
+                  <span className="ml-2 text-[10px] font-normal text-gold">♨️ Mode spa</span>
+                )}
+              </Label>
 
-              {form.treatmentType === 'salt' && (
-                <div className="rounded-lg border border-gold/30 bg-gold/5 p-3 text-xs text-gold-foreground">
-                  <Sparkles className="mb-1 inline h-3.5 w-3.5 text-gold" />{' '}
-                  <strong className="text-gold">Électrolyse au sel activée.</strong> AQWELIA
-                  surveillera le niveau de sel pour votre électrolyseur.
-                </div>
+              {isSpaFlow(form.waterBodyType) ? (
+                <>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {SPA_TREATMENT_OPTIONS.map((t) => {
+                      const isChlorine = t.value === 'chlorine'
+                      return (
+                        <button
+                          key={t.value}
+                          onClick={() => update('treatmentType', t.value)}
+                          className={`flex flex-col items-start gap-0.5 rounded-lg border p-3 text-left transition-all ${
+                            form.treatmentType === t.value
+                              ? 'border-gold/60 bg-gold/10 shadow-sm'
+                              : isChlorine
+                                ? 'border-red-300/50 bg-red-500/5 hover:border-red-400/60'
+                                : 'border-border bg-background hover:border-gold/30'
+                          }`}
+                        >
+                          <span className={`text-sm font-semibold ${
+                            form.treatmentType === t.value
+                              ? 'text-gold'
+                              : isChlorine
+                                ? 'text-red-500'
+                                : ''
+                          }`}>
+                            {t.label}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">{t.desc}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {form.treatmentType === 'chlorine' && (
+                    <div className="rounded-lg border border-red-400/40 bg-red-500/5 p-3 text-xs text-red-700 dark:text-red-300">
+                      <strong className="text-red-600 dark:text-red-400">⚠️ Chlore déconseillé en spa.</strong>{' '}
+                      À haute température, le chlore s'évapore rapidement, forme des chloramines
+                      irritantes et sent fort. AQWELIA recommande vivement le brome pour les spas.
+                    </div>
+                  )}
+
+                  {form.treatmentType === 'bromine' && (
+                    <div className="rounded-lg border border-gold/30 bg-gold/5 p-3 text-xs text-gold-foreground">
+                      <Sparkles className="mb-1 inline h-3.5 w-3.5 text-gold" />{' '}
+                      <strong className="text-gold">Brome activé.</strong> AQWELIA adaptera ses
+                      recommandations pour l'eau chaude et surveillera le taux de brome (3-5 mg/L).
+                    </div>
+                  )}
+
+                  {form.treatmentType === 'active_oxygen' && (
+                    <div className="rounded-lg border border-gold/30 bg-gold/5 p-3 text-xs text-gold-foreground">
+                      <Sparkles className="mb-1 inline h-3.5 w-3.5 text-gold" />{' '}
+                      <strong className="text-gold">Oxygène actif activé.</strong> Écologique et
+                      sans odeur. Surveillez la température : moins efficace au-delà de 35°C.
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {TREATMENTS.map((t) => (
+                      <button
+                        key={t.value}
+                        onClick={() => {
+                          update('treatmentType', t.value)
+                          update('saltSystem', t.value === 'salt')
+                        }}
+                        className={`flex flex-col items-start gap-0.5 rounded-lg border p-3 text-left transition-all ${
+                          form.treatmentType === t.value
+                            ? 'border-gold/60 bg-gold/10 shadow-sm'
+                            : 'border-border bg-background hover:border-gold/30'
+                        }`}
+                      >
+                        <span className={`text-sm font-semibold ${form.treatmentType === t.value ? 'text-gold' : ''}`}>
+                          {t.label}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">{t.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {form.treatmentType === 'salt' && (
+                    <div className="rounded-lg border border-gold/30 bg-gold/5 p-3 text-xs text-gold-foreground">
+                      <Sparkles className="mb-1 inline h-3.5 w-3.5 text-gold" />{' '}
+                      <strong className="text-gold">Électrolyse au sel activée.</strong> AQWELIA
+                      surveillera le niveau de sel pour votre électrolyseur.
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

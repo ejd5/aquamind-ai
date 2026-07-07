@@ -6,8 +6,8 @@ import { Reveal, SectionHeading, staggerContainer, fadeUpVariants } from '../lan
 
 const FAQ = [
   {
-    q: 'AQWELIA remplace-t-il le pisciniste ?',
-    a: "Non. Il le complète. Le pisciniste vient 1 fois/semaine ; AQWELIA couvre les 6 autres jours, gère les urgences, et vous apprend à comprendre votre piscine. Beaucoup d'utilisateurs gardent un pisciniste + AQWELIA.",
+    q: 'AQWELIA remplace-t-elle le pisciniste ?',
+    a: "Non. Elle le complète. Le pisciniste vient 1 fois/semaine ; AQWELIA couvre les 6 autres jours, gère les urgences, et vous apprend à comprendre votre piscine. Beaucoup d'utilisateurs gardent un pisciniste + AQWELIA.",
   },
   {
     q: 'L\'IA peut-elle se tromper ?',
@@ -26,8 +26,8 @@ const FAQ = [
     a: "Le mode web nécessite une connexion. L'app mobile native (à venir) aura un mode offline pour les tests et le carnet.",
   },
   {
-    q: 'AQWELIA gère-t-il les spas ?',
-    a: 'Oui. Profil spa, brome, spécificités eau chaude.',
+    q: 'AQWELIA gère-t-elle les spas ?',
+    a: 'Oui ! AQWELIA gère les spas avec des spécificités dédiées : traitement au brome ou oxygène actif (pas de chlore en eau chaude), surveillance de la température, rappels de vidange, bâchage anti-évaporation, programmes de filtration adaptés. Le support spa est disponible à partir du plan Premium.',
   },
   {
     q: 'Et si j\'ai plusieurs piscines ?',
@@ -76,10 +76,10 @@ export function Faq() {
           <p className="text-sm text-muted-foreground">
             Une autre question ? Écrivez-nous :{' '}
             <a
-              href="mailto:contact@aquamind.ai"
+              href="mailto:contact@aqwelia.app"
               className="font-medium text-primary underline-offset-4 hover:underline"
             >
-              contact@aquamind.ai
+              contact@aqwelia.app
             </a>
           </p>
         </Reveal>

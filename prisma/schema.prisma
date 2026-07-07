@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -83,6 +83,11 @@ model PoolProfile {
   region        String? // région / climat
   sunExposure   String   @default("medium") // low | medium | high
   covered       Boolean  @default(false)
+  waterBodyType String   @default("pool") // pool | spa | both
+  spaSeats      Int? // nombre de places assises (spa)
+  spaTempTarget Int? // température cible °C (spa)
+  spaUsageFreq  String? // occasional | regular | intensive (spa)
+  spaBrand      String? // marque du spa
   usageLevel    String   @default("medium") // low | medium | high
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
