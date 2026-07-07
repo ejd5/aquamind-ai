@@ -1,10 +1,7 @@
 'use client'
 
-<<<<<<< HEAD
 import { useEffect, useState } from 'react'
-=======
 import { useState } from 'react'
->>>>>>> main
 import { Waves, Sparkles, ChevronLeft, ChevronRight, Check, Clock, Crosshair, MapPin, Loader2, Droplets, Thermometer, Users, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,11 +16,8 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { SPA_SPECIFICS } from '@/lib/pool/spa-data'
-<<<<<<< HEAD
 import { getCountryList } from '@/lib/countries'
 import { detectCountryConfig } from '@/lib/countries/detect'
-=======
->>>>>>> main
 
 interface OnboardingProps {
   onDone: () => void
@@ -122,10 +116,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
     filterType: 'sand',
     pumpType: '',
     region: '', // ville saisie ou "lat,lon" — vide = géoloc IP à la prochaine requête
-<<<<<<< HEAD
     country: 'FR', // code ISO 3166-1 alpha-2 — utilisé pour les normes eau locales
-=======
->>>>>>> main
     sunExposure: 'medium',
     covered: false,
     usageLevel: 'medium',
@@ -161,7 +152,6 @@ export function Onboarding({ onDone }: OnboardingProps) {
     }
   }
 
-<<<<<<< HEAD
   // Détection automatique du pays au montage du composant.
   // On lance la cascade (profile → IP → navigateur → défaut FR) en arrière-plan
   // et on pré-remplit le champ `country` si l'utilisateur n'a pas déjà choisi.
@@ -180,8 +170,6 @@ export function Onboarding({ onDone }: OnboardingProps) {
     }
   }, [])
 
-=======
->>>>>>> main
   // Géolocalisation GPS navigateur (ou Capacitor sur mobile)
   function handleGeolocate() {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
@@ -696,7 +684,6 @@ export function Onboarding({ onDone }: OnboardingProps) {
 
           {step === 4 && (
             <div className="space-y-4">
-<<<<<<< HEAD
               {/* Pays — détermine les normes eau locales (pH, chlore, brome…) */}
               <div className="space-y-1.5">
                 <Label htmlFor="country">📍 Pays</Label>
@@ -719,10 +706,8 @@ export function Onboarding({ onDone }: OnboardingProps) {
 
               {/* Localisation pour la météo : GPS + saisie manuelle */}
               <div className="space-y-1.5">
-=======
               {/* Localisation pour la météo : GPS + saisie manuelle */}
               <div className="space-y-1.5">
->>>>>>> main
                 <Label>Votre ville (pour la météo)</Label>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <Button

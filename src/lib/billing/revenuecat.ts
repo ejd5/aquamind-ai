@@ -8,10 +8,7 @@ const RC_API_KEYS = {
 }
 
 let _initialized = false
-<<<<<<< HEAD
 let _loggedInUserId: string | null = null
-=======
->>>>>>> main
 
 async function ensureInitialized() {
   if (_initialized || !isNative()) return
@@ -24,7 +21,6 @@ async function ensureInitialized() {
   _initialized = true
 }
 
-<<<<<<< HEAD
 /**
  * Link the current NextAuth user to RevenueCat.
  * Must be called after login so that purchases are attributed to the right user.
@@ -57,8 +53,6 @@ export async function logoutRevenueCatUser(): Promise<void> {
   _loggedInUserId = null
 }
 
-=======
->>>>>>> main
 function mapPackageToProduct(pkg: any): Product | null {
   try {
     const id = pkg?.product?.identifier || ''

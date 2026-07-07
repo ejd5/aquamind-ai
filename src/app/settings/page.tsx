@@ -4,18 +4,15 @@
  * URL: /settings
  *
  * Client component (uses useSession, useRouter, billing, signOut).
-<<<<<<< HEAD
  * Lists 11 sections in glass cards with the AQWELIA design system:
  *   1. Mon abonnement          → billing.manageSubscription()
  *   2. Restaurer mes achats    → billing.restorePurchases()
  *   3. Notifications           → 3 toggle switches (rappels, météo, reco)
-=======
  * Lists 15 sections in glass cards with the AQWELIA design system:
  *   1. Mon abonnement          → billing.manageSubscription()
  *   2. Restaurer mes achats    → billing.restorePurchases()
  *   3. Notifications           → 3 toggle switches (rappels, météo, reco)
  *   3.5 Préférences            → Langue + Pays + Unités + Normes (4 cartes)
->>>>>>> main
  *   4. Données personnelles    → links to sections 5 & 6
  *   5. Exporter mes données    → GET /api/account/export (JSON download)
  *   6. Supprimer mon compte    → POST /api/account/delete (DANGER + AlertDialog)
@@ -35,8 +32,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { billing } from '@/lib/billing'
 import type { PlanId } from '@/lib/billing'
-<<<<<<< HEAD
-=======
 import {
   usePreferences,
   LANGUAGES,
@@ -51,13 +46,10 @@ import {
   type WeightUnit,
   type LengthUnit,
 } from '@/lib/preferences/store'
->>>>>>> main
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import {
-<<<<<<< HEAD
-=======
   Select,
   SelectContent,
   SelectItem,
@@ -71,7 +63,6 @@ import {
 } from '@/components/ui/collapsible'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import {
->>>>>>> main
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -96,11 +87,9 @@ import {
   Info,
   LogOut,
   ChevronRight,
-<<<<<<< HEAD
   Sparkles,
   ArrowLeft,
   Loader2,
-=======
   ChevronDown,
   Sparkles,
   ArrowLeft,
@@ -109,7 +98,6 @@ import {
   MapPin,
   Ruler,
   RotateCcw,
->>>>>>> main
 } from 'lucide-react'
 
 const APP_VERSION = 'v1.0.0'
@@ -137,8 +125,6 @@ export default function SettingsPage() {
   const [exporting, setExporting] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-<<<<<<< HEAD
-=======
   // Préférences (langue + pays + unités + normes) — store Zustand persistant.
   const {
     language,
@@ -159,7 +145,6 @@ export default function SettingsPage() {
   } = usePreferences()
   const [showCustomUnits, setShowCustomUnits] = useState(false)
 
->>>>>>> main
   // Redirect to signin if unauthenticated.
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -167,8 +152,6 @@ export default function SettingsPage() {
     }
   }, [status, router])
 
-<<<<<<< HEAD
-=======
   // Auto-détection pays + langue au premier load (si pas encore de préférences sauvegardées).
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -183,7 +166,6 @@ export default function SettingsPage() {
     // setCountry/setLanguage sont stables (Zustand).
   }, [setCountry, setLanguage])
 
->>>>>>> main
   // Load active plan + notification preferences once authenticated.
   useEffect(() => {
     if (status !== 'authenticated') return
@@ -464,8 +446,6 @@ export default function SettingsPage() {
               </div>
             </SettingsCard>
 
-<<<<<<< HEAD
-=======
             {/* ───────── 3.5 Préférences (Langue + Pays + Unités + Normes) ───────── */}
             <PreferencesSection
               language={language}
@@ -487,7 +467,6 @@ export default function SettingsPage() {
               setShowCustomUnits={setShowCustomUnits}
             />
 
->>>>>>> main
             {/* ───────── 4. Données personnelles (overview) ───────── */}
             <SettingsCard
               icon={<Database className="h-4 w-4" />}
@@ -771,8 +750,6 @@ function ToggleRow({
     </label>
   )
 }
-<<<<<<< HEAD
-=======
 
 /* ──────────────────────────────────────────────────────────────────────── */
 /*  Section 3.5 — Préférences (Langue + Pays + Unités + Normes)             */
@@ -1114,4 +1091,3 @@ function UnitToggle<T extends string>({
     </div>
   )
 }
->>>>>>> main
