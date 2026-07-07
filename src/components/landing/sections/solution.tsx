@@ -2,33 +2,37 @@
 
 import { motion } from 'framer-motion'
 import { Camera, Brain, CheckCircle2, Calculator } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { GlassCard, Reveal, SectionHeading, staggerContainer, fadeUpVariants } from '../landing-utils'
 
-const STEPS = [
-  {
-    num: '1',
-    icon: Camera,
-    emoji: '📸',
-    title: 'Photo + mesures',
-    text: "Prenez une photo de l'eau / filtre / bandelette, entrez vos valeurs (ou scannez).",
-  },
-  {
-    num: '2',
-    icon: Brain,
-    emoji: '🧠',
-    title: 'Diagnostic prudent',
-    text: "L'IA + le moteur déterministe analysent : profil piscine, météo, historique.",
-  },
-  {
-    num: '3',
-    icon: CheckCircle2,
-    emoji: '✅',
-    title: "Plan d'action exact",
-    text: '1. TAC+ 2040g → 2. pH- 900ml → 3. Chlore choc → filtration 4h → re-test 3h → baignade interdite 8h.',
-  },
-]
-
 export function Solution() {
+  const t = useTranslations('landing')
+  const t = useTranslations('landing')
+
+  const STEPS = [
+    {
+      num: '1',
+      icon: Camera,
+      emoji: '📸',
+      title: t('solutionStep1'),
+      text: t('solutionStep1Text'),
+    },
+    {
+      num: '2',
+      icon: Brain,
+      emoji: '🧠',
+      title: t('solutionStep2'),
+      text: t('solutionStep2Text'),
+    },
+    {
+      num: '3',
+      icon: CheckCircle2,
+      emoji: '✅',
+      title: t('solutionStep3'),
+      text: t('solutionStep3Text'),
+    },
+  ]
+
   return (
     <section id="solution" className="relative py-20 sm:py-28">
       {/* Subtle aurora wash */}
@@ -36,8 +40,8 @@ export function Solution() {
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <SectionHeading
-          eyebrow="04 — La solution"
-          title={<>AQWELIA : votre pisciniste intelligent, 24/7.</>}
+          eyebrow={t('solutionEyebrow')}
+          title={<>{t('solutionTitle')}</>}
         />
 
         {/* Steps */}
@@ -82,11 +86,13 @@ export function Solution() {
               </div>
               <div>
                 <h3 className="font-display text-lg font-bold sm:text-xl">
-                  Le moteur de dosage est <span className="gradient-text-premium">DÉTERMINISTE</span> (pas de l&apos;IA).
+                  {t('solutionDeterminist1')}{' '}
+                  <span className="gradient-text-premium">{t('solutionDeterminist2')}</span>{' '}
+                  {t('solutionDeterminist3')}
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-foreground/85 sm:text-base">
-                  On ne confie pas votre sécurité à un LLM. Les calculs sont exacts, testables,
-                  prudents. <strong className="text-foreground">L&apos;IA explique, le moteur calcule.</strong>
+                  {t('solutionDeterministText1')}{' '}
+                  <strong className="text-foreground">{t('solutionDeterministText2')}</strong>
                 </p>
               </div>
             </div>

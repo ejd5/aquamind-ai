@@ -1,15 +1,18 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useTranslations } from 'next-intl'
 import { Reveal, SectionHeading } from '../landing-utils'
 
 export function Story() {
+  const t = useTranslations('landing')
+
   return (
     <section id="histoire" className="relative py-20 sm:py-28">
       <div className="mx-auto max-w-4xl px-4 sm:px-6">
         <SectionHeading
-          eyebrow="08 — Notre histoire"
-          title={<>Conçu par des propriétaires, pour des propriétaires.</>}
+          eyebrow={t('storyEyebrow')}
+          title={<>{t('storyTitle')}</>}
         />
 
         <Reveal delay={0.1} className="mt-12">
@@ -31,13 +34,13 @@ export function Story() {
               <span className="text-gold">=</span>
               <span className="text-sm font-semibold text-foreground/80 sm:text-base">
                 <span className="text-primary">AQ</span>
-                <span className="text-muted-foreground"> (aqua)</span>
+                <span className="text-muted-foreground"> {t('storyAquaWord')}</span>
                 <span className="mx-1 text-gold">·</span>
                 <span className="text-ocean-light">WEL</span>
-                <span className="text-muted-foreground"> (well)</span>
+                <span className="text-muted-foreground"> {t('storyWellWord')}</span>
                 <span className="mx-1 text-gold">·</span>
                 <span className="text-gold">IA</span>
-                <span className="text-muted-foreground"> (intelligence)</span>
+                <span className="text-muted-foreground"> {t('storyIAWord')}</span>
               </span>
             </motion.div>
 
@@ -49,28 +52,22 @@ export function Story() {
               className="relative space-y-5 font-display text-lg leading-relaxed text-foreground/90 sm:text-xl"
             >
               <p>
-                « Trois racines, une promesse&nbsp;: une eau qui va bien, pilotée par l&apos;IA. »
+                {t('storyQuote1')}
               </p>
               <p>
-                « Après 15 ans, 3 piscines différentes (béton, coque, hors-sol), 2 électrolyseurs,
-                un filtre à sable et un à cartouche, des centaines de tests, des dizaines de
-                mauvaises surprises — on a craqué. »
+                {t('storyQuote2')}
               </p>
               <p>
-                « On a tout essayé : le pisciniste cher qui vient une fois par semaine, les apps
-                basiques qui disent &ldquo;ajoutez du chlore&rdquo;, les forums, les vidéos YouTube à 23h. »
+                {t('storyQuote3')}
               </p>
               <p>
-                « Rien ne répondait à la seule question qui compte :{' '}
+                {t('storyQuote4a')}{' '}
                 <span className="gradient-text-premium font-bold">
-                  &ldquo;LÀ, maintenant, avec MES mesures, MA piscine, MA météo, qu&apos;est-ce que je fais,
-                  dans quel ordre, et quand est-ce que je peux me baigner ?&rdquo;
-                </span>{' '}
-                »
+                  {t('storyQuote4b')}
+                </span>
               </p>
               <p>
-                « AQWELIA est né de cette frustration. Pas par une équipe de marketers. Par des
-                utilisateurs assidus qui en avaient marre de l&apos;eau verte. »
+                {t('storyQuote5')}
               </p>
             </motion.div>
 
@@ -81,7 +78,7 @@ export function Story() {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="relative mt-6 text-right text-sm uppercase tracking-widest text-gold"
             >
-              — L&apos;équipe AQWELIA
+              {t('storyTeam')}
             </motion.p>
           </div>
         </Reveal>

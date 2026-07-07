@@ -57,7 +57,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
             className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-white/70 px-4 py-1.5 text-xs font-semibold text-foreground backdrop-blur-md dark:bg-white/5"
           >
             <Sparkles className="h-3.5 w-3.5 text-gold" />
-            <span className="tracking-[0.18em]">AQUA · WELL · IA</span>
+            <span className="tracking-[0.18em]">{t('heroBadge')}</span>
           </motion.div>
 
           {/* Headline */}
@@ -69,7 +69,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
           >
             {t('heroTitle')}
             <br className="hidden sm:block" />{' '}
-            <span className="gradient-text-premium italic">sans gaspillage.</span>
+            <span className="gradient-text-premium italic">{t('heroTitleSuffix')}</span>
           </motion.h1>
 
           {/* Subtitle — promise AQWELIA (Option B) */}
@@ -79,9 +79,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
             transition={{ duration: 0.7, delay: 0.15 }}
             className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg"
           >
-            Trois racines, une promesse&nbsp;: <span className="font-semibold text-foreground">une eau qui va bien, pilotée par l&apos;IA.</span>{' '}
-            AQWELIA est le copilote intelligent qui veille sur votre piscine 24/7 —
-            diagnostic prudent, plan d&apos;action exact, eau toujours cristalline.
+            {t('heroSubtitle')}
           </motion.p>
 
           {/* Dual CTA */}
@@ -113,12 +111,12 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
             transition={{ duration: 0.7, delay: 0.4 }}
             className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground"
           >
-            {TRUST.map((t) => {
-              const Icon = t.icon
+            {TRUST.map((trust) => {
+              const Icon = trust.icon
               return (
-                <span key={t.label} className="inline-flex items-center gap-1.5">
+                <span key={trust.label} className="inline-flex items-center gap-1.5">
                   <Icon className="h-3.5 w-3.5 text-gold" />
-                  {t.label}
+                  {trust.label}
                 </span>
               )
             })}
@@ -147,13 +145,13 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
                     <span className="text-xs font-bold">AQWELIA</span>
                   </div>
                   <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[9px] font-bold text-gold">
-                    IA EN LIGNE
+                    {t('heroPhoneBadge')}
                   </span>
                 </div>
 
                 <div className="mt-4 rounded-xl bg-white/80 p-3 dark:bg-white/5">
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Indice eau claire
+                    {t('heroPhoneClearIndex')}
                   </p>
                   <div className="mt-1 flex items-end gap-2">
                     <span className="font-display text-3xl font-bold gradient-text-premium">
@@ -182,12 +180,12 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
 
                 <div className="mt-3 rounded-xl border border-gold/30 bg-gold/5 p-3">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-gold">
-                    Plan d&apos;action
+                    {t('heroPhoneActionPlan')}
                   </p>
                   <ol className="mt-1.5 space-y-1 text-[10px] text-foreground/80">
-                    <li>1. pH- 900 ml</li>
-                    <li>2. Filtration 4h</li>
-                    <li>3. Re-test 3h</li>
+                    <li>{t('heroPhoneStep1')}</li>
+                    <li>{t('heroPhoneStep2')}</li>
+                    <li>{t('heroPhoneStep3')}</li>
                   </ol>
                 </div>
               </div>
@@ -200,9 +198,9 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
               className="absolute -right-6 top-20 hidden rounded-2xl border border-white/50 bg-white/85 px-3 py-2 shadow-lg backdrop-blur-xl sm:block dark:bg-white/10"
             >
               <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
-                Baignade
+                {t('heroPhoneBaignadeLabel')}
               </p>
-              <p className="text-sm font-bold text-emerald-600">Autorisée ✓</p>
+              <p className="text-sm font-bold text-emerald-600">{t('heroPhoneBaignadeValue')}</p>
             </motion.div>
 
             <motion.div
@@ -211,9 +209,9 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
               className="absolute -left-8 bottom-16 hidden rounded-2xl border border-white/50 bg-white/85 px-3 py-2 shadow-lg backdrop-blur-xl sm:block dark:bg-white/10"
             >
               <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
-                Météo
+                {t('heroPhoneMeteoLabel')}
               </p>
-              <p className="text-sm font-bold text-amber-600">Orage 70%</p>
+              <p className="text-sm font-bold text-amber-600">{t('heroPhoneMeteoValue')}</p>
             </motion.div>
           </div>
         </motion.div>
@@ -253,9 +251,9 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
           animate={{ opacity: 1 }}
           transition={{ delay: 1.2 }}
           className="mx-auto mt-14 flex flex-col items-center gap-1 text-muted-foreground transition-colors hover:text-gold"
-          aria-label="Faire défiler vers le bas"
+          aria-label={t('heroScrollAria')}
         >
-          <span className="text-[10px] uppercase tracking-widest">Découvrir</span>
+          <span className="text-[10px] uppercase tracking-widest">{t('heroScroll')}</span>
           <motion.span
             animate={{ y: [0, 6, 0] }}
             transition={{ duration: 1.5, repeat: Infinity }}

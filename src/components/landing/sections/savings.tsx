@@ -2,35 +2,38 @@
 
 import { motion } from 'framer-motion'
 import { Clock, Coins, TrendingUp } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { AnimatedCounter, GlassCard, Reveal, SectionHeading, staggerContainer, fadeUpVariants } from '../landing-utils'
 
-const TIME_BREAKDOWN = [
-  'Tests et ajustements (13h)',
-  'Recherche internet (3h)',
-  'Achats magasin (4h)',
-  'Gestion urgences (5h)',
-]
-
-const MONEY_BREAKDOWN = [
-  'Moins de surdosage produits (150€)',
-  "Moins d'urgences pisciniste (200€)",
-  'Moins de renouvellement d\'eau (100€)',
-  'Prolongation vie équipements (100€)',
-]
-
-const BARS = [
-  { label: 'AQWELIA Premium', value: 96, color: 'from-primary to-gold', highlight: true },
-  { label: 'Pisciniste seul', value: 1000, color: 'from-amber-400 to-amber-600', highlight: false },
-  { label: 'Pisciniste + erreurs', value: 1500, color: 'from-rose-400 to-rose-600', highlight: false },
-]
-
 export function Savings() {
+  const t = useTranslations('landing')
+
+  const TIME_BREAKDOWN = [
+    t('savingsTimeBreakdown1'),
+    t('savingsTimeBreakdown2'),
+    t('savingsTimeBreakdown3'),
+    t('savingsTimeBreakdown4'),
+  ]
+
+  const MONEY_BREAKDOWN = [
+    t('savingsMoneyBreakdown1'),
+    t('savingsMoneyBreakdown2'),
+    t('savingsMoneyBreakdown3'),
+    t('savingsMoneyBreakdown4'),
+  ]
+
+  const BARS = [
+    { label: t('savingsBar1'), value: 96, color: 'from-primary to-gold', highlight: true },
+    { label: t('savingsBar2'), value: 1000, color: 'from-amber-400 to-amber-600', highlight: false },
+    { label: t('savingsBar3'), value: 1500, color: 'from-rose-400 to-rose-600', highlight: false },
+  ]
+
   return (
     <section id="gains" className="relative py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <SectionHeading
-          eyebrow="07 — Gains"
-          title={<>Combien vous économisez vraiment.</>}
+          eyebrow={t('savingsEyebrow')}
+          title={<>{t('savingsTitle')}</>}
         />
 
         <motion.div
@@ -48,11 +51,11 @@ export function Savings() {
                   <Clock className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Temps gagné</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">{t('savingsTimeGained')}</p>
                   <p className="font-display text-3xl font-bold sm:text-4xl">
                     <AnimatedCounter value={25} prefix="~" suffix=" h" />
                   </p>
-                  <p className="text-xs text-muted-foreground">par saison</p>
+                  <p className="text-xs text-muted-foreground">{t('savingsPerSeason')}</p>
                 </div>
               </div>
               <ul className="mt-5 space-y-1.5 text-sm text-foreground/80">
@@ -74,11 +77,11 @@ export function Savings() {
                   <Coins className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Argent économisé</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">{t('savingsMoneySaved')}</p>
                   <p className="font-display text-3xl font-bold sm:text-4xl">
                     <AnimatedCounter value={550} prefix="~" suffix=" €" />
                   </p>
-                  <p className="text-xs text-muted-foreground">par an</p>
+                  <p className="text-xs text-muted-foreground">{t('savingsPerYear')}</p>
                 </div>
               </div>
               <ul className="mt-5 space-y-1.5 text-sm text-foreground/80">
@@ -99,10 +102,9 @@ export function Savings() {
             <div className="flex items-center gap-3">
               <TrendingUp className="h-6 w-6 shrink-0 text-gold" />
               <p className="font-display text-base leading-relaxed text-foreground sm:text-lg">
-                Pour <span className="font-bold">~96€/an</span> (plan Premium), vous économisez{' '}
+                {t('savingsRoi1')} <span className="font-bold">~96€{t('savingsRoiYearSuffix')}</span> {t('savingsRoi2')}{' '}
                 <span className="font-bold text-gold">550€</span>.{' '}
-                <span className="gradient-text-premium font-bold">ROI x5,7</span>. Et vous récupérez
-                25h de temps libre.
+                <span className="gradient-text-premium font-bold">{t('savingsROI')}</span>. {t('savingsRoi3')}
               </p>
             </div>
           </div>
@@ -112,7 +114,7 @@ export function Savings() {
         <Reveal delay={0.15} className="mt-8">
           <div className="rounded-2xl border border-white/40 bg-white/60 p-6 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.03]">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Coût annuel comparé
+              {t('savingsComparison')}
             </p>
             <div className="mt-4 space-y-4">
               {BARS.map((bar, i) => {
