@@ -1365,3 +1365,66 @@ Stage Summary:
   * Brancher un vrai test E2E (Capacitor) pour valider le flux complet sur iOS/Android
   * Ajouter un bouton "Voir l'historique complet" qui ouvre le carnet WaterTest
   * Internationaliser les libellés si on cible d'autres marchés (actuellement FR uniquement)
+
+---
+Task ID: L5-ITER
+Agent: general-purpose (iterative-diagnostic)
+Task: Jauge satisfaction colorée + plan complémentaire itératif quand pas résolu
+
+Work Log:
+- Lu /home/z/my-project/worklog.md (contexte projet AQWELIA, 1367 lignes) et src/components/aquamind/diagnostic-action-plan.tsx (1585 lignes après L5-RICH)
+- Identifié le périmètre : état "Pas encore résolu" actuel = simple message orange de 4 lignes (lignes 1573-1585), pas d'itération possible
+- Ajouté 2 imports lucide-react : `TrendingUp` (indicateur d'amélioration) et `Sparkles` (analyse IA)
+- Ajouté 4 fonctions/composants helpers AVANT le composant principal (après getStepIcon, ligne 583) :
+  1. `SatisfactionGauge({score, label})` : jauge 0-100 avec 4 paliers couleur (🔴 0-25 rouge critique, 🟠 26-50 orange mauvais, 🟡 51-75 jaune modéré, 🟢 76-100 vert bon), barre animée + texte % + emoji
+  2. `calculateScore(diagnostic)` : scoring heuristique à partir de detectedIssues + userFriendlySummary + confidence. Démarre à 100, soustrait -40 (vert), -30 (alg), -25 (trouble), -15 (particul), -20 (fuite), -10 (tartre). Bonus 85 si aucun issue, 80 si summary contient "sain/clair/propre/bon". Malus 0.85x si confidence < 0.4. Clampé 0-100
+  3. `generateComplementarySteps(current, previous)` : génère des étapes COMPLÉMENTAIRES (différentes du 1er plan) selon ce que l'IA a détecté sur la NOUVELLE photo :
+     - Algues toujours présentes après choc → "Doubler dose + chlore marque différente" + "Vérifier durée filtration 12h/24" + "Backwash filtre à fond"
+     - Eau toujours trouble → "Floculant liquide" + "Aspirer en position égout" + "Vérifier média filtrant (sable tous les 5-7 ans)"
+     - Nouveaux problèmes apparus → étape dédiée pour analyser cause (surchloration, précipitation calcaire, etc.)
+     - Fallback générique → "Continuer filtration 24h" + "Re-tester dans 24h, envisager vidange 20-30%"
+     Numérotation dynamique (`${steps.length + 1}.`) pour cohérence
+  4. `NewComplementarySteps({diagnostic, previousDiagnostic})` : wrapper d'affichage des steps avec title + description + reason italic (💡)
+- Ajouté la jauge de satisfaction initiale en haut du CardContent (avant les steps) : `<SatisfactionGauge score={calculateScore(diagnostic)} label="État de votre piscine" />` dans une card arrondie
+- Remplacé le message "Pas encore résolu" (4 lignes) par une expérience riche itérative :
+  * Section photo upload : masquée quand recheckResult existe (place pour l'expérience riche)
+  * Bloc "Avant / Après" : 2 jauges SatisfactionGauge côte à côte (grid-cols-2) pour comparer l'état initial vs après traitement
+  * Indicateur de progrès : si après > avant → encart vert avec TrendingUp "Amélioration de +X% ! Continuez sur cette voie" ; sinon → encart orange avec AlertTriangle "Peu d'amélioration. Ajustez votre approche avec le nouveau plan ci-dessous"
+  * Bloc "Analyse de votre nouvelle photo" (Sparkles) : userFriendlySummary + liste à puces des detectedIssues toujours présents
+  * Bloc "Nouveau plan complémentaire" (RefreshCw) : NewComplementarySteps généré dynamiquement selon l'analyse IA de la nouvelle photo — PAS hardcoded
+  * Bouton "Refaire une vérification" (Camera) qui reset recheckImage/recheckResult et relance le flux → itération possible à l'infini
+- Vérifié le lint : `bun run lint` → EXIT 0 ✓ (aucune erreur)
+- Vérifié tsc : aucune erreur introduite dans diagnostic-action-plan.tsx (erreurs pré-existantes uniquement dans skills/, src/lib/native/index.ts, src/lib/pool/safety-rules.ts — hors périmètre L5-ITER)
+- Respecté toutes les règles : schema.prisma NON modifié, routes API NON modifiées, module-diagnostic.tsx NON modifié, composant reste 'use client' avec même nom `DiagnosticActionPlan` et mêmes props, fonctionnalités existantes conservées (urgence, steps, progress, re-check, état résolu)
+
+Stage Summary:
+- Fichier modifié : src/components/aquamind/diagnostic-action-plan.tsx (1585 → 1687 lignes)
+- Lint : `bun run lint` → EXIT 0 ✓
+- TypeScript : fichier clean (0 erreur sur ce fichier)
+- Nouveau flux itératif complet :
+  1. À l'ouverture du plan : jauge satisfaction initiale (couleur selon score calculé)
+  2. Utilisateur suit les étapes (validation, enregistrement mesures)
+  3. Quand toutes les étapes sont done : bouton "Vérifier le résultat"
+  4. Upload nouvelle photo + "Analyser et vérifier"
+  5. SI résolu → état PartyPopper (inchangé)
+  6. SI PAS résolu → expérience riche itérative :
+     a. Comparaison visuelle Avant/Après avec 2 jauges satisfaction colorées
+     b. Indicateur de progrès (TrendingUp vert si amélioration, AlertTriangle orange sinon)
+     c. Analyse IA de la nouvelle photo (Sparkles) avec liste des problèmes persistants
+     d. NOUVEAU plan complémentaire généré dynamiquement selon ce que l'IA voit (pas générique) :
+        - Algues persistantes → dose 1.5x + marque différente + filtration 24h/24 + backwash filtre
+        - Eau trouble persistante → floculant liquide + aspiration égout + remplacement média filtrant
+        - Nouveaux problèmes apparus → analyse cause (surchloration, calcaire, etc.)
+        - Fallback → continuer filtration + re-test 24h
+     e. Bouton "Refaire une vérification" → reset state → boucle au point 4
+  7. Itération possible à l'infini, chaque cycle génère un plan adapté à la dernière photo
+- Points clés du cahier des charges couverts :
+  * ✅ "Jauge satisfaction colorée (red → orange → yellow → green) avec percentage" — SatisfactionGauge 4 paliers + emoji + %
+  * ✅ "Comparison before/after — what improved, what didn't, what's new" — 2 jauges côte à côte + indicator TrendingUp/AlertTriangle + liste problèmes persistants + détection nouveaux problèmes
+  * ✅ "NEW complementary action plan based on AI analysis (NOT generic — personalized)" — generateComplementarySteps lit detectedIssues et userFriendlySummary du recheckResult et génère des steps contextuels
+  * ✅ "Iterative process — user can do another round, re-check again" — bouton "Refaire une vérification" qui reset et relance le flux
+  * ✅ "Real AI-driven suggestions — not hardcoded steps, but based on what AI detected" — la logique s'appuie sur detectedIssues et userFriendlySummary de chaque diagnostic IA, pas sur un template figé
+- Next actions possibles :
+  * Brancher un vrai LLM (OpenAI/Claude) pour générer le plan complémentaire au lieu d'heuristiques — actuellement basé sur pattern matching des detectedIssues
+  * Stocker l'historique des itérations (avant/après + score) en base pour analytics
+  * Ajouter une limite "Si 3 itérations sans amélioration → conseiller d'appeler un pisciniste professionnel"

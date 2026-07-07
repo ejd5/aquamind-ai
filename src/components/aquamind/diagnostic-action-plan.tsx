@@ -20,6 +20,8 @@ import {
   ChevronUp,
   History,
   Info,
+  TrendingUp,
+  Sparkles,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -581,6 +583,262 @@ function getStepIcon(stepId: string) {
 }
 
 // ───────────────────────────────────────────────────────────────────────────
+// Satisfaction gauge + scoring
+// ───────────────────────────────────────────────────────────────────────────
+
+function SatisfactionGauge({
+  score,
+  label,
+}: {
+  score: number
+  label: string
+}) {
+  // score: 0-100
+  // 0-25: red (critical)
+  // 26-50: orange (bad)
+  // 51-75: yellow (moderate)
+  // 76-100: green (good)
+  const color =
+    score <= 25
+      ? 'bg-red-500'
+      : score <= 50
+        ? 'bg-orange-500'
+        : score <= 75
+          ? 'bg-yellow-500'
+          : 'bg-emerald-500'
+  const textColor =
+    score <= 25
+      ? 'text-red-600 dark:text-red-400'
+      : score <= 50
+        ? 'text-orange-600 dark:text-orange-400'
+        : score <= 75
+          ? 'text-yellow-600 dark:text-yellow-400'
+          : 'text-emerald-600 dark:text-emerald-400'
+  const emoji =
+    score <= 25 ? '🔴' : score <= 50 ? '🟠' : score <= 75 ? '🟡' : '🟢'
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold">
+          {emoji} {label}
+        </span>
+        <span className={`text-2xl font-bold ${textColor}`}>{score}%</span>
+      </div>
+      <div className="h-3 overflow-hidden rounded-full bg-secondary">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${color}`}
+          style={{ width: `${score}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function calculateScore(diagnostic: DiagnosticResult): number {
+  const issues = diagnostic.detectedIssues || []
+  const summary = (diagnostic.userFriendlySummary || '').toLowerCase()
+  const confidence = diagnostic.confidence || 0.5
+
+  // Start at 100, subtract for each problem
+  let score = 100
+
+  // Critical issues
+  if (summary.includes('vert') || issues.some((i) => i.toLowerCase().includes('vert')))
+    score -= 40
+  if (summary.includes('alg') || issues.some((i) => i.toLowerCase().includes('alg')))
+    score -= 30
+  if (
+    summary.includes('trouble') ||
+    issues.some((i) => i.toLowerCase().includes('trouble'))
+  )
+    score -= 25
+  if (
+    summary.includes('particul') ||
+    issues.some((i) => i.toLowerCase().includes('particul'))
+  )
+    score -= 15
+  if (
+    summary.includes('fuite') ||
+    issues.some((i) => i.toLowerCase().includes('fuite'))
+  )
+    score -= 20
+  if (
+    summary.includes('tartre') ||
+    issues.some((i) => i.toLowerCase().includes('tartre'))
+  )
+    score -= 10
+
+  // If no issues detected, high score
+  if (issues.length === 0) score = Math.max(score, 85)
+
+  // If summary mentions "sain", "clair", "propre", "bon"
+  if (
+    summary.includes('sain') ||
+    summary.includes('clair') ||
+    summary.includes('propre') ||
+    summary.includes('bon')
+  ) {
+    score = Math.max(score, 80)
+  }
+
+  // Confidence boost: low confidence dampens the score slightly toward 60
+  if (confidence < 0.4) {
+    score = Math.round(score * 0.85)
+  }
+
+  return Math.max(0, Math.min(100, Math.round(score)))
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Complementary steps generator (used when re-check shows problem NOT resolved)
+// ───────────────────────────────────────────────────────────────────────────
+
+function generateComplementarySteps(
+  current: DiagnosticResult,
+  previous: DiagnosticResult,
+): { title: string; description: string; reason: string }[] {
+  const currentIssues = (current.detectedIssues || []).map((i) =>
+    i.toLowerCase(),
+  )
+  const prevIssues = (previous.detectedIssues || []).map((i) =>
+    i.toLowerCase(),
+  )
+  const currentSummary = (current.userFriendlySummary || '').toLowerCase()
+  const steps: { title: string; description: string; reason: string }[] = []
+
+  const stillHasAlgae =
+    currentIssues.some((i) => i.includes('alg') || i.includes('vert')) ||
+    currentSummary.includes('alg') ||
+    currentSummary.includes('vert')
+  const stillCloudy =
+    currentIssues.some(
+      (i) => i.includes('trouble') || i.includes('particul'),
+    ) ||
+    currentSummary.includes('trouble') ||
+    currentSummary.includes('particul')
+  const hadAlgaeBefore = prevIssues.some(
+    (i) => i.includes('alg') || i.includes('vert'),
+  )
+  const hadCloudyBefore = prevIssues.some(
+    (i) => i.includes('trouble') || i.includes('particul'),
+  )
+
+  // New issues that appeared between the two diagnostics
+  const newIssues = currentIssues.filter(
+    (i) => !prevIssues.some((p) => p.includes(i) || i.includes(p)),
+  )
+
+  if (stillHasAlgae && hadAlgaeBefore) {
+    steps.push({
+      title: '1. Doubler la dose de traitement choc',
+      description:
+        "Les algues sont toujours présentes malgré le premier traitement. Refaites un traitement choc avec 1.5x la dose précédente. Vérifiez que le pH est bien entre 7.0-7.4 AVANT. Privilégiez un chlore choc de marque différente (les algues peuvent développer une résistance).",
+      reason:
+        "Les algues peuvent être résistantes. Une dose plus forte et un produit différent sont nécessaires.",
+    })
+    steps.push({
+      title: '2. Vérifier la durée de filtration',
+      description:
+        "Comptez le nombre d'heures de filtration par jour. Pour une eau verte, il faut filtrer au minimum 12h/24. Idéalement 24h/24 pendant 3 jours consécutifs.",
+      reason:
+        "Une filtration insuffisante empêche d'éliminer les algues mortes et de clarifier l'eau.",
+    })
+    steps.push({
+      title: '3. Nettoyer le filtre à fond',
+      description:
+        "Si vous avez un filtre à sable, faites un backwash (contre-lavage) de 3 minutes suivi d'un rinçage de 30s. Si c'est une cartouche, sortez-la et nettoyez-la au jet. Un filtre encrassé ne retient pas les algues et les renvoie dans le bassin.",
+      reason:
+        "Le filtre peut être saturé d'algues après le premier traitement.",
+    })
+  }
+
+  if (stillCloudy && hadCloudyBefore) {
+    steps.push({
+      title: `${steps.length + 1}. Ajouter un floculant liquide`,
+      description:
+        "L'eau est encore trouble. Versez un floculant LIQUIDE (pas en chaussette) directement devant les buses de refoulement, filtration en marche. Laissez filtrer 1h, puis coupez 12h pour laisser décanter. Les particules vont agglomérer et tomber au fond.",
+      reason:
+        "Le floculant agglomère les particules fines que le filtre ne retient pas.",
+    })
+    steps.push({
+      title: `${steps.length + 1}. Aspirer le fond après floculation`,
+      description:
+        "Après 12h de décantation, les débris seront au fond. Aspirez lentement en position 'égout' (waste) pour ne pas les renvoyer dans le filtre. Ne remettez la vanne en filtration qu'après avoir fini l'aspiration.",
+      reason: "Les floculés sont trop lourds pour le filtre normal.",
+    })
+    steps.push({
+      title: `${steps.length + 1}. Vérifier le média filtrant`,
+      description:
+        "Si l'eau reste trouble malgré floculation + filtration : votre sable/cartouche est peut-être à remplacer. Le sable se change tous les 5-7 ans, la cartouche tous les 2 ans. Un média usé ne retient plus les particules fines.",
+      reason:
+        "Un filtre en fin de vie est une cause fréquente d'eau trouble persistante.",
+    })
+  }
+
+  // New issues that weren't there before
+  if (newIssues.length > 0) {
+    steps.push({
+      title: `${steps.length + 1}. Traiter les nouveaux problèmes détectés`,
+      description: `Nouveau(x) problème(s) apparu(s) : ${newIssues.join(', ')}. Analysez la cause probable (surchloration, surdosage de floculant, précipitation de calcaire, etc.) avant d'agir. En cas de doute, refaites un test complet pH/chlore/TAC/th.`,
+      reason:
+        "Certains traitements peuvent créer de nouveaux déséquilibres. Il faut les corriger avant qu'ils n'aggravent la situation.",
+    })
+  }
+
+  // If no specific issues but still not perfect
+  if (steps.length === 0) {
+    steps.push({
+      title: '1. Continuer la filtration 24h de plus',
+      description:
+        "L'eau s'améliore mais n'est pas encore parfaite. Laissez tourner la filtration 24h supplémentaires en continu. Surveillez la pression du filtre (backwash si elle monte de +0.3 bar).",
+      reason:
+        "Le traitement est en cours, il faut lui laisser le temps d'agir.",
+    })
+    steps.push({
+      title: '2. Re-tester dans 24h',
+      description:
+        "Refaites un test complet (pH, chlore, TAC) dans 24h et prenez une nouvelle photo pour vérifier. Si le score de satisfaction stagne, envisagez de vider 20-30% de l'eau pour repartir sur une base saine.",
+      reason:
+        "Il faut donner le temps au traitement de faire effet avant de conclure à un échec.",
+    })
+  }
+
+  return steps
+}
+
+function NewComplementarySteps({
+  diagnostic,
+  previousDiagnostic,
+}: {
+  diagnostic: DiagnosticResult
+  previousDiagnostic: DiagnosticResult
+}) {
+  const steps = generateComplementarySteps(diagnostic, previousDiagnostic)
+
+  return (
+    <div className="mt-3 space-y-2">
+      {steps.map((step, i) => (
+        <div
+          key={i}
+          className="rounded-lg border border-primary/20 bg-background/60 p-3"
+        >
+          <p className="text-sm font-semibold">{step.title}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {step.description}
+          </p>
+          {step.reason && (
+            <p className="mt-1 text-[11px] italic text-primary/70">
+              💡 {step.reason}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ───────────────────────────────────────────────────────────────────────────
 // Component
 // ───────────────────────────────────────────────────────────────────────────
 
@@ -924,6 +1182,13 @@ export function DiagnosticActionPlan({
       </CardHeader>
 
       <CardContent className="space-y-3">
+        {/* Initial satisfaction gauge */}
+        <div className="rounded-xl border border-border/50 bg-background/60 p-3">
+          <SatisfactionGauge
+            score={calculateScore(diagnostic)}
+            label="État de votre piscine"
+          />
+        </div>
         {steps.map((step) => {
           const cfg = URGENCY_CONFIG[step.urgency]
           const StepIcon = step.done ? CheckCircle2 : getStepIcon(step.id)
@@ -1254,68 +1519,164 @@ export function DiagnosticActionPlan({
               <Camera className="h-4 w-4" />
               Prenez une nouvelle photo pour vérifier
             </p>
-            {recheckImage ? (
-              <div className="relative">
-                <img
-                  src={recheckImage}
-                  alt="Nouvelle photo"
-                  className="max-h-48 w-full rounded-lg object-cover"
-                />
-                <button
-                  onClick={() => setRecheckImage(null)}
-                  className="absolute right-2 top-2 rounded-full bg-background/80 px-2.5 py-1 text-xs"
-                >
-                  ✕
-                </button>
-              </div>
-            ) : (
-              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gold/30 bg-gold/5 px-4 py-6 text-center">
-                <Upload className="h-6 w-6 text-gold" />
-                <span className="text-xs font-medium">
-                  Cliquez pour charger une photo
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0]
-                    if (f) {
-                      const reader = new FileReader()
-                      reader.onload = () =>
-                        setRecheckImage(reader.result as string)
-                      reader.readAsDataURL(f)
-                    }
-                  }}
-                />
-              </label>
-            )}
-            {recheckImage && (
-              <Button
-                onClick={handleRecheck}
-                disabled={rechecking}
-                className="w-full gap-2 bg-gradient-to-r from-primary to-gold text-primary-foreground"
-              >
-                {rechecking ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
+            {/* Photo upload UI — hidden once we have a recheckResult (to leave room for the rich experience) */}
+            {!recheckResult && (
+              <>
+                {recheckImage ? (
+                  <div className="relative">
+                    <img
+                      src={recheckImage}
+                      alt="Nouvelle photo"
+                      className="max-h-48 w-full rounded-lg object-cover"
+                    />
+                    <button
+                      onClick={() => setRecheckImage(null)}
+                      className="absolute right-2 top-2 rounded-full bg-background/80 px-2.5 py-1 text-xs"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 ) : (
-                  <CheckCircle2 className="h-4 w-4" />
+                  <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gold/30 bg-gold/5 px-4 py-6 text-center">
+                    <Upload className="h-6 w-6 text-gold" />
+                    <span className="text-xs font-medium">
+                      Cliquez pour charger une photo
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0]
+                        if (f) {
+                          const reader = new FileReader()
+                          reader.onload = () =>
+                            setRecheckImage(reader.result as string)
+                          reader.readAsDataURL(f)
+                        }
+                      }}
+                    />
+                  </label>
                 )}
-                {rechecking ? 'Analyse en cours...' : 'Analyser et vérifier'}
-              </Button>
+                {recheckImage && (
+                  <Button
+                    onClick={handleRecheck}
+                    disabled={rechecking}
+                    className="w-full gap-2 bg-gradient-to-r from-primary to-gold text-primary-foreground"
+                  >
+                    {rechecking ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4" />
+                    )}
+                    {rechecking ? 'Analyse en cours...' : 'Analyser et vérifier'}
+                  </Button>
+                )}
+              </>
             )}
+
+            {/* RICH ITERATIVE EXPERIENCE — shown when re-check shows problem NOT resolved */}
             {recheckResult && !resolved && (
-              <div className="rounded-lg border border-orange-500/30 bg-orange-500/5 p-2 text-xs">
-                <p className="font-semibold text-orange-700 dark:text-orange-300">
-                  Pas encore résolu
-                </p>
-                <p className="mt-1 text-muted-foreground">
-                  {recheckResult.userFriendlySummary}
-                </p>
-                <p className="mt-1 text-[10px]">
-                  Continuez le traitement et re-vérifiez dans quelques heures.
-                </p>
+              <div className="space-y-4">
+                {/* Satisfaction gauge - BEFORE vs AFTER */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-border/50 bg-background/60 p-3">
+                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Avant
+                    </p>
+                    <SatisfactionGauge
+                      score={calculateScore(diagnostic)}
+                      label="État initial"
+                    />
+                  </div>
+                  <div className="rounded-xl border border-border/50 bg-background/60 p-3">
+                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Après
+                    </p>
+                    <SatisfactionGauge
+                      score={calculateScore(recheckResult)}
+                      label="Après traitement"
+                    />
+                  </div>
+                </div>
+
+                {/* Progress indicator */}
+                {calculateScore(recheckResult) > calculateScore(diagnostic) ? (
+                  <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm">
+                    <TrendingUp className="h-4 w-4 text-emerald-600" />
+                    <span className="text-emerald-700 dark:text-emerald-300">
+                      Amélioration de +
+                      {calculateScore(recheckResult) -
+                        calculateScore(diagnostic)}
+                      % ! Continuez sur cette voie.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 rounded-lg border border-orange-500/30 bg-orange-500/5 p-3 text-sm">
+                    <AlertTriangle className="h-4 w-4 text-orange-600" />
+                    <span className="text-orange-700 dark:text-orange-300">
+                      Peu d&apos;amélioration. Ajustez votre approche avec le
+                      nouveau plan ci-dessous.
+                    </span>
+                  </div>
+                )}
+
+                {/* AI analysis of the new photo */}
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+                  <p className="flex items-center gap-1.5 text-sm font-semibold text-primary">
+                    <Sparkles className="h-4 w-4" />
+                    Analyse de votre nouvelle photo
+                  </p>
+                  <p className="mt-2 text-sm text-foreground/80">
+                    {recheckResult.userFriendlySummary}
+                  </p>
+                  {recheckResult.detectedIssues &&
+                    recheckResult.detectedIssues.length > 0 && (
+                      <div className="mt-3 space-y-1">
+                        <p className="text-xs font-semibold text-destructive">
+                          Problèmes toujours présents :
+                        </p>
+                        {recheckResult.detectedIssues.map((issue, i) => (
+                          <p key={i} className="text-xs text-muted-foreground">
+                            • {issue}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                </div>
+
+                {/* NEW complementary action plan */}
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+                  <p className="flex items-center gap-1.5 text-sm font-semibold text-primary">
+                    <RefreshCw className="h-4 w-4" />
+                    Nouveau plan complémentaire
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Basé sur l&apos;analyse de votre nouvelle photo, voici les
+                    étapes complémentaires recommandées :
+                  </p>
+
+                  {/* Generate NEW steps based on the recheckResult */}
+                  <NewComplementarySteps
+                    diagnostic={recheckResult}
+                    previousDiagnostic={diagnostic}
+                  />
+                </div>
+
+                {/* Allow another re-check */}
+                <Button
+                  onClick={() => {
+                    setRecheckImage(null)
+                    setRecheckResult(null)
+                    setShowRecheck(true)
+                  }}
+                  variant="outline"
+                  className="w-full gap-2"
+                >
+                  <Camera className="h-4 w-4" />
+                  Refaire une vérification
+                </Button>
               </div>
             )}
           </div>
