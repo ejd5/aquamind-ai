@@ -1428,3 +1428,74 @@ Stage Summary:
   * Brancher un vrai LLM (OpenAI/Claude) pour générer le plan complémentaire au lieu d'heuristiques — actuellement basé sur pattern matching des detectedIssues
   * Stocker l'historique des itérations (avant/après + score) en base pour analytics
   * Ajouter une limite "Si 3 itérations sans amélioration → conseiller d'appeler un pisciniste professionnel"
+
+---
+Task ID: L6-SPA
+Agent: general-purpose (spa-feature)
+Task: Support Spa complet — data, landing, onboarding, freemium
+
+Work Log:
+- Lecture du worklog et des fichiers existants (freemium.ts, onboarding.tsx, pricing.tsx, landing-page.tsx, variations.tsx, landing-utils.tsx)
+- Création de src/lib/pool/spa-data.ts (~180 lignes) :
+  * Type WaterBodyType = 'pool' | 'spa' | 'both'
+  * 10 SPA_BRANDS (Jacuzzi, Sundance, Hot Spring, Bestway, Intex, Aquatopia, Pearl, Desjoyaux, Wellis, générique chinois) avec origine et catégorie (premium/mid_range/budget)
+  * 3 SPA_TREATMENTS (brome, oxygène actif recommandés ; chlore déconseillé) avec pros/cons et températureMax
+  * 8 SPA_MAINTENANCE tasks (vérif quotidienne, test hebdo, nettoyage filtre, bâchage, vidange 3-4 mois, vidange anticipée usage intensif, programme pompe, nettoyage coque) — dont 2 marquées isDrainage
+  * SPA_SPECIFICS : seatsRange 2-8, temperatureRange 28-40°C (idéal 37), volumeRange 0.8-3 m³, options de fréquence d'usage
+  * getSpaRecommendations(temperature, treatmentType) : alertes si T>35°C, T>38°C, chlore en eau chaude, rappels bâchage et vidange
+  * calculateDrainageFrequency(usagePerWeek, seats) : retourne {months, reason} — plus l'usage est intensif, plus la vidange est fréquente (4→3→2 mois)
+  * Fix TS : ajout de `unit: string` sur temperatureRange dans SpaSpecifics (compilation passée)
+- Update src/lib/pool/freemium.ts :
+  * Ajout de `spaSupport: boolean` à Plan.limits
+  * free: spaSupport=false, premium: spaSupport=true, expert: spaSupport=true
+  * Ajout de 'spa_support' au FeatureGate type union
+  * Ajout du case 'spa_support' dans canAccess() avec ctaPlan: PLANS[1].id (Premium)
+  * Ajout de la feature "Spa et eau chaude (brome, oxygène actif)" dans la liste premium.features
+- Update src/components/aquamind/onboarding.tsx (4 étapes → toggle Piscine/Spa/Les deux) :
+  * Imports lucide-react étendus : Droplets, Thermometer, Users, Lock
+  * Import de SPA_SPECIFICS depuis spa-data.ts
+  * Type local WaterBodyType, WATER_BODY_OPTIONS (3 boutons), SPA_TREATMENT_OPTIONS (brome/oxygène/chlore déconseillé), SPA_USAGE_LEVELS (occasionnel/régulier/intensif), helper isSpaFlow()
+  * Ajout dans le form state : waterBodyType, spaSeats (4), spaTemperature (37), spaUsageFrequency ('medium'), spaBrand
+  * Fonction selectWaterBodyType(type) : bascule intelligente Piscine↔Spa — adapte volume par défaut (40↔1.5), nom par défaut ("Ma piscine"↔"Mon spa"), traitement par défaut (chlorine↔bromine)
+  * Step 1 — Toggle Piscine/Spa/Les deux en TOUT HAUT avec note Premium si spa ; champs spa masqués en mode piscine ; en mode spa : sliders nombre de places (2-8) + température cible (28-40°C) avec alerte si >38°C, et 3 boutons fréquence d'usage
+  * Step 2 — En mode spa : 3 cartes traitement (brome recommandé, oxygène actif, chlore déconseillé avec styling rouge), avec messages contextuels par traitement (avertissement chlore en spa, confirmation brome, etc.) ; en mode piscine : reste TREATMENTS classique (chlorine, salt, bromine, active_oxygen, uv, other)
+  * Validation next() step 1 : si spa et volume > 10 m³ → toast erreur "Volume spa ?" (vérifier l'unité)
+  * Header subtitle modifié : "Décrivez votre piscine ou spa pour activer le copilote…"
+- Création de src/components/landing/sections/spa-section.tsx (~230 lignes) :
+  * Section id="spa" entre Variations et FeaturesGrid
+  * SectionHeading eyebrow "10.5 — Spa & Baignade", title "AQWELIA gère aussi votre spa", subtitle explicatif
+  * 5 FEATURE_CARDS glass-card avec icônes lucide (Droplets, RotateCcw, Thermometer, Settings2, Users) + emojis : Traitement adapté eau chaude, Vidange intelligente, Bâchage & température, Marques & équipements, Détails spa
+  * 6e carte "Disponible dès Premium" avec bordure gold et bouton "Voir les plans" → scrollToId('tarifs')
+  * Bloc comparatif des 3 SPA_TREATMENTS (brome, oxygène actif, chlore) avec badges Recommandé/Déconseillé, T° max, listes pros/cons
+  * Bloc emphasis "Vidanger plutôt que sur-traiter : le calcul économique" avec icône RotateCcw, badges drainage fréquences
+  * Brand wall : grille des 10 SPA_BRANDS avec badges catégorie (Premium/Milieu de gamme/Éco)
+  * Mini CTA final → tarifs
+- Update src/components/landing/landing-page.tsx :
+  * Import SpaSection
+  * Ajout <SpaSection /> entre <Variations /> et <FeaturesGrid />
+- Vérifications :
+  * bun run lint → EXIT 0 (aucun warning, aucune erreur)
+  * bunx tsc --noEmit → 0 erreur sur les fichiers modifiés (seul src/lib/pool/safety-rules.ts:28 reste en erreur pré-existante, hors scope)
+  * Dev server Next.js 16.1.3 démarre en 1.4s, HTTP 200 sur /, aucune erreur de compilation
+- Règles respectées : prisma/schema.prisma NON touché, API routes NON touchées, pronom féminin AQWELIA ("elle", "t-elle") dans les copies, design system turquoise/glass-card/gold, tout en français
+
+Stage Summary:
+- 5 fichiers modifiés/créés :
+  * src/lib/pool/spa-data.ts (CRÉÉ, ~180 lignes) — données spa complètes
+  * src/lib/pool/freemium.ts (MODIFIÉ) — feature gate spa_support, limite spaSupport sur 3 plans, feature list premium
+  * src/components/aquamind/onboarding.tsx (MODIFIÉ) — toggle Piscine/Spa/Les deux en step 1, sliders spa, traitements spa en step 2
+  * src/components/landing/sections/spa-section.tsx (CRÉÉ, ~230 lignes) — section landing riche
+  * src/components/landing/landing-page.tsx (MODIFIÉ) — import + insertion SpaSection
+- Spa désormais un feature Premium+ (free=bloqué, premium/expert=débloqué)
+- Différenciation piscine vs spa à 3 endroits : onboarding (toggle), landing (section dédiée), freemium (gate)
+- Argument économique "vidanger > sur-traiter" mis en avant à la fois dans les données (calculateDrainageFrequency), dans la section landing (bloc emphasis), et dans la description des maintenance tasks
+- Lint: ✅ EXIT 0
+- TypeScript: ✅ (0 erreur sur les fichiers du scope)
+- Dev server: ✅ HTTP 200, compile en 7s
+
+Next actions possibles (hors scope, pour le main agent) :
+- Ajouter les champs spa (waterBodyType, spaSeats, spaTemperature, spaUsageFrequency, spaBrand) au modèle PoolProfile dans prisma/schema.prisma
+- Adapter l'API /api/pool/profile pour accepter ces nouveaux champs
+- Brancher les recommandations spa (getSpaRecommendations, calculateDrainageFrequency) dans le module diagnostic/maintenance
+- Ajouter un onglet "Spa" dans le dashboard si le profil a waterBodyType=spa|both
+- Gate l'accès au mode spa dans l'app via canAccess(plan, 'spa_support') et afficher un upgrade prompt si free

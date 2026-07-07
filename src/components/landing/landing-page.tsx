@@ -14,6 +14,7 @@ import { Simulations } from './sections/simulations'
 import { Savings } from './sections/savings'
 import { Story } from './sections/story'
 import { Variations } from './sections/variations'
+import { SpaSection } from './sections/spa-section'
 import { FeaturesGrid } from './sections/features-grid'
 import { Pricing } from './sections/pricing'
 import { Faq } from './sections/faq'
@@ -177,6 +178,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
         <Savings />
         <Story />
         <Variations />
+        <SpaSection />
         <FeaturesGrid />
         <Pricing hasProfile={hasProfile} onEnterApp={onEnterApp} />
         <Faq />
