@@ -172,13 +172,13 @@ export function SpaSection() {
                       {treatment.pros.map((p) => (
                         <li key={p} className="flex items-start gap-1.5 text-foreground/85">
                           <span className="mt-0.5 text-green-500">+</span>
-                          <span>{p}</span>
+                          <span>{td(p)}</span>
                         </li>
                       ))}
                       {treatment.cons.map((c) => (
                         <li key={c} className="flex items-start gap-1.5 text-muted-foreground">
                           <span className="mt-0.5 text-red-400">−</span>
-                          <span>{c}</span>
+                          <span>{td(c)}</span>
                         </li>
                       ))}
                     </ul>
