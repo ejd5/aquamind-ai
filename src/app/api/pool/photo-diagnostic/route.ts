@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       data: {
         userId,
         type: parsed?.imageType || typeHint || 'unknown',
-        imageUrl: image.substring(0, 500),
+        imageUrl: image, // Store full base64 (for dev/MVP — use S3 in production)
         detectedIssues: JSON.stringify(parsed?.detectedIssues || []),
         probableIssues: JSON.stringify(parsed?.probableIssues || []),
         confidence: Number(parsed?.confidence) || 0,

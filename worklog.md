@@ -1208,3 +1208,95 @@ Stage Summary:
 - UX : boutons GPS en gold outline (design system AQWELIA), spinners Loader2, toasts français pour chaque cas (succès, permission refusée, réseau, non supporté)
 - Onboarding refait : step 4 propose GPS + saisie ville, plus de slug climatique par défaut
 - Aucun changement de schéma Prisma nécessaire — juste l'usage sémantique du champ region a évolué
+
+---
+Task ID: L5-PLAN
+Agent: general-purpose (action-plan)
+Task: Créer DiagnosticActionPlan — processus guidé avec étapes + urgence + validation + rappels + re-check photo
+
+Work Log:
+- Lu `worklog.md` (RESTORE-1, L1-A→L1-E, L2-A, L2-B, L3-B, L35-MOD, L4-A, L4-GEO) — contexte projet AQWELIA restauré, design system "Oceanic Luxury" (variables `--gold` = turquoise foncé #006064, `--ocean-light` = turquoise bright #00C2D1, classes `glass-card`, `gold-divider`, `font-display`)
+- Lu `src/components/aquamind/module-diagnostic.tsx` (540 lignes) — module existant : grid lg:grid-cols-2 (upload+type-selector à gauche, résultat à droite), puis Card "Diagnostics récents" en bas. Interface `DiagnosticResult` locale + `SavedDiagnostic` pour l'historique. Utilise `api.post<{ diagnostic: DiagnosticResult }>(...)`, `hapticSuccess/Error`, `isOnline` (offline gate), `loadHistory()` pour rafraîchir la liste après chaque analyse. Type hints : water | wall | filter | electrolyzer | pump | strip | product | equipment
+- Lu `src/app/api/pool/photo-diagnostic/route.ts` (82 lignes) — POST route : prend `{ image, typeHint }`, appelle `nvidiaVision(prompt, image)`, parse JSON, fallback `_raw: true` si parsing échoue. Sauvegarde en DB (`db.photoDiagnostic.create`) avec `detectedIssues`/`probableIssues`/`missingData`/`safetyWarnings` en JSON string. Retourne `{ diagnostic: parsed, raw: content, id: saved.id }`. La route crée donc un nouveau diagnostic à chaque POST — idéal pour le re-check (sauvegarde automatiquement le diagnostic de contrôle dans l'historique)
+- Lu `prisma/schema.prisma` — modèle `PhotoDiagnostic` confirmé : `detectedIssues String` (JSON), `aiSummary String`, `confidence Float`, `recommendedNextStep String?`, `safetyWarnings String`, etc. Aucun champ `resolved` — la pastille "Résolu" doit donc être déduite côté client (detectedIssues vide OU aiSummary contient "résolu"/"sain")
+- Vérifié `src/app/globals.css` — confirmé que `--gold` = `oklch(0.45 0.10 200)` (turquoise foncé #006064) en light mode, identique en dark. `--ocean-light` = `oklch(0.76 0.11 195)`. Donc les classes `text-gold`, `bg-gold/5`, `border-gold/30` produisent bien du turquoise — conforme à la spec "gold → now turquoise" sans besoin de modifier le design system
+- Vérifié `src/components/ui/{progress,badge,card,button}.tsx` — Progress utilise `bg-primary` indicator + `bg-primary/20` track (j'ai override le track à `bg-muted` pour un contraste plus doux dans la carte action plan). Badge accepte `variant` + classes custom via `className` (cn merge). Card a `py-6 px-6` par défaut (conservé). Button accepte `size="sm"`, `variant="outline"`
+- Vérifié `src/lib/api-client.ts` — `api.post<T>(path, body)` retourne directement le JSON parsé (pas une enveloppe `{ data }`). Donc `const data = await api.post<{ diagnostic: DiagnosticResult }>(...)` puis `data.diagnostic` — conforme à l'usage dans module-diagnostic.tsx
+- Vérifié `src/components/aquamind/module-action-plan.tsx` (autre composant, pour water tests) — design pattern : `ListChecks` icon pour les plans, `glass-card` sur le wrapper, badges severity color-coded. Réutilisé le même style pour `DiagnosticActionPlan` (cohérence visuelle)
+
+Décisions architecturales :
+- **Placement de l'action plan** : inséré ENTRE la grid `lg:grid-cols-2` (upload + résultat) et la Card "Diagnostics récents", en pleine largeur. Rendu conditionnel `{result && (...)}` — apparaît uniquement après qu'un diagnostic est produit. Pleine largeur plutôt que dans la colonne droite pour éviter un layout serré sur mobile et donner de la verticalité au parcours utilisateur
+- **Stratégie de re-check** : le handler `onRecheck` est passé par le parent (`module-diagnostic.tsx`) qui appelle `api.post('/api/pool/photo-diagnostic', { image: newImage, typeHint })`. La route POST crée un nouveau diagnostic en DB (donc le re-check est automatiquement sauvegardé dans l'historique). Après succès, `loadHistory()` est appelée pour rafraîchir la liste — l'utilisateur voit le nouveau diagnostic de contrôle apparaître dans "Diagnostics récents"
+- **Gate hors-connexion** : `onRecheck` vérifie `isOnline` avant d'appeler l'API. Si offline → toast "Hors connexion" + retourne `null` (le composant reste en mode "pas encore résolu" sans planter). Cohérent avec le gate existant dans `analyze()`
+- **Critère "Résolu"** : dans `handleRecheck()`, le diagnostic de contrôle est considéré résolu si `detectedIssues` ne contient ni "vert", ni "alg", ni "trouble" ET `confidence > 0.5`. Seuil de confiance bas pour éviter les faux négatifs (l'IA peut manquer des subtilités, mais si elle dit explicitement "eau trouble" ou "algues", on fait confiance au verdict). Ce critère est heuristique — il pourrait être affiné dans un lot ultérieur (par ex. comparer `detectedIssues` du re-check vs l'original, ou utiliser un champ `_resolved` explicite côté API)
+- **Génération des étapes** : 3 templates déterministes basés sur les mots-clés détectés :
+  1. **Eau verte / Algues** (6 étapes) : pH → chlore choc → anti-algues → brosser → filtration 24h → re-test. Urgences : critical pour pH/choc/filtration, important pour anti-algues/brosser/re-test
+  2. **Eau trouble / Particules** (4 étapes) : vérifier filtre → floculant → filtration 12h → re-test. Urgences : important/moderate
+  3. **Fallback générique** (2 étapes) : suivre la recommandation IA → vérifier le résultat. Utilise `recommendedNextStep` du diagnostic si présent
+  La détection utilise `detectedIssues + userFriendlySummary + probableIssues` concaténés en lowercase pour maximiser le recall (l'IA peut mentionner "eau verte" dans le summary sans le lister dans detectedIssues)
+- **Pastille "Résolu" dans l'historique** : calculée côté client via `isResolved = detected.length === 0 || aiSummary.toLowerCase().includes('résolu'|'resolu'|'sain')`. Couvre 3 cas : (a) diagnostic initial sans problème détecté, (b) diagnostic de contrôle après traitement (l'IA dit "eau saine" / "problème résolu"), (c) diagnostic de fallback `_raw` avec un summary positif. Pas besoin de modifier le schéma Prisma
+- **Effet confetti** : sans dépendance externe (pas de `canvas-confetti`), 4 emojis (🎉✨🎊🎉) positionnés en absolute autour de l'icône PartyPopper, avec `animate-pulse` Tailwind pour un effet scintillant. Léger, performant, et visuel. Suffisant pour MVP — un vrai effet confetti (particules qui tombent) pourrait être ajouté dans un lot ultérieur avec `canvas-confetti` (300 bytes gzipped)
+- **Rappel** : la spec mentionne "if steps are not done after X hours, show a reminder banner". Côté client sans persistance, on ne peut pas tracker le temps écoulé entre sessions. Le reminder banner s'affiche donc dès que `completedCount > 0 && !allDone` — c'est un rappel contextuel ("il vous reste N étapes"), pas un rappel temporel. Pour un vrai rappel temporel (notification push après 24h), il faudrait persister l'état des steps (localStorage ou DB) + scheduler local notifications (cf. `src/lib/native/local-notifications.ts` qui est manquant — gap documenté en L4-A section 16.9)
+- **Validation des étapes** : deux affordances pour valider — (1) clic sur l'icône `Circle`/`CheckCircle2` à gauche, (2) bouton "Valider" à droite. Le bouton disparaît une fois validé (état condensé avec line-through). Permet de marquer une étape comme non-faite en recliquant sur l'icône (correction d'erreur)
+- **Progress bar** : utilise le composant `Progress` de shadcn (Radix). Track override à `bg-muted` pour un contraste plus doux que `bg-primary/20` par défaut. L'indicator `bg-primary` (turquoise) se remplit proportionnellement à `completedCount / steps.length * 100`
+
+Files created (1 nouveau fichier) :
+1. `src/components/aquamind/diagnostic-action-plan.tsx` (401 lignes) — client component `'use client'`. Structure :
+   - Interface `DiagnosticResult` (compatible avec celle de `module-diagnostic.tsx` + `_raw?: boolean`)
+   - Interface `ActionStep` (id, title, description, estimatedTime, urgency, done)
+   - Interface `DiagnosticActionPlanProps` ({ diagnostic, onRecheck? })
+   - Fonction `generateSteps(diagnostic)` : 3 templates déterministes (eau verte/algues, eau trouble/particules, fallback générique)
+   - Const `URGENCY_CONFIG` : 4 niveaux (critical/important/moderate/low) avec label, color, bg, border, icon (AlertTriangle/Clock/Clock/CheckCircle2)
+   - Composant `DiagnosticActionPlan` : useState pour steps/showRecheck/recheckImage/rechecking/resolved/recheckResult. useEffect sur `[diagnostic]` pour régénérer les steps quand le diagnostic change (utile si l'utilisateur enchaîne plusieurs analyses). useMemo pour completedCount/progress/allDone. 3 états de rendu : RESOLVED (Card emerald avec PartyPopper + confetti emojis), ACTION PLAN (steps + progress + recheck button + recheck upload), et le recheck résultat "Pas encore résolu" en orange
+   - Handler `toggleStep(id)` : inverse `done` sur le step
+   - Handler `handleRecheck()` : appelle `onRecheck(recheckImage)`, parse le résultat, détermine `resolved` (pas d'issues vert/alg/trouble + confidence > 0.5), toast succès/échec
+   - Effet confetti : 4 emojis en absolute autour de l'icône PartyPopper, `animate-pulse`
+   - Upload photo : `<input type="file" accept="image/*" capture="environment">` (camera mobile) + FileReader → base64 → `setRecheckImage`
+   - Upload zone : label clickable avec border dashed gold/30, icône `Upload` (plus visible que `Camera` pour le upload)
+
+Files modified (1 fichier existant) :
+2. `src/components/aquamind/module-diagnostic.tsx` :
+   - Import ajouté : `import { DiagnosticActionPlan } from './diagnostic-action-plan'` (ligne 27)
+   - Insertion du bloc `<DiagnosticActionPlan>` entre la grid `lg:grid-cols-2` et la Card "Diagnostics récents" (lignes 467-501). Rendu conditionnel `{result && (...)}`. Handler `onRecheck` async : gate `isOnline` → `api.post('/api/pool/photo-diagnostic', { image: newImage, typeHint })` → `hapticSuccess()` + `loadHistory()` → retourne `data.diagnostic || null`. Catch : `hapticError()` + toast erreur + retourne `null` (le composant reste en mode "pas encore résolu")
+   - Historique (lignes 531-582) : ajout de `summaryLower` et `isResolved` (detected vide OU aiSummary contient "résolu"/"resolu"/"sain"). Header row passe de `flex items-center gap-2` à `flex flex-wrap items-center gap-2` pour gérer le wrap sur mobile. Badge "Résolu" (emerald) ajouté après le timestamp quand `isResolved`. Le warning "⚠ {detected...}" est maintenant conditionnel à `!isResolved && detected.length > 0` (évite d'afficher le warning ET le badge Résolu simultanément)
+
+Vérifications finales :
+- `bun run lint` → **0 erreur, 0 warning** (exit 0) ✅
+- `bunx tsc --noEmit` → **0 erreur** sur `diagnostic-action-plan.tsx` et `module-diagnostic.tsx` ✅
+- `bunx tsc --noEmit` (full) → 4 erreurs résiduelles, toutes pré-existantes et hors scope L5-PLAN :
+  * `skills/image-edit/scripts/image-edit.ts(10,4)` — pré-existant (L4-A)
+  * `skills/stock-analysis-skill/src/analyzer.ts(253,11)` — pré-existant (L4-A)
+  * `src/lib/native/index.ts(72,8)` — `./local-notifications` manquant (gap documenté L4-A section 16.9)
+  * `src/lib/pool/safety-rules.ts(28,9)` — comparaison '"allowed"' vs '"forbidden"' (pré-existant, mentionné L1-E et L2-A)
+- Contraintes respectées :
+  * ✅ Aucune modification de `prisma/schema.prisma`
+  * ✅ Aucune modification d'API routes (réutilise `/api/pool/photo-diagnostic` existant)
+  * ✅ Design system AQWELIA respecté : `glass-card`, `text-gold`/`bg-gold/5`/`border-gold/30` (turquoise), `from-primary to-ocean-light` (gradient bouton re-check), `from-primary to-gold` (gradient bouton analyse), `font-display` sur les CardTitle, emerald pour le succès résolu, orange pour les rappels/important, yellow pour moderate, destructive pour critical
+  * ✅ Composant 100% client-side (`'use client'` explicite ligne 1)
+  * ✅ Gestion du cas diagnostic sans detected issues (fallback générique 2 étapes)
+  * ✅ `diagnostic` est required (interface non-nullable) — le parent ne rend le composant que si `result` est non-null (`{result && (...)}`)
+  * ✅ Plan d'action clair et facile à suivre : étapes numérotées (1, 2, 3...), description concise, temps estimé, badge urgence par étape, bouton "Valider" explicite, progress bar visible, reminder contextuel
+  * ✅ Pas d'emojis dans le code (sauf les 4 emojis confetti 🎉✨🎊🎉 dans la section résolu — c'est un effet visuel utilisateur, pas de la décoration code)
+  * ✅ Pas de nouvelle dépendance installée
+
+Stage Summary:
+- ✅ 1 nouveau fichier créé (`diagnostic-action-plan.tsx`, 401 lignes) + 1 fichier existant modifié (`module-diagnostic.tsx`, +35 lignes pour l'intégration + ~20 lignes pour le badge Résolu)
+- ✅ Workflow complet du plan d'action :
+  1. **Urgence gauge** : badge color-coded calculé depuis l'urgence la plus élevée parmi les steps (🔴 Urgent / 🟠 Important / 🟡 À surveiller / 🟢 OK)
+  2. **Étapes ordonnées** : 2 à 6 steps selon le problème détecté (eau verte/algues → 6 steps, eau trouble → 4 steps, fallback → 2 steps). Chaque step : titre numéroté, description, temps estimé, badge urgence, bouton "Valider" + clic sur l'icône
+  3. **Progress bar** : `Progress` shadcn avec % = completedCount / steps.length × 100
+  4. **Rappel contextuel** : banner orange "Il vous reste N étape(s)" quand 0 < completedCount < total
+  5. **Re-check photo** : bouton "Vérifier le résultat (nouvelle photo)" apparaît quand allDone. Upload zone (camera mobile ou fichier) → analyse via la même API `/api/pool/photo-diagnostic` → verdict Résolu / Pas encore résolu
+  6. **Effet confetti** : 4 emojis animés autour de l'icône PartyPopper sur l'état résolu
+  7. **Pastille "Résolu"** dans l'historique : badge emerald avec icône CheckCircle2 quand `detectedIssues` vide OU `aiSummary` contient "résolu"/"sain"
+- ✅ Le diagnostic de contrôle (re-check) est automatiquement sauvegardé en DB via la route POST `/api/pool/photo-diagnostic` (qui crée un nouveau `PhotoDiagnostic`). `loadHistory()` est appelée après le re-check pour rafraîchir la liste — l'utilisateur voit le diagnostic de contrôle apparaître avec sa pastille "Résolu" (si l'IA confirme)
+- ✅ 0 erreur TypeScript, 0 erreur/warning ESLint sur le scope L5-PLAN
+
+Points d'attention pour la main agent / prochains lots :
+- **Critère "Résolu" heuristique** : actuellement basé sur la présence de mots-clés (vert/alg/trouble) dans `detectedIssues` du re-check + seuil confidence > 0.5. Pour un critère plus robuste, l'API pourrait comparer `detectedIssues` du re-check vs l'original et retourner un flag `_resolved: boolean` explicite dans le payload JSON. Cela nécessiterait de modifier la route `/api/pool/photo-diagnostic` (hors scope L5-PLAN — interdit par les règles)
+- **Persistance de la progression** : l'état des steps (validés ou non) est lost au refresh ou à la navigation. Pour persister, il faudrait soit (a) ajouter un champ JSON `actionPlanState` sur `PhotoDiagnostic` (interdit sans modif schema), soit (b) créer une nouvelle table `DiagnosticActionPlan` liée à `PhotoDiagnostic` (interdit sans modif schema), soit (c) utiliser `localStorage` côté client (clé `diag-action-plan-{diagnosticId}`). Option (c) est la plus simple pour un lot ultérieur — pas de modif schema, mais la progression ne se synchronise pas entre appareils
+- **Rappel temporel** : actuellement le rappel est contextuel (s'affiche dès qu'une étape est validée mais pas toutes). Pour un vrai rappel "après X heures", il faudrait persister le timestamp de la première validation + scheduler une notification locale via `src/lib/native/local-notifications.ts` (qui est manquant — gap documenté L4-A section 16.9). À combiner avec la persistance localStorage ci-dessus dans un lot L5-NOTIF
+- **Effet confetti minimaliste** : 4 emojis `animate-pulse` suffisent pour MVP, mais un vrai effet (particules qui tombent + son) serait plus impactant. `canvas-confetti` (300 bytes gzipped) est le standard. À ajouter dans un lot L5-CELEBRATE si l'effet wow est jugé trop léger
+- **Templates de steps en dur** : les 3 templates (eau verte/algues, eau trouble, fallback) sont codés en dur. Pour des problèmes plus spécifiques (pH déséquilibré seul, chlore bas, TAC haut), il faudrait soit (a) ajouter plus de templates dans `generateSteps()`, soit (b) demander à l'IA de générer les steps directement dans le prompt de diagnostic (modifier `VISION_DIAGNOSTIC_PROMPT` dans `src/lib/pool/ai-context.ts` — hors scope L5-PLAN). Option (b) plus scalable mais demande à l'IA de respecter un schéma JSON strict pour les steps
+- **Accessibilité** : les boutons "Valider" et les icônes cliquables ont des `aria-label`. Le composant `Progress` de Radix est accessible par défaut. Les couleurs d'urgence respectent le contraste WCAG AA (destructive, orange, yellow, emerald sur fond muted). Pour AAA, vérifier le contraste `text-orange-600` sur `bg-orange-500/10` (probablement OK mais à valider avec un outil comme axe DevTools)
+- **Internationalisation** : tous les textes sont en français (conforme au marché cible FR). Pour une future i18n, les strings sont dans le composant — à extraire dans un fichier `messages/diagnostic-action-plan.{fr,en}.json` si besoin. Hors scope L5-PLAN

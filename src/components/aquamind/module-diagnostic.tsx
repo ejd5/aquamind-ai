@@ -24,6 +24,7 @@ import { offlineApi } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
 import { hapticSuccess, hapticError } from '@/lib/native/haptics'
+import { DiagnosticActionPlan } from './diagnostic-action-plan'
 
 interface DiagnosticResult {
   imageType?: string
@@ -463,6 +464,42 @@ export function ModuleDiagnostic() {
         </Card>
       </div>
 
+      {/* Action Plan — appears after a diagnostic is produced */}
+      {result && (
+        <DiagnosticActionPlan
+          diagnostic={result}
+          onRecheck={async (newImage) => {
+            try {
+              if (!isOnline) {
+                toast({
+                  title: 'Hors connexion',
+                  description: "L'analyse IA nécessite Internet.",
+                  variant: 'destructive',
+                })
+                return null
+              }
+              const data = await api.post<{ diagnostic: DiagnosticResult }>(
+                '/api/pool/photo-diagnostic',
+                { image: newImage, typeHint },
+              )
+              hapticSuccess()
+              // Refresh history so the new re-check diagnostic shows up
+              loadHistory()
+              return data.diagnostic || null
+            } catch (e) {
+              hapticError()
+              toast({
+                title: 'Erreur',
+                description:
+                  e instanceof Error ? e.message : 'Analyse impossible',
+                variant: 'destructive',
+              })
+              return null
+            }
+          }}
+        />
+      )}
+
       {/* History */}
       <Card className="glass-card">
         <CardHeader className="pb-3">
@@ -493,6 +530,12 @@ export function ModuleDiagnostic() {
             <div className="custom-scroll max-h-96 space-y-2 overflow-y-auto pr-1">
               {history.map((d) => {
                 const detected = safeParse<string[]>(d.detectedIssues, [])
+                const summaryLower = (d.aiSummary || '').toLowerCase()
+                const isResolved =
+                  detected.length === 0 ||
+                  summaryLower.includes('résolu') ||
+                  summaryLower.includes('resolu') ||
+                  summaryLower.includes('sain')
                 return (
                   <div
                     key={d.id}
@@ -506,7 +549,7 @@ export function ModuleDiagnostic() {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                           {d.type}
                         </span>
@@ -518,11 +561,17 @@ export function ModuleDiagnostic() {
                             minute: '2-digit',
                           })}
                         </span>
+                        {isResolved && (
+                          <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-300">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Résolu
+                          </span>
+                        )}
                       </div>
                       <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                         {d.aiSummary}
                       </p>
-                      {detected.length > 0 && (
+                      {!isResolved && detected.length > 0 && (
                         <p className="mt-1 text-[11px] text-destructive">
                           ⚠ {detected.slice(0, 2).join(' · ')}
                         </p>
