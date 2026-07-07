@@ -404,7 +404,8 @@
     "footerCopyright": "Eau toujours cristalline.",
     "footerVersion": "v2.0 Copilote",
     "footerMadeInFrance": "Conçu en France 🇫🇷",
-    "footerTagline2": "Copilote piscine"
+    "footerTagline2": "Copilote piscine",
+    "signIn": "Connexion"
   },
   "plans": {
     "free": {
