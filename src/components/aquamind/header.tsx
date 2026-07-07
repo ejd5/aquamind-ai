@@ -67,9 +67,7 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
             { id: 'today' as const, label: "Aujourd'hui" },
             { id: 'diagnostic' as const, label: 'Diagnostic' },
             { id: 'water' as const, label: 'Analyse eau' },
-            { id: 'plan' as const, label: "Plan d'action" },
-            { id: 'log' as const, label: 'Carnet' },
-            { id: 'maintenance' as const, label: 'Matériel' },
+            { id: 'assistant' as const, label: 'Assistant' },
           ].map((item) => (
             <button
               key={item.id}

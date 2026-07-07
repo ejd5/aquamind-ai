@@ -67,9 +67,9 @@ const NAV: NavItem[] = [
   { id: 'diagnostic', label: 'Diagnostic photo', short: 'Photo', icon: Camera, primary: true },
   { id: 'water', label: 'Analyse eau', short: 'Eau', icon: Droplets, primary: true },
   { id: 'assistant', label: 'Assistant IA', short: 'IA', icon: MessageSquare, primary: true },
-  { id: 'plan', label: "Plan d'action", short: 'Plan', icon: ListChecks, primary: true },
-  { id: 'log', label: 'Carnet de santé', short: 'Carnet', icon: BookOpen, primary: true },
-  { id: 'maintenance', label: 'Maintenance', short: 'Matériel', icon: Wrench },
+  { id: 'plan', label: "Plan d'action", short: 'Plan', icon: ListChecks },
+  { id: 'log', label: 'Carnet de santé', short: 'Carnet', icon: BookOpen },
+  { id: 'maintenance', label: 'Maintenance', short: 'Matériel', icon: Wrench, primary: true },
   { id: 'weather', label: 'Météo intelligente', short: 'Météo', icon: CloudSun },
   { id: 'guides', label: 'Ressources & guides', short: 'Guides', icon: BookOpen },
   { id: 'reminders', label: 'Rappels', short: 'Rappels', icon: Bell },
@@ -78,6 +78,24 @@ const NAV: NavItem[] = [
 
 const PRIMARY_NAV = NAV.filter((n) => n.primary)
 const SECONDARY_NAV = NAV.filter((n) => !n.primary)
+
+// Sidebar groups for structured navigation
+const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
+  { title: 'Accueil', items: [NAV[0]] },
+  { title: 'Analyses', items: [NAV[1], NAV[2], NAV[5]] },
+  { title: 'Actions', items: [NAV[3], NAV[4], NAV[9]] },
+  { title: 'Ressources', items: [NAV[7], NAV[8]] },
+  { title: 'Réglages', items: [NAV[6], NAV[10]] },
+]
+
+// Sidebar groups for structured navigation
+const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
+  { title: 'Accueil', items: [NAV[0]] },
+  { title: 'Analyses', items: [NAV[1], NAV[2], NAV[5]] }, // diagnostic, water, log
+  { title: 'Actions', items: [NAV[3], NAV[4], NAV[9]] }, // assistant, plan, reminders
+  { title: 'Ressources', items: [NAV[7], NAV[8]] }, // weather, guides
+  { title: 'Réglages', items: [NAV[6], NAV[10]] }, // maintenance, paywall
+]
 
 export interface PoolProfileLite {
   id: string
@@ -174,42 +192,51 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
       <div className="mx-auto flex w-full max-w-7xl flex-1 gap-0 px-0 sm:px-6">
         {/* Desktop sidebar */}
         <aside className="custom-scroll sticky top-16 hidden h-[calc(100vh-4rem)] w-56 shrink-0 overflow-y-auto border-r border-border/40 py-6 pr-4 md:block">
-          <nav className="space-y-1">
-            {NAV.map((item) => {
-              const active = activeTab === item.id
-              const Icon = item.icon
-              const isPremium = item.id === 'paywall'
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => navigate(item.id)}
-                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
-                    active
-                      ? 'bg-gradient-to-r from-primary/15 to-gold/10 text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
-                  } ${isPremium ? 'border border-gold/30 hover:border-gold/50' : ''}`}
-                >
-                  <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-                      active
-                        ? 'bg-gradient-to-br from-primary to-gold text-primary-foreground shadow-md shadow-primary/30'
-                        : isPremium
-                          ? 'bg-gold/10 text-gold'
-                          : 'bg-secondary text-muted-foreground group-hover:text-foreground'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <span className="truncate">{item.label}</span>
-                  {isPremium && (
-                    <Sparkles className="ml-auto h-3 w-3 text-gold" />
-                  )}
-                  {active && !isPremium && (
-                    <span className="ml-auto h-1.5 w-1.5 rounded-full bg-gold" />
-                  )}
-                </button>
-              )
-            })}
+          <nav className="space-y-4">
+            {NAV_GROUPS.map((group) => (
+              <div key={group.title}>
+                <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">
+                  {group.title}
+                </p>
+                <div className="space-y-0.5">
+                  {group.items.map((item) => {
+                    const active = activeTab === item.id
+                    const Icon = item.icon
+                    const isPremium = item.id === 'paywall'
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => navigate(item.id)}
+                        className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all ${
+                          active
+                            ? 'bg-gradient-to-r from-primary/15 to-gold/10 text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
+                        } ${isPremium ? 'border border-gold/30 hover:border-gold/50' : ''}`}
+                      >
+                        <span
+                          className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
+                            active
+                              ? 'bg-gradient-to-br from-primary to-gold text-primary-foreground shadow-md shadow-primary/30'
+                              : isPremium
+                                ? 'bg-gold/10 text-gold'
+                                : 'bg-secondary text-muted-foreground group-hover:text-foreground'
+                          }`}
+                        >
+                          <Icon className="h-3.5 w-3.5" />
+                        </span>
+                        <span className="truncate text-[13px]">{item.label}</span>
+                        {isPremium && (
+                          <Sparkles className="ml-auto h-3 w-3 text-gold" />
+                        )}
+                        {active && !isPremium && (
+                          <span className="ml-auto h-1.5 w-1.5 rounded-full bg-gold" />
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
 
           <div className="mt-6 rounded-xl border border-destructive/30 bg-destructive/5 p-3">
