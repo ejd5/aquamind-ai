@@ -120,6 +120,7 @@ const SOURCE_KEY: Record<string, string> = {
 
 export function ModuleReminders({ onNavigate }: Props) {
   const t = useTranslations('modules.reminders')
+  const td = useTranslations('guidesData')
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [manualReminders, setManualReminders] = useState<Reminder[]>([])
   const [context, setContext] = useState<ReminderContext | null>(null)
@@ -522,7 +523,7 @@ export function ModuleReminders({ onNavigate }: Props) {
                           </span>
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                              <p className="font-display text-sm font-bold">{r.title}</p>
+                              <p className="font-display text-sm font-bold">{td('reminder_' + r.type + '_title')}</p>
                               <Badge variant="outline" className={`text-[9px] ${badgeCls}`}>
                                 {t(`priority.${r.priority}`)}
                               </Badge>
@@ -530,10 +531,10 @@ export function ModuleReminders({ onNavigate }: Props) {
                                 {SOURCE_KEY[r.source] ? t(`source.${SOURCE_KEY[r.source]}`) : r.source}
                               </span>
                             </div>
-                            <p className="mt-0.5 text-xs text-muted-foreground">{r.detail}</p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">{td('reminder_' + r.type + '_detail')}</p>
                             <div className="mt-2 flex items-start gap-1.5 rounded-md bg-gold/5 p-2 text-xs text-foreground/90">
                               <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-gold" />
-                              <span><strong className="text-gold">{t('actionLabel')} :</strong> {r.action}</span>
+                              <span><strong className="text-gold">{t('actionLabel')} :</strong> {td('reminder_' + r.type + '_action')}</span>
                             </div>
                             <div className="mt-2 flex flex-wrap items-center gap-2">
                               <span className="flex items-center gap-1 text-[10px] text-muted-foreground">

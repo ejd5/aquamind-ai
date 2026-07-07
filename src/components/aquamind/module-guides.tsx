@@ -81,6 +81,7 @@ const FREE_CATEGORIES: CategoryId[] = ['getting_started', 'faq']
 
 export function ModuleGuides({ onNavigate }: Props) {
   const t = useTranslations('modules.guides')
+  const td = useTranslations('guidesData')
   const [guides, setGuides] = useState<Guide[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [recommended, setRecommended] = useState<Guide[]>([])
@@ -242,7 +243,7 @@ export function ModuleGuides({ onNavigate }: Props) {
               >
                 <div className="mb-1 flex items-center gap-1.5">
                   <span className="text-xs font-semibold uppercase tracking-wide text-gold">
-                    {categories.find((c) => c.id === g.category)?.label}
+                    {td('cat_' + g.category)}
                   </span>
                   {isGuideLocked(g) && <Lock className="ml-auto h-3 w-3 text-gold" />}
                 </div>
@@ -274,7 +275,7 @@ export function ModuleGuides({ onNavigate }: Props) {
             key={c.id}
             active={activeCategory === c.id}
             onClick={() => setActiveCategory(c.id)}
-            label={c.label}
+            label={td('cat_' + c.id)}
             icon={c.icon}
           />
         ))}
@@ -303,7 +304,7 @@ export function ModuleGuides({ onNavigate }: Props) {
                 <CardContent className="flex flex-1 flex-col gap-2 p-4">
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-semibold uppercase tracking-wide text-gold">
-                      {categories.find((c) => c.id === g.category)?.label || g.category}
+                      {td('cat_' + g.category)}
                     </span>
                     {isGuidePremium(g) && (
                       <Badge variant="outline" className="border-gold/40 bg-gold/10 px-1.5 text-[9px] font-bold text-gold">
@@ -348,7 +349,7 @@ export function ModuleGuides({ onNavigate }: Props) {
               <DialogHeader>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold uppercase tracking-wide text-gold">
-                    {categories.find((c) => c.id === selectedGuide.category)?.label}
+                    {td('cat_' + selectedGuide.category)}
                   </span>
                   {isGuidePremium(selectedGuide) && (
                     <Badge variant="outline" className="border-gold/40 bg-gold/10 px-1.5 text-[9px] font-bold text-gold">
