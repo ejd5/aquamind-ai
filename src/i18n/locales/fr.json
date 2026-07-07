@@ -778,7 +778,42 @@
     "restoreError": "Restauration impossible.",
     "manageError": "Impossible d'ouvrir la gestion.",
     "error": "Erreur",
-    "failed": "Échec"
+    "failed": "Échec",
+    "rippleFeatures": [
+      "1 piscine",
+      "Scans photo illimités (IA Vision)",
+      "Plan d'action guidé avec étapes + saisie mesures",
+      "Analyse eau complète (pH, chlore, TAC, CYA, TH)",
+      "Météo intelligente + alertes orage/canicule",
+      "Tous les guides écrits (20+)",
+      "Historique 90 jours",
+      "Rappels intelligents",
+      "Diagnostic itératif (avant/après + jauge satisfaction)"
+    ],
+    "lagoonFeatures": [
+      "1 piscine + 1 spa",
+      "Tout Ripple",
+      "Support spa complet (6 types, 10 marques, brome, oxygène actif)",
+      "Surveillance température + alertes spa",
+      "Rappels de vidange intelligents",
+      "Rapport PDF partageable",
+      "Historique illimité",
+      "Tutoriels vidéo premium",
+      "Support prioritaire"
+    ],
+    "atlasFeatures": [
+      "Piscines + spas illimités",
+      "Tout Lagoon",
+      "Multi-clients illimité",
+      "Comptes équipe (jusqu'à 5 techniciens)",
+      "Devis et planning de visites",
+      "Photos avant/après par visite",
+      "Notes techniques avancées (LSI, mode expert)",
+      "Export comptable (CSV/PDF)",
+      "API + intégrations",
+      "Marque blanche (logo de votre entreprise)",
+      "Support dédié (réponse < 24h)"
+    ]
   },
   "onboarding": {
     "welcome": "Bienvenue sur AQWELIA",
