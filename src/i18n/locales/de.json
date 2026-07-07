@@ -1,0 +1,146 @@
+{
+  "common": {
+    "appName": "AQWELIA",
+    "tagline": "Das Wasser, das passt — mit Intelligenz.",
+    "loading": "AQWELIA wird geladen…",
+    "signIn": "Anmelden",
+    "signUp": "Registrieren",
+    "signOut": "Abmelden",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "name": "Name",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "settings": "Einstellungen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "skip": "Überspringen"
+  },
+  "nav": {
+    "home": "Start",
+    "analyses": "Analysen",
+    "assistant": "Assistent",
+    "maintenance": "Wartung",
+    "profile": "Profil",
+    "today": "Heute",
+    "diagnostic": "Foto-Diagnose",
+    "water": "Wasseranalyse",
+    "plan": "Aktionsplan",
+    "log": "Gesundheitsbuch",
+    "weather": "Wetter",
+    "guides": "Anleitungen",
+    "reminders": "Erinnerungen",
+    "premium": "AQWELIA Premium"
+  },
+  "onboarding": {
+    "welcome": "Willkommen bei AQWELIA",
+    "step1": "Ihr Becken",
+    "step2": "Behandlung",
+    "step3": "Filtration",
+    "step4": "Standort & Nutzung",
+    "poolType": "Ich betreue:",
+    "pool": "Pool",
+    "spa": "Spa",
+    "both": "Beides",
+    "poolName": "Poolname",
+    "volume": "Volumen",
+    "shape": "Form",
+    "surface": "Oberfläche",
+    "treatment": "Behandlung",
+    "filter": "Filter",
+    "region": "Region / Stadt",
+    "country": "Land",
+    "sunExposure": "Sonneneinstrahlung",
+    "usage": "Nutzungshäufigkeit"
+  },
+  "plans": {
+    "free": {
+      "name": "Free",
+      "tagline": "Kostenlos — zum Entdecken"
+    },
+    "ripple": {
+      "name": "Ripple",
+      "tagline": "Das Wesentliche für klares Wasser"
+    },
+    "lagoon": {
+      "name": "Lagoon",
+      "tagline": "Pool und Spa, alles in einem"
+    },
+    "atlas": {
+      "name": "Atlas",
+      "tagline": "Der ultimative Copilot für Poolprofis und Techniker"
+    }
+  },
+  "weather": {
+    "locateMe": "Mich lokalisieren",
+    "enterCity": "Oder geben Sie Ihre Stadt ein…",
+    "apply": "Anwenden",
+    "locating": "Lokalisieren…",
+    "locationDenied": "Standort abgelehnt. Erlauben Sie die Geolokalisierung oder geben Sie Ihre Stadt manuell ein.",
+    "locationDetected": "Standort erkannt"
+  },
+  "diagnostic": {
+    "title": "Foto-Diagnose",
+    "subtitle": "Fotografieren Sie das Wasser, eine Wand, den Filter oder einen Teststreifen.",
+    "analyze": "Mit KI analysieren",
+    "analyzing": "Analyse läuft…",
+    "analysisComplete": "Analyse abgeschlossen",
+    "analysisFailed": "Analyse fehlgeschlagen",
+    "confidence": "Analysevertrauen",
+    "summary": "Zusammenfassung",
+    "detectedIssues": "Erkannte Probleme",
+    "probableIssues": "Wahrscheinliche Ursachen",
+    "nextStep": "Nächster Schritt",
+    "safetyWarnings": "Sicherheitshinweise",
+    "missingData": "Fehlende Daten",
+    "actionPlan": "Aktionsplan",
+    "validate": "Bestätigen",
+    "verifyResult": "Ergebnis überprüfen",
+    "resolved": "Mit AQWELIA gelöst",
+    "notResolved": "Noch nicht gelöst",
+    "before": "Vorher",
+    "after": "Nachher",
+    "improvement": "+{percent}% Verbesserung! Weiter so.",
+    "littleImprovement": "Wenig Verbesserung. Passen Sie Ihren Ansatz an.",
+    "newComplementaryPlan": "Neuer ergänzender Plan",
+    "deleteConfirm": "Diese Diagnose löschen?",
+    "deleteWarning": "Diese Aktion ist endgültig. Die Diagnose und ihr Foto werden aus Ihrem Verlauf entfernt.",
+    "reopen": "Klicken, um wieder zu öffnen und zu vervollständigen"
+  },
+  "settings": {
+    "title": "Einstellungen und Datenschutz",
+    "subscription": "Mein Abonnement",
+    "restore": "Einkäufe wiederherstellen",
+    "manage": "Abonnement verwalten",
+    "notifications": "Benachrichtigungen",
+    "dataPersonal": "Persönliche Daten",
+    "exportData": "Meine Daten exportieren",
+    "deleteAccount": "Mein Konto löschen",
+    "privacy": "Datenschutzerklärung",
+    "terms": "Nutzungsbedingungen",
+    "support": "Support kontaktieren",
+    "version": "App-Version",
+    "deleteConfirm": "Sind Sie sicher, dass Sie Ihr Konto löschen möchten? Diese Aktion ist unwiderruflich.",
+    "deleteWarning": "Alle Ihre Daten werden endgültig gelöscht: Pools, Messungen, Diagnosen, Verlauf.",
+    "exportNote": "Laden Sie alle Ihre Daten im JSON-Format herunter (DSGVO — Recht auf Datenübertragbarkeit)."
+  },
+  "spa": {
+    "title": "Spa & Baden",
+    "subtitle": "AQWELIA verwaltet auch Ihr Spa",
+    "treatment": "Behandlung für heißes Wasser",
+    "drainage": "Intelligentes Ablassen",
+    "cover": "Abdeckung & Temperatur",
+    "brands": "Marken & Geräte",
+    "details": "Spa-Details",
+    "drainageEconomic": "Ablassen statt überbehandeln",
+    "types": {
+      "inflatable": "Aufblasbares Spa",
+      "rigid": "Starres Spa (Schale)",
+      "nordic": "Nordisches Spa / Holzbalneothek",
+      "swim_spa": "Schwimmspa / Gegenstrom",
+      "in_ground": "Eingelassenes / gemauertes Spa",
+      "portable": "Tragbares / Reisespa"
+    }
+  }
+}

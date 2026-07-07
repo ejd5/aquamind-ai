@@ -1,0 +1,146 @@
+{
+  "common": {
+    "appName": "AQWELIA",
+    "tagline": "Water dat past, met intelligentie.",
+    "loading": "AQWELIA laden…",
+    "signIn": "Inloggen",
+    "signUp": "Registreren",
+    "signOut": "Uitloggen",
+    "email": "E-mail",
+    "password": "Wachtwoord",
+    "name": "Naam",
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "delete": "Verwijderen",
+    "settings": "Instellingen",
+    "back": "Terug",
+    "next": "Doorgaan",
+    "skip": "Overslaan"
+  },
+  "nav": {
+    "home": "Start",
+    "analyses": "Analyses",
+    "assistant": "Assistent",
+    "maintenance": "Onderhoud",
+    "profile": "Profiel",
+    "today": "Vandaag",
+    "diagnostic": "Foto-diagnose",
+    "water": "Wateranalyse",
+    "plan": "Actieplan",
+    "log": "Gezondheidslog",
+    "weather": "Weer",
+    "guides": "Handleidingen",
+    "reminders": "Herinneringen",
+    "premium": "AQWELIA Premium"
+  },
+  "onboarding": {
+    "welcome": "Welkom bij AQWELIA",
+    "step1": "Uw bassin",
+    "step2": "Behandeling",
+    "step3": "Filtratie",
+    "step4": "Locatie en gebruik",
+    "poolType": "Ik beheer:",
+    "pool": "Zwembad",
+    "spa": "Spa",
+    "both": "Beide",
+    "poolName": "Naam van het zwembad",
+    "volume": "Volume",
+    "shape": "Vorm",
+    "surface": "Afwerking",
+    "treatment": "Behandeling",
+    "filter": "Filter",
+    "region": "Regio / Stad",
+    "country": "Land",
+    "sunExposure": "Zonblootstelling",
+    "usage": "Gebruiksfrequentie"
+  },
+  "plans": {
+    "free": {
+      "name": "Free",
+      "tagline": "Gratis — om te ontdekken"
+    },
+    "ripple": {
+      "name": "Ripple",
+      "tagline": "De basis voor helder water"
+    },
+    "lagoon": {
+      "name": "Lagoon",
+      "tagline": "Zwembad en spa, alles in één"
+    },
+    "atlas": {
+      "name": "Atlas",
+      "tagline": "De ultieme copiloot voor poolprofessionals en technici"
+    }
+  },
+  "weather": {
+    "locateMe": "Mij lokaliseren",
+    "enterCity": "Of typ uw stad…",
+    "apply": "Toepassen",
+    "locating": "Lokaliseren…",
+    "locationDenied": "Locatie geweigerd. Sta geolokalisatie toe of typ uw stad handmatig.",
+    "locationDetected": "Locatie gedetecteerd"
+  },
+  "diagnostic": {
+    "title": "Foto-diagnose",
+    "subtitle": "Fotografeer het water, een wand, de filter of een teststrook.",
+    "analyze": "Met AI analyseren",
+    "analyzing": "Analyse bezig…",
+    "analysisComplete": "Analyse voltooid",
+    "analysisFailed": "Analyse mislukt",
+    "confidence": "Betrouwbaarheid van de analyse",
+    "summary": "Samenvatting",
+    "detectedIssues": "Gedetecteerde problemen",
+    "probableIssues": "Waarschijnlijke oorzaken",
+    "nextStep": "Volgende stap",
+    "safetyWarnings": "Veiligheidswaarschuwingen",
+    "missingData": "Ontbrekende gegevens",
+    "actionPlan": "Actieplan",
+    "validate": "Valideren",
+    "verifyResult": "Resultaat verifiëren",
+    "resolved": "Opgelost met AQWELIA",
+    "notResolved": "Nog niet opgelost",
+    "before": "Voor",
+    "after": "Na",
+    "improvement": "+{percent}% verbetering! Ga zo door.",
+    "littleImprovement": "Weinig verbetering. Pas uw aanpak aan.",
+    "newComplementaryPlan": "Nieuw aanvullend plan",
+    "deleteConfirm": "Deze diagnose verwijderen?",
+    "deleteWarning": "Deze actie is definitief. De diagnose en de bijbehorende foto worden uit uw geschiedenis verwijderd.",
+    "reopen": "Klik om opnieuw te openen en aan te vullen"
+  },
+  "settings": {
+    "title": "Instellingen en privacy",
+    "subscription": "Mijn abonnement",
+    "restore": "Mijn aankopen herstellen",
+    "manage": "Mijn abonnement beheren",
+    "notifications": "Meldingen",
+    "dataPersonal": "Persoonsgegevens",
+    "exportData": "Mijn gegevens exporteren",
+    "deleteAccount": "Mijn account verwijderen",
+    "privacy": "Privacybeleid",
+    "terms": "Gebruiksvoorwaarden",
+    "support": "Contact met support",
+    "version": "App-versie",
+    "deleteConfirm": "Weet u zeker dat u uw account wilt verwijderen? Deze actie is onomkeerbaar.",
+    "deleteWarning": "Al uw gegevens worden definitief gewist: zwembaden, metingen, diagnoses, geschiedenis.",
+    "exportNote": "Download al uw gegevens in JSON-formaat (AVG — recht op overdraagbaarheid)."
+  },
+  "spa": {
+    "title": "Spa en baden",
+    "subtitle": "AQWELIA beheert ook uw spa",
+    "treatment": "Behandeling voor heet water",
+    "drainage": "Slim aftappen",
+    "cover": "Afdekking en temperatuur",
+    "brands": "Merken en apparatuur",
+    "details": "Spa-details",
+    "drainageEconomic": "Tappen in plaats van overbehandelen",
+    "types": {
+      "inflatable": "Opblaasbare spa",
+      "rigid": "Stijve spa (schelp)",
+      "nordic": "Nordische spa / houten balneo",
+      "swim_spa": "Zwemspa / tegenstroom",
+      "in_ground": "Ingebouwde / gemetselde spa",
+      "portable": "Draagbare / reisspa"
+    }
+  }
+}

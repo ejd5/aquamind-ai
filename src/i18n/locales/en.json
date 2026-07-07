@@ -1,0 +1,146 @@
+{
+  "common": {
+    "appName": "AQWELIA",
+    "tagline": "Water made right, powered by intelligence.",
+    "loading": "Loading AQWELIA…",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signOut": "Sign out",
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "settings": "Settings",
+    "back": "Back",
+    "next": "Continue",
+    "skip": "Skip"
+  },
+  "nav": {
+    "home": "Home",
+    "analyses": "Analyses",
+    "assistant": "Assistant",
+    "maintenance": "Maintenance",
+    "profile": "Profile",
+    "today": "Today",
+    "diagnostic": "Photo diagnostic",
+    "water": "Water analysis",
+    "plan": "Action plan",
+    "log": "Health log",
+    "weather": "Weather",
+    "guides": "Guides",
+    "reminders": "Reminders",
+    "premium": "AQWELIA Premium"
+  },
+  "onboarding": {
+    "welcome": "Welcome to AQWELIA",
+    "step1": "Your pool",
+    "step2": "Treatment",
+    "step3": "Filtration",
+    "step4": "Location & usage",
+    "poolType": "I manage a:",
+    "pool": "Pool",
+    "spa": "Spa",
+    "both": "Both",
+    "poolName": "Pool name",
+    "volume": "Volume",
+    "shape": "Shape",
+    "surface": "Finish",
+    "treatment": "Treatment",
+    "filter": "Filter",
+    "region": "Region / City",
+    "country": "Country",
+    "sunExposure": "Sun exposure",
+    "usage": "Usage frequency"
+  },
+  "plans": {
+    "free": {
+      "name": "Free",
+      "tagline": "Free — to get started"
+    },
+    "ripple": {
+      "name": "Ripple",
+      "tagline": "The essentials for clear water"
+    },
+    "lagoon": {
+      "name": "Lagoon",
+      "tagline": "Pool and spa, all in one"
+    },
+    "atlas": {
+      "name": "Atlas",
+      "tagline": "The ultimate copilot for pool pros and technicians"
+    }
+  },
+  "weather": {
+    "locateMe": "Locate me",
+    "enterCity": "Or enter your city…",
+    "apply": "Apply",
+    "locating": "Locating…",
+    "locationDenied": "Location denied. Allow geolocation or enter your city manually.",
+    "locationDetected": "Location detected"
+  },
+  "diagnostic": {
+    "title": "Photo diagnostic",
+    "subtitle": "Photograph the water, a wall, the filter or a test strip.",
+    "analyze": "Analyze with AI",
+    "analyzing": "Analysis in progress…",
+    "analysisComplete": "Analysis complete",
+    "analysisFailed": "Analysis failed",
+    "confidence": "Analysis confidence",
+    "summary": "Summary",
+    "detectedIssues": "Detected issues",
+    "probableIssues": "Probable causes",
+    "nextStep": "Next step",
+    "safetyWarnings": "Safety warnings",
+    "missingData": "Missing data",
+    "actionPlan": "Action plan",
+    "validate": "Validate",
+    "verifyResult": "Verify result",
+    "resolved": "Resolved with AQWELIA",
+    "notResolved": "Not yet resolved",
+    "before": "Before",
+    "after": "After",
+    "improvement": "+{percent}% improvement! Keep it up.",
+    "littleImprovement": "Little improvement. Adjust your approach.",
+    "newComplementaryPlan": "New complementary plan",
+    "deleteConfirm": "Delete this diagnostic?",
+    "deleteWarning": "This action is permanent. The diagnostic and its photo will be removed from your history.",
+    "reopen": "Click to reopen & complete"
+  },
+  "settings": {
+    "title": "Settings and privacy",
+    "subscription": "My subscription",
+    "restore": "Restore purchases",
+    "manage": "Manage subscription",
+    "notifications": "Notifications",
+    "dataPersonal": "Personal data",
+    "exportData": "Export my data",
+    "deleteAccount": "Delete my account",
+    "privacy": "Privacy policy",
+    "terms": "Terms of use",
+    "support": "Contact support",
+    "version": "App version",
+    "deleteConfirm": "Are you sure you want to delete your account? This action is irreversible.",
+    "deleteWarning": "All your data will be permanently erased: pools, measurements, diagnostics, history.",
+    "exportNote": "Download all your data in JSON format (GDPR — right to portability)."
+  },
+  "spa": {
+    "title": "Spa & bathing",
+    "subtitle": "AQWELIA also manages your spa",
+    "treatment": "Hot water treatment",
+    "drainage": "Smart drainage",
+    "cover": "Cover & temperature",
+    "brands": "Brands & equipment",
+    "details": "Spa details",
+    "drainageEconomic": "Drain rather than over-treat",
+    "types": {
+      "inflatable": "Inflatable spa",
+      "rigid": "Rigid spa (shell)",
+      "nordic": "Nordic spa / wooden hot tub",
+      "swim_spa": "Swim spa / counter-current",
+      "in_ground": "In-ground / masonry spa",
+      "portable": "Portable / travel spa"
+    }
+  }
+}

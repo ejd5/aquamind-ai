@@ -1,0 +1,146 @@
+{
+  "common": {
+    "appName": "AQWELIA",
+    "tagline": "El agua en su justa medida, con inteligencia.",
+    "loading": "Cargando AQWELIA…",
+    "signIn": "Iniciar sesión",
+    "signUp": "Registrarse",
+    "signOut": "Cerrar sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "name": "Nombre",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "settings": "Ajustes",
+    "back": "Volver",
+    "next": "Continuar",
+    "skip": "Omitir"
+  },
+  "nav": {
+    "home": "Inicio",
+    "analyses": "Análisis",
+    "assistant": "Asistente",
+    "maintenance": "Mantenimiento",
+    "profile": "Perfil",
+    "today": "Hoy",
+    "diagnostic": "Diagnóstico por foto",
+    "water": "Análisis del agua",
+    "plan": "Plan de acción",
+    "log": "Cuadro de salud",
+    "weather": "Tiempo",
+    "guides": "Guías",
+    "reminders": "Recordatorios",
+    "premium": "AQWELIA Premium"
+  },
+  "onboarding": {
+    "welcome": "Bienvenido a AQWELIA",
+    "step1": "Su piscina",
+    "step2": "Tratamiento",
+    "step3": "Filtración",
+    "step4": "Ubicación y uso",
+    "poolType": "Gestiono:",
+    "pool": "Piscina",
+    "spa": "Spa",
+    "both": "Ambos",
+    "poolName": "Nombre de la piscina",
+    "volume": "Volumen",
+    "shape": "Forma",
+    "surface": "Revestimiento",
+    "treatment": "Tratamiento",
+    "filter": "Filtro",
+    "region": "Región / Ciudad",
+    "country": "País",
+    "sunExposure": "Exposición al sol",
+    "usage": "Frecuencia de uso"
+  },
+  "plans": {
+    "free": {
+      "name": "Free",
+      "tagline": "Gratis — para descubrir"
+    },
+    "ripple": {
+      "name": "Ripple",
+      "tagline": "Lo esencial para un agua cristalina"
+    },
+    "lagoon": {
+      "name": "Lagoon",
+      "tagline": "Piscina y spa, todo en uno"
+    },
+    "atlas": {
+      "name": "Atlas",
+      "tagline": "El copiloto definitivo para profesionales y técnicos"
+    }
+  },
+  "weather": {
+    "locateMe": "Localizarme",
+    "enterCity": "O escriba su ciudad…",
+    "apply": "Aplicar",
+    "locating": "Localizando…",
+    "locationDenied": "Ubicación denegada. Permita la geolocalización o escriba su ciudad manualmente.",
+    "locationDetected": "Ubicación detectada"
+  },
+  "diagnostic": {
+    "title": "Diagnóstico por foto",
+    "subtitle": "Fotografíe el agua, una pared, el filtro o una tira reactiva.",
+    "analyze": "Analizar con IA",
+    "analyzing": "Análisis en curso…",
+    "analysisComplete": "Análisis completado",
+    "analysisFailed": "Análisis fallido",
+    "confidence": "Confianza del análisis",
+    "summary": "Resumen",
+    "detectedIssues": "Problemas detectados",
+    "probableIssues": "Causas probables",
+    "nextStep": "Siguiente paso",
+    "safetyWarnings": "Advertencias de seguridad",
+    "missingData": "Datos faltantes",
+    "actionPlan": "Plan de acción",
+    "validate": "Validar",
+    "verifyResult": "Verificar resultado",
+    "resolved": "Resuelto con AQWELIA",
+    "notResolved": "Aún no resuelto",
+    "before": "Antes",
+    "after": "Después",
+    "improvement": "¡Mejora del +{percent}%! Siga así.",
+    "littleImprovement": "Poca mejora. Ajuste su enfoque.",
+    "newComplementaryPlan": "Nuevo plan complementario",
+    "deleteConfirm": "¿Eliminar este diagnóstico?",
+    "deleteWarning": "Esta acción es definitiva. El diagnóstico y su foto se eliminarán de su historial.",
+    "reopen": "Haga clic para reabrir y completar"
+  },
+  "settings": {
+    "title": "Ajustes y privacidad",
+    "subscription": "Mi suscripción",
+    "restore": "Restaurar mis compras",
+    "manage": "Gestionar mi suscripción",
+    "notifications": "Notificaciones",
+    "dataPersonal": "Datos personales",
+    "exportData": "Exportar mis datos",
+    "deleteAccount": "Eliminar mi cuenta",
+    "privacy": "Política de privacidad",
+    "terms": "Condiciones de uso",
+    "support": "Contactar con soporte",
+    "version": "Versión de la aplicación",
+    "deleteConfirm": "¿Está seguro de que desea eliminar su cuenta? Esta acción es irreversible.",
+    "deleteWarning": "Todos sus datos se borrarán definitivamente: piscinas, medidas, diagnósticos, historial.",
+    "exportNote": "Descargue todos sus datos en formato JSON (RGPD — derecho a portabilidad)."
+  },
+  "spa": {
+    "title": "Spa y bañera",
+    "subtitle": "AQWELIA también gestiona su spa",
+    "treatment": "Tratamiento adaptado a agua caliente",
+    "drainage": "Vaciado inteligente",
+    "cover": "Cobertura y temperatura",
+    "brands": "Marcas y equipos",
+    "details": "Detalles del spa",
+    "drainageEconomic": "Vaciar en lugar de sobretratar",
+    "types": {
+      "inflatable": "Spa hinchable",
+      "rigid": "Spa rígido (cáscara)",
+      "nordic": "Spa nórdico / balneación de madera",
+      "swim_spa": "Spa de natación / contracorriente",
+      "in_ground": "Spa enterrado / de obra",
+      "portable": "Spa portátil / de viaje"
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 /**
  * Next.js configuration for AQWELIA.
@@ -9,7 +10,14 @@ import type { NextConfig } from "next";
  *
  * The mobile build is triggered by `bun run mobile:build` which sets
  * MOBILE_BUILD=true before invoking next build.
+ *
+ * The `next-intl` plugin (createNextIntlPlugin) is REQUIRED for the App Router
+ * to locate `src/i18n/request.ts` and load the message bundle on the server.
+ * Without it, `getLocale()` / `getMessages()` throw at runtime. The plugin is
+ * purely additive — it only adds the request-config alias + Turbopack rules.
  */
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
 const isMobileBuild = process.env.MOBILE_BUILD === "true";
 
 const nextConfig: NextConfig = isMobileBuild
@@ -35,4 +43,4 @@ const nextConfig: NextConfig = isMobileBuild
       reactStrictMode: false,
     };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);
