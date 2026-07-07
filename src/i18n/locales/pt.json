@@ -666,13 +666,13 @@
       "tagline": "Para profissionais e técnicos de piscinas"
     },
     "freeFeatures": [
-      "1 piscina",
-      "Testes de água ilimitados (manual)",
-      "Índice de água límpida + segurança de banho",
-      "2 digitalizações de foto / mês",
-      "Meteorologia básica",
-      "5 guias de arranque",
-      "Histórico de 14 dias"
+      "1 pool",
+      "Unlimited water tests (manual)",
+      "Clear water index + swim safety",
+      "2 photo scans / month",
+      "Basic weather",
+      "5 basic guides",
+      "14-day history"
     ],
     "premiumFeatures": [
       "3 piscinas",
@@ -778,7 +778,42 @@
     "restoreError": "Não foi possível restaurar.",
     "manageError": "Não foi possível abrir a gestão.",
     "error": "Erro",
-    "failed": "Falhou"
+    "failed": "Falhou",
+    "rippleFeatures": [
+      "1 pool",
+      "Unlimited photo scans (AI Vision)",
+      "Guided action plan with steps + measurement input",
+      "Full water analysis (pH, chlorine, TA, CYA, CH)",
+      "Smart weather + storm/heatwave alerts",
+      "All written guides (20+)",
+      "90-day history",
+      "Smart reminders",
+      "Iterative diagnostic (before/after + satisfaction gauge)"
+    ],
+    "lagoonFeatures": [
+      "1 pool + 1 spa",
+      "Everything in Ripple",
+      "Full spa support (6 types, 10 brands, bromine, active oxygen)",
+      "Temperature monitoring + spa alerts",
+      "Smart drain reminders",
+      "Shareable PDF report",
+      "Unlimited history",
+      "Premium video tutorials",
+      "Priority support"
+    ],
+    "atlasFeatures": [
+      "Unlimited pools + spas",
+      "Everything in Lagoon",
+      "Unlimited multi-client",
+      "Team accounts (up to 5 technicians)",
+      "Quotes and visit planning",
+      "Before/after photos per visit",
+      "Advanced technical notes (LSI, expert mode)",
+      "Accounting export (CSV/PDF)",
+      "API + integrations",
+      "White label (your company logo)",
+      "Dedicated support (response < 24h)"
+    ]
   },
   "onboarding": {
     "welcome": "Bem-vindo à AQWELIA",
