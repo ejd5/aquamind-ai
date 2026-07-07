@@ -1300,3 +1300,68 @@ Points d'attention pour la main agent / prochains lots :
 - **Templates de steps en dur** : les 3 templates (eau verte/algues, eau trouble, fallback) sont codés en dur. Pour des problèmes plus spécifiques (pH déséquilibré seul, chlore bas, TAC haut), il faudrait soit (a) ajouter plus de templates dans `generateSteps()`, soit (b) demander à l'IA de générer les steps directement dans le prompt de diagnostic (modifier `VISION_DIAGNOSTIC_PROMPT` dans `src/lib/pool/ai-context.ts` — hors scope L5-PLAN). Option (b) plus scalable mais demande à l'IA de respecter un schéma JSON strict pour les steps
 - **Accessibilité** : les boutons "Valider" et les icônes cliquables ont des `aria-label`. Le composant `Progress` de Radix est accessible par défaut. Les couleurs d'urgence respectent le contraste WCAG AA (destructive, orange, yellow, emerald sur fond muted). Pour AAA, vérifier le contraste `text-orange-600` sur `bg-orange-500/10` (probablement OK mais à valider avec un outil comme axe DevTools)
 - **Internationalisation** : tous les textes sont en français (conforme au marché cible FR). Pour une future i18n, les strings sont dans le composant — à extraire dans un fichier `messages/diagnostic-action-plan.{fr,en}.json` si besoin. Hors scope L5-PLAN
+
+---
+Task ID: L5-RICH
+Agent: general-purpose (enriched-plan)
+Task: Enrichir le plan d'action avec champs de saisie + dosages détaillés + enregistrement mesures
+
+Work Log:
+- Lu worklog.md (contexte RESTORE-1 + tâches précédentes L1-L4) pour comprendre la stack et l'état du projet
+- Lu src/components/aquamind/diagnostic-action-plan.tsx (version simple d'origine — 533 lignes, sans dosage, sans input, sans enregistrement)
+- Lu src/lib/pool/dosing-engine.ts (moteur de dosage déterministe — coefficients ph_minus/chlorine_shock/anti_algae/flocculant)
+- Lu src/lib/pool/targets.ts (plages cibles : pH 7.0-7.4, chlore 1-3 mg/L, TAC 80-120 mg/L)
+- Lu prisma/schema.prisma (modèle WaterTest : ph required, 10 champs optionnels, source/note/status/clearWaterIndex/swimSafety/lsi)
+- Lu src/app/api/pool/water-test/route.ts (POST accepte ph + champs optionnels → crée WaterTest + génère ActionPlan automatique)
+- Lu src/app/api/pool/profile/route.ts (GET retourne {profile: {volume, ...}})
+- Lu src/components/aquamind/module-diagnostic.tsx (intégration actuelle — DiagnosticActionPlan reçoit {diagnostic, onRecheck} — non modifié)
+- Lu src/lib/api-client.ts (api.get/post renvoie JSON parsé, gère BASE URL web+mobile, ApiError sur !res.ok)
+- Réécriture COMPLÈTE de src/components/aquamind/diagnostic-action-plan.tsx (~860 lignes) :
+  * Nouvelle interface ActionStep avec detailedInstructions[], productType, dosageText(fn), waitTime, inputFields[], recordedValues, previousValues
+  * Nouvelle interface InputField {name, label, unit, placeholder, required, step, min, max} — name matche colonnes WaterTest
+  * Helper computePhRecommendation(ph, volume) : calcule dose pH-/pH+ dynamiquement selon mesure utilisateur + plage 7.0-7.4
+  * Helpers dosage : phMinusGramsPer01 (10g/m³), phPlusGramsPer01 (15g/m³), chlorineShockGrams (10g/m³ curatif), antiAlgaeMl (20mL/m³), flocculantMl (5mL/m³)
+  * generateSteps(diagnostic, poolVolume) :
+    - Cas green/algae → 7 étapes (pH ajust, re-test pH, chlore choc, anti-algues, brossage, filtration 24h, re-test complet)
+    - Cas cloudy/particles → 5 étapes (filtre, pH, floculant, filtration 12h, re-test)
+    - Cas générique → 2 étapes (reco IA, re-vérification)
+  * Chaque instruction = 5-8 lignes détaillées (minimum 4-5 conforme au cahier des charges)
+  * State ajouté : poolVolume (fetch /api/pool/profile), latestWaterTest (fetch /api/pool/water-test), expandedStepId, stepForms, submitting
+  * useEffect mount : fetch pool profile + latest WaterTest pour before/after
+  * validateStep(step) : POST /api/pool/water-test avec valeurs saisies → enregistre WaterTest → toast → mark done avec recordedValues + previousValues
+  * Mise à jour latestWaterTest après POST pour que l'étape suivante ait le bon "avant"
+  * UI : cards expandables, badges urgence, formulaire inline (Input number), bouton "Valider et enregistrer" + "Ignorer cette étape"
+  * Affichage before/after quand step done : "ph: 7.8 → 7.2 ✓" (vert si dans plage, orange sinon)
+  * Aperçu recommandation pH live pendant la saisie (avant validation)
+  * Conservation de l'UX existante : jauge urgence, barre progression, flux re-check photo, état "Résolu" avec confettis
+  * Design system AQWELIA respecté : glass-card, gradients turquoise→gold, badges, utilisation composants ui (Card, Button, Progress, Badge, Input)
+- Corrigé erreur TypeScript sur setLatestWaterTest (ph required → merge typé proprement avec WaterTestRow cast)
+- Vérifié lint : `bun run lint` → EXIT 0 (aucune erreur)
+- Vérifié tsc sur le fichier modifié : plus d'erreurs (autres erreurs tsc sont pré-existantes dans skills/, src/lib/native/index.ts, src/lib/pool/safety-rules.ts — hors périmètre L5-RICH)
+- Respecté les règles : schema.prisma NON modifié, routes API NON modifiées, module-diagnostic.tsx NON modifié, composant reste 'use client' et exporte DiagnosticActionPlan avec mêmes props
+
+Stage Summary:
+- Fichier modifié : src/components/aquamind/diagnostic-action-plan.tsx (533 → ~860 lignes, rewrite complet)
+- Lint : `bun run lint` → EXIT 0 ✓
+- TypeScript : fichier clean (erreurs pré-existantes uniquement ailleurs)
+- Workflow enrichi :
+  1. Au mount, le composant fetch le profil piscine (volume m³) et le dernier WaterTest (pour before/after)
+  2. Les étapes sont générées dynamiquement avec dosage calculé selon le volume (ex: "400g de pH- pour 40m³ / 0.1 unité")
+  3. Chaque étape est une card expandable avec : intro, 5-8 instructions numérotées, bloc Produit/Dosage/Temps d'attente, formulaire inline si inputFields
+  4. Pendant la saisie du pH, une recommandation live s'affiche (dose pH-/pH+ selon écart vs 7.0-7.4)
+  5. Au clic "Valider et enregistrer" : POST /api/pool/water-test → crée WaterTest + ActionPlan auto côté serveur → toast → étape marquée done avec recordedValues + previousValues
+  6. Quand l'étape est done, l'en-tête affiche "ph: 7.8 → 7.2 ✓" (vert si dans plage, orange sinon)
+  7. latestWaterTest est mis à jour après chaque POST → l'étape suivante aura le bon "avant"
+  8. Flux re-check final conservé : photo upload → onRecheck → état "Résolu" avec confettis si plus de problèmes
+- Points clés du cahier des charges couverts :
+  * ✅ "champ qui permet saisir le pH" — Input number inline par étape
+  * ✅ "Combien il faut mettre quel produit pH+ ou pH-" — dosageText dynamique + recommandation live
+  * ✅ "Combien de temps attendre avant refaire un test" — waitTime affiché (2h, 8h, 24h…)
+  * ✅ "Il doit aller se renseigner dans un historique" — POST /api/pool/water-test enregistre dans WaterTest
+  * ✅ "À combien il était avant et à combien il était maintenant" — previousValues vs recordedValues affichés
+  * ✅ "Faut donner vraiment plus d'assistance et d'expliquer les étapes" — 5-8 instructions détaillées par étape
+  * ✅ "Que les gens puissent le faire en y comprenant strictement rien" — instructions foolproof (mesurer à 30cm, diluer dans seau, verser devant refoulements, ne jamais mélanger, etc.)
+- Next actions possibles :
+  * Brancher un vrai test E2E (Capacitor) pour valider le flux complet sur iOS/Android
+  * Ajouter un bouton "Voir l'historique complet" qui ouvre le carnet WaterTest
+  * Internationaliser les libellés si on cible d'autres marchés (actuellement FR uniquement)
