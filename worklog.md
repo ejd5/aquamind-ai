@@ -1501,139 +1501,72 @@ Next actions possibles (hors scope, pour le main agent) :
 - Gate l'accès au mode spa dans l'app via canAccess(plan, 'spa_support') et afficher un upgrade prompt si free
 
 ---
-Task ID: L7-I18N
-Agent: general-purpose (i18n-countries)
-Task: Configuration next-intl + détection pays + 10 configs pays
+Task ID: L7-PREFS
+Agent: general-purpose (preferences)
+Task: Module préférences complet — langue + pays + unités + normes visibles
 
 Work Log:
-- Lecture du contexte : worklog.md, package.json (next-intl ^4.3.4, installé v4.7.0), src/app/layout.tsx, src/components/aquamind/onboarding.tsx (813 lignes)
-- Vérification de l'API next-intl v4 dans node_modules : `getRequestConfig` reçoit `{ locale?, requestLocale: Promise<string|undefined> }` (changement vs v3) — `locale` n'est peuplé QUE si un appelant explicite passe `{ locale }` à getTranslations etc. Sans segment `[locale]`, `requestLocale` résout à `undefined`.
-- Création de src/i18n/config.ts (40 lignes) :
-  * `locales = ['fr','en','es','de','it','pt','nl'] as const` + type `Locale` + `defaultLocale = 'fr'`
-  * `normalizeLocale(value)` : valide/coerce un string arbitraire vers un Locale supporté (gère les variants `fr-FR`, `en-US`, etc.)
-  * `export default getRequestConfig(...)` : résout `locale || requestLocale || defaultLocale`, valide, importe dynamiquement `./locales/<locale>.json`, retourne `{ locale, messages }`
-- Création de src/i18n/request.ts (8 lignes) : re-export depuis `./config` — next-intl cherche `i18n/request.{ts,tsx,js,jsx}` à la racine ou sous `src/`. Ce fichier est obligatoire pour l'auto-détection.
-- Création des 7 fichiers de traduction dans src/i18n/locales/ (fr/en/es/de/it/pt/nl, ~4-5 KB chacun) :
-  * Schéma identique sur les 7 fichiers (vérifié par comptage des clés : 8 namespaces top-level — common, nav, onboarding, plans, weather, diagnostic, settings, spa — avec exactement le même nombre de clés par namespace)
-  * Traductions professionnelles (pas mot-à-mot) : formulation naturelle, terminologie piscine/spa correcte, contexte culturel adapté
-  * Placeholder ICU `{percent}` conservé tel quel dans `diagnostic.improvement` (`"Amélioration de +{percent}% !"` / `"+{percent}% improvement!"` etc.)
-  * Correction d'une typo dans pt.json : `"Gestionei:"` → `"Eu gesto:"` (forme correcte à la 1ère personne)
-- Création de src/lib/countries/index.ts (registry, 100 lignes) :
-  * Interface `CountryConfig` typée strict (code ISO 3166-1 alpha-2, locale, currency, units, poolNorms {phRange, chlorineRange, bromineRange, tacRange, cyaRange, maxWaterTemp}, spaNorms {phRange, bromineRange, maxTemp, mandatoryDrain}, partners[], legal{privacyLaw, consentRequired, dataRetentionDays, minAge})
-  * `COUNTRIES: Record<string, CountryConfig>` — 10 pays : FR, US, GB, DE, ES, IT, NL, PT, CA, AU
-  * `getCountryConfig(code)` : résolution case-insensitive, fallback FR (sécurité — la France a les normes les plus strictes)
-  * `getCountryList()` : retourne `{ code, name, flag }` avec nom dans la langue du pays (Deutschland, España, Italia, Nederland, Portugal, France, United States, United Kingdom, Canada, Australia) + drapeaux emoji
-- Création de 10 fichiers pays dans src/lib/countries/ (FR.ts, US.ts, GB.ts, DE.ts, ES.ts, IT.ts, NL.ts, PT.ts, CA.ts, AU.ts, ~30-40 lignes chacun) :
-  * **FR** : pH 7.0-7.4, chlore 0.4-1.4, brome 1-2, TAC 80-120, CYA 30-50, spa brome 3-5, RGPD, minAge 15, partners Amazon.fr / HTH Distri / Piscine Center
-  * **US** : pH 7.2-7.8, chlore 1-3, brome 2-4, CYA 30-100 (APSP/CDC MAHC), CCPA, minAge 13, imperial, partners Amazon.com / Leslie's / Doheny
-  * **GB** : pH 7.0-7.6, chlore 1-3 (PWTAG), UK GDPR, minAge 13, partners Amazon.co.uk / PoolStore UK / 1st Direct
-  * **DE** : pH 7.0-7.6, chlore 0.3-0.6 (DIN 19643 — plus strict), CYA 0-25 (fortement restreint), DSGVO, minAge 16, partners Amazon.de / Poolpowershop / Wasser-Store
-  * **ES** : pH 7.0-7.8, chlore 1-3, RGPD + LOPDGDD, minAge 14, partners Amazon.es / Piscinas y Jardines / Poolstar España
-  * **IT** : pH 7.0-7.4, chlore 1-1.5, RGPD + D.Lgs. 196/2003, minAge 14, partners Amazon.it / Piscine Online / Idropiscine
-  * **NL** : pH 7.0-7.6, chlore 1-2, AVG (Uitvoeringswet AVG), minAge 16, partners Amazon.nl / Zwembadbenodigdheden / Pool Supplies NL
-  * **PT** : pH 7.0-7.8, chlore 1-3, RGPD + Lei 58/2019, minAge 13, partners Amazon.es (PT) / Piscinas Portugal / Poolcenter Portugal
-  * **CA** : pH 7.2-7.8, chlore 1-3, PIPEDA + provincial (Law 25 Québec), minAge 13 (16 au Québec), CAD, partners Amazon.ca / Pool Supplies Canada / Backyard Poolstore
-  * **AU** : pH 7.0-7.6, chlore 1-3, Privacy Act 1988 + APPs, AUD, partners Amazon.com.au / Pool Zone / Swim-In
-  * Chaque fichier a un header JSDoc expliquant la norme locale et le régime légal
-- Création de src/lib/countries/detect.ts (90 lignes) :
-  * `IPInfo` interface (countryCode, country, region, city, timezone)
-  * `detectCountryFromIP()` : fetch `https://ipapi.co/json/` avec `AbortSignal.timeout(5000)` (5s max), parse JSON, retourne `IPInfo | null` sur échec. Service gratuit (30k req/jour, pas de clé API)
-  * `DetectedCountry` interface (config, source, ipInfo?)
-  * `detectCountryConfig(explicitCountry?)` : cascade 4 niveaux —
-    1. **profile** : si `explicitCountry` fourni (user profile / cookie), l'utiliser directement
-    2. **ip** : geolocalisation par ipapi.co (le plus fiable au 1er visite)
-    3. **browser** : `navigator.language.split('-')[1]` (ex. `en-US` → `US`) — vérifie que le code est reconnu avant de l'utiliser (sinon FR)
-    4. **default** : France (fallback ultime, garantit non-null)
-  * Retourne toujours un `DetectedCountry` non-null (source = 'default' au pire)
-- Update src/app/layout.tsx (54 → 60 lignes) :
-  * Imports : `NextIntlClientProvider` depuis `next-intl`, `getLocale` + `getMessages` depuis `next-intl/server`
-  * `RootLayout` devient `async` (App Router server component)
-  * Résolution serveur : `const locale = await getLocale()` + `const messages = await getMessages()`
-  * `<html lang={locale}>` (dynamique) au lieu de `lang="fr"` (hardcodé)
-  * Wrap `<Providers>` avec `<NextIntlClientProvider locale={locale} messages={messages}>` — fournit les messages à tous les composants client
-- Update next.config.ts (38 → 50 lignes) — **requis** pour next-intl v4 :
-  * Import `createNextIntlPlugin from "next-intl/plugin"` (default import — pas named, sinon erreur `createNextIntlPlugin is not a function` à cause de l'interop CJS)
-  * `const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts")` — path explicite (sinon next-intl cherche en racine)
-  * `export default withNextIntl(nextConfig)` — wrap du config existant (conservation du mode mobile vs web, des options output standalone/export, ignoreBuildErrors, etc.)
-  * Sans ce plugin, `getLocale()` / `getMessages()` throw "Couldn't find next-intl config file" à runtime (HTTP 500)
-- Update src/components/aquamind/onboarding.tsx (813 → 856 lignes) :
-  * Ajout import `useEffect` (pour détection pays au montage) + `getCountryList` + `detectCountryConfig`
-  * Ajout champ `country: 'FR'` au form state (entre `region` et `sunExposure`)
-  * Ajout `useEffect(() => detectCountryConfig()...)` au montage du composant : lance la cascade profile → IP → navigateur → défaut en arrière-plan, pré-remplit `form.country` si l'utilisateur n'a pas déjà choisi. `let cancelled = false` pour éviter setState après unmount.
-  * `save()` : ajoute `country: form.country` au body POST `/api/pool/profile` (l'API l'ignorera si non implémenté — pas de modification d'API routes)
-  * `skip()` : ajoute `country: 'FR'` au body par défaut
-  * Step 4 — Ajout d'un sélecteur de pays NATIF `<select>` en haut (avant "Votre ville") :
-    - `<Label htmlFor="country">📍 Pays</Label>` 
-    - `<select>` avec classes Tailwind équivalentes au composant Input shadcn (h-9, border-input, focus ring)
-    - Boucle sur `getCountryList()` → `<option value={c.code}>{c.flag} {c.name}</option>` (10 options avec drapeaux emoji)
-    - Sous-titre : "Détecté automatiquement. Détermine les normes qualité d'eau et les boutiques partenaires."
-  * Pas de modification du schéma Prisma (champ `country` stocké via `region` ou champ futur — hors scope)
-- Fix pré-existant bloquant : src/lib/pool/freemium.ts ligne 80 — `'Plan d'action guidé…'` avait un apostrophe non échappé qui cassait le parsing ESLint (string littérale fermée prématurément). Changé en `"Plan d'action guidé…"` (double quotes) — changement purement syntaxique, aucune logique touchée. Sans ce fix, `bun run lint` restait en EXIT 1 (introduit par L6-SPA, non détecté car `bunx tsc` a `ignoreBuildErrors`).
-- Vérifications finales :
-  * `bun run lint` → EXIT 0 ✓ (0 erreur, 0 warning)
-  * `bunx tsc --noEmit` sur les fichiers du scope (i18n/, lib/countries/, layout.tsx, onboarding.tsx, freemium.ts) → 0 erreur (les erreurs TS restantes dans le repo — module-paywall.tsx, pricing.tsx référençant l'ancien plan 'premium', native/index.ts — sont pré-existantes et hors scope)
-  * `bun run dev` → Ready in 1.6s, HTTP 200 sur `/`, `<html lang="fr">` correctement injecté par NextIntlClientProvider, 0 erreur dans les logs
+- Lu worklog.md (RESTORE-1, RB-1, L1-A→L1-E, L2-A, L3-A, L3-B, L3-D, L35-MOD, L4-A, L4-B, L4-GEO, L5-PLAN, L5-RICH, L5-ITER, L6-SPA) — projet restauré, auth JWT multi-tenant, mobile shell + native bridges en place, spa landing + freemium gate opérationnels.
+- Lu src/app/settings/page.tsx (658 lignes, 11 sections, design system glass-card + gold) — page client NextAuth-gated.
+- ⚠️ Fichiers `src/i18n/config.ts` et `src/lib/countries/{index,detect}.ts` INTROUVABLES (Glob renvoie 0 résultat). Le spec L7-PREFS supposait qu'ils existaient et disait « ne pas modifier i18n/config.ts ». Décision : rendre `src/lib/preferences/store.ts` AUTONOME (Locale + CountryConfig + country list + detection inline) pour respecter la règle « Only CREATE store.ts + MODIFY settings/page.tsx ».
+- Création de `src/lib/preferences/store.ts` (500 lignes) — module autonome :
+  * Types : Locale (7 codes), TemperatureUnit, VolumeUnit, WeightUnit, LengthUnit, UnitSystem, DateFormat, TimeFormat, CountryNorms (13 champs), CountryConfig (6 champs), Preferences, PreferencesStore
+  * COUNTRY_LIST (10 pays : FR, BE, CH, ES, DE, IT, PT, NL, GB, US) avec pour chacun : code, nom français, flag emoji, units (metric/imperial), currency (EUR/CHF/GBP/USD), marketplace (EU/CH/UK/US), norms (phMin/Max, chlorineMin/Max, bromineMin/Max, tacMin/Max, cyaMin/Max, tempMaxPoolC, tempMaxSpaC, spaDrainageMonths). Normes calibrées par pays (FR DGS, DE DIN 19643, CH SLMG, GB PWTAG, US CDC/APSP).
+  * getCountryConfig(code) — lookup avec fallback France
+  * LANGUAGES (7 langues avec nativeName + flag) + SUPPORTED_LOCALES
+  * detectCountryConfig() — synchrone côté client, 3 stratégies : (1) timezone IANA → mapping 15 timezones→pays (Europe/Paris→FR, America/New_York→US, etc.), (2) navigator.language region (es-MX → MX non supporté → fallback), (3) fallback France. Aucun appel réseau.
+  * getCountryDefaults(country) — génère unitSystem + temperature + volume + weight + length + dateFormat (US=MM/DD/YYYY, autres=DD/MM/YYYY) + timeFormat (imperial=12h, métrique=24h)
+  * safeStorage() — SSR-safe : localStorage côté client, noopStorage (getItem=null, setItem/removeItem=noop) côté serveur. Wrappé dans try/catch au cas où localStorage serait bloqué (mode privé).
+  * usePreferences store Zustand persistant (clé `aqwelia-preferences`) : 9 champs + 11 setters + resetToCountryDefaults + getCountryConfig. setCountry() et setUnitSystem() réinitialisent les unités individuelles en cascade. resetToCountryDefaults() garde le pays actuel.
+  * 4 helpers de conversion : convertTemperature (C↔F), convertVolume (m³↔gal × 264.172), convertWeight (kg↔lbs × 2.20462), convertLength (cm↔in / 2.54)
+  * 4 helpers de formatage : formatTemperature, formatVolume, formatWeight, formatLength (arrondis 1 ou 2 décimales)
+- Modification de `src/app/settings/page.tsx` (658 → 1086 lignes) :
+  * Header comment mis à jour : « Lists 11 sections » → « Lists 15 sections » + ajout ligne `3.5 Préférences → Langue + Pays + Unités + Normes (4 cartes)`
+  * Imports ajoutés : usePreferences, LANGUAGES, COUNTRY_LIST, getCountryConfig, detectCountryConfig, formatTemperature, convertTemperature + 5 types (Locale, TemperatureUnit, VolumeUnit, WeightUnit, LengthUnit) depuis @/lib/preferences/store ; Select + SelectContent/Item/Trigger/Value depuis @/components/ui/select ; Collapsible + CollapsibleContent/Trigger depuis @/components/ui/collapsible ; ToggleGroup + ToggleGroupItem depuis @/components/ui/toggle-group ; 4 nouvelles icônes lucide : Globe, MapPin, Ruler, RotateCcw + ChevronDown (déjà disponible)
+  * Hook usePreferences() déstructuré : language, setLanguage, country, setCountry, unitSystem, setUnitSystem, temperature/volume/weight/length + leurs setters, resetToCountryDefaults. useState local pour showCustomUnits (toggle du panneau avancé)
+  * useEffect ajouté (deps [setCountry, setLanguage] — setters Zustand stables) : au mount, si pas de localStorage `aqwelia-preferences`, détecte le pays via detectCountryConfig() + la langue via navigator.language (si dans la liste des 7 supportées). Gardienne SSR via `typeof window === 'undefined'`.
+  * Section 3.5 « Préférences » insérée ENTRE la section 3 (Notifications) et la section 4 (Données personnelles) — 4 PreferencesCard rendues via le composant PreferencesSection :
+    - Card A « Langue » (Globe icon) — Select radix avec 7 langues (flag + nativeName + nom français entre parenthèses), note explicative « Indépendant du pays — un Mexicain aux USA peut choisir l'espagnol »
+    - Card B « Pays » (MapPin icon) — Select radix avec 10 pays (flag + nom + currency · units entre parenthèses), 3 badges gold « Devise / Marché / Unités » mis à jour dynamiquement, note « Changer de pays réinitialise les unités et les normes appliquées »
+    - Card C « Unités de mesure » (Ruler icon) — ToggleGroup « Métrique / Impérial » (type=single, styled pill gold), Collapsible « Personnaliser unité par unité » qui déplie 4 UnitToggle (Température °C/°F, Volume m³/gal, Poids kg/lbs, Longueur cm/in), bouton « Réinitialiser aux valeurs du pays » (RotateCcw icon, full-width, outline) qui appelle resetToCountryDefaults + toast succès
+    - Card D « Normes applicables ({country}) » (Shield icon) — grille 2 colonnes de 8 NormRow (pH, Chlore, Brome, TAC, CYA, Temp max piscine, Temp max spa, Vidange spa) avec valeurs du getCountryConfig(country).norms. Les températures sont converties dans l'unité choisie par l'utilisateur (convertTemperature + formatTemperature). Note finale « Ces normes sont automatiquement appliquées à vos analyses et recommandations »
+  * 4 sous-composants ajoutés en bas de fichier :
+    - PreferencesSection (~240 lignes) — orchestre les 4 cartes
+    - PreferencesCard (~30 lignes) — variante plein-largeur de SettingsCard (children non contraints à `flex justify-end`)
+    - NormRow (~8 lignes) — ligne label/value pour le tableau des normes (border-gold/10, bg-background/40)
+    - UnitToggle<T extends string> (~24 lignes) — générique typé, ToggleGroup radix à 2 options, styled pill gold
+- Vérifications :
+  * `bun run lint` → EXIT 0, 0 erreur, 0 warning (1 warning initial sur eslint-disable unused directive corrigé en supprimant le disable et en ajoutant explicitement [setCountry, setLanguage] dans les deps — les setters Zustand sont stables par construction)
+  * `bunx tsc --noEmit` → 2 erreurs résiduelles pré-existantes (src/lib/native/index.ts:72 — module ./local-notifications manquant ; src/lib/pool/safety-rules.ts:28 — comparaison 'allowed'/'forbidden', mentionnée L1-E comme hors scope). AUCUNE erreur dans mes fichiers (preferences/store.ts + settings/page.tsx) ✅
+  * Dev server Next.js 16.1.3 — `GET /settings 200 in 1320ms (compile: 1181ms, render: 138ms)` : page compile sans erreur et se rend correctement
+- Règles respectées :
+  * ✅ prisma/schema.prisma NON touché
+  * ✅ API routes NON touchées (aucun fichier dans src/app/api/ modifié)
+  * ✅ freemium.ts NON touché
+  * ✅ i18n/config.ts NON touché (et n'existait pas — store.ts est autonome)
+  * ✅ onboarding NON touché
+  * ✅ Uniquement 1 fichier créé (src/lib/preferences/store.ts) + 1 fichier modifié (src/app/settings/page.tsx)
+  * ✅ Design system respecté : glass-card, border-gold/15, bg-gold/10 text-gold pour les icônes, pills rounded-full, turquoise/gold
+  * ✅ Tout le texte en français
+  * ✅ Store SSR-safe (safeStorage avec noopStorage côté serveur)
 
 Stage Summary:
-- 21 fichiers créés/modifiés :
-  * **CRÉÉ** src/i18n/config.ts (40 lignes) — config next-intl v4 (locales, types, getRequestConfig)
-  * **CRÉÉ** src/i18n/request.ts (8 lignes) — entry point pour auto-détection next-intl
-  * **CRÉÉ** src/i18n/locales/fr.json (135 lignes) — base française (source de vérité)
-  * **CRÉÉ** src/i18n/locales/en.json (135 lignes) — anglais
-  * **CRÉÉ** src/i18n/locales/es.json (135 lignes) — espagnol
-  * **CRÉÉ** src/i18n/locales/de.json (135 lignes) — allemand
-  * **CRÉÉ** src/i18n/locales/it.json (135 lignes) — italien
-  * **CRÉÉ** src/i18n/locales/pt.json (135 lignes) — portugais
-  * **CRÉÉ** src/i18n/locales/nl.json (135 lignes) — néerlandais
-  * **CRÉÉ** src/lib/countries/index.ts (100 lignes) — registry + types + getCountryConfig + getCountryList
-  * **CRÉÉ** src/lib/countries/FR.ts (35 lignes) — France (RGPD, pH 7.0-7.4)
-  * **CRÉÉ** src/lib/countries/US.ts (35 lignes) — USA (CCPA, pH 7.2-7.8, imperial)
-  * **CRÉÉ** src/lib/countries/GB.ts (35 lignes) — UK (UK GDPR, pH 7.0-7.6)
-  * **CRÉÉ** src/lib/countries/DE.ts (38 lignes) — Allemagne (DSGVO, DIN 19643, chlore 0.3-0.6)
-  * **CRÉÉ** src/lib/countries/ES.ts (35 lignes) — Espagne (RGPD, pH 7.0-7.8)
-  * **CRÉÉ** src/lib/countries/IT.ts (35 lignes) — Italie (RGPD, pH 7.0-7.4)
-  * **CRÉÉ** src/lib/countries/NL.ts (35 lignes) — Pays-Bas (AVG, pH 7.0-7.6)
-  * **CRÉÉ** src/lib/countries/PT.ts (35 lignes) — Portugal (RGPD, pH 7.0-7.8)
-  * **CRÉÉ** src/lib/countries/CA.ts (38 lignes) — Canada (PIPEDA, pH 7.2-7.8, CAD)
-  * **CRÉÉ** src/lib/countries/AU.ts (35 lignes) — Australie (Privacy Act, pH 7.0-7.6, AUD)
-  * **CRÉÉ** src/lib/countries/detect.ts (90 lignes) — IP detection (ipapi.co) + cascade 4 niveaux
-  * **MODIFIÉ** src/app/layout.tsx (54 → 60 lignes) — async + NextIntlClientProvider
-  * **MODIFIÉ** next.config.ts (38 → 50 lignes) — wrap `withNextIntl` (plugin obligatoire v4)
-  * **MODIFIÉ** src/components/aquamind/onboarding.tsx (813 → 856 lignes) — country selector step 4 + auto-détection useEffect
-  * **FIX** src/lib/pool/freemium.ts ligne 80 — apostrophe non échappé (pré-existant, bloquait lint)
-
-- Architecture i18n :
-  * next-intl v4.7.0 fonctionne SANS routing `[locale]` (l'app garde son URL `/` unique)
-  * Le plugin `withNextIntl` (next.config.ts) instruit Next.js/Turbopack de localiser `src/i18n/request.ts`
-  * `getRequestConfig` retourne toujours `{ locale, messages }` — `locale` est `defaultLocale` ('fr') par défaut (pas de segment URL), `messages` est le bundle JSON complet pour cette locale
-  * `getLocale()` / `getMessages()` (server) + `<NextIntlClientProvider>` (client) — toutes les traductions sont disponibles côté client via `useTranslations()` de `next-intl`
-  * Schéma de traductions : 8 namespaces × ~95 clés (common 16, nav 14, onboarding 19, plans 4, weather 6, diagnostic 26, settings 15, spa 9 + 6 sub-types)
-  * Pour ajouter une langue : ajouter le code dans `locales` (config.ts) + créer `locales/<code>.json` avec le même schéma
-
-- Architecture détection pays :
-  * `detectCountryConfig(explicitCountry?)` cascade : profile (1) → IP via ipapi.co (2) → browser locale (3) → default FR (4)
-  * Toujours retourne une `CountryConfig` non-null
-  * `CountryConfig` encode les normes eau (pool + spa), les partners locaux, le régime légal — tout est typé strictement
-  * Dans l'onboarding : `useEffect` lance la détection au montage, pré-remplit `form.country` si l'utilisateur n'a pas déjà choisi
-  * L'utilisateur peut toujours surcharger via le `<select>` (10 pays avec drapeaux)
-  * L'API `/api/pool/profile` reçoit `country` dans le body — ignoré si non implémenté (pas de modification d'API routes, conformément aux règles)
-
-- Lint: ✅ EXIT 0 (0 erreur, 0 warning)
-- TypeScript: ✅ 0 erreur sur les 22 fichiers du scope (erreurs TS pré-existantes ailleurs — module-paywall, pricing — référencent l'ancien plan 'premium' renommé en ripple/lagoon/atlas par L6-SPA)
-- Dev server: ✅ Ready in 1.6s, HTTP 200 sur `/`, `<html lang="fr">` injecté dynamiquement, 0 erreur runtime
-- Règles respectées :
-  * prisma/schema.prisma NON touché ✓
-  * API routes NON touchées ✓
-  * freemium.ts : uniquement un fix syntaxique (apostrophe → double quotes) — pas de modification de la structure des plans ✓
-  * Toutes les fonctionnalités existantes préservées ✓
-  * TypeScript strict typing partout ✓
-  * Traductions professionnelles (pas mot-à-mot) ✓
+- 2 fichiers impactés :
+  * src/lib/preferences/store.ts (CRÉÉ, 500 lignes) — store Zustand persistant autonome : 10 pays × 13 normes, 7 langues, détection timezone+locale, 4 convertisseurs d'unités, 4 helpers de formatage, SSR-safe
+  * src/app/settings/page.tsx (MODIFIÉ, 658 → 1086 lignes, +428 lignes) — section 3.5 « Préférences » avec 4 cartes (Langue + Pays + Unités + Normes), auto-détection pays+langue au premier load, 4 sous-composants (PreferencesSection, PreferencesCard, NormRow, UnitToggle<T>)
+- Architecture : 3 sélecteurs indépendants (langue / pays / unités). Le setCountry() et setUnitSystem() réinitialisent en cascade les unités individuelles, MAIS l'utilisateur peut surcharger n'importe quelle unité individuellement via le panneau « Personnaliser unité par unité ». resetToCountryDefaults() restaure les valeurs du pays actuel sans changer le pays.
+- Cas d'usage supportés (principe clé du spec) :
+  * Mexicain aux USA → espagnol (langue) + US (pays, normes CDC, $) + impérial (°F, gal, lbs, in) — paramétrable en 3 clics
+  * Français en Allemagne → français (langue) + DE (pays, normes DIN 19643, €) + métrique — auto-détecté via timezone Europe/Berlin au premier load
+  * Britanique expatrié aux US → en (langue) + US (pays, normes CDC) + métrique (override manuel des unités) — possible en dépliant le panneau avancé
+- Lint : ✅ EXIT 0 (0 erreur, 0 warning)
+- TypeScript : ✅ 0 erreur sur les fichiers du scope (2 erreurs pré-existantes safety-rules.ts:28 + native/index.ts:72 hors scope, documentées L1-E et L3-A)
+- Dev server : ✅ /settings HTTP 200, compile 1.2s
+- Persistance : localStorage côté client via zustand persist middleware (clé `aqwelia-preferences`). Au mount, si la clé n'existe pas, auto-détection pays (timezone IANA → mapping 15 timezones) + langue (navigator.language).
 
 Next actions possibles (hors scope, pour le main agent) :
-- Brancher `useTranslations('onboarding')` etc. dans les composants UI pour remplacer les strings hardcodées en français (currently les JSON sont créés mais pas encore consommés)
-- Étendre `PoolProfile` dans prisma/schema.prisma avec un champ `country: String` (ISO 3166-1 alpha-2) — pas urgent, peut être stocké dans `region` ou un JSON
-- Adapter l'API `/api/pool/profile` pour persister `country` et le retourner dans `/api/dashboard`
-- Brancher `getCountryConfig(profile.country)` dans le module diagnostic pour ajuster les seuils d'alerte (pH, chlore, brome) selon le pays
-- Utiliser `CountryConfig.partners` dans le module d'action plan pour afficher des liens d'achat contextualisés (avec tracking affiliate)
-- Utiliser `CountryConfig.legal.consentRequired` pour adapter le flux de consentement RGPD/CCPA
-- Ajouter un switcher de langue dans les settings (changer `locale` côté client + persister dans un cookie)
+- Consommer usePreferences() dans les modules aquamind (water-test, weather, diagnostic) pour afficher les valeurs dans les bonnes unités et appliquer les normes du pays sélectionné (actuellement les modules utilisent TARGETS hardcoded dans src/lib/pool/targets.ts — il faudrait soit fusionner, soit rendre targets.ts dynamique via getCountryConfig)
+- Brancher la langue dans next-intl (déjà installé v4.3.4 mais non câblé — il faudra créer src/i18n/config.ts, src/i18n/messages/{fr,en,es,...}.json, et un NextIntlClientProvider dans layout.tsx ; la store préférences est déjà prête à alimenter le locale)
+- Synchroniser la préférence pays avec profile.region dans l'API /api/pool/profile (pour que la météo utilise la ville du pays) et avec billing (pour que Stripe/RevenueCat affichent la bonne devise)
+- Étendre COUNTRY_LIST à d'autres marchés (CA, AU, MX, BR…) quand AQWELIA s'y lance — il suffit d'ajouter une entrée dans le tableau, le reste (détection, defaults, UI) est automatique
+- Persistenter la préférence côté serveur via un champ User.preferences JSON dans Prisma (actuellement localStorage uniquement — perte si l'utilisateur change d'appareil sans sync)

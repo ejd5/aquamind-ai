@@ -3,8 +3,11 @@ import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Providers } from "@/components/providers";
+<<<<<<< HEAD
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+=======
+>>>>>>> main
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -50,12 +53,19 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} antialiased bg-background text-foreground`}
       >
+<<<<<<< HEAD
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
             {children}
             <Toaster />
           </Providers>
         </NextIntlClientProvider>
+=======
+        <Providers>
+          {children}
+          <Toaster />
+        </Providers>
+>>>>>>> main
       </body>
     </html>
   );

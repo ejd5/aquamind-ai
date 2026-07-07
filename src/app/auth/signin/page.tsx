@@ -1,6 +1,10 @@
 'use client'
 
+<<<<<<< HEAD
 import { useState, useEffect, Suspense } from 'react'
+=======
+import { useState, useEffect } from 'react'
+>>>>>>> main
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
@@ -9,7 +13,11 @@ import { Sparkles, Mail, Lock, User as UserIcon, ArrowRight, ArrowLeft, Loader2,
 
 type Mode = 'signin' | 'signup'
 
+<<<<<<< HEAD
 function AuthPageContent() {
+=======
+export default function AuthPage() {
+>>>>>>> main
   const router = useRouter()
   const params = useSearchParams()
   const [mode, setMode] = useState<Mode>('signin')
@@ -241,6 +249,7 @@ function AuthPageContent() {
     </div>
   )
 }
+<<<<<<< HEAD
 
 
 export default function AuthPage() {
@@ -250,3 +259,5 @@ export default function AuthPage() {
     </Suspense>
   )
 }
+=======
+>>>>>>> main

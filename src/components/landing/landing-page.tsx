@@ -107,6 +107,13 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
                 Accéder à l&apos;app
               </button>
             )}
+            {/* Bouton Connexion — toujours visible */}
+            <a
+              href="/auth/signin"
+              className="rounded-full border border-gold/40 bg-background/80 px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-gold hover:text-gold"
+            >
+              Connexion
+            </a>
             <button
               onClick={onEnterApp}
               className="glow-gold group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] px-4 py-2 text-sm font-bold text-[oklch(0.99_0.01_195)] shadow-md transition-all hover:scale-[1.03] hover:shadow-[0_0_35px_-6px_oklch(0.65_0.11_195/0.6)]"
@@ -160,6 +167,12 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
                   {hasProfile ? 'Accéder à mon espace' : 'Démarrer gratuitement'}
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
+                <a
+                  href="/auth/signin"
+                  className="mt-2 flex items-center justify-center gap-2 rounded-full border border-gold/40 bg-background/80 px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-gold hover:text-gold"
+                >
+                  Connexion
+                </a>
               </nav>
             </motion.div>
           )}
