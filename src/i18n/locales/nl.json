@@ -263,7 +263,13 @@
       "chatError": "Sorry, ik kon geen antwoord genereren.",
       "demoLoginMessage": "Gebruik deze inloggegevens om aan te melden",
       "regionSudEst": "Zuidoost / PACA",
-      "defaultReminder": "Aangepaste herinnering"
+      "defaultReminder": "Aangepaste herinnering",
+      "bodyInvalid": "Ongeldige body",
+      "eventRequired": "event vereist",
+      "messageRequired": "Bericht vereist",
+      "testIdValuesRequired": "testId of values vereist",
+      "idRequired": "id vereist",
+      "idRequiredUpper": "ID vereist"
     }
   },
   "nav": {

@@ -146,7 +146,13 @@
       "chatError": "Désolé, je n'ai pas pu générer de réponse.",
       "demoLoginMessage": "Utilisez ces identifiants pour vous connecter",
       "regionSudEst": "Sud-Est / PACA",
-      "defaultReminder": "Rappel personnalisé"
+      "defaultReminder": "Rappel personnalisé",
+      "bodyInvalid": "Body invalide",
+      "eventRequired": "event requis",
+      "messageRequired": "Message requis",
+      "testIdValuesRequired": "testId ou values requis",
+      "idRequired": "id requis",
+      "idRequiredUpper": "ID requis"
     },
     "emergency": {
       "title": "J'ai un problème",

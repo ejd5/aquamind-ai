@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { PLANS, DEFAULT_PLAN, type PlanId } from '@/lib/pool/freemium'
+import { pickLocale, translate } from '@/lib/i18n-api'
 
 // Subscription.plan values: 'free' | 'premium' | 'expert'
 // (formerly 'surface' | 'limpide' | 'cristal' | 'gardien' — see worklog L1-C)
@@ -10,10 +11,11 @@ import { PLANS, DEFAULT_PLAN, type PlanId } from '@/lib/pool/freemium'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    return NextResponse.json({ error: await translate(locale, 'common.errors.unauthorized', 'Non autorisé') }, { status: 401 })
   }
   const userId = session.user.id
 
@@ -24,16 +26,20 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    return NextResponse.json({ error: await translate(locale, 'common.errors.unauthorized', 'Non autorisé') }, { status: 401 })
   }
   const userId = session.user.id
 
   try {
     const { plan, duration } = await req.json()
     const validPlan = PLANS.find((p) => p.id === plan)
-    if (!validPlan) return NextResponse.json({ error: 'Plan invalide' }, { status: 400 })
+    if (!validPlan) {
+      const msg = await translate(locale, 'common.errors.invalidPlan', 'Plan invalide')
+      return NextResponse.json({ error: msg }, { status: 400 })
+    }
 
     // Désactiver ancien abonnement (uniquement pour cet utilisateur)
     await db.subscription.updateMany({ where: { userId, active: true }, data: { active: false } })

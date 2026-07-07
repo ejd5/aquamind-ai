@@ -263,7 +263,13 @@
       "chatError": "Desculpe, não consegui gerar uma resposta.",
       "demoLoginMessage": "Use estas credenciais para iniciar sessão",
       "regionSudEst": "Sudeste / PACA",
-      "defaultReminder": "Lembrete personalizado"
+      "defaultReminder": "Lembrete personalizado",
+      "bodyInvalid": "Body inválido",
+      "eventRequired": "evento obrigatório",
+      "messageRequired": "Mensagem obrigatória",
+      "testIdValuesRequired": "testId ou values obrigatório",
+      "idRequired": "id obrigatório",
+      "idRequiredUpper": "ID obrigatório"
     }
   },
   "nav": {

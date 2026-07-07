@@ -26,9 +26,9 @@ import { pickLocale, translate } from '@/lib/i18n-api'
 export const runtime = 'nodejs'
 
 export async function POST(req: Request) {
+  const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    const locale = pickLocale(req)
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
@@ -42,7 +42,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[account/delete] error:', err)
-    const locale = pickLocale(req)
     const msg = await translate(
       locale,
       'common.errors.accountDeleteError',

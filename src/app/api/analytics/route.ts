@@ -7,9 +7,9 @@ import { pickLocale, translate } from '@/lib/i18n-api'
 export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
+  const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    const locale = pickLocale(req)
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
@@ -39,9 +39,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    const locale = pickLocale(req)
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
@@ -49,7 +49,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const { event, props } = await req.json()
-    if (!event) return NextResponse.json({ error: 'event requis' }, { status: 400 })
+    if (!event) {
+      const msg = await translate(locale, 'common.errors.eventRequired', 'event requis')
+      return NextResponse.json({ error: msg }, { status: 400 })
+    }
     const e = await db.analyticsEvent.create({ data: { userId, event, props: props ? JSON.stringify(props) : null } })
     return NextResponse.json({ event: e })
   } catch (e) {

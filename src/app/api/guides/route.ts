@@ -8,6 +8,7 @@ import { pickLocale, translate } from '@/lib/i18n-api'
 export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
+  const locale = pickLocale(req)
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
   const category = searchParams.get('category')
@@ -18,7 +19,6 @@ export async function GET(req: NextRequest) {
   // resolution fails (e.g. on static / pre-rendered contexts).
   const session = await getServerSession(authOptions).catch(() => null)
   const userId = session?.user?.id
-  const locale = pickLocale(req)
 
   if (id) {
     const guide = GUIDES.find((g) => g.id === id)

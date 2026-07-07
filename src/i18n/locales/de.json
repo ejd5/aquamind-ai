@@ -263,7 +263,13 @@
       "chatError": "Entschuldigung, ich konnte keine Antwort generieren.",
       "demoLoginMessage": "Verwenden Sie diese Anmeldedaten zur Anmeldung",
       "regionSudEst": "Südosten / PACA",
-      "defaultReminder": "Benutzerdefinierte Erinnerung"
+      "defaultReminder": "Benutzerdefinierte Erinnerung",
+      "bodyInvalid": "Ungültiger Body",
+      "eventRequired": "Event erforderlich",
+      "messageRequired": "Nachricht erforderlich",
+      "testIdValuesRequired": "testId oder values erforderlich",
+      "idRequired": "id erforderlich",
+      "idRequiredUpper": "ID erforderlich"
     }
   },
   "nav": {

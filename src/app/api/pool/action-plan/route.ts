@@ -9,8 +9,8 @@ export const runtime = 'nodejs'
 
 // Régénère un plan d'action à partir d'un test existant (id) ou de valeurs inline
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
   const locale = pickLocale(req)
+  const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
@@ -28,8 +28,12 @@ export async function POST(req: NextRequest) {
       test = body.values
     }
     if (!test) {
-      // TODO: i18n — return a translation key for the client to localise.
-      return NextResponse.json({ error: 'testId ou values requis' }, { status: 400 })
+      const msg = await translate(
+        locale,
+        'common.errors.testIdValuesRequired',
+        'testId ou values requis'
+      )
+      return NextResponse.json({ error: msg }, { status: 400 })
     }
 
     const profile = await db.poolProfile.findFirst({ where: { userId } })
@@ -72,7 +76,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ plan, saved })
   } catch (e) {
-    // TODO: i18n — return a translation key for the client to localise.
-    return NextResponse.json({ error: e instanceof Error ? e.message : 'Erreur' }, { status: 500 })
+    const msg = e instanceof Error ? e.message : 'Erreur'
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

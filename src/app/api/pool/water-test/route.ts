@@ -10,9 +10,9 @@ import { pickLocale, translate } from '@/lib/i18n-api'
 export const runtime = 'nodejs'
 
 export async function GET(req: Request) {
+  const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    const locale = pickLocale(req)
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
@@ -28,8 +28,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
   const locale = pickLocale(req)
+  const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
@@ -113,15 +113,15 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ test: created, actionPlan, lsiInfo: lsiInterpretation(lsi) })
   } catch (e) {
-    // TODO: i18n — return a translation key for the client to localise.
-    return NextResponse.json({ error: e instanceof Error ? e.message : 'Erreur' }, { status: 500 })
+    const msg = e instanceof Error ? e.message : 'Erreur'
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
 
 export async function DELETE(req: NextRequest) {
+  const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    const locale = pickLocale(req)
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }

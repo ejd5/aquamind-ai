@@ -2,16 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { getStripe } from '@/lib/stripe'
+import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
 
 // Creates a Stripe Customer Portal session so the user can manage their
 // subscription (update card, cancel, view invoices) directly on Stripe.
 // Auth: requires NextAuth session. The customer is resolved by email.
-export async function POST(_req: NextRequest) {
+export async function POST(req: NextRequest) {
+  const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    return NextResponse.json({ error: await translate(locale, 'common.errors.unauthorized', 'Non autorisé') }, { status: 401 })
   }
 
   try {
@@ -24,7 +26,8 @@ export async function POST(_req: NextRequest) {
     })
 
     if (customers.data.length === 0) {
-      return NextResponse.json({ error: 'Aucun client Stripe trouvé' }, { status: 404 })
+      const msg = await translate(locale, 'common.errors.noStripeCustomer', 'Aucun client Stripe trouvé')
+      return NextResponse.json({ error: msg }, { status: 404 })
     }
 
     const portalSession = await stripe.billingPortal.sessions.create({
@@ -35,6 +38,7 @@ export async function POST(_req: NextRequest) {
     return NextResponse.json({ url: portalSession.url })
   } catch (err) {
     console.error('Stripe portal error:', err)
-    return NextResponse.json({ error: 'Erreur Stripe' }, { status: 500 })
+    const msg = await translate(locale, 'common.errors.stripeError', 'Erreur Stripe')
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

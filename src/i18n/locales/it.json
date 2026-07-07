@@ -263,7 +263,13 @@
       "chatError": "Spiacente, non ho potuto generare una risposta.",
       "demoLoginMessage": "Usa queste credenziali per accedere",
       "regionSudEst": "Sud-Est / PACA",
-      "defaultReminder": "Promemoria personalizzato"
+      "defaultReminder": "Promemoria personalizzato",
+      "bodyInvalid": "Body non valido",
+      "eventRequired": "evento richiesto",
+      "messageRequired": "Messaggio richiesto",
+      "testIdValuesRequired": "testId o values richiesto",
+      "idRequired": "id richiesto",
+      "idRequiredUpper": "ID richiesto"
     }
   },
   "nav": {

@@ -29,31 +29,22 @@ export const runtime = 'nodejs'
 
 const DEMO_EMAIL = 'demo@aqwelia.app'
 const DEMO_PASSWORD = 'aqwelia-demo-2026'
-// Default account / pool name shown when the locale can't be resolved or the
-// key is missing from the locale bundle. The actual name written to the DB is
-// resolved per-request via `translate(locale, 'common.demoAccountName', …)`
-// so a Spanish reviewer sees "Cuenta demo", an English reviewer sees
-// "Demo Account", etc. (Only FR + EN keys are added in this task; the other
-// 5 locales will fall back to this French default until translator agents
-// add their keys.)
-const DEMO_NAME_FALLBACK = 'Compte Démonstration'
-const DEMO_POOL_NAME_FALLBACK = 'Piscine démo'
 
 export async function POST(req: Request) {
+  const locale = pickLocale(req)
   try {
     // Resolve the user's UI locale so the demo account name + pool name are
     // stored in the reviewer's language at creation time. The middleware
     // (src/middleware.ts) rewrites `accept-language` to a 2-letter code.
-    const locale = pickLocale(req)
     const demoName = await translate(
       locale,
       'common.demoAccountName',
-      DEMO_NAME_FALLBACK
+      'Compte Démonstration'
     )
     const demoPoolName = await translate(
       locale,
       'common.demoPoolName',
-      DEMO_POOL_NAME_FALLBACK
+      'Piscine démo'
     )
     const demoRegion = await translate(
       locale,
@@ -114,7 +105,6 @@ export async function POST(req: Request) {
     })
   } catch (err) {
     console.error('[demo/login] error:', err)
-    const locale = pickLocale(req)
     const msg = await translate(
       locale,
       'common.errors.demoCreateError',

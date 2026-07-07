@@ -15,6 +15,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
  * - Does NOT auto-login — the client must call `signIn('credentials', ...)` after.
  */
 export async function POST(req: Request) {
+  const locale = pickLocale(req)
   let body: any
   try {
     body = await req.json()
@@ -26,7 +27,6 @@ export async function POST(req: Request) {
   const password = typeof body?.password === 'string' ? body.password : ''
   const name = typeof body?.name === 'string' && body.name.trim() ? body.name.trim() : null
 
-  const locale = pickLocale(req)
 
   if (!EMAIL_RE.test(email)) {
     const msg = await translate(locale, 'common.errors.emailInvalid', 'Email invalide')

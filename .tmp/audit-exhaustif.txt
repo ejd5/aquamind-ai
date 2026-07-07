@@ -1,197 +1,197 @@
-=== AUDIT EXHAUSTIF : 596 chaînes françaises hardcoded ===
+=== AUDIT EXHAUSTIF : 597 chaînes françaises hardcoded ===
 
 
 --- src/app/api/account/delete/route.ts (2 chaînes) ---
-  L31: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L46: 'Erreur lors de la suppression du compte'
-         { error: 'Erreur lors de la suppression du compte' },
+  L32: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L48: 'Erreur lors de la suppression du compte'
+         'Erreur lors de la suppression du compte'
 
 --- src/app/api/account/export/route.ts (2 chaînes) ---
-  L36: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L99: 'Erreur lors de l’export des données'
-         { error: 'Erreur lors de l’export des données' },
+  L38: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L104: 'Erreur lors de l’export des données'
+         await translate(locale, 'common.errors.exportError', 'Erreur lors de l’export des données')
 
 --- src/app/api/account/notifications/route.ts (2 chaînes) ---
-  L34: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L44: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L36: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L48: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
 
 --- src/app/api/analytics/route.ts (2 chaînes) ---
-  L11: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L41: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L13: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L45: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
 
 --- src/app/api/auth/register/route.ts (4 chaînes) ---
-  L30: 'Email invalide'
-         return NextResponse.json({ error: 'Email invalide' }, { status: 400 })
-  L35: 'Le mot de passe doit contenir au moins 8 caractères'
-         { error: 'Le mot de passe doit contenir au moins 8 caractères' },
-  L46: 'Un compte existe déjà avec cet email'
-         return NextResponse.json({ error: 'Un compte existe déjà avec cet email' }, { status: 409 })
-  L65: 'Erreur lors de la création du compte'
-         return NextResponse.json({ error: 'Erreur lors de la création du compte' }, { status: 500 })
+  L32: 'Email invalide'
+         const msg = await translate(locale, 'common.errors.emailInvalid', 'Email invalide')
+  L39: 'Le mot de passe doit contenir au moins 8 caractères'
+         await translate(locale, 'common.errors.passwordTooShort', 'Le mot de passe doit contenir au moins 8 caractères')
+  L51: 'Un compte existe déjà avec cet email'
+         'Un compte existe déjà avec cet email'
+  L73: 'Erreur lors de la création du compte'
+         'Erreur lors de la création du compte'
 
 --- src/app/api/chat/route.ts (3 chaînes) ---
-  L13: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L38: "Désolé, je n'ai pas pu générer de réponse."
-         const reply = result.content || "Désolé, je n'ai pas pu générer de réponse."
-  L56: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L15: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L44: "Désolé, je n'ai pas pu générer de réponse."
+         await translate(locale, 'common.errors.chatError', "Désolé, je n'ai pas pu générer de réponse.")
+  L65: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
 
 --- src/app/api/dashboard/route.ts (1 chaînes) ---
-  L13: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L15: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
 
 --- src/app/api/demo/login/route.ts (5 chaînes) ---
   L39: 'Compte Démonstration'
          const DEMO_NAME_FALLBACK = 'Compte Démonstration'
   L40: 'Piscine démo'
          const DEMO_POOL_NAME_FALLBACK = 'Piscine démo'
-  L86: 'Sud-Est / PACA'
-         region: 'Sud-Est / PACA',
-  L104: 'Utilisez ces identifiants pour vous connecter'
-         message: 'Utilisez ces identifiants pour vous connecter',
-  L111: 'Erreur lors de la création du compte démo'
-         { error: 'Erreur lors de la création du compte démo' },
+  L61: 'Sud-Est / PACA'
+         await translate(locale, 'common.errors.regionSudEst', 'Sud-Est / PACA')
+  L108: 'Utilisez ces identifiants pour vous connecter'
+         await translate(locale, 'common.errors.demoLoginMessage', 'Utilisez ces identifiants pour vous connecter')
+  L120: 'Erreur lors de la création du compte démo'
+         'Erreur lors de la création du compte démo'
 
 --- src/app/api/guides/route.ts (1 chaînes) ---
-  L23: 'Guide introuvable'
-         if (!guide) return NextResponse.json({ error: 'Guide introuvable' }, { status: 404 })
+  L26: 'Guide introuvable'
+         const msg = await translate(locale, 'common.errors.guideNotFound', 'Guide introuvable')
 
 --- src/app/api/pool/action-plan/route.ts (2 chaînes) ---
-  L14: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L37: 'Profil piscine requis'
-         return NextResponse.json({ error: 'Profil piscine requis' }, { status: 400 })
+  L15: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L40: 'Profil piscine requis'
+         'Profil piscine requis'
 
 --- src/app/api/pool/equipment/route.ts (5 chaînes) ---
-  L11: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L22: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L51: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L61: 'Équipement introuvable'
-         if (!existing) return NextResponse.json({ error: 'Équipement introuvable' }, { status: 404 })
-  L78: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L13: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L26: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L57: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L72: 'Équipement introuvable'
+         await translate(locale, 'common.errors.equipmentNotFound', 'Équipement introuvable')
+  L93: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
 
 --- src/app/api/pool/inventory/route.ts (3 chaînes) ---
-  L11: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L22: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L49: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L13: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L26: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L55: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
 
 --- src/app/api/pool/photo-diagnostic/route.ts (4 chaînes) ---
-  L13: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L24: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L87: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L99: 'Non trouvé'
-         return NextResponse.json({ error: 'Non trouvé' }, { status: 404 })
+  L15: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L28: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L93: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L106: 'Non trouvé'
+         const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
 
 --- src/app/api/pool/profile/route.ts (3 chaînes) ---
   L13: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L25: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L39: 'Ma piscine'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L26: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L40: 'Ma piscine'
          'Ma piscine'
 
 --- src/app/api/pool/reminders/route.ts (6 chaînes) ---
-  L13: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L87: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L98: 'Rappel personnalisé'
-         title: body.title || 'Rappel personnalisé',
-  L115: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L125: 'Rappel introuvable'
-         if (!existing) return NextResponse.json({ error: 'Rappel introuvable' }, { status: 404 })
-  L144: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L15: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L91: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L102: 'Rappel personnalisé'
+         'Rappel personnalisé'
+  L126: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L141: 'Rappel introuvable'
+         'Rappel introuvable'
+  L164: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
 
 --- src/app/api/pool/water-test/route.ts (4 chaînes) ---
-  L15: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L32: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L42: 'pH requis'
-         return NextResponse.json({ error: 'pH requis' }, { status: 400 })
-  L119: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  L16: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L34: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L46: 'pH requis'
+         'pH requis'
+  L125: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
 
 --- src/app/api/pool/weather/route.ts (5 chaînes) ---
-  L23: 'la rochelle'
+  L24: 'la rochelle'
          'biarritz', 'cannes', 'antibes', 'perpignan', 'la rochelle', 'le havre',
-  L23: 'le havre'
+  L24: 'le havre'
          'biarritz', 'cannes', 'antibes', 'perpignan', 'la rochelle', 'le havre',
-  L25: 'la rochelle'
+  L26: 'la rochelle'
          'annecy', 'grenoble', 'avignon', 'la rochelle', 'saint-etienne',
-  L106: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L135: 'Météo indisponible'
-         { error: 'Météo indisponible', location: query || 'auto' },
+  L108: 'Non autorisé'
+         const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+  L140: 'Météo indisponible'
+         'Météo indisponible'
 
 --- src/app/api/stripe/checkout/route.ts (4 chaînes) ---
-  L13: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L18: 'Produit invalide'
+  L15: 'Non autorisé'
+         return NextResponse.json({ error: await translate(locale, 'common.errors.unauthorized', 'Non autorisé') }, { status: 401
+  L20: 'Produit invalide'
          return NextResponse.json({ error: 'Produit invalide' }, { status: 400 })
-  L23: 'Prix non configuré'
+  L25: 'Prix non configuré'
          return NextResponse.json({ error: 'Prix non configuré' }, { status: 500 })
-  L54: 'Erreur Stripe'
+  L56: 'Erreur Stripe'
          return NextResponse.json({ error: 'Erreur Stripe' }, { status: 500 })
 
 --- src/app/api/stripe/portal/route.ts (3 chaînes) ---
-  L14: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L27: 'Aucun client Stripe trouvé'
+  L15: 'Non autorisé'
+         return NextResponse.json({ error: await translate(locale, 'common.errors.unauthorized', 'Non autorisé') }, { status: 401
+  L28: 'Aucun client Stripe trouvé'
          return NextResponse.json({ error: 'Aucun client Stripe trouvé' }, { status: 404 })
-  L38: 'Erreur Stripe'
+  L39: 'Erreur Stripe'
          return NextResponse.json({ error: 'Erreur Stripe' }, { status: 500 })
 
 --- src/app/api/subscription/route.ts (3 chaînes) ---
-  L16: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L29: 'Non autorisé'
-         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  L36: 'Plan invalide'
+  L17: 'Non autorisé'
+         return NextResponse.json({ error: await translate(locale, 'common.errors.unauthorized', 'Non autorisé') }, { status: 401
+  L31: 'Non autorisé'
+         return NextResponse.json({ error: await translate(locale, 'common.errors.unauthorized', 'Non autorisé') }, { status: 401
+  L38: 'Plan invalide'
          if (!validPlan) return NextResponse.json({ error: 'Plan invalide' }, { status: 400 })
 
 --- src/app/layout.tsx (1 chaînes) ---
   L10: '--font-geist-sans'
          variable: "--font-geist-sans",
 
---- src/components/aquamind/diagnostic-action-plan.tsx (3 chaînes) ---
+--- src/components/aquamind/diagnostic-action-plan.tsx (5 chaînes) ---
   L216: 'eau verte'
-         allText.includes('eau verte')
-  L224: 'eau trouble'
-         allText.includes('eau trouble')
-  L225: 'dépôt'
-         const hasParticles = allText.includes('particul') || allText.includes('dépôt')
+         'eau verte', 'green water', 'agua verde', 'água verde',
+  L217: 'grünes wasser'
+         'grünes wasser', 'gruenes wasser', 'acqua verde', 'groen water',
+  L220: 'eau trouble'
+         'eau trouble', 'cloudy', 'agua turbia', 'água turva',
+  L221: 'trübes wasser'
+         'trübes wasser', 'truebes wasser', 'acqua torbida', 'troebel water',
+  L224: 'dépôt'
+         'particul', 'dépôt', 'depot', 'deposit',
 
 --- src/components/aquamind/module-diagnostic.tsx (3 chaînes) ---
-  L550: 'résolu'
-         summaryLower.includes('résolu') ||
-  L611: 'je ne peux pas'
-         {d.aiSummary && !d.aiSummary.toLowerCase().includes('je ne peux pas') && !d.aiSummary.toLowerCase().includes("i can't") 
-  L668: 'je ne peux pas'
-         {d.aiSummary && !d.aiSummary.toLowerCase().includes('je ne peux pas') && !d.aiSummary.toLowerCase().includes("i can't") 
-
---- src/components/aquamind/module-weather.tsx (1 chaînes) ---
-  L130: 'ensoleillé'
-         if (d.includes('ensoleillé') || d.includes('soleil')) return <Sun className="h-8 w-8 text-gold" />
+  L93: 'résolu'
+         'résolu', 'resolu', 'sain', 'clair',
+  L99: 'gelöst'
+         'gelöst', 'geloest', 'gesund', 'sauber', 'klar',
+  L109: 'je ne peux pas'
+         'je ne peux pas',          // FR
 
 --- src/components/landing/sections/international-section.tsx (2 chaînes) ---
   L41: 'Poolshop.de'

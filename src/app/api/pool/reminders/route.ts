@@ -9,9 +9,9 @@ import { pickLocale, translate } from '@/lib/i18n-api'
 export const runtime = 'nodejs'
 
 export async function GET(req: Request) {
+  const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    const locale = pickLocale(req)
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
@@ -85,8 +85,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
   const locale = pickLocale(req)
+  const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
@@ -120,8 +120,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const session = await getServerSession(authOptions)
   const locale = pickLocale(req)
+  const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
@@ -131,7 +131,10 @@ export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json()
     const { id, done, snoozed } = body
-    if (!id) return NextResponse.json({ error: 'id requis' }, { status: 400 })
+    if (!id) {
+      const msg = await translate(locale, 'common.errors.idRequired', 'id requis')
+      return NextResponse.json({ error: msg }, { status: 400 })
+    }
     // Only update if it belongs to the authenticated user
     const existing = await db.reminder.findFirst({ where: { id, userId } })
     if (!existing) {
@@ -158,9 +161,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    const locale = pickLocale(req)
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }

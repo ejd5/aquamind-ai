@@ -9,18 +9,20 @@ import { pickLocale, translate } from '@/lib/i18n-api'
 export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
+  const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    const locale = pickLocale(req)
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
-  const locale = pickLocale(req)
 
   try {
     const { message } = await req.json()
-    if (!message) return NextResponse.json({ error: 'Message requis' }, { status: 400 })
+    if (!message) {
+      const msg = await translate(locale, 'common.errors.messageRequired', 'Message requis')
+      return NextResponse.json({ error: msg }, { status: 400 })
+    }
 
     const [profile, latestTest, history] = await Promise.all([
       db.poolProfile.findFirst({ where: { userId } }),
@@ -60,9 +62,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: Request) {
+  const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    const locale = pickLocale(req)
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }

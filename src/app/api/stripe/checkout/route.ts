@@ -2,25 +2,29 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { getStripe, STRIPE_PRICES, isValidProductId, getPlanFromProductId } from '@/lib/stripe'
+import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
 
 // Creates a Stripe Checkout Session for a subscription product.
 // Auth: requires NextAuth session (web flow). Mobile uses RevenueCat instead.
 export async function POST(req: NextRequest) {
+  const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    return NextResponse.json({ error: await translate(locale, 'common.errors.unauthorized', 'Non autorisé') }, { status: 401 })
   }
 
   const { productId } = await req.json()
   if (!productId || !isValidProductId(productId)) {
-    return NextResponse.json({ error: 'Produit invalide' }, { status: 400 })
+    const msg = await translate(locale, 'common.errors.invalidProduct', 'Produit invalide')
+    return NextResponse.json({ error: msg }, { status: 400 })
   }
 
   const priceId = STRIPE_PRICES[productId]
   if (!priceId) {
-    return NextResponse.json({ error: 'Prix non configuré' }, { status: 500 })
+    const msg = await translate(locale, 'common.errors.priceNotConfigured', 'Prix non configuré')
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 
   try {
@@ -51,6 +55,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url: checkoutSession.url })
   } catch (err) {
     console.error('Stripe checkout error:', err)
-    return NextResponse.json({ error: 'Erreur Stripe' }, { status: 500 })
+    const msg = await translate(locale, 'common.errors.stripeError', 'Erreur Stripe')
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

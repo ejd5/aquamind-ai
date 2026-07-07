@@ -102,8 +102,8 @@ async function fetchWeather(query: string): Promise<WeatherData | null> {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
   const locale = pickLocale(req)
+  const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })

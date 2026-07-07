@@ -146,7 +146,13 @@
       "chatError": "Sorry, I couldn't generate a response.",
       "demoLoginMessage": "Use these credentials to sign in",
       "regionSudEst": "South-East / PACA",
-      "defaultReminder": "Custom reminder"
+      "defaultReminder": "Custom reminder",
+      "bodyInvalid": "Invalid body",
+      "eventRequired": "event required",
+      "messageRequired": "Message required",
+      "testIdValuesRequired": "testId or values required",
+      "idRequired": "id required",
+      "idRequiredUpper": "ID required"
     },
     "emergency": {
       "title": "I have a problem",

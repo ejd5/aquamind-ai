@@ -30,9 +30,9 @@ const DEFAULT_PREFS: NotificationPreferences = {
 }
 
 export async function GET(req: Request) {
+  const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    const locale = pickLocale(req)
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
@@ -42,9 +42,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: NextRequest) {
+  const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    const locale = pickLocale(req)
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
     // TODO (future): persist on the User model or a dedicated table.
     return NextResponse.json({ success: true, preferences })
   } catch {
-    return NextResponse.json({ error: 'Body invalide' }, { status: 400 })
+    const msg = await translate(locale, 'common.errors.bodyInvalid', 'Body invalide')
+    return NextResponse.json({ error: msg }, { status: 400 })
   }
 }
