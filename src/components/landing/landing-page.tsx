@@ -113,12 +113,12 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
             )}
             {/* Language switcher */}
             <LanguageSwitcher />
-            {/* Bouton Connexion — toujours visible */}
+            {/* Bouton {t('common.signIn')} — toujours visible */}
             <a
               href="/auth/signin"
               className="rounded-full border border-gold/40 bg-background/80 px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-gold hover:text-gold"
             >
-              Connexion
+              {t('common.signIn')}
             </a>
             <button
               onClick={onEnterApp}
@@ -177,7 +177,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
                   href="/auth/signin"
                   className="mt-2 flex items-center justify-center gap-2 rounded-full border border-gold/40 bg-background/80 px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-gold hover:text-gold"
                 >
-                  Connexion
+                  {t('common.signIn')}
                 </a>
                 <div className="mt-2 flex items-center justify-center">
                 </div>
@@ -245,13 +245,13 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
                     <span className="aqua-text-gradient">AQWELIA</span>
                   </div>
                   <div className="text-[10px] uppercase tracking-[0.22em] text-white/45">
-                    Copilote piscine
+                    {t('footerTagline2')}
                   </div>
                 </div>
               </div>
               <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/65">
                 Le copilote IA qui vous dit exactement quoi faire, combien, dans quel ordre, et
-                quand vous baigner. Conçu en France 🇫🇷.
+                quand vous baigner. {t('trustFrance')}.
               </p>
               {hasProfile && (
                 <button
@@ -266,32 +266,32 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
 
             {/* Produit */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-white/50">Produit</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-white/50">{t('footerProduct')}</p>
               <ul className="mt-3 space-y-2 text-sm">
                 <li>
-                  <button onClick={() => scrollToId('solution')} className="text-white/70 transition-colors hover:text-gold">La solution</button>
+                  <button onClick={() => scrollToId('solution')} className="text-white/70 transition-colors hover:text-gold">{t('navSolution')}</button>
                 </li>
                 <li>
-                  <button onClick={() => scrollToId('comparatif')} className="text-white/70 transition-colors hover:text-gold">Comparatif</button>
+                  <button onClick={() => scrollToId('comparatif')} className="text-white/70 transition-colors hover:text-gold">{t('navComparatif')}</button>
                 </li>
                 <li>
-                  <button onClick={() => scrollToId('fonctionnalites')} className="text-white/70 transition-colors hover:text-gold">Fonctionnalités</button>
+                  <button onClick={() => scrollToId('fonctionnalites')} className="text-white/70 transition-colors hover:text-gold">{t('featuresTitle')}</button>
                 </li>
                 <li>
-                  <button onClick={() => scrollToId('tarifs')} className="text-white/70 transition-colors hover:text-gold">Tarifs</button>
+                  <button onClick={() => scrollToId('tarifs')} className="text-white/70 transition-colors hover:text-gold">{t('navTarifs')}</button>
                 </li>
                 <li>
-                  <button onClick={() => scrollToId('faq')} className="text-white/70 transition-colors hover:text-gold">FAQ</button>
+                  <button onClick={() => scrollToId('faq')} className="text-white/70 transition-colors hover:text-gold">{t('navFaq')}</button>
                 </li>
               </ul>
             </div>
 
             {/* Liens */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-white/50">Informations</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-white/50">{t('footerInfo')}</p>
               <ul className="mt-3 space-y-2 text-sm">
-                <li><span className="text-white/70">Guides</span></li>
-                <li><span className="text-white/70">Blog <span className="text-white/35">(à venir)</span></span></li>
+                <li><span className="text-white/70">{t('nav.guides')}</span></li>
+                <li><span className="text-white/70">Blog <span className="text-white/35">({t('comingSoon')})</span></span></li>
                 <li>
                   <Link href="/legal/support" className="text-white/70 transition-colors hover:text-gold">
                     Contact
@@ -318,13 +318,13 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
 
           <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 sm:flex-row">
             <p className="text-xs text-white/50">
-              © {new Date().getFullYear()} AQWELIA. Eau toujours cristalline.
+              © {new Date().getFullYear()} AQWELIA. {t('footerCopyright')}
             </p>
             <div className="flex items-center gap-3 text-xs text-white/50">
               <span className="rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 font-semibold text-gold">
-                v2.0 Copilote
+                {t('footerVersion')}
               </span>
-              <span className="hidden sm:inline">Conçu en France 🇫🇷</span>
+              <span className="hidden sm:inline">{t('trustFrance')}</span>
             </div>
           </div>
         </div>
