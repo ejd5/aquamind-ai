@@ -2,18 +2,21 @@
 
 import { motion } from 'framer-motion'
 import { AlertTriangle } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { Reveal, SectionHeading, staggerContainer, fadeUpVariants } from '../landing-utils'
 
-const ROWS = [
-  { poste: 'Abonnement pisciniste (saisonnier)', low: '500€', high: '1 200€', note: '1 visite/semaine, saison 6 mois' },
-  { poste: 'Produits chimiques (chlore, pH, TAC, anti-algues...)', low: '300€', high: '600€', note: 'Souvent en SUS du pisciniste' },
-  { poste: 'Électricité (filtration 6-12h/jour)', low: '200€', high: '500€', note: 'Dépend pompe et tarif' },
-  { poste: 'Eau (évaporation, renouvellement, backwash)', low: '100€', high: '300€', note: 'Plus cher en région sèche' },
-  { poste: 'Chauffage (pompe à chaleur)', low: '300€', high: '800€', note: 'Optionnel mais fréquent' },
-  { poste: 'Entretien matériel (sable, cartouche, pièces)', low: '100€', high: '400€', note: 'Renouvellements' },
-]
-
 export function RealCosts() {
+  const t = useTranslations('landing')
+
+  const ROWS = [
+    { poste: t('costsRow1'), low: '500€', high: '1 200€', note: t('costsRow1Note') },
+    { poste: t('costsRow2'), low: '300€', high: '600€', note: t('costsRow2Note') },
+    { poste: t('costsRow3'), low: '200€', high: '500€', note: t('costsRow3Note') },
+    { poste: t('costsRow4'), low: '100€', high: '300€', note: t('costsRow4Note') },
+    { poste: t('costsRow5'), low: '300€', high: '800€', note: t('costsRow5Note') },
+    { poste: t('costsRow6'), low: '100€', high: '400€', note: t('costsRow6Note') },
+  ]
+
   return (
     <section id="couts" className="relative py-20 sm:py-28">
       {/* subtle bg */}
@@ -21,9 +24,9 @@ export function RealCosts() {
 
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <SectionHeading
-          eyebrow="02 — Coûts réels"
-          title={<>Combien coûte VRAIMENT votre piscine chaque année ?</>}
-          subtitle="Les gens sous-estiment massivement le coût réel. Voici les moyennes françaises et européennes (sources : FPP, Aquaguard, études marché 2023-2024)."
+          eyebrow={t('costsEyebrow')}
+          title={<>{t('costsTitle')}</>}
+          subtitle={t('costsSubtitle')}
         />
 
         <Reveal delay={0.1} className="mt-12">
@@ -32,10 +35,10 @@ export function RealCosts() {
               <table className="w-full border-collapse text-left text-sm">
                 <thead>
                   <tr className="border-b border-border/60 bg-gradient-to-r from-primary/5 to-gold/5">
-                    <th className="px-4 py-3.5 font-semibold text-foreground sm:px-6">Poste</th>
-                    <th className="px-4 py-3.5 font-semibold text-muted-foreground sm:px-6">Fourchette basse</th>
-                    <th className="px-4 py-3.5 font-semibold text-muted-foreground sm:px-6">Fourchette haute</th>
-                    <th className="hidden px-4 py-3.5 font-semibold text-muted-foreground sm:table-cell sm:px-6">Commentaire</th>
+                    <th className="px-4 py-3.5 font-semibold text-foreground sm:px-6">{t('costsPoste')}</th>
+                    <th className="px-4 py-3.5 font-semibold text-muted-foreground sm:px-6">{t('costsLow')}</th>
+                    <th className="px-4 py-3.5 font-semibold text-muted-foreground sm:px-6">{t('costsHigh')}</th>
+                    <th className="hidden px-4 py-3.5 font-semibold text-muted-foreground sm:table-cell sm:px-6">{t('costsComment')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -61,11 +64,11 @@ export function RealCosts() {
                     transition={{ duration: 0.5, delay: 0.4 }}
                     className="bg-gradient-to-r from-primary/10 via-gold/10 to-primary/10 font-bold"
                   >
-                    <td className="px-4 py-4 text-foreground sm:px-6">TOTAL annuel</td>
+                    <td className="px-4 py-4 text-foreground sm:px-6">{t('costsTotal')}</td>
                     <td className="px-4 py-4 text-foreground sm:px-6">1 500€</td>
                     <td className="px-4 py-4 text-foreground sm:px-6">3 800€</td>
                     <td className="hidden px-4 py-4 text-xs font-semibold text-foreground sm:table-cell sm:px-6">
-                      Moyenne ~2 500€/an
+                      {t('costsAvgNote')}
                     </td>
                   </motion.tr>
                 </tbody>
@@ -89,8 +92,7 @@ export function RealCosts() {
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
               <p className="text-sm leading-relaxed text-foreground/90">
-                <strong>Sans compter les coups durs :</strong> eau verte (80€ de produits + 2 jours),
-                électrolyseur en panne (150€ déplacement pro), fuite (300-2000€).
+                <strong>{t('costsCalloutTitle')}</strong> {t('costsCalloutText')}
               </p>
             </div>
           </motion.div>

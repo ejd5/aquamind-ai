@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, ShieldCheck, Lock, RotateCcw, Sparkles, ArrowRight } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { PLANS, DURATIONS } from '@/lib/pool/freemium'
 import { Reveal, SectionHeading, scrollToId } from '../landing-utils'
 
@@ -13,7 +14,25 @@ interface PricingProps {
 
 type DurationId = (typeof DURATIONS)[number]['id']
 
+const DURATION_LABEL_KEY: Record<DurationId, string> = {
+  week: 'week',
+  month: 'month',
+  quarter: 'quarter',
+  halfyear: 'halfyear',
+}
+
+const DURATION_SUFFIX_KEY: Record<DurationId, string> = {
+  week: 'perWeek',
+  month: 'perMonth',
+  quarter: 'perQuarter',
+  halfyear: 'perHalfyear',
+}
+
 export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
+  const t = useTranslations('landing')
+  const t = useTranslations('landing')
+  const tPlans = useTranslations('plans')
+
   const [duration, setDuration] = useState<DurationId>('month')
 
   const paidPlans = PLANS.filter((p) => p.id !== 'free')
@@ -24,8 +43,8 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
       <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-background via-secondary/30 to-background" />
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <SectionHeading
-          eyebrow="11 — Tarifs"
-          title={<>Simple, transparent, sans engagement.</>}
+          eyebrow={t('pricingEyebrow')}
+          title={<>{t('pricingTitle')}</>}
         />
 
         {/* Duration toggle */}
@@ -49,7 +68,7 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
                     />
                   )}
                   <span className="relative flex items-center gap-1.5">
-                    {d.label}
+                    {tPlans(DURATION_LABEL_KEY[d.id])}
                     {'save' in d && d.save && (
                       <span
                         className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
@@ -71,7 +90,10 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
           {paidPlans.map((plan, idx) => {
             const isPremium = plan.id === 'premium'
             const price = plan.price[duration]
-            const suffix = DURATIONS.find((d) => d.id === duration)!.suffix
+            const suffix = tPlans(DURATION_SUFFIX_KEY[duration])
+            const planName = tPlans(`${plan.id}.name`)
+            const planTagline = tPlans(`${plan.id}.tagline`)
+            const planFeatures = tPlans.raw(`${plan.id}Features`) as string[]
             return (
               <Reveal key={plan.id} delay={idx * 0.08}>
                 <div
@@ -85,7 +107,7 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
                     <>
                       <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
                       <span className="absolute -right-12 top-5 rotate-45 bg-gradient-to-r from-gold to-[oklch(0.55_0.10_195)] px-12 py-1 text-center text-[10px] font-bold uppercase tracking-widest text-[oklch(0.99_0.01_195)] shadow-md">
-                        Populaire
+                        {tPlans('popular')}
                       </span>
                       <div className="pointer-events-none absolute -inset-1 -z-10 rounded-2xl bg-gold/10 blur-2xl" />
                     </>
@@ -96,9 +118,9 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
                       <span className="text-2xl" aria-hidden="true">
                         {plan.icon}
                       </span>
-                      <h3 className="font-display text-xl font-bold">{plan.name}</h3>
+                      <h3 className="font-display text-xl font-bold">{planName}</h3>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">{plan.tagline}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{planTagline}</p>
 
                     {/* Price — crossfade */}
                     <div className="mt-5 flex items-baseline gap-1">
@@ -111,7 +133,7 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
                           transition={{ duration: 0.25 }}
                           className="font-display text-4xl font-bold"
                         >
-                          {price === 0 ? 'Gratuit' : `${price.toLocaleString('fr-FR')} €`}
+                          {price === 0 ? t('pricingFree') : `${price.toLocaleString('fr-FR')} €`}
                         </motion.span>
                       </AnimatePresence>
                       {price !== 0 && (
@@ -127,12 +149,12 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
                           : 'border border-primary/30 bg-primary/5 text-foreground hover:border-primary/60 hover:bg-primary/10'
                       }`}
                     >
-                      {hasProfile ? 'Accéder à l\'app' : 'Commencer'}
+                      {hasProfile ? t('pricingCtaAccess') : t('pricingCtaStart')}
                       <ArrowRight className="h-3.5 w-3.5" />
                     </button>
 
                     <ul className="mt-5 space-y-2">
-                      {plan.features.map((f) => (
+                      {planFeatures.map((f) => (
                         <li
                           key={f}
                           className="flex items-start gap-2 text-xs text-foreground/85"
@@ -162,16 +184,16 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
               </span>
               <div>
                 <p className="font-display text-base font-bold">
-                  {freePlan.name} <span className="text-gold">— Gratuit</span>
+                  {tPlans('free.name')} <span className="text-gold">{t('pricingFreeDash')}</span>
                 </p>
-                <p className="text-xs text-muted-foreground">{freePlan.tagline}</p>
+                <p className="text-xs text-muted-foreground">{tPlans('free.tagline')}</p>
               </div>
             </div>
             <button
               onClick={onEnterApp}
               className="rounded-full border border-border bg-background px-5 py-2 text-sm font-semibold transition-colors hover:border-gold/50 hover:text-gold"
             >
-              Découvrir gratuitement
+              {tPlans('discover')}
             </button>
           </div>
         </Reveal>
@@ -180,16 +202,16 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
         <Reveal delay={0.1} className="mt-6">
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
             {[
-              { icon: RotateCcw, label: 'Sans engagement' },
-              { icon: Lock, label: 'Paiement sécurisé' },
-              { icon: ShieldCheck, label: 'Résiliable à tout moment' },
-              { icon: Sparkles, label: 'Données privées' },
-            ].map((t) => {
-              const Icon = t.icon
+              { icon: RotateCcw, label: tPlans('noCommitment') },
+              { icon: Lock, label: tPlans('securePayment') },
+              { icon: ShieldCheck, label: tPlans('cancelAnytime') },
+              { icon: Sparkles, label: tPlans('privateData') },
+            ].map((trust) => {
+              const Icon = trust.icon
               return (
-                <span key={t.label} className="inline-flex items-center gap-1.5">
+                <span key={trust.label} className="inline-flex items-center gap-1.5">
                   <Icon className="h-3.5 w-3.5 text-gold" />
-                  {t.label}
+                  {trust.label}
                 </span>
               )
             })}
@@ -201,7 +223,7 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
             onClick={() => scrollToId('comparatif')}
             className="text-sm font-medium text-primary underline-offset-4 hover:underline"
           >
-            Comparatif détaillé →
+            {t('pricingCompareCta')}
           </button>
         </Reveal>
       </div>

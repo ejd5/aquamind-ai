@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { Droplets, RotateCcw, Thermometer, Users, Settings2, Lock, Waves } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import {
   GlassCard,
   Reveal,
@@ -12,46 +13,48 @@ import {
 } from '../landing-utils'
 import { SPA_BRANDS, SPA_TREATMENTS, SPA_MAINTENANCE } from '@/lib/pool/spa-data'
 
-const FEATURE_CARDS = [
-  {
-    icon: Droplets,
-    emoji: '🧪',
-    title: 'Traitement adapté eau chaude',
-    text: 'Brome ou oxygène actif — pas de chlore qui s\'évapore en eau chaude. AQWELIA vous guide vers le bon désinfectant selon la température de votre spa.',
-    accent: 'from-[oklch(0.65_0.11_195)]/15 to-transparent',
-  },
-  {
-    icon: RotateCcw,
-    emoji: '💧',
-    title: 'Vidange intelligente',
-    text: 'Rappels de vidange calculés selon votre usage. Vidanger tous les 3-4 mois est souvent PLUS économique que de saturer l\'eau en produits.',
-    accent: 'from-gold/15 to-transparent',
-  },
-  {
-    icon: Thermometer,
-    emoji: '🌡️',
-    title: 'Bâchage & température',
-    text: 'Couvrez après chaque bain : anti-évaporation, anti-algues, conservation de la chaleur. AQWELIA vous rappelle les bons gestes au quotidien.',
-    accent: 'from-[oklch(0.55_0.10_195)]/15 to-transparent',
-  },
-  {
-    icon: Settings2,
-    emoji: '⚙️',
-    title: 'Marques & équipements',
-    text: 'Jacuzzi, Sundance, Hot Spring, Bestway, Intex, Wellis, Desjoyaux… ou générique chinois. AQWELIA reconnaît votre spa et adapte ses conseils.',
-    accent: 'from-gold/15 to-transparent',
-  },
-  {
-    icon: Users,
-    emoji: '💺',
-    title: 'Détails spa',
-    text: 'Nombre de places, fréquence d\'usage, programmes de pompe, température cible. AQWELIA calcule les vidanges et cycles de filtration selon VOTRE réalité.',
-    accent: 'from-[oklch(0.65_0.11_195)]/15 to-transparent',
-  },
-]
-
 export function SpaSection() {
-  const drainageTasks = SPA_MAINTENANCE.filter((t) => t.isDrainage)
+  const t = useTranslations('landing')
+
+  const drainageTasks = SPA_MAINTENANCE.filter((task) => task.isDrainage)
+
+  const FEATURE_CARDS = [
+    {
+      icon: Droplets,
+      emoji: '🧪',
+      title: t('spaCard1Title'),
+      text: t('spaCard1Text'),
+      accent: 'from-[oklch(0.65_0.11_195)]/15 to-transparent',
+    },
+    {
+      icon: RotateCcw,
+      emoji: '💧',
+      title: t('spaCard2Title'),
+      text: t('spaCard2Text'),
+      accent: 'from-gold/15 to-transparent',
+    },
+    {
+      icon: Thermometer,
+      emoji: '🌡️',
+      title: t('spaCard3Title'),
+      text: t('spaCard3Text'),
+      accent: 'from-[oklch(0.55_0.10_195)]/15 to-transparent',
+    },
+    {
+      icon: Settings2,
+      emoji: '⚙️',
+      title: t('spaCard4Title'),
+      text: t('spaCard4Text'),
+      accent: 'from-gold/15 to-transparent',
+    },
+    {
+      icon: Users,
+      emoji: '💺',
+      title: t('spaCard5Title'),
+      text: t('spaCard5Text'),
+      accent: 'from-[oklch(0.65_0.11_195)]/15 to-transparent',
+    },
+  ]
 
   return (
     <section id="spa" className="relative py-20 sm:py-28">
@@ -59,19 +62,13 @@ export function SpaSection() {
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <SectionHeading
-          eyebrow="10.5 — Spa & Baignade"
+          eyebrow={t('spaEyebrow')}
           title={
             <>
-              <span className="aqua-text-gradient">AQWELIA</span> gère aussi votre spa
+              <span className="aqua-text-gradient">{t('spaTitle1')}</span> {t('spaTitle2')}
             </>
           }
-          subtitle={
-            <>
-              Eau chaude, petit volume, baigneurs nombreux : le spa n&apos;est pas une piscine.
-              Traitements spécifiques (brome, oxygène actif), vidanges régulières, bâchage et
-              programmes de pompe — AQWELIA s&apos;occupe de tout.
-            </>
-          }
+          subtitle={t('spaSubtitle')}
         />
 
         {/* 5 cards — spa features */}
@@ -113,18 +110,16 @@ export function SpaSection() {
               <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
               <Lock className="h-5 w-5 text-gold" />
               <h3 className="mt-3 font-display text-base font-bold text-gold">
-                Disponible dès Premium
+                {t('spaPremiumTitle')}
               </h3>
               <p className="mt-1.5 text-xs leading-relaxed text-foreground/85">
-                Le support Spa complet (brome, oxygène actif, vidange intelligente, programmes de
-                pompe) est réservé au plan <strong className="text-gold">Premium</strong> et
-                Expert.
+                {t('spaPremiumText1')} <strong className="text-gold">Premium</strong> {t('spaPremiumText2')}
               </p>
               <button
                 onClick={() => scrollToId('tarifs')}
                 className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-xs font-semibold text-gold transition-colors hover:bg-gold/20"
               >
-                Voir les plans
+                {t('spaPremiumCta')}
                 <Waves className="h-3 w-3" />
               </button>
             </div>
@@ -136,19 +131,19 @@ export function SpaSection() {
           <div className="rounded-2xl border border-white/40 bg-white/60 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] sm:p-6">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="font-display text-lg font-bold">
-                ♨️ Traitements adaptés au spa
+                {t('spaTreatmentsTitle')}
               </h3>
               <p className="text-xs text-muted-foreground">
-                À haute température, le choix du désinfectant change tout.
+                {t('spaTreatmentsDesc')}
               </p>
             </div>
 
             <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
-              {SPA_TREATMENTS.map((t) => {
-                const isRecommended = t.recommended
+              {SPA_TREATMENTS.map((treatment) => {
+                const isRecommended = treatment.recommended
                 return (
                   <div
-                    key={t.type}
+                    key={treatment.type}
                     className={`rounded-xl border p-4 ${
                       isRecommended
                         ? 'border-gold/40 bg-gold/[0.06]'
@@ -157,7 +152,7 @@ export function SpaSection() {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className={`font-display text-sm font-bold ${isRecommended ? 'text-gold' : 'text-red-500'}`}>
-                        {t.name}
+                        {treatment.name}
                       </span>
                       <span
                         className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
@@ -166,20 +161,20 @@ export function SpaSection() {
                             : 'bg-red-500/15 text-red-500'
                         }`}
                       >
-                        {isRecommended ? 'Recommandé' : 'Déconseillé'}
+                        {isRecommended ? t('spaRecommended') : t('spaNotRecommended')}
                       </span>
                     </div>
                     <p className="mt-1 text-[10px] text-muted-foreground">
-                      T° max recommandée : <strong>{t.temperatureMax}°C</strong>
+                      {t('spaTempMax')} <strong>{treatment.temperatureMax}°C</strong>
                     </p>
                     <ul className="mt-2 space-y-1 text-[11px]">
-                      {t.pros.map((p) => (
+                      {treatment.pros.map((p) => (
                         <li key={p} className="flex items-start gap-1.5 text-foreground/85">
                           <span className="mt-0.5 text-green-500">+</span>
                           <span>{p}</span>
                         </li>
                       ))}
-                      {t.cons.map((c) => (
+                      {treatment.cons.map((c) => (
                         <li key={c} className="flex items-start gap-1.5 text-muted-foreground">
                           <span className="mt-0.5 text-red-400">−</span>
                           <span>{c}</span>
@@ -202,14 +197,12 @@ export function SpaSection() {
               </div>
               <div className="flex-1">
                 <h3 className="font-display text-base font-bold text-foreground sm:text-lg">
-                  Vidanger plutôt que sur-traiter : le calcul économique
+                  {t('spaDrainageTitle')}
                 </h3>
                 <p className="mt-1 text-xs leading-relaxed text-foreground/85 sm:text-sm">
-                  Au bout de 3-4 mois, l&apos;eau d&apos;un spa est saturée en matière organique,
-                  minéraux et résidus de traitement. Continuer à ajouter des produits devient
-                  <strong> plus cher et moins efficace</strong> qu&apos;une vidange complète.
-                  AQWELIA vous alerte au bon moment et calcule la fréquence idéale selon votre
-                  usage.
+                  {t('spaDrainageText1')}{' '}
+                  <strong>{t('spaDrainageText2')}</strong>{' '}
+                  {t('spaDrainageText3')}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {drainageTasks.map((task) => (
@@ -231,10 +224,10 @@ export function SpaSection() {
         <Reveal delay={0.1} className="mt-6">
           <div className="rounded-2xl border border-white/40 bg-white/60 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] sm:p-6">
             <h3 className="font-display text-base font-bold sm:text-lg">
-              Marques prises en charge
+              {t('spaBrandsTitle')}
             </h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              AQWELIA reconnaît les principales marques mondiales et les spas génériques chinois.
+              {t('spaBrandsDesc')}
             </p>
             <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
               {SPA_BRANDS.map((brand) => (
@@ -253,7 +246,11 @@ export function SpaSection() {
                           : 'bg-muted text-muted-foreground'
                     }`}
                   >
-                    {brand.category === 'premium' ? 'Premium' : brand.category === 'mid_range' ? 'Milieu de gamme' : 'Éco'}
+                    {brand.category === 'premium'
+                      ? t('spaBrandCategoryPremium')
+                      : brand.category === 'mid_range'
+                        ? t('spaBrandCategoryMid')
+                        : t('spaBrandCategoryEco')}
                   </span>
                 </div>
               ))}
@@ -264,12 +261,12 @@ export function SpaSection() {
         {/* Mini CTA */}
         <Reveal delay={0.1} className="mt-8 text-center">
           <p className="text-sm text-muted-foreground">
-            Vous avez un spa ?{' '}
+            {t('spaCtaText1')}{' '}
             <button
               onClick={() => scrollToId('tarifs')}
               className="font-semibold text-gold underline-offset-4 hover:underline"
             >
-              Découvrez le plan Premium →
+              {t('spaCtaText2')}
             </button>
           </p>
         </Reveal>

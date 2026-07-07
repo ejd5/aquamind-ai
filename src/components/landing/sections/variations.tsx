@@ -1,27 +1,30 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useTranslations } from 'next-intl'
 import { GlassCard, Reveal, SectionHeading, staggerContainer, fadeUpVariants } from '../landing-utils'
 
-const FACTORS = [
-  { emoji: '🌧️', title: 'Météo', text: 'Orage (dilue chlore, modifie pH), canicule (algues), vent (débris), gel (équipements).' },
-  { emoji: '👥', title: 'Baignade', text: "Plus de baigneurs = plus de matière organique = chlore consommé plus vite." },
-  { emoji: '🧴', title: 'Crème solaire', text: 'Phosphates et résidus gras → eau trouble, algues.' },
-  { emoji: '💦', title: 'Transpiration / urine', text: 'Chloramines, eau irritante (oui, ça compte).' },
-  { emoji: '🌡️', title: 'Température eau', text: 'Chlore évaporé plus vite à chaud, activité chimique accrue.' },
-  { emoji: '☀️', title: 'UV', text: 'Détruit le chlore non stabilisé en 2h.' },
-  { emoji: '🍂', title: 'Saison', text: 'Printemps (remise en route), été (intensif), automne (hivernage), hiver (gel).' },
-  { emoji: '🔧', title: 'Équipements', text: 'Filtre qui se charge, électrolyseur qui s\'entartre, pompe qui vieillit.' },
-]
-
 export function Variations() {
+  const t = useTranslations('landing')
+
+  const FACTORS = [
+    { emoji: '🌧️', title: t('variationsFactor1Title'), text: t('variationsFactor1Text') },
+    { emoji: '👥', title: t('variationsFactor2Title'), text: t('variationsFactor2Text') },
+    { emoji: '🧴', title: t('variationsFactor3Title'), text: t('variationsFactor3Text') },
+    { emoji: '💦', title: t('variationsFactor4Title'), text: t('variationsFactor4Text') },
+    { emoji: '🌡️', title: t('variationsFactor5Title'), text: t('variationsFactor5Text') },
+    { emoji: '☀️', title: t('variationsFactor6Title'), text: t('variationsFactor6Text') },
+    { emoji: '🍂', title: t('variationsFactor7Title'), text: t('variationsFactor7Text') },
+    { emoji: '🔧', title: t('variationsFactor8Title'), text: t('variationsFactor8Text') },
+  ]
+
   return (
     <section id="variations" className="relative py-20 sm:py-28">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-background via-secondary/20 to-background" />
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <SectionHeading
-          eyebrow="09 — La piscine est vivante"
-          title={<>Pourquoi l&apos;eau change tout le temps ?</>}
+          eyebrow={t('variationsEyebrow')}
+          title={<>{t('variationsTitle')}</>}
         />
 
         <motion.div
@@ -49,8 +52,7 @@ export function Variations() {
         <Reveal delay={0.15} className="mt-8">
           <div className="mx-auto max-w-3xl rounded-2xl border border-gold/30 bg-gradient-to-r from-gold/10 via-transparent to-primary/10 p-5 text-center">
             <p className="text-sm leading-relaxed text-foreground/90 sm:text-base">
-              AQWELIA tient compte de <span className="font-bold text-gold">TOUTES</span> ces
-              variations pour adapter ses conseils. <span className="font-semibold">Pas une app générique.</span>
+              {t('variationsCallout1')} <span className="font-bold text-gold">{t('variationsCalloutAll')}</span> {t('variationsCallout2')} <span className="font-semibold">{t('variationsCallout3')}</span>
             </p>
           </div>
         </Reveal>

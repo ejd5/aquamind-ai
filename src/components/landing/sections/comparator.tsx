@@ -2,47 +2,55 @@
 
 import { motion } from 'framer-motion'
 import { Check, X, AlertTriangle } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { Reveal, SectionHeading } from '../landing-utils'
 
 type Cell = 'yes' | 'no' | 'partial'
 
-const FEATURES: { label: string; cells: Cell[] }[] = [
-  { label: 'Moteur de dosage déterministe', cells: ['yes', 'partial', 'no', 'no', 'no', 'yes'] },
-  { label: 'Diagnostic photo IA (eau, filtre, électrolyseur, cellule)', cells: ['yes', 'no', 'partial', 'partial', 'partial', 'yes'] },
-  { label: 'Scan bandelette avec confiance', cells: ['yes', 'no', 'yes', 'yes', 'yes', 'yes'] },
-  { label: "Plan d'action ordonné (TAC→pH→chlore)", cells: ['yes', 'no', 'no', 'no', 'no', 'yes'] },
-  { label: 'Sécurité baignade temps réel', cells: ['yes', 'no', 'no', 'no', 'no', 'yes'] },
-  { label: 'Météo intelligente + alertes orage/canicule', cells: ['yes', 'no', 'no', 'no', 'no', 'no'] },
-  { label: 'Rappels intelligents contextuels', cells: ['yes', 'no', 'partial', 'partial', 'partial', 'no'] },
-  { label: 'Carnet de santé + graphiques', cells: ['yes', 'yes', 'yes', 'yes', 'yes', 'yes'] },
-  { label: 'Inventaire produits + coût estimé', cells: ['yes', 'no', 'yes', 'no', 'yes', 'no'] },
-  { label: 'Maintenance équipements (filtre, électrolyseur, pompe)', cells: ['yes', 'no', 'no', 'no', 'yes', 'yes'] },
-  { label: '20+ guides experts intégrés', cells: ['yes', 'no', 'no', 'partial', 'partial', 'no'] },
-  { label: 'Mode urgence (14 parcours guidés)', cells: ['yes', 'no', 'no', 'no', 'no', 'no'] },
-  { label: 'Multi-piscines / multi-clients pro', cells: ['yes', 'no', 'no', 'no', 'no', 'yes'] },
-  { label: 'LSI / mode avancé expert', cells: ['yes', 'yes', 'no', 'no', 'no', 'yes'] },
-  { label: 'Disponibilité', cells: ['yes', 'yes', 'yes', 'yes', 'yes', 'partial'] },
-  { label: 'Coût mensuel', cells: ['yes', 'yes', 'yes', 'yes', 'yes', 'yes'] },
+type FeatureKey =
+  | 'comparatorFeature1'
+  | 'comparatorFeature2'
+  | 'comparatorFeature3'
+  | 'comparatorFeature4'
+  | 'comparatorFeature5'
+  | 'comparatorFeature6'
+  | 'comparatorFeature7'
+  | 'comparatorFeature8'
+  | 'comparatorFeature9'
+  | 'comparatorFeature10'
+  | 'comparatorFeature11'
+  | 'comparatorFeature12'
+  | 'comparatorFeature13'
+  | 'comparatorFeature14'
+  | 'comparatorFeature15'
+  | 'comparatorFeature16'
+
+interface FeatureRow {
+  key: FeatureKey
+  cells: Cell[]
+}
+
+const FEATURES: FeatureRow[] = [
+  { key: 'comparatorFeature1', cells: ['yes', 'partial', 'no', 'no', 'no', 'yes'] },
+  { key: 'comparatorFeature2', cells: ['yes', 'no', 'partial', 'partial', 'partial', 'yes'] },
+  { key: 'comparatorFeature3', cells: ['yes', 'no', 'yes', 'yes', 'yes', 'yes'] },
+  { key: 'comparatorFeature4', cells: ['yes', 'no', 'no', 'no', 'no', 'yes'] },
+  { key: 'comparatorFeature5', cells: ['yes', 'no', 'no', 'no', 'no', 'yes'] },
+  { key: 'comparatorFeature6', cells: ['yes', 'no', 'no', 'no', 'no', 'no'] },
+  { key: 'comparatorFeature7', cells: ['yes', 'no', 'partial', 'partial', 'partial', 'no'] },
+  { key: 'comparatorFeature8', cells: ['yes', 'yes', 'yes', 'yes', 'yes', 'yes'] },
+  { key: 'comparatorFeature9', cells: ['yes', 'no', 'yes', 'no', 'yes', 'no'] },
+  { key: 'comparatorFeature10', cells: ['yes', 'no', 'no', 'no', 'yes', 'yes'] },
+  { key: 'comparatorFeature11', cells: ['yes', 'no', 'no', 'partial', 'partial', 'no'] },
+  { key: 'comparatorFeature12', cells: ['yes', 'no', 'no', 'no', 'no', 'no'] },
+  { key: 'comparatorFeature13', cells: ['yes', 'no', 'no', 'no', 'no', 'yes'] },
+  { key: 'comparatorFeature14', cells: ['yes', 'yes', 'no', 'no', 'no', 'yes'] },
+  { key: 'comparatorFeature15', cells: ['yes', 'yes', 'yes', 'yes', 'yes', 'partial'] },
+  { key: 'comparatorFeature16', cells: ['yes', 'yes', 'yes', 'yes', 'yes', 'yes'] },
 ]
 
-const COLS = ['AQWELIA', 'PoolMath', 'Pooli', 'Clorox Pool', "Leslie's", 'Pisciniste']
-
-const CELL_TEXT: Record<string, string> = {
-  // Availability row text
-  'avail-0': '24/7',
-  'avail-1': '24/7',
-  'avail-2': '24/7',
-  'avail-3': '24/7',
-  'avail-4': '24/7',
-  'avail-5': '1 visite/sem',
-  // Cost row text
-  'cost-0': '0-25€',
-  'cost-1': 'gratuit',
-  'cost-2': 'gratuit',
-  'cost-3': 'gratuit',
-  'cost-4': 'gratuit',
-  'cost-5': '80-150€',
-}
+const AVAILABILITY_KEY: FeatureKey = 'comparatorFeature15'
+const COST_KEY: FeatureKey = 'comparatorFeature16'
 
 function CellIcon({ value, label }: { value: Cell; label?: string }) {
   if (label) {
@@ -68,12 +76,33 @@ function CellIcon({ value, label }: { value: Cell; label?: string }) {
 }
 
 export function Comparator() {
+  const t = useTranslations('landing')
+
+  const COLS = ['AQWELIA', 'PoolMath', 'Pooli', 'Clorox Pool', "Leslie's", t('comparatorColPisciniste')]
+
+  const CELL_TEXT: Record<string, string> = {
+    // Availability row text
+    'avail-0': '24/7',
+    'avail-1': '24/7',
+    'avail-2': '24/7',
+    'avail-3': '24/7',
+    'avail-4': '24/7',
+    'avail-5': t('comparatorAvailVisit'),
+    // Cost row text
+    'cost-0': '0-25€',
+    'cost-1': t('comparatorCostFree'),
+    'cost-2': t('comparatorCostFree'),
+    'cost-3': t('comparatorCostFree'),
+    'cost-4': t('comparatorCostFree'),
+    'cost-5': '80-150€',
+  }
+
   return (
     <section id="comparatif" className="relative py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <SectionHeading
-          eyebrow="05 — Comparatif"
-          title={<>AQWELIA vs tout le reste</>}
+          eyebrow={t('comparatorEyebrow')}
+          title={<>{t('comparatorTitle')}</>}
         />
 
         <Reveal delay={0.1} className="mt-12">
@@ -84,7 +113,7 @@ export function Comparator() {
                   <tr className="border-b border-border/60">
                     {/* Sticky first column header */}
                     <th className="sticky left-0 z-10 bg-white/85 px-4 py-4 text-left font-semibold backdrop-blur-xl dark:bg-[oklch(0.19_0.02_200)]/90 sm:px-6">
-                      Fonctionnalité
+                      {t('comparatorFunctionality')}
                     </th>
                     {COLS.map((c, idx) => (
                       <th
@@ -109,11 +138,12 @@ export function Comparator() {
                 </thead>
                 <tbody>
                   {FEATURES.map((row, rowIdx) => {
-                    const isAvailRow = row.label === 'Disponibilité'
-                    const isCostRow = row.label === 'Coût mensuel'
+                    const isAvailRow = row.key === AVAILABILITY_KEY
+                    const isCostRow = row.key === COST_KEY
+                    const rowLabel = t(row.key)
                     return (
                       <motion.tr
-                        key={row.label}
+                        key={row.key}
                         initial={{ opacity: 0 }}
                         whileInView={{ opacity: 1 }}
                         viewport={{ once: true }}
@@ -123,7 +153,7 @@ export function Comparator() {
                         }`}
                       >
                         <td className="sticky left-0 z-10 bg-white/85 px-4 py-3.5 font-medium text-foreground backdrop-blur-xl dark:bg-[oklch(0.19_0.02_200)]/90 sm:px-6">
-                          {row.label}
+                          {rowLabel}
                         </td>
                         {row.cells.map((cell, idx) => (
                           <td
@@ -154,8 +184,8 @@ export function Comparator() {
 
         <Reveal delay={0.1} className="mt-6">
           <p className="mx-auto max-w-3xl text-center text-sm italic text-muted-foreground">
-            Aucune application ne combine moteur déterministe + VLM multimodale + météo temps
-            réel + rappels contextuels. <span className="font-semibold text-gold not-italic">AQWELIA est la seule.</span>
+            {t('comparatorConclusion1')}{' '}
+            <span className="font-semibold text-gold not-italic">{t('comparatorConclusion2')}</span>
           </p>
         </Reveal>
       </div>

@@ -67,7 +67,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
           <button
             onClick={() => scrollToId('top')}
             className="flex items-center gap-2.5"
-            aria-label="AQWELIA — retour en haut"
+            aria-label={t('headerAriaLogo')}
           >
             <div className="relative">
               <div className="absolute -inset-[3px] rounded-[14px] bg-gradient-to-br from-gold via-ocean-light to-primary opacity-80 blur-[2px]" />
@@ -83,7 +83,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
                 <span className="aqua-text-gradient">AQWELIA</span>
               </div>
               <div className="hidden text-[10px] uppercase tracking-[0.22em] text-muted-foreground sm:block">
-                Copilote piscine
+                {t('headerCopilote')}
               </div>
             </div>
           </button>

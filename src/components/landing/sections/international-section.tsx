@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { Globe, Languages, Ruler, ShoppingBag } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import {
   GlassCard,
   Reveal,
@@ -24,37 +25,13 @@ const COUNTRIES = [
   { flag: '🇫🇷', label: 'France' },
   { flag: '🇺🇸', label: 'USA' },
   { flag: '🇬🇧', label: 'UK' },
-  { flag: '🇩🇪', label: 'Allemagne' },
-  { flag: '🇪🇸', label: 'Espagne' },
-  { flag: '🇮🇹', label: 'Italie' },
-  { flag: '🇳🇱', label: 'Pays-Bas' },
+  { flag: '🇩🇪', label: 'Deutschland' },
+  { flag: '🇪🇸', label: 'España' },
+  { flag: '🇮🇹', label: 'Italia' },
+  { flag: '🇳🇱', label: 'Nederland' },
   { flag: '🇵🇹', label: 'Portugal' },
   { flag: '🇨🇦', label: 'Canada' },
-  { flag: '🇦🇺', label: 'Australie' },
-]
-
-const FEATURE_CARDS = [
-  {
-    icon: Globe,
-    emoji: '🌍',
-    title: 'Normes adaptées',
-    text: 'pH, chlore, brome : les normes changent selon votre pays. AQWELIA s\u2019adapte automatiquement (France DGS, USA CDC, Allemagne DIN 19643, UK PWTAG...)',
-    accent: 'from-[oklch(0.65_0.11_195)]/15 to-transparent',
-  },
-  {
-    icon: Languages,
-    emoji: '🗣️',
-    title: 'Votre langue, votre choix',
-    text: 'Un Mexicain aux USA peut utiliser l\u2019app en espagnol. La langue est indépendante du pays de résidence.',
-    accent: 'from-gold/15 to-transparent',
-  },
-  {
-    icon: Ruler,
-    emoji: '📏',
-    title: 'Unités intelligentes',
-    text: 'Métrique ou impérial, °C ou °F, m³ ou gallons. AQWELIA s\u2019adapte à vos habitudes, pas l\u2019inverse.',
-    accent: 'from-[oklch(0.55_0.10_195)]/15 to-transparent',
-  },
+  { flag: '🇦🇺', label: 'Australia' },
 ]
 
 const MARKETPLACE_TEASERS = [
@@ -67,24 +44,45 @@ const MARKETPLACE_TEASERS = [
 ]
 
 export function InternationalSection() {
+  const t = useTranslations('landing')
+
+  const FEATURE_CARDS = [
+    {
+      icon: Globe,
+      emoji: '🌍',
+      title: t('internationalNorms'),
+      text: t('internationalNormsDesc'),
+      accent: 'from-[oklch(0.65_0.11_195)]/15 to-transparent',
+    },
+    {
+      icon: Languages,
+      emoji: '🗣️',
+      title: t('internationalLanguage'),
+      text: t('internationalLanguageDesc'),
+      accent: 'from-gold/15 to-transparent',
+    },
+    {
+      icon: Ruler,
+      emoji: '📏',
+      title: t('internationalUnits'),
+      text: t('internationalUnitsDesc'),
+      accent: 'from-[oklch(0.55_0.10_195)]/15 to-transparent',
+    },
+  ]
+
   return (
     <section id="international" className="relative py-20 sm:py-28">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-background via-[oklch(0.55_0.10_195/0.06)] to-background" />
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <SectionHeading
-          eyebrow="🌐 AQWELIA, partout dans le monde"
+          eyebrow={t('internationalEyebrow')}
           title={
             <>
-              Une app qui parle <span className="aqua-text-gradient">votre langue</span>
+              {t('internationalTitle1')} <span className="aqua-text-gradient">{t('internationalTitle2')}</span>
             </>
           }
-          subtitle={
-            <>
-              7 langues, 10 pays, des normes adaptées à votre région. AQWELIA
-              s\u2019adapte à vous, où que vous soyez.
-            </>
-          }
+          subtitle={t('internationalSubtitle')}
         />
 
         {/* Languages grid */}
@@ -93,11 +91,11 @@ export function InternationalSection() {
             <div className="flex items-center gap-2">
               <Languages className="h-5 w-5 text-gold" />
               <h3 className="font-display text-base font-bold sm:text-lg">
-                7 langues prises en charge
+                {t('internationalLangTitle')}
               </h3>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Choisissez votre langue, indépendamment de votre pays de résidence.
+              {t('internationalLangDesc')}
             </p>
             <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
               {LANGUAGES.map((lang) => (
@@ -123,12 +121,11 @@ export function InternationalSection() {
             <div className="flex items-center gap-2">
               <Globe className="h-5 w-5 text-gold" />
               <h3 className="font-display text-base font-bold sm:text-lg">
-                10 pays, normes & unités locales
+                {t('internationalCountriesTitle')}
               </h3>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Les seuils de pH, chlore, brome et les unités (°C/°F, L/gal)
-              s\u2019ajustent automatiquement selon votre pays.
+              {t('internationalCountriesDesc')}
             </p>
             <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
               {COUNTRIES.map((country) => (
@@ -194,12 +191,10 @@ export function InternationalSection() {
               </div>
               <div className="flex-1">
                 <h3 className="font-display text-base font-bold text-gold sm:text-lg">
-                  🛒 Produits locaux
+                  {t('internationalMarketplaceTitle')}
                 </h3>
                 <p className="mt-1 text-xs leading-relaxed text-foreground/85 sm:text-sm">
-                  Bandelettes, produits chimiques, équipements : AQWELIA recommande
-                  les meilleurs vendeurs de votre pays (Amazon.fr, Leslie&apos;s USA,
-                  Poolstore UK...).
+                  {t('internationalMarketplaceText')}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {MARKETPLACE_TEASERS.map((m) => (

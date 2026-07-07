@@ -1,29 +1,32 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useTranslations } from 'next-intl'
 import { GlassCard, Reveal, SectionHeading, staggerContainer, fadeUpVariants } from '../landing-utils'
 
-const FEATURES = [
-  { emoji: '🏠', title: 'Dashboard Aujourd\'hui', text: 'Indice eau claire, sécurité baignade, actions du jour.' },
-  { emoji: '📸', title: 'Diagnostic Photo IA', text: 'Eau, filtre, électrolyseur, bandelette (VLM prudent).' },
-  { emoji: '🧪', title: 'Analyse de l\'eau', text: 'pH, chlore, TAC, TH, CYA, sel, phosphates + plan auto.' },
-  { emoji: '💬', title: 'Assistant IA contextuel', text: 'Connaît votre piscine et votre historique.' },
-  { emoji: '✅', title: "Plan d'action", text: 'Étapes ordonnées, dosages exacts, « ne pas faire ».' },
-  { emoji: '📔', title: 'Carnet de santé', text: 'Historique, graphiques, détection de patterns.' },
-  { emoji: '🌤️', title: 'Météo intelligente', text: 'Alertes orage/canicule, filtration recommandée.' },
-  { emoji: '🔔', title: 'Rappels intelligents', text: 'Contextuels (météo, historique, inventaire).' },
-  { emoji: '🔧', title: 'Maintenance & équipements', text: 'Suivi filtre, électrolyseur, pompe.' },
-  { emoji: '📚', title: 'Ressources & guides', text: '20+ guides experts + recommandation auto.' },
-  { emoji: '🛟', title: 'Mode urgence', text: '14 parcours (eau verte, orage, vacances, hivernage...).' },
-]
-
 export function FeaturesGrid() {
+  const t = useTranslations('landing')
+
+  const FEATURES = [
+    { emoji: '🏠', title: t('featuresItem1Title'), text: t('featuresItem1Text') },
+    { emoji: '📸', title: t('featuresItem2Title'), text: t('featuresItem2Text') },
+    { emoji: '🧪', title: t('featuresItem3Title'), text: t('featuresItem3Text') },
+    { emoji: '💬', title: t('featuresItem4Title'), text: t('featuresItem4Text') },
+    { emoji: '✅', title: t('featuresItem5Title'), text: t('featuresItem5Text') },
+    { emoji: '📔', title: t('featuresItem6Title'), text: t('featuresItem6Text') },
+    { emoji: '🌤️', title: t('featuresItem7Title'), text: t('featuresItem7Text') },
+    { emoji: '🔔', title: t('featuresItem8Title'), text: t('featuresItem8Text') },
+    { emoji: '🔧', title: t('featuresItem9Title'), text: t('featuresItem9Text') },
+    { emoji: '📚', title: t('featuresItem10Title'), text: t('featuresItem10Text') },
+    { emoji: '🛟', title: t('featuresItem11Title'), text: t('featuresItem11Text') },
+  ]
+
   return (
     <section id="fonctionnalites" className="relative py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <SectionHeading
-          eyebrow="10 — Fonctionnalités"
-          title={<>11 modules. Un copilote complet.</>}
+          eyebrow={t('featuresEyebrow')}
+          title={<>{t('featuresTitle')}</>}
         />
 
         <motion.div
@@ -54,7 +57,7 @@ export function FeaturesGrid() {
             <div className="relative flex h-full flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-gold/40 bg-gradient-to-br from-primary/10 via-gold/10 to-primary/5 p-5 text-center backdrop-blur-xl">
               <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
               <p className="font-display text-3xl font-bold gradient-text-premium">+1</p>
-              <p className="mt-1 text-xs text-muted-foreground">Bien plus à venir</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t('featuresMore')}</p>
             </div>
           </motion.div>
         </motion.div>

@@ -2,35 +2,38 @@
 
 import { motion } from 'framer-motion'
 import { Check, X } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { GlassCard, Reveal, SectionHeading, staggerContainer, fadeUpVariants } from '../landing-utils'
 
-const INCLUDED = [
-  '1 visite par semaine',
-  "Test d'eau",
-  'Ajout de produits',
-  'Nettoyage filtre & skimmer',
-  'Brossage des parois',
-  'Conseil de base',
-]
-
-const NOT_INCLUDED = [
-  'Être là le dimanche quand l\'eau tourne',
-  'Surveiller entre 2 visites (orage mardi, visite vendredi)',
-  'Vous dire « LÀ, maintenant, puis-je me baigner ? »',
-  'Anticiper la météo (canicule, orage)',
-  'Gérer les urgences le soir',
-  'Vous apprendre à comprendre votre piscine',
-  'Optimiser vos achats produits',
-  'Être disponible 24/7 pour 8€/mois',
-]
-
 export function PiscinisteCost() {
+  const t = useTranslations('landing')
+
+  const INCLUDED = [
+    t('piscinisteIncluded1'),
+    t('piscinisteIncluded2'),
+    t('piscinisteIncluded3'),
+    t('piscinisteIncluded4'),
+    t('piscinisteIncluded5'),
+    t('piscinisteIncluded6'),
+  ]
+
+  const NOT_INCLUDED = [
+    t('piscinisteNotIncluded1'),
+    t('piscinisteNotIncluded2'),
+    t('piscinisteNotIncluded3'),
+    t('piscinisteNotIncluded4'),
+    t('piscinisteNotIncluded5'),
+    t('piscinisteNotIncluded6'),
+    t('piscinisteNotIncluded7'),
+    t('piscinisteNotIncluded8'),
+  ]
+
   return (
     <section id="pisciniste" className="relative py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <SectionHeading
-          eyebrow="03 — Le pisciniste"
-          title={<>Le pisciniste est utile. Mais il ne résout pas tout.</>}
+          eyebrow={t('piscinisteEyebrow')}
+          title={<>{t('piscinisteTitle')}</>}
         />
 
         <motion.div
@@ -47,7 +50,7 @@ export function PiscinisteCost() {
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600">
                   <Check className="h-4 w-4" />
                 </span>
-                <h3 className="font-display text-xl font-bold">Ce que fait le pisciniste</h3>
+                <h3 className="font-display text-xl font-bold">{t('piscinisteIncludedTitle')}</h3>
               </div>
               <ul className="mt-5 space-y-2.5">
                 {INCLUDED.map((item) => (
@@ -68,7 +71,7 @@ export function PiscinisteCost() {
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/20 text-gold">
                   <X className="h-4 w-4" />
                 </span>
-                <h3 className="font-display text-xl font-bold">Ce que le pisciniste ne fait PAS</h3>
+                <h3 className="font-display text-xl font-bold">{t('piscinisteNotIncludedTitle')}</h3>
               </div>
               <ul className="mt-5 space-y-2.5">
                 {NOT_INCLUDED.map((item) => (
@@ -89,9 +92,9 @@ export function PiscinisteCost() {
         <Reveal delay={0.1} className="mt-8">
           <div className="mx-auto max-w-3xl rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 via-gold/5 to-transparent p-5 text-center">
             <p className="font-display text-base leading-relaxed text-foreground sm:text-lg">
-              Avec un pisciniste, vous restez seul{' '}
-              <span className="font-bold text-gold">6 jours sur 7</span>.{' '}
-              <span className="gradient-text-premium font-bold">AQWELIA couvre ces 6 jours.</span>
+              {t('piscinisteCallout1')}{' '}
+              <span className="font-bold text-gold">{t('piscinisteCallout2')}</span>.{' '}
+              <span className="gradient-text-premium font-bold">{t('piscinisteCallout3')}</span>
             </p>
           </div>
         </Reveal>
