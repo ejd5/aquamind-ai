@@ -1499,3 +1499,74 @@ Next actions possibles (hors scope, pour le main agent) :
 - Brancher les recommandations spa (getSpaRecommendations, calculateDrainageFrequency) dans le module diagnostic/maintenance
 - Ajouter un onglet "Spa" dans le dashboard si le profil a waterBodyType=spa|both
 - Gate l'accès au mode spa dans l'app via canAccess(plan, 'spa_support') et afficher un upgrade prompt si free
+
+---
+Task ID: L7-PREFS
+Agent: general-purpose (preferences)
+Task: Module préférences complet — langue + pays + unités + normes visibles
+
+Work Log:
+- Lu worklog.md (RESTORE-1, RB-1, L1-A→L1-E, L2-A, L3-A, L3-B, L3-D, L35-MOD, L4-A, L4-B, L4-GEO, L5-PLAN, L5-RICH, L5-ITER, L6-SPA) — projet restauré, auth JWT multi-tenant, mobile shell + native bridges en place, spa landing + freemium gate opérationnels.
+- Lu src/app/settings/page.tsx (658 lignes, 11 sections, design system glass-card + gold) — page client NextAuth-gated.
+- ⚠️ Fichiers `src/i18n/config.ts` et `src/lib/countries/{index,detect}.ts` INTROUVABLES (Glob renvoie 0 résultat). Le spec L7-PREFS supposait qu'ils existaient et disait « ne pas modifier i18n/config.ts ». Décision : rendre `src/lib/preferences/store.ts` AUTONOME (Locale + CountryConfig + country list + detection inline) pour respecter la règle « Only CREATE store.ts + MODIFY settings/page.tsx ».
+- Création de `src/lib/preferences/store.ts` (500 lignes) — module autonome :
+  * Types : Locale (7 codes), TemperatureUnit, VolumeUnit, WeightUnit, LengthUnit, UnitSystem, DateFormat, TimeFormat, CountryNorms (13 champs), CountryConfig (6 champs), Preferences, PreferencesStore
+  * COUNTRY_LIST (10 pays : FR, BE, CH, ES, DE, IT, PT, NL, GB, US) avec pour chacun : code, nom français, flag emoji, units (metric/imperial), currency (EUR/CHF/GBP/USD), marketplace (EU/CH/UK/US), norms (phMin/Max, chlorineMin/Max, bromineMin/Max, tacMin/Max, cyaMin/Max, tempMaxPoolC, tempMaxSpaC, spaDrainageMonths). Normes calibrées par pays (FR DGS, DE DIN 19643, CH SLMG, GB PWTAG, US CDC/APSP).
+  * getCountryConfig(code) — lookup avec fallback France
+  * LANGUAGES (7 langues avec nativeName + flag) + SUPPORTED_LOCALES
+  * detectCountryConfig() — synchrone côté client, 3 stratégies : (1) timezone IANA → mapping 15 timezones→pays (Europe/Paris→FR, America/New_York→US, etc.), (2) navigator.language region (es-MX → MX non supporté → fallback), (3) fallback France. Aucun appel réseau.
+  * getCountryDefaults(country) — génère unitSystem + temperature + volume + weight + length + dateFormat (US=MM/DD/YYYY, autres=DD/MM/YYYY) + timeFormat (imperial=12h, métrique=24h)
+  * safeStorage() — SSR-safe : localStorage côté client, noopStorage (getItem=null, setItem/removeItem=noop) côté serveur. Wrappé dans try/catch au cas où localStorage serait bloqué (mode privé).
+  * usePreferences store Zustand persistant (clé `aqwelia-preferences`) : 9 champs + 11 setters + resetToCountryDefaults + getCountryConfig. setCountry() et setUnitSystem() réinitialisent les unités individuelles en cascade. resetToCountryDefaults() garde le pays actuel.
+  * 4 helpers de conversion : convertTemperature (C↔F), convertVolume (m³↔gal × 264.172), convertWeight (kg↔lbs × 2.20462), convertLength (cm↔in / 2.54)
+  * 4 helpers de formatage : formatTemperature, formatVolume, formatWeight, formatLength (arrondis 1 ou 2 décimales)
+- Modification de `src/app/settings/page.tsx` (658 → 1086 lignes) :
+  * Header comment mis à jour : « Lists 11 sections » → « Lists 15 sections » + ajout ligne `3.5 Préférences → Langue + Pays + Unités + Normes (4 cartes)`
+  * Imports ajoutés : usePreferences, LANGUAGES, COUNTRY_LIST, getCountryConfig, detectCountryConfig, formatTemperature, convertTemperature + 5 types (Locale, TemperatureUnit, VolumeUnit, WeightUnit, LengthUnit) depuis @/lib/preferences/store ; Select + SelectContent/Item/Trigger/Value depuis @/components/ui/select ; Collapsible + CollapsibleContent/Trigger depuis @/components/ui/collapsible ; ToggleGroup + ToggleGroupItem depuis @/components/ui/toggle-group ; 4 nouvelles icônes lucide : Globe, MapPin, Ruler, RotateCcw + ChevronDown (déjà disponible)
+  * Hook usePreferences() déstructuré : language, setLanguage, country, setCountry, unitSystem, setUnitSystem, temperature/volume/weight/length + leurs setters, resetToCountryDefaults. useState local pour showCustomUnits (toggle du panneau avancé)
+  * useEffect ajouté (deps [setCountry, setLanguage] — setters Zustand stables) : au mount, si pas de localStorage `aqwelia-preferences`, détecte le pays via detectCountryConfig() + la langue via navigator.language (si dans la liste des 7 supportées). Gardienne SSR via `typeof window === 'undefined'`.
+  * Section 3.5 « Préférences » insérée ENTRE la section 3 (Notifications) et la section 4 (Données personnelles) — 4 PreferencesCard rendues via le composant PreferencesSection :
+    - Card A « Langue » (Globe icon) — Select radix avec 7 langues (flag + nativeName + nom français entre parenthèses), note explicative « Indépendant du pays — un Mexicain aux USA peut choisir l'espagnol »
+    - Card B « Pays » (MapPin icon) — Select radix avec 10 pays (flag + nom + currency · units entre parenthèses), 3 badges gold « Devise / Marché / Unités » mis à jour dynamiquement, note « Changer de pays réinitialise les unités et les normes appliquées »
+    - Card C « Unités de mesure » (Ruler icon) — ToggleGroup « Métrique / Impérial » (type=single, styled pill gold), Collapsible « Personnaliser unité par unité » qui déplie 4 UnitToggle (Température °C/°F, Volume m³/gal, Poids kg/lbs, Longueur cm/in), bouton « Réinitialiser aux valeurs du pays » (RotateCcw icon, full-width, outline) qui appelle resetToCountryDefaults + toast succès
+    - Card D « Normes applicables ({country}) » (Shield icon) — grille 2 colonnes de 8 NormRow (pH, Chlore, Brome, TAC, CYA, Temp max piscine, Temp max spa, Vidange spa) avec valeurs du getCountryConfig(country).norms. Les températures sont converties dans l'unité choisie par l'utilisateur (convertTemperature + formatTemperature). Note finale « Ces normes sont automatiquement appliquées à vos analyses et recommandations »
+  * 4 sous-composants ajoutés en bas de fichier :
+    - PreferencesSection (~240 lignes) — orchestre les 4 cartes
+    - PreferencesCard (~30 lignes) — variante plein-largeur de SettingsCard (children non contraints à `flex justify-end`)
+    - NormRow (~8 lignes) — ligne label/value pour le tableau des normes (border-gold/10, bg-background/40)
+    - UnitToggle<T extends string> (~24 lignes) — générique typé, ToggleGroup radix à 2 options, styled pill gold
+- Vérifications :
+  * `bun run lint` → EXIT 0, 0 erreur, 0 warning (1 warning initial sur eslint-disable unused directive corrigé en supprimant le disable et en ajoutant explicitement [setCountry, setLanguage] dans les deps — les setters Zustand sont stables par construction)
+  * `bunx tsc --noEmit` → 2 erreurs résiduelles pré-existantes (src/lib/native/index.ts:72 — module ./local-notifications manquant ; src/lib/pool/safety-rules.ts:28 — comparaison 'allowed'/'forbidden', mentionnée L1-E comme hors scope). AUCUNE erreur dans mes fichiers (preferences/store.ts + settings/page.tsx) ✅
+  * Dev server Next.js 16.1.3 — `GET /settings 200 in 1320ms (compile: 1181ms, render: 138ms)` : page compile sans erreur et se rend correctement
+- Règles respectées :
+  * ✅ prisma/schema.prisma NON touché
+  * ✅ API routes NON touchées (aucun fichier dans src/app/api/ modifié)
+  * ✅ freemium.ts NON touché
+  * ✅ i18n/config.ts NON touché (et n'existait pas — store.ts est autonome)
+  * ✅ onboarding NON touché
+  * ✅ Uniquement 1 fichier créé (src/lib/preferences/store.ts) + 1 fichier modifié (src/app/settings/page.tsx)
+  * ✅ Design system respecté : glass-card, border-gold/15, bg-gold/10 text-gold pour les icônes, pills rounded-full, turquoise/gold
+  * ✅ Tout le texte en français
+  * ✅ Store SSR-safe (safeStorage avec noopStorage côté serveur)
+
+Stage Summary:
+- 2 fichiers impactés :
+  * src/lib/preferences/store.ts (CRÉÉ, 500 lignes) — store Zustand persistant autonome : 10 pays × 13 normes, 7 langues, détection timezone+locale, 4 convertisseurs d'unités, 4 helpers de formatage, SSR-safe
+  * src/app/settings/page.tsx (MODIFIÉ, 658 → 1086 lignes, +428 lignes) — section 3.5 « Préférences » avec 4 cartes (Langue + Pays + Unités + Normes), auto-détection pays+langue au premier load, 4 sous-composants (PreferencesSection, PreferencesCard, NormRow, UnitToggle<T>)
+- Architecture : 3 sélecteurs indépendants (langue / pays / unités). Le setCountry() et setUnitSystem() réinitialisent en cascade les unités individuelles, MAIS l'utilisateur peut surcharger n'importe quelle unité individuellement via le panneau « Personnaliser unité par unité ». resetToCountryDefaults() restaure les valeurs du pays actuel sans changer le pays.
+- Cas d'usage supportés (principe clé du spec) :
+  * Mexicain aux USA → espagnol (langue) + US (pays, normes CDC, $) + impérial (°F, gal, lbs, in) — paramétrable en 3 clics
+  * Français en Allemagne → français (langue) + DE (pays, normes DIN 19643, €) + métrique — auto-détecté via timezone Europe/Berlin au premier load
+  * Britanique expatrié aux US → en (langue) + US (pays, normes CDC) + métrique (override manuel des unités) — possible en dépliant le panneau avancé
+- Lint : ✅ EXIT 0 (0 erreur, 0 warning)
+- TypeScript : ✅ 0 erreur sur les fichiers du scope (2 erreurs pré-existantes safety-rules.ts:28 + native/index.ts:72 hors scope, documentées L1-E et L3-A)
+- Dev server : ✅ /settings HTTP 200, compile 1.2s
+- Persistance : localStorage côté client via zustand persist middleware (clé `aqwelia-preferences`). Au mount, si la clé n'existe pas, auto-détection pays (timezone IANA → mapping 15 timezones) + langue (navigator.language).
+
+Next actions possibles (hors scope, pour le main agent) :
+- Consommer usePreferences() dans les modules aquamind (water-test, weather, diagnostic) pour afficher les valeurs dans les bonnes unités et appliquer les normes du pays sélectionné (actuellement les modules utilisent TARGETS hardcoded dans src/lib/pool/targets.ts — il faudrait soit fusionner, soit rendre targets.ts dynamique via getCountryConfig)
+- Brancher la langue dans next-intl (déjà installé v4.3.4 mais non câblé — il faudra créer src/i18n/config.ts, src/i18n/messages/{fr,en,es,...}.json, et un NextIntlClientProvider dans layout.tsx ; la store préférences est déjà prête à alimenter le locale)
+- Synchroniser la préférence pays avec profile.region dans l'API /api/pool/profile (pour que la météo utilise la ville du pays) et avec billing (pour que Stripe/RevenueCat affichent la bonne devise)
+- Étendre COUNTRY_LIST à d'autres marchés (CA, AU, MX, BR…) quand AQWELIA s'y lance — il suffit d'ajouter une entrée dans le tableau, le reste (détection, defaults, UI) est automatique
+- Persistenter la préférence côté serveur via un champ User.preferences JSON dans Prisma (actuellement localStorage uniquement — perte si l'utilisateur change d'appareil sans sync)

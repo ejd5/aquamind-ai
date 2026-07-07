@@ -4,10 +4,11 @@
  * URL: /settings
  *
  * Client component (uses useSession, useRouter, billing, signOut).
- * Lists 11 sections in glass cards with the AQWELIA design system:
+ * Lists 15 sections in glass cards with the AQWELIA design system:
  *   1. Mon abonnement          → billing.manageSubscription()
  *   2. Restaurer mes achats    → billing.restorePurchases()
  *   3. Notifications           → 3 toggle switches (rappels, météo, reco)
+ *   3.5 Préférences            → Langue + Pays + Unités + Normes (4 cartes)
  *   4. Données personnelles    → links to sections 5 & 6
  *   5. Exporter mes données    → GET /api/account/export (JSON download)
  *   6. Supprimer mon compte    → POST /api/account/delete (DANGER + AlertDialog)
@@ -27,9 +28,36 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { billing } from '@/lib/billing'
 import type { PlanId } from '@/lib/billing'
+import {
+  usePreferences,
+  LANGUAGES,
+  COUNTRY_LIST,
+  getCountryConfig,
+  detectCountryConfig,
+  formatTemperature,
+  convertTemperature,
+  type Locale,
+  type TemperatureUnit,
+  type VolumeUnit,
+  type WeightUnit,
+  type LengthUnit,
+} from '@/lib/preferences/store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,9 +83,14 @@ import {
   Info,
   LogOut,
   ChevronRight,
+  ChevronDown,
   Sparkles,
   ArrowLeft,
   Loader2,
+  Globe,
+  MapPin,
+  Ruler,
+  RotateCcw,
 } from 'lucide-react'
 
 const APP_VERSION = 'v1.0.0'
@@ -85,12 +118,46 @@ export default function SettingsPage() {
   const [exporting, setExporting] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
+  // Préférences (langue + pays + unités + normes) — store Zustand persistant.
+  const {
+    language,
+    setLanguage,
+    country,
+    setCountry,
+    unitSystem,
+    setUnitSystem,
+    temperature,
+    setTemperature,
+    volume,
+    setVolume,
+    weight,
+    setWeight,
+    length,
+    setLength,
+    resetToCountryDefaults,
+  } = usePreferences()
+  const [showCustomUnits, setShowCustomUnits] = useState(false)
+
   // Redirect to signin if unauthenticated.
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.replace('/auth/signin')
     }
   }, [status, router])
+
+  // Auto-détection pays + langue au premier load (si pas encore de préférences sauvegardées).
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (localStorage.getItem('aqwelia-preferences')) return
+    const { config } = detectCountryConfig()
+    setCountry(config.code)
+    const browserLang = navigator.language?.split('-')[0] ?? 'fr'
+    if (['fr', 'en', 'es', 'de', 'it', 'pt', 'nl'].includes(browserLang)) {
+      setLanguage(browserLang as Locale)
+    }
+    // Dépendances volontairement omises : on ne détecte qu'au mount.
+    // setCountry/setLanguage sont stables (Zustand).
+  }, [setCountry, setLanguage])
 
   // Load active plan + notification preferences once authenticated.
   useEffect(() => {
@@ -371,6 +438,27 @@ export default function SettingsPage() {
                 />
               </div>
             </SettingsCard>
+
+            {/* ───────── 3.5 Préférences (Langue + Pays + Unités + Normes) ───────── */}
+            <PreferencesSection
+              language={language}
+              setLanguage={setLanguage}
+              country={country}
+              setCountry={setCountry}
+              unitSystem={unitSystem}
+              setUnitSystem={setUnitSystem}
+              temperature={temperature}
+              setTemperature={setTemperature}
+              volume={volume}
+              setVolume={setVolume}
+              weight={weight}
+              setWeight={setWeight}
+              length={length}
+              setLength={setLength}
+              resetToCountryDefaults={resetToCountryDefaults}
+              showCustomUnits={showCustomUnits}
+              setShowCustomUnits={setShowCustomUnits}
+            />
 
             {/* ───────── 4. Données personnelles (overview) ───────── */}
             <SettingsCard
@@ -653,5 +741,346 @@ function ToggleRow({
       <span className="text-xs text-muted-foreground">{label}</span>
       <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
     </label>
+  )
+}
+
+/* ──────────────────────────────────────────────────────────────────────── */
+/*  Section 3.5 — Préférences (Langue + Pays + Unités + Normes)             */
+/* ──────────────────────────────────────────────────────────────────────── */
+
+interface PreferencesSectionProps {
+  language: Locale
+  setLanguage: (lang: Locale) => void
+  country: string
+  setCountry: (country: string) => void
+  unitSystem: 'metric' | 'imperial'
+  setUnitSystem: (system: 'metric' | 'imperial') => void
+  temperature: TemperatureUnit
+  setTemperature: (unit: TemperatureUnit) => void
+  volume: VolumeUnit
+  setVolume: (unit: VolumeUnit) => void
+  weight: WeightUnit
+  setWeight: (unit: WeightUnit) => void
+  length: LengthUnit
+  setLength: (unit: LengthUnit) => void
+  resetToCountryDefaults: () => void
+  showCustomUnits: boolean
+  setShowCustomUnits: (v: boolean) => void
+}
+
+function PreferencesSection({
+  language,
+  setLanguage,
+  country,
+  setCountry,
+  unitSystem,
+  setUnitSystem,
+  temperature,
+  setTemperature,
+  volume,
+  setVolume,
+  weight,
+  setWeight,
+  length,
+  setLength,
+  resetToCountryDefaults,
+  showCustomUnits,
+  setShowCustomUnits,
+}: PreferencesSectionProps) {
+  const countryConfig = getCountryConfig(country)
+  const norms = countryConfig.norms
+
+  // Les températures affichées dans la card Normes s'adaptent à l'unité choisie par l'utilisateur.
+  const tempMaxPool = formatTemperature(
+    convertTemperature(norms.tempMaxPoolC, 'C', temperature),
+    temperature,
+  )
+  const tempMaxSpa = formatTemperature(
+    convertTemperature(norms.tempMaxSpaC, 'C', temperature),
+    temperature,
+  )
+
+  function handleReset() {
+    resetToCountryDefaults()
+    setShowCustomUnits(false)
+    toast({
+      title: 'Unités réinitialisées',
+      description: `Valeurs par défaut du pays (${countryConfig.name}) restaurées.`,
+    })
+  }
+
+  return (
+    <>
+      {/* Card A — Langue */}
+      <PreferencesCard
+        icon={<Globe className="h-4 w-4" />}
+        title="Langue"
+        description="Choisissez la langue de l'interface."
+      >
+        <Select value={language} onValueChange={(v) => setLanguage(v as Locale)}>
+          <SelectTrigger className="w-full" aria-label="Langue de l'interface">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {LANGUAGES.map((lang) => (
+              <SelectItem key={lang.code} value={lang.code}>
+                <span className="mr-1.5">{lang.flag}</span>
+                {lang.nativeName}
+                <span className="ml-1.5 text-xs text-muted-foreground">({lang.name})</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
+          Indépendant du pays — un Mexicain aux USA peut choisir l&apos;espagnol.
+        </p>
+      </PreferencesCard>
+
+      {/* Card B — Pays */}
+      <PreferencesCard
+        icon={<MapPin className="h-4 w-4" />}
+        title="Pays"
+        description="Détermine les normes d'eau, les partenaires et la devise."
+      >
+        <Select value={country} onValueChange={(v) => setCountry(v)}>
+          <SelectTrigger className="w-full" aria-label="Pays">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {COUNTRY_LIST.map((c) => (
+              <SelectItem key={c.code} value={c.code}>
+                <span className="mr-1.5">{c.flag}</span>
+                {c.name}
+                <span className="ml-1.5 text-xs text-muted-foreground">
+                  ({c.currency} · {c.units === 'imperial' ? 'impérial' : 'métrique'})
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+          <span className="rounded-full border border-gold/30 bg-gold/5 px-2 py-0.5 text-gold">
+            Devise : {countryConfig.currency}
+          </span>
+          <span className="rounded-full border border-gold/30 bg-gold/5 px-2 py-0.5 text-gold">
+            Marché : {countryConfig.marketplace}
+          </span>
+          <span className="rounded-full border border-gold/30 bg-gold/5 px-2 py-0.5 text-gold">
+            Unités : {countryConfig.units === 'imperial' ? 'impériales' : 'métriques'}
+          </span>
+        </div>
+        <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
+          Changer de pays réinitialise les unités et les normes appliquées.
+        </p>
+      </PreferencesCard>
+
+      {/* Card C — Unités */}
+      <PreferencesCard
+        icon={<Ruler className="h-4 w-4" />}
+        title="Unités de mesure"
+        description="Système global + personnalisation unité par unité."
+      >
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs text-muted-foreground">Système</span>
+          <ToggleGroup
+            type="single"
+            value={unitSystem}
+            onValueChange={(v) => {
+              if (v === 'metric' || v === 'imperial') setUnitSystem(v)
+            }}
+            className="rounded-full border border-gold/20 p-0.5"
+          >
+            <ToggleGroupItem
+              value="metric"
+              className="h-7 rounded-full px-3 text-xs data-[state=on]:bg-gold/15 data-[state=on]:text-gold"
+            >
+              Métrique
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="imperial"
+              className="h-7 rounded-full px-3 text-xs data-[state=on]:bg-gold/15 data-[state=on]:text-gold"
+            >
+              Impérial
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+
+        <Collapsible open={showCustomUnits} onOpenChange={setShowCustomUnits}>
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-gold transition-opacity hover:opacity-80"
+            >
+              <ChevronDown
+                className={`h-3 w-3 transition-transform ${showCustomUnits ? 'rotate-180' : ''}`}
+              />
+              {showCustomUnits
+                ? 'Masquer les réglages avancés'
+                : 'Personnaliser unité par unité'}
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-3 space-y-2.5">
+            <UnitToggle
+              label="Température"
+              value={temperature}
+              options={[
+                { v: 'C', l: '°C' },
+                { v: 'F', l: '°F' },
+              ]}
+              onChange={setTemperature}
+            />
+            <UnitToggle
+              label="Volume"
+              value={volume}
+              options={[
+                { v: 'm3', l: 'm³' },
+                { v: 'gal', l: 'gal' },
+              ]}
+              onChange={setVolume}
+            />
+            <UnitToggle
+              label="Poids"
+              value={weight}
+              options={[
+                { v: 'kg', l: 'kg' },
+                { v: 'lbs', l: 'lbs' },
+              ]}
+              onChange={setWeight}
+            />
+            <UnitToggle
+              label="Longueur"
+              value={length}
+              options={[
+                { v: 'cm', l: 'cm' },
+                { v: 'in', l: 'in' },
+              ]}
+              onChange={setLength}
+            />
+          </CollapsibleContent>
+        </Collapsible>
+
+        <Button
+          onClick={handleReset}
+          size="sm"
+          variant="outline"
+          className="mt-3 w-full rounded-full"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          Réinitialiser aux valeurs du pays
+        </Button>
+      </PreferencesCard>
+
+      {/* Card D — Normes (READ ONLY) */}
+      <PreferencesCard
+        icon={<Shield className="h-4 w-4" />}
+        title={`Normes applicables (${country})`}
+        description="Plages cibles appliquées automatiquement à vos analyses."
+      >
+        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+          <NormRow label="pH" value={`${norms.phMin.toFixed(1)} – ${norms.phMax.toFixed(1)}`} />
+          <NormRow
+            label="Chlore"
+            value={`${norms.chlorineMin} – ${norms.chlorineMax} mg/L`}
+          />
+          <NormRow
+            label="Brome"
+            value={`${norms.bromineMin} – ${norms.bromineMax} mg/L`}
+          />
+          <NormRow
+            label="TAC (alcalinité)"
+            value={`${norms.tacMin} – ${norms.tacMax} mg/L`}
+          />
+          <NormRow
+            label="CYA (stabilisant)"
+            value={`${norms.cyaMin} – ${norms.cyaMax} mg/L`}
+          />
+          <NormRow label="Temp. max piscine" value={tempMaxPool} />
+          <NormRow label="Temp. max spa" value={tempMaxSpa} />
+          <NormRow
+            label="Vidange spa"
+            value={`Tous les ${norms.spaDrainageMonths} mois`}
+          />
+        </div>
+        <p className="mt-3 text-[11px] leading-snug text-muted-foreground">
+          Ces normes sont automatiquement appliquées à vos analyses et recommandations.
+        </p>
+      </PreferencesCard>
+    </>
+  )
+}
+
+function PreferencesCard({
+  icon,
+  title,
+  description,
+  children,
+}: {
+  icon: React.ReactNode
+  title: string
+  description: string
+  children?: React.ReactNode
+}) {
+  return (
+    <Card className="glass-card overflow-hidden rounded-2xl border border-gold/15 py-4">
+      <CardHeader className="px-5 pb-0">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold/10 text-gold">
+            {icon}
+          </div>
+          <div className="flex-1">
+            <CardTitle className="text-sm font-semibold text-foreground">{title}</CardTitle>
+            <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+          </div>
+        </div>
+      </CardHeader>
+      {children ? (
+        <CardContent className="px-5 pt-3">{children}</CardContent>
+      ) : null}
+    </Card>
+  )
+}
+
+function NormRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-lg border border-gold/10 bg-background/40 px-2.5 py-1.5">
+      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <span className="text-[11px] font-semibold text-foreground">{value}</span>
+    </div>
+  )
+}
+
+function UnitToggle<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string
+  value: T
+  options: Array<{ v: T; l: string }>
+  onChange: (v: T) => void
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <ToggleGroup
+        type="single"
+        value={value}
+        onValueChange={(v) => {
+          if (v) onChange(v as T)
+        }}
+        className="rounded-full border border-gold/20 p-0.5"
+      >
+        {options.map((opt) => (
+          <ToggleGroupItem
+            key={opt.v}
+            value={opt.v}
+            className="h-7 rounded-full px-3 text-xs data-[state=on]:bg-gold/15 data-[state=on]:text-gold"
+          >
+            {opt.l}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+    </div>
   )
 }
