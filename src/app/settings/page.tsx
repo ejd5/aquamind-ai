@@ -26,6 +26,7 @@ import { useEffect, useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { billing } from '@/lib/billing'
 import type { PlanId } from '@/lib/billing'
 import {
@@ -97,6 +98,7 @@ const APP_VERSION = 'v1.0.0'
 const APP_BUILD = 'build 1'
 
 export default function SettingsPage() {
+  const t = useTranslations('settings')
   const { data: session, status } = useSession()
   const router = useRouter()
 
@@ -194,22 +196,22 @@ export default function SettingsPage() {
       const active = entitlements.find((e) => e.isActive)
       if (!active) {
         toast({
-          title: 'Aucun abonnement actif',
-          description: 'Vous êtes sur le plan Free. Souscrivez à Premium ou Expert pour gérer votre abonnement.',
+          title: t('noActiveSubscription'),
+          description: t('noActiveSubscriptionDesc'),
         })
         return
       }
       await billing.manageSubscription()
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erreur inconnue'
+      const msg = err instanceof Error ? err.message : t('unknownError')
       if (msg.includes('not configured') || msg.includes('STRIPE')) {
         toast({
-          title: 'Gestion indisponible en dev',
-          description: 'Stripe n\'est pas configuré en local. En production, ce bouton ouvrira le portail Stripe.',
+          title: t('manageUnavailable'),
+          description: t('manageUnavailableDesc'),
         })
       } else {
         toast({
-          title: 'Impossible d\'ouvrir le portail',
+          title: t('portalFailed'),
           description: msg,
           variant: 'destructive',
         })
@@ -227,16 +229,16 @@ export default function SettingsPage() {
         const active = entitlements.find((e) => e.isActive)
         if (active) {
           setActivePlan(active.plan)
-          toast({ title: 'Achats restaurés', description: `Plan actif : ${active.plan}` })
+          toast({ title: t('restoreSuccess'), description: t('restoreSuccessDesc', { plan: active.plan }) })
         } else {
-          toast({ title: 'Aucun abonnement actif trouvé' })
+          toast({ title: t('noActiveFound') })
         }
       } else {
-        toast({ title: 'Aucun achat à restaurer' })
+        toast({ title: t('noPurchases') })
       }
     } catch (err) {
       toast({
-        title: 'Restauration échouée',
+        title: t('restoreFailed'),
         description: err instanceof Error ? err.message : undefined,
         variant: 'destructive',
       })
@@ -274,10 +276,10 @@ export default function SettingsPage() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-      toast({ title: 'Export téléchargé', description: 'Fichier JSON récupéré.' })
+      toast({ title: t('exportSuccess'), description: t('exportSuccessDesc') })
     } catch (err) {
       toast({
-        title: 'Export impossible',
+        title: t('exportFailed'),
         description: err instanceof Error ? err.message : undefined,
         variant: 'destructive',
       })
@@ -294,11 +296,11 @@ export default function SettingsPage() {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Suppression échec')
-      toast({ title: 'Compte supprimé', description: 'Redirection…' })
+      toast({ title: t('accountDeleted'), description: t('redirecting') })
       await signOut({ callbackUrl: '/' })
     } catch (err) {
       toast({
-        title: 'Suppression impossible',
+        title: t('deleteFailed'),
         description: err instanceof Error ? err.message : undefined,
         variant: 'destructive',
       })
@@ -311,7 +313,7 @@ export default function SettingsPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-gold" />
-        <p className="text-sm text-muted-foreground">Chargement…</p>
+        <p className="text-sm text-muted-foreground">{t('loading')}</p>
       </div>
     )
   }
@@ -321,9 +323,9 @@ export default function SettingsPage() {
   }
 
   const planLabel: Record<PlanId, string> = {
-    free: 'Free',
-    premium: 'Premium',
-    expert: 'Expert',
+    free: t('planFree'),
+    premium: t('planPremium'),
+    expert: t('planExpert'),
   }
 
   return (
@@ -336,11 +338,11 @@ export default function SettingsPage() {
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Retour
+            {t('backBtn')}
           </button>
           <div className="flex items-center gap-2">
             <span className="font-display text-base font-bold tracking-tight">
-              Paramètres
+              {t('headerTitle')}
             </span>
             <Sparkles className="h-3 w-3 text-gold" />
           </div>
@@ -353,12 +355,12 @@ export default function SettingsPage() {
         <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
           {/* Page title */}
           <div className="mb-8 space-y-1.5">
-            <p className="section-label">Compte & confidentialité</p>
+            <p className="section-label">{t('accountPrivacy')}</p>
             <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
-              Paramètres et confidentialité
+              {t('title')}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Gérez votre abonnement, vos données et vos préférences.
+              {t('subtitle')}
             </p>
             <div className="gold-divider mt-4" />
           </div>
@@ -367,8 +369,8 @@ export default function SettingsPage() {
             {/* ───────── 1. Mon abonnement ───────── */}
             <SettingsCard
               icon={<Crown className="h-4 w-4" />}
-              title="Mon abonnement"
-              description={`Plan actuel : ${loadingPlan ? '…' : planLabel[activePlan]}. Gérez votre abonnement depuis le portail.`}
+              title={t('subscription')}
+              description={t('subscriptionDesc', { plan: loadingPlan ? t('loadingPlan') : planLabel[activePlan] })}
             >
               <Button
                 onClick={handleManage}
@@ -379,10 +381,10 @@ export default function SettingsPage() {
                 {managing ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Ouverture…
+                    {t('opening')}
                   </>
                 ) : (
-                  'Gérer'
+                  t('manage')
                 )}
               </Button>
             </SettingsCard>
@@ -390,8 +392,8 @@ export default function SettingsPage() {
             {/* ───────── 2. Restaurer mes achats ───────── */}
             <SettingsCard
               icon={<RefreshCw className="h-4 w-4" />}
-              title="Restaurer mes achats"
-              description="Réactivez vos abonnements Premium ou Expert achetés sur un autre appareil."
+              title={t('restore')}
+              description={t('restoreDesc')}
             >
               <Button
                 onClick={handleRestore}
@@ -403,12 +405,12 @@ export default function SettingsPage() {
                 {restoring ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Restauration…
+                    {t('restoring')}
                   </>
                 ) : (
                   <>
                     <RefreshCw className="h-3.5 w-3.5" />
-                    Restaurer
+                    {t('restoreBtn')}
                   </>
                 )}
               </Button>
@@ -417,22 +419,22 @@ export default function SettingsPage() {
             {/* ───────── 3. Notifications ───────── */}
             <SettingsCard
               icon={<Bell className="h-4 w-4" />}
-              title="Notifications"
-              description="Choisissez les rappels et alertes que vous souhaitez recevoir."
+              title={t('notifications')}
+              description={t('notifDesc')}
             >
               <div className="flex w-full flex-col gap-3 sm:w-64">
                 <ToggleRow
-                  label="Rappels mesures"
+                  label={t('notifMeasureShort')}
                   checked={prefsLoaded ? prefs.measureReminders : true}
                   onChange={(v) => handlePrefChange('measureReminders', v)}
                 />
                 <ToggleRow
-                  label="Alertes météo"
+                  label={t('notifWeatherAlerts')}
                   checked={prefsLoaded ? prefs.weatherAlerts : true}
                   onChange={(v) => handlePrefChange('weatherAlerts', v)}
                 />
                 <ToggleRow
-                  label="Recommandations"
+                  label={t('notifRecommendations')}
                   checked={prefsLoaded ? prefs.recommendations : true}
                   onChange={(v) => handlePrefChange('recommendations', v)}
                 />
@@ -463,8 +465,8 @@ export default function SettingsPage() {
             {/* ───────── 4. Données personnelles (overview) ───────── */}
             <SettingsCard
               icon={<Database className="h-4 w-4" />}
-              title="Données personnelles"
-              description="Conformément au RGPD, vous pouvez exporter ou supprimer vos données à tout moment."
+              title={t('dataPersonal')}
+              description={t('dataPersonalDesc')}
             >
               <div className="flex flex-wrap gap-2">
                 <a
@@ -472,14 +474,14 @@ export default function SettingsPage() {
                   className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-xs font-semibold text-gold transition-colors hover:bg-gold/20"
                 >
                   <Download className="h-3 w-3" />
-                  Exporter
+                  {t('export')}
                 </a>
                 <a
                   href="#delete"
                   className="inline-flex items-center gap-1.5 rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/20"
                 >
                   <Trash2 className="h-3 w-3" />
-                  Supprimer
+                  {t('delete')}
                 </a>
               </div>
             </SettingsCard>
@@ -488,8 +490,8 @@ export default function SettingsPage() {
             <div id="export" className="scroll-mt-20">
               <SettingsCard
                 icon={<Download className="h-4 w-4" />}
-                title="Exporter mes données"
-                description="Téléchargez toutes vos données (piscine, mesures, photos, historique) au format JSON."
+                title={t('exportData')}
+                description={t('exportDesc')}
               >
                 <Button
                   onClick={handleExport}
@@ -501,12 +503,12 @@ export default function SettingsPage() {
                   {exporting ? (
                     <>
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Export…
+                      {t('exporting')}
                     </>
                   ) : (
                     <>
                       <Download className="h-3.5 w-3.5" />
-                      Exporter en JSON
+                      {t('exportJson')}
                     </>
                   )}
                 </Button>
@@ -517,8 +519,8 @@ export default function SettingsPage() {
             <div id="delete" className="scroll-mt-20">
               <SettingsCard
                 icon={<Trash2 className="h-4 w-4" />}
-                title="Supprimer mon compte"
-                description="Action irréversible. Toutes vos données seront définitivement effacées."
+                title={t('deleteAccount')}
+                description={t('deleteDesc')}
                 danger
               >
                 <AlertDialog>
@@ -529,22 +531,18 @@ export default function SettingsPage() {
                       className="rounded-full"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                      Supprimer
+                      {t('delete')}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Supprimer définitivement votre compte ?</AlertDialogTitle>
+                      <AlertDialogTitle>{t('deleteConfirmTitle')}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Cette action est <strong className="text-destructive">irréversible</strong>.
-                        Toutes vos données (piscines, mesures, photos, historique, abonnement)
-                        seront effacées immédiatement et ne pourront pas être récupérées.
-                        Si vous avez un abonnement actif, pensez à l&apos;annuler d&apos;abord
-                        depuis l&apos;App Store ou Google Play.
+                        {t('deleteDialogDesc')}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel disabled={deleting}>Annuler</AlertDialogCancel>
+                      <AlertDialogCancel disabled={deleting}>{t('cancel')}</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={(e) => {
                           e.preventDefault() // prevent auto-close, we'll close after signOut
@@ -556,10 +554,10 @@ export default function SettingsPage() {
                         {deleting ? (
                           <>
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            Suppression…
+                            {t('deleting')}
                           </>
                         ) : (
-                          'Oui, supprimer mon compte'
+                          t('deleteConfirmBtn')
                         )}
                       </AlertDialogAction>
                     </AlertDialogFooter>
@@ -571,32 +569,32 @@ export default function SettingsPage() {
             {/* ───────── 7. Politique de confidentialité ───────── */}
             <SettingsLinkCard
               icon={<Shield className="h-4 w-4" />}
-              title="Politique de confidentialité"
-              description="Comment nous collectons, utilisons et protégeons vos données (RGPD)."
+              title={t('privacy')}
+              description={t('privacyDesc')}
               href="/legal/privacy"
             />
 
             {/* ───────── 8. Conditions d'utilisation ───────── */}
             <SettingsLinkCard
               icon={<FileText className="h-4 w-4" />}
-              title="Conditions d'utilisation"
-              description="Les CGU régissant l'utilisation du service AQWELIA."
+              title={t('terms')}
+              description={t('termsDesc')}
               href="/legal/cgu"
             />
 
             {/* ───────── 9. Contacter le support ───────── */}
             <SettingsLinkCard
               icon={<Mail className="h-4 w-4" />}
-              title="Contacter le support"
-              description="Une question, un bug, une idée ? Notre équipe vous répond."
+              title={t('support')}
+              description={t('supportDesc')}
               href="/legal/support"
             />
 
             {/* ───────── 10. Version de l'application ───────── */}
             <SettingsCard
               icon={<Info className="h-4 w-4" />}
-              title="Version de l'application"
-              description="Informations sur la version installée."
+              title={t('version')}
+              description={t('versionDesc')}
             >
               <div className="flex flex-col items-end gap-1 text-right text-xs">
                 <span className="rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 font-semibold text-gold">
@@ -609,8 +607,8 @@ export default function SettingsPage() {
             {/* ───────── 11. Déconnexion ───────── */}
             <SettingsCard
               icon={<LogOut className="h-4 w-4" />}
-              title="Déconnexion"
-              description={`Connecté en tant que ${session.user?.email ?? 'utilisateur'}.`}
+              title={t('signOut')}
+              description={t('signOutDesc', { email: session.user?.email ?? t('unknownUser') })}
             >
               <Button
                 onClick={() => signOut({ callbackUrl: '/' })}
@@ -619,14 +617,14 @@ export default function SettingsPage() {
                 className="rounded-full"
               >
                 <LogOut className="h-3.5 w-3.5" />
-                Se déconnecter
+                {t('signOutBtn')}
               </Button>
             </SettingsCard>
           </div>
 
           {/* Footer note */}
           <p className="mt-8 text-center text-xs text-muted-foreground">
-            AQWELIA — Eau toujours cristalline. © {new Date().getFullYear()}
+            {t('footerNote', { year: new Date().getFullYear() })}
           </p>
         </div>
       </main>
@@ -787,6 +785,7 @@ function PreferencesSection({
   showCustomUnits,
   setShowCustomUnits,
 }: PreferencesSectionProps) {
+  const t = useTranslations('settings')
   const countryConfig = getCountryConfig(country)
   const norms = countryConfig.norms
 
@@ -804,8 +803,8 @@ function PreferencesSection({
     resetToCountryDefaults()
     setShowCustomUnits(false)
     toast({
-      title: 'Unités réinitialisées',
-      description: `Valeurs par défaut du pays (${countryConfig.name}) restaurées.`,
+      title: t('unitsReset'),
+      description: t('unitsResetDesc', { country: countryConfig.name }),
     })
   }
 
@@ -814,11 +813,11 @@ function PreferencesSection({
       {/* Card A — Langue */}
       <PreferencesCard
         icon={<Globe className="h-4 w-4" />}
-        title="Langue"
-        description="Choisissez la langue de l'interface."
+        title={t('language')}
+        description={t('languageDesc')}
       >
         <Select value={language} onValueChange={(v) => setLanguage(v as Locale)}>
-          <SelectTrigger className="w-full" aria-label="Langue de l'interface">
+          <SelectTrigger className="w-full" aria-label={t('ariaLang')}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -832,18 +831,18 @@ function PreferencesSection({
           </SelectContent>
         </Select>
         <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
-          Indépendant du pays — un Mexicain aux USA peut choisir l&apos;espagnol.
+          {t('languageNote')}
         </p>
       </PreferencesCard>
 
       {/* Card B — Pays */}
       <PreferencesCard
         icon={<MapPin className="h-4 w-4" />}
-        title="Pays"
-        description="Détermine les normes d'eau, les partenaires et la devise."
+        title={t('country')}
+        description={t('countryDesc')}
       >
         <Select value={country} onValueChange={(v) => setCountry(v)}>
-          <SelectTrigger className="w-full" aria-label="Pays">
+          <SelectTrigger className="w-full" aria-label={t('ariaCountry')}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -852,7 +851,7 @@ function PreferencesSection({
                 <span className="mr-1.5">{c.flag}</span>
                 {c.name}
                 <span className="ml-1.5 text-xs text-muted-foreground">
-                  ({c.currency} · {c.units === 'imperial' ? 'impérial' : 'métrique'})
+                  ({c.currency} · {c.units === 'imperial' ? t('imperialLower') : t('metricLower')})
                 </span>
               </SelectItem>
             ))}
@@ -860,28 +859,28 @@ function PreferencesSection({
         </Select>
         <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
           <span className="rounded-full border border-gold/30 bg-gold/5 px-2 py-0.5 text-gold">
-            Devise : {countryConfig.currency}
+            {t('currencyLabel', { currency: countryConfig.currency })}
           </span>
           <span className="rounded-full border border-gold/30 bg-gold/5 px-2 py-0.5 text-gold">
-            Marché : {countryConfig.marketplace}
+            {t('marketplaceLabel', { marketplace: countryConfig.marketplace })}
           </span>
           <span className="rounded-full border border-gold/30 bg-gold/5 px-2 py-0.5 text-gold">
-            Unités : {countryConfig.units === 'imperial' ? 'impériales' : 'métriques'}
+            {t('unitsLabel', { system: countryConfig.units === 'imperial' ? t('imperialPlural') : t('metricPlural') })}
           </span>
         </div>
         <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
-          Changer de pays réinitialise les unités et les normes appliquées.
+          {t('countryChangeNote')}
         </p>
       </PreferencesCard>
 
       {/* Card C — Unités */}
       <PreferencesCard
         icon={<Ruler className="h-4 w-4" />}
-        title="Unités de mesure"
-        description="Système global + personnalisation unité par unité."
+        title={t('units')}
+        description={t('unitsDesc')}
       >
         <div className="flex items-center justify-between gap-3">
-          <span className="text-xs text-muted-foreground">Système</span>
+          <span className="text-xs text-muted-foreground">{t('unitsSystem')}</span>
           <ToggleGroup
             type="single"
             value={unitSystem}
@@ -894,13 +893,13 @@ function PreferencesSection({
               value="metric"
               className="h-7 rounded-full px-3 text-xs data-[state=on]:bg-gold/15 data-[state=on]:text-gold"
             >
-              Métrique
+              {t('unitsMetric')}
             </ToggleGroupItem>
             <ToggleGroupItem
               value="imperial"
               className="h-7 rounded-full px-3 text-xs data-[state=on]:bg-gold/15 data-[state=on]:text-gold"
             >
-              Impérial
+              {t('unitsImperial')}
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
@@ -915,13 +914,13 @@ function PreferencesSection({
                 className={`h-3 w-3 transition-transform ${showCustomUnits ? 'rotate-180' : ''}`}
               />
               {showCustomUnits
-                ? 'Masquer les réglages avancés'
-                : 'Personnaliser unité par unité'}
+                ? t('unitsAdvancedHide')
+                : t('unitsCustomize')}
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-3 space-y-2.5">
             <UnitToggle
-              label="Température"
+              label={t('unitsTemperature')}
               value={temperature}
               options={[
                 { v: 'C', l: '°C' },
@@ -930,7 +929,7 @@ function PreferencesSection({
               onChange={setTemperature}
             />
             <UnitToggle
-              label="Volume"
+              label={t('unitsVolume')}
               value={volume}
               options={[
                 { v: 'm3', l: 'm³' },
@@ -939,7 +938,7 @@ function PreferencesSection({
               onChange={setVolume}
             />
             <UnitToggle
-              label="Poids"
+              label={t('unitsWeight')}
               value={weight}
               options={[
                 { v: 'kg', l: 'kg' },
@@ -948,7 +947,7 @@ function PreferencesSection({
               onChange={setWeight}
             />
             <UnitToggle
-              label="Longueur"
+              label={t('unitsLength')}
               value={length}
               options={[
                 { v: 'cm', l: 'cm' },
@@ -966,43 +965,43 @@ function PreferencesSection({
           className="mt-3 w-full rounded-full"
         >
           <RotateCcw className="h-3.5 w-3.5" />
-          Réinitialiser aux valeurs du pays
+          {t('unitsReset')}
         </Button>
       </PreferencesCard>
 
       {/* Card D — Normes (READ ONLY) */}
       <PreferencesCard
         icon={<Shield className="h-4 w-4" />}
-        title={`Normes applicables (${country})`}
-        description="Plages cibles appliquées automatiquement à vos analyses."
+        title={t('normsTitle', { country })}
+        description={t('normsCardDesc')}
       >
         <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
           <NormRow label="pH" value={`${norms.phMin.toFixed(1)} – ${norms.phMax.toFixed(1)}`} />
           <NormRow
-            label="Chlore"
+            label={t('normsChlorine')}
             value={`${norms.chlorineMin} – ${norms.chlorineMax} mg/L`}
           />
           <NormRow
-            label="Brome"
+            label={t('normsBromine')}
             value={`${norms.bromineMin} – ${norms.bromineMax} mg/L`}
           />
           <NormRow
-            label="TAC (alcalinité)"
+            label={t('normsTac')}
             value={`${norms.tacMin} – ${norms.tacMax} mg/L`}
           />
           <NormRow
-            label="CYA (stabilisant)"
+            label={t('normsCya')}
             value={`${norms.cyaMin} – ${norms.cyaMax} mg/L`}
           />
-          <NormRow label="Temp. max piscine" value={tempMaxPool} />
-          <NormRow label="Temp. max spa" value={tempMaxSpa} />
+          <NormRow label={t('normsTempPool')} value={tempMaxPool} />
+          <NormRow label={t('normsTempSpa')} value={tempMaxSpa} />
           <NormRow
-            label="Vidange spa"
-            value={`Tous les ${norms.spaDrainageMonths} mois`}
+            label={t('normsSpaDrain')}
+            value={t('normsSpaDrainValue', { months: norms.spaDrainageMonths })}
           />
         </div>
         <p className="mt-3 text-[11px] leading-snug text-muted-foreground">
-          Ces normes sont automatiquement appliquées à vos analyses et recommandations.
+          {t('normsNote')}
         </p>
       </PreferencesCard>
     </>

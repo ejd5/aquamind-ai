@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Waves } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { MobileHeader } from './mobile-header'
 import { BottomTabs } from './bottom-tabs'
 import { HomeScreen } from './screens/home-screen'
@@ -50,6 +51,7 @@ interface MobileAppShellProps {
  * models decoupled while sharing the same underlying modules.
  */
 export function MobileAppShell({ initialPresetQuestion, onBackToLanding }: MobileAppShellProps) {
+  const t = useTranslations('common')
   // ---- Profile state (mirrors desktop AppShell) --------------------------
   const [profile, setProfile] = useState<PoolProfileLite | null | undefined>(undefined)
 
@@ -179,7 +181,7 @@ export function MobileAppShell({ initialPresetQuestion, onBackToLanding }: Mobil
             <Waves className="h-6 w-6 animate-pulse text-primary-foreground" />
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">Chargement d'AQWELIA…</p>
+        <p className="text-sm text-muted-foreground">{t('loading')}</p>
       </div>
     )
   }

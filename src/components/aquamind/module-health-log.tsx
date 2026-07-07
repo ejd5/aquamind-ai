@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/hooks/use-toast'
+import { useTranslations } from 'next-intl'
 import { offlineApi, apiGetCached } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
@@ -42,10 +43,10 @@ interface DiagnosticRow {
   createdAt: string
 }
 
-const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  ok: { label: 'OK', cls: 'border-[oklch(0.7_0.15_155)]/30 bg-[oklch(0.7_0.15_155)]/10 text-[oklch(0.45_0.13_155)]' },
-  warning: { label: 'Attention', cls: 'border-yellow-400/30 bg-yellow-400/10 text-yellow-700 dark:text-yellow-300' },
-  critical: { label: 'Critique', cls: 'border-destructive/30 bg-destructive/10 text-destructive' },
+const STATUS_CLS: Record<string, string> = {
+  ok: 'border-[oklch(0.7_0.15_155)]/30 bg-[oklch(0.7_0.15_155)]/10 text-[oklch(0.45_0.13_155)]',
+  warning: 'border-yellow-400/30 bg-yellow-400/10 text-yellow-700 dark:text-yellow-300',
+  critical: 'border-destructive/30 bg-destructive/10 text-destructive',
 }
 
 const SWIM_BADGE: Record<string, string> = {
@@ -72,6 +73,7 @@ function safeParse<T>(s: string | null, fallback: T): T {
 }
 
 export function ModuleHealthLog() {
+  const t = useTranslations('modules')
   const [tests, setTests] = useState<WaterTestRow[]>([])
   const [diags, setDiags] = useState<DiagnosticRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -108,18 +110,18 @@ export function ModuleHealthLog() {
     try {
       if (!isOnline) {
         queueAction({ method: 'DELETE', path: `/api/pool/water-test?id=${id}` })
-        setTests((t) => t.filter((x) => x.id !== id))
+        setTests((t2) => t2.filter((x) => x.id !== id))
         toast({
-          title: 'Suppression enregistrée',
-          description: 'Sera synchronisée quand vous serez en ligne.',
+          title: t('healthLog.deleteQueued'),
+          description: t('healthLog.syncLater'),
         })
         return
       }
       await api.delete(`/api/pool/water-test?id=${id}`)
-      setTests((t) => t.filter((x) => x.id !== id))
-      toast({ title: 'Mesure supprimée' })
+      setTests((t2) => t2.filter((x) => x.id !== id))
+      toast({ title: t('healthLog.testDeleted') })
     } catch {
-      toast({ title: 'Erreur', description: 'Suppression impossible', variant: 'destructive' })
+      toast({ title: t('healthLog.error'), description: t('healthLog.deleteError'), variant: 'destructive' })
     }
   }
 
@@ -131,34 +133,33 @@ export function ModuleHealthLog() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="section-label">Carnet de santé</span>
+            <span className="section-label">{t('healthLog.sectionLabel')}</span>
             <span className="h-px w-8 bg-gold/40" />
           </div>
           <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            Carnet de santé
+            {t('healthLog.headline')}
           </h1>
           <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
-            Historique complet : mesures d'eau, indices de qualité, diagnostics photo. Rapport PDF
-            bientôt disponible.
+            {t('healthLog.subtitle')}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={load}>
             <RefreshCw className="h-3.5 w-3.5" />
-            Actualiser
+            {t('healthLog.refresh')}
           </Button>
           <Button
             variant="outline"
             size="sm"
             disabled
-            title="Bientôt disponible"
+            title={t('healthLog.comingSoon')}
             className="opacity-60"
           >
             <FileDown className="h-3.5 w-3.5" />
-            Export PDF
+            {t('healthLog.exportPdf')}
           </Button>
           {stale && (
-            <span className="text-[10px] italic text-muted-foreground">données en cache</span>
+            <span className="text-[10px] italic text-muted-foreground">{t('healthLog.cached')}</span>
           )}
         </div>
       </div>
@@ -178,16 +179,16 @@ export function ModuleHealthLog() {
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 font-display text-base">
                   <TrendingUp className="h-4 w-4 text-primary" />
-                  Évolution du pH
+                  {t('healthLog.phEvolution')}
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  {trend.length} mesure(s) — zone idéale 7.0–7.4
+                  {t('healthLog.phDesc', { count: trend.length })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {trend.length < 2 ? (
                   <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-                    Pas assez de mesures pour un graphique.
+                    {t('healthLog.notEnoughChart')}
                   </div>
                 ) : (
                   <div className="relative h-48">
@@ -218,18 +219,18 @@ export function ModuleHealthLog() {
                         strokeLinejoin="round"
                         strokeLinecap="round"
                         points={trend
-                          .map((t, i) => {
+                          .map((t2, i) => {
                             const x = (i / Math.max(1, trend.length - 1)) * 320
-                            const y = ((8 - t.ph) / (8 - 6.5)) * 180
+                            const y = ((8 - t2.ph) / (8 - 6.5)) * 180
                             return `${x},${y}`
                           })
                           .join(' ')}
                       />
                       {/* Points */}
-                      {trend.map((t, i) => {
+                      {trend.map((t2, i) => {
                         const x = (i / Math.max(1, trend.length - 1)) * 320
-                        const y = ((8 - t.ph) / (8 - 6.5)) * 180
-                        const inIdeal = t.ph >= 7 && t.ph <= 7.4
+                        const y = ((8 - t2.ph) / (8 - 6.5)) * 180
+                        const inIdeal = t2.ph >= 7 && t2.ph <= 7.4
                         return (
                           <circle
                             key={i}
@@ -251,44 +252,44 @@ export function ModuleHealthLog() {
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 font-display text-base">
                   <Activity className="h-4 w-4 text-gold" />
-                  Indice eau claire
+                  {t('healthLog.clearWaterIndex')}
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Score global 0–100, plus c'est haut mieux c'est.
+                  {t('healthLog.clearWaterDesc')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {trend.length < 2 ? (
                   <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-                    Pas assez de mesures.
+                    {t('healthLog.notEnough')}
                   </div>
                 ) : (
                   <div className="flex h-48 items-end justify-between gap-1">
-                    {trend.map((t, i) => {
-                      const h = Math.max(4, t.clearWaterIndex)
+                    {trend.map((t2, i) => {
+                      const h = Math.max(4, t2.clearWaterIndex)
                       const color =
-                        t.clearWaterIndex >= 85
+                        t2.clearWaterIndex >= 85
                           ? 'from-[oklch(0.55_0.13_195)] to-[oklch(0.7_0.15_155)]'
-                          : t.clearWaterIndex >= 65
+                          : t2.clearWaterIndex >= 65
                             ? 'from-yellow-500/60 to-yellow-400'
-                            : t.clearWaterIndex >= 40
+                            : t2.clearWaterIndex >= 40
                               ? 'from-orange-500/60 to-orange-400'
                               : 'from-destructive/70 to-destructive'
                       return (
                         <div
                           key={i}
                           className="flex flex-1 flex-col items-center gap-1"
-                          title={`Indice ${t.clearWaterIndex} — ${new Date(t.createdAt).toLocaleDateString('fr-FR')}`}
+                          title={`${t('healthLog.clearWaterIndex')} ${t2.clearWaterIndex} — ${new Date(t2.createdAt).toLocaleDateString('fr-FR')}`}
                         >
-                          <span className={`text-[9px] font-bold ${clarityColorClass(t.clearWaterIndex)}`}>
-                            {t.clearWaterIndex}
+                          <span className={`text-[9px] font-bold ${clarityColorClass(t2.clearWaterIndex)}`}>
+                            {t2.clearWaterIndex}
                           </span>
                           <div
                             className={`w-full rounded-t-md bg-gradient-to-t ${color}`}
                             style={{ height: `${h}%` }}
                           />
                           <span className="text-[8px] text-muted-foreground">
-                            {new Date(t.createdAt).toLocaleDateString('fr-FR', {
+                            {new Date(t2.createdAt).toLocaleDateString('fr-FR', {
                               day: '2-digit',
                               month: '2-digit',
                             })}
@@ -307,32 +308,32 @@ export function ModuleHealthLog() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 font-display text-base">
                 <FlaskConical className="h-4 w-4 text-primary" />
-                Mesures d'eau
+                {t('healthLog.waterTests')}
               </CardTitle>
               <CardDescription className="text-xs">
-                {tests.length} mesure(s) au total
+                {t('healthLog.testsCount', { count: tests.length })}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {tests.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
                   <FlaskConical className="h-8 w-8 text-muted-foreground/40" />
-                  Aucune mesure enregistrée.
+                  {t('healthLog.noTests')}
                 </div>
               ) : (
                 <div className="custom-scroll relative max-h-[28rem] space-y-3 overflow-y-auto pr-2">
                   {/* Vertical timeline line */}
                   <div className="absolute bottom-3 left-3 top-3 w-px bg-gradient-to-b from-gold/40 via-primary/30 to-transparent" />
-                  {tests.map((t) => {
-                    const st = STATUS_BADGE[t.status] || STATUS_BADGE.ok
+                  {tests.map((t2) => {
+                    const statusCls = STATUS_CLS[t2.status] || STATUS_CLS.ok
                     return (
-                      <div key={t.id} className="relative flex gap-3 pl-6">
+                      <div key={t2.id} className="relative flex gap-3 pl-6">
                         {/* Dot */}
                         <span className="absolute left-1.5 top-3 h-3 w-3 rounded-full border-2 border-background bg-gradient-to-br from-primary to-gold shadow-md" />
                         <div className="flex-1 rounded-xl border border-border/50 bg-background/60 p-3">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <span className="text-xs font-semibold text-foreground">
-                              {new Date(t.createdAt).toLocaleDateString('fr-FR', {
+                              {new Date(t2.createdAt).toLocaleDateString('fr-FR', {
                                 weekday: 'short',
                                 day: '2-digit',
                                 month: 'short',
@@ -341,45 +342,45 @@ export function ModuleHealthLog() {
                               })}
                             </span>
                             <div className="flex flex-wrap items-center gap-1.5">
-                              <Badge variant="outline" className={st.cls}>
-                                {st.label}
+                              <Badge variant="outline" className={statusCls}>
+                                {t(`healthLog.status.${t2.status}`)}
                               </Badge>
                               <span
-                                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${SWIM_BADGE[t.swimSafety] || SWIM_BADGE.unknown}`}
+                                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${SWIM_BADGE[t2.swimSafety] || SWIM_BADGE.unknown}`}
                               >
-                                {t.swimSafety}
+                                {t2.swimSafety}
                               </span>
                               <span className={`rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold`}>
-                                {t.clearWaterIndex}/100
+                                {t2.clearWaterIndex}/100
                               </span>
                             </div>
                           </div>
                           <div className="mt-2 flex flex-wrap gap-3 text-xs">
                             <span className="text-muted-foreground">
-                              pH <span className="font-semibold text-foreground">{t.ph.toFixed(2)}</span>
+                              pH <span className="font-semibold text-foreground">{t2.ph.toFixed(2)}</span>
                             </span>
-                            {t.freeChlorine != null && (
+                            {t2.freeChlorine != null && (
                               <span className="text-muted-foreground">
-                                Cl libre <span className="font-semibold text-foreground">{t.freeChlorine} mg/L</span>
+                                {t('healthLog.freeChlorine')} <span className="font-semibold text-foreground">{t2.freeChlorine} mg/L</span>
                               </span>
                             )}
-                            {t.alkalinity != null && (
+                            {t2.alkalinity != null && (
                               <span className="text-muted-foreground">
-                                TAC <span className="font-semibold text-foreground">{t.alkalinity}</span>
+                                {t('healthLog.alkalinity')} <span className="font-semibold text-foreground">{t2.alkalinity}</span>
                               </span>
                             )}
                           </div>
-                          {t.note && (
-                            <p className="mt-1.5 text-xs italic text-muted-foreground">« {t.note} »</p>
+                          {t2.note && (
+                            <p className="mt-1.5 text-xs italic text-muted-foreground">« {t2.note} »</p>
                           )}
                           <div className="mt-2 flex items-center justify-between">
                             <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                              Source : {t.source === 'strip_photo' ? 'Bandelette photo' : t.source}
+                              {t('healthLog.source')} {t2.source === 'strip_photo' ? t('healthLog.stripPhoto') : t2.source}
                             </span>
                             <button
-                              onClick={() => removeTest(t.id)}
+                              onClick={() => removeTest(t2.id)}
                               className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                              aria-label="Supprimer"
+                              aria-label={t('healthLog.delete')}
                             >
                               <Trash2 className="h-3 w-3" />
                             </button>
@@ -398,14 +399,14 @@ export function ModuleHealthLog() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 font-display text-base">
                 <Camera className="h-4 w-4 text-primary" />
-                Diagnostics photo
+                {t('healthLog.diagnostics')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {diags.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
                   <Camera className="h-8 w-8 text-muted-foreground/40" />
-                  Aucun diagnostic photo.
+                  {t('healthLog.noDiagnostics')}
                 </div>
               ) : (
                 <div className="custom-scroll grid max-h-80 grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4">
@@ -450,8 +451,7 @@ export function ModuleHealthLog() {
           {/* PDF disclaimer */}
           <div className="flex items-center gap-2 rounded-xl border border-border/40 bg-secondary/30 p-3 text-xs text-muted-foreground">
             <BookOpen className="h-3.5 w-3.5 shrink-0 text-gold" />
-            Le rapport PDF complet (mesures, plans d'action, diagnostics) arrive bientôt. En
-            attendant, toutes vos données sont conservées dans le carnet.
+            {t('healthLog.pdfDisclaimer')}
           </div>
         </>
       )}

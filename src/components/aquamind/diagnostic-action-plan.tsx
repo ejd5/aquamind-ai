@@ -521,7 +521,7 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): Action
       instructions: [
         'Attendez au moins 24h de filtration continue.',
         'Reprenez une photo dans les mêmes conditions (même endroit, même éclairage).',
-        'Cliquez sur "Vérifier le résultat" en bas du plan.',
+        'Cliquez sur Vérifier le résultat en bas du plan.',
         'L\'IA comparera et dira si le problème est résolu.',
       ],
       waitTime: '24h',

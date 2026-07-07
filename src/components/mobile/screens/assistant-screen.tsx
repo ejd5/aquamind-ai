@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
+
 import { ModuleAssistant } from '../../aquamind/module-assistant'
 
 interface AssistantScreenProps {

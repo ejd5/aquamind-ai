@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/hooks/use-toast'
+import { useTranslations } from 'next-intl'
 import { offlineApi } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
@@ -55,21 +56,22 @@ interface LatestPlan {
   waterTestId: string
 }
 
-const SEVERITY_CONFIG: Record<string, { label: string; cls: string }> = {
-  low: { label: 'Tout va bien', cls: 'border-[oklch(0.7_0.15_155)]/30 bg-[oklch(0.7_0.15_155)]/10 text-[oklch(0.45_0.13_155)]' },
-  medium: { label: 'À surveiller', cls: 'border-yellow-400/30 bg-yellow-400/10 text-yellow-700 dark:text-yellow-300' },
-  high: { label: 'Action recommandée', cls: 'border-orange-400/30 bg-orange-400/10 text-orange-700 dark:text-orange-300' },
-  urgent: { label: 'Urgent', cls: 'border-destructive/30 bg-destructive/10 text-destructive' },
+const SEVERITY_CLS: Record<string, string> = {
+  low: 'border-[oklch(0.7_0.15_155)]/30 bg-[oklch(0.7_0.15_155)]/10 text-[oklch(0.45_0.13_155)]',
+  medium: 'border-yellow-400/30 bg-yellow-400/10 text-yellow-700 dark:text-yellow-300',
+  high: 'border-orange-400/30 bg-orange-400/10 text-orange-700 dark:text-orange-300',
+  urgent: 'border-destructive/30 bg-destructive/10 text-destructive',
 }
 
-const SWIM_CONFIG: Record<string, { label: string; cls: string; icon: string }> = {
-  allowed: { label: 'Baignade autorisée', cls: 'border-[oklch(0.7_0.15_155)]/40 bg-[oklch(0.7_0.15_155)]/15 text-[oklch(0.4_0.13_155)]', icon: 'bg-[oklch(0.7_0.15_155)]' },
-  avoid: { label: 'Baignade déconseillée', cls: 'border-yellow-400/40 bg-yellow-400/15 text-yellow-700 dark:text-yellow-200', icon: 'bg-yellow-500' },
-  forbidden: { label: 'Baignade interdite', cls: 'border-destructive/40 bg-destructive/15 text-destructive', icon: 'bg-destructive' },
-  unknown: { label: 'Baignade à confirmer', cls: 'border-border bg-muted text-muted-foreground', icon: 'bg-muted-foreground' },
+const SWIM_CLS: Record<string, { cls: string; icon: string }> = {
+  allowed: { cls: 'border-[oklch(0.7_0.15_155)]/40 bg-[oklch(0.7_0.15_155)]/15 text-[oklch(0.4_0.13_155)]', icon: 'bg-[oklch(0.7_0.15_155)]' },
+  avoid: { cls: 'border-yellow-400/40 bg-yellow-400/15 text-yellow-700 dark:text-yellow-200', icon: 'bg-yellow-500' },
+  forbidden: { cls: 'border-destructive/40 bg-destructive/15 text-destructive', icon: 'bg-destructive' },
+  unknown: { cls: 'border-border bg-muted text-muted-foreground', icon: 'bg-muted-foreground' },
 }
 
 export function ModuleActionPlan({ onNavigate }: Props) {
+  const t = useTranslations('diagnostic')
   const [plan, setPlan] = useState<LatestPlan | null>(null)
   const [loading, setLoading] = useState(true)
   const [regenerating, setRegenerating] = useState(false)
@@ -104,18 +106,18 @@ export function ModuleActionPlan({ onNavigate }: Props) {
       if (!isOnline) {
         queueAction({ method: 'POST', path: '/api/pool/action-plan', body: payload })
         toast({
-          title: 'Action enregistrée',
-          description: 'Le plan sera régénéré quand vous serez en ligne.',
+          title: t('actionQueued'),
+          description: t('actionQueuedDesc'),
         })
         return
       }
       await api.post('/api/pool/action-plan', payload)
-      toast({ title: 'Plan régénéré', description: 'Le plan a été recalculé.' })
+      toast({ title: t('regeneratedToast'), description: t('regeneratedDesc') })
       load()
     } catch (e) {
       toast({
-        title: 'Erreur',
-        description: e instanceof Error ? e.message : 'Régénération impossible',
+        title: t('error'),
+        description: e instanceof Error ? e.message : t('regenerateError'),
         variant: 'destructive',
       })
     } finally {
@@ -138,25 +140,24 @@ export function ModuleActionPlan({ onNavigate }: Props) {
       <Card className="glass-card">
         <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
           <ListChecks className="h-10 w-10 text-muted-foreground/40" />
-          <p className="font-display text-lg font-semibold">Aucun plan d'action disponible</p>
+          <p className="font-display text-lg font-semibold">{t('noPlan')}</p>
           <p className="max-w-md text-sm text-muted-foreground">
-            Saisissez une mesure d'eau pour générer automatiquement un plan d'action ordonné :
-            actions immédiates, dosages, sécurité baignade.
+            {t('noPlanDesc')}
           </p>
           <Button
             onClick={() => onNavigate('water')}
             className="bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-lg shadow-primary/20"
           >
             <Droplets className="h-4 w-4" />
-            Saisir une mesure
+            {t('enterMeasure')}
           </Button>
         </CardContent>
       </Card>
     )
   }
 
-  const sev = SEVERITY_CONFIG[plan.severity] || SEVERITY_CONFIG.low
-  const swim = SWIM_CONFIG[plan.swimSafety] || SWIM_CONFIG.unknown
+  const sevCls = SEVERITY_CLS[plan.severity] || SEVERITY_CLS.low
+  const swim = SWIM_CLS[plan.swimSafety] || SWIM_CLS.unknown
 
   return (
     <div className="space-y-5">
@@ -164,24 +165,23 @@ export function ModuleActionPlan({ onNavigate }: Props) {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="section-label">Plan d'action</span>
+            <span className="section-label">{t('sectionLabel')}</span>
             <span className="h-px w-8 bg-gold/40" />
           </div>
           <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            Plan d'action
+            {t('headline')}
           </h1>
           <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
-            Généré automatiquement à partir de votre dernière mesure. Suivez les étapes dans
-            l'ordre.
+            {t('actionPlanSubtitle')}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={regenerate} disabled={regenerating}>
             <RefreshCw className={`h-3.5 w-3.5 ${regenerating ? 'animate-spin' : ''}`} />
-            Régénérer
+            {t('regenerate')}
           </Button>
           {stale && (
-            <span className="text-[10px] italic text-muted-foreground">données en cache</span>
+            <span className="text-[10px] italic text-muted-foreground">{t('cached')}</span>
           )}
         </div>
       </div>
@@ -192,11 +192,11 @@ export function ModuleActionPlan({ onNavigate }: Props) {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 font-display text-lg">
               <Sparkles className="h-5 w-5 text-gold" />
-              Diagnostic
+              {t('diagnostic')}
             </CardTitle>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className={sev.cls}>
-                {sev.label}
+              <Badge variant="outline" className={sevCls}>
+                {t(`severity.${plan.severity}`)}
               </Badge>
               <span className="text-[10px] text-muted-foreground">
                 {new Date(plan.createdAt).toLocaleDateString('fr-FR', {
@@ -220,9 +220,9 @@ export function ModuleActionPlan({ onNavigate }: Props) {
           <ShieldAlert className="h-5 w-5 text-white" />
         </span>
         <div>
-          <p className="font-display text-lg font-bold">{swim.label}</p>
+          <p className="font-display text-lg font-bold">{t(`swimSafety.${plan.swimSafety}`)}</p>
           <p className="text-xs opacity-80">
-            Évaluez la sécurité avant toute baignade. En cas d'irritation, sortez de l'eau.
+            {t('swimSafetyDesc')}
           </p>
         </div>
       </div>
@@ -233,10 +233,10 @@ export function ModuleActionPlan({ onNavigate }: Props) {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 font-display text-base">
               <ListChecks className="h-4 w-4 text-gold" />
-              Actions immédiates — dans cet ordre
+              {t('immediateActions')}
             </CardTitle>
             <CardDescription className="text-xs">
-              L'ordre compte : TAC avant pH, pH avant chlore, chlore avant filtration.
+              {t('immediateActionsDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -268,13 +268,13 @@ export function ModuleActionPlan({ onNavigate }: Props) {
         <div className="space-y-4">
           <Card className="glass-card">
             <CardHeader className="pb-2">
-              <CardTitle className="font-display text-base">Synthèse</CardTitle>
+              <CardTitle className="font-display text-base">{t('synthesis')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" />
-                  Re-test
+                  {t('retest')}
                 </span>
                 <span className="font-display font-bold text-primary">
                   {Math.round(plan.retestInHours)}h
@@ -283,7 +283,7 @@ export function ModuleActionPlan({ onNavigate }: Props) {
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                   <RefreshCw className="h-3.5 w-3.5" />
-                  Filtration min.
+                  {t('filtrationMin')}
                 </span>
                 <span className="font-display font-bold text-primary">
                   {plan.filtrationHours}h
@@ -292,7 +292,7 @@ export function ModuleActionPlan({ onNavigate }: Props) {
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                   <Euro className="h-3.5 w-3.5" />
-                  Coût estimé
+                  {t('estimatedCost')}
                 </span>
                 <span className="font-display font-bold text-gold">
                   {plan.estimatedCost}
@@ -305,7 +305,7 @@ export function ModuleActionPlan({ onNavigate }: Props) {
             <div className="rounded-xl border border-gold/30 bg-gold/5 p-3 text-xs">
               <p className="flex items-center gap-1.5 font-semibold text-gold">
                 <PhoneCall className="h-3.5 w-3.5" />
-                Faire appel à un pro
+                {t('callPro')}
               </p>
               <p className="mt-1 text-foreground/80">{plan.whenToCallProfessional}</p>
             </div>
@@ -319,10 +319,10 @@ export function ModuleActionPlan({ onNavigate }: Props) {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 font-display text-base">
               <Droplets className="h-4 w-4 text-primary" />
-              Dosages recommandés
+              {t('dosages')}
             </CardTitle>
             <CardDescription className="text-xs">
-              Quantités calculées d'après votre volume d'eau et votre méthode de traitement.
+              {t('dosagesDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -345,15 +345,15 @@ export function ModuleActionPlan({ onNavigate }: Props) {
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
                     <span className="flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5">
                       <Clock className="h-3 w-3" />
-                      Filtr. {d.filtrationHours}h
+                      {t('filtrationHoursShort', { n: d.filtrationHours })}
                     </span>
                     <span className="flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5">
                       <ArrowRight className="h-3 w-3" />
-                      Re-test {d.retestInHours}h
+                      {t('retestHoursShort', { n: d.retestInHours })}
                     </span>
                     {d.waitBeforeSwimHours > 0 && (
                       <span className="flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-destructive">
-                        ⌛ Baignade {d.waitBeforeSwimHours}h
+                        ⌛ {t('swimWaitHours', { n: d.waitBeforeSwimHours })}
                       </span>
                     )}
                   </div>
@@ -381,7 +381,7 @@ export function ModuleActionPlan({ onNavigate }: Props) {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 font-display text-base text-destructive">
             <ShieldX className="h-4 w-4" />
-            À ne jamais faire
+            {t('doNotDo')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -400,16 +400,15 @@ export function ModuleActionPlan({ onNavigate }: Props) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-gold" />
-          AQWELIA aide au diagnostic et à l'entretien mais ne remplace pas un professionnel.
-          Respectez les notices produits.
+          {t('disclaimer')}
         </p>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => onNavigate('water')}>
             <Droplets className="h-3.5 w-3.5" />
-            Nouveau test
+            {t('newTest')}
           </Button>
           <Button variant="outline" size="sm" onClick={() => onNavigate('log')}>
-            Voir le carnet
+            {t('seeLog')}
             <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         </div>

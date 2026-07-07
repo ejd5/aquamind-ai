@@ -27,6 +27,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
+import { useTranslations } from 'next-intl'
 import type { TabId } from './app-shell'
 import { offlineApi, apiGetCached } from '@/lib/offline/api-cache'
 
@@ -69,16 +70,17 @@ interface Props {
   onNavigate?: (tab: TabId) => void
 }
 
-const LEVEL_CFG: Record<string, { label: string; cls: string }> = {
-  beginner: { label: 'Débutant', cls: 'border-[oklch(0.7_0.15_155)]/30 bg-[oklch(0.7_0.15_155)]/10 text-[oklch(0.45_0.13_155)]' },
-  intermediate: { label: 'Intermédiaire', cls: 'border-gold/30 bg-gold/10 text-gold' },
-  expert: { label: 'Expert', cls: 'border-primary/30 bg-primary/10 text-primary' },
+const LEVEL_CLS: Record<string, string> = {
+  beginner: 'border-[oklch(0.7_0.15_155)]/30 bg-[oklch(0.7_0.15_155)]/10 text-[oklch(0.45_0.13_155)]',
+  intermediate: 'border-gold/30 bg-gold/10 text-gold',
+  expert: 'border-primary/30 bg-primary/10 text-primary',
 }
 
 // Free categories for the free plan: only getting_started + faq
 const FREE_CATEGORIES: CategoryId[] = ['getting_started', 'faq']
 
 export function ModuleGuides({ onNavigate }: Props) {
+  const t = useTranslations('modules.guides')
   const [guides, setGuides] = useState<Guide[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [recommended, setRecommended] = useState<Guide[]>([])
@@ -110,12 +112,12 @@ export function ModuleGuides({ onNavigate }: Props) {
       if (subData?.plan?.id) setCurrentPlanId(subData.plan.id)
       setStale(listRes.stale || recRes.stale || subRes.stale)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur de chargement')
+      setError(e instanceof Error ? e.message : t('error'))
       setStale(false)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     loadAll()
@@ -126,8 +128,8 @@ export function ModuleGuides({ onNavigate }: Props) {
     const isPremium = !FREE_CATEGORIES.includes(g.category)
     if (isPremium && currentPlanId === 'free') {
       toast({
-        title: 'Guide Premium',
-        description: 'Ce guide est réservé aux abonnés Premium ou supérieur.',
+        title: t('premiumGuide'),
+        description: t('premiumGuideDesc'),
       })
       if (onNavigate) onNavigate('paywall')
       return
@@ -190,14 +192,14 @@ export function ModuleGuides({ onNavigate }: Props) {
   if (error) {
     return (
       <div className="space-y-5">
-        <Header />
+        <Header t={t} />
         <Card className="glass-card">
           <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
             <AlertTriangle className="h-8 w-8 text-destructive" />
             <p className="text-sm text-muted-foreground">{error}</p>
             <Button onClick={loadAll} variant="outline" size="sm">
               <RefreshCw className="h-4 w-4" />
-              Réessayer
+              {t('retry')}
             </Button>
           </CardContent>
         </Card>
@@ -207,16 +209,16 @@ export function ModuleGuides({ onNavigate }: Props) {
 
   return (
     <div className="space-y-5">
-      <Header />
+      <Header t={t} />
       {stale && (
-        <p className="-mt-3 text-[11px] italic text-muted-foreground">données en cache</p>
+        <p className="-mt-3 text-[11px] italic text-muted-foreground">{t('cached')}</p>
       )}
 
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Rechercher un guide, un tag…"
+          placeholder={t('searchTagPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-9"
@@ -228,7 +230,7 @@ export function ModuleGuides({ onNavigate }: Props) {
         <div>
           <div className="mb-2 flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-gold" />
-            <h2 className="font-display text-lg font-semibold">Recommandés pour vous</h2>
+            <h2 className="font-display text-lg font-semibold">{t('recommended')}</h2>
             <span className="h-px flex-1 bg-gold/20" />
           </div>
           <div className="custom-scroll flex gap-3 overflow-x-auto pb-2">
@@ -248,9 +250,9 @@ export function ModuleGuides({ onNavigate }: Props) {
                 <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">{g.summary}</p>
                 <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
                   <Clock className="h-3 w-3" />
-                  {g.durationMin} min
-                  <Badge variant="outline" className={`ml-auto text-[9px] ${LEVEL_CFG[g.level]?.cls || ''}`}>
-                    {LEVEL_CFG[g.level]?.label}
+                  {g.durationMin} {t('min')}
+                  <Badge variant="outline" className={`ml-auto text-[9px] ${LEVEL_CLS[g.level] || ''}`}>
+                    {t(`level.${g.level}`)}
                   </Badge>
                 </div>
               </button>
@@ -264,7 +266,7 @@ export function ModuleGuides({ onNavigate }: Props) {
         <CategoryPill
           active={activeCategory === 'all'}
           onClick={() => setActiveCategory('all')}
-          label="Tous"
+          label={t('all')}
           icon="📚"
         />
         {categories.map((c) => (
@@ -284,7 +286,7 @@ export function ModuleGuides({ onNavigate }: Props) {
           <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
             <BookOpen className="h-8 w-8 text-muted-foreground/50" />
             <p className="text-sm text-muted-foreground">
-              Aucun guide ne correspond à votre recherche.
+              {t('noResultsDesc')}
             </p>
           </CardContent>
         </Card>
@@ -305,7 +307,7 @@ export function ModuleGuides({ onNavigate }: Props) {
                     </span>
                     {isGuidePremium(g) && (
                       <Badge variant="outline" className="border-gold/40 bg-gold/10 px-1.5 text-[9px] font-bold text-gold">
-                        PREMIUM
+                        {t('premiumBadge')}
                       </Badge>
                     )}
                     {locked && (
@@ -315,20 +317,20 @@ export function ModuleGuides({ onNavigate }: Props) {
                   <p className="font-display text-base font-bold leading-tight">{g.title}</p>
                   <p className="line-clamp-2 text-xs text-muted-foreground">{g.summary}</p>
                   <div className="mt-auto flex flex-wrap gap-1.5 pt-1">
-                    {g.tags.slice(0, 3).map((t) => (
+                    {g.tags.slice(0, 3).map((tag) => (
                       <span
-                        key={t}
+                        key={tag}
                         className="rounded-full bg-secondary/60 px-2 py-0.5 text-[9px] font-medium text-muted-foreground"
                       >
-                        {t}
+                        {tag}
                       </span>
                     ))}
                   </div>
                   <div className="flex items-center gap-2 border-t border-border/40 pt-2 text-[10px] text-muted-foreground">
                     <Clock className="h-3 w-3" />
-                    {g.durationMin} min
-                    <Badge variant="outline" className={`ml-auto text-[9px] ${LEVEL_CFG[g.level]?.cls || ''}`}>
-                      {LEVEL_CFG[g.level]?.label}
+                    {g.durationMin} {t('min')}
+                    <Badge variant="outline" className={`ml-auto text-[9px] ${LEVEL_CLS[g.level] || ''}`}>
+                      {t(`level.${g.level}`)}
                     </Badge>
                   </div>
                 </CardContent>
@@ -350,7 +352,7 @@ export function ModuleGuides({ onNavigate }: Props) {
                   </span>
                   {isGuidePremium(selectedGuide) && (
                     <Badge variant="outline" className="border-gold/40 bg-gold/10 px-1.5 text-[9px] font-bold text-gold">
-                      PREMIUM
+                      {t('premiumBadge')}
                     </Badge>
                   )}
                 </div>
@@ -361,10 +363,10 @@ export function ModuleGuides({ onNavigate }: Props) {
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  {selectedGuide.durationMin} min
+                  {selectedGuide.durationMin} {t('min')}
                 </span>
-                <Badge variant="outline" className={LEVEL_CFG[selectedGuide.level]?.cls || ''}>
-                  {LEVEL_CFG[selectedGuide.level]?.label}
+                <Badge variant="outline" className={LEVEL_CLS[selectedGuide.level] || ''}>
+                  {t(`level.${selectedGuide.level}`)}
                 </Badge>
               </div>
 
@@ -384,13 +386,13 @@ export function ModuleGuides({ onNavigate }: Props) {
                         {s.tip && (
                           <p className="mt-2 flex items-start gap-1.5 rounded-md border border-gold/30 bg-gold/5 p-2 text-xs text-foreground/80">
                             <Lightbulb className="mt-0.5 h-3 w-3 shrink-0 text-gold" />
-                            <span><strong className="text-gold">Astuce :</strong> {s.tip}</span>
+                            <span><strong className="text-gold">{t('tipLabel')}</strong> {s.tip}</span>
                           </p>
                         )}
                         {s.warning && (
                           <p className="mt-2 flex items-start gap-1.5 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
                             <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-                            <span><strong>Attention :</strong> {s.warning}</span>
+                            <span><strong>{t('warningLabel')}</strong> {s.warning}</span>
                           </p>
                         )}
                       </div>
@@ -403,7 +405,7 @@ export function ModuleGuides({ onNavigate }: Props) {
                 <div className="border-t border-border/40 pt-3">
                   <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     <Bookmark className="h-3 w-3" />
-                    Guides liés
+                    {t('related')}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {selectedGuide.relatedGuideIds.map((id) => {
@@ -430,7 +432,7 @@ export function ModuleGuides({ onNavigate }: Props) {
                   className="border-border/60"
                 >
                   <CheckCircle2 className="h-4 w-4" />
-                  Fermer
+                  {t('close')}
                 </Button>
               </DialogFooter>
             </>
@@ -442,25 +444,25 @@ export function ModuleGuides({ onNavigate }: Props) {
       {openingGuide && (
         <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-full bg-background/95 px-4 py-2 text-xs shadow-lg border border-border/60">
           <RefreshCw className="h-3 w-3 animate-spin text-gold" />
-          Ouverture du guide…
+          {t('opening')}
         </div>
       )}
     </div>
   )
 }
 
-function Header() {
+function Header({ t }: { t: ReturnType<typeof useTranslations> }) {
   return (
     <div>
       <div className="flex items-center gap-2">
-        <span className="section-label">Ressources & guides</span>
+        <span className="section-label">{t('sectionLabel')}</span>
         <span className="h-px w-8 bg-gold/40" />
       </div>
       <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-        Ressources AQWELIA
+        {t('headline')}
       </h1>
       <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
-        Guides experts, tutoriels et fiches pratiques pour une eau claire toute l'année.
+        {t('subtitle')}
       </p>
     </div>
   )

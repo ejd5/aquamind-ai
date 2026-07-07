@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
+
 import { Droplets, Camera, BookOpen, FlaskConical } from 'lucide-react'
 import { ModuleWaterTest } from '../../aquamind/module-water-test'
 import { ModuleDiagnostic } from '../../aquamind/module-diagnostic'

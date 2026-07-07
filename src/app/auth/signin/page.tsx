@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Mail, Lock, User as UserIcon, ArrowRight, ArrowLeft, Loader2, ShieldCheck, Gift } from 'lucide-react'
 
 type Mode = 'signin' | 'signup'
 
 export default function AuthPage() {
+  const t = useTranslations('auth')
   const router = useRouter()
   const params = useSearchParams()
   const [mode, setMode] = useState<Mode>('signin')
@@ -37,22 +39,22 @@ export default function AuthPage() {
           body: JSON.stringify({ email, password, name: name || undefined }),
         })
         const data = await res.json()
-        if (!res.ok) throw new Error(data.error || 'Erreur lors de l\'inscription')
+        if (!res.ok) throw new Error(data.error || t('errorSignup'))
         // Auto-login after register
         const result = await signIn('credentials', { email, password, redirect: false })
-        if (!result?.ok) throw new Error('Compte créé, veuillez vous connecter')
+        if (!result?.ok) throw new Error(t('errorCreatedNeedSignin'))
         router.push('/')
         router.refresh()
       } else {
         const result = await signIn('credentials', { email, password, redirect: false })
         if (!result?.ok) {
-          throw new Error('Email ou mot de passe incorrect')
+          throw new Error(t('errorInvalidCredentials'))
         }
         router.push('/')
         router.refresh()
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue')
+      setError(err instanceof Error ? err.message : t('errorGeneric'))
     } finally {
       setLoading(false)
     }
@@ -79,7 +81,7 @@ export default function AuthPage() {
           className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Retour à l&apos;accueil
+          {t('backHome')}
         </Link>
 
         {/* Logo + title */}
@@ -99,7 +101,7 @@ export default function AuthPage() {
             <span className="aqua-text-gradient">AQWELIA</span>
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {mode === 'signin' ? 'Connectez-vous à votre copilote piscine' : 'Créez votre compte en 30 secondes'}
+            {mode === 'signin' ? t('loginTitle') : t('signupTitle')}
           </p>
         </div>
 
@@ -114,7 +116,7 @@ export default function AuthPage() {
                 mode === 'signin' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Connexion
+              {t('loginTab')}
             </button>
             <button
               type="button"
@@ -123,7 +125,7 @@ export default function AuthPage() {
                 mode === 'signup' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Inscription
+              {t('signupTab')}
             </button>
           </div>
 
@@ -137,7 +139,7 @@ export default function AuthPage() {
                   className="overflow-hidden"
                 >
                   <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                    Nom (optionnel)
+                    {t('nameLabel')}
                   </label>
                   <div className="relative">
                     <UserIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -145,7 +147,7 @@ export default function AuthPage() {
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Jean Dupont"
+                      placeholder={t('namePlaceholder')}
                       className="w-full rounded-xl border border-border bg-background/60 py-2.5 pl-10 pr-3 text-sm outline-none transition-all focus:border-gold/50 focus:ring-2 focus:ring-gold/20"
                     />
                   </div>
@@ -155,7 +157,7 @@ export default function AuthPage() {
 
             <div>
               <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                Email
+                {t('emailLabel')}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -164,7 +166,7 @@ export default function AuthPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="vous@exemple.com"
+                  placeholder={t('emailPlaceholder')}
                   className="w-full rounded-xl border border-border bg-background/60 py-2.5 pl-10 pr-3 text-sm outline-none transition-all focus:border-gold/50 focus:ring-2 focus:ring-gold/20"
                 />
               </div>
@@ -172,7 +174,7 @@ export default function AuthPage() {
 
             <div>
               <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                Mot de passe
+                {t('passwordLabel')}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -182,7 +184,7 @@ export default function AuthPage() {
                   minLength={mode === 'signup' ? 8 : undefined}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={mode === 'signup' ? 'Minimum 8 caractères' : '••••••••'}
+                  placeholder={mode === 'signup' ? t('passwordHint') : t('passwordPlaceholder')}
                   className="w-full rounded-xl border border-border bg-background/60 py-2.5 pl-10 pr-3 text-sm outline-none transition-all focus:border-gold/50 focus:ring-2 focus:ring-gold/20"
                 />
               </div>
@@ -206,11 +208,11 @@ export default function AuthPage() {
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  {mode === 'signin' ? 'Connexion…' : 'Création…'}
+                  {mode === 'signin' ? t('connecting') : t('creating')}
                 </>
               ) : (
                 <>
-                  {mode === 'signin' ? 'Se connecter' : 'Créer mon compte'}
+                  {mode === 'signin' ? t('signIn') : t('signUp')}
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </>
               )}
@@ -221,21 +223,21 @@ export default function AuthPage() {
           <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <ShieldCheck className="h-3 w-3 text-gold" />
-              Données chiffrées
+              {t('encryptedData')}
             </span>
             <span className="inline-flex items-center gap-1">
               <Gift className="h-3 w-3 text-gold" />
-              Plan Free à vie
+              {t('freePlan')}
             </span>
           </div>
         </div>
 
         {/* Footer note */}
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          En continuant, vous acceptez nos{' '}
-          <Link href="/legal/cgu" className="underline hover:text-foreground">CGU</Link>
-          {' '}et{' '}
-          <Link href="/legal/privacy" className="underline hover:text-foreground">Politique de confidentialité</Link>
+          {t('agreeTermsStart')}
+          <Link href="/legal/cgu" className="underline hover:text-foreground">{t('cgu')}</Link>
+          {t('agreeTermsAnd')}
+          <Link href="/legal/privacy" className="underline hover:text-foreground">{t('privacyPolicy')}</Link>
         </p>
       </div>
     </div>
