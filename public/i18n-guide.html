@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AQWELIA — Guide de Traduction (i18n)</title>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface-2: #1f2937;
+    --border: #374151;
+    --text: #f3f4f6;
+    --text-muted: #9ca3af;
+    --primary: #14b8a6;
+    --gold: #f59e0b;
+    --green: #10b981;
+    --red: #ef4444;
+    --blue: #3b82f6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0;
+  }
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+  header {
+    background: linear-gradient(135deg, var(--primary), var(--gold));
+    padding: 48px 24px;
+    text-align: center;
+    border-bottom: 3px solid var(--gold);
+  }
+  header h1 {
+    font-size: 2.2rem;
+    margin-bottom: 8px;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  header p {
+    color: rgba(255,255,255,0.9);
+    font-size: 1.1rem;
+  }
+  h2 {
+    font-size: 1.6rem;
+    margin-top: 40px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+    color: var(--gold);
+  }
+  h3 {
+    font-size: 1.25rem;
+    margin-top: 28px;
+    margin-bottom: 12px;
+    color: var(--primary);
+  }
+  p { margin-bottom: 12px; color: var(--text); }
+  ul, ol { margin-left: 24px; margin-bottom: 16px; }
+  li { margin-bottom: 6px; }
+  code {
+    background: var(--surface-2);
+    color: var(--green);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 0.9em;
+  }
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    margin-bottom: 16px;
+  }
+  pre code {
+    background: none;
+    color: var(--text);
+    padding: 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    background: var(--surface);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  th {
+    background: var(--surface-2);
+    color: var(--gold);
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border);
+  }
+  td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface-2); }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 8px;
+  }
+  .badge-green { background: rgba(16,185,129,0.2); color: var(--green); }
+  .badge-red { background: rgba(239,68,68,0.2); color: var(--red); }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-do { border-left: 4px solid var(--green); }
+  .card-dont { border-left: 4px solid var(--red); }
+  .card-info { border-left: 4px solid var(--blue); }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--gold);
+  }
+  .stat-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    align-items: flex-start;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--gold));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+  .step-content { flex: 1; }
+  .step-content h3 { margin-top: 0; }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .footer {
+    text-align: center;
+    padding: 40px 24px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+  .lang-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin: 16px 0;
+  }
+  .lang-item {
+    background: var(--surface-2);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    font-size: 0.85rem;
+  }
+  .lang-flag { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+  @media (max-width: 768px) {
+    .lang-grid { grid-template-columns: repeat(2, 1fr); }
+    .stats { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>AQWELIA — Guide de Traduction (i18n)</h1>
+  <p>Système de traduction complet · 7 langues · 2810 clés · 0 chaîne codée en dur</p>
+</header>
+
+<div class="container">
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat">
+    <div class="stat-value">7</div>
+    <div class="stat-label">Langues supportées</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">2810</div>
+    <div class="stat-label">Clés par langue</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">0</div>
+    <div class="stat-label">Chaîne codée en dur</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">18</div>
+    <div class="stat-label">Routes API traduites</div>
+  </div>
+</div>
+
+<!-- LANGUES -->
+<h2>Langues supportées</h2>
+<div class="lang-grid">
+  <div class="lang-item"><span class="lang-flag">🇫🇷</span>Français<br><small>Source</small></div>
+  <div class="lang-item"><span class="lang-flag">🇬🇧</span>English</div>
+  <div class="lang-item"><span class="lang-flag">🇪🇸</span>Español</div>
+  <div class="lang-item"><span class="lang-flag">🇩🇪</span>Deutsch</div>
+  <div class="lang-item"><span class="lang-flag">🇮🇹</span>Italiano</div>
+  <div class="lang-item"><span class="lang-flag">🇵🇹</span>Português</div>
+  <div class="lang-item"><span class="lang-flag">🇳🇱</span>Nederlands</div>
+</div>
+
+<!-- ARCHITECTURE -->
+<h2>Architecture actuelle</h2>
+<div class="card card-info">
+  <ul>
+    <li><strong>Framework i18n</strong> : <a href="https://next-intl-docs.vercel.app/" target="_blank">next-intl</a> (standard Next.js 16)</li>
+    <li><strong>Fichiers de locale</strong> : <code>src/i18n/locales/{fr,en,es,de,it,pt,nl}.json</code></li>
+    <li><strong>Langue source</strong> : Français (<code>fr.json</code>)</li>
+    <li><strong>Nombre de clés</strong> : 2810 par langue</li>
+    <li><strong>Règle d'or</strong> : <strong>Zéro texte visible codé en dur dans les composants</strong> — tout passe par <code>t("key")</code></li>
+  </ul>
+</div>
+
+<!-- NAMESPACES -->
+<h2>Structure des namespaces</h2>
+<table>
+  <thead>
+    <tr><th>Namespace</th><th>Description</th><th>Exemple</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>common</code></td><td>Textes partagés (boutons, erreurs, noms)</td><td><code>common.errors.unauthorized</code></td></tr>
+    <tr><td><code>nav</code></td><td>Navigation principale</td><td><code>nav.solution</code></td></tr>
+    <tr><td><code>landing</code></td><td>Page d'accueil marketing</td><td><code>landing.heroTitle</code></td></tr>
+    <tr><td><code>modules</code></td><td>UI des modules de l'app</td><td><code>modules.dashboard.weatherRisk</code></td></tr>
+    <tr><td><code>diagnostic</code></td><td>Diagnostic eau</td><td><code>diagnostic.balanced</code></td></tr>
+    <tr><td><code>diagnosticActionPlan</code></td><td>Plans d'action détaillés</td><td><code>diagnosticActionPlan.greenS1Title</code></td></tr>
+    <tr><td><code>actionPlan</code></td><td>Plans d'action générés</td><td><code>actionPlan.iaAdjustTac</code></td></tr>
+    <tr><td><code>weather</code></td><td>Météo + codes wttr.in</td><td><code>weather.codes.113</code></td></tr>
+    <tr><td><code>reminders</code></td><td>Rappels intelligents</td><td><code>reminders.test_overdue.title</code></td></tr>
+    <tr><td><code>guidesData</code></td><td>Guides pédagogiques</td><td><code>guidesData.green-water.title</code></td></tr>
+    <tr><td><code>targets</code></td><td>Cibles paramètres eau</td><td><code>targets.ph.label</code></td></tr>
+    <tr><td><code>spaData</code></td><td>Données spa</td><td><code>spaData.freq_daily</code></td></tr>
+    <tr><td><code>plans</code></td><td>Plans tarifaires</td><td><code>plans.free.name</code></td></tr>
+    <tr><td><code>settings</code></td><td>Page paramètres</td><td><code>settings.accountSection</code></td></tr>
+    <tr><td><code>onboarding</code></td><td>Configuration initiale</td><td><code>onboarding.step1Title</code></td></tr>
+    <tr><td><code>legal</code></td><td>CGU, confidentialité, support</td><td><code>legal.cgu.article1Title</code></td></tr>
+    <tr><td><code>metadata</code></td><td>SEO</td><td><code>metadata.title</code></td></tr>
+  </tbody>
+</table>
+
+<!-- RÈGLES -->
+<h2>Règles de développement</h2>
+
+<div class="card card-do">
+  <h3>✅ À FAIRE <span class="badge badge-green">Autorisé</span></h3>
+  <pre><code>// Utiliser t() pour tout texte visible
+const t = useTranslations('modules.dashboard')
+return &lt;h1&gt;{t('weatherRisk')}&lt;/h1&gt;
+
+// Pour les données dynamiques avec clés
+&lt;p&gt;{t(alert.titleKey as any)}&lt;/p&gt;
+&lt;p&gt;{t(alert.messageKey as any, alert.messageParams || {})}&lt;/p&gt;</code></pre>
+</div>
+
+<div class="card card-dont">
+  <h3>❌ À NE PAS FAIRE <span class="badge badge-red">Bloqué</span></h3>
+  <pre><code>// Texte codé en dur — BLOQUÉ par pre-commit hook
+return &lt;h1&gt;Risque météo&lt;/h1&gt;
+
+// Erreur API en français — BLOQUÉ
+return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })</code></pre>
+</div>
+
+<div class="card card-info">
+  <h3>✅ Routes API (server-side)</h3>
+  <pre><code>import { pickLocale, translate } from '@/lib/i18n-api'
+
+export async function GET(req: Request) {
+  const locale = pickLocale(req)
+  if (!session) {
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
+  }
+}</code></pre>
+</div>
+
+<!-- PRE-COMMIT -->
+<h2>Pre-commit hook</h2>
+<div class="card card-info">
+  <p>Le hook <code>scripts/i18n/check-hardcoded-strings.py</code> s'exécute avant chaque commit :</p>
+  <ul>
+    <li><strong>Bloque</strong> les chaînes avec accents français non passées par <code>t()</code></li>
+    <li><strong>Ignore</strong> les fallbacks dans <code>lib/pool/*</code> (à côté des <code>*Key</code> fields)</li>
+    <li><strong>Ignore</strong> les patterns de détection multilingue (IA)</li>
+    <li><strong>Ignore</strong> les noms propres (pays, marques)</li>
+  </ul>
+  <p style="margin-top:12px;">Pour bypasser (non recommandé) : <code>git commit --no-verify</code></p>
+</div>
+
+<hr>
+
+<!-- PHASE 2 -->
+<h2>Phase 2 — Mise en place de Crowdin</h2>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <h3>Créer un compte Crowdin</h3>
+    <ol>
+      <li>Aller sur <a href="https://crowdin.com" target="_blank">https://crowdin.com</a></li>
+      <li>Créer un compte (gratuit jusqu'à 6000 chaînes — AQWELIA en a ~2810)</li>
+      <li>Créer un projet "AQWELIA"</li>
+    </ol>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <h3>Configurer les langues</h3>
+    <ul>
+      <li><strong>Langue source</strong> : French (fr)</li>
+      <li><strong>Langues cibles</strong> : English (en), Spanish (es), German (de), Italian (it), Portuguese (pt), Dutch (nl)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content">
+    <h3>Connecter GitHub</h3>
+    <ol>
+      <li>Dans Crowdin → <strong>Integrations</strong> → <strong>GitHub</strong></li>
+      <li>Autoriser l'accès au dépôt <code>ejd5/aquamind-ai</code></li>
+      <li>Configurer la synchronisation :
+        <ul>
+          <li><strong>Fichier source</strong> : <code>src/i18n/locales/fr.json</code></li>
+          <li><strong>Fichiers cibles</strong> : <code>src/i18n/locales/{en,es,de,it,pt,nl}.json</code></li>
+          <li><strong>Branche</strong> : <code>main</code></li>
+          <li><strong>Sens</strong> : Crowdin ↔ GitHub (bidirectionnel)</li>
+        </ul>
+      </li>
+    </ol>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-content">
+    <h3>Créer le glossaire AQWELIA</h3>
+    <p>Ajouter ces termes au glossaire (traduction cohérente) :</p>
+    <table>
+      <thead>
+        <tr><th>Terme FR</th><th>EN</th><th>ES</th><th>DE</th><th>IT</th><th>PT</th><th>NL</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>AQWELIA</strong></td><td>AQWELIA</td><td>AQWELIA</td><td>AQWELIA</td><td>AQWELIA</td><td>AQWELIA</td><td>AQWELIA</td></tr>
+        <tr><td>copilote</td><td>copilot</td><td>copiloto</td><td>Copilot</td><td>copilota</td><td>copiloto</td><td>copiloot</td></tr>
+        <tr><td>piscine</td><td>pool</td><td>piscina</td><td>Pool</td><td>piscina</td><td>piscina</td><td>zwembad</td></tr>
+        <tr><td>électrolyseur</td><td>electrolyzer</td><td>electrolizador</td><td>Elektrolysegerät</td><td>elettrolizzatore</td><td>eletrolisador</td><td>elektrolyseapparaat</td></tr>
+        <tr><td>chlore</td><td>chlorine</td><td>cloro</td><td>Chlor</td><td>cloro</td><td>cloro</td><td>chloor</td></tr>
+        <tr><td>stabilisant</td><td>stabilizer</td><td>estabilizante</td><td>Stabilisator</td><td>stabilizzante</td><td>estabilizante</td><td>stabilisator</td></tr>
+        <tr><td>floculant</td><td>flocculant</td><td>floculante</td><td>Flockungsmittel</td><td>flocculante</td><td>floculante</td><td>vlokmiddel</td></tr>
+        <tr><td>backwash</td><td>backwash</td><td>contralavado</td><td>Rückspülung</td><td>contro-lavaggio</td><td>contralavagem</td><td>backwash</td></tr>
+        <tr><td>skimmer</td><td>skimmer</td><td>skimmer</td><td>Skimmer</td><td>skimmer</td><td>skimmer</td><td>skimmer</td></tr>
+        <tr><td>TAC</td><td>TAC</td><td>TAC</td><td>TAC</td><td>TAC</td><td>TAC</td><td>TAC</td></tr>
+        <tr><td>CYA</td><td>CYA</td><td>CYA</td><td>CYA</td><td>CYA</td><td>CYA</td><td>CYA</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-content">
+    <h3>Activer la traduction IA</h3>
+    <ol>
+      <li><strong>Settings</strong> → <strong>MT (Machine Translation)</strong> → Activer</li>
+      <li>Sélectionner le moteur IA (Crowdin MT ou Google Translate)</li>
+      <li>Activer "Auto-translate new strings"</li>
+      <li>Les nouvelles clés ajoutées à <code>fr.json</code> seront automatiquement traduites</li>
+    </ol>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">6</div>
+  <div class="step-content">
+    <h3>Configurer les contrôles QA</h3>
+    <p>Dans <strong>Settings</strong> → <strong>Quality Assurance</strong>, activer :</p>
+    <ul>
+      <li>✅ <strong>Missing translations</strong> — détecte les clés non traduites</li>
+      <li>✅ <strong>Unused keys</strong> — détecte les clés plus utilisées dans le code</li>
+      <li>✅ <strong>Broken variables</strong> — détecte les <code>{param}</code> cassés</li>
+      <li>✅ <strong>Length limits</strong> — alerte si traduction trop longue (UI overflow)</li>
+      <li>✅ <strong>Glossary compliance</strong> — vérifie l'utilisation du glossaire</li>
+    </ul>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">7</div>
+  <div class="step-content">
+    <h3>Workflow de validation</h3>
+    <ol>
+      <li><strong>Développeur</strong> ajoute une clé à <code>fr.json</code> + pousse sur GitHub</li>
+      <li><strong>Crowdin</strong> détecte la nouvelle clé → traduit automatiquement via IA</li>
+      <li><strong>Relecteur</strong> valide la traduction dans l'aperçu "in-context"</li>
+      <li><strong>Crowdin</strong> pousse les traductions validées vers GitHub</li>
+      <li><strong>Pre-commit hook</strong> vérifie qu'aucun texte codé en dur n'est ajouté</li>
+    </ol>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">8</div>
+  <div class="step-content">
+    <h3>Aperçu "in-context"</h3>
+    <ol>
+      <li>Dans Crowdin → <strong>In-Context Preview</strong></li>
+      <li>Entrer l'URL : <code>http://localhost:3000</code> (dev) ou l'URL de production</li>
+      <li>Naviguer dans l'app — Crowdin surligne les textes traduisibles</li>
+      <li>Cliquer sur un texte → éditer la traduction directement</li>
+    </ol>
+  </div>
+</div>
+
+<hr>
+
+<!-- MAINTENANCE -->
+<h2>Maintenance quotidienne</h2>
+
+<h3>Ajouter une nouvelle clé</h3>
+<ol>
+  <li>Ajouter la clé dans <code>src/i18n/locales/fr.json</code></li>
+  <li>Le pre-commit hook vérifie qu'elle est utilisée via <code>t("key")</code></li>
+  <li>Crowdin traduit automatiquement vers les 6 autres langues</li>
+  <li>Valider dans Crowdin si nécessaire</li>
+</ol>
+
+<h3>Vérifier la couverture</h3>
+<pre><code># Compter les clés par langue
+python3 -c "
+import json
+for lang in ['fr','en','es','de','it','pt','nl']:
+    d = json.load(open(f'src/i18n/locales/{lang}.json'))
+    def count(x):
+        return sum(count(v) if isinstance(v, dict) else 1 for v in x.values())
+    print(f'{lang}: {count(d)} keys')
+"
+
+# Vérifier qu'aucun texte codé en dur n'existe
+python3 scripts/i18n/check-hardcoded-strings.py</code></pre>
+
+<h3>Ajouter une nouvelle langue</h3>
+<ol>
+  <li>Créer <code>src/i18n/locales/{lang}.json</code> (copier de <code>en.json</code>)</li>
+  <li>Ajouter la langue dans <code>src/lib/preferences/store.ts</code> (LANGUAGES array)</li>
+  <li>Ajouter la langue dans <code>src/i18n/config.ts</code></li>
+  <li>Dans Crowdin, ajouter la langue cible</li>
+  <li>Crowdin traduit automatiquement</li>
+</ol>
+
+</div>
+
+<div class="footer">
+  <p><strong>AQWELIA</strong> — Guide de Traduction i18n · Commit <code>70aa54a</code> · 7 langues · 2810 clés</p>
+  <p>Always crystal-clear water. · Une eau toujours cristalline.</p>
+</div>
+
+</body>
+</html>
