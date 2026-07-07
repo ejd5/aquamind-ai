@@ -7,7 +7,6 @@ import { GlassCard, Reveal, SectionHeading, staggerContainer, fadeUpVariants } f
 
 export function Solution() {
   const t = useTranslations('landing')
-  const t = useTranslations('landing')
 
   const STEPS = [
     {
