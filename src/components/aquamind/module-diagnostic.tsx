@@ -14,7 +14,19 @@ import {
   RefreshCw,
   ShieldAlert,
   Trash2,
+  Pencil,
 } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -540,62 +552,128 @@ export function ModuleDiagnostic() {
                 return (
                   <div
                     key={d.id}
-                    className="flex items-start gap-3 rounded-xl border border-border/50 bg-background/60 p-3"
+                    className="group flex items-start gap-3 rounded-xl border border-border/50 bg-background/60 p-3 transition-all hover:border-primary/30 hover:bg-primary/5"
                   >
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary">
-                      {d.imageUrl && d.imageUrl.startsWith('data:') ? (
-                        <img src={d.imageUrl} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                          {d.type}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground">
-                          {new Date(d.createdAt).toLocaleDateString('fr-FR', {
-                            day: '2-digit',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                        {isResolved && (
-                          <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-300">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Résolu
-                          </span>
+                    {/* Clickable area — reopen diagnostic */}
+                    <button
+                      onClick={() => {
+                        // Reopen this diagnostic: set image + result
+                        if (d.imageUrl) setImage(d.imageUrl)
+                        setResult({
+                          imageType: d.type,
+                          detectedIssues: detected,
+                          probableIssues: safeParse<string[]>(d.probableIssues, []),
+                          confidence: d.confidence,
+                          missingData: safeParse<string[]>(d.missingData, []),
+                          recommendedNextStep: d.recommendedNextStep || undefined,
+                          safetyWarnings: safeParse<string[]>(d.safetyWarnings, []),
+                          userFriendlySummary: d.aiSummary,
+                        })
+                        setTypeHint(d.type)
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                        toast({ title: 'Diagnostic rouvert', description: 'Vous pouvez compléter les étapes ci-dessous.' })
+                      }}
+                      className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                    >
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary">
+                        {d.imageUrl && d.imageUrl.startsWith('data:') ? (
+                          <img src={d.imageUrl} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <ImageIcon className="h-5 w-5 text-muted-foreground" />
                         )}
                       </div>
-                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                        {d.aiSummary}
-                      </p>
-                      {!isResolved && detected.length > 0 && (
-                        <p className="mt-1 text-[11px] text-destructive">
-                          ⚠ {detected.slice(0, 2).join(' · ')}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            {d.type}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {new Date(d.createdAt).toLocaleDateString('fr-FR', {
+                              day: '2-digit',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                          {isResolved && (
+                            <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-300">
+                              <CheckCircle2 className="h-3 w-3" />
+                              Résolu
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                          {d.aiSummary}
                         </p>
-                      )}
-                    </div>
-                    {/* Delete button */}
-                    <button
-                      onClick={async () => {
-                        if (!confirm('Supprimer ce diagnostic ?')) return
-                        try {
-                          await api.delete(`/api/pool/photo-diagnostic?id=${d.id}`)
-                          toast({ title: 'Diagnostic supprimé' })
-                          loadHistory()
-                        } catch {
-                          toast({ title: 'Erreur', description: 'Suppression impossible', variant: 'destructive' })
-                        }
-                      }}
-                      className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                      title="Supprimer"
-                      aria-label="Supprimer ce diagnostic"
-                    >
-                      <Trash2 className="h-4 w-4" />
+                        {!isResolved && detected.length > 0 && (
+                          <p className="mt-1 text-[11px] text-destructive">
+                            ⚠ {detected.slice(0, 2).join(' · ')}
+                          </p>
+                        )}
+                        <span className="mt-1 flex items-center gap-1 text-[10px] text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                          <Pencil className="h-3 w-3" />
+                          Cliquer pour rouvrir & compléter
+                        </span>
+                      </div>
                     </button>
+                    {/* Delete button — branded AlertDialog */}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button
+                          className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                          title="Supprimer"
+                          aria-label="Supprimer ce diagnostic"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="overflow-hidden border-border/60 bg-background/95 backdrop-blur-xl">
+                        {/* Branded header with logo */}
+                        <div className="flex flex-col items-center border-b border-border/40 bg-gradient-to-br from-primary/5 to-gold/5 px-6 pb-4 pt-6">
+                          <div className="relative mb-3">
+                            <div className="absolute -inset-[3px] rounded-[14px] bg-gradient-to-br from-gold via-ocean-light to-primary opacity-70 blur-[2px]" />
+                            <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl shadow-md">
+                              <img src="/icon-aqwelia-48.png" alt="AQWELIA" className="h-12 w-12 object-cover" />
+                            </div>
+                          </div>
+                          <AlertDialogTitle className="text-center font-display text-lg font-bold">
+                            <span className="aqua-text-gradient">Supprimer ce diagnostic ?</span>
+                          </AlertDialogTitle>
+                        </div>
+                        <div className="px-6 py-4">
+                          <AlertDialogDescription className="text-center text-sm text-muted-foreground">
+                            Cette action est définitive. Le diagnostic et sa photo seront supprimés définitivement de votre historique.
+                          </AlertDialogDescription>
+                          {d.aiSummary && (
+                            <div className="mt-3 rounded-lg border border-border/40 bg-secondary/30 p-2.5">
+                              <p className="line-clamp-2 text-xs text-muted-foreground">
+                                📸 {d.aiSummary}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        <AlertDialogFooter className="gap-2 px-6 pb-6">
+                          <AlertDialogCancel className="rounded-full border-border/60 px-6">
+                            Annuler
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={async () => {
+                              try {
+                                await api.delete(`/api/pool/photo-diagnostic?id=${d.id}`)
+                                toast({ title: 'Diagnostic supprimé', description: 'Le diagnostic a été retiré de votre historique.' })
+                                loadHistory()
+                              } catch {
+                                toast({ title: 'Erreur', description: 'Suppression impossible', variant: 'destructive' })
+                              }
+                            }}
+                            className="rounded-full bg-destructive px-6 text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            <Trash2 className="mr-1.5 h-4 w-4" />
+                            Supprimer
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 )
               })}
