@@ -29,19 +29,20 @@ interface LandingPageProps {
   onEnterApp: () => void
 }
 
-const NAV_LINKS = [
-  { id: 'probleme', label: t('navProblem') },
-  { id: 'solution', label: t('navSolution') },
-  { id: 'comparatif', label: t('navComparatif') },
-  { id: 'simulations', label: t('navSimulations') },
-  { id: 'gains', label: t('navGains') },
-  { id: 'tarifs', label: t('navTarifs') },
-  { id: 'faq', label: t('navFaq') },
-]
-
 export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
+  const t = useTranslations('landing')
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  const NAV_LINKS = [
+    { id: 'probleme', label: t('navProblem') },
+    { id: 'solution', label: t('navSolution') },
+    { id: 'comparatif', label: t('navComparatif') },
+    { id: 'simulations', label: t('navSimulations') },
+    { id: 'gains', label: t('navGains') },
+    { id: 'tarifs', label: t('navTarifs') },
+    { id: 'faq', label: t('navFaq') },
+  ]
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
