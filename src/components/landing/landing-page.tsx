@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Menu, X, ShieldAlert, ArrowRight } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/language-switcher'
+import { useTranslations } from 'next-intl'
 import { Hero } from './sections/hero'
 import { Problem } from './sections/problem'
 import { RealCosts } from './sections/real-costs'
@@ -29,13 +30,13 @@ interface LandingPageProps {
 }
 
 const NAV_LINKS = [
-  { id: 'probleme', label: 'Le problème' },
-  { id: 'solution', label: 'La solution' },
-  { id: 'comparatif', label: 'Comparatif' },
-  { id: 'simulations', label: 'Simulations' },
-  { id: 'gains', label: 'Gains' },
-  { id: 'tarifs', label: 'Tarifs' },
-  { id: 'faq', label: 'FAQ' },
+  { id: 'probleme', label: t('navProblem') },
+  { id: 'solution', label: t('navSolution') },
+  { id: 'comparatif', label: t('navComparatif') },
+  { id: 'simulations', label: t('navSimulations') },
+  { id: 'gains', label: t('navGains') },
+  { id: 'tarifs', label: t('navTarifs') },
+  { id: 'faq', label: t('navFaq') },
 ]
 
 export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
@@ -118,12 +119,11 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
             >
               Connexion
             </a>
-            <LanguageSwitcher />
             <button
               onClick={onEnterApp}
               className="glow-gold group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] px-4 py-2 text-sm font-bold text-[oklch(0.99_0.01_195)] shadow-md transition-all hover:scale-[1.03] hover:shadow-[0_0_35px_-6px_oklch(0.65_0.11_195/0.6)]"
             >
-              {hasProfile ? 'Mon espace' : 'Démarrer gratuitement'}
+              {hasProfile ? t('navMySpace') : t('navStart')}
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </button>
           </div>
@@ -169,7 +169,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
                   }}
                   className="mt-2 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] px-4 py-2.5 text-sm font-bold text-[oklch(0.99_0.01_195)] shadow-md"
                 >
-                  {hasProfile ? 'Accéder à mon espace' : 'Démarrer gratuitement'}
+                  {hasProfile ? t('navMySpace') : t('navStart')}
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
                 <a
@@ -179,7 +179,6 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
                   Connexion
                 </a>
                 <div className="mt-2 flex items-center justify-center">
-                  <LanguageSwitcher />
                 </div>
               </nav>
             </motion.div>

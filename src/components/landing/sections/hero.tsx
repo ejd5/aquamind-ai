@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { ArrowRight, Sparkles, ShieldCheck, Gift, Lock, ChevronDown, Droplets } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { AnimatedCounter, scrollToId } from '../landing-utils'
 
 interface HeroProps {
@@ -10,20 +11,21 @@ interface HeroProps {
 }
 
 const STATS = [
-  { value: 11, suffix: '', label: 'Modules IA', decimals: 0 },
-  { value: 20, suffix: '+', label: 'Guides experts', decimals: 0 },
-  { value: 550, prefix: '-', suffix: '€', label: "d'économies / an", decimals: 0 },
-  { value: 25, suffix: 'h', label: 'gagnées / saison', decimals: 0 },
+  { value: 11, suffix: '', label: t('statModules'), decimals: 0 },
+  { value: 20, suffix: '+', label: t('statGuides'), decimals: 0 },
+  { value: 550, prefix: '-', suffix: '€', label: t('statSavings'), decimals: 0 },
+  { value: 25, suffix: 'h', label: t('statHours'), decimals: 0 },
 ]
 
 const TRUST = [
-  { icon: Gift, label: 'Gratuit sans CB' },
-  { icon: ShieldCheck, label: 'Sans engagement' },
-  { icon: Lock, label: 'Données 100% privées' },
-  { icon: Sparkles, label: 'Conçu en France 🇫🇷' },
+  { icon: Gift, label: t('trustNoCard') },
+  { icon: ShieldCheck, label: t('trustNoCommitment') },
+  { icon: Lock, label: t('trustPrivate') },
+  { icon: Sparkles, label: t('trustFrance') },
 ]
 
 export function Hero({ hasProfile, onEnterApp }: HeroProps) {
+  const t = useTranslations('landing')
   return (
     <section id="top" className="relative isolate overflow-hidden pt-28 pb-24 sm:pt-32 sm:pb-32">
       {/* Aurora mesh background */}
@@ -64,7 +66,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
             transition={{ duration: 0.7, delay: 0.05 }}
             className="mt-6 font-display text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-6xl md:text-7xl"
           >
-            Une eau claire, sans stress,
+            {t('heroTitle')}
             <br className="hidden sm:block" />{' '}
             <span className="gradient-text-premium italic">sans gaspillage.</span>
           </motion.h1>
@@ -92,14 +94,14 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
               onClick={onEnterApp}
               className="glow-gold group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] px-7 py-3.5 text-sm font-bold text-[oklch(0.99_0.01_195)] shadow-lg transition-all hover:scale-[1.02] hover:shadow-[0_0_50px_-8px_oklch(0.65_0.11_195/0.7)] sm:w-auto"
             >
-              {hasProfile ? 'Accéder à mon espace' : 'Démarrer gratuitement'}
+              {hasProfile ? t('navMySpace') : t('heroCtaStart')}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </button>
             <button
               onClick={() => scrollToId('solution')}
               className="glass-pill inline-flex w-full items-center justify-center gap-2 rounded-full border-white/50 px-7 py-3.5 text-sm font-semibold text-foreground transition-all hover:border-gold/50 hover:text-gold sm:w-auto"
             >
-              Voir comment ça marche
+              {t('heroCtaHowItWorks')}
             </button>
           </motion.div>
 
