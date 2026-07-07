@@ -250,15 +250,14 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
                 </div>
               </div>
               <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/65">
-                Le copilote IA qui vous dit exactement quoi faire, combien, dans quel ordre, et
-                quand vous baigner. {t('trustFrance')}.
+                {t('footerTagline')}
               </p>
               {hasProfile && (
                 <button
                   onClick={onEnterApp}
                   className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-4 py-2 text-xs font-semibold text-gold transition-colors hover:bg-gold/20"
                 >
-                  Accéder à l&apos;app
+                  {t('navApp')}
                   <ArrowRight className="h-3 w-3" />
                 </button>
               )}
@@ -294,22 +293,22 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
                 <li><span className="text-white/70">{t('footerBlog')} <span className="text-white/35">({t('footerComingSoon')})</span></span></li>
                 <li>
                   <Link href="/legal/support" className="text-white/70 transition-colors hover:text-gold">
-                    Contact
+                    {t('footerContact')}
                   </Link>
                 </li>
                 <li>
                   <Link href="/legal/cgu" className="text-white/70 transition-colors hover:text-gold">
-                    CGU
+                    {t('footerCGU')}
                   </Link>
                 </li>
                 <li>
                   <Link href="/legal/privacy" className="text-white/70 transition-colors hover:text-gold">
-                    Confidentialité
+                    {t('footerPrivacy')}
                   </Link>
                 </li>
                 <li>
                   <Link href="/settings" className="text-white/70 transition-colors hover:text-gold">
-                    Paramètres
+                    {t('footerSettings')}
                   </Link>
                 </li>
               </ul>
