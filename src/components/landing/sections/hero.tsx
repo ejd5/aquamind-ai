@@ -167,7 +167,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   {[
                     { k: 'pH', v: '7.4', c: 'emerald' },
-                    { k: 'Chlore', v: '1.6', c: 'emerald' },
+                    { k: t('heroPhoneChlorine'), v: '1.6', c: 'emerald' },
                     { k: 'TAC', v: '90', c: 'amber' },
                     { k: 'CYA', v: '45', c: 'emerald' },
                   ].map((m) => (

@@ -1,0 +1,252 @@
+{
+  "guidesData.cloudy-water.steps.3.title": {
+    "fr": "Nettoyer ou backwash le filtre",
+    "en": "Clean or backwash the filter",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.4.detail": {
+    "fr": "Le floculant agglomère les particules fines pour que le filtre les retienne.",
+    "en": "Flocculant clumps fine particles so the filter can catch them.",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.4.title": {
+    "fr": "Utiliser un floculant (si filtre à sable)",
+    "en": "Use a flocculant (if sand filter)",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.4.warning": {
+    "fr": "Floculant uniquement avec filtre à sable. Pas avec cartouche.",
+    "en": "Flocculant only with sand filter. Not with cartridge.",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.5.detail": {
+    "fr": "Après floculation, des dépôts se forment au fond : aspirez-les.",
+    "en": "After flocculation, deposits form at the bottom: vacuum them up.",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.5.title": {
+    "fr": "Filtrer 24h puis aspirer les dépôts",
+    "en": "Filter 24h then vacuum deposits",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.summary": {
+    "fr": "Distinguer les causes d'une eau trouble et appliquer le bon traitement.",
+    "en": "Distinguish the causes of cloudy water and apply the right treatment.",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.title": {
+    "fr": "Eau trouble ou laiteuse",
+    "en": "Cloudy or milky water",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.steps.1.detail": {
+    "fr": "L'odeur forte de chlore n'est PAS un excès de chlore : ce sont les chloramines (chlore combiné), sous-produits de la désinfection.",
+    "en": "Strong chlorine smell is NOT excess chlorine: it is chloramines (combined chlorine), disinfection by-products.",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.steps.1.title": {
+    "fr": "Comprendre la cause",
+    "en": "Understand the cause",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.steps.2.detail": {
+    "fr": "Chlore combiné = chlore total - chlore libre. Si > 0.4 mg/L, traitement nécessaire.",
+    "en": "Combined chlorine = total chlorine - free chlorine. If > 0.4 mg/L, treatment needed.",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.steps.2.title": {
+    "fr": "Mesurer chlore libre ET total",
+    "en": "Measure BOTH free and total chlorine",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.steps.3.detail": {
+    "fr": "Le choc casse les chloramines et libère du chlore libre actif.",
+    "en": "Shock breaks down chloramines and releases active free chlorine.",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.steps.3.title": {
+    "fr": "Faire un traitement choc",
+    "en": "Do a shock treatment",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.steps.4.detail": {
+    "fr": "Un pH haut aggrave les chloramines.",
+    "en": "High pH worsens chloramines.",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.steps.4.title": {
+    "fr": "Vérifier le pH",
+    "en": "Check the pH",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.summary": {
+    "fr": "Comprendre les chloramines et comment s'en débarrasser.",
+    "en": "Understand chloramines and how to get rid of them.",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.title": {
+    "fr": "Odeur forte de chlore et yeux qui piquent",
+    "en": "Strong chlorine smell and stinging eyes",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.1.detail": {
+    "fr": "Un CYA trop haut \"bloque\" le chlore : il est présent mais inactif. Risque algues malgré un chlore normal.",
+    "en": "Too-high CYA \"locks\" chlorine: it is present but inactive. Algae risk despite normal chlorine.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.1.title": {
+    "fr": "Pourquoi c'est un problème",
+    "en": "Why it's a problem",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.2.detail": {
+    "fr": "Seule solution : diluer l'eau.",
+    "en": "Only solution: dilute the water.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.2.title": {
+    "fr": "Il n'existe pas de produit pour baisser le CYA",
+    "en": "There is no product to lower CYA",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.3.detail": {
+    "fr": "Vidange partielle puis complément.",
+    "en": "Partial drain then top up.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.3.title": {
+    "fr": "Renouveler 20-30% de l'eau",
+    "en": "Renew 20-30% of the water",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.4.detail": {
+    "fr": "Vérifier la nouvelle valeur.",
+    "en": "Check the new value.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.4.title": {
+    "fr": "Re-tester après renouvellement",
+    "en": "Re-test after renewal",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.5.detail": {
+    "fr": "Préférer chlore non stabilisé ou électrolyseur.",
+    "en": "Prefer non-stabilized chlorine or electrolyzer.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.5.title": {
+    "fr": "À l'avenir : utiliser moins de chlore stabilisé",
+    "en": "In future: use less stabilized chlorine",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.summary": {
+    "fr": "Que faire quand le CYA dépasse 50-60 mg/L ?",
+    "en": "What to do when CYA exceeds 50-60 mg/L?",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.title": {
+    "fr": "Mon stabilisant (CYA) est trop haut",
+    "en": "My stabilizer (CYA) is too high",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.1.detail": {
+    "fr": "2 fois par semaine minimum, plus si forte chaleur.",
+    "en": "At least twice a week, more in hot weather.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.1.title": {
+    "fr": "En saison chaide",
+    "en": "In warm season",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.2.detail": {
+    "fr": "1 fois tous les 15 jours.",
+    "en": "Once every 2 weeks.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.2.title": {
+    "fr": "En saison froide (hivernage actif)",
+    "en": "In cold season (active winterization)",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.3.detail": {
+    "fr": "Re-test dans les 3-24h selon produit.",
+    "en": "Re-test within 3-24h depending on product.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.3.title": {
+    "fr": "Après tout traitement",
+    "en": "After any treatment",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.4.detail": {
+    "fr": "Test systématique.",
+    "en": "Systematic test.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.4.title": {
+    "fr": "Après orage",
+    "en": "After a storm",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.5.detail": {
+    "fr": "Toujours.",
+    "en": "Always.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.5.title": {
+    "fr": "Avant baignade si doute",
+    "en": "Before swimming if in doubt",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.summary": {
+    "fr": "Rythme recommandé selon saison et usage.",
+    "en": "Recommended frequency by season and usage.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.title": {
+    "fr": "À quelle fréquence tester son eau ?",
+    "en": "How often should you test your water?",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.1.detail": {
+    "fr": "Quand la pression monte de 0.3-0.5 bar au-dessus de la pression de service, ou toutes les 2-4 semaines.",
+    "en": "When pressure rises 0.3-0.5 bar above service pressure, or every 2-4 weeks.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.1.title": {
+    "fr": "Quand backwash ?",
+    "en": "When to backwash?",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.2.detail": {
+    "fr": "TOUJOURS éteindre la pompe avant de manipuler la vanne.",
+    "en": "ALWAYS turn off the pump before handling the valve.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.2.title": {
+    "fr": "Éteindre la pompe",
+    "en": "Turn off the pump",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.2.warning": {
+    "fr": "Risque électrique et matériel.",
+    "en": "Electrical and material risk.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.3.detail": {
+    "fr": "Tourner fermement la vanne multivoies.",
+    "en": "Turn the multi-port valve firmly.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.3.title": {
+    "fr": "Placer la vanne sur BACKWASH",
+    "en": "Set valve to BACKWASH",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.4.detail": {
+    "fr": "L'eau s'écoule à l'égout jusqu'à ce qu'elle redevienne claire.",
+    "en": "Water flows to the drain until it becomes clear again.",
+    "reason": "placeholder"
+  }
+}

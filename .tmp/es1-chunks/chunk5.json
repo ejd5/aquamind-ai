@@ -1,0 +1,252 @@
+{
+  "guidesData.after-storm.steps.4.title": {
+    "fr": "Compléter le chlore si bas",
+    "en": "Top up chlorine if low",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.5.detail": {
+    "fr": "Bien répartir les corrections.",
+    "en": "Distribute corrections well.",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.5.title": {
+    "fr": "Filtrer 4-6h",
+    "en": "Filter 4-6h",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.summary": {
+    "fr": "L'orage dilue le chlore et modifie le pH. Routine post-orage.",
+    "en": "Lightning dilutes chlorine and changes pH. Post-storm routine.",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.title": {
+    "fr": "Que faire après un orage ?",
+    "en": "What to do after a storm?",
+    "reason": "placeholder"
+  },
+  "guidesData.cat_equipment": {
+    "fr": "Équipements",
+    "en": "Equipment",
+    "reason": "identical_to_en"
+  },
+  "guidesData.cat_faq": {
+    "fr": "FAQ",
+    "en": "FAQ",
+    "reason": "identical_to_en"
+  },
+  "guidesData.cat_getting_started": {
+    "fr": "Débuter",
+    "en": "Getting started",
+    "reason": "identical_to_en"
+  },
+  "guidesData.cat_problems": {
+    "fr": "Problèmes d'eau",
+    "en": "Water problems",
+    "reason": "identical_to_en"
+  },
+  "guidesData.cat_products": {
+    "fr": "Produits & dosages",
+    "en": "Products & dosing",
+    "reason": "identical_to_en"
+  },
+  "guidesData.cat_safety": {
+    "fr": "Sécurité & baignade",
+    "en": "Safety & swimming",
+    "reason": "identical_to_en"
+  },
+  "guidesData.cat_treatments": {
+    "fr": "Traitements (chlore/sel/brome)",
+    "en": "Treatments (chlorine/salt/bromine)",
+    "reason": "identical_to_en"
+  },
+  "guidesData.cat_weather_seasons": {
+    "fr": "Météo & saisons",
+    "en": "Weather & seasons",
+    "reason": "identical_to_en"
+  },
+  "guidesData.cell-clean.steps.1.detail": {
+    "fr": "Éteindre l'électrolyseur et la pompe.",
+    "en": "Turn off the electrolyzer and the pump.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.1.title": {
+    "fr": "Couper l'alimentation",
+    "en": "Cut the power",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.1.warning": {
+    "fr": "Sécurité électrique. Ne jamais manipuler la cellule sous tension.",
+    "en": "Electrical safety. Never handle the cell under power.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.2.detail": {
+    "fr": "Dévisser selon le modèle. Vérifier l'état des électrodes.",
+    "en": "Unscrew according to the model. Check the electrodes.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.2.title": {
+    "fr": "Démonter la cellule",
+    "en": "Remove the cell",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.3.detail": {
+    "fr": "1/3 acide chlorhydrique + 2/3 eau dans un récipient plastique.",
+    "en": "1/3 hydrochloric acid + 2/3 water in a plastic container.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.3.title": {
+    "fr": "Préparer une solution acide diluée",
+    "en": "Prepare a diluted acid solution",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.3.warning": {
+    "fr": "TOUJOURS verser l'acide dans l'eau, jamais l'inverse. Gants et lunettes obligatoires. Aération.",
+    "en": "ALWAYS pour acid into water, never the reverse. Gloves and goggles mandatory. Ventilation.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.4.detail": {
+    "fr": "Le tartre se dissout. Ne pas laisser trop longtemps.",
+    "en": "Scale dissolves. Do not leave too long.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.4.title": {
+    "fr": "Tremper 10-15 min",
+    "en": "Soak 10-15 min",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.5.detail": {
+    "fr": "À l'eau claire jusqu'à disparition de l'odeur.",
+    "en": "With clean water until the smell disappears.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.5.title": {
+    "fr": "Rincer abondamment",
+    "en": "Rinse thoroughly",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.6.detail": {
+    "fr": "Vérifier la production sur l'afficheur.",
+    "en": "Check production on the display.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.6.title": {
+    "fr": "Remonter et redémarrer",
+    "en": "Reassemble and restart",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.summary": {
+    "fr": "Détartrer la cellule d'électrolyseur au sel pour maintenir la production de chlore.",
+    "en": "Descale the salt electrolyzer cell to maintain chlorine production.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.title": {
+    "fr": "Nettoyer la cellule de l'électrolyseur",
+    "en": "Clean the electrolyzer cell",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.1.detail": {
+    "fr": "Un choc est inefficace si le pH > 7.6. Équilibrez d'abord.",
+    "en": "A shock is ineffective if pH > 7.6. Balance first.",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.1.title": {
+    "fr": "Vérifier le pH AVANT",
+    "en": "Check pH BEFORE",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.1.warning": {
+    "fr": "Ne JAMAIS faire un choc sans avoir vérifié le pH.",
+    "en": "NEVER shock without checking pH first.",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.2.detail": {
+    "fr": "Le soir, sans baigneurs, filtration en marche.",
+    "en": "In the evening, no swimmers, filtration running.",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.2.title": {
+    "fr": "Choisir le bon moment",
+    "en": "Choose the right time",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.3.detail": {
+    "fr": "AQWELIA calcule la quantité selon votre volume de bassin.",
+    "en": "AQWELIA calculates the amount based on your basin volume.",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.3.title": {
+    "fr": "Doser selon le volume",
+    "en": "Dose according to volume",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.4.detail": {
+    "fr": "Ne jamais verser le choc en poudre directement au bord.",
+    "en": "Never pour powder shock directly at the edge.",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.4.title": {
+    "fr": "Dissoudre dans un seau",
+    "en": "Dissolve in a bucket",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.5.detail": {
+    "fr": "Le chlore doit être bien réparti.",
+    "en": "Chlorine must be well distributed.",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.5.title": {
+    "fr": "Filtrer 4h minimum",
+    "en": "Filter at least 4h",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.6.detail": {
+    "fr": "Vérifiez le chlore libre avant de se baigner (doit être < 3 mg/L).",
+    "en": "Check free chlorine before swimming (must be < 3 mg/L).",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.6.title": {
+    "fr": "Attendre 8h avant baignade",
+    "en": "Wait 8h before swimming",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.6.warning": {
+    "fr": "Baignade interdite pendant 8h minimum.",
+    "en": "No swimming for at least 8h.",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.summary": {
+    "fr": "Le traitement choc : indications, dosage, sécurité, délais baignade.",
+    "en": "Shock treatment: indications, dosage, safety, swim delays.",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.title": {
+    "fr": "Quand et comment faire un chlore choc",
+    "en": "When and how to do a chlorine shock",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.1.detail": {
+    "fr": "80% des eaux troubles viennent d'un problème de filtration. Vérifiez pression, durée, propreté du filtre.",
+    "en": "80% of cloudy water comes from a filtration problem. Check pressure, duration, filter cleanliness.",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.1.title": {
+    "fr": "Vérifier la filtration",
+    "en": "Check the filtration",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.2.detail": {
+    "fr": "pH hors plage ou chlore bas = eau trouble.",
+    "en": "Out-of-range pH or low chlorine = cloudy water.",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.2.title": {
+    "fr": "Tester pH et chlore",
+    "en": "Test pH and chlorine",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.3.detail": {
+    "fr": "Filtre encrassé = eau trouble.",
+    "en": "Clogged filter = cloudy water.",
+    "reason": "placeholder"
+  }
+}

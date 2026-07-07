@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
+import { useTranslations } from 'next-intl'
 
 // Simple admin gate — password stored in localStorage after first entry
 const ADMIN_PASSWORD = 'aqwelia-admin-2026' // TODO: move to env
@@ -52,8 +53,8 @@ export default function AdminPage() {
       setAuthed(true)
     } else {
       toast({
-        title: 'Mot de passe incorrect',
-        description: 'Accès refusé.',
+        title: t('wrongPassword'),
+        description: t('accessDenied'),
         variant: 'destructive',
       })
     }
@@ -75,7 +76,7 @@ export default function AdminPage() {
               <span className="aqua-text-gradient">AQWELIA Admin</span>
             </h1>
             <p className="mt-1 text-xs text-muted-foreground">
-              Espace réservé — Accès protégé
+              {t('protected')}
             </p>
           </div>
           <input
@@ -85,20 +86,20 @@ export default function AdminPage() {
             onKeyDown={(e) => {
               if (e.key === 'Enter') tryAuth()
             }}
-            placeholder="Mot de passe administrateur"
+            placeholder={t('password')}
             className="w-full rounded-xl border border-border bg-background/60 px-4 py-2.5 text-sm outline-none focus:border-gold/50 focus:ring-2 focus:ring-gold/20"
           />
           <button
             onClick={tryAuth}
             className="mt-3 w-full rounded-full bg-gradient-to-r from-primary to-gold px-6 py-2.5 text-sm font-bold text-primary-foreground transition-transform hover:scale-[1.02]"
           >
-            Accéder
+            {t('access')}
           </button>
           <a
             href="/"
             className="mt-3 block text-center text-xs text-muted-foreground hover:text-foreground"
           >
-            ← Retour au site
+            {t('backToSiteArrow')}
           </a>
         </div>
       </div>
@@ -106,11 +107,11 @@ export default function AdminPage() {
   }
 
   const tabs: Array<{ id: AdminTab; label: string; icon: string }> = [
-    { id: 'banner', label: 'Bannière saisonnière', icon: '📢' },
-    { id: 'popup', label: 'Popups promo', icon: '🎁' },
-    { id: 'content', label: 'Contenu & textes', icon: '📝' },
-    { id: 'analytics', label: 'Analytics', icon: '📊' },
-    { id: 'users', label: 'Utilisateurs', icon: '👥' },
+    { id: 'banner', label: t('tabBanner'), icon: '📢' },
+    { id: 'popup', label: t('tabPopup'), icon: '🎁' },
+    { id: 'content', label: t('tabContent'), icon: '📝' },
+    { id: 'analytics', label: t('tabAnalytics'), icon: '📊' },
+    { id: 'users', label: t('tabUsers'), icon: '👥' },
   ]
 
   return (
@@ -136,7 +137,7 @@ export default function AdminPage() {
               href="/"
               className="text-xs text-muted-foreground hover:text-foreground"
             >
-              Voir le site
+              {t('viewSite')}
             </a>
             <button
               onClick={() => {
@@ -145,7 +146,7 @@ export default function AdminPage() {
               }}
               className="text-xs text-muted-foreground hover:text-foreground"
             >
-              Déconnexion
+              {t('signOut')}
             </button>
           </div>
         </div>
@@ -184,10 +185,11 @@ export default function AdminPage() {
 /* ------------------------------------------------------------------ */
 
 function BannerAdmin() {
+  const t = useTranslations('admin')
   const { toast } = useToast()
   const [banner, setBanner] = useState<BannerConfig>({
     enabled: false,
-    text: '☀️ Été 2026 — Profitez de -20% sur le plan Lagoon !',
+    text: t('bannerDefaultText'),
     bgColor: '#004D5A',
     textColor: '#FFFFFF',
     link: '/settings',
@@ -210,15 +212,14 @@ function BannerAdmin() {
   function save() {
     localStorage.setItem('aqwelia-banner', JSON.stringify(banner))
     // Also save to API for server-side rendering (à venir)
-    toast({ title: 'Bannière enregistrée' })
+    toast({ title: t('bannerSavedToast') })
   }
 
   return (
     <div className="space-y-4">
-      <h2 className="font-display text-lg font-bold">📢 Bannière saisonnière</h2>
+      <h2 className="font-display text-lg font-bold">📢 {t('bannerTitle')}</h2>
       <p className="text-sm text-muted-foreground">
-        Personnalisez la bannière promotionnelle en haut de l&apos;app. Idéal pour
-        les saisons, promotions, annonces.
+        {t('bannerDescFull')}
       </p>
 
       {/* Preview */}
@@ -232,7 +233,7 @@ function BannerAdmin() {
         >
           <span className="text-sm font-medium">{banner.text}</span>
           {banner.link && (
-            <span className="text-xs underline">En savoir plus →</span>
+            <span className="text-xs underline">{t('learnMore')}</span>
           )}
         </div>
       </div>
@@ -243,19 +244,19 @@ function BannerAdmin() {
           checked={banner.enabled}
           onCheckedChange={(v) => setBanner({ ...banner, enabled: v })}
         />
-        <span className="text-sm">Activer la bannière</span>
+        <span className="text-sm">{t('bannerEnable')}</span>
       </div>
 
       {/* Form */}
       <div className="grid gap-3">
-        <label className="text-xs font-semibold">Texte</label>
+        <label className="text-xs font-semibold">{t('bannerText')}</label>
         <input
           value={banner.text}
           onChange={(e) => setBanner({ ...banner, text: e.target.value })}
           className="rounded-lg border border-border px-3 py-2 text-sm"
         />
 
-        <label className="text-xs font-semibold">Couleur de fond</label>
+        <label className="text-xs font-semibold">{t('bannerBgColor')}</label>
         <div className="flex gap-2">
           <input
             type="color"
@@ -270,7 +271,7 @@ function BannerAdmin() {
           />
         </div>
 
-        <label className="text-xs font-semibold">Couleur du texte</label>
+        <label className="text-xs font-semibold">{t('bannerTextColor')}</label>
         <div className="flex gap-2">
           <input
             type="color"
@@ -285,7 +286,7 @@ function BannerAdmin() {
           />
         </div>
 
-        <label className="text-xs font-semibold">Lien (optionnel)</label>
+        <label className="text-xs font-semibold">{t('bannerLink')}</label>
         <input
           value={banner.link}
           onChange={(e) => setBanner({ ...banner, link: e.target.value })}
@@ -295,7 +296,7 @@ function BannerAdmin() {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs font-semibold">Date de début</label>
+            <label className="text-xs font-semibold">{t('bannerStart')}</label>
             <input
               type="date"
               value={banner.startDate}
@@ -304,7 +305,7 @@ function BannerAdmin() {
             />
           </div>
           <div>
-            <label className="text-xs font-semibold">Date de fin</label>
+            <label className="text-xs font-semibold">{t('bannerEnd')}</label>
             <input
               type="date"
               value={banner.endDate}
@@ -315,7 +316,7 @@ function BannerAdmin() {
         </div>
 
         <Button onClick={save} className="mt-2 w-fit">
-          Enregistrer la bannière
+          {t('bannerSave')}
         </Button>
       </div>
     </div>
@@ -327,6 +328,7 @@ function BannerAdmin() {
 /* ------------------------------------------------------------------ */
 
 function PopupAdmin() {
+  const t = useTranslations('admin')
   const { toast } = useToast()
   const [popups, setPopups] = useState<PopupConfig[]>([])
 
@@ -345,12 +347,12 @@ function PopupAdmin() {
   function persist(next: PopupConfig[]) {
     setPopups(next)
     localStorage.setItem('aqwelia-popups', JSON.stringify(next))
-    toast({ title: 'Popups enregistrés' })
+    toast({ title: t('popupsSavedToast') })
   }
 
   function saveAll() {
     localStorage.setItem('aqwelia-popups', JSON.stringify(popups))
-    toast({ title: 'Popups enregistrés' })
+    toast({ title: t('popupsSavedToast') })
   }
 
   function addPopup() {
@@ -359,10 +361,10 @@ function PopupAdmin() {
       {
         id: Date.now().toString(),
         enabled: false,
-        title: 'Nouveau popup promo',
-        body: 'Description de la promo...',
+        title: t('popupDefaultTitle'),
+        body: t('popupDefaultBody'),
         imageUrl: '',
-        ctaText: 'En profiter',
+        ctaText: t('popupDefaultCta'),
         ctaLink: '/settings',
         trigger: 'on_load',
         frequency: 'once',
@@ -379,20 +381,18 @@ function PopupAdmin() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-bold">🎁 Popups promotionnels</h2>
+        <h2 className="font-display text-lg font-bold">🎁 {t('popupTitle')}</h2>
         <Button onClick={addPopup} size="sm">
-          + Ajouter
+          {t('popupAdd')}
         </Button>
       </div>
       <p className="text-sm text-muted-foreground">
-        Créez des popups qui s&apos;affichent selon des déclencheurs. Upload
-        d&apos;images promo à venir.
+        {t('popupDescFull')}
       </p>
 
       {popups.length === 0 && (
         <div className="rounded-xl border border-dashed border-border/50 p-8 text-center text-sm text-muted-foreground">
-          Aucun popup. Cliquez sur &quot;+ Ajouter&quot; pour créer votre premier
-          popup promo.
+          {t('popupNoPopups')}
         </div>
       )}
 
@@ -417,20 +417,20 @@ function PopupAdmin() {
               onClick={() => persist(popups.filter((p) => p.id !== popup.id))}
               className="text-xs text-destructive hover:underline"
             >
-              Supprimer
+              {t('delete')}
             </button>
           </div>
 
           <input
             value={popup.title}
             onChange={(e) => updatePopup(i, { title: e.target.value })}
-            placeholder="Titre"
+            placeholder={t('popupTitleLabel')}
             className="w-full rounded-lg border border-border px-3 py-2 text-sm"
           />
           <textarea
             value={popup.body}
             onChange={(e) => updatePopup(i, { body: e.target.value })}
-            placeholder="Description"
+            placeholder={t('popupBody')}
             rows={2}
             className="w-full rounded-lg border border-border px-3 py-2 text-sm"
           />
@@ -443,10 +443,10 @@ function PopupAdmin() {
               }
               className="rounded-lg border border-border px-3 py-2 text-sm"
             >
-              <option value="on_load">Au chargement</option>
-              <option value="on_exit">À la fermeture</option>
-              <option value="after_diagnostic">Après diagnostic</option>
-              <option value="manual">Manuel</option>
+              <option value="on_load">{t('popupTriggerOnLoad')}</option>
+              <option value="on_exit">{t('popupTriggerOnExit')}</option>
+              <option value="after_diagnostic">{t('popupTriggerAfterDiagnostic')}</option>
+              <option value="manual">{t('popupTriggerManual')}</option>
             </select>
             <select
               value={popup.frequency}
@@ -457,16 +457,16 @@ function PopupAdmin() {
               }
               className="rounded-lg border border-border px-3 py-2 text-sm"
             >
-              <option value="once">Une fois (jamais revoir)</option>
-              <option value="session">Une fois par session</option>
-              <option value="always">Toujours</option>
+              <option value="once">{t('popupFrequencyOnce')}</option>
+              <option value="session">{t('popupFrequencySession')}</option>
+              <option value="always">{t('popupFrequencyAlways')}</option>
             </select>
           </div>
 
           <input
             value={popup.imageUrl}
             onChange={(e) => updatePopup(i, { imageUrl: e.target.value })}
-            placeholder="URL image promo (à venir: upload)"
+            placeholder={t('popupImagePlaceholder')}
             className="w-full rounded-lg border border-border px-3 py-2 text-sm"
           />
 
@@ -474,19 +474,19 @@ function PopupAdmin() {
             <input
               value={popup.ctaText}
               onChange={(e) => updatePopup(i, { ctaText: e.target.value })}
-              placeholder="Texte bouton"
+              placeholder={t('popupCtaText')}
               className="rounded-lg border border-border px-3 py-2 text-sm"
             />
             <input
               value={popup.ctaLink}
               onChange={(e) => updatePopup(i, { ctaLink: e.target.value })}
-              placeholder="Lien bouton"
+              placeholder={t('popupCtaLink')}
               className="rounded-lg border border-border px-3 py-2 text-sm"
             />
           </div>
 
           <Button onClick={saveAll} size="sm" variant="outline">
-            Enregistrer ce popup
+            {t('popupSave')}
           </Button>
         </div>
       ))}
@@ -499,15 +499,15 @@ function PopupAdmin() {
 /* ------------------------------------------------------------------ */
 
 function ContentAdmin() {
+  const t = useTranslations('admin')
   return (
     <div className="space-y-4">
-      <h2 className="font-display text-lg font-bold">📝 Contenu & textes</h2>
+      <h2 className="font-display text-lg font-bold">📝 {t('contentTitle')}</h2>
       <p className="text-sm text-muted-foreground">
-        Personnalisez les textes de l&apos;app sans modifier le code.
+        {t('contentDesc')}
       </p>
       <div className="rounded-xl border border-dashed border-border/50 p-8 text-center text-sm text-muted-foreground">
-        Module à venir — Éditeur de contenu WYSIWYG pour landing page, guides,
-        emails...
+        {t('contentComingSoonFull')}
       </div>
     </div>
   )
@@ -518,32 +518,33 @@ function ContentAdmin() {
 /* ------------------------------------------------------------------ */
 
 function AnalyticsAdmin() {
+  const t = useTranslations('admin')
   return (
     <div className="space-y-4">
-      <h2 className="font-display text-lg font-bold">📊 Analytics</h2>
+      <h2 className="font-display text-lg font-bold">📊 {t('analyticsTitle')}</h2>
       <p className="text-sm text-muted-foreground">
-        Statistiques d&apos;utilisation de l&apos;app.
+        {t('analyticsDesc')}
       </p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="glass-card rounded-xl p-4">
           <p className="text-2xl font-bold text-primary">—</p>
-          <p className="text-xs text-muted-foreground">Utilisateurs totaux</p>
+          <p className="text-xs text-muted-foreground">{t('analyticsUsers')}</p>
         </div>
         <div className="glass-card rounded-xl p-4">
           <p className="text-2xl font-bold text-primary">—</p>
-          <p className="text-xs text-muted-foreground">Diagnostics IA</p>
+          <p className="text-xs text-muted-foreground">{t('analyticsDiagnostics')}</p>
         </div>
         <div className="glass-card rounded-xl p-4">
           <p className="text-2xl font-bold text-primary">—</p>
-          <p className="text-xs text-muted-foreground">Tests d&apos;eau</p>
+          <p className="text-xs text-muted-foreground">{t('analyticsTests')}</p>
         </div>
         <div className="glass-card rounded-xl p-4">
           <p className="text-2xl font-bold text-primary">—</p>
-          <p className="text-xs text-muted-foreground">Abonnements actifs</p>
+          <p className="text-xs text-muted-foreground">{t('analyticsSubs')}</p>
         </div>
       </div>
       <div className="rounded-xl border border-dashed border-border/50 p-8 text-center text-sm text-muted-foreground">
-        Données détaillées à venir — Connexion API /api/analytics
+        {t('analyticsComingSoonFull')}
       </div>
     </div>
   )
@@ -554,14 +555,15 @@ function AnalyticsAdmin() {
 /* ------------------------------------------------------------------ */
 
 function UsersAdmin() {
+  const t = useTranslations('admin')
   return (
     <div className="space-y-4">
-      <h2 className="font-display text-lg font-bold">👥 Utilisateurs</h2>
+      <h2 className="font-display text-lg font-bold">👥 {t('usersTitle')}</h2>
       <p className="text-sm text-muted-foreground">
-        Gérez les utilisateurs, abonnements et accès.
+        {t('usersDescFull')}
       </p>
       <div className="rounded-xl border border-dashed border-border/50 p-8 text-center text-sm text-muted-foreground">
-        Module à venir — Liste utilisateurs, gestion abonnements, support...
+        {t('usersComingSoonFull')}
       </div>
     </div>
   )

@@ -27,7 +27,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useMessages } from 'next-intl'
 import type { TabId } from './app-shell'
 import { offlineApi, apiGetCached } from '@/lib/offline/api-cache'
 
@@ -43,16 +43,23 @@ type CategoryId =
 
 interface GuideStep {
   title: string
+  titleKey: string
   detail: string
+  detailKey: string
   tip?: string
+  tipKey?: string
   warning?: string
+  warningKey?: string
 }
 
 interface Guide {
   id: string
   title: string
+  titleKey: string
   category: CategoryId
+  categoryLabelKey: string
   summary: string
+  summaryKey: string
   durationMin: number
   level: 'beginner' | 'intermediate' | 'expert'
   tags: string[]
@@ -63,6 +70,7 @@ interface Guide {
 interface Category {
   id: CategoryId
   label: string
+  labelKey: string
   icon: string
 }
 
@@ -82,6 +90,28 @@ const FREE_CATEGORIES: CategoryId[] = ['getting_started', 'faq']
 export function ModuleGuides({ onNavigate }: Props) {
   const t = useTranslations('modules.guides')
   const td = useTranslations('guidesData')
+  const messages = useMessages() as any
+  const tagMessages: Record<string, unknown> = messages?.guidesData ?? {}
+
+  /**
+   * Translate a guide tag. Locale keys follow the convention
+   * `tag_<normalized>` where `<normalized>` is the French tag lowercased with
+   * accents stripped (e.g. 'sécurité' → 'tag_securite'). If no key exists,
+   * fall back to the original French tag value (preserved in the data layer).
+   */
+  const translateTag = useCallback((tag: string): string => {
+    const normalized = tag
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+    const key = `tag_${normalized}`
+    if (tagMessages[key] != null) {
+      return td(key as any)
+    }
+    return tag
+  }, [tagMessages, td])
   const [guides, setGuides] = useState<Guide[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [recommended, setRecommended] = useState<Guide[]>([])
@@ -167,13 +197,13 @@ export function ModuleGuides({ onNavigate }: Props) {
     if (q) {
       list = list.filter(
         (g) =>
-          g.title.toLowerCase().includes(q) ||
-          g.summary.toLowerCase().includes(q) ||
-          g.tags.some((t) => t.toLowerCase().includes(q))
+          td(g.titleKey as any).toLowerCase().includes(q) ||
+          td(g.summaryKey as any).toLowerCase().includes(q) ||
+          g.tags.some((tag) => translateTag(tag).toLowerCase().includes(q))
       )
     }
     return list
-  }, [guides, activeCategory, search])
+  }, [guides, activeCategory, search, td, translateTag])
 
   if (loading) {
     return (
@@ -243,12 +273,12 @@ export function ModuleGuides({ onNavigate }: Props) {
               >
                 <div className="mb-1 flex items-center gap-1.5">
                   <span className="text-xs font-semibold uppercase tracking-wide text-gold">
-                    {td('cat_' + g.category)}
+                    {td(g.categoryLabelKey)}
                   </span>
                   {isGuideLocked(g) && <Lock className="ml-auto h-3 w-3 text-gold" />}
                 </div>
-                <p className="font-display text-sm font-bold leading-tight">{g.title}</p>
-                <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">{g.summary}</p>
+                <p className="font-display text-sm font-bold leading-tight">{td(g.titleKey)}</p>
+                <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">{td(g.summaryKey)}</p>
                 <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
                   <Clock className="h-3 w-3" />
                   {g.durationMin} {t('min')}
@@ -275,7 +305,7 @@ export function ModuleGuides({ onNavigate }: Props) {
             key={c.id}
             active={activeCategory === c.id}
             onClick={() => setActiveCategory(c.id)}
-            label={td('cat_' + c.id)}
+            label={td(c.labelKey)}
             icon={c.icon}
           />
         ))}
@@ -304,7 +334,7 @@ export function ModuleGuides({ onNavigate }: Props) {
                 <CardContent className="flex flex-1 flex-col gap-2 p-4">
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-semibold uppercase tracking-wide text-gold">
-                      {td('cat_' + g.category)}
+                      {td(g.categoryLabelKey)}
                     </span>
                     {isGuidePremium(g) && (
                       <Badge variant="outline" className="border-gold/40 bg-gold/10 px-1.5 text-[9px] font-bold text-gold">
@@ -315,15 +345,15 @@ export function ModuleGuides({ onNavigate }: Props) {
                       <Lock className="ml-auto h-3.5 w-3.5 text-gold" />
                     )}
                   </div>
-                  <p className="font-display text-base font-bold leading-tight">{g.title}</p>
-                  <p className="line-clamp-2 text-xs text-muted-foreground">{g.summary}</p>
+                  <p className="font-display text-base font-bold leading-tight">{td(g.titleKey)}</p>
+                  <p className="line-clamp-2 text-xs text-muted-foreground">{td(g.summaryKey)}</p>
                   <div className="mt-auto flex flex-wrap gap-1.5 pt-1">
                     {g.tags.slice(0, 3).map((tag) => (
                       <span
                         key={tag}
                         className="rounded-full bg-secondary/60 px-2 py-0.5 text-[9px] font-medium text-muted-foreground"
                       >
-                        {tag}
+                        {translateTag(tag)}
                       </span>
                     ))}
                   </div>
@@ -349,7 +379,7 @@ export function ModuleGuides({ onNavigate }: Props) {
               <DialogHeader>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold uppercase tracking-wide text-gold">
-                    {td('cat_' + selectedGuide.category)}
+                    {td(selectedGuide.categoryLabelKey)}
                   </span>
                   {isGuidePremium(selectedGuide) && (
                     <Badge variant="outline" className="border-gold/40 bg-gold/10 px-1.5 text-[9px] font-bold text-gold">
@@ -357,8 +387,8 @@ export function ModuleGuides({ onNavigate }: Props) {
                     </Badge>
                   )}
                 </div>
-                <DialogTitle className="font-display text-xl">{selectedGuide.title}</DialogTitle>
-                <DialogDescription>{selectedGuide.summary}</DialogDescription>
+                <DialogTitle className="font-display text-xl">{td(selectedGuide.titleKey)}</DialogTitle>
+                <DialogDescription>{td(selectedGuide.summaryKey)}</DialogDescription>
               </DialogHeader>
 
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -382,18 +412,18 @@ export function ModuleGuides({ onNavigate }: Props) {
                         {i + 1}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold">{s.title}</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">{s.detail}</p>
-                        {s.tip && (
+                        <p className="text-sm font-semibold">{td(s.titleKey)}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">{td(s.detailKey)}</p>
+                        {s.tipKey && (
                           <p className="mt-2 flex items-start gap-1.5 rounded-md border border-gold/30 bg-gold/5 p-2 text-xs text-foreground/80">
                             <Lightbulb className="mt-0.5 h-3 w-3 shrink-0 text-gold" />
-                            <span><strong className="text-gold">{t('tipLabel')}</strong> {s.tip}</span>
+                            <span><strong className="text-gold">{t('tipLabel')}</strong> {td(s.tipKey as any)}</span>
                           </p>
                         )}
-                        {s.warning && (
+                        {s.warningKey && (
                           <p className="mt-2 flex items-start gap-1.5 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
                             <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-                            <span><strong>{t('warningLabel')}</strong> {s.warning}</span>
+                            <span><strong>{t('warningLabel')}</strong> {td(s.warningKey as any)}</span>
                           </p>
                         )}
                       </div>
@@ -418,7 +448,7 @@ export function ModuleGuides({ onNavigate }: Props) {
                           onClick={() => openGuide(r)}
                           className="rounded-full border border-border/60 bg-secondary/40 px-3 py-1 text-xs font-medium hover:border-gold/40 hover:text-gold"
                         >
-                          {r.title}
+                          {td(r.titleKey)}
                         </button>
                       )
                     })}

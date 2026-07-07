@@ -27,6 +27,7 @@ export const runtime = 'nodejs'
 export async function POST() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
+    // TODO: i18n — return a translation key for the client to localise.
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
 
@@ -39,6 +40,8 @@ export async function POST() {
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[account/delete] error:', err)
+    // TODO: i18n — return a translation key (common.errors.accountDeleteError)
+    // for the client to localise. French fallback kept for now.
     return NextResponse.json(
       { error: 'Erreur lors de la suppression du compte' },
       { status: 500 }

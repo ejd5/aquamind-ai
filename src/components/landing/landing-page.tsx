@@ -118,7 +118,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
               href="/auth/signin"
               className="rounded-full border border-gold/40 bg-background/80 px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-gold hover:text-gold"
             >
-              Connexion
+              {t('signIn')}
             </a>
             <button
               onClick={onEnterApp}
@@ -133,7 +133,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
           <button
             onClick={() => setMobileOpen((v) => !v)}
             className="glass-pill flex h-10 w-10 items-center justify-center rounded-full lg:hidden"
-            aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+            aria-label={mobileOpen ? t('headerMenuClose') : t('headerMenuOpen')}
             aria-expanded={mobileOpen}
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -177,7 +177,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
                   href="/auth/signin"
                   className="mt-2 flex items-center justify-center gap-2 rounded-full border border-gold/40 bg-background/80 px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-gold hover:text-gold"
                 >
-                  Connexion
+                  {t('signIn')}
                 </a>
                 <div className="mt-2 flex items-center justify-center">
                 </div>

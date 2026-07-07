@@ -444,6 +444,55 @@ export const usePreferences = create<PreferencesStore>()(
 )
 
 /* ─────────────────────────────────────────────────────────────────────── */
+/*  Helpers — display names (Intl.DisplayNames, no translation keys)       */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Returns the country name in the user's locale using Intl.DisplayNames.
+ * Falls back to the French `name` from COUNTRY_LIST if Intl is unavailable
+ * or the code is not a valid ISO 3166-1 alpha-2 code.
+ *
+ * Example: getCountryDisplayName('FR', 'en') → "France"
+ *          getCountryDisplayName('FR', 'es') → "Francia"
+ */
+export function getCountryDisplayName(code: string, locale: Locale): string {
+  if (typeof Intl === 'undefined' || !('DisplayNames' in Intl)) {
+    // SSR or old runtime — fall back to French literal
+    return getCountryConfig(code).name
+  }
+  try {
+    const dn = new Intl.DisplayNames([locale], { type: 'region', fallback: 'code' })
+    const out = dn.of(code)
+    return out || getCountryConfig(code).name
+  } catch {
+    return getCountryConfig(code).name
+  }
+}
+
+/**
+ * Returns the language name in the user's locale using Intl.DisplayNames.
+ * Falls back to the French `name` from LANGUAGES if Intl is unavailable.
+ *
+ * Example: getLanguageDisplayName('en', 'fr') → "Anglais"
+ *          getLanguageDisplayName('fr', 'en') → "French"
+ *          getLanguageDisplayName('es', 'de') → "Spanisch"
+ */
+export function getLanguageDisplayName(lang: Locale, locale: Locale): string {
+  if (typeof Intl === 'undefined' || !('DisplayNames' in Intl)) {
+    const found = LANGUAGES.find((l) => l.code === lang)
+    return found?.name ?? lang
+  }
+  try {
+    const dn = new Intl.DisplayNames([locale], { type: 'language', fallback: 'code' })
+    const out = dn.of(lang)
+    return out || (LANGUAGES.find((l) => l.code === lang)?.name ?? lang)
+  } catch {
+    const found = LANGUAGES.find((l) => l.code === lang)
+    return found?.name ?? lang
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
 /*  Helpers — conversion d'unités                                         */
 /* ─────────────────────────────────────────────────────────────────────── */
 

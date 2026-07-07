@@ -1,0 +1,252 @@
+{
+  "diagnosticActionPlan.genericInstruction2_3": {
+    "fr": "Cliquez sur Vérifier le résultat en bas du plan.",
+    "en": "Click Verify result at the bottom of the plan.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericInstruction2_4": {
+    "fr": "L'IA comparera et dira si le problème est résolu.",
+    "en": "The AI will compare and tell if the problem is resolved.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericInstruction3": {
+    "fr": "Ajustez si nécessaire avec du pH- ou pH+.",
+    "en": "Adjust if necessary with pH- or pH+.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericInstruction4": {
+    "fr": "Enregistrez votre mesure ci-dessous pour l'historique.",
+    "en": "Record your measurement below for history.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericInstruction5": {
+    "fr": "Vérifiez que la filtration fonctionne au moins 8h/jour.",
+    "en": "Check that filtration runs at least 8h/day.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericIntro1": {
+    "fr": "L'IA a identifié un problème mais sans motif typique (eau verte / trouble). Suivez la recommandation ci-dessous.",
+    "en": "The AI identified a problem but no typical pattern (green / cloudy water). Follow the recommendation below.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericIntro2": {
+    "fr": "Après avoir appliqué les recommandations, prenez une nouvelle photo pour confirmer la résolution.",
+    "en": "After applying the recommendations, take a new photo to confirm resolution.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericProduct": {
+    "fr": "Selon recommandation",
+    "en": "Per recommendation",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericTitle1": {
+    "fr": "1. Suivre la recommandation",
+    "en": "1. Follow the recommendation",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericTitle2": {
+    "fr": "2. Vérifier le résultat (24h)",
+    "en": "2. Verify result (24h)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1Dosage": {
+    "fr": "~{qty} g de pH- / 0.1 unité à abaisser (piscine de {volume} m³)",
+    "en": "~{qty} g of pH- / 0.1 unit to lower (pool of {volume} m³)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1I1": {
+    "fr": "Prenez votre kit de test (gouttes ou bandelette) ou un testeur électronique.",
+    "en": "Take your test kit (drops or strip) or an electronic tester.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1I2": {
+    "fr": "Récupérez un échantillon d'eau à 30 cm de profondeur, loin des refoulements.",
+    "en": "Collect a water sample at 30 cm depth, away from return jets.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1I3": {
+    "fr": "Mesurez le pH actuel et notez-le ci-dessous.",
+    "en": "Measure current pH and note it below.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1I4": {
+    "fr": "Si pH > 7.4 → ajoutez du pH- (acide). Si pH < 7.0 → ajoutez du pH+ (base).",
+    "en": "If pH > 7.4 → add pH- (acid). If pH < 7.0 → add pH+ (base).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1I5": {
+    "fr": "Dosage de référence : ~{qty} g de pH- pour abaisser de 0.1 unité sur {volume} m³.",
+    "en": "Reference dosage: ~{qty} g of pH- to lower by 0.1 unit on {volume} m³.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1I6": {
+    "fr": "Diluez le produit dans un seau d'eau de la piscine, jamais pur directement.",
+    "en": "Dilute the product in a bucket of pool water, never pure.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1I7": {
+    "fr": "Versez lentement devant les buses de refoulement, filtration en marche.",
+    "en": "Pour slowly in front of return jets, pump running.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1I8": {
+    "fr": "Patientez 2 heures avec la filtration en route avant de re-tester.",
+    "en": "Wait 2 hours with filtration running before re-testing.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1Intro": {
+    "fr": "Le pH doit être entre 7.0 et 7.4 AVANT tout traitement. Un pH incorrect rend le chlore inefficace (jusqu'à -90 %).",
+    "en": "pH must be between 7.0 and 7.4 BEFORE any treatment. An incorrect pH makes chlorine ineffective (up to -90%).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1Product": {
+    "fr": "pH- ou pH+ (selon votre mesure)",
+    "en": "pH- or pH+ (per your measurement)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1Title": {
+    "fr": "1. Mesurer et ajuster le pH",
+    "en": "1. Measure and adjust pH",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2Dosage": {
+    "fr": "Réajustement : moitié de la dose initiale (~{qty} g max pour {volume} m³)",
+    "en": "Re-adjustment: half the initial dose (~{qty} g max for {volume} m³)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2I1": {
+    "fr": "Reprenez un échantillon d'eau à 30 cm de profondeur.",
+    "en": "Take a new water sample at 30 cm depth.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2I2": {
+    "fr": "Mesurez à nouveau le pH.",
+    "en": "Measure pH again.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2I3": {
+    "fr": "Si pH entre 7.0 et 7.4 → ✅ passez à l'étape suivante (traitement choc).",
+    "en": "If pH between 7.0 and 7.4 → ✅ proceed to next step (shock treatment).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2I4": {
+    "fr": "Si pH encore trop haut/bas → ajustez à nouveau avec la MOITIÉ de la dose précédente.",
+    "en": "If pH still too high/low → adjust again with HALF the previous dose.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2I5": {
+    "fr": "Re-testez 1h après ce second ajustement.",
+    "en": "Re-test 1h after this second adjustment.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2Intro": {
+    "fr": "Après 2h de filtration, le pH a eu le temps de se stabiliser. Vérifiez qu'il est maintenant dans la plage cible.",
+    "en": "After 2h of filtration, the pH has had time to stabilize. Check that it is now in the target range.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2Product": {
+    "fr": "pH- ou pH+ (dose réduite si réajustement)",
+    "en": "pH- or pH+ (reduced dose if re-adjusting)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2Title": {
+    "fr": "2. Re-tester le pH (après 2h)",
+    "en": "2. Re-test pH (after 2h)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3Dosage": {
+    "fr": "{qty} g de chlore choc (pour {volume} m³)",
+    "en": "{qty} g of shock chlorine (for {volume} m³)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3I1": {
+    "fr": "⚠ Vérifiez que le pH est correct (étapes 1-2). Sinon le choc sera inefficace.",
+    "en": "⚠ Check that pH is correct (steps 1-2). Otherwise the shock will be ineffective.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3I2": {
+    "fr": "Calculez la dose curative : environ 10 g de chlore choc par m³.",
+    "en": "Calculate curative dose: about 10 g of shock chlorine per m³.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3I3": {
+    "fr": "Pour votre piscine de {volume} m³ : {qty} g de chlore choc (soit ~{tablets} pastilles de 20 g).",
+    "en": "For your {volume} m³ pool: {qty} g of shock chlorine (about {tablets} 20g tablets).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3I4": {
+    "fr": "Préférez le soir, sans baigneurs, filtration en marche.",
+    "en": "Prefer evening, no swimmers, pump running.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3I5": {
+    "fr": "Diluez le chlore en poudre/granulés dans un seau d'eau de piscine.",
+    "en": "Dilute powder/granular chlorine in a bucket of pool water.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3I6": {
+    "fr": "Versez devant les buses de refoulement, jamais dans le skimmer.",
+    "en": "Pour in front of return jets, never in the skimmer.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3I7": {
+    "fr": "🚫 INTERDICTION DE BAIGNADE pendant 8 heures minimum.",
+    "en": "🚫 NO SWIMMING for at least 8 hours.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3Intro": {
+    "fr": "Le chlore choc détruit les algues, bactéries et virus. C'est l'étape la plus importante contre l'eau verte.",
+    "en": "Shock chlorine destroys algae, bacteria and viruses. This is the most important step against green water.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3Product": {
+    "fr": "Chlore choc (65 % actif, granulés ou pastilles)",
+    "en": "Shock chlorine (65% active, granules or tablets)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3Title": {
+    "fr": "3. Traitement choc au chlore",
+    "en": "3. Chlorine shock treatment",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS4Dosage": {
+    "fr": "{qty} mL d'anti-algues (pour {volume} m³)",
+    "en": "{qty} mL of anti-algae (for {volume} m³)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS4I1": {
+    "fr": "Attendez au moins 2h après le traitement choc (ne jamais mélanger directement).",
+    "en": "Wait at least 2h after shock treatment (never mix directly).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS4I2": {
+    "fr": "Dosage curatif : ~20 mL d'anti-algues par m³.",
+    "en": "Curative dose: ~20 mL of anti-algae per m³.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS4I3": {
+    "fr": "Pour {volume} m³ : {qty} mL d'anti-algues (soit {liters} L).",
+    "en": "For {volume} m³: {qty} mL of anti-algae (i.e. {liters} L).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS4I4": {
+    "fr": "Versez directement devant les refoulements, filtration en marche.",
+    "en": "Pour directly in front of return jets, pump running.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS4I5": {
+    "fr": "Brossez les parois juste après (voir étape suivante) pour décoller les algues.",
+    "en": "Brush walls right after (see next step) to dislodge algae.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS4Intro": {
+    "fr": "L'anti-algues complète le chlore en détruisant les algues résistantes et en empêchant la repousse.",
+    "en": "Anti-algae complements chlorine by destroying resistant algae and preventing regrowth.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS4Product": {
+    "fr": "Anti-algues curatif",
+    "en": "Curative anti-algae",
+    "reason": "placeholder"
+  }
+}

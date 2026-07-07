@@ -60,12 +60,16 @@ async function fetchWeather(query: string): Promise<WeatherData | null> {
     const today = data.weather?.[0]
     if (!cur) return null
 
-    const next3days = (data.weather || []).slice(0, 3).map((d: any) => ({
-      date: d.date,
-      maxC: parseInt(d.maxtempC, 10),
-      chanceRain: Math.max(parseInt(d.hourly?.[4]?.chanceofrain || '0', 10), parseInt(d.hourly?.[6]?.chanceofrain || '0', 10)),
-      desc: wttrCodeToFr(parseInt(d.hourly?.[4]?.weatherCode || '113', 10)),
-    }))
+    const next3days = (data.weather || []).slice(0, 3).map((d: any) => {
+      const code = parseInt(d.hourly?.[4]?.weatherCode || '113', 10)
+      return {
+        date: d.date,
+        maxC: parseInt(d.maxtempC, 10),
+        chanceRain: Math.max(parseInt(d.hourly?.[4]?.chanceofrain || '0', 10), parseInt(d.hourly?.[6]?.chanceofrain || '0', 10)),
+        desc: wttrCodeToFr(code),
+        code,
+      }
+    })
 
     const tomorrowChanceStorm = Math.max(
       ...(tomorrow?.hourly || []).map((h: any) => parseInt(h.chanceofthunder || '0', 10))

@@ -7,11 +7,22 @@ export interface TargetRange {
   idealLow: number
   idealHigh: number
   unit: string
+  /** French fallback label — displayed when labelKey is not resolved */
   label: string
+  /** next-intl key under the `targets` namespace, e.g. `ph.label` */
+  labelKey: string
   severityLow: 'critical' | 'warning'
   severityHigh: 'critical' | 'warning'
+  /** French fallback for the low-out-of-range consequence */
   consequenceLow: string
+  /** next-intl key under the `targets` namespace, e.g. `ph.consequenceLow`.
+   *  Omitted when `consequenceLow` is the universal placeholder "—". */
+  consequenceLowKey?: string
+  /** French fallback for the high-out-of-range consequence */
   consequenceHigh: string
+  /** next-intl key under the `targets` namespace, e.g. `ph.consequenceHigh`.
+   *  Omitted when `consequenceHigh` is the universal placeholder "—". */
+  consequenceHighKey?: string
 }
 
 export const TARGETS: Record<string, TargetRange> = {
@@ -22,10 +33,13 @@ export const TARGETS: Record<string, TargetRange> = {
     idealHigh: 7.4,
     unit: '',
     label: 'pH',
+    labelKey: 'ph.label',
     severityLow: 'critical',
     severityHigh: 'warning',
     consequenceLow: 'Eau acide : irritation, corrosion équipements, chlore instable.',
+    consequenceLowKey: 'ph.consequenceLow',
     consequenceHigh: 'Eau basique : chlore moins efficace, tartre, eau trouble.',
+    consequenceHighKey: 'ph.consequenceHigh',
   },
   freeChlorine: {
     min: 0.5,
@@ -34,10 +48,13 @@ export const TARGETS: Record<string, TargetRange> = {
     idealHigh: 3,
     unit: 'mg/L',
     label: 'Chlore libre',
+    labelKey: 'freeChlorine.label',
     severityLow: 'critical',
     severityHigh: 'warning',
     consequenceLow: 'Désinfection insuffisante : risque algues et bactéries.',
+    consequenceLowKey: 'freeChlorine.consequenceLow',
     consequenceHigh: 'Surchloration : irritation, odeur, surdosage.',
+    consequenceHighKey: 'freeChlorine.consequenceHigh',
   },
   combinedChlorine: {
     min: 0,
@@ -46,10 +63,12 @@ export const TARGETS: Record<string, TargetRange> = {
     idealHigh: 0.4,
     unit: 'mg/L',
     label: 'Chlore combiné',
+    labelKey: 'combinedChlorine.label',
     severityLow: 'warning',
     severityHigh: 'critical',
     consequenceLow: '—',
     consequenceHigh: 'Chlore combiné élevé : odeur forte, irritation yeux, chloramines.',
+    consequenceHighKey: 'combinedChlorine.consequenceHigh',
   },
   alkalinity: {
     min: 60,
@@ -58,10 +77,13 @@ export const TARGETS: Record<string, TargetRange> = {
     idealHigh: 120,
     unit: 'mg/L',
     label: 'Alcalinité (TAC)',
+    labelKey: 'alkalinity.label',
     severityLow: 'warning',
     severityHigh: 'warning',
     consequenceLow: 'pH instable, variations rapides.',
+    consequenceLowKey: 'alkalinity.consequenceLow',
     consequenceHigh: 'pH difficile à ajuster, eau trouble.',
+    consequenceHighKey: 'alkalinity.consequenceHigh',
   },
   calciumHardness: {
     min: 150,
@@ -70,10 +92,13 @@ export const TARGETS: Record<string, TargetRange> = {
     idealHigh: 400,
     unit: 'mg/L',
     label: 'Dureté calcium (TH)',
+    labelKey: 'calciumHardness.label',
     severityLow: 'warning',
     severityHigh: 'warning',
     consequenceLow: 'Eau agressive : corrosion, mousse.',
+    consequenceLowKey: 'calciumHardness.consequenceLow',
     consequenceHigh: 'Tartre, dépôts, eau trouble.',
+    consequenceHighKey: 'calciumHardness.consequenceHigh',
   },
   cyanuricAcid: {
     min: 0,
@@ -82,10 +107,13 @@ export const TARGETS: Record<string, TargetRange> = {
     idealHigh: 50,
     unit: 'mg/L',
     label: 'Stabilisant (CYA)',
+    labelKey: 'cyanuricAcid.label',
     severityLow: 'warning',
     severityHigh: 'critical',
     consequenceLow: 'Chlore dégradé vite par le soleil.',
+    consequenceLowKey: 'cyanuricAcid.consequenceLow',
     consequenceHigh: 'Chlore bloqué : traitement inefficace, risque algues.',
+    consequenceHighKey: 'cyanuricAcid.consequenceHigh',
   },
   salt: {
     min: 2,
@@ -94,10 +122,13 @@ export const TARGETS: Record<string, TargetRange> = {
     idealHigh: 7,
     unit: 'g/L',
     label: 'Sel',
+    labelKey: 'salt.label',
     severityLow: 'critical',
     severityHigh: 'warning',
     consequenceLow: 'Électrolyseur ne produit pas assez de chlore.',
+    consequenceLowKey: 'salt.consequenceLow',
     consequenceHigh: 'Surconsommation électrolyseur, goût.',
+    consequenceHighKey: 'salt.consequenceHigh',
   },
   bromine: {
     min: 1,
@@ -106,10 +137,13 @@ export const TARGETS: Record<string, TargetRange> = {
     idealHigh: 4,
     unit: 'mg/L',
     label: 'Brome',
+    labelKey: 'bromine.label',
     severityLow: 'critical',
     severityHigh: 'warning',
     consequenceLow: 'Désinfection insuffisante.',
+    consequenceLowKey: 'bromine.consequenceLow',
     consequenceHigh: 'Surdosage, irritation.',
+    consequenceHighKey: 'bromine.consequenceHigh',
   },
   phosphates: {
     min: 0,
@@ -118,10 +152,12 @@ export const TARGETS: Record<string, TargetRange> = {
     idealHigh: 0.1,
     unit: 'mg/L',
     label: 'Phosphates',
+    labelKey: 'phosphates.label',
     severityLow: 'warning',
     severityHigh: 'critical',
     consequenceLow: '—',
     consequenceHigh: 'Nourrit les algues : risque eau verte élevé.',
+    consequenceHighKey: 'phosphates.consequenceHigh',
   },
   temperature: {
     min: 10,
@@ -130,10 +166,13 @@ export const TARGETS: Record<string, TargetRange> = {
     idealHigh: 30,
     unit: '°C',
     label: 'Température',
+    labelKey: 'temperature.label',
     severityLow: 'warning',
     severityHigh: 'warning',
     consequenceLow: 'Eau froide, faible activité chimique.',
+    consequenceLowKey: 'temperature.consequenceLow',
     consequenceHigh: 'Évaporation, algues, surconsommation chlore.',
+    consequenceHighKey: 'temperature.consequenceHigh',
   },
 }
 

@@ -1,0 +1,252 @@
+{
+  "diagnosticActionPlan.recheckAnalyzing": {
+    "fr": "Analyse en cours...",
+    "en": "Analyzing...",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckBefore": {
+    "fr": "Avant",
+    "en": "Before",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckButton": {
+    "fr": "Vérifier le résultat (nouvelle photo)",
+    "en": "Verify result (new photo)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckClickToUpload": {
+    "fr": "Cliquez pour charger une photo",
+    "en": "Click to upload a photo",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckImprovement": {
+    "fr": "Amélioration de +{n}% ! Continuez sur cette voie.",
+    "en": "Improvement of +{n}%! Keep it up.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckLittleImprovement": {
+    "fr": "Peu d'amélioration. Ajustez votre approche avec le nouveau plan ci-dessous.",
+    "en": "Little improvement. Adjust your approach with the new plan below.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckNewPhotoAlt": {
+    "fr": "Nouvelle photo",
+    "en": "New photo",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckNewPlan": {
+    "fr": "Nouveau plan complémentaire",
+    "en": "New complementary plan",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckNewPlanDesc": {
+    "fr": "Basé sur l'analyse de votre nouvelle photo, voici les étapes complémentaires recommandées :",
+    "en": "Based on the analysis of your new photo, here are the recommended complementary steps:",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckPersistentIssues": {
+    "fr": "Problèmes toujours présents :",
+    "en": "Issues still present:",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckTakeNewPhoto": {
+    "fr": "Prenez une nouvelle photo pour vérifier",
+    "en": "Take a new photo to verify",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recommendation": {
+    "fr": "Recommandation pour votre mesure",
+    "en": "Recommendation for your measurement",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recordMeasures": {
+    "fr": "Enregistrer vos mesures",
+    "en": "Record your measurements",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.reminderDesc": {
+    "fr": "Il vous reste {count} étape(s) à compléter. Suivez le plan jusqu'au bout pour résoudre durablement le problème.",
+    "en": "{count} step(s) remaining. Follow the plan to the end to permanently solve the problem.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.reminderTitle": {
+    "fr": "Rappel",
+    "en": "Reminder",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.resolvedDesc": {
+    "fr": "Votre piscine est maintenant saine. L'analyse de contrôle confirme que le problème est résolu.",
+    "en": "Your pool is now healthy. The control analysis confirms the problem is resolved.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.resolvedTitle": {
+    "fr": "✅ Résolu avec AQWELIA",
+    "en": "✅ Solved with AQWELIA",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.skipStep": {
+    "fr": "Ignorer cette étape",
+    "en": "Skip this step",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.stepsCount": {
+    "fr": "{done}/{total} étapes",
+    "en": "{done}/{total} steps",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.title": {
+    "fr": "Plan d'action guidé",
+    "en": "Guided action plan",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastMeasureSaved": {
+    "fr": "Mesure enregistrée ✓",
+    "en": "Measurement saved ✓",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastMeasureSavedDesc": {
+    "fr": "{measures} → carnet mis à jour.",
+    "en": "{measures} → logbook updated.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastMissingRequired": {
+    "fr": "Champs requis manquants",
+    "en": "Missing required fields",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastMissingRequiredDesc": {
+    "fr": "Remplissez tous les champs obligatoires (*) avant de valider.",
+    "en": "Fill in all required fields (*) before validating.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastRecheckErrorDesc": {
+    "fr": "Analyse impossible",
+    "en": "Could not analyze",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastRecheckErrorTitle": {
+    "fr": "Erreur",
+    "en": "Error",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastRecheckNotResolvedDesc": {
+    "fr": "Continuez le traitement et re-vérifiez plus tard.",
+    "en": "Continue treatment and re-check later.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastRecheckNotResolvedTitle": {
+    "fr": "Pas encore résolu",
+    "en": "Not yet resolved",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastRecheckResolvedDesc": {
+    "fr": "✅ Votre piscine est maintenant saine.",
+    "en": "✅ Your pool is now healthy.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastRecheckResolvedTitle": {
+    "fr": "Problème résolu !",
+    "en": "Problem solved!",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastSaveFailed": {
+    "fr": "Enregistrement impossible",
+    "en": "Could not save",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastSaveFailedTitle": {
+    "fr": "Erreur enregistrement",
+    "en": "Save error",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastStepValidated": {
+    "fr": "Étape validée",
+    "en": "Step validated",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastStepValidatedNoMeasure": {
+    "fr": "Étape validée (sans mesure)",
+    "en": "Step validated (no measurement)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.urgencyCritical": {
+    "fr": "Urgent",
+    "en": "Urgent",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.urgencyImportant": {
+    "fr": "Important",
+    "en": "Important",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.urgencyLow": {
+    "fr": "OK",
+    "en": "OK",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.urgencyModerate": {
+    "fr": "À surveiller",
+    "en": "Watch",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.validateAndSave": {
+    "fr": "Valider et enregistrer",
+    "en": "Validate & save",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.validating": {
+    "fr": "Enregistrement…",
+    "en": "Saving…",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.waitTime": {
+    "fr": "Temps d'attente",
+    "en": "Wait time",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.waterTestNote": {
+    "fr": "Les mesures sont enregistrées dans votre carnet (",
+    "en": "Measurements are saved in your logbook (",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.waterTestNoteSuffix": {
+    "fr": ") via l'API.",
+    "en": ") via API.",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.1.detail": {
+    "fr": "L'orage acidifie souvent l'eau et dilue le chlore.",
+    "en": "Storms often acidify water and dilute chlorine.",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.1.title": {
+    "fr": "Tester pH et chlore",
+    "en": "Test pH and chlorine",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.2.detail": {
+    "fr": "Débris apportés par la pluie et le vent.",
+    "en": "Debris brought by rain and wind.",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.2.title": {
+    "fr": "Nettoyer skimmer et panier",
+    "en": "Clean skimmer and basket",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.3.detail": {
+    "fr": "Priorité au pH avant tout ajout de chlore.",
+    "en": "Priority to pH before any chlorine addition.",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.3.title": {
+    "fr": "Ajuster le pH si nécessaire",
+    "en": "Adjust pH if necessary",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.4.detail": {
+    "fr": "Chlore lent ou choc selon l'écart.",
+    "en": "Slow or shock chlorine depending on the gap.",
+    "reason": "placeholder"
+  }
+}

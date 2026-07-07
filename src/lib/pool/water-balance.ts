@@ -1,4 +1,9 @@
 // Équilibre de l'eau : indice de saturation de Langelier (LSI) + indice eau claire
+//
+// i18n: parallel `*Key` fields are exposed alongside the legacy French
+// literals so consumers (module-dashboard.tsx, module-action-plan.tsx via
+// action-plan.ts) can translate them via next-intl. French literals are
+// kept for backward compat.
 
 import { evaluateParam } from './targets'
 
@@ -43,13 +48,67 @@ export function calculateLSI(test: {
   return Math.round(lsi * 100) / 100
 }
 
-export function lsiInterpretation(lsi: number | null): { label: string; status: string; advice: string } {
-  if (lsi == null) return { label: '—', status: 'unknown', advice: 'Manque de données (TH, TAC, température).' }
-  if (lsi < -0.5) return { label: 'Eau agressive', status: 'warning', advice: 'Risque corrosion. Augmenter TAC/TH ou pH.' }
-  if (lsi < -0.3) return { label: 'Légèrement agressive', status: 'warning', advice: 'Léger déséquilibre.' }
-  if (lsi <= 0.3) return { label: 'Équilibrée', status: 'ok', advice: 'Équilibre idéal.' }
-  if (lsi <= 0.5) return { label: 'Légèrement entartrante', status: 'warning', advice: 'Léger risque tartre.' }
-  return { label: 'Entartrante', status: 'warning', advice: 'Risque tartre. Baisser pH/TAC.' }
+export interface LsiInterpretation {
+  label: string
+  labelKey: string
+  status: string
+  advice: string
+  adviceKey: string
+}
+
+export function lsiInterpretation(lsi: number | null): LsiInterpretation {
+  if (lsi == null) {
+    return {
+      label: '—',
+      labelKey: 'lsiMissingLabel',
+      status: 'unknown',
+      advice: 'Manque de données (TH, TAC, température).',
+      adviceKey: 'lsiMissing',
+    }
+  }
+  if (lsi < -0.5) {
+    return {
+      label: 'Eau agressive',
+      labelKey: 'lsiAgressiveLabel',
+      status: 'warning',
+      advice: 'Risque corrosion. Augmenter TAC/TH ou pH.',
+      adviceKey: 'lsiAgressiveAdvice',
+    }
+  }
+  if (lsi < -0.3) {
+    return {
+      label: 'Légèrement agressive',
+      labelKey: 'lsiSlightlyAgressiveLabel',
+      status: 'warning',
+      advice: 'Léger déséquilibre.',
+      adviceKey: 'lsiSlightlyAgressiveAdvice',
+    }
+  }
+  if (lsi <= 0.3) {
+    return {
+      label: 'Équilibrée',
+      labelKey: 'lsiBalancedLabel',
+      status: 'ok',
+      advice: 'Équilibre idéal.',
+      adviceKey: 'lsiBalancedAdvice',
+    }
+  }
+  if (lsi <= 0.5) {
+    return {
+      label: 'Légèrement entartrante',
+      labelKey: 'lsiSlightlyScalingLabel',
+      status: 'warning',
+      advice: 'Léger risque tartre.',
+      adviceKey: 'lsiSlightlyScalingAdvice',
+    }
+  }
+  return {
+    label: 'Entartrante',
+    labelKey: 'lsiScalingLabel',
+    status: 'warning',
+    advice: 'Risque tartre. Baisser pH/TAC.',
+    adviceKey: 'lsiScalingAdvice',
+  }
 }
 
 export function calculateClearWaterIndex(test: {
@@ -77,9 +136,16 @@ export function calculateClearWaterIndex(test: {
   return Math.max(0, Math.min(100, score))
 }
 
-export function clarityLabel(score: number): { label: string; status: string; color: string } {
-  if (score >= 85) return { label: 'Eau parfaite', status: 'ok', color: 'accent' }
-  if (score >= 65) return { label: 'À surveiller', status: 'warning', color: 'yellow' }
-  if (score >= 40) return { label: 'Action recommandée', status: 'warning', color: 'orange' }
-  return { label: 'Urgence', status: 'critical', color: 'destructive' }
+export interface ClarityLabel {
+  label: string
+  labelKey: string
+  status: string
+  color: string
+}
+
+export function clarityLabel(score: number): ClarityLabel {
+  if (score >= 85) return { label: 'Eau parfaite', labelKey: 'clarityPerfect', status: 'ok', color: 'accent' }
+  if (score >= 65) return { label: 'À surveiller', labelKey: 'clarityWatch', status: 'warning', color: 'yellow' }
+  if (score >= 40) return { label: 'Action recommandée', labelKey: 'clarityAction', status: 'warning', color: 'orange' }
+  return { label: 'Urgence', labelKey: 'clarityUrgent', status: 'critical', color: 'destructive' }
 }

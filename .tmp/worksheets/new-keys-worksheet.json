@@ -1,0 +1,434 @@
+{
+  "actionPlan.iaAdjustTac": {
+    "fr": "Ajuster l'alcalinité (TAC)",
+    "en": "Adjust alkalinity (TAC)"
+  },
+  "actionPlan.iaLowerPh": {
+    "fr": "Baisser le pH",
+    "en": "Lower pH"
+  },
+  "actionPlan.iaRaisePh": {
+    "fr": "Monter le pH",
+    "en": "Raise pH"
+  },
+  "actionPlan.iaPhOk": {
+    "fr": "pH correct",
+    "en": "pH correct"
+  },
+  "actionPlan.iaChlorineShock": {
+    "fr": "Chloration choc",
+    "en": "Chlorine shock"
+  },
+  "actionPlan.iaAddSlowChlorine": {
+    "fr": "Ajouter chlore lent",
+    "en": "Add slow chlorine"
+  },
+  "actionPlan.iaTreatChloramines": {
+    "fr": "Traitement chloramines",
+    "en": "Treat chloramines"
+  },
+  "actionPlan.iaAddStabilizer": {
+    "fr": "Ajouter stabilisant",
+    "en": "Add stabilizer"
+  },
+  "actionPlan.iaDiluteWater": {
+    "fr": "Diluer l'eau (CYA trop haut)",
+    "en": "Dilute water (CYA too high)"
+  },
+  "actionPlan.iaAddSalt": {
+    "fr": "Ajouter du sel",
+    "en": "Add salt"
+  },
+  "actionPlan.iaTreatPhosphates": {
+    "fr": "Traiter les phosphates",
+    "en": "Treat phosphates"
+  },
+  "actionPlan.iaMaintainFiltration": {
+    "fr": "Maintenir la filtration",
+    "en": "Maintain filtration"
+  },
+  "actionPlan.iaRetest": {
+    "fr": "Re-tester l'eau",
+    "en": "Re-test the water"
+  },
+  "actionPlan.iaAdjustTacDetail": {
+    "fr": "TAC {current} mg/L cible {target} mg/L. A faire AVANT le pH.",
+    "en": "TAC {current} mg/L target {target} mg/L. Do this BEFORE pH."
+  },
+  "actionPlan.iaLowerPhDetail": {
+    "fr": "pH {current} cible {target}. Indispensable avant tout traitement chlore.",
+    "en": "pH {current} target {target}. Essential before any chlorine treatment."
+  },
+  "actionPlan.iaRaisePhDetail": {
+    "fr": "pH {current} cible {target}.",
+    "en": "pH {current} target {target}."
+  },
+  "actionPlan.iaPhOkDetail": {
+    "fr": "pH {ph} dans la plage ideale. Ne pas toucher.",
+    "en": "pH {ph} in the ideal range. Leave it alone."
+  },
+  "actionPlan.iaChlorineShockDetail": {
+    "fr": "Chlore libre {chlorine} mg/L trop bas. Faire un choc (apres pH equilibre).",
+    "en": "Free chlorine {chlorine} mg/L too low. Shock treatment (after pH balanced)."
+  },
+  "actionPlan.iaAddSlowChlorineDetail": {
+    "fr": "Chlore libre {chlorine} mg/L un peu bas. Completer avec chlore lent.",
+    "en": "Free chlorine {chlorine} mg/L slightly low. Top up with slow chlorine."
+  },
+  "actionPlan.iaTreatChloraminesDetail": {
+    "fr": "Chlore combine {combined} mg/L eleve. Chloration choc pour casser les chloramines (odeur, irritation).",
+    "en": "Combined chlorine {combined} mg/L high. Shock treatment to break down chloramines (odor, irritation)."
+  },
+  "actionPlan.iaAddStabilizerDetail": {
+    "fr": "CYA {current} mg/L cible {target} mg/L.",
+    "en": "CYA {current} mg/L target {target} mg/L."
+  },
+  "actionPlan.iaDiluteWaterDetail": {
+    "fr": "CYA {cya} mg/L bloque le chlore. Renouveler 20-30% de l'eau.",
+    "en": "CYA {cya} mg/L blocks chlorine. Renew 20-30% of the water."
+  },
+  "actionPlan.iaAddSaltDetail": {
+    "fr": "Sel {salt} g/L trop bas pour l'electrolyseur.",
+    "en": "Salt {salt} g/L too low for the electrolyzer."
+  },
+  "actionPlan.iaTreatPhosphatesDetail": {
+    "fr": "Phosphates {phosphates} mg/L : nourrissent les algues. Utiliser un reducteur de phosphates.",
+    "en": "Phosphates {phosphates} mg/L: feeds algae. Use a phosphate remover."
+  },
+  "actionPlan.iaMaintainFiltrationHours": {
+    "fr": "Filtrer au moins {hours}h pour bien repartir les produits.",
+    "en": "Filter at least {hours}h to distribute products well."
+  },
+  "actionPlan.iaMaintainFiltrationNormal": {
+    "fr": "Filtration normale (moitie de la temperature de l'eau en heures).",
+    "en": "Normal filtration (half the water temperature in hours)."
+  },
+  "actionPlan.iaRetestHours": {
+    "fr": "Refaire un test dans {hours}h pour verifier l'effet.",
+    "en": "Retest in {hours}h to check the effect."
+  },
+  "actionPlan.iaRetestDefault": {
+    "fr": "Refaire un test dans 24-48h.",
+    "en": "Retest in 24-48h."
+  },
+  "actionPlan.iaAdjustTacProduct": {
+    "fr": "TAC+",
+    "en": "TAC+"
+  },
+  "actionPlan.iaLowerPhProduct": {
+    "fr": "pH-",
+    "en": "pH-"
+  },
+  "actionPlan.iaRaisePhProduct": {
+    "fr": "pH+",
+    "en": "pH+"
+  },
+  "actionPlan.iaChlorineShockProduct": {
+    "fr": "Chlore choc",
+    "en": "Chlorine shock"
+  },
+  "actionPlan.iaAddSlowChlorineProduct": {
+    "fr": "Chlore lent",
+    "en": "Slow chlorine"
+  },
+  "actionPlan.dndNoMixChemicals": {
+    "fr": "Ne jamais melanger deux produits chimiques differents (chlore + acide = gaz toxique).",
+    "en": "Never mix two different chemical products (chlorine + acid = toxic gas)."
+  },
+  "actionPlan.dndNoPurePour": {
+    "fr": "Ne jamais verser du produit pur directement dans la piscine sans dilution (sauf sel).",
+    "en": "Never pour pure product directly into the pool without dilution (except salt)."
+  },
+  "actionPlan.dndWaterIntoAcid": {
+    "fr": "Ne jamais ajouter de l'eau dans un produit acide : toujours ajouter le produit dans l'eau.",
+    "en": "Never add water to an acid product: always add the product to the water."
+  },
+  "actionPlan.dndNoShockWithoutPh": {
+    "fr": "Ne jamais faire une chloration choc sans avoir verifie le pH au prealable.",
+    "en": "Never do a shock chlorination without checking the pH first."
+  },
+  "actionPlan.dndNoBathAfterShock": {
+    "fr": "Ne jamais se baigner pendant ou juste apres un traitement choc.",
+    "en": "Never swim during or right after a shock treatment."
+  },
+  "actionPlan.dndNoStoreChlorineAcid": {
+    "fr": "Ne jamais stocker chlore et acide cote a cote.",
+    "en": "Never store chlorine and acid side by side."
+  },
+  "actionPlan.dndNoCyaOver50": {
+    "fr": "Ne pas depasser 50 mg/L de stabilisant (CYA) : le chlore devient inefficace.",
+    "en": "Do not exceed 50 mg/L of stabilizer (CYA): chlorine becomes ineffective."
+  },
+  "actionPlan.dndNoBath8h": {
+    "fr": "Ne pas se baigner pendant au moins 8h apres le choc.",
+    "en": "Do not swim for at least 8h after the shock."
+  },
+  "actionPlan.dndNoMaskChlorineSmell": {
+    "fr": "Ne pas masquer l'odeur de chlore avec du parfum : c'est un signe de chloramines.",
+    "en": "Do not mask the chlorine smell with perfume: it's a sign of chloramines."
+  },
+  "actionPlan.dndNoAddStabilizer": {
+    "fr": "Ne pas ajouter de stabilisant : le niveau est deja trop eleve.",
+    "en": "Do not add stabilizer: the level is already too high."
+  },
+  "actionPlan.diagBalanced": {
+    "fr": "Votre eau est globalement equilibree (indice {cwi}/100). Maintenez le rythme de tests et de filtration. Baignade : {swim}.",
+    "en": "Your water is generally balanced (index {cwi}/100). Maintain the testing and filtration pace. Swimming: {swim}."
+  },
+  "actionPlan.diagIssues": {
+    "fr": "Diagnostic ({sevLabel}) indice eau claire {cwi}/100. Points a traiter : {issues}. Suivez le plan d'action ordonne ci-dessous. Baignade : {swim}.",
+    "en": "Diagnosis ({sevLabel}) clear water index {cwi}/100. Issues to address: {issues}. Follow the ordered action plan below. Swimming: {swim}."
+  },
+  "actionPlan.sevLabelUrgent": {
+    "fr": "URGENT",
+    "en": "URGENT"
+  },
+  "actionPlan.sevLabelHigh": {
+    "fr": "Action recommandee",
+    "en": "Action recommended"
+  },
+  "actionPlan.sevLabelMedium": {
+    "fr": "A surveiller",
+    "en": "To monitor"
+  },
+  "actionPlan.swimLabelAllowed": {
+    "fr": "autorisee",
+    "en": "allowed"
+  },
+  "actionPlan.swimLabelAvoid": {
+    "fr": "deconseillee",
+    "en": "not recommended"
+  },
+  "actionPlan.swimLabelForbidden": {
+    "fr": "interdite",
+    "en": "forbidden"
+  },
+  "actionPlan.swimLabelUnknown": {
+    "fr": "a confirmer apres mesures",
+    "en": "to confirm after measurements"
+  },
+  "actionPlan.issuePh": {
+    "fr": "pH {ph}",
+    "en": "pH {ph}"
+  },
+  "actionPlan.issueFreeChlorine": {
+    "fr": "chlore libre {chlorine} mg/L",
+    "en": "free chlorine {chlorine} mg/L"
+  },
+  "actionPlan.issueCombinedChlorine": {
+    "fr": "chloramines elevees",
+    "en": "high chloramines"
+  },
+  "actionPlan.issueTac": {
+    "fr": "TAC {tac}",
+    "en": "TAC {tac}"
+  },
+  "actionPlan.proPhExtreme": {
+    "fr": "pH extreme : un professionnel peut aider a reequilibrer sans risque.",
+    "en": "Extreme pH: a professional can help rebalance safely."
+  },
+  "actionPlan.proOverChlorination": {
+    "fr": "Surchloration massive : envisagez une dilution partielle ou un pro.",
+    "en": "Massive over-chlorination: consider partial dilution or a pro."
+  },
+  "actionPlan.proHighChloramines": {
+    "fr": "Chloramines tres elevees : choc necessaire, un pro peut piloter l'operation.",
+    "en": "Very high chloramines: shock needed, a pro can manage the operation."
+  },
+  "actionPlan.dosePhMinusProduct": {
+    "fr": "pH- (acide)",
+    "en": "pH- (acid)"
+  },
+  "actionPlan.dosePhMinusMethod": {
+    "fr": "Diluer dans un seau d'eau de la piscine, repartir devant les refoulements, filtration en marche.",
+    "en": "Dilute in a bucket of pool water, distribute in front of return jets, filtration running."
+  },
+  "actionPlan.dosePhMinusWarningGap": {
+    "fr": "Ecart trop grand : traitement limite a -{delta} pH. Refaire un test apres filtration.",
+    "en": "Gap too large: treatment limited to -{delta} pH. Retest after filtration."
+  },
+  "actionPlan.dosePhPlusProduct": {
+    "fr": "pH+ (carbonate de sodium)",
+    "en": "pH+ (sodium carbonate)"
+  },
+  "actionPlan.dosePhPlusMethod": {
+    "fr": "Diluer dans un seau, repartir devant les refoulements, filtration en marche.",
+    "en": "Dilute in a bucket, distribute in front of return jets, filtration running."
+  },
+  "actionPlan.dosePhPlusWarningGap": {
+    "fr": "Ecart trop grand : traitement limite a +{delta} pH.",
+    "en": "Gap too large: treatment limited to +{delta} pH."
+  },
+  "actionPlan.doseChlorineShockProduct": {
+    "fr": "Chlore choc (65% actif)",
+    "en": "Chlorine shock (65% active)"
+  },
+  "actionPlan.doseChlorineShockMethod": {
+    "fr": "Dissoudre dans un seau d'eau, verser devant les refoulements. Preferer le soir, sans baigneurs.",
+    "en": "Dissolve in a bucket of water, pour in front of return jets. Prefer evening, no swimmers."
+  },
+  "actionPlan.doseChlorineShockWarningBath": {
+    "fr": "ATTENTION : chloration choc. Aucune baignade pendant au moins 8h.",
+    "en": "WARNING: shock chlorination. No swimming for at least 8h."
+  },
+  "actionPlan.doseChlorineShockWarningMix": {
+    "fr": "Ne jamais melanger chlore choc et pH-.",
+    "en": "Never mix chlorine shock and pH-."
+  },
+  "actionPlan.doseChlorineShockWarningPh": {
+    "fr": "Verifier le pH AVANT le choc (ideal 7.2-7.4).",
+    "en": "Check pH BEFORE shock (ideal 7.2-7.4)."
+  },
+  "actionPlan.doseChlorineSlowProduct": {
+    "fr": "Chlore lent (pastilles 20g)",
+    "en": "Slow chlorine (20g tablets)"
+  },
+  "actionPlan.doseChlorineSlowMethod": {
+    "fr": "Placer dans le skimmer ou diffuseur. Renouveler selon consommation.",
+    "en": "Place in skimmer or dispenser. Renew as needed."
+  },
+  "actionPlan.doseChlorineSlowWarningSkimmer": {
+    "fr": "Ne pas placer dans le skimmer si traitement anti-algues simultane.",
+    "en": "Do not place in skimmer if simultaneous anti-algae treatment."
+  },
+  "actionPlan.doseAlkalinityPlusProduct": {
+    "fr": "TAC+ (bicarbonate de sodium)",
+    "en": "TAC+ (sodium bicarbonate)"
+  },
+  "actionPlan.doseAlkalinityPlusMethod": {
+    "fr": "Diluer, repartir, filtration en marche. Attendre avant de retoucher le pH.",
+    "en": "Dilute, distribute, filtration running. Wait before adjusting pH."
+  },
+  "actionPlan.doseAlkalinityPlusWarningOrder": {
+    "fr": "Ajuster le TAC AVANT le pH.",
+    "en": "Adjust TAC BEFORE pH."
+  },
+  "actionPlan.doseCalciumPlusProduct": {
+    "fr": "Calcium+ (chlorure de calcium)",
+    "en": "Calcium+ (calcium chloride)"
+  },
+  "actionPlan.doseCalciumPlusMethod": {
+    "fr": "Diluer dans un seau, verser lentement devant les refoulements.",
+    "en": "Dilute in a bucket, pour slowly in front of return jets."
+  },
+  "actionPlan.doseStabilizerPlusProduct": {
+    "fr": "Stabilisant (acide cyanurique)",
+    "en": "Stabilizer (cyanuric acid)"
+  },
+  "actionPlan.doseStabilizerPlusMethod": {
+    "fr": "Verser lentement dans le skimmer, filtration en marche. Dissolution lente (24-48h).",
+    "en": "Pour slowly into the skimmer, filtration running. Slow dissolution (24-48h)."
+  },
+  "actionPlan.doseStabilizerPlusWarningMax": {
+    "fr": "Ne pas depasser 50 mg/L. Trop de stabilisant bloque le chlore.",
+    "en": "Do not exceed 50 mg/L. Too much stabilizer blocks chlorine."
+  },
+  "actionPlan.doseSaltPlusProduct": {
+    "fr": "Sel piscine (NaCl)",
+    "en": "Pool salt (NaCl)"
+  },
+  "actionPlan.doseSaltPlusMethod": {
+    "fr": "Verser le sel directement dans la piscine, filtration en marche jusqu'a dissolution complete.",
+    "en": "Pour salt directly into the pool, filtration running until fully dissolved."
+  },
+  "actionPlan.doseSaltPlusWarningCheck": {
+    "fr": "Verifier le sel requis par votre electrolyseur avant ajout.",
+    "en": "Check the salt required by your electrolyzer before adding."
+  },
+  "actionPlan.doseAntiAlgaeProduct": {
+    "fr": "Anti-algues (curatif)",
+    "en": "Anti-algae (curative)"
+  },
+  "actionPlan.doseAntiAlgaeMethod": {
+    "fr": "Verser devant les refoulements, filtration en marche. Brosser les parois.",
+    "en": "Pour in front of return jets, filtration running. Brush the walls."
+  },
+  "actionPlan.doseAntiAlgaeWarningPh": {
+    "fr": "Le pH doit etre equilibre AVANT. Efficace surtout en prevention.",
+    "en": "pH must be balanced BEFORE. Effective mainly as prevention."
+  },
+  "actionPlan.doseFlocculantProduct": {
+    "fr": "Floculant",
+    "en": "Flocculant"
+  },
+  "actionPlan.doseFlocculantMethod": {
+    "fr": "Verser devant les refoulements, filtration 1h puis coupure 12h pour decantation, puis aspiration.",
+    "en": "Pour in front of return jets, filtration 1h then stop 12h for settling, then vacuum."
+  },
+  "actionPlan.doseFlocculantWarningFilter": {
+    "fr": "Compatible avec filtre a sable uniquement. Ne pas utiliser avec filtre cartouche.",
+    "en": "Compatible with sand filter only. Do not use with cartridge filter."
+  },
+  "diagnostic.swimReasonPhCriticalAcidic": {
+    "fr": "pH {ph} hors plage de securite (trop acide).",
+    "en": "pH {ph} outside safety range (too acidic)."
+  },
+  "diagnostic.swimReasonPhCriticalBasic": {
+    "fr": "pH {ph} hors plage de securite (trop basique).",
+    "en": "pH {ph} outside safety range (too basic)."
+  },
+  "diagnostic.swimReasonPhWarning": {
+    "fr": "pH {ph} legerement hors plage ideale.",
+    "en": "pH {ph} slightly outside ideal range."
+  },
+  "diagnostic.swimReasonChlorineInsufficient": {
+    "fr": "Chlore libre insuffisant : desinfection non assuree.",
+    "en": "Insufficient free chlorine: disinfection not assured."
+  },
+  "diagnostic.swimReasonChlorineTooHigh": {
+    "fr": "Chlore libre {chlorine} mg/L trop eleve : irritation, surdosage.",
+    "en": "Free chlorine {chlorine} mg/L too high: irritation, overdose."
+  },
+  "diagnostic.swimReasonChlorineHighLimit": {
+    "fr": "Chlore libre en limite haute.",
+    "en": "Free chlorine at upper limit."
+  },
+  "diagnostic.swimReasonChlorineNotMeasured": {
+    "fr": "Chlore libre non mesure.",
+    "en": "Free chlorine not measured."
+  },
+  "diagnostic.swimReasonCombinedChlorine": {
+    "fr": "Chlore combine {combined} mg/L : chloramines irritantes, odeur forte.",
+    "en": "Combined chlorine {combined} mg/L: irritating chloramines, strong odor."
+  },
+  "diagnostic.lsiBalancedLabel": {
+    "fr": "Equilibree",
+    "en": "Balanced"
+  },
+  "diagnostic.lsiSlightlyScalingLabel": {
+    "fr": "Legerement entartrante",
+    "en": "Slightly scaling"
+  },
+  "diagnostic.lsiScalingLabel": {
+    "fr": "Entartrante",
+    "en": "Scaling"
+  },
+  "diagnostic.lsiSlightlyAgressiveLabel": {
+    "fr": "Legerement agressive",
+    "en": "Slightly aggressive"
+  },
+  "diagnostic.lsiAgressiveLabel": {
+    "fr": "Eau agressive",
+    "en": "Aggressive water"
+  },
+  "diagnostic.lsiMissingLabel": {
+    "fr": "-",
+    "en": "-"
+  },
+  "diagnostic.clarityPerfect": {
+    "fr": "Eau parfaite",
+    "en": "Perfect water"
+  },
+  "diagnostic.clarityWatch": {
+    "fr": "A surveiller",
+    "en": "To monitor"
+  },
+  "diagnostic.clarityAction": {
+    "fr": "Action recommandee",
+    "en": "Action recommended"
+  },
+  "diagnostic.clarityUrgent": {
+    "fr": "Urgence",
+    "en": "Urgent"
+  }
+}

@@ -235,6 +235,17 @@
           ]
         }
       }
+    },
+    "defaultPoolName": "Mijn zwembad",
+    "demoAccountName": "Demo-account",
+    "demoPoolName": "Demo-zwembad",
+    "errors": {
+      "accountCreateError": "Fout bij aanmaken account",
+      "accountDeleteError": "Fout bij verwijderen account",
+      "accountExists": "Er bestaat al een account met dit e-mailadres",
+      "demoCreateError": "Fout bij aanmaken demo-account",
+      "phRequired": "pH vereist",
+      "poolProfileRequired": "Zwembadprofiel vereist"
     }
   },
   "nav": {
@@ -262,7 +273,7 @@
     "shortPhoto": "Foto",
     "shortWater": "Water",
     "shortIA": "AI",
-    "shortPlan": "Plan",
+    "shortPlan": "Abonnement",
     "shortLog": "Logboek",
     "shortWeather": "Weer",
     "shortGuides": "Handleidingen",
@@ -645,25 +656,56 @@
     "footerSettings": "Instellingen",
     "footerSupport": "Support",
     "footerCopyright": "Altijd kristalhelder water.",
-    "footerVersion": "v2.0 Copilot",
+    "footerVersion": "v2.0 Copiloot",
     "footerMadeInFrance": "Gemaakt in Frankrijk 🇫🇷",
     "footerTagline2": "Zwembad-copiloot",
     "signIn": "Aanmelden",
     "footerComingSoon": "binnenkort",
-    "disclaimerLabel": "Disclaimer."
+    "disclaimerLabel": "Disclaimer.",
+    "heroPhoneChlorine": "Chloor"
   },
   "plans": {
     "free": {
       "name": "Gratis",
-      "tagline": "Gratis — om te ontdekken"
+      "tagline": "Gratis — om te ontdekken",
+      "features": {
+        "1pool": "1 zwembad",
+        "unlimitedManualTests": "Onbeperkte watertests (handmatig)",
+        "clearWaterIndex": "Helderwaterindex + zwemveiligheid",
+        "2scans": "2 fotoscans / maand",
+        "simpleWeather": "Eenvoudig weer",
+        "5guides": "5 basisgidsen",
+        "history14": "Geschiedenis 14 dagen"
+      }
     },
     "premium": {
       "name": "Premium",
-      "tagline": "De volledige copiloot"
+      "tagline": "De volledige copiloot",
+      "features": {
+        "3pools": "3 zwembaden",
+        "unlimitedScans": "Onbeperkte fotoscans",
+        "advancedWeather": "Geavanceerd weer + meldingen",
+        "allGuidesVideos": "Alle gidsen + video's",
+        "smartReminders": "Slimme herinneringen",
+        "pdfReport": "Deelbaar PDF-rapport",
+        "proMode": "Pro-modus (geavanceerde LSI)",
+        "spaSupport": "Spa en heet water (broom, actief zuurstof)",
+        "unlimitedHistory": "Onbeperkte geschiedenis",
+        "prioritySupport": "Prioritaire support"
+      }
     },
     "expert": {
       "name": "Expert",
-      "tagline": "Voor zwembadprofessionals en techniekers"
+      "tagline": "Voor zwembadprofessionals en techniekers",
+      "features": {
+        "allPremium": "Alles uit Premium",
+        "multiClients": "Onbeperkt multi-klant",
+        "quotesVisits": "Offertes en bezoekplanning",
+        "photosBeforeAfter": "Foto's voor/na",
+        "advancedTechNotes": "Geavanceerde technische notities",
+        "accountingExport": "Boekhoudexport",
+        "apiIntegrations": "API + integraties"
+      }
     },
     "freeFeatures": [
       "1 pool",
@@ -813,7 +855,18 @@
       "API + integrations",
       "White label (your company logo)",
       "Dedicated support (response < 24h)"
-    ]
+    ],
+    "gates": {
+      "photo_scan_limit": "Limiet van {n} scans/maand bereikt.",
+      "weather_advanced": "Geavanceerd weer is voorbehouden aan betaalde abonnementen.",
+      "smart_reminders": "Slimme herinneringen zijn voorbehouden aan betaalde abonnementen.",
+      "guides_premium": "Premium-gidsen zijn voorbehouden aan betaalde abonnementen.",
+      "multi_pool": "Multi-zwembad is voorbehouden aan Premium en Expert.",
+      "pdf_report": "PDF-rapport is voorbehouden aan Premium en Expert.",
+      "pro_mode": "Pro-modus is voorbehouden aan Premium en Expert.",
+      "history_extended": "Uitgebreide geschiedenis is voorbehouden aan betaalde abonnementen.",
+      "spa_support": "Spa-support is voorbehouden aan het Premium-abonnement."
+    }
   },
   "onboarding": {
     "welcome": "Welkom bij AQWELIA",
@@ -1065,7 +1118,9 @@
     "ariaCountry": "Land",
     "ariaMainNav": "Hoofdnavigatie",
     "unknownError": "Onbekende fout",
-    "footerNote": "AQWELIA — Altijd kristalhelder water. © {year}"
+    "footerNote": "AQWELIA — Altijd kristalhelder water. © {year}",
+    "exportFailedDesc": "Export mislukt",
+    "deleteFailedDesc": "Verwijdering mislukt"
   },
   "auth": {
     "backHome": "Terug naar home",
@@ -1228,7 +1283,25 @@
     "previewAlt": "Voorbeeld",
     "eyebrowLabel": "Visuele diagnose",
     "error": "Fout",
-    "failed": "Mislukt"
+    "failed": "Mislukt",
+    "swimReasonPhCriticalAcidic": "pH {ph} buiten veiligheidsrange (te zuur).",
+    "swimReasonPhCriticalBasic": "pH {ph} buiten veiligheidsrange (te basisch).",
+    "swimReasonPhWarning": "pH {ph} iets buiten de ideale range.",
+    "swimReasonChlorineInsufficient": "Onvoldoende vrij chloor: desinfectie niet gewaarborgd.",
+    "swimReasonChlorineTooHigh": "Vrij chloor {chlorine} mg/L te hoog: irritatie, overdosering.",
+    "swimReasonChlorineHighLimit": "Vrij chloor op de bovengrens.",
+    "swimReasonChlorineNotMeasured": "Vrij chloor niet gemeten.",
+    "swimReasonCombinedChlorine": "Gebonden chloor {combined} mg/L: irriterende chloramines, sterke geur.",
+    "lsiBalancedLabel": "Gebalanceerd",
+    "lsiSlightlyScalingLabel": "Licht kalkafzettend",
+    "lsiScalingLabel": "Kalkafzettend",
+    "lsiSlightlyAgressiveLabel": "Licht agressief",
+    "lsiAgressiveLabel": "Agressief water",
+    "lsiMissingLabel": "-",
+    "clarityPerfect": "Perfect water",
+    "clarityWatch": "In de gaten houden",
+    "clarityAction": "Actie aanbevolen",
+    "clarityUrgent": "Dringend"
   },
   "weather": {
     "locateMe": "Mij lokaliseren",
@@ -1246,7 +1319,50 @@
     "wind": "Wind",
     "precip": "Neerslag",
     "tomorrow": "Morgen",
-    "alerts": "Waarschuwingen",
+    "alerts": {
+      "storm_soon": {
+        "title": "Onweer morgen verwacht",
+        "message": "{percent} % kans op onweer. Onweer verdunt chloor en verhoogt de pH.",
+        "action": "Controleer vanavond het vrij chloor vóór het onweer. Verhoog morgen de filtratie.",
+        "when": "Vanavond vóór 20 u"
+      },
+      "heat_extreme": {
+        "title": "Hittegolf verwacht",
+        "message": "{temp} °C voorspeld. Zeer warm water = chloor sneller verbruikt + algengroei.",
+        "action": "Verhoog de filtratie met 2 u/dag. Controleer elke ochtend het chloor. Overweeg preventief anti-algen.",
+        "when": "Vanaf nu en tijdens de hittegolf"
+      },
+      "heat_high": {
+        "title": "Hoge hitte verwacht",
+        "message": "{temp} °C voorspeld. Waarschijnlijk oververbruik van chloor.",
+        "action": "Verhoog de filtratie met 1 u/dag en test morgen het chloor.",
+        "when": "Morgenochtend"
+      },
+      "heavy_rain": {
+        "title": "Zware regenval verwacht",
+        "message": "Regen verdunt de producten, verlaagt de pH en brengt vuil mee.",
+        "action": "Na de regen: controleer pH en chloor, maak de skimmer en het pompmandje schoon.",
+        "when": "Na de regen"
+      },
+      "wind_strong": {
+        "title": "Sterke wind verwacht",
+        "message": "{wind} km/h. Vuil, bladeren, stof in het zwembad.",
+        "action": "Controleer de skimmer en het pompmandje. Reinig de waterlijn.",
+        "when": "Na de wind"
+      },
+      "uv_high": {
+        "title": "Zeer hoge UV",
+        "message": "Zonlicht breekt niet-gestabiliseerd chloor sneller af.",
+        "action": "Controleer uw stabilisator (CYA) en het vrij chloor.",
+        "when": "Deze week"
+      },
+      "frost_risk": {
+        "title": "Vorstgevaar",
+        "message": "Negatieve temperatuur voorspeld. Risico voor apparatuur en leidingen.",
+        "action": "Bescherm de technische ruimte. Laat de filtratie 's nachts draaien om vorst te voorkomen. Maak winterklaar indien nog niet gedaan.",
+        "when": "Vannacht"
+      }
+    },
     "noAlerts": "Geen weerwaarschuwingen",
     "autoLocate": "Mijn locatie automatisch bepalen",
     "retry": "Opnieuw proberen",
@@ -1310,6 +1426,72 @@
       "fresh": "Fris",
       "cold": "Koud",
       "tooCold": "Te koud"
+    },
+    "summary": {
+      "calm": "Mild weer in {location}. Geen specifieke waarschuwing. Filter {hours} u/dag.",
+      "withAlerts": "{count} weeralarm(en): {titles}. Volg de aanbevolen acties."
+    },
+    "testReason": {
+      "before_storm": "Test aanbevolen vóór het morgen verwachte onweer.",
+      "during_heatwave": "Dagelijkse test aanbevolen tijdens de hittegolf.",
+      "after_rain": "pH- + chloortest aanbevolen na de regen.",
+      "routine": "Laatste test {days} dagen geleden. Routinetest aanbevolen.",
+      "urgent": "Laatste test {days} dagen geleden: dringende test aanbevolen."
+    },
+    "filtration": {
+      "reason": "Regel: de helft van de watertemperatuur ({temp} °C) aan filtratie-uren.",
+      "scheduleNocturnal": "Geef de voorkeur aan nachtfiltratie (minder verdamping, betere chloorefficiëntie).",
+      "scheduleDiurnal": "Dagfiltratie aanbevolen."
+    },
+    "codes": {
+      "113": {},
+      "116": {},
+      "119": {},
+      "122": {},
+      "143": {},
+      "176": {},
+      "179": {},
+      "182": {},
+      "185": {},
+      "200": {},
+      "227": {},
+      "230": {},
+      "248": {},
+      "260": {},
+      "263": {},
+      "266": {},
+      "281": {},
+      "284": {},
+      "293": {},
+      "296": {},
+      "299": {},
+      "302": {},
+      "305": {},
+      "308": {},
+      "311": {},
+      "314": {},
+      "317": {},
+      "320": {},
+      "323": {},
+      "326": {},
+      "329": {},
+      "332": {},
+      "335": {},
+      "338": {},
+      "350": {},
+      "353": {},
+      "356": {},
+      "359": {},
+      "362": {},
+      "365": {},
+      "368": {},
+      "371": {},
+      "374": {},
+      "377": {},
+      "386": {},
+      "389": {},
+      "392": {},
+      "395": {}
     }
   },
   "admin": {
@@ -1365,7 +1547,25 @@
     "analyticsComingSoon": "Gedetailleerde gegevens binnenkort",
     "usersTitle": "Gebruikers",
     "usersDesc": "Beheer gebruikers, abonnementen en toegang.",
-    "usersComingSoon": "Binnenkort"
+    "usersComingSoon": "Binnenkort",
+    "wrongPassword": "Onjuist wachtwoord",
+    "accessDenied": "Toegang geweigerd.",
+    "bannerSavedToast": "Banner opgeslagen",
+    "popupsSavedToast": "Popups opgeslagen",
+    "learnMore": "Meer weten →",
+    "delete": "Verwijderen",
+    "popupDefaultTitle": "Nieuwe promo-popup",
+    "popupDefaultBody": "Beschrijving van de promo...",
+    "popupDefaultCta": "Ervan profiteren",
+    "popupImagePlaceholder": "URL promo-afbeelding (upload binnenkort)",
+    "bannerDefaultText": "☀️ Zomer 2026 — Profiteer van 20% korting op het Lagoon-abonnement!",
+    "bannerDescFull": "Pas de promotiebanner bovenaan de app aan. Ideaal voor seizoenen, promoties, aankondigingen.",
+    "popupDescFull": "Maak popups aan die verschijnen op basis van triggers. Upload van promo-afbeeldingen binnenkort.",
+    "contentComingSoonFull": "Binnenkort — WYSIWYG-contenteditor voor landingspagina, gidsen, e-mails...",
+    "analyticsComingSoonFull": "Gedetailleerde gegevens binnenkort — API-verbinding /api/analytics",
+    "usersComingSoonFull": "Binnenkort — Gebruikerslijst, abonnementenbeheer, support...",
+    "usersDescFull": "Beheer gebruikers, abonnementen en toegang.",
+    "backToSiteArrow": "← Terug naar site"
   },
   "spa": {
     "title": "Spa & baden",
@@ -1554,7 +1754,7 @@
       "profileInjected": "Zwembadprofiel ingevoegd",
       "profileNotConfigured": "Profiel niet geconfigureerd",
       "lastTestInjected": "Laatste watertest ingevoegd",
-      "aqweliaAssistant": "AQWELIA Assistant",
+      "aqweliaAssistant": "AQWELIA-assistent",
       "disclaimer": "Indicatieve antwoorden. Verifieer altijd met een watertest voor behandeling.",
       "welcomeTitle": "Hoi! Ik ben uw zwembadexpert 👋",
       "welcomeDesc": "Vraag me alles over pH, chloor, algen, filtratie, winteronderhoud…",
@@ -1919,29 +2119,55 @@
     "brand_other_notes": "Generieke Chinese spa, zonder merk",
     "recommended": "Aanbevolen",
     "notRecommended": "Niet aanbevolen",
-    "maxTemp": "Max. aanbevolen temp."
+    "maxTemp": "Max. aanbevolen temp.",
+    "freq": {
+      "daily": "Dagelijks",
+      "weekly": "Wekelijks",
+      "every_3_4_months": "Elke 3-4 maanden",
+      "per_usage": "Per gebruik",
+      "config": "Configuratie",
+      "per_drain": "Bij elke verversing"
+    },
+    "seats_label": "Aantal zitplaatsen",
+    "usage_occasional": "Occasioneel (1-2x/week)",
+    "usage_regular": "Regelmatig (3-4x/week)",
+    "usage_intensive": "Intensief (5+/week)",
+    "rec_temp_high_chlorine_warning": "⚠️ Hoge temperatuur — chloor wordt NIET aanbevolen. Gebruik broom.",
+    "rec_temp_high_session_limit": "Houd de temperatuur in de gaten: boven 38 °C, beperk sessies tot 15-20 min.",
+    "rec_temp_critical_health": "🔴 Kritieke temperatuur (>38 °C) — gezondheidsrisico. Verlaag de temperatuur.",
+    "rec_chlorine_evaporates": "⚠️ Chloor verdampt snel in heet water. Schakel over op broom voor meer efficiëntie.",
+    "rec_cover_after_use": "Dek de spa af na elk gebruik om verdamping en fotosynthese te voorkomen.",
+    "rec_drain_economic": "Ververs om de 3-4 maanden — dat is goedkoper dan overbehandelen.",
+    "drainage_reason_intensive": "Intensief gebruik vastgesteld — verversing aanbevolen om de {months} maanden om verzadiging door producten te voorkomen.",
+    "drainage_reason_standard": "Verversing aanbevolen om de {months} maanden (goedkoper dan overbehandelen).",
+    "freq_daily": "Dagelijks",
+    "freq_weekly": "Wekelijks",
+    "freq_every_3_4_months": "Elke 3-4 maanden",
+    "freq_per_usage": "Naar gebruik",
+    "freq_config": "Configuratie",
+    "freq_per_drain": "Bij elke lediging"
   },
   "guidesData": {
-    "cat_getting_started": "Getting started",
-    "cat_problems": "Water problems",
-    "cat_products": "Products & dosing",
-    "cat_equipment": "Equipment",
-    "cat_weather_seasons": "Weather & seasons",
-    "cat_safety": "Safety & swimming",
-    "cat_treatments": "Treatments (chlorine/salt/bromine)",
+    "cat_getting_started": "Beginnen",
+    "cat_problems": "Waterproblemen",
+    "cat_products": "Producten & dosering",
+    "cat_equipment": "Uitrusting",
+    "cat_weather_seasons": "Weer & seizoenen",
+    "cat_safety": "Veiligheid & zwemmen",
+    "cat_treatments": "Behandelingen (chloor/zout/broom)",
     "cat_faq": "FAQ",
     "level_beginner": "Beginner",
-    "level_intermediate": "Intermediate",
+    "level_intermediate": "Gevorderd",
     "level_expert": "Expert",
-    "tag_algues": "algae",
-    "tag_chlore": "chlorine",
-    "tag_vert": "green",
-    "tag_trouble": "cloudy",
-    "tag_filtration": "filtration",
+    "tag_algues": "algen",
+    "tag_chlore": "chloor",
+    "tag_vert": "groen",
+    "tag_trouble": "troebel",
+    "tag_filtration": "filtratie",
     "tag_floculant": "flocculant",
     "tag_choc": "shock",
-    "tag_securite": "safety",
-    "tag_sel": "salt",
+    "tag_securite": "veiligheid",
+    "tag_sel": "zout",
     "tag_electrolyseur": "electrolyzer",
     "tag_ph": "pH",
     "tag_debutant": "beginner",
@@ -1949,64 +2175,1304 @@
     "tag_backwash": "backwash",
     "tag_cartouche": "cartridge",
     "tag_chloramines": "chloramines",
-    "tag_odeur": "odor",
-    "tag_yeux": "eyes",
-    "guide_gs1_title": "Getting started with your pool",
-    "guide_gs1_summary": "The first 10 things to know when you become a pool owner.",
-    "guide_tr1_title": "Understanding your salt electrolyzer",
-    "guide_tr1_summary": "Principle, salt level, production, routine maintenance.",
-    "guide_pb1_title": "Green water: diagnosis and action plan",
-    "guide_pb1_summary": "Identify the cause of green water and treat it step by step without overdosing.",
-    "guide_pb2_title": "Cloudy or milky water",
-    "guide_pb2_summary": "Distinguish the causes of cloudy water and apply the right treatment.",
-    "guide_pr1_title": "When and how to shock chlorinate",
-    "guide_pr1_summary": "Shock treatment: indications, dosage, safety, swimming delays.",
-    "guide_pb3_title": "Strong chlorine odor and burning eyes",
-    "guide_pb3_summary": "Understand chloramines and how to get rid of them.",
-    "guide_eq1_title": "Backwashing a sand filter",
-    "guide_eq1_summary": "When and how to do an effective backwash.",
-    "guide_eq2_title": "Cleaning a cartridge filter",
-    "guide_eq2_summary": "Disassembly and rinsing of a filter cartridge.",
-    "reminder_filter_clean": "Filter cleaning",
-    "reminder_filter_clean_desc": "Sand filter backwash recommended.",
-    "reminder_filter_clean_action": "Do a backwash (counter-wash).",
-    "reminder_skimmer": "Check skimmer and basket",
-    "reminder_skimmer_desc": "Debris, leaves, insects to remove regularly.",
-    "reminder_skimmer_action": "Empty the skimmer basket and the pump basket.",
-    "reminder_test_water_title": "Water test",
-    "reminder_test_water_detail": "It's time to test your water.",
-    "reminder_test_water_action": "Do a full test (pH, chlorine, TA).",
+    "tag_odeur": "geur",
+    "tag_yeux": "ogen",
+    "guide_gs1_title": "Beginnen met uw zwembad",
+    "guide_gs1_summary": "De eerste 10 dingen die u moet weten wanneer u eigenaar wordt van een zwembad.",
+    "guide_tr1_title": "Uw zoutelektrolysecel begrijpen",
+    "guide_tr1_summary": "Principe, zoutgehalte, productie, routine-onderhoud.",
+    "guide_pb1_title": "Groen water: diagnose en actieplan",
+    "guide_pb1_summary": "De oorzaak van groen water identificeren en het stap voor stap behandelen zonder over te doseren.",
+    "guide_pb2_title": "Troebel of melkachtig water",
+    "guide_pb2_summary": "Oorzaken van troebel water onderscheiden en de juiste behandeling toepassen.",
+    "guide_pr1_title": "Wanneer en hoe chloor shocken",
+    "guide_pr1_summary": "Shockbehandeling: indicaties, dosering, veiligheid, zwemvertragingen.",
+    "guide_pb3_title": "Sterke chloorgeur en brandende ogen",
+    "guide_pb3_summary": "Chloramines begrijpen en hoe ervan af te raken.",
+    "guide_eq1_title": "Backwash (tegenspoelen) van het zandfilter",
+    "guide_eq1_summary": "Wanneer en hoe een effectieve backwash uitvoeren.",
+    "guide_eq2_title": "Een patroonfilter reinigen",
+    "guide_eq2_summary": "Demontage en afspoelen van een filterpatroon.",
+    "reminder_filter_clean": "Filterreiniging",
+    "reminder_filter_clean_desc": "Backwash van zandfilter aanbevolen.",
+    "reminder_filter_clean_action": "Doe een backwash (tegenspoelen).",
+    "reminder_skimmer": "Skimmer en mandje controleren",
+    "reminder_skimmer_desc": "Debris, bladeren, insecten regelmatig verwijderen.",
+    "reminder_skimmer_action": "Leeg het skimmermandje en dat van de pomp.",
+    "reminder_test_water_title": "Watertest",
+    "reminder_test_water_detail": "Het is tijd om uw water te testen.",
+    "reminder_test_water_action": "Doe een volledige test (pH, chloor, TAC).",
     "reminder_retest_after_product_title": "Retest After Product",
-    "reminder_retest_after_product_detail": "Detail for retest_after_product",
-    "reminder_retest_after_product_action": "Action for retest_after_product",
-    "reminder_after_storm_title": "After the storm",
-    "reminder_after_storm_detail": "The storm may have unbalanced your water.",
-    "reminder_after_storm_action": "Test chlorine and pH.",
-    "reminder_filter_clean_title": "Filter cleaning",
-    "reminder_filter_clean_detail": "Sand filter backwash recommended.",
+    "reminder_retest_after_product_detail": "Detail voor retest_after_product",
+    "reminder_retest_after_product_action": "Actie voor retest_after_product",
+    "reminder_after_storm_title": "Na het onweer",
+    "reminder_after_storm_detail": "Het onweer kan uw water uit evenwicht gebracht hebben.",
+    "reminder_after_storm_action": "Test chloor en pH.",
+    "reminder_filter_clean_title": "Filterreiniging",
+    "reminder_filter_clean_detail": "Backwash van zandfilter aanbevolen.",
     "reminder_cell_clean_title": "Cell Clean",
-    "reminder_cell_clean_detail": "Detail for cell_clean",
-    "reminder_cell_clean_action": "Action for cell_clean",
+    "reminder_cell_clean_detail": "Detail voor cell_clean",
+    "reminder_cell_clean_action": "Actie voor cell_clean",
     "reminder_ph_check_title": "Ph Check",
-    "reminder_ph_check_detail": "Detail for ph_check",
-    "reminder_ph_check_action": "Action for ph_check",
+    "reminder_ph_check_detail": "Detail voor ph_check",
+    "reminder_ph_check_action": "Actie voor ph_check",
     "reminder_chlorine_check_title": "Chlorine Check",
-    "reminder_chlorine_check_detail": "Detail for chlorine_check",
-    "reminder_chlorine_check_action": "Action for chlorine_check",
-    "reminder_skimmer_check_title": "Check skimmer and basket",
-    "reminder_skimmer_check_detail": "Debris, leaves, insects to remove regularly.",
-    "reminder_skimmer_check_action": "Empty the skimmer basket and the pump basket.",
+    "reminder_chlorine_check_detail": "Detail voor chlorine_check",
+    "reminder_chlorine_check_action": "Actie voor chlorine_check",
+    "reminder_skimmer_check_title": "Skimmer en mandje controleren",
+    "reminder_skimmer_check_detail": "Debris, bladeren, insecten regelmatig verwijderen.",
+    "reminder_skimmer_check_action": "Leeg het skimmermandje en dat van de pomp.",
     "reminder_shock_treatment_title": "Shock Treatment",
-    "reminder_shock_treatment_detail": "Detail for shock_treatment",
-    "reminder_shock_treatment_action": "Action for shock_treatment",
-    "reminder_winterize_title": "Winterize",
-    "reminder_winterize_detail": "Detail for winterize",
-    "reminder_winterize_action": "Action for winterize",
+    "reminder_shock_treatment_detail": "Detail voor shock_treatment",
+    "reminder_shock_treatment_action": "Actie voor shock_treatment",
+    "reminder_winterize_title": "Winterklaar maken",
+    "reminder_winterize_detail": "Detail voor winterklaar maken",
+    "reminder_winterize_action": "Actie voor winterklaar maken",
     "reminder_open_pool_title": "Open Pool",
-    "reminder_open_pool_detail": "Detail for open_pool",
-    "reminder_open_pool_action": "Action for open_pool",
+    "reminder_open_pool_detail": "Detail voor open_pool",
+    "reminder_open_pool_action": "Actie voor open_pool",
     "reminder_algae_prevent_title": "Algae Prevent",
-    "reminder_algae_prevent_detail": "Detail for algae_prevent",
-    "reminder_algae_prevent_action": "Action for algae_prevent"
+    "reminder_algae_prevent_detail": "Detail voor algae_prevent",
+    "reminder_algae_prevent_action": "Actie voor algae_prevent",
+    "green-water": {
+      "title": "Groen water: diagnose en actieplan",
+      "summary": "Identificeer de oorzaak van groen water en behandel het stap voor stap zonder over te doseren.",
+      "steps": {
+        "1": {
+          "title": "pH en vrij chloor meten",
+          "detail": "Groen water is bijna altijd te wijten aan een tekort aan ontsmettingsmiddel of een ongebalanceerde pH.",
+          "warning": "Nooit anti-algae toevoegen vóór de pH in evenwicht te brengen."
+        },
+        "2": {
+          "title": "De pH in evenwicht brengen (7.0-7.4)",
+          "detail": "Als pH > 7.4, voeg verdund pH- toe. Wacht 2-3u filtratie.",
+          "tip": "Chloor is 10x effectiever bij pH 7.2 dan bij pH 8.0."
+        },
+        "3": {
+          "title": "Wanden en bodem borstelen",
+          "detail": "Algae losmaken helpt de behandeling doordringen."
+        },
+        "4": {
+          "title": "Een shockbehandeling doen",
+          "detail": "Shockchloor (na pH in evenwicht). Continue filtratie 24u.",
+          "warning": "Zwemverbod minstens 8u na de shock."
+        },
+        "5": {
+          "title": "Een curatief anti-algae toevoegen",
+          "detail": "Na de shock voorkomt anti-algae hergroei."
+        },
+        "6": {
+          "title": "24-48u continu filteren",
+          "detail": "Filtratie is even belangrijk als de producten."
+        },
+        "7": {
+          "title": "Opnieuw testen na 24u",
+          "detail": "Controleer pH en chloor. Als het water groen blijft, moet het filter misschien gereinigd worden."
+        }
+      }
+    },
+    "cloudy-water": {
+      "title": "Troebel of melkachtig water",
+      "summary": "Oorzaken van troebel water onderscheiden en de juiste behandeling toepassen.",
+      "steps": {
+        "1": {
+          "title": "De filtratie controleren",
+          "detail": "80% van troebel water komt door een filtratieprobleem. Controleer druk, duur, reinheid van de filter."
+        },
+        "2": {
+          "title": "pH en chloor testen",
+          "detail": "pH buiten bereik of laag chloor = troebel water."
+        },
+        "3": {
+          "title": "Filter reinigen of backwash",
+          "detail": "Verstopt filter = troebel water."
+        },
+        "4": {
+          "title": "Een vlokmiddel gebruiken (indien zandfilter)",
+          "detail": "Vlokmiddel klumpt fijne deeltjes samen zodat het filter ze kan tegenhouden.",
+          "warning": "Vlokmiddel enkel met zandfilter. Niet met patroon."
+        },
+        "5": {
+          "title": "24u filteren en daarna afzettingen opzuigen",
+          "detail": "Na vlokking vormen zich afzettingen op de bodem: zuig ze op."
+        }
+      }
+    },
+    "chlorine-shock": {
+      "title": "Wanneer en hoe een chloreshock doen",
+      "summary": "Shockbehandeling: indicaties, dosering, veiligheid, zwemvertragingen.",
+      "steps": {
+        "1": {
+          "title": "pH vóór controleren",
+          "detail": "Een shock is ineffectief als pH > 7.6. Balanceer eerst.",
+          "warning": "NOOIT shock doen zonder pH gecontroleerd te hebben."
+        },
+        "2": {
+          "title": "Het juiste moment kiezen",
+          "detail": "'s Avonds, geen zwemmers, filtratie draait."
+        },
+        "3": {
+          "title": "Doseren volgens volume",
+          "detail": "AQWELIA berekent de hoeveelheid op basis van uw bekkenvolume."
+        },
+        "4": {
+          "title": "In een emmer oplossen",
+          "detail": "Nooit poedershock direct aan de rand gieten."
+        },
+        "5": {
+          "title": "Minstens 4u filteren",
+          "detail": "Chloor moet goed verdeeld zijn."
+        },
+        "6": {
+          "title": "8u wachten vóór het zwemmen",
+          "detail": "Controleer vrij chloor vóór het zwemmen (moet < 3 mg/L zijn).",
+          "warning": "Zwemverbod gedurende minstens 8u."
+        }
+      }
+    },
+    "combined-chlorine": {
+      "title": "Sterke chloorgeur en prikkende ogen",
+      "summary": "Chloramines begrijpen en hoe ervan af te raken.",
+      "steps": {
+        "1": {
+          "title": "De oorzaak begrijpen",
+          "detail": "Een sterke chloorgeur is GEEN chlooroverschot: het zijn chloramines (gecombineerd chloor), bijproducten van desinfectie."
+        },
+        "2": {
+          "title": "Zowel vrij als totaal chloor meten",
+          "detail": "Gecombineerd chloor = totaal chloor - vrij chloor. Als > 0.4 mg/L, behandeling nodig."
+        },
+        "3": {
+          "title": "Een shockbehandeling doen",
+          "detail": "De shock breekt chloramines af en geeft actief vrij chloor vrij."
+        },
+        "4": {
+          "title": "De pH controleren",
+          "detail": "Een hoge pH verergert chloramines."
+        }
+      }
+    },
+    "filter-backwash": {
+      "title": "Backwash (tegenspoelen) van het zandfilter",
+      "summary": "Wanneer en hoe een effectieve backwash uitvoeren.",
+      "steps": {
+        "1": {
+          "title": "Wanneer backwash?",
+          "detail": "Wanneer de druk 0.3-0.5 bar boven de bedrijfsdruk stijgt, of om de 2-4 weken."
+        },
+        "2": {
+          "title": "De pomp uitschakelen",
+          "detail": "ALTIJD de pomp uitschakelen vóór de klep te hanteren.",
+          "warning": "Elektrisch en materieel risico."
+        },
+        "3": {
+          "title": "Klep op BACKWASH zetten",
+          "detail": "Draai de meerwegklep stevig."
+        },
+        "4": {
+          "title": "De pomp 2-3 min herstarten",
+          "detail": "Het water stroomt naar de afvoer tot het weer helder is."
+        },
+        "5": {
+          "title": "Uitschakelen, klep op RINSE 30s",
+          "detail": "Het spoelen pakt het zand weer aan en voorkomt terugkeer van vuil."
+        },
+        "6": {
+          "title": "Terugkeren naar positie FILTER",
+          "detail": "Zet de klep terug op normale filtratie."
+        }
+      }
+    },
+    "filter-cartridge-clean": {
+      "title": "Een patroonfilter reinigen",
+      "summary": "Demontage en afspoelen van een filterpatroon.",
+      "steps": {
+        "1": {
+          "title": "De pomp uitschakelen",
+          "detail": "Stroomtoevoer uitschakelen.",
+          "warning": "Elektrische veiligheid verplicht."
+        },
+        "2": {
+          "title": "De patroon demonteren",
+          "detail": "Open het filterlichaam volgens het model."
+        },
+        "3": {
+          "title": "Met een straal afspoelen",
+          "detail": "Zachte waterstraal, van boven naar beneden, tussen de plooien."
+        },
+        "4": {
+          "title": "In een filterreiniger weken (optioneel)",
+          "detail": "Om de 2-3 reinigingen, ontvetten en ontsalken."
+        },
+        "5": {
+          "title": "Terugplaatsen en herstarten",
+          "detail": "De afdichtingen goed terugplaatsen."
+        }
+      }
+    },
+    "cell-clean": {
+      "title": "De elektrolysecel reinigen",
+      "summary": "Ontsalken van de zoutelektrolysecel om de chloorproductie te behouden.",
+      "steps": {
+        "1": {
+          "title": "Stroom uitschakelen",
+          "detail": "Schakel de elektrolysecel en de pomp uit.",
+          "warning": "Elektrische veiligheid. Nooit de cel onder stroom hanteren."
+        },
+        "2": {
+          "title": "De cel demonteren",
+          "detail": "Afschroeven volgens het model. Controleer de staat van de elektroden."
+        },
+        "3": {
+          "title": "Een verdunde zuuroplossing bereiden",
+          "detail": "1/3 zoutzuur + 2/3 water in een plastic recipiënt.",
+          "warning": "Giet ALTIJD het zuur in het water, nooit omgekeerd. Handschoenen en veiligheidsbril verplicht. Ventilatie."
+        },
+        "4": {
+          "title": "10-15 min weken",
+          "detail": "De kalk lost op. Niet te lang laten staan."
+        },
+        "5": {
+          "title": "Overvloedig afspoelen",
+          "detail": "Met schoon water tot de geur verdwijnt."
+        },
+        "6": {
+          "title": "Terugplaatsen en herstarten",
+          "detail": "Controleer de productie op het display."
+        }
+      }
+    },
+    "salt-system-basics": {
+      "title": "Begrijp uw zout-electrolyzer",
+      "summary": "Principe, zoutgehalte, productie, routinematig onderhoud.",
+      "steps": {
+        "1": {
+          "title": "Het principe",
+          "detail": "Zout (NaCl) wordt in-situ geëlektrolyseerd tot actief chloor. Geen chlooropslag, zachter water."
+        },
+        "2": {
+          "title": "Vereist zoutgehalte",
+          "detail": "Afhankelijk van het model: over het algemeen 3-7 g/L. Raadpleeg de handleiding. Te laag = geen productie; te hoog = oververbruik."
+        },
+        "3": {
+          "title": "Stabilisator (CYA) onmisbaar",
+          "detail": "Zonder stabilisator wordt het geproduceerde chloor door de zon vernietigd in 2 u."
+        },
+        "4": {
+          "title": "De pH in de gaten houden",
+          "detail": "De electrolyzer verhoogt de pH. Vaak bijregelen nodig."
+        },
+        "5": {
+          "title": "Productie afhankelijk van temperatuur",
+          "detail": "In koud water (< 15 °C) daalt de productie. Geen zorgen in de winter."
+        },
+        "6": {
+          "title": "Onderhoud cel",
+          "detail": "Zure reiniging elke 3-6 maanden, afhankelijk van de waterhardheid."
+        }
+      }
+    },
+    "ph-control": {
+      "title": "Uw pH beheersen",
+      "summary": "Waarom pH de parameter nr. 1 is, hoe deze aan te passen.",
+      "steps": {
+        "1": {
+          "title": "De pH heeft prioriteit",
+          "detail": "Alles vertrekt vanuit de pH: werking van chloor, zwemcomfort, bescherming van uitrusting."
+        },
+        "2": {
+          "title": "Ideaal bereik 7.0-7.4",
+          "detail": "Dichter bij 7.2 = optimaal chloor."
+        },
+        "3": {
+          "title": "De TAC aanpassen vóór de pH indien onstabiel",
+          "detail": "Een lage TAC maakt de pH onstabiel."
+        },
+        "4": {
+          "title": "In kleine hoeveelheden doseren",
+          "detail": "Nooit de pH in één keer met meer dan 0.3 wijzigen."
+        },
+        "5": {
+          "title": "2-3u filteren en opnieuw testen",
+          "detail": "Het mengsel moet homogeen zijn."
+        }
+      }
+    },
+    "tac-control": {
+      "title": "Begrijp alkaliniteit (TAC)",
+      "summary": "TAC is de buffer van de pH. Zonder goede TAC wordt de pH onstabiel.",
+      "steps": {
+        "1": {
+          "title": "Rol van TAC",
+          "detail": "TAC (totale alkaliniteit) stabiliseert de pH. Zonder TAC schiet de pH omhoog bij elke producttoevoeging."
+        },
+        "2": {
+          "title": "Ideaal bereik 80-120 mg/L",
+          "detail": "Doel 100 mg/L."
+        },
+        "3": {
+          "title": "AANPASSEN VOOR de pH",
+          "detail": "Breng TAC altijd eerst in balans, anders houdt de pH niet stand."
+        },
+        "4": {
+          "title": "Om te verhogen: natriumbicarbonaat",
+          "detail": "Verdunnen, verdelen, 3 u filtratie."
+        },
+        "5": {
+          "title": "Om te verlagen: zuur",
+          "detail": "Complexer, langzaam uitvoeren met een pH-."
+        }
+      }
+    },
+    "after-storm": {
+      "title": "Wat doen na een onweer?",
+      "summary": "Onweer verdunt chloor en wijzigt de pH. Routine na onweer.",
+      "steps": {
+        "1": {
+          "title": "pH en chloor testen",
+          "detail": "Onweer verzurikt vaak het water en verdunt het chloor."
+        },
+        "2": {
+          "title": "Skimmer en mandje reinigen",
+          "detail": "Debris aangevoerd door regen en wind."
+        },
+        "3": {
+          "title": "pH aanpassen indien nodig",
+          "detail": "Prioriteit aan pH vóór enige chloortoevoeging."
+        },
+        "4": {
+          "title": "Chloor aanvullen indien laag",
+          "detail": "Langzaam chloor of shockchloor naargelang de afwijking."
+        },
+        "5": {
+          "title": "Filteren 4-6u",
+          "detail": "Corrigeer de aanpassingen goed verdeeld."
+        }
+      }
+    },
+    "vacation-mode": {
+      "title": "Voordat u op vakantie gaat",
+      "summary": "Bereid uw zwembad voor op een afwezigheid van enkele dagen/weken.",
+      "steps": {
+        "1": {
+          "title": "Een volledige test uitvoeren",
+          "detail": "Alles in balans brengen voor vertrek: pH, chloor, TAC."
+        },
+        "2": {
+          "title": "Shock-chloor de dag ervoor",
+          "detail": "Grondig desinfecteren."
+        },
+        "3": {
+          "title": "Vul de dispenser met langzaam chloor",
+          "detail": "Bij een afwezigheid < 1 week."
+        },
+        "4": {
+          "title": "Stel de filtratietimer in",
+          "detail": "Minstens 4-6 u/dag, bij voorkeur 's nachts."
+        },
+        "5": {
+          "title": "Dek het zwembad af",
+          "detail": "Dekzeil of afdekking: beperkt vuil en verdamping."
+        },
+        "6": {
+          "title": "Bij lange afwezigheid: buur of robot",
+          "detail": "Laat iemand controleren of installeer een robot."
+        },
+        "7": {
+          "title": "Afhankelijk van het seizoen: actieve of passieve wintervoorbereiding",
+          "detail": "In de zomer is verminderde filtratie voldoende. In de winter volledige wintervoorbereiding."
+        }
+      }
+    },
+    "winterization": {
+      "title": "Uw zwembad winterklaar maken",
+      "summary": "Het zwembad winterklaar maken zonder de apparatuur te beschadigen.",
+      "steps": {
+        "1": {
+          "title": "Kies actieve of passieve wintervoorbereiding",
+          "detail": "Actief: verminderde filtratie. Passief: volledige stop. Hangt af van het klimaat."
+        },
+        "2": {
+          "title": "Grondig reinigen",
+          "detail": "Water, wanden, bodem, filter, waterlijn."
+        },
+        "3": {
+          "title": "Voer een wintervoorbehandeling uit",
+          "detail": "Winterproduct, anti-algen en anti-kalk."
+        },
+        "4": {
+          "title": "Verlaag het waterpeil",
+          "detail": "10-15 cm onder de mondstukken voor passief."
+        },
+        "5": {
+          "title": "Voelbare leidingen ledigen",
+          "detail": "Tegen vorst beschermen."
+        },
+        "6": {
+          "title": "Dek het zwembad af",
+          "detail": "Winterdekzeil of afdekking."
+        },
+        "7": {
+          "title": "Actieve wintervoorbereiding: filtratie 2-3 u/dag",
+          "detail": "Vooral tijdens vorstperioden."
+        }
+      }
+    },
+    "startup": {
+      "title": "Seizoensstart in de lente",
+      "summary": "Uw zwembad na de winter zachtjes wekken.",
+      "steps": {
+        "1": {
+          "title": "Verwijder de afdekking en reinig",
+          "detail": "Verwijder opeengehoopte bladeren en vuil."
+        },
+        "2": {
+          "title": "Bijvullen als het waterpeil laag is",
+          "detail": "Vul het waterpeel bij."
+        },
+        "3": {
+          "title": "Start de filtratie",
+          "detail": "Controleer het filter (backwash indien nodig)."
+        },
+        "4": {
+          "title": "Test het water",
+          "detail": "pH, chloor, TAC, stabilisator."
+        },
+        "5": {
+          "title": "Geleidelijk in balans brengen",
+          "detail": "TAC → pH → chloor. Geen haast."
+        },
+        "6": {
+          "title": "Een shockbehandeling uitvoeren",
+          "detail": "Om op een gezonde basis te herstarten."
+        },
+        "7": {
+          "title": "Controleer de apparatuur",
+          "detail": "Pomp, electrolyzer, afdichtingen, manometer."
+        }
+      }
+    },
+    "swim-safety": {
+      "title": "Zwemveiligheid: wanneer mag u zwemmen?",
+      "summary": "Veiligheidscriteria voor risicovrij zwemmen.",
+      "steps": {
+        "1": {
+          "title": "pH tussen 7.0 en 7.6",
+          "detail": "Buiten dit bereik: mogelijke irritatie."
+        },
+        "2": {
+          "title": "Vrij chloor tussen 1 en 3 mg/L",
+          "detail": "Minder = onvoldoende desinfectie. Meer = irritatie."
+        },
+        "3": {
+          "title": "Gebonden chloor < 0.4 mg/L",
+          "detail": "Daarboven: sterke geur, prikkende ogen."
+        },
+        "4": {
+          "title": "Respecteer de wachttijden na behandeling",
+          "detail": "2 u na pH, 8 u na chloor-shock."
+        },
+        "5": {
+          "title": "Bij twijfel: niet zwemmen",
+          "detail": "Beter wachten op een test dan twijfelachtig water ingaan."
+        }
+      }
+    },
+    "product-safety": {
+      "title": "Veiligheid van chemische producten",
+      "summary": "De gouden regels voor het hanteren en opslaan van zwembadproducten.",
+      "steps": {
+        "1": {
+          "title": "NOOIT producten mengen",
+          "detail": "Chloor + zuur = dodelijk giftig gas. Altijd afzonderlijk verdunnen.",
+          "warning": "Absolute overlevingsregel."
+        },
+        "2": {
+          "title": "Altijd het product aan het water toevoegen",
+          "detail": "Nooit water in het zuurproduct (spatten)."
+        },
+        "3": {
+          "title": "Handschoenen en veiligheidsbril dragen",
+          "detail": "Vooral voor zuren en geconcentreerd chloor."
+        },
+        "4": {
+          "title": "Droog, koel, geventileerd bewaren",
+          "detail": "Zuren en chloor scheiden. Buiten bereik van kinderen."
+        },
+        "5": {
+          "title": "De gebruiksaanwijzingen volgen",
+          "detail": "Elk product heeft zijn eigen doserings- en toepassingsregels."
+        },
+        "6": {
+          "title": "Bij incident: bel 112 of het antigifcentrum",
+          "detail": "Geen braken opwekken, onmiddellijk raadplegen."
+        }
+      }
+    },
+    "getting-started": {
+      "title": "Beginnen met uw zwembad",
+      "summary": "De eerste 10 dingen die u moet weten wanneer u eigenaar wordt van een zwembad.",
+      "steps": {
+        "1": {
+          "title": "Het volume van zijn zwembad kennen",
+          "detail": "Onmisbaar voor enige dosering. AQWELIA berekent dit op basis van de afmetingen."
+        },
+        "2": {
+          "title": "De pH begrijpen",
+          "detail": "De parameter nr. 1. Alles vertrekt hiervandaan."
+        },
+        "3": {
+          "title": "Chloor begrijpen",
+          "detail": "Vrij, totaal, gecombineerd. AQWELIA begeleidt u."
+        },
+        "4": {
+          "title": "Voldoende filteren",
+          "detail": "De helft van de watertemperatuur in uren."
+        },
+        "5": {
+          "title": "1-2x per week testen",
+          "detail": "Vaker bij grote hitte."
+        },
+        "6": {
+          "title": "Het filter onderhouden",
+          "detail": "Regelmatige backwash of spoeling."
+        },
+        "7": {
+          "title": "Het waterniveau in de gaten houden",
+          "detail": "Te laag = pomp in gevaar; te hoog = ineffectieve skimmer."
+        },
+        "8": {
+          "title": "De waterlijn borstelen en reinigen",
+          "detail": "Voorkomt algae en afzettingen."
+        },
+        "9": {
+          "title": "Het weer anticiperen",
+          "detail": "Onweer, hittegolf, vakantie: voorkomen beter dan genezen."
+        },
+        "10": {
+          "title": "Een logboek bijhouden",
+          "detail": "AQWELIA bewaart de geschiedenis voor u."
+        }
+      }
+    },
+    "getting-started-spa": {
+      "title": "Bijzonderheden van de spa",
+      "summary": "De spa heeft zijn eigen regels: warm water, beperkt volume, broom boven chloor.",
+      "steps": {
+        "1": {
+          "title": "Beperkt volume = snelle reacties",
+          "detail": "Het water draait snel om. Vaker testen."
+        },
+        "2": {
+          "title": "Voorkeur voor broom boven chloor",
+          "detail": "Broom is stabieler bij hitte en minder geurig."
+        },
+        "3": {
+          "title": "Temperatuur en pH",
+          "detail": "De pH beweegt met de temperatuur. Testen op badtemperatuur."
+        },
+        "4": {
+          "title": "Wekelijkse shock",
+          "detail": "Meer nodig dan in een zwembad."
+        },
+        "5": {
+          "title": "Periodiek verversen",
+          "detail": "Om de 3-4 maanden afhankelijk van gebruik."
+        }
+      }
+    },
+    "faq-test-frequency": {
+      "title": "Hoe vaak uw water testen?",
+      "summary": "Aanbevolen frequentie volgens seizoen en gebruik.",
+      "steps": {
+        "1": {
+          "title": "In het warme seizoen",
+          "detail": "Minstens 2 keer per week, meer bij grote hitte."
+        },
+        "2": {
+          "title": "In het koude seizoen (actieve wintering)",
+          "detail": "Eens per 2 weken."
+        },
+        "3": {
+          "title": "Na enige behandeling",
+          "detail": "Opnieuw testen binnen 3-24u afhankelijk van het product."
+        },
+        "4": {
+          "title": "Na onweer",
+          "detail": "Systematische test."
+        },
+        "5": {
+          "title": "Vóór het zwemmen bij twijfel",
+          "detail": "Altijd."
+        }
+      }
+    },
+    "faq-cya-high": {
+      "title": "Mijn stabilisator (CYA) is te hoog",
+      "summary": "Wat doen wanneer CYA hoger is dan 50-60 mg/L?",
+      "steps": {
+        "1": {
+          "title": "Waarom het een probleem is",
+          "detail": "Een te hoge CYA 'blokkeert' chloor: het is aanwezig maar inactief. Risico op algae ondanks normaal chloor."
+        },
+        "2": {
+          "title": "Er bestaat geen product om CYA te verlagen",
+          "detail": "Enige oplossing: het water verdunnen."
+        },
+        "3": {
+          "title": "20-30% van het water verversen",
+          "detail": "Gedeeltelijke afvoer en daarna aanvullen."
+        },
+        "4": {
+          "title": "Opnieuw testen na verversing",
+          "detail": "Controleer de nieuwe waarde."
+        },
+        "5": {
+          "title": "In de toekomst: minder gestabiliseerd chloor gebruiken",
+          "detail": "Voorkeur voor niet-gestabiliseerd chloor of elektrolysecel."
+        }
+      }
+    }
+  },
+  "diagnosticActionPlan": {
+    "urgencyCritical": "Dringend",
+    "urgencyImportant": "Belangrijk",
+    "urgencyModerate": "In de gaten houden",
+    "urgencyLow": "OK",
+    "fieldPhLabel": "Voer uw gemeten pH in",
+    "fieldChlorineLabel": "Gemeten vrij chloor",
+    "fieldTacLabel": "Gemeten TAC",
+    "title": "Begeleid actieplan",
+    "poolDetected": "Zwembad gedetecteerd:",
+    "poolDetectedSuffix": "— doseringen automatisch berekend.",
+    "progress": "Voortgang",
+    "stepsCount": "{done}/{total} stappen",
+    "poolState": "Toestand van uw zwembad",
+    "initialState": "Beginstaat",
+    "afterTreatment": "Na behandeling",
+    "instructionsTitle": "Gedetailleerde instructies",
+    "product": "Product",
+    "dosage": "Dosering",
+    "waitTime": "Wachttijd",
+    "immediate": "Onmiddellijk",
+    "recommendation": "Aanbeveling voor uw meting",
+    "recordMeasures": "Uw metingen opslaan",
+    "waterTestNote": "Metingen worden opgeslagen in uw logboek (",
+    "waterTestNoteSuffix": ") via de API.",
+    "validating": "Opslaan…",
+    "validateAndSave": "Valideren en opslaan",
+    "markAsDone": "Markeren als voltooid",
+    "skipStep": "Deze stap overslaan",
+    "cancelValidation": "Validatie annuleren",
+    "reminderTitle": "Herinnering",
+    "reminderDesc": "U heeft nog {count} stap(pen) te voltooien. Volg het plan tot het einde om het probleem duurzaam op te lossen.",
+    "lastMeasureTitle": "Laatst opgeslagen meting",
+    "lastMeasureDesc": "Wordt gebruikt als 'ervóór'-waarde om uw nieuwe metingen te vergelijken.",
+    "lastMeasureChlorine": "chloor",
+    "lastMeasureTac": "TAC",
+    "recheckButton": "Resultaat verifiëren (nieuwe foto)",
+    "recheckTakeNewPhoto": "Maak een nieuwe foto om te verifiëren",
+    "recheckNewPhotoAlt": "Nieuwe foto",
+    "recheckClickToUpload": "Klik om een foto te uploaden",
+    "recheckAnalyzing": "Bezig met analyseren...",
+    "recheckAnalyze": "Analyseren en verifiëren",
+    "recheckBefore": "Voor",
+    "recheckAfter": "Na",
+    "recheckImprovement": "Verbetering van +{n}%! Ga zo door.",
+    "recheckLittleImprovement": "Weinig verbetering. Pas uw aanpak aan met het nieuwe plan hieronder.",
+    "recheckAnalyzeNewPhoto": "Analyse van uw nieuwe foto",
+    "recheckPersistentIssues": "Problemen nog steeds aanwezig:",
+    "recheckNewPlan": "Nieuw complementair plan",
+    "recheckNewPlanDesc": "Op basis van de analyse van uw nieuwe foto, hier zijn de aanbevolen complementaire stappen:",
+    "recheckAgain": "Opnieuw controleren",
+    "resolvedTitle": "✅ Opgelost met AQWELIA",
+    "resolvedDesc": "Uw zwembad is nu gezond. De controleanalyse bevestigt dat het probleem is opgelost.",
+    "toastStepValidated": "Stap gevalideerd",
+    "toastStepValidatedNoMeasure": "Stap gevalideerd (zonder meting)",
+    "toastMeasureSaved": "Meting opgeslagen ✓",
+    "toastMeasureSavedDesc": "{measures} → logboek bijgewerkt.",
+    "toastMissingRequired": "Verplichte velden ontbreken",
+    "toastMissingRequiredDesc": "Vul alle verplichte velden (*) in vóór valideren.",
+    "toastSaveFailedTitle": "Opslagfout",
+    "toastSaveFailed": "Opslaan onmogelijk",
+    "toastRecheckResolvedTitle": "Probleem opgelost!",
+    "toastRecheckResolvedDesc": "✅ Uw zwembad is nu gezond.",
+    "toastRecheckNotResolvedTitle": "Nog niet opgelost",
+    "toastRecheckNotResolvedDesc": "Zet de behandeling voort en controleer later opnieuw.",
+    "toastRecheckErrorTitle": "Fout",
+    "toastRecheckErrorDesc": "Analyse onmogelijk",
+    "noteActionPlan": "Actieplanstap: {title}",
+    "phIdeal": "✅ pH in het ideale bereik (7.0 - 7.4). Geen aanpassing nodig.",
+    "phHigh": "Uw pH {ph} is te hoog. Voeg {qty} pH- toe om terug naar 7.4 te gaan (daling van ~{delta} eenheid).",
+    "phHighWarning": "Giet voor de retourmonden, pomp draait. Nooit puur pH- direct gieten.",
+    "phLow": "Uw pH {ph} is te laag. Voeg {qty} pH+ toe om terug naar 7.0 te gaan (stijging van ~{delta} eenheid).",
+    "phLowWarning": "Verdun in een emmer zwembadwater vóór voor de retourmonden te gieten.",
+    "productPhMinus": "pH- (poeder, natriumbisulfaat)",
+    "productPhPlus": "pH+ (natriumcarbonaat)",
+    "genericTitle1": "1. De aanbeveling volgen",
+    "genericIntro1": "De AI heeft een probleem geïdentificeerd maar zonder typisch patroon (groen / troebel water). Volg de aanbeveling hieronder.",
+    "genericInstruction1Default": "Volg de hierboven weergegeven AI-aanbevelingen.",
+    "genericInstruction2": "Meet uw pH vóór enige behandeling (doel: 7.0 - 7.4).",
+    "genericInstruction3": "Pas indien nodig aan met pH- of pH+.",
+    "genericInstruction4": "Noteer uw meting hieronder voor de geschiedenis.",
+    "genericInstruction5": "Controleer dat de filtratie minstens 8u/dag draait.",
+    "genericProduct": "Volgens aanbeveling",
+    "genericTitle2": "2. Resultaat verifiëren (24u)",
+    "genericIntro2": "Neem na het toepassen van de aanbevelingen een nieuwe foto om de oplossing te bevestigen.",
+    "genericInstruction2_1": "Wacht minstens 24u continue filtratie.",
+    "genericInstruction2_2": "Maak een nieuwe foto onder dezelfde omstandigheden (dezelfde plek, dezelfde belichting).",
+    "genericInstruction2_3": "Klik op Resultaat verifiëren onderaan het plan.",
+    "genericInstruction2_4": "De AI vergelijkt en geeft aan of het probleem is opgelost.",
+    "greenS1Title": "1. pH meten en aanpassen",
+    "greenS1Intro": "De pH moet tussen 7.0 en 7.4 liggen VÓÓR enige behandeling. Een onjuiste pH maakt chloor ineffectief (tot -90%).",
+    "greenS1I1": "Neem uw testkit (druppels of strook) of een elektronische tester.",
+    "greenS1I2": "Neem een watermonster op 30 cm diepte, weg van de retourmonden.",
+    "greenS1I3": "Meet de actuele pH en noteer deze hieronder.",
+    "greenS1I4": "Als pH > 7.4 → voeg pH- toe (zuur). Als pH < 7.0 → voeg pH+ toe (base).",
+    "greenS1I5": "Referentiedosering: ~{qty} g pH- om 0.1 eenheid te verlagen op {volume} m³.",
+    "greenS1I6": "Verdun het product in een emmer zwembadwater, nooit puur.",
+    "greenS1I7": "Giet langzaam voor de retourmonden, pomp draait.",
+    "greenS1I8": "Wacht 2u met de filtratie aan voordat u opnieuw test.",
+    "greenS1Product": "pH- of pH+ (volgens uw meting)",
+    "greenS1Dosage": "~{qty} g pH- / 0.1 eenheid te verlagen (zwembad van {volume} m³)",
+    "greenS2Title": "2. pH opnieuw testen (na 2u)",
+    "greenS2Intro": "Na 2u filtratie heeft de pH de tijd gehad om te stabiliseren. Controleer of deze nu in het streefbereik ligt.",
+    "greenS2I1": "Neem opnieuw een watermonster op 30 cm diepte.",
+    "greenS2I2": "Meet opnieuw de pH.",
+    "greenS2I3": "Als pH tussen 7.0 en 7.4 → ✅ ga naar de volgende stap (shockbehandeling).",
+    "greenS2I4": "Als pH nog te hoog/laag → pas opnieuw aan met de HELFT van de vorige dosis.",
+    "greenS2I5": "Test opnieuw 1u na deze tweede aanpassing.",
+    "greenS2Product": "pH- of pH+ (verminderde dosis bij heraanpassing)",
+    "greenS2Dosage": "Heraanpassing: de helft van de oorspronkelijke dosis (~{qty} g max voor {volume} m³)",
+    "greenS3Title": "3. Chloor-shockbehandeling",
+    "greenS3Intro": "Shockchloor vernietigt algae, bacteriën en virussen. Dit is de belangrijkste stap tegen groen water.",
+    "greenS3I1": "⚠ Controleer dat de pH juist is (stappen 1-2). Anders is de shock ineffectief.",
+    "greenS3I2": "Bereken de curatieve dosis: ongeveer 10 g shockchloor per m³.",
+    "greenS3I3": "Voor uw zwembad van {volume} m³: {qty} g shockchloor (dit zijn ~{tablets} tabletten van 20 g).",
+    "greenS3I4": "Geef de voorkeur aan 's avonds, geen zwemmers, pomp draait.",
+    "greenS3I5": "Verdun poeder/granulaat-chloor in een emmer zwembadwater.",
+    "greenS3I6": "Giet voor de retourmonden, nooit in de skimmer.",
+    "greenS3I7": "🚫 ZWEMVERBOD gedurende minstens 8 uur.",
+    "greenS3Product": "Shockchloor (65% actief, granulaat of tabletten)",
+    "greenS3Dosage": "{qty} g shockchloor (voor {volume} m³)",
+    "greenS4Title": "4. Anti-algae (preventief curatief)",
+    "greenS4Intro": "Anti-algae vult chloor aan door resistente algae te vernietigen en hergroei te voorkomen.",
+    "greenS4I1": "Wacht minstens 2u na de shockbehandeling (nooit direct mengen).",
+    "greenS4I2": "Curatieve dosering: ~20 mL anti-algae per m³.",
+    "greenS4I3": "Voor {volume} m³: {qty} mL anti-algae (dit is {liters} L).",
+    "greenS4I4": "Giet direct voor de retourmonden, pomp draait.",
+    "greenS4I5": "Borstel de wanden vlak daarna (zie volgende stap) om algae los te maken.",
+    "greenS4Product": "Curatief anti-algae",
+    "greenS4Dosage": "{qty} mL anti-algae (voor {volume} m³)",
+    "greenS5Title": "5. Wanden en bodem borstelen",
+    "greenS5Intro": "Borstelen maakt ingebedde algae los. Zonder deze stap is de chemische behandeling niet voldoende.",
+    "greenS5I1": "Gebruik een borstel die geschikt is voor uw afwerking: nylon borstel voor liner/schelp, stalen borstel voor beton.",
+    "greenS5I2": "🚫 Nooit een metalen borstel gebruiken op liner of versterkte membraan — u zou hem doorprikken.",
+    "greenS5I3": "Borstel van boven naar beneden, in secties van 1 m².",
+    "greenS5I4": "Besteed aandacht aan hoeken, treden, monden, ladders en de waterlijn.",
+    "greenS5I5": "Borstel ook de bodem indien bereikbaar (telescopische steel).",
+    "greenS5I6": "Dit is fysiek (15-30 min) maar ONMISBAAR — zonder dit komen de algae terug binnen 48u.",
+    "greenS6Title": "6. Continue filtratie 24u",
+    "greenS6Intro": "De filtratie moet 24u zonder onderbreking draaien om dode algae en deeltjes te verwijderen.",
+    "greenS6I1": "Zet de pomp op geforceerde modus (24u/24) — geen timerprogramma.",
+    "greenS6I2": "Controleer de manometer van het filter.",
+    "greenS6I3": "Als de druk stijgt > 0.3 bar boven normaal → doe een backwash (tegenspoelen).",
+    "greenS6I4": "Reinig de pompvoorfilter (mandje) indien vol debris.",
+    "greenS6I5": "Leeg de skimmers regelmatig tijdens deze 24u.",
+    "greenS6I6": "Bij een patroonfilter: spoel halverwege indien de doorstroom daalt.",
+    "greenS7Title": "7. Volledige hertest van het water",
+    "greenS7Intro": "Na 24u filtratie, doe een volledige test om te verifiëren dat het water veilig en gebalanceerd is.",
+    "greenS7I1": "Neem opnieuw een monster op 30 cm diepte.",
+    "greenS7I2": "Meet de pH (doel: 7.0 - 7.4).",
+    "greenS7I3": "Meet vrij chloor (doel: 1 - 3 mg/L).",
+    "greenS7I4": "Meet de TAC / alkaliniteit (doel: 80 - 120 mg/L).",
+    "greenS7I5": "Voer uw 3 waarden hieronder in — ze worden in uw logboek opgeslagen.",
+    "greenS7I6": "Als alles binnen de banden is → u kunt weer zwemmen. Anders, pas aan.",
+    "cloudyS1Title": "1. Filtratie controleren en reinigen",
+    "cloudyS1Intro": "Troebel water komt meestal voort uit ineffectieve filtratie. Begin altijd hier.",
+    "cloudyS1I1": "Schakel de pomp uit vóór enige veiligheidsinterventie.",
+    "cloudyS1I2": "Controleer de manometer: indien > 0.3 bar boven de beginwaarde → reinigen.",
+    "cloudyS1I3": "Zandfilter: backwash (tegenspoelen) 2-3 min, daarna spoelen 30 s.",
+    "cloudyS1I4": "Patroonfilter: demonteren, met de tuinslang afspoelen, vervangen indien > 2 jaar oud.",
+    "cloudyS1I5": "Leeg en reinig de skimmer- en pompvoorfiltermanden.",
+    "cloudyS1I6": "Start opnieuw en controleer of de doorstroom goed is (retourmonden).",
+    "cloudyS2Title": "2. pH meten en aanpassen",
+    "cloudyS2Intro": "Een ongebalanceerde pH bevordert troebelheid en vermindert de werking van chloor.",
+    "cloudyS2I1": "Meet de pH op 30 cm diepte.",
+    "cloudyS2I2": "Als pH > 7.4 → voeg pH- toe; als pH < 7.0 → voeg pH+ toe.",
+    "cloudyS2I3": "Referentie: ~{qty} g pH- om 0.1 eenheid te verlagen op {volume} m³.",
+    "cloudyS2I4": "Verdun in een emmer zwembadwater, giet voor de retourmonden.",
+    "cloudyS2I5": "Filtratie draait 2u vóór opnieuw testen.",
+    "cloudyS2Product": "pH- of pH+ (volgens uw meting)",
+    "cloudyS2Dosage": "~{qty} g pH- / 0.1 eenheid (voor {volume} m³)",
+    "cloudyS3Title": "3. Vlokmiddel toevoegen (indien zandfilter)",
+    "cloudyS3Intro": "Vlokmiddel agglomereert fijne deeltjes tot vlokken die het filter kan tegenhouden. ⚠ Uitsluitend voor zandfilter.",
+    "cloudyS3I1": "⚠ GEBRUIK NOOIT vlokmiddel met een patroonfilter (verstopping).",
+    "cloudyS3I2": "Dosering: ~5 mL vloeibaar vlokmiddel per m³.",
+    "cloudyS3I3": "Voor {volume} m³: {qty} mL vlokmiddel.",
+    "cloudyS3I4": "Giet voor de retourmonden, filtratie draait 1u.",
+    "cloudyS3I5": "Schakel daarna de filtratie 12u uit om te laten bezinken.",
+    "cloudyS3I6": "De vlokken zakken naar de bodem — zuig ze op met robot of handmatige stofzuiger.",
+    "cloudyS3Product": "Vloeibaar vlokmiddel (enkel zandfilter)",
+    "cloudyS3Dosage": "{qty} mL vlokmiddel (voor {volume} m³)",
+    "cloudyS4Title": "4. Continue filtratie 12u",
+    "cloudyS4Intro": "Laat de filtratie 12u draaien om het water helder te maken na vlokking/opzuigen.",
+    "cloudyS4I1": "Start de pomp in geforceerde modus na het opzuigen van de vlokken.",
+    "cloudyS4I2": "Houd de filterdruk in de gaten — backwash indien deze stijgt.",
+    "cloudyS4I3": "Controleer het skimmermandje om de 4u.",
+    "cloudyS4I4": "Na 12u moet het water weer helder zijn.",
+    "cloudyS5Title": "5. Water opnieuw testen",
+    "cloudyS5Intro": "Controleer of het water gebalanceerd is en het chloor actief is.",
+    "cloudyS5I1": "Meet de pH (doel: 7.0 - 7.4).",
+    "cloudyS5I2": "Meet vrij chloor (doel: 1 - 3 mg/L).",
+    "cloudyS5I3": "Voer uw waarden hieronder in — ze worden in uw logboek opgeslagen.",
+    "cloudyS5I4": "Als de waarden OK zijn en het water helder is → probleem opgelost.",
+    "compAlgae1Title": "{n}. Shockbehandeling verdubbelen",
+    "compAlgae1Desc": "De algae zijn nog steeds aanwezig ondanks de eerste behandeling. Herhaal de shockbehandeling met 1.5x de vorige dosis. Controleer of de pH tussen 7.0-7.4 ligt vóór de behandeling. Geef de voorkeur aan een shockchloor van een ander merk (algae kunnen resistentie ontwikkelen).",
+    "compAlgae1Reason": "Algae kunnen resistent zijn. Een sterkere dosis en een ander product zijn nodig.",
+    "compAlgae2Title": "{n}. Duur van filtratie controleren",
+    "compAlgae2Desc": "Tel het aantal uren filtratie per dag. Bij groen water moet u minstens 12u/24 filteren. Idealiter 24u/24 tijdens 3 opeenvolgende dagen.",
+    "compAlgae2Reason": "Onvoldoende filtratie verhindert het verwijderen van dode algae en het helder maken van het water.",
+    "compAlgae3Title": "{n}. Filter grondig reinigen",
+    "compAlgae3Desc": "Als u een zandfilter hebt, doe dan een backwash (tegenspoelen) van 3 minuten gevolgd door 30s spoelen. Als het een patroon is, haal deze eruit en spoel met de tuinslang. Een verstopt filter houdt geen algae tegen en voert ze terug naar het bekken.",
+    "compAlgae3Reason": "Het filter kan verzadigd zijn met algae na de eerste behandeling.",
+    "compCloudy1Title": "{n}. Vloeibaar vlokmiddel toevoegen",
+    "compCloudy1Desc": "Het water is nog troebel. Giet een VLOEIBAAR vlokmiddel (geen zakje) direct voor de retourmonden, met de pomp aan. Filter 1u, daarna 12u uitschakelen om te laten bezinken. De deeltjes agglomereren en zakken naar de bodem.",
+    "compCloudy1Reason": "Vlokmiddel agglomereert fijne deeltjes die het filter niet tegenhoudt.",
+    "compCloudy2Title": "{n}. Bodem opzuigen na vlokking",
+    "compCloudy2Desc": "Na 12u bezinken liggen de debris op de bodem. Zuig langzaam op in de stand 'afvalwater' (waste) om ze niet terug naar het filter te sturen. Zet de klep pas terug op filtratie na het opzuigen.",
+    "compCloudy2Reason": "Vlokken zijn te zwaar voor het normale filter.",
+    "compCloudy3Title": "{n}. Filtermedia controleren",
+    "compCloudy3Desc": "Als het water troebel blijft ondanks vlokking + filtratie: uw zand/patroon moet misschien vervangen worden. Zand wordt om de 5-7 jaar vervangen, de patroon om de 2 jaar. Versleten media houdt geen fijne deeltjes meer tegen.",
+    "compCloudy3Reason": "Een filter aan het einde van zijn levensduur is een veelvoorkomende oorzaak van aanhoudend troebel water.",
+    "compNewIssuesTitle": "{n}. Nieuw gedetecteerde problemen behandelen",
+    "compNewIssuesDesc": "Nieuw(e) probleem(en) verschenen: {issues}. Analyseer de waarschijnlijke oorzaak (overchloording, overdosering van vlokmiddel, kalkneerslag, enz.) vóór actie. Bij twijfel, doe opnieuw een volledige pH/chloor/TAC/TH-test.",
+    "compNewIssuesReason": "Bepaalde behandelingen kunnen nieuwe onevenwichten creëren. Deze moeten gecorrigeerd worden voordat ze de situatie verergeren.",
+    "compFallback1Title": "1. Filtratie nog 24u voortzetten",
+    "compFallback1Desc": "Het water verbetert maar is nog niet perfect. Laat de filtratie nog 24u continu draaien. Houd de filterdruk in de gaten (backwash indien deze stijgt met +0.3 bar).",
+    "compFallback1Reason": "De behandeling is bezig, geef haar de tijd om te werken.",
+    "compFallback2Title": "2. Opnieuw testen binnen 24u",
+    "compFallback2Desc": "Doe binnen 24u opnieuw een volledige test (pH, chloor, TAC) en neem een nieuwe foto om te verifiëren. Als de tevredenheidsscore stagneert, overweeg 20-30% van het water te verversen om op een gezonde basis te herstarten.",
+    "compFallback2Reason": "De behandeling heeft tijd nodig om effect te hebben alvorens tot een mislukking te besluiten."
+  },
+  "mobile": {
+    "screens": {
+      "analysesAriaSubtabs": "Subtabbladen Analyses",
+      "analysesSubtabMesures": "Metingen",
+      "analysesSubtabPhoto": "Foto",
+      "analysesSubtabLogbook": "Logboek",
+      "maintenanceAriaSubtabs": "Subtabbladen Onderhoud",
+      "maintenanceSubtabActions": "Acties",
+      "profileAriaPoolProfile": "Zwembadprofiel",
+      "profilePoolNotConfigured": "Zwembad niet geconfigureerd",
+      "profileConfigureToStart": "Configureer uw zwembad om te beginnen",
+      "profileElectrolysisSalt": "Zout-electrolyse",
+      "profileAriaSubscription": "Abonnement",
+      "profileSubscriptionTitle": "Abonnement",
+      "profileAriaSettings": "Instellingen",
+      "profileNotifReminders": "Meldingen & herinneringen",
+      "profilePrivacyData": "Privacy & gegevens",
+      "profileHelpSupport": "Hulp & support",
+      "profileFaqContact": "FAQ + contact",
+      "profileVersionLine": "AQWELIA Pro · v1.0.0-mobile"
+    }
+  },
+  "metadata": {
+    "layoutTitle": "AQWELIA — Intelligente Copiloot voor Zwembad",
+    "layoutDescription": "AQWELIA — de revolutionaire AI-aangedreven zwembadbeheer-app: expert-assistent, visuele wateranalyse, deterministisch actieplan en meer.",
+    "layoutKeywordPool": "zwembad",
+    "layoutKeywordAI": "AI",
+    "layoutKeywordMaintenance": "onderhoud",
+    "layoutKeywordWaterQuality": "waterkwaliteit",
+    "layoutKeywordSmartAssistant": "slimme assistent"
+  },
+  "legal": {
+    "backHome": "Terug naar home",
+    "lastUpdatedLabel": "Laatst bijgewerkt:",
+    "cgu": {
+      "metaTitle": "GBU — AQWELIA",
+      "metaDescription": "Algemene gebruiksvoorwaarden van de AQWELIA-dienst.",
+      "eyebrow": "Juridische mededeling",
+      "title": "Algemene Gebruiksvoorwaarden",
+      "article1Title": "Artikel 1 — Doel",
+      "article1Body1": "Deze Algemene Gebruiksvoorwaarden (« <bold>GBU</bold> ») bepalen de voorwaarden en modaliteiten voor toegang tot en gebruik van de AQWELIA-applicatie (« <bold>de Dienst</bold> »), uitgegeven door de vennootschap AQWELIA, alsook de rechten en verplichtingen van de partijen in dit kader.",
+      "article1Body2": "Het gebruik van de Dienst impliceert de volledige aanvaarding van deze GBU. Indien u niet akkoord gaat met een van deze voorwaarden, mag u de Dienst niet gebruiken.",
+      "article2Title": "Artikel 2 — Definities",
+      "article2Item1": "« <bold>Gebruiker</bold> »: elke natuurlijke persoon die de Dienst gebruikt.",
+      "article2Item2": "« <bold>Account</bold> »: persoonlijke ruimte die door de Gebruiker is aangemaakt om toegang te krijgen tot de Dienst.",
+      "article2Item3": "« <bold>Gegevens</bold> »: informatie die door de Gebruiker is ingevoerd (metingen, foto's, zwembadprofiel, enz.).",
+      "article2Item4": "« <bold>Abonnement</bold> »: abonnementsformule (Free, Premium of Expert) waarop de Gebruiker zich abonneert.",
+      "article2Item5": "« <bold>Inhoud</bold> »: aanbevelingen, actieplannen, analyses, gidsen en teksten die door de Dienst worden gegenereerd.",
+      "article3Title": "Artikel 3 — Beschrijving van de dienst",
+      "article3Body1": "AQWELIA is een intelligente copiloot voor zwembadonderhoud. De Dienst stelt de Gebruiker in staat om:",
+      "article3Item1": "de kwaliteit van zijn zwembadwater opvolgen en analyseren (pH, chloor, TAC, TH, enz.);",
+      "article3Item2": "persoonlijke actieplannen verkrijgen (doseringen, filtratie, zwembaarheid);",
+      "article3Item3": "water en apparatuur visueel diagnosticeren via foto;",
+      "article3Item4": "een AI-assistent raadplegen voor elke onderhoudsvraag;",
+      "article3Item5": "slimme herinneringen ontvangen (weer, apparatuur, productvoorraden);",
+      "article3Item6": "educatieve gidsen en bronnen raadplegen.",
+      "article3Body2": "De Dienst wordt informatief aangeboden en vervangt niet de tussenkomst van een gekwalificeerde professional (zwembadspecialist, verdeler, redder).",
+      "article4Title": "Artikel 4 — Registratie en account",
+      "article4Body1": "Registratie voor de Dienst vereist het aanmaken van een Account via een geldig e-mailadres en een wachtwoord. De Gebruiker verbindt zich ertoe nauwkeurige informatie te verstrekken en deze up-to-date te houden.",
+      "article4Body2": "De Gebruiker is als enige verantwoordelijk voor de vertrouwelijkheid van zijn inloggegevens en voor elk gebruik van zijn Account. Elke activiteit die vanuit zijn Account wordt uitgevoerd, wordt geacht door de Gebruiker te zijn uitgevoerd.",
+      "article4Body3": "AQWELIA behoudt zich het recht voor een Account te weigeren of te sluiten bij niet-naleving van deze GBU of bij frauduleus gedrag.",
+      "article5Title": "Artikel 5 — Gebruik van de dienst",
+      "article5Body1": "De Gebruiker verbindt zich ertoe:",
+      "article5Item1": "de Dienst te gebruiken in overeenstemming met het doel ervan en het geldende recht;",
+      "article5Item2": "niet te proberen de Dienst om te leiden, uit te schakelen of de beveiliging ervan in gevaar te brengen;",
+      "article5Item3": "ge Inhoud te uploaden die onrechtmatig, lasterlijk is of inbreuk maakt op de rechten van derden;",
+      "article5Item4": "de voorschriften van de chemische producten die worden gebruikt voor het onderhoud van zijn zwembad na te leven.",
+      "article5Body2": "De Gebruiker erkent dat de door de Dienst verstrekte aanbevelingen indicatief zijn en dat hij als enige verantwoordelijk blijft voor de acties die hij op zijn zwembad onderneemt.",
+      "article6Title": "Artikel 6 — Abonnementen",
+      "article6Body1": "De Dienst biedt drie Abonnementen:",
+      "article6Item1": "<bold>Free</bold>: gratis, omvat 1 zwembad, basis handmatige metingen, beperkte assistent.",
+      "article6Item2": "<bold>Premium</bold>: tot 3 zwembaden, onbeperkte fotodiagnostiek, volledige AI-assistent, weersherinneringen, geavanceerde gidsen.",
+      "article6Item3": "<bold>Expert</bold>: onbeperkt (professionele zwembadspecialisten), multi-klant, exports, prioritaire support.",
+      "article6Body2": "De functionaliteiten en tarieven van elk Abonnement worden beschreven op de pagina <link>Tarieven</link>. AQWELIA behoudt zich het recht voor deze aanbiedingen op elk gewenst moment te wijzigen, mits zij geabonneerde Gebruikers ten minste 30 dagen voor inwerkingtreding informeert.",
+      "article7Title": "Artikel 7 — Betaling",
+      "article7Body1": "De betaling van Premium- en Expert-abonnementen gebeurt volgens het gebruikte platform:",
+      "article7Item1": "<bold>Web</bold>: via Stripe (bankkaart, beveiligde betaling).",
+      "article7Item2": "<bold>iOS</bold>: via Apple In-App Purchase (beheerd door Apple).",
+      "article7Item3": "<bold>Android</bold>: via Google Play Billing (beheerd door Google).",
+      "article7Body2": "De verlenging is automatisch aan het einde van de geabonneerde periode, tenzij de Gebruiker dit uitschakelt in de instellingen van zijn Apple/Google-account of via de Stripe-klantenportaal.",
+      "article8Title": "Artikel 8 — Beëindiging",
+      "article8Body1": "De Gebruiker kan zijn abonnement op elk moment opzeggen vanuit de applicatie (pagina <link>Instellingen</link>) of vanuit de instellingen van de App Store / Google Play. De opzegging wordt effectief aan het einde van de lopende facturatieperiode.",
+      "article8Body2": "AQWELIA behoudt zich het recht voor de toegang tot de Dienst te beëindigen of op te schorten bij een overtreding van de GBU, na voorafgaande kennisgeving, behalve in geval van nood.",
+      "article9Title": "Artikel 9 — Persoonsgegevens (AVG)",
+      "article9Body1": "De verwerking van de persoonsgegevens van de Gebruiker wordt beheerst door ons <link>Privacybeleid</link>, in overeenstemming met de Algemene Verordening Gegevensbescherming (AVG, EU 2016/679).",
+      "article9Body2": "De Gebruiker heeft recht op toegang, rectificatie, verwijdering, draagbaarheid en bezwaar. Deze rechten kunnen worden uitgeoefend vanaf de pagina <link>Instellingen</link> of per e-mail via <alink>privacy@aqwelia.app</alink>.",
+      "article10Title": "Artikel 10 — Aansprakelijkheid",
+      "article10Body1": "AQWELIA doet er alles aan om de beschikbaarheid en betrouwbaarheid van de Dienst te verzekeren, maar kan geen totale afwezigheid van fouten of onderbrekingen garanderen.",
+      "article10Body2": "Aangezien de Dienst informatief wordt aangeboden, kan AQWELIA niet aansprakelijk worden gesteld voor directe of indirecte schade voortvloeiend uit de toepassing van de aanbevelingen (met name: materiële schade, verlies van zwemplezier, aantasting van apparatuur, chemische reacties). Bij twijfel dient de Gebruiker een professional te raadplegen.",
+      "article11Title": "Artikel 11 — Intellectueel eigendom",
+      "article11Body1": "Alle elementen van de Dienst (merk, logo, teksten, algoritmes, ontwerp, gidsen) zijn exclusief eigendom van AQWELIA of haar partners. Elke reproductie, weergave of verspreiding, geheel of gedeeltelijk, zonder voorafgaande schriftelijke toestemming is verboden.",
+      "article11Body2": "De door de Gebruiker ingevoerde Gegevens blijven zijn eigendom. De Gebruiker verleent AQWELIA een niet-exclusieve licentie voor het gebruik van deze Gegevens voor zover nodig voor de levering en verbetering van de Dienst.",
+      "article12Title": "Artikel 12 — Wijzigingen van de GBU",
+      "article12Body1": "AQWELIA kan deze GBU op elk gewenst moment wijzigen. De van toepassing zijnde GBU zijn diegene die gelden op het moment van gebruik van de Dienst. Ingrijpende wijzigingen worden per e-mail of via de applicatie meegedeeld, ten minste 30 dagen voordat ze inwerking treden.",
+      "article13Title": "Artikel 13 — Toepasselijk recht",
+      "article13Body1": "Deze GBU worden beheerst door het Franse recht. Bij een geschil verplichten de partijen zich een minnelijke oplossing te zoeken voordat enige juridische actie wordt ondernomen. Bij gebrek aan overeenkomst zijn uitsluitend de Franse rechtbanken bevoegd.",
+      "contactTitle": "Contact",
+      "contactBody1": "Voor elke vraag met betrekking tot deze GBU: <alink>legal@aqwelia.app</alink>",
+      "contactBody2": "Voor elke vraag met betrekking tot uw gegevens: <alink>privacy@aqwelia.app</alink>",
+      "contactBody3": "Voor elke supportaanvraag: <link>supportpagina</link>."
+    },
+    "privacy": {
+      "metaTitle": "Privacybeleid — AQWELIA",
+      "metaDescription": "Privacybeleid voor persoonsgegevens van AQWELIA (AVG).",
+      "eyebrow": "AVG",
+      "title": "Privacybeleid",
+      "section1Title": "1. Verwerkingsverantwoordelijke",
+      "section1Body1": "De verwerkingsverantwoordelijke voor de via de AQWELIA-applicatie verzamelde persoonsgegevens is de vennootschap <bold>AQWELIA</bold>, uitgever van de Dienst.",
+      "section1Body2": "Contact FG: <alink>privacy@aqwelia.app</alink>",
+      "section2Title": "2. Verzamelde gegevens",
+      "section2Body1": "De Dienst verzamelt de volgende categorieën gegevens:",
+      "section2Item1": "<bold>Accountidentificatoren</bold>: e-mailadres, naam (optioneel), wachtwoord (gehasht).",
+      "section2Item2": "<bold>Zwembadprofiel</bold>: volume, vorm, bekleding, behandeling, filter, blootstelling, regio.",
+      "section2Item3": "<bold>Watergegevens</bold>: metingen (pH, chloor, TAC, TH, CYA, zout, temperatuur, enz.) die zijn ingevoerd of geïmporteerd.",
+      "section2Item4": "<bold>Foto's</bold>: afbeeldingen van water, wanden, filter, electrolyzers en producten, gebruikt voor visuele AI-diagnostiek.",
+      "section2Item5": "<bold>Apparatuur en voorraad</bold>: merk, model, onderhoudsdatums, chemische producten op voorraad.",
+      "section2Item6": "<bold>Geschiedenis</bold>: gesprekken met de AI-assistent, gegenereerde actieplannen, fotodiagnostiek.",
+      "section2Item7": "<bold>Factureringsgegevens</bold>: geabonneerd abonnement, periode, status (betalingsinformatie wordt verwerkt door Stripe, Apple of Google — AQWELIA slaat geen kaartnummers op).",
+      "section2Item8": "<bold>Gebruiksgegevens</bold>: analytics-gebeurtenissen (raadpleging van gidsen, opening van betaalschermen, gebruiksfrequentie).",
+      "section3Title": "3. Doeleinden",
+      "section3Body1": "De gegevens worden verwerkt voor de volgende doeleinden:",
+      "section3Item1": "werking van de Dienst (generatie van actieplannen, doseringsberekeningen, opvolging van het water);",
+      "section3Item2": "verbetering van de AI-modellen (fotodiagnostiek, aanbevelingen) — op basis van voorafgaande anonimisering waar mogelijk;",
+      "section3Item3": "facturering en abonnementsbeheer;",
+      "section3Item4": "gebruikersondersteuning;",
+      "section3Item5": "gebruiksanalyse en verbetering van de ervaring;",
+      "section3Item6": "naleving van wettelijke en boekhoudkundige verplichtingen.",
+      "section4Title": "4. Wettelijke grondslag",
+      "section4Body1": "Overeenkomstig artikel 6 van de AVG berust de verwerking op de volgende wettelijke grondslagen:",
+      "section4Item1": "<bold>Uitvoering van de overeenkomst</bold> (art. 6.1.b): levering van de geabonneerde Dienst.",
+      "section4Item2": "<bold>Toestemming</bold> (art. 6.1.a): voor diagnostiek verstuurde foto's, meldingen, eventuele marketingcommunicatie.",
+      "section4Item3": "<bold>Gerechtvaardigd belang</bold> (art. 6.1.f): verbetering van de Dienst, beveiliging, fraudepreventie.",
+      "section4Item4": "<bold>Wettelijke verplichting</bold> (art. 6.1.c): bewaring van facturen en boekhoudkundige sporen.",
+      "section4Body2": "De Gebruiker kan zijn toestemming op elk moment intrekken vanaf de pagina <link>Instellingen</link>, zonder afbreuk te doen aan de rechtmatigheid van de eerdere verwerking.",
+      "section5Title": "5. Bewaartermijn",
+      "section5Item1": "<bold>Actief account</bold>: gebruiksduur van de Dienst.",
+      "section5Item2": "<bold>Zwembadgegevens, metingen, foto's</bold>: bewaard zolang het Account actief is, plus 90 dagen na verwijdering (voor eventueel herstel), daarna definitief gewist.",
+      "section5Item3": "<bold>Facturen</bold>: 10 jaar (wettelijke boekhoudverplichting in Frankrijk).",
+      "section5Item4": "<bold>Beveiligingslogs</bold>: 12 maanden.",
+      "section5Item5": "<bold>Inactief account</bold>: na 24 maanden zonder aanmelding, melding per e-mail en vervolgens verwijdering van het Account en de bijbehorende gegevens.",
+      "section6Title": "6. Ontvangers",
+      "section6Body1": "De gegevens zijn toegankelijk voor de volgende ontvangers:",
+      "section6Item1": "<bold>AQWELIA</bold>: bevoegd personeel (ingenieurs, support) onder een geheimhoudingsovereenkomst.",
+      "section6Item2": "<bold>Cloudhost</bold>: opslag en computing (EU-gelegen).",
+      "section6Item3": "<bold>Stripe</bold>: verwerking van webbetalingen (onderworpen aan een eigen AVG).",
+      "section6Item4": "<bold>RevenueCat</bold>: uniform beheer van iOS/Android-abonnementen.",
+      "section6Item5": "<bold>Apple / Google</bold>: in-app-betalingen (onderworpen aan hun eigen voorwaarden).",
+      "section6Item6": "<bold>AI-leveranciers</bold>: voor fotodiagnostiek en de assistent — uitsluitend strikt noodzakelijke gegevens, zonder opslag buiten de sessie.",
+      "section6Body2": "AQWELIA verkoopt uw gegevens nooit aan derden voor marketingdoeleinden.",
+      "section7Title": "7. Transfers buiten de EU",
+      "section7Body1": "De hoofdhosting bevindt zich in de Europese Unie. Eventuele transfers buiten de EU (bijvoorbeeld naar een in de Verenigde Staten gevestigde AI-leverancier) worden omkaderd door de standaardcontractbepalingen van de Europese Commissie (besluit 2021/914) en vergezeld van passende waarborgen (versleuteling, minimalisering, pseudonimisering).",
+      "section8Title": "8. Uw rechten",
+      "section8Body1": "Overeenkomstig de artikelen 15 tot 22 van de AVG beschikt u over de volgende rechten:",
+      "section8Item1": "<bold>Recht op toegang</bold>: een kopie van uw gegevens verkrijgen.",
+      "section8Item2": "<bold>Recht op rectificatie</bold>: onjuiste gegevens corrigeren.",
+      "section8Item3": "<bold>Recht op verwijdering</bold> (\"recht om vergeten te worden\"): uw Account en uw gegevens verwijderen.",
+      "section8Item4": "<bold>Recht op draagbaarheid</bold>: uw gegevens ontvangen in een gestructureerde en herbruikbare indeling.",
+      "section8Item5": "<bold>Recht van bezwaar</bold>: verwerking weigeren die is gebaseerd op gerechtvaardigd belang.",
+      "section8Item6": "<bold>Recht op beperking</bold>: een verwerking tijdelijk bevriezen.",
+      "section8Item7": "<bold>Recht om uw toestemming</bold> op elk moment in te trekken.",
+      "section8Body2": "Deze rechten kunnen rechtstreeks worden uitgeoefend vanaf de pagina <link>Instellingen</link> (JSON-export, accountverwijdering), of per e-mail via <alink>privacy@aqwelia.app</alink>.",
+      "section8Body3": "U kunt ook een klacht indienen bij de AP (www.autoriteitpersoonsgegevens.nl) of bij de toezichthoudende autoriteit van uw land.",
+      "section9Title": "9. Cookies en trackers",
+      "section9Body1": "AQWELIA gebruikt een minimum aan trackers die strikt noodzakelijk zijn voor de werking van de Dienst (authenticatiesessie, taal- en themavoorkeuren). Er worden geen advertentie- of trackingcookies van derden geplaatst zonder toestemming.",
+      "section9Body2": "De voorkeuren kunnen worden beheerd vanaf de pagina <link>Instellingen</link>.",
+      "section10Title": "10. Beveiliging",
+      "section10Body1": "AQWELIA implementeert passende technische en organisatorische maatregelen om uw gegevens te beschermen:",
+      "section10Item1": "versleuteling van wachtwoorden (scrypt, bestand tegen brute-force);",
+      "section10Item2": "versleuteling van gegevens tijdens transport (TLS 1.2+) en in rust (databaseversleuteling);",
+      "section10Item3": "authenticatie via ondertekende JWT, beperkte geldigheidsduur (30 dagen);",
+      "section10Item4": "beperkte toegang tot persoonsgegevens (principe van minimale bevoegdheid);",
+      "section10Item5": "versleutelde back-ups en regelmatige penetratietests.",
+      "section10Body2": "In geval van een datalek dat een risico vormt voor uw rechten en vrijheden, zal AQWELIA u zonder onredelijke vertraging informeren overeenkomstig artikel 34 van de AVG.",
+      "section11Title": "11. Contact FG",
+      "section11Body1": "Voor elke vraag over de bescherming van uw gegevens kunt u contact opnemen met onze FG (Functionaris voor Gegevensbescherming):",
+      "section11Body2": "Zie ook onze <link>GBU</link> en onze <link2>supportpagina</link2>."
+    },
+    "support": {
+      "metaTitle": "Support — AQWELIA",
+      "metaDescription": "Contact met AQWELIA-support, FAQ, een bug melden, een functie aanvragen.",
+      "eyebrow": "Hulp & support",
+      "title": "Contact met support",
+      "subtitle": "Ons team staat klaar om u te helpen het meeste uit AQWELIA te halen.",
+      "emailTitle": "E-mail",
+      "emailDesc": "De beste manier om ons te bereiken. Antwoord binnen 48 werkuur.",
+      "responseTimeTitle": "Responstijd",
+      "responseTimeFree": "<bold>Free-abonnement</bold>: antwoord binnen 72 werkuur.",
+      "responseTimePremium": "<bold>Premium-abonnement</bold>: antwoord binnen 48 werkuur.",
+      "responseTimeExpert": "<bold>Expert-abonnement</bold>: antwoord binnen 24 u, prioritaire support.",
+      "cardFaqTitle": "FAQ",
+      "cardFaqDesc": "Antwoorden op de meest gestelde vragen: abonnementen, gegevens, zwembad, compatibiliteit.",
+      "cardFaqLink": "FAQ bekijken",
+      "cardKbTitle": "Kennisbank",
+      "cardKbDesc": "Gedetailleerde gidsen, video-tutorials en hulp artikelen. Binnenkort beschikbaar.",
+      "cardKbLink": "Binnenkort beschikbaar",
+      "cardBugTitle": "Een bug melden",
+      "cardBugDesc": "Heeft u onverwacht gedrag opgemerkt? Beschrijf het ons met, indien mogelijk, een schermafbeelding.",
+      "cardBugLink": "Per e-mail melden",
+      "cardFeatureTitle": "Een functie aanvragen",
+      "cardFeatureSubject": "Functie-idee AQWELIA",
+      "cardFeatureDesc": "Een idee om AQWELIA te verbeteren? We lezen alle suggesties.",
+      "cardFeatureLink": "Mijn idee delen",
+      "cardAssistantTitle": "Ingebouwde AI-assistent",
+      "cardAssistantDesc": "Voor een snelle vraag over uw zwembad kunt u de assistent rechtstreeks in de app raadplegen.",
+      "cardAssistantLink": "App openen",
+      "cardLegalTitle": "Juridische vragen",
+      "cardLegalDesc": "Voor AVG-, privacy- of GBU-onderwerpen, schrijf naar privacy@aqwelia.app.",
+      "cardLegalLink": "Contact met de FG",
+      "resourcesTitle": "Gerelateerde bronnen",
+      "resourcesCguLink": "Algemene voorwaarden",
+      "resourcesPrivacyLink": "Privacybeleid",
+      "resourcesSettingsLink": "Accountinstellingen"
+    }
+  },
+  "reminders": {
+    "test_overdue": {
+      "title": "Watertest opnieuw uitvoeren",
+      "detail": "Laatste test {days} dagen geleden. De waterkwaliteit verandert snel.",
+      "action": "Voer een volledige test uit: pH + chloor + TAC."
+    },
+    "test_soon": {
+      "title": "Routinetest",
+      "detail": "Laatste test {days} dagen geleden.",
+      "action": "Controleer pH en vrij chloor."
+    },
+    "test_first": {
+      "title": "Eerste watertest",
+      "detail": "Geen test geregistreerd. Activeer de opvolging.",
+      "action": "Voer uw eerste test in (minstens pH)."
+    },
+    "retest_product": {
+      "title": "Opnieuw testen na behandeling",
+      "detail": "U heeft onlangs een product toegevoegd. Controleer het effect.",
+      "action": "Voer binnen enkele uren opnieuw een pH- + chloortest uit."
+    },
+    "wx_test": {
+      "title": "Test aanbevolen (weer)",
+      "action": "Test pH en chloor."
+    },
+    "filter_clean": {
+      "title": "Reiniging van het filter",
+      "detailSand": "Backwash van het zandfilter aanbevolen.",
+      "detailCartridge": "Cartridgespoeling aanbevolen.",
+      "detailGeneric": "Filtercontrole aanbevolen.",
+      "actionSand": "Voer een backwash (tegenspoeling) uit.",
+      "actionCartridge": "Verwijder en spoel de cartridge."
+    },
+    "cell_clean": {
+      "title": "Reiniging electrolyzer-cel",
+      "detail": "De cel zet zich in de loop der tijd vast met kalk. Zure reiniging elke 3-6 maanden.",
+      "action": "Demonteer de cel, week 10-15 min in een verdunde zuuroplossing, spoel na."
+    },
+    "skimmer_clean": {
+      "title": "Skimmer en mandje controleren",
+      "detail": "Vuil, bladeren, insecten regelmatig verwijderen.",
+      "action": "Maak het skimmermandje en het pompmandje leeg."
+    },
+    "low_product": {
+      "title": "Lage voorraad: {name}",
+      "detail": "Er is nog weinig van dit product over.",
+      "action": "Denk eraan om opnieuw te kopen voordat u zonder zit."
+    },
+    "equipment_overdue": {
+      "title": "Onderhoud {type}",
+      "detail": "Onderhoud {days} dagen te laat.",
+      "action": "Plan onderhoud voor deze apparatuur."
+    },
+    "startup": {
+      "title": "Seizoensstart",
+      "detail": "De lente komt eraan: bereid het zwembad voor op het seizoen.",
+      "action": "Volg de gids voor seizoensstart: reinigen, behandeling, filtratie."
+    },
+    "winterize": {
+      "title": "Bereid de wintervoorbereiding voor",
+      "detail": "De herfst is er: anticipeer op de wintervoorbereiding.",
+      "action": "Volg de gids voor wintervoorbereiding: koud water, winterproducten, afdekking."
+    }
+  },
+  "actionPlan": {
+    "iaAdjustTac": "Alkaliteit aanpassen (TAC)",
+    "iaLowerPh": "pH verlagen",
+    "iaRaisePh": "pH verhogen",
+    "iaPhOk": "pH correct",
+    "iaChlorineShock": "Chloorshock",
+    "iaAddSlowChlorine": "Langzame chloor toevoegen",
+    "iaTreatChloramines": "Chloramines behandelen",
+    "iaAddStabilizer": "Stabilisator toevoegen",
+    "iaDiluteWater": "Water verdunnen (CYA te hoog)",
+    "iaAddSalt": "Zout toevoegen",
+    "iaTreatPhosphates": "Fosfaten behandelen",
+    "iaMaintainFiltration": "Filtratie handhaven",
+    "iaRetest": "Water opnieuw testen",
+    "iaAdjustTacDetail": "TAC {current} mg/L doel {target} mg/L. Doe dit VÓÓR de pH.",
+    "iaLowerPhDetail": "pH {current} doel {target}. Essentieel vóór elke chloorbehandeling.",
+    "iaRaisePhDetail": "pH {current} doel {target}.",
+    "iaPhOkDetail": "pH {ph} in de ideale range. Niet aanpassen.",
+    "iaChlorineShockDetail": "Vrij chloor {chlorine} mg/L te laag. Shock uitvoeren (na pH-balans).",
+    "iaAddSlowChlorineDetail": "Vrij chloor {chlorine} mg/L iets te laag. Aanvullen met langzame chloor.",
+    "iaTreatChloraminesDetail": "Gebonden chloor {combined} mg/L hoog. Chloorshock om chloramines af te breken (geur, irritatie).",
+    "iaAddStabilizerDetail": "CYA {current} mg/L doel {target} mg/L.",
+    "iaDiluteWaterDetail": "CYA {cya} mg/L blokkeert de chloor. 20-30% van het water verversen.",
+    "iaAddSaltDetail": "Zout {salt} g/L te laag voor het elektrolyseapparaat.",
+    "iaTreatPhosphatesDetail": "Fosfaten {phosphates} mg/L: voeden algen. Een fosfaatverwijderaar gebruiken.",
+    "iaMaintainFiltrationHours": "Minstens {hours}u filteren om de producten goed te verspreiden.",
+    "iaMaintainFiltrationNormal": "Normale filtratie (helft van de watertemperatuur in uren).",
+    "iaRetestHours": "Opnieuw testen binnen {hours}u om het effect te controleren.",
+    "iaRetestDefault": "Opnieuw testen binnen 24-48u.",
+    "iaAdjustTacProduct": "TAC+",
+    "iaLowerPhProduct": "pH-",
+    "iaRaisePhProduct": "pH+",
+    "iaChlorineShockProduct": "Chloorshock",
+    "iaAddSlowChlorineProduct": "Langzame chloor",
+    "dndNoMixChemicals": "Nooit twee verschillende chemicaliën mengen (chloor + zuur = giftig gas).",
+    "dndNoPurePour": "Nooit puur product direct in het zwembad gieten zonder verdunning (behalve zout).",
+    "dndWaterIntoAcid": "Nooit water aan een zuur product toevoegen: altijd het product aan het water toevoegen.",
+    "dndNoShockWithoutPh": "Nooit een chloorshock uitvoeren zonder vooraf de pH te controleren.",
+    "dndNoBathAfterShock": "Nooit zwemmen tijdens of vlak na een shockbehandeling.",
+    "dndNoStoreChlorineAcid": "Nooit chloor en zuur naast elkaar opslaan.",
+    "dndNoCyaOver50": "Niet meer dan 50 mg/L stabilisator (CYA): chloor wordt ineffectief.",
+    "dndNoBath8h": "Minstens 8u niet zwemmen na de shock.",
+    "dndNoMaskChlorineSmell": "De chloorgeur niet maskeren met parfum: het is een teken van chloramines.",
+    "dndNoAddStabilizer": "Geen stabilisator toevoegen: het niveau is al te hoog.",
+    "diagBalanced": "Uw water is over het algemeen gebalanceerd (index {cwi}/100). Houd het tempo van testen en filtratie aan. Zwemmen: {swim}.",
+    "diagIssues": "Diagnose ({sevLabel}) helderwaterindex {cwi}/100. Punten om aan te pakken: {issues}. Volg het geordende actieplan hieronder. Zwemmen: {swim}.",
+    "sevLabelUrgent": "DRINGEND",
+    "sevLabelHigh": "Actie aanbevolen",
+    "sevLabelMedium": "In de gaten houden",
+    "swimLabelAllowed": "toegestaan",
+    "swimLabelAvoid": "afgeraden",
+    "swimLabelForbidden": "verboden",
+    "swimLabelUnknown": "te bevestigen na metingen",
+    "issuePh": "pH {ph}",
+    "issueFreeChlorine": "vrij chloor {chlorine} mg/L",
+    "issueCombinedChlorine": "hoge chloramines",
+    "issueTac": "TAC {tac}",
+    "proPhExtreme": "Extreme pH: een professional kan helpen veilig te herbalanceren.",
+    "proOverChlorination": "Massale overchlorering: overweeg een gedeeltelijke verdunning of een pro.",
+    "proHighChloramines": "Zeer hoge chloramines: shock nodig, een pro kan de bewerking sturen.",
+    "dosePhMinusProduct": "pH- (zuur)",
+    "dosePhMinusMethod": "Verdunnen in een emmer zwembadwater, verspreiden voor de retourmonden, filtratie aan.",
+    "dosePhMinusWarningGap": "Verschil te groot: behandeling beperkt tot -{delta} pH. Opnieuw testen na filtratie.",
+    "dosePhPlusProduct": "pH+ (natriumcarbonaat)",
+    "dosePhPlusMethod": "Verdunnen in een emmer, verspreiden voor de retourmonden, filtratie aan.",
+    "dosePhPlusWarningGap": "Verschil te groot: behandeling beperkt tot +{delta} pH.",
+    "doseChlorineShockProduct": "Chloorshock (65% actief)",
+    "doseChlorineShockMethod": "Oplossen in een emmer water, gieten voor de retourmonden. Bij voorkeur 's avonds, zonder zwemmers.",
+    "doseChlorineShockWarningBath": "LET OP: chloorshock. Minstens 8u niet zwemmen.",
+    "doseChlorineShockWarningMix": "Nooit chloorshock en pH- mengen.",
+    "doseChlorineShockWarningPh": "Controleer de pH VÓÓR de shock (ideaal 7,2-7,4).",
+    "doseChlorineSlowProduct": "Langzame chloor (tabletten 20g)",
+    "doseChlorineSlowMethod": "Plaatsen in de skimmer of doseerder. Vernieuwen naargelang het verbruik.",
+    "doseChlorineSlowWarningSkimmer": "Niet in de skimmer plaatsen bij gelijktijdige anti-algenbehandeling.",
+    "doseAlkalinityPlusProduct": "TAC+ (natriumbicarbonaat)",
+    "doseAlkalinityPlusMethod": "Verdunnen, verspreiden, filtratie aan. Wachten voordat de pH opnieuw wordt aangepast.",
+    "doseAlkalinityPlusWarningOrder": "Pas de TAC VÓÓR de pH aan.",
+    "doseCalciumPlusProduct": "Calcium+ (calciumchloride)",
+    "doseCalciumPlusMethod": "Verdunnen in een emmer, langzaam gieten voor de retourmonden.",
+    "doseStabilizerPlusProduct": "Stabilisator (cyaanzuur)",
+    "doseStabilizerPlusMethod": "Langzaam in de skimmer gieten, filtratie aan. Langzame oplossing (24-48u).",
+    "doseStabilizerPlusWarningMax": "Niet meer dan 50 mg/L. Te veel stabilisator blokkeert chloor.",
+    "doseSaltPlusProduct": "Zwembadzout (NaCl)",
+    "doseSaltPlusMethod": "Zout direct in het zwembad gieten, filtratie aan tot volledig opgelost.",
+    "doseSaltPlusWarningCheck": "Controleer het zout dat uw elektrolyseapparaat vereist vóór toevoeging.",
+    "doseAntiAlgaeProduct": "Anti-algen (curatief)",
+    "doseAntiAlgaeMethod": "Gieten voor de retourmonden, filtratie aan. De wanden borstelen.",
+    "doseAntiAlgaeWarningPh": "De pH moet VÓÓR gebalanceerd zijn. Vooral effectief ter preventie.",
+    "doseFlocculantProduct": "Vlokmiddel",
+    "doseFlocculantMethod": "Gieten voor de retourmonden, filtratie 1u dan stop 12u voor bezinking, dan opzuigen.",
+    "doseFlocculantWarningFilter": "Alleen compatibel met zandfilter. Niet gebruiken met patroonfilter."
+  },
+  "targets": {
+    "ph": {
+      "label": "pH",
+      "consequenceLow": "Zuur water: irritatie, corrosie van apparatuur, onstabiele chloor.",
+      "consequenceHigh": "Basisch water: chloor minder effectief, kalkaanslag, troebel water."
+    },
+    "freeChlorine": {
+      "label": "Vrije chloor",
+      "consequenceLow": "Onvoldoende desinfectie: risico op algen en bacteriën.",
+      "consequenceHigh": "Vrije chloor op de bovengrens."
+    },
+    "combinedChlorine": {
+      "label": "Gebonden chloor",
+      "consequenceHigh": "Hoog gebonden chloor: sterke geur, oogirritatie, chloramines."
+    },
+    "alkalinity": {
+      "label": "Alkaliniteit (TAC)",
+      "consequenceLow": "Onstabiele pH, snelle schommelingen.",
+      "consequenceHigh": "pH moeilijk af te stellen, troebel water."
+    },
+    "calciumHardness": {
+      "label": "Calciumhardheid (TH)",
+      "consequenceLow": "Agressief water: corrosie, schuim.",
+      "consequenceHigh": "Kalkaanslag, afzettingen, troebel water."
+    },
+    "cyanuricAcid": {
+      "label": "Stabilisator (CYA)",
+      "consequenceLow": "Chloor wordt snel door de zon afgebroken.",
+      "consequenceHigh": "Chloor geblokkeerd: behandeling ineffectief, risico op algen."
+    },
+    "salt": {
+      "label": "Zout",
+      "consequenceLow": "Elektrolyseapparaat produceert niet genoeg chloor.",
+      "consequenceHigh": "Overmatig verbruik van elektrolyseapparaat, smaak."
+    },
+    "bromine": {
+      "label": "Broom",
+      "consequenceLow": "Onvoldoende desinfectie.",
+      "consequenceHigh": "Overdosis, irritatie."
+    },
+    "phosphates": {
+      "label": "Fosfaten",
+      "consequenceHigh": "Voedt algen: hoog risico op groen water."
+    },
+    "temperature": {
+      "label": "Temperatuur",
+      "consequenceHigh": "Verdamping, algen, overmatig chloorverbruik.",
+      "consequenceLow": "Koud water, lage chemische activiteit."
+    }
   }
 }

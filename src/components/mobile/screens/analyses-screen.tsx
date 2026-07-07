@@ -24,12 +24,6 @@ interface SubTabDef {
   icon: typeof Droplets
 }
 
-const SUB_TABS: readonly SubTabDef[] = [
-  { id: 'mesures', label: 'Mesures', icon: FlaskConical },
-  { id: 'photo', label: 'Photo', icon: Camera },
-  { id: 'carnet', label: 'Carnet', icon: BookOpen },
-] as const
-
 /**
  * Mobile "Analyses" screen — three pill-style sub-tabs that switch between
  * `<ModuleWaterTest />`, `<ModuleDiagnostic />`, and `<ModuleHealthLog />`.
@@ -43,12 +37,21 @@ const SUB_TABS: readonly SubTabDef[] = [
  * devices) and use the AQWELIA pill style (active = gold gradient border).
  */
 export function AnalysesScreen({ subTab, onSubTabChange, onNavigate }: AnalysesScreenProps) {
+  const tNav = useTranslations('nav')
+  const tScr = useTranslations('mobile.screens')
+
+  const SUB_TABS: readonly SubTabDef[] = [
+    { id: 'mesures', label: tScr('analysesSubtabMesures'), icon: FlaskConical },
+    { id: 'photo', label: tScr('analysesSubtabPhoto'), icon: Camera },
+    { id: 'carnet', label: tScr('analysesSubtabLogbook'), icon: BookOpen },
+  ] as const
+
   return (
     <div className="mobile-scroll px-4 pb-24 pt-4">
       <div className="mb-3 flex items-center gap-2">
         <Droplets className="h-5 w-5 text-primary" aria-hidden />
         <h1 className="font-display text-2xl font-bold tracking-tight">
-          Analyses
+          {tNav('analyses')}
         </h1>
       </div>
 
@@ -56,18 +59,18 @@ export function AnalysesScreen({ subTab, onSubTabChange, onNavigate }: AnalysesS
       <div
         className="mb-4 flex gap-2 overflow-x-auto pb-1"
         role="tablist"
-        aria-label="Sous-onglets Analyses"
+        aria-label={tScr('analysesAriaSubtabs')}
       >
-        {SUB_TABS.map((t) => {
-          const Icon = t.icon
-          const active = subTab === t.id
+        {SUB_TABS.map((tab) => {
+          const Icon = tab.icon
+          const active = subTab === tab.id
           return (
             <button
-              key={t.id}
+              key={tab.id}
               type="button"
               role="tab"
               aria-selected={active}
-              onClick={() => onSubTabChange(t.id)}
+              onClick={() => onSubTabChange(tab.id)}
               className={`flex min-h-[40px] shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors active:opacity-70 ${
                 active
                   ? 'border-gold/60 bg-gold/10 text-gold'
@@ -75,7 +78,7 @@ export function AnalysesScreen({ subTab, onSubTabChange, onNavigate }: AnalysesS
               }`}
             >
               <Icon className="h-4 w-4" aria-hidden />
-              {t.label}
+              {tab.label}
             </button>
           )
         })}

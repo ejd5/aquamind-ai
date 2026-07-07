@@ -2,6 +2,7 @@
 
 import { motion, useInView, useMotionValue, useSpring, type Variants } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
+import { useLocale } from 'next-intl'
 
 /* ------------------------------------------------------------------ */
 /* Reveal — framer-motion whileInView wrapper with staggered children */
@@ -108,6 +109,7 @@ export function AnimatedCounter({
   const motionValue = useMotionValue(0)
   const spring = useSpring(motionValue, { duration: duration * 1000, bounce: 0 })
   const [display, setDisplay] = useState('0')
+  const locale = useLocale()
 
   useEffect(() => {
     if (inView) motionValue.set(value)
@@ -116,14 +118,14 @@ export function AnimatedCounter({
   useEffect(() => {
     const unsub = spring.on('change', (latest) => {
       setDisplay(
-        latest.toLocaleString('fr-FR', {
+        latest.toLocaleString(locale, {
           minimumFractionDigits: decimals,
           maximumFractionDigits: decimals,
         }),
       )
     })
     return () => unsub()
-  }, [spring, decimals])
+  }, [spring, decimals, locale])
 
   return (
     <span ref={ref} className={className}>

@@ -35,6 +35,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
   const t = useTranslations('onboarding')
   const tc = useTranslations('common')
   const tspa = useTranslations('spa')
+  const tspaData = useTranslations('spaData')
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
   const [locating, setLocating] = useState(false)
@@ -409,7 +410,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
                   <div className="space-y-1.5">
                     <Label className="flex items-center gap-1.5 text-xs">
                       <Users className="h-3.5 w-3.5 text-gold" />
-                      {SPA_SPECIFICS.seatsRange.label} : <strong className="text-gold">{form.spaSeats}</strong>
+                      {tspaData(SPA_SPECIFICS.seatsRange.labelKey)} : <strong className="text-gold">{form.spaSeats}</strong>
                     </Label>
                     <input
                       type="range"

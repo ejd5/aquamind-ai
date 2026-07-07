@@ -24,12 +24,13 @@ interface HomeScreenProps {
  * maps the desktop TabId to the appropriate mobile screen + sub-tab.
  */
 export function HomeScreen({ onNavigate, onOpenEmergency, onAskAssistant }: HomeScreenProps) {
+  const t = useTranslations('nav')
   return (
     <div className="mobile-scroll px-4 pb-24 pt-4">
       <div className="mb-3 flex items-center gap-2">
         <Sun className="h-5 w-5 text-gold" aria-hidden />
         <h1 className="font-display text-2xl font-bold tracking-tight">
-          Aujourd'hui
+          {t('today')}
         </h1>
       </div>
 

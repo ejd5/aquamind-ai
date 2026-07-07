@@ -1,0 +1,252 @@
+{
+  "diagnosticActionPlan.cloudyS3Intro": {
+    "fr": "Le floculant agglomère les particules fines en flocons que le filtre peut retenir. ⚠ Uniquement pour filtre à sable.",
+    "en": "Flocculant aggregates fine particles into flocs the filter can catch. ⚠ Sand filter only.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3Product": {
+    "fr": "Floculant liquide (filtre à sable uniquement)",
+    "en": "Liquid flocculant (sand filter only)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3Title": {
+    "fr": "3. Ajouter un floculant (si filtre à sable)",
+    "en": "3. Add flocculant (if sand filter)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS4I1": {
+    "fr": "Remettez la pompe en marche forcée après aspiration des flocons.",
+    "en": "Restart pump in forced mode after vacuuming flocs.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS4I2": {
+    "fr": "Surveillez la pression du filtre — backwash si elle monte.",
+    "en": "Monitor filter pressure — backwash if it rises.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS4I3": {
+    "fr": "Vérifiez le panier de skimmer toutes les 4h.",
+    "en": "Check skimmer basket every 4h.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS4I4": {
+    "fr": "Au bout de 12h, l'eau doit redevenir transparente.",
+    "en": "After 12h, water should be clear again.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS4Intro": {
+    "fr": "Laissez la filtration tourner 12h pour clarifier l'eau après floculation/aspiration.",
+    "en": "Let filtration run 12h to clarify water after flocculation/vacuuming.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS4Title": {
+    "fr": "4. Filtration continue 12h",
+    "en": "4. Continuous filtration 12h",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS5I1": {
+    "fr": "Mesurez le pH (cible : 7.0 - 7.4).",
+    "en": "Measure pH (target: 7.0 - 7.4).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS5I2": {
+    "fr": "Mesurez le chlore libre (cible : 1 - 3 mg/L).",
+    "en": "Measure free chlorine (target: 1 - 3 mg/L).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS5I3": {
+    "fr": "Entrez vos valeurs ci-dessous — elles seront enregistrées dans votre carnet.",
+    "en": "Enter your values below — they will be saved in your logbook.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS5I4": {
+    "fr": "Si les valeurs sont OK et l'eau claire → problème résolu.",
+    "en": "If values are OK and water clear → problem solved.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS5Intro": {
+    "fr": "Vérifiez que l'eau est équilibrée et que le chlore est actif.",
+    "en": "Verify water is balanced and chlorine is active.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS5Title": {
+    "fr": "5. Re-tester l'eau",
+    "en": "5. Re-test water",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae1Desc": {
+    "fr": "Les algues sont toujours présentes malgré le premier traitement. Refaites un traitement choc avec 1.5x la dose précédente. Vérifiez que le pH est bien entre 7.0-7.4 AVANT. Privilégiez un chlore choc de marque différente (les algues peuvent développer une résistance).",
+    "en": "Algae are still present despite the first treatment. Repeat shock treatment with 1.5x the previous dose. Verify pH is between 7.0-7.4 BEFORE. Prefer a different shock chlorine brand (algae can develop resistance).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae1Reason": {
+    "fr": "Les algues peuvent être résistantes. Une dose plus forte et un produit différent sont nécessaires.",
+    "en": "Algae can be resistant. A stronger dose and a different product are needed.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae1Title": {
+    "fr": "{n}. Doubler la dose de traitement choc",
+    "en": "{n}. Double the shock treatment dose",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae2Desc": {
+    "fr": "Comptez le nombre d'heures de filtration par jour. Pour une eau verte, il faut filtrer au minimum 12h/24. Idéalement 24h/24 pendant 3 jours consécutifs.",
+    "en": "Count the number of filtration hours per day. For green water, filter at least 12h/24. Ideally 24h/24 for 3 consecutive days.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae2Reason": {
+    "fr": "Une filtration insuffisante empêche d'éliminer les algues mortes et de clarifier l'eau.",
+    "en": "Insufficient filtration prevents removing dead algae and clarifying water.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae2Title": {
+    "fr": "{n}. Vérifier la durée de filtration",
+    "en": "{n}. Check filtration duration",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae3Desc": {
+    "fr": "Si vous avez un filtre à sable, faites un backwash (contre-lavage) de 3 minutes suivi d'un rinçage de 30s. Si c'est une cartouche, sortez-la et nettoyez-la au jet. Un filtre encrassé ne retient pas les algues et les renvoie dans le bassin.",
+    "en": "If you have a sand filter, backwash for 3 minutes followed by 30s rinse. If it's a cartridge, remove and hose it off. A clogged filter doesn't catch algae and returns them to the pool.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae3Reason": {
+    "fr": "Le filtre peut être saturé d'algues après le premier traitement.",
+    "en": "The filter may be saturated with algae after the first treatment.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae3Title": {
+    "fr": "{n}. Nettoyer le filtre à fond",
+    "en": "{n}. Clean the filter thoroughly",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy1Desc": {
+    "fr": "L'eau est encore trouble. Versez un floculant LIQUIDE (pas en chaussette) directement devant les buses de refoulement, filtration en marche. Laissez filtrer 1h, puis coupez 12h pour laisser décanter. Les particules vont agglomérer et tomber au fond.",
+    "en": "Water is still cloudy. Pour LIQUID flocculant (not sock) directly in front of return jets, pump running. Filter 1h, then turn off 12h to let settle. Particles will aggregate and fall to the bottom.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy1Reason": {
+    "fr": "Le floculant agglomère les particules fines que le filtre ne retient pas.",
+    "en": "Flocculant aggregates fine particles the filter doesn't catch.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy1Title": {
+    "fr": "{n}. Ajouter un floculant liquide",
+    "en": "{n}. Add liquid flocculant",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy2Desc": {
+    "fr": "Après 12h de décantation, les débris seront au fond. Aspirez lentement en position 'égout' (waste) pour ne pas les renvoyer dans le filtre. Ne remettez la vanne en filtration qu'après avoir fini l'aspiration.",
+    "en": "After 12h of settling, debris will be at the bottom. Vacuum slowly in 'waste' position to avoid sending them back to the filter. Only switch the valve back to filtration after vacuuming is done.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy2Reason": {
+    "fr": "Les floculés sont trop lourds pour le filtre normal.",
+    "en": "Flocs are too heavy for the normal filter.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy2Title": {
+    "fr": "{n}. Aspirer le fond après floculation",
+    "en": "{n}. Vacuum the floor after flocculation",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy3Desc": {
+    "fr": "Si l'eau reste trouble malgré floculation + filtration : votre sable/cartouche est peut-être à remplacer. Le sable se change tous les 5-7 ans, la cartouche tous les 2 ans. Un média usé ne retient plus les particules fines.",
+    "en": "If water stays cloudy despite flocculation + filtration: your sand/cartridge may need replacement. Sand is changed every 5-7 years, cartridge every 2 years. Worn media no longer catches fine particles.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy3Reason": {
+    "fr": "Un filtre en fin de vie est une cause fréquente d'eau trouble persistante.",
+    "en": "An end-of-life filter is a common cause of persistent cloudy water.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy3Title": {
+    "fr": "{n}. Vérifier le média filtrant",
+    "en": "{n}. Check filter media",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compFallback1Desc": {
+    "fr": "L'eau s'améliore mais n'est pas encore parfaite. Laissez tourner la filtration 24h supplémentaires en continu. Surveillez la pression du filtre (backwash si elle monte de +0.3 bar).",
+    "en": "Water is improving but not perfect yet. Let filtration run 24h more continuously. Monitor filter pressure (backwash if it rises by +0.3 bar).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compFallback1Reason": {
+    "fr": "Le traitement est en cours, il faut lui laisser le temps d'agir.",
+    "en": "Treatment is in progress, give it time to work.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compFallback1Title": {
+    "fr": "1. Continuer la filtration 24h de plus",
+    "en": "1. Continue filtration 24h more",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compFallback2Desc": {
+    "fr": "Refaites un test complet (pH, chlore, TAC) dans 24h et prenez une nouvelle photo pour vérifier. Si le score de satisfaction stagne, envisagez de vider 20-30% de l'eau pour repartir sur une base saine.",
+    "en": "Redo a full test (pH, chlorine, TA) in 24h and take a new photo to verify. If satisfaction score stagnates, consider draining 20-30% of water to restart on a healthy base.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compFallback2Reason": {
+    "fr": "Il faut donner le temps au traitement de faire effet avant de conclure à un échec.",
+    "en": "Treatment needs time to take effect before concluding failure.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compFallback2Title": {
+    "fr": "2. Re-tester dans 24h",
+    "en": "2. Re-test in 24h",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compNewIssuesDesc": {
+    "fr": "Nouveau(x) problème(s) apparu(s) : {issues}. Analysez la cause probable (surchloration, surdosage de floculant, précipitation de calcaire, etc.) avant d'agir. En cas de doute, refaites un test complet pH/chlore/TAC/th.",
+    "en": "New problem(s) appeared: {issues}. Analyze the probable cause (over-chlorination, flocculant overdose, limescale precipitation, etc.) before acting. If in doubt, redo a full pH/chlorine/TA/CH test.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compNewIssuesReason": {
+    "fr": "Certains traitements peuvent créer de nouveaux déséquilibres. Il faut les corriger avant qu'ils n'aggravent la situation.",
+    "en": "Some treatments can create new imbalances. They must be corrected before they worsen the situation.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compNewIssuesTitle": {
+    "fr": "{n}. Traiter les nouveaux problèmes détectés",
+    "en": "{n}. Treat newly detected problems",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.dosage": {
+    "fr": "Dosage",
+    "en": "Dosage",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.fieldChlorineLabel": {
+    "fr": "Chlore libre mesuré",
+    "en": "Measured free chlorine",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.fieldPhLabel": {
+    "fr": "Entrez votre pH mesuré",
+    "en": "Enter your measured pH",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.fieldTacLabel": {
+    "fr": "TAC mesuré",
+    "en": "Measured TA",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericInstruction1Default": {
+    "fr": "Suivez les recommandations de l'IA affichées ci-dessus.",
+    "en": "Follow the AI recommendations displayed above.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericInstruction2": {
+    "fr": "Mesurez votre pH avant tout traitement (cible : 7.0 - 7.4).",
+    "en": "Measure your pH before any treatment (target: 7.0 - 7.4).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericInstruction2_1": {
+    "fr": "Attendez au moins 24h de filtration continue.",
+    "en": "Wait at least 24h of continuous filtration.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericInstruction2_2": {
+    "fr": "Reprenez une photo dans les mêmes conditions (même endroit, même éclairage).",
+    "en": "Take a new photo in the same conditions (same spot, same lighting).",
+    "reason": "placeholder"
+  }
+}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { LandingPage } from '@/components/landing/landing-page'
 import { AppShell } from '@/components/aquamind/app-shell'
 import { MobileAppShell } from '@/components/mobile/mobile-app-shell'
@@ -9,6 +10,7 @@ import { isMobile, isNative } from '@/lib/platform'
 type View = 'landing' | 'app'
 
 export default function Home() {
+  const t = useTranslations('common')
   const [view, setView] = useState<View>('landing')
   const [hasProfile, setHasProfile] = useState(false)
   const [loaded, setLoaded] = useState(false)
@@ -82,7 +84,7 @@ export default function Home() {
             </svg>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">Chargement d&apos;AQWELIA…</p>
+        <p className="text-sm text-muted-foreground">{t('loading')}</p>
       </div>
     )
   }

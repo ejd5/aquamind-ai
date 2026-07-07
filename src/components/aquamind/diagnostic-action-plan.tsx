@@ -30,6 +30,10 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/hooks/use-toast'
 import { api, ApiError } from '@/lib/api-client'
+import { useTranslations } from 'next-intl'
+
+// Type alias for the translation function returned by useTranslations.
+type TFunc = ReturnType<typeof useTranslations>
 
 // ───────────────────────────────────────────────────────────────────────────
 // Types
@@ -143,6 +147,7 @@ function flocculantMl(poolVolume: number): number {
 function computePhRecommendation(
   ph: number,
   poolVolume: number,
+  t: TFunc,
 ): {
   product: string
   quantity: number
@@ -158,7 +163,7 @@ function computePhRecommendation(
       product: '—',
       quantity: 0,
       unit: 'g',
-      message: '✅ pH dans la plage idéale (7.0 - 7.4). Aucun ajustement nécessaire.',
+      message: t('phIdeal'),
     }
   }
 
@@ -167,15 +172,15 @@ function computePhRecommendation(
     const drop = Math.min(ph - IDEAL_HIGH, 0.3) // safe delta cap
     const grams = (drop / 0.1) * phMinusGramsPer01(poolVolume)
     return {
-      product: 'pH- (poudre, bisulfate de sodium)',
+      product: t('productPhMinus'),
       quantity: grams,
       unit: 'g',
-      message: `Votre pH ${ph.toFixed(2)} est trop haut. Ajoutez ${fmtQty(
-        grams,
-        'g',
-      )} de pH- pour revenir vers 7.4 (baisse de ~${drop.toFixed(1)} unité).`,
-      warning:
-        'Verser devant les buses de refoulement, filtration en marche. Ne jamais verser pH- pur directement.',
+      message: t('phHigh', {
+        ph: ph.toFixed(2),
+        qty: fmtQty(grams, 'g'),
+        delta: drop.toFixed(1),
+      }),
+      warning: t('phHighWarning'),
     }
   }
 
@@ -183,15 +188,15 @@ function computePhRecommendation(
   const rise = Math.min(IDEAL_LOW - ph, 0.3)
   const grams = (rise / 0.1) * phPlusGramsPer01(poolVolume)
   return {
-    product: 'pH+ (carbonate de sodium)',
+    product: t('productPhPlus'),
     quantity: grams,
     unit: 'g',
-    message: `Votre pH ${ph.toFixed(2)} est trop bas. Ajoutez ${fmtQty(
-      grams,
-      'g',
-    )} de pH+ pour remonter vers 7.0 (hausse de ~${rise.toFixed(1)} unité).`,
-    warning:
-      'Diluer dans un seau d\'eau de piscine avant de verser devant les refoulements.',
+    message: t('phLow', {
+      ph: ph.toFixed(2),
+      qty: fmtQty(grams, 'g'),
+      delta: rise.toFixed(1),
+    }),
+    warning: t('phLowWarning'),
   }
 }
 
@@ -199,7 +204,7 @@ function computePhRecommendation(
 // Step generation
 // ───────────────────────────────────────────────────────────────────────────
 
-function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): ActionStep[] {
+function generateSteps(diagnostic: DiagnosticResult, poolVolume: number, t: TFunc): ActionStep[] {
   const issues = diagnostic.detectedIssues || []
   const summary = (diagnostic.userFriendlySummary || '').toLowerCase()
   const probableIssues = diagnostic.probableIssues || []
@@ -221,7 +226,7 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): Action
 
   const phField: InputField = {
     name: 'ph',
-    label: 'Entrez votre pH mesuré',
+    label: t('fieldPhLabel'),
     unit: '',
     placeholder: '7.2',
     required: true,
@@ -231,7 +236,7 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): Action
   }
   const chlorineField: InputField = {
     name: 'freeChlorine',
-    label: 'Chlore libre mesuré',
+    label: t('fieldChlorineLabel'),
     unit: 'mg/L',
     placeholder: '2.0',
     step: '0.1',
@@ -240,7 +245,7 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): Action
   }
   const tacField: InputField = {
     name: 'alkalinity',
-    label: 'TAC mesuré',
+    label: t('fieldTacLabel'),
     unit: 'mg/L',
     placeholder: '100',
     step: '1',
@@ -252,24 +257,21 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): Action
     return [
       {
         id: 'ph-adjust',
-        title: '1. Mesurer et ajuster le pH',
-        intro:
-          "Le pH doit être entre 7.0 et 7.4 AVANT tout traitement. Un pH incorrect rend le chlore inefficace (jusqu'à -90 %).",
+        title: t('greenS1Title'),
+        intro: t('greenS1Intro'),
         instructions: [
-          'Prenez votre kit de test (gouttes ou bandelette) ou un testeur électronique.',
-          'Récupérez un échantillon d\'eau à 30 cm de profondeur, loin des refoulements.',
-          'Mesurez le pH actuel et notez-le ci-dessous.',
-          'Si pH > 7.4 → ajoutez du pH- (acide). Si pH < 7.0 → ajoutez du pH+ (base).',
-          `Dosage de référence : ~${phMinusGramsPer01(
-            poolVolume,
-          )} g de pH- pour abaisser de 0.1 unité sur ${poolVolume} m³.`,
-          'Diluez le produit dans un seau d\'eau de la piscine, jamais pur directement.',
-          'Versez lentement devant les buses de refoulement, filtration en marche.',
-          'Patientez 2 heures avec la filtration en route avant de re-tester.',
+          t('greenS1I1'),
+          t('greenS1I2'),
+          t('greenS1I3'),
+          t('greenS1I4'),
+          t('greenS1I5', { qty: phMinusGramsPer01(poolVolume), volume: poolVolume }),
+          t('greenS1I6'),
+          t('greenS1I7'),
+          t('greenS1I8'),
         ],
-        productType: 'pH- ou pH+ (selon votre mesure)',
+        productType: t('greenS1Product'),
         dosageText: (v) =>
-          `~${phMinusGramsPer01(v)} g de pH- / 0.1 unité à abaisser (piscine de ${v} m³)`,
+          t('greenS1Dosage', { qty: phMinusGramsPer01(v), volume: v }),
         waitTime: '2h',
         inputFields: [phField],
         urgency: 'critical',
@@ -277,21 +279,18 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): Action
       },
       {
         id: 'ph-retest',
-        title: '2. Re-tester le pH (après 2h)',
-        intro:
-          'Après 2h de filtration, le pH a eu le temps de se stabiliser. Vérifiez qu\'il est maintenant dans la plage cible.',
+        title: t('greenS2Title'),
+        intro: t('greenS2Intro'),
         instructions: [
-          'Reprenez un échantillon d\'eau à 30 cm de profondeur.',
-          'Mesurez à nouveau le pH.',
-          'Si pH entre 7.0 et 7.4 → ✅ passez à l\'étape suivante (traitement choc).',
-          'Si pH encore trop haut/bas → ajustez à nouveau avec la MOITIÉ de la dose précédente.',
-          'Re-testez 1h après ce second ajustement.',
+          t('greenS2I1'),
+          t('greenS2I2'),
+          t('greenS2I3'),
+          t('greenS2I4'),
+          t('greenS2I5'),
         ],
-        productType: 'pH- ou pH+ (dose réduite si réajustement)',
+        productType: t('greenS2Product'),
         dosageText: (v) =>
-          `Réajustement : moitié de la dose initiale (~${Math.round(
-            phMinusGramsPer01(v) / 2,
-          )} g max pour ${v} m³)`,
+          t('greenS2Dosage', { qty: Math.round(phMinusGramsPer01(v) / 2), volume: v }),
         waitTime: '0',
         inputFields: [phField],
         urgency: 'critical',
@@ -299,24 +298,23 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): Action
       },
       {
         id: 'chlorine-shock',
-        title: '3. Traitement choc au chlore',
-        intro:
-          "Le chlore choc détruit les algues, bactéries et virus. C'est l'étape la plus importante contre l'eau verte.",
+        title: t('greenS3Title'),
+        intro: t('greenS3Intro'),
         instructions: [
-          '⚠ Vérifiez que le pH est correct (étapes 1-2). Sinon le choc sera inefficace.',
-          `Calculez la dose curative : environ 10 g de chlore choc par m³.`,
-          `Pour votre piscine de ${poolVolume} m³ : ${chlorineShockGrams(
-            poolVolume,
-          )} g de chlore choc (soit ~${(
-            chlorineShockGrams(poolVolume) / 20
-          ).toFixed(0)} pastilles de 20 g).`,
-          'Préférez le soir, sans baigneurs, filtration en marche.',
-          'Diluez le chlore en poudre/granulés dans un seau d\'eau de piscine.',
-          'Versez devant les buses de refoulement, jamais dans le skimmer.',
-          '🚫 INTERDICTION DE BAIGNADE pendant 8 heures minimum.',
+          t('greenS3I1'),
+          t('greenS3I2'),
+          t('greenS3I3', {
+            volume: poolVolume,
+            qty: chlorineShockGrams(poolVolume),
+            tablets: (chlorineShockGrams(poolVolume) / 20).toFixed(0),
+          }),
+          t('greenS3I4'),
+          t('greenS3I5'),
+          t('greenS3I6'),
+          t('greenS3I7'),
         ],
-        productType: 'Chlore choc (65 % actif, granulés ou pastilles)',
-        dosageText: (v) => `${chlorineShockGrams(v)} g de chlore choc (pour ${v} m³)`,
+        productType: t('greenS3Product'),
+        dosageText: (v) => t('greenS3Dosage', { qty: chlorineShockGrams(v), volume: v }),
         waitTime: '8h',
         inputFields: [{ ...chlorineField, required: false }],
         urgency: 'critical',
@@ -324,36 +322,36 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): Action
       },
       {
         id: 'anti-algae',
-        title: '4. Anti-algues (préventif curatif)',
-        intro:
-          "L'anti-algues complète le chlore en détruisant les algues résistantes et en empêchant la repousse.",
+        title: t('greenS4Title'),
+        intro: t('greenS4Intro'),
         instructions: [
-          "Attendez au moins 2h après le traitement choc (ne jamais mélanger directement).",
-          `Dosage curatif : ~20 mL d'anti-algues par m³.`,
-          `Pour ${poolVolume} m³ : ${antiAlgaeMl(
-            poolVolume,
-          )} mL d'anti-algues (soit ${(antiAlgaeMl(poolVolume) / 1000).toFixed(2)} L).`,
-          'Versez directement devant les refoulements, filtration en marche.',
-          'Brossez les parois juste après (voir étape suivante) pour décoller les algues.',
+          t('greenS4I1'),
+          t('greenS4I2'),
+          t('greenS4I3', {
+            volume: poolVolume,
+            qty: antiAlgaeMl(poolVolume),
+            liters: (antiAlgaeMl(poolVolume) / 1000).toFixed(2),
+          }),
+          t('greenS4I4'),
+          t('greenS4I5'),
         ],
-        productType: 'Anti-algues curatif',
-        dosageText: (v) => `${antiAlgaeMl(v)} mL d'anti-algues (pour ${v} m³)`,
+        productType: t('greenS4Product'),
+        dosageText: (v) => t('greenS4Dosage', { qty: antiAlgaeMl(v), volume: v }),
         waitTime: '2h',
         urgency: 'important',
         done: false,
       },
       {
         id: 'brush-walls',
-        title: '5. Brosser les parois et le fond',
-        intro:
-          "Le brossage décolle les algues incrustées. Sans cette étape, le traitement chimique ne suffit pas.",
+        title: t('greenS5Title'),
+        intro: t('greenS5Intro'),
         instructions: [
-          "Utilisez une brosse adaptée à votre revêtement : brosse nylon pour liner/coque, brosse acier pour béton.",
-          "🚫 Jamais de brosse métallique sur liner ou membrane armée — vous la perceriez.",
-          "Brossez du haut vers le bas, par sections de 1 m².",
-          'Insistez sur les coins, marches, buses, échelles et la ligne d\'eau.',
-          'Brossez aussi le fond si accessible (perche télescopique).',
-          "C'est physique (15-30 min) mais INDISPENSABLE — sans ça les algues reviennent en 48h.",
+          t('greenS5I1'),
+          t('greenS5I2'),
+          t('greenS5I3'),
+          t('greenS5I4'),
+          t('greenS5I5'),
+          t('greenS5I6'),
         ],
         waitTime: '0',
         urgency: 'important',
@@ -361,16 +359,15 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): Action
       },
       {
         id: 'filtration-24h',
-        title: '6. Filtration continue 24h',
-        intro:
-          "La filtration doit tourner 24h sans interruption pour évacuer les algues mortes et les particules.",
+        title: t('greenS6Title'),
+        intro: t('greenS6Intro'),
         instructions: [
-          "Réglez la pompe en marche forcée (24h/24) — pas de programme horaire.",
-          'Vérifiez la pression du manomètre du filtre.',
-          'Si la pression monte > 0.3 bar au-dessus de la normale → faites un backwash (contre-lavage).',
-          'Nettoyez le pré-filtre de la pompe (panier) s\'il est plein de débris.',
-          'Videz les skimmers régulièrement pendant ces 24h.',
-          'Pour un filtre à cartouche : rincez-la à mi-parcours si le débit baisse.',
+          t('greenS6I1'),
+          t('greenS6I2'),
+          t('greenS6I3'),
+          t('greenS6I4'),
+          t('greenS6I5'),
+          t('greenS6I6'),
         ],
         waitTime: '24h',
         urgency: 'critical',
@@ -378,16 +375,15 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): Action
       },
       {
         id: 'retest-full',
-        title: '7. Re-test complet de l\'eau',
-        intro:
-          "Après 24h de filtration, faites un test complet pour vérifier que l'eau est saine et équilibrée.",
+        title: t('greenS7Title'),
+        intro: t('greenS7Intro'),
         instructions: [
-          'Reprenez un échantillon à 30 cm de profondeur.',
-          'Mesurez le pH (cible : 7.0 - 7.4).',
-          'Mesurez le chlore libre (cible : 1 - 3 mg/L).',
-          'Mesurez le TAC / alcalinité (cible : 80 - 120 mg/L).',
-          'Entrez vos 3 valeurs ci-dessous — elles seront enregistrées dans votre carnet.',
-          'Si tout est dans les plages → vous pouvez re-baigner. Sinon, ajustez.',
+          t('greenS7I1'),
+          t('greenS7I2'),
+          t('greenS7I3'),
+          t('greenS7I4'),
+          t('greenS7I5'),
+          t('greenS7I6'),
         ],
         waitTime: '0',
         inputFields: [phField, chlorineField, tacField],
@@ -401,16 +397,15 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): Action
     return [
       {
         id: 'check-filter',
-        title: '1. Vérifier et nettoyer la filtration',
-        intro:
-          "Une eau trouble vient le plus souvent d'une filtration inefficace. On commence toujours par là.",
+        title: t('cloudyS1Title'),
+        intro: t('cloudyS1Intro'),
         instructions: [
-          "Coupez la pompe avant toute intervention de sécurité.",
-          'Vérifiez la pression au manomètre : si > 0.3 bar au-dessus de la valeur initiale → nettoyer.',
-          'Filtre à sable : faites un backwash (contre-lavage) 2-3 min puis rinçage 30 s.',
-          'Filtre à cartouche : démontez, rincez au jet, remplacez si > 2 ans.',
-          'Videz et nettoyez les paniers de skimmer et de pré-filtre de pompe.',
-          'Remettez en route et vérifiez que le débit est bon (buses de refoulement).',
+          t('cloudyS1I1'),
+          t('cloudyS1I2'),
+          t('cloudyS1I3'),
+          t('cloudyS1I4'),
+          t('cloudyS1I5'),
+          t('cloudyS1I6'),
         ],
         waitTime: '0',
         urgency: 'important',
@@ -418,20 +413,17 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): Action
       },
       {
         id: 'ph-adjust-cloudy',
-        title: '2. Mesurer et ajuster le pH',
-        intro:
-          "Un pH déséquilibré favorise la turbidité et diminue l'efficacité du chlore.",
+        title: t('cloudyS2Title'),
+        intro: t('cloudyS2Intro'),
         instructions: [
-          'Mesurez le pH à 30 cm de profondeur.',
-          'Si pH > 7.4 → ajoutez du pH- ; si pH < 7.0 → ajoutez du pH+.',
-          `Référence : ~${phMinusGramsPer01(
-            poolVolume,
-          )} g de pH- pour abaisser de 0.1 unité sur ${poolVolume} m³.`,
-          'Diluez dans un seau d\'eau de piscine, versez devant les refoulements.',
-          'Filtration en marche pendant 2h avant de re-tester.',
+          t('cloudyS2I1'),
+          t('cloudyS2I2'),
+          t('cloudyS2I3', { qty: phMinusGramsPer01(poolVolume), volume: poolVolume }),
+          t('cloudyS2I4'),
+          t('cloudyS2I5'),
         ],
-        productType: 'pH- ou pH+ (selon votre mesure)',
-        dosageText: (v) => `~${phMinusGramsPer01(v)} g de pH- / 0.1 unité (pour ${v} m³)`,
+        productType: t('cloudyS2Product'),
+        dosageText: (v) => t('cloudyS2Dosage', { qty: phMinusGramsPer01(v), volume: v }),
         waitTime: '2h',
         inputFields: [phField],
         urgency: 'critical',
@@ -439,33 +431,31 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): Action
       },
       {
         id: 'flocculant',
-        title: '3. Ajouter un floculant (si filtre à sable)',
-        intro:
-          "Le floculant agglomère les particules fines en flocons que le filtre peut retenir. ⚠ Uniquement pour filtre à sable.",
+        title: t('cloudyS3Title'),
+        intro: t('cloudyS3Intro'),
         instructions: [
-          "⚠ Ne JAMAIS utiliser de floculant avec un filtre à cartouche (colmatage).",
-          `Dosage : ~5 mL de floculant liquide par m³.`,
-          `Pour ${poolVolume} m³ : ${flocculantMl(poolVolume)} mL de floculant.`,
-          'Versez devant les refoulements, filtration en marche 1h.',
-          'Coupez ensuite la filtration 12h pour laisser décanter.',
-          'Les flocons tombent au fond — aspirez-les au robot ou à l\'aspirateur manuel.',
+          t('cloudyS3I1'),
+          t('cloudyS3I2'),
+          t('cloudyS3I3', { volume: poolVolume, qty: flocculantMl(poolVolume) }),
+          t('cloudyS3I4'),
+          t('cloudyS3I5'),
+          t('cloudyS3I6'),
         ],
-        productType: 'Floculant liquide (filtre à sable uniquement)',
-        dosageText: (v) => `${flocculantMl(v)} mL de floculant (pour ${v} m³)`,
+        productType: t('cloudyS3Product'),
+        dosageText: (v) => t('cloudyS3Dosage', { qty: flocculantMl(v), volume: v }),
         waitTime: '12h',
         urgency: 'moderate',
         done: false,
       },
       {
         id: 'filtration-12h',
-        title: '4. Filtration continue 12h',
-        intro:
-          "Laissez la filtration tourner 12h pour clarifier l'eau après floculation/aspiration.",
+        title: t('cloudyS4Title'),
+        intro: t('cloudyS4Intro'),
         instructions: [
-          'Remettez la pompe en marche forcée après aspiration des flocons.',
-          'Surveillez la pression du filtre — backwash si elle monte.',
-          'Vérifiez le panier de skimmer toutes les 4h.',
-          'Au bout de 12h, l\'eau doit redevenir transparente.',
+          t('cloudyS4I1'),
+          t('cloudyS4I2'),
+          t('cloudyS4I3'),
+          t('cloudyS4I4'),
         ],
         waitTime: '12h',
         urgency: 'important',
@@ -473,14 +463,13 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): Action
       },
       {
         id: 'retest-cloudy',
-        title: '5. Re-tester l\'eau',
-        intro:
-          "Vérifiez que l'eau est équilibrée et que le chlore est actif.",
+        title: t('cloudyS5Title'),
+        intro: t('cloudyS5Intro'),
         instructions: [
-          'Mesurez le pH (cible : 7.0 - 7.4).',
-          'Mesurez le chlore libre (cible : 1 - 3 mg/L).',
-          'Entrez vos valeurs ci-dessous — elles seront enregistrées dans votre carnet.',
-          'Si les valeurs sont OK et l\'eau claire → problème résolu.',
+          t('cloudyS5I1'),
+          t('cloudyS5I2'),
+          t('cloudyS5I3'),
+          t('cloudyS5I4'),
         ],
         waitTime: '0',
         inputFields: [phField, chlorineField],
@@ -494,19 +483,17 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): Action
   return [
     {
       id: 'follow-reco',
-      title: '1. Suivre la recommandation',
-      intro:
-        "L'IA a identifié un problème mais sans motif typique (eau verte / trouble). Suivez la recommandation ci-dessous.",
+      title: t('genericTitle1'),
+      intro: t('genericIntro1'),
       instructions: [
-        diagnostic.recommendedNextStep ||
-          "Suivez les recommandations de l'IA affichées ci-dessus.",
-        'Mesurez votre pH avant tout traitement (cible : 7.0 - 7.4).',
-        'Ajustez si nécessaire avec du pH- ou pH+.',
-        'Enregistrez votre mesure ci-dessous pour l\'historique.',
-        'Vérifiez que la filtration fonctionne au moins 8h/jour.',
+        diagnostic.recommendedNextStep || t('genericInstruction1Default'),
+        t('genericInstruction2'),
+        t('genericInstruction3'),
+        t('genericInstruction4'),
+        t('genericInstruction5'),
       ],
       productType: diagnostic.recommendedNextStep?.match(/pH|chlore|brome/i)
-        ? 'Selon recommandation'
+        ? t('genericProduct')
         : undefined,
       waitTime: '24h',
       inputFields: [phField],
@@ -515,14 +502,13 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): Action
     },
     {
       id: 'recheck-generic',
-      title: '2. Vérifier le résultat (24h)',
-      intro:
-        "Après avoir appliqué les recommandations, prenez une nouvelle photo pour confirmer la résolution.",
+      title: t('genericTitle2'),
+      intro: t('genericIntro2'),
       instructions: [
-        'Attendez au moins 24h de filtration continue.',
-        'Reprenez une photo dans les mêmes conditions (même endroit, même éclairage).',
-        'Cliquez sur Vérifier le résultat en bas du plan.',
-        'L\'IA comparera et dira si le problème est résolu.',
+        t('genericInstruction2_1'),
+        t('genericInstruction2_2'),
+        t('genericInstruction2_3'),
+        t('genericInstruction2_4'),
       ],
       waitTime: '24h',
       urgency: 'moderate',
@@ -537,28 +523,28 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number): Action
 
 const URGENCY_CONFIG = {
   critical: {
-    label: 'Urgent',
+    labelKey: 'urgencyCritical',
     color: 'text-destructive',
     bg: 'bg-destructive/10',
     border: 'border-destructive/30',
     icon: AlertTriangle,
   },
   important: {
-    label: 'Important',
+    labelKey: 'urgencyImportant',
     color: 'text-orange-600 dark:text-orange-300',
     bg: 'bg-orange-500/10',
     border: 'border-orange-500/30',
     icon: Clock,
   },
   moderate: {
-    label: 'À surveiller',
+    labelKey: 'urgencyModerate',
     color: 'text-yellow-600 dark:text-yellow-300',
     bg: 'bg-yellow-500/10',
     border: 'border-yellow-500/30',
     icon: Clock,
   },
   low: {
-    label: 'OK',
+    labelKey: 'urgencyLow',
     color: 'text-emerald-600',
     bg: 'bg-emerald-500/10',
     border: 'border-emerald-500/30',
@@ -697,6 +683,7 @@ function calculateScore(diagnostic: DiagnosticResult): number {
 function generateComplementarySteps(
   current: DiagnosticResult,
   previous: DiagnosticResult,
+  t: TFunc,
 ): { title: string; description: string; reason: string }[] {
   const currentIssues = (current.detectedIssues || []).map((i) =>
     i.toLowerCase(),
@@ -731,76 +718,60 @@ function generateComplementarySteps(
 
   if (stillHasAlgae && hadAlgaeBefore) {
     steps.push({
-      title: '1. Doubler la dose de traitement choc',
-      description:
-        "Les algues sont toujours présentes malgré le premier traitement. Refaites un traitement choc avec 1.5x la dose précédente. Vérifiez que le pH est bien entre 7.0-7.4 AVANT. Privilégiez un chlore choc de marque différente (les algues peuvent développer une résistance).",
-      reason:
-        "Les algues peuvent être résistantes. Une dose plus forte et un produit différent sont nécessaires.",
+      title: t('compAlgae1Title', { n: steps.length + 1 }),
+      description: t('compAlgae1Desc'),
+      reason: t('compAlgae1Reason'),
     })
     steps.push({
-      title: '2. Vérifier la durée de filtration',
-      description:
-        "Comptez le nombre d'heures de filtration par jour. Pour une eau verte, il faut filtrer au minimum 12h/24. Idéalement 24h/24 pendant 3 jours consécutifs.",
-      reason:
-        "Une filtration insuffisante empêche d'éliminer les algues mortes et de clarifier l'eau.",
+      title: t('compAlgae2Title', { n: steps.length + 1 }),
+      description: t('compAlgae2Desc'),
+      reason: t('compAlgae2Reason'),
     })
     steps.push({
-      title: '3. Nettoyer le filtre à fond',
-      description:
-        "Si vous avez un filtre à sable, faites un backwash (contre-lavage) de 3 minutes suivi d'un rinçage de 30s. Si c'est une cartouche, sortez-la et nettoyez-la au jet. Un filtre encrassé ne retient pas les algues et les renvoie dans le bassin.",
-      reason:
-        "Le filtre peut être saturé d'algues après le premier traitement.",
+      title: t('compAlgae3Title', { n: steps.length + 1 }),
+      description: t('compAlgae3Desc'),
+      reason: t('compAlgae3Reason'),
     })
   }
 
   if (stillCloudy && hadCloudyBefore) {
     steps.push({
-      title: `${steps.length + 1}. Ajouter un floculant liquide`,
-      description:
-        "L'eau est encore trouble. Versez un floculant LIQUIDE (pas en chaussette) directement devant les buses de refoulement, filtration en marche. Laissez filtrer 1h, puis coupez 12h pour laisser décanter. Les particules vont agglomérer et tomber au fond.",
-      reason:
-        "Le floculant agglomère les particules fines que le filtre ne retient pas.",
+      title: t('compCloudy1Title', { n: steps.length + 1 }),
+      description: t('compCloudy1Desc'),
+      reason: t('compCloudy1Reason'),
     })
     steps.push({
-      title: `${steps.length + 1}. Aspirer le fond après floculation`,
-      description:
-        "Après 12h de décantation, les débris seront au fond. Aspirez lentement en position 'égout' (waste) pour ne pas les renvoyer dans le filtre. Ne remettez la vanne en filtration qu'après avoir fini l'aspiration.",
-      reason: "Les floculés sont trop lourds pour le filtre normal.",
+      title: t('compCloudy2Title', { n: steps.length + 1 }),
+      description: t('compCloudy2Desc'),
+      reason: t('compCloudy2Reason'),
     })
     steps.push({
-      title: `${steps.length + 1}. Vérifier le média filtrant`,
-      description:
-        "Si l'eau reste trouble malgré floculation + filtration : votre sable/cartouche est peut-être à remplacer. Le sable se change tous les 5-7 ans, la cartouche tous les 2 ans. Un média usé ne retient plus les particules fines.",
-      reason:
-        "Un filtre en fin de vie est une cause fréquente d'eau trouble persistante.",
+      title: t('compCloudy3Title', { n: steps.length + 1 }),
+      description: t('compCloudy3Desc'),
+      reason: t('compCloudy3Reason'),
     })
   }
 
   // New issues that weren't there before
   if (newIssues.length > 0) {
     steps.push({
-      title: `${steps.length + 1}. Traiter les nouveaux problèmes détectés`,
-      description: `Nouveau(x) problème(s) apparu(s) : ${newIssues.join(', ')}. Analysez la cause probable (surchloration, surdosage de floculant, précipitation de calcaire, etc.) avant d'agir. En cas de doute, refaites un test complet pH/chlore/TAC/th.`,
-      reason:
-        "Certains traitements peuvent créer de nouveaux déséquilibres. Il faut les corriger avant qu'ils n'aggravent la situation.",
+      title: t('compNewIssuesTitle', { n: steps.length + 1 }),
+      description: t('compNewIssuesDesc', { issues: newIssues.join(', ') }),
+      reason: t('compNewIssuesReason'),
     })
   }
 
   // If no specific issues but still not perfect
   if (steps.length === 0) {
     steps.push({
-      title: '1. Continuer la filtration 24h de plus',
-      description:
-        "L'eau s'améliore mais n'est pas encore parfaite. Laissez tourner la filtration 24h supplémentaires en continu. Surveillez la pression du filtre (backwash si elle monte de +0.3 bar).",
-      reason:
-        "Le traitement est en cours, il faut lui laisser le temps d'agir.",
+      title: t('compFallback1Title'),
+      description: t('compFallback1Desc'),
+      reason: t('compFallback1Reason'),
     })
     steps.push({
-      title: '2. Re-tester dans 24h',
-      description:
-        "Refaites un test complet (pH, chlore, TAC) dans 24h et prenez une nouvelle photo pour vérifier. Si le score de satisfaction stagne, envisagez de vider 20-30% de l'eau pour repartir sur une base saine.",
-      reason:
-        "Il faut donner le temps au traitement de faire effet avant de conclure à un échec.",
+      title: t('compFallback2Title'),
+      description: t('compFallback2Desc'),
+      reason: t('compFallback2Reason'),
     })
   }
 
@@ -810,11 +781,13 @@ function generateComplementarySteps(
 function NewComplementarySteps({
   diagnostic,
   previousDiagnostic,
+  t,
 }: {
   diagnostic: DiagnosticResult
   previousDiagnostic: DiagnosticResult
+  t: TFunc
 }) {
-  const steps = generateComplementarySteps(diagnostic, previousDiagnostic)
+  const steps = generateComplementarySteps(diagnostic, previousDiagnostic, t)
 
   return (
     <div className="mt-3 space-y-2">
@@ -846,6 +819,7 @@ export function DiagnosticActionPlan({
   diagnostic,
   onRecheck,
 }: DiagnosticActionPlanProps) {
+  const t = useTranslations('diagnosticActionPlan')
   const [steps, setSteps] = useState<ActionStep[]>([])
   const [poolVolume, setPoolVolume] = useState<number>(40)
   const [poolVolumeLoaded, setPoolVolumeLoaded] = useState(false)
@@ -881,8 +855,8 @@ export function DiagnosticActionPlan({
     api
       .get<{ tests: WaterTestRow[] }>('/api/pool/water-test')
       .then((d) => {
-        const t = d?.tests?.[0]
-        if (t) setLatestWaterTest(t)
+        const latest = d?.tests?.[0]
+        if (latest) setLatestWaterTest(latest)
       })
       .catch(() => {
         /* no tests yet — that's fine */
@@ -892,7 +866,7 @@ export function DiagnosticActionPlan({
   // Regenerate steps when diagnostic or poolVolume changes
   useEffect(() => {
     if (!poolVolumeLoaded) return
-    const newSteps = generateSteps(diagnostic, poolVolume)
+    const newSteps = generateSteps(diagnostic, poolVolume, t)
     setSteps(newSteps)
     setResolved(false)
     setShowRecheck(false)
@@ -900,7 +874,7 @@ export function DiagnosticActionPlan({
     setRecheckResult(null)
     setExpandedStepId(newSteps[0]?.id || null)
     setStepForms({})
-  }, [diagnostic, poolVolume, poolVolumeLoaded])
+  }, [diagnostic, poolVolume, poolVolumeLoaded, t])
 
   const completedCount = useMemo(
     () => steps.filter((s) => s.done).length,
@@ -950,7 +924,7 @@ export function DiagnosticActionPlan({
       if (!step.inputFields || step.inputFields.length === 0) {
         markStepDone(step.id)
         toast({
-          title: 'Étape validée',
+          title: t('toastStepValidated'),
           description: step.title,
         })
         return
@@ -979,8 +953,8 @@ export function DiagnosticActionPlan({
 
       if (missingRequired) {
         toast({
-          title: 'Champs requis manquants',
-          description: 'Remplissez tous les champs obligatoires (*) avant de valider.',
+          title: t('toastMissingRequired'),
+          description: t('toastMissingRequiredDesc'),
           variant: 'destructive',
         })
         return
@@ -991,7 +965,7 @@ export function DiagnosticActionPlan({
         markStepDone(step.id)
         setExpandedStepId(null)
         toast({
-          title: 'Étape validée (sans mesure)',
+          title: t('toastStepValidatedNoMeasure'),
           description: step.title,
         })
         return
@@ -1011,7 +985,7 @@ export function DiagnosticActionPlan({
         await api.post('/api/pool/water-test', {
           ...payload,
           source: 'action_plan',
-          note: `Étape plan d'action: ${step.title}`,
+          note: t('noteActionPlan', { title: step.title }),
         })
 
         // Update local "latest" so subsequent steps show the new "before"
@@ -1051,10 +1025,12 @@ export function DiagnosticActionPlan({
         )
         setExpandedStepId(null)
         toast({
-          title: 'Mesure enregistrée ✓',
-          description: `${Object.entries(payload)
-            .map(([k, v]) => `${k} = ${v}`)
-            .join(', ')} → carnet mis à jour.`,
+          title: t('toastMeasureSaved'),
+          description: t('toastMeasureSavedDesc', {
+            measures: Object.entries(payload)
+              .map(([k, v]) => `${k} = ${v}`)
+              .join(', '),
+          }),
         })
       } catch (e) {
         const msg =
@@ -1062,9 +1038,9 @@ export function DiagnosticActionPlan({
             ? e.message
             : e instanceof Error
               ? e.message
-              : 'Enregistrement impossible'
+              : t('toastSaveFailed')
         toast({
-          title: 'Erreur enregistrement',
+          title: t('toastSaveFailedTitle'),
           description: msg,
           variant: 'destructive',
         })
@@ -1072,7 +1048,7 @@ export function DiagnosticActionPlan({
         setSubmitting(null)
       }
     },
-    [stepForms, latestWaterTest, markStepDone],
+    [stepForms, latestWaterTest, markStepDone, t],
   )
 
   async function handleRecheck() {
@@ -1091,19 +1067,19 @@ export function DiagnosticActionPlan({
       if (!stillBad && (result?.confidence || 0) > 0.5) {
         setResolved(true)
         toast({
-          title: 'Problème résolu !',
-          description: '✅ Votre piscine est maintenant saine.',
+          title: t('toastRecheckResolvedTitle'),
+          description: t('toastRecheckResolvedDesc'),
         })
       } else {
         toast({
-          title: 'Pas encore résolu',
-          description: 'Continuez le traitement et re-vérifiez plus tard.',
+          title: t('toastRecheckNotResolvedTitle'),
+          description: t('toastRecheckNotResolvedDesc'),
         })
       }
     } catch {
       toast({
-        title: 'Erreur',
-        description: 'Analyse impossible',
+        title: t('toastRecheckErrorTitle'),
+        description: t('toastRecheckErrorDesc'),
         variant: 'destructive',
       })
     } finally {
@@ -1127,11 +1103,10 @@ export function DiagnosticActionPlan({
             <span className="pointer-events-none absolute bottom-0 -right-2 animate-pulse text-base">🎉</span>
           </div>
           <h3 className="font-display text-xl font-bold text-emerald-700 dark:text-emerald-400">
-            ✅ Résolu avec AQWELIA
+            {t('resolvedTitle')}
           </h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            Votre piscine est maintenant saine. L&apos;analyse de contrôle confirme que le
-            problème est résolu.
+            {t('resolvedDesc')}
           </p>
           {recheckResult?.userFriendlySummary && (
             <p className="mt-3 rounded-lg bg-emerald-500/5 p-3 text-xs text-foreground/70">
@@ -1153,28 +1128,28 @@ export function DiagnosticActionPlan({
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="flex items-center gap-2 font-display text-base">
             <ListChecks className="h-4 w-4 text-gold" />
-            Plan d&apos;action guidé
+            {t('title')}
           </CardTitle>
           <Badge
             className={`${urgencyCfg.bg} ${urgencyCfg.color} ${urgencyCfg.border} border`}
           >
             <UrgencyIcon className="mr-1 h-3 w-3" />
-            {urgencyCfg.label}
+            {t(urgencyCfg.labelKey as any)}
           </Badge>
         </div>
 
         <p className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <Info className="h-3 w-3 text-primary" />
-          Piscine détectée : <span className="font-semibold text-foreground">{poolVolume} m³</span>
-          — dosages calculés automatiquement.
+          {t('poolDetected')} <span className="font-semibold text-foreground">{poolVolume} m³</span>
+          {t('poolDetectedSuffix')}
         </p>
 
         {/* Progress bar */}
         <div className="mt-3">
           <div className="mb-1 flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Progression</span>
+            <span className="text-muted-foreground">{t('progress')}</span>
             <span className="font-semibold">
-              {completedCount}/{steps.length} étapes
+              {t('stepsCount', { done: completedCount, total: steps.length })}
             </span>
           </div>
           <Progress value={progress} className="h-2 bg-muted" />
@@ -1186,7 +1161,7 @@ export function DiagnosticActionPlan({
         <div className="rounded-xl border border-border/50 bg-background/60 p-3">
           <SatisfactionGauge
             score={calculateScore(diagnostic)}
-            label="État de votre piscine"
+            label={t('poolState')}
           />
         </div>
         {steps.map((step) => {
@@ -1206,7 +1181,7 @@ export function DiagnosticActionPlan({
           ) {
             const phNum = Number(phRaw)
             if (!isNaN(phNum)) {
-              phPreview = computePhRecommendation(phNum, poolVolume)
+              phPreview = computePhRecommendation(phNum, poolVolume, t)
             }
           }
 
@@ -1245,7 +1220,7 @@ export function DiagnosticActionPlan({
                       <span
                         className={`flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${cfg.bg} ${cfg.color} ${cfg.border}`}
                       >
-                        {cfg.label}
+                        {t(cfg.labelKey as any)}
                       </span>
                     )}
                   </div>
@@ -1297,7 +1272,7 @@ export function DiagnosticActionPlan({
                   <div className="mt-3 rounded-lg bg-background/60 p-3">
                     <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
                       <ListChecks className="h-3 w-3" />
-                      Instructions détaillées
+                      {t('instructionsTitle')}
                     </p>
                     <ol className="space-y-1 text-xs leading-relaxed text-foreground/90">
                       {step.instructions.map((ins, i) => (
@@ -1316,7 +1291,7 @@ export function DiagnosticActionPlan({
                     {step.productType && (
                       <div className="rounded-lg border border-gold/20 bg-gold/5 p-2">
                         <p className="text-[9px] font-semibold uppercase tracking-wide text-gold">
-                          🧴 Produit
+                          🧴 {t('product')}
                         </p>
                         <p className="mt-0.5 font-medium">{step.productType}</p>
                       </div>
@@ -1324,7 +1299,7 @@ export function DiagnosticActionPlan({
                     {step.dosageText && (
                       <div className="rounded-lg border border-primary/20 bg-primary/5 p-2">
                         <p className="text-[9px] font-semibold uppercase tracking-wide text-primary">
-                          ⚖️ Dosage
+                          ⚖️ {t('dosage')}
                         </p>
                         <p className="mt-0.5 font-medium">
                           {step.dosageText(poolVolume)}
@@ -1333,10 +1308,10 @@ export function DiagnosticActionPlan({
                     )}
                     <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-2">
                       <p className="text-[9px] font-semibold uppercase tracking-wide text-orange-600 dark:text-orange-300">
-                        ⏱ Temps d&apos;attente
+                        ⏱ {t('waitTime')}
                       </p>
                       <p className="mt-0.5 font-medium">
-                        {step.waitTime === '0' ? 'Immédiat' : step.waitTime}
+                        {step.waitTime === '0' ? t('immediate') : step.waitTime}
                       </p>
                     </div>
                   </div>
@@ -1352,7 +1327,7 @@ export function DiagnosticActionPlan({
                     >
                       <p className="flex items-center gap-1.5 font-semibold">
                         <FlaskConical className="h-3.5 w-3.5" />
-                        Recommandation pour votre mesure
+                        {t('recommendation')}
                       </p>
                       <p className="mt-1 text-foreground/90">
                         {phPreview.message}
@@ -1369,7 +1344,7 @@ export function DiagnosticActionPlan({
                   {step.inputFields && step.inputFields.length > 0 && (
                     <div className="mt-3 space-y-2">
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        📝 Enregistrer vos mesures
+                        📝 {t('recordMeasures')}
                       </p>
                       <div className="grid gap-2 sm:grid-cols-2">
                         {step.inputFields.map((field) => (
@@ -1406,11 +1381,11 @@ export function DiagnosticActionPlan({
                         ))}
                       </div>
                       <p className="text-[10px] text-muted-foreground">
-                        💡 Les mesures sont enregistrées dans votre carnet (
+                        💡 {t('waterTestNote')}
                         <code className="rounded bg-muted px-1 py-0.5">
                           WaterTest
                         </code>
-                        ) via l&apos;API.
+                        {t('waterTestNoteSuffix')}
                       </p>
                     </div>
                   )}
@@ -1431,10 +1406,10 @@ export function DiagnosticActionPlan({
                             <Save className="h-3.5 w-3.5" />
                           )}
                           {isSubmitting
-                            ? 'Enregistrement…'
+                            ? t('validating')
                             : step.inputFields && step.inputFields.length > 0
-                              ? 'Valider et enregistrer'
-                              : 'Marquer comme fait'}
+                              ? t('validateAndSave')
+                              : t('markAsDone')}
                         </Button>
                         {step.inputFields && step.inputFields.length > 0 && (
                           <Button
@@ -1444,7 +1419,7 @@ export function DiagnosticActionPlan({
                             onClick={() => markStepDone(step.id)}
                             className="text-xs text-muted-foreground"
                           >
-                            Ignorer cette étape
+                            {t('skipStep')}
                           </Button>
                         )}
                       </>
@@ -1455,7 +1430,7 @@ export function DiagnosticActionPlan({
                         onClick={() => toggleStep(step.id)}
                         className="text-xs text-muted-foreground"
                       >
-                        Annuler la validation
+                        {t('cancelValidation')}
                       </Button>
                     )}
                   </div>
@@ -1470,11 +1445,10 @@ export function DiagnosticActionPlan({
           <div className="rounded-xl border border-orange-500/30 bg-orange-500/5 p-3 text-xs text-orange-700 dark:text-orange-300">
             <p className="flex items-center gap-1.5 font-semibold">
               <AlertTriangle className="h-3.5 w-3.5" />
-              Rappel
+              {t('reminderTitle')}
             </p>
             <p className="mt-1">
-              Il vous reste {steps.length - completedCount} étape(s) à compléter.
-              Suivez le plan jusqu&apos;au bout pour résoudre durablement le problème.
+              {t('reminderDesc', { count: steps.length - completedCount })}
             </p>
           </div>
         )}
@@ -1484,19 +1458,19 @@ export function DiagnosticActionPlan({
           <div className="rounded-xl border border-primary/20 bg-primary/5 p-2.5 text-[11px] text-foreground/80">
             <p className="flex items-center gap-1.5 font-medium">
               <History className="h-3.5 w-3.5 text-primary" />
-              Dernière mesure enregistrée
+              {t('lastMeasureTitle')}
             </p>
             <p className="mt-0.5 font-mono text-[10px]">
               pH {latestWaterTest.ph}
               {typeof latestWaterTest.freeChlorine === 'number'
-                ? ` · chlore ${latestWaterTest.freeChlorine} mg/L`
+                ? ` · ${t('lastMeasureChlorine')} ${latestWaterTest.freeChlorine} mg/L`
                 : ''}
               {typeof latestWaterTest.alkalinity === 'number'
-                ? ` · TAC ${latestWaterTest.alkalinity} mg/L`
+                ? ` · ${t('lastMeasureTac')} ${latestWaterTest.alkalinity} mg/L`
                 : ''}
             </p>
             <p className="mt-0.5 text-[10px] text-muted-foreground">
-              Sera utilisée comme valeur &quot;avant&quot; pour comparer vos nouvelles mesures.
+              {t('lastMeasureDesc')}
             </p>
           </div>
         )}
@@ -1508,7 +1482,7 @@ export function DiagnosticActionPlan({
             className="w-full gap-2 bg-gradient-to-r from-primary to-ocean-light text-primary-foreground"
           >
             <Camera className="h-4 w-4" />
-            Vérifier le résultat (nouvelle photo)
+            {t('recheckButton')}
           </Button>
         )}
 
@@ -1517,7 +1491,7 @@ export function DiagnosticActionPlan({
           <div className="space-y-3 rounded-xl border border-gold/30 bg-gold/5 p-3">
             <p className="flex items-center gap-1.5 text-sm font-semibold text-gold">
               <Camera className="h-4 w-4" />
-              Prenez une nouvelle photo pour vérifier
+              {t('recheckTakeNewPhoto')}
             </p>
             {/* Photo upload UI — hidden once we have a recheckResult (to leave room for the rich experience) */}
             {!recheckResult && (
@@ -1526,7 +1500,7 @@ export function DiagnosticActionPlan({
                   <div className="relative">
                     <img
                       src={recheckImage}
-                      alt="Nouvelle photo"
+                      alt={t('recheckNewPhotoAlt')}
                       className="max-h-48 w-full rounded-lg object-cover"
                     />
                     <button
@@ -1540,7 +1514,7 @@ export function DiagnosticActionPlan({
                   <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gold/30 bg-gold/5 px-4 py-6 text-center">
                     <Upload className="h-6 w-6 text-gold" />
                     <span className="text-xs font-medium">
-                      Cliquez pour charger une photo
+                      {t('recheckClickToUpload')}
                     </span>
                     <input
                       type="file"
@@ -1570,7 +1544,7 @@ export function DiagnosticActionPlan({
                     ) : (
                       <CheckCircle2 className="h-4 w-4" />
                     )}
-                    {rechecking ? 'Analyse en cours...' : 'Analyser et vérifier'}
+                    {rechecking ? t('recheckAnalyzing') : t('recheckAnalyze')}
                   </Button>
                 )}
               </>
@@ -1583,20 +1557,20 @@ export function DiagnosticActionPlan({
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-xl border border-border/50 bg-background/60 p-3">
                     <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      Avant
+                      {t('recheckBefore')}
                     </p>
                     <SatisfactionGauge
                       score={calculateScore(diagnostic)}
-                      label="État initial"
+                      label={t('initialState')}
                     />
                   </div>
                   <div className="rounded-xl border border-border/50 bg-background/60 p-3">
                     <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      Après
+                      {t('recheckAfter')}
                     </p>
                     <SatisfactionGauge
                       score={calculateScore(recheckResult)}
-                      label="Après traitement"
+                      label={t('afterTreatment')}
                     />
                   </div>
                 </div>
@@ -1606,18 +1580,16 @@ export function DiagnosticActionPlan({
                   <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm">
                     <TrendingUp className="h-4 w-4 text-emerald-600" />
                     <span className="text-emerald-700 dark:text-emerald-300">
-                      Amélioration de +
-                      {calculateScore(recheckResult) -
-                        calculateScore(diagnostic)}
-                      % ! Continuez sur cette voie.
+                      {t('recheckImprovement', {
+                        n: calculateScore(recheckResult) - calculateScore(diagnostic),
+                      })}
                     </span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 rounded-lg border border-orange-500/30 bg-orange-500/5 p-3 text-sm">
                     <AlertTriangle className="h-4 w-4 text-orange-600" />
                     <span className="text-orange-700 dark:text-orange-300">
-                      Peu d&apos;amélioration. Ajustez votre approche avec le
-                      nouveau plan ci-dessous.
+                      {t('recheckLittleImprovement')}
                     </span>
                   </div>
                 )}
@@ -1626,7 +1598,7 @@ export function DiagnosticActionPlan({
                 <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
                   <p className="flex items-center gap-1.5 text-sm font-semibold text-primary">
                     <Sparkles className="h-4 w-4" />
-                    Analyse de votre nouvelle photo
+                    {t('recheckAnalyzeNewPhoto')}
                   </p>
                   <p className="mt-2 text-sm text-foreground/80">
                     {recheckResult.userFriendlySummary}
@@ -1635,7 +1607,7 @@ export function DiagnosticActionPlan({
                     recheckResult.detectedIssues.length > 0 && (
                       <div className="mt-3 space-y-1">
                         <p className="text-xs font-semibold text-destructive">
-                          Problèmes toujours présents :
+                          {t('recheckPersistentIssues')}
                         </p>
                         {recheckResult.detectedIssues.map((issue, i) => (
                           <p key={i} className="text-xs text-muted-foreground">
@@ -1650,17 +1622,17 @@ export function DiagnosticActionPlan({
                 <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
                   <p className="flex items-center gap-1.5 text-sm font-semibold text-primary">
                     <RefreshCw className="h-4 w-4" />
-                    Nouveau plan complémentaire
+                    {t('recheckNewPlan')}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Basé sur l&apos;analyse de votre nouvelle photo, voici les
-                    étapes complémentaires recommandées :
+                    {t('recheckNewPlanDesc')}
                   </p>
 
                   {/* Generate NEW steps based on the recheckResult */}
                   <NewComplementarySteps
                     diagnostic={recheckResult}
                     previousDiagnostic={diagnostic}
+                    t={t}
                   />
                 </div>
 
@@ -1675,7 +1647,7 @@ export function DiagnosticActionPlan({
                   className="w-full gap-2"
                 >
                   <Camera className="h-4 w-4" />
-                  Refaire une vérification
+                  {t('recheckAgain')}
                 </Button>
               </div>
             )}

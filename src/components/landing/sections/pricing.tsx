@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, ShieldCheck, Lock, RotateCcw, Sparkles, ArrowRight } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { PLANS, DURATIONS } from '@/lib/pool/freemium'
 import { Reveal, SectionHeading, scrollToId } from '../landing-utils'
 
@@ -31,6 +31,7 @@ const DURATION_SUFFIX_KEY: Record<DurationId, string> = {
 export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
   const t = useTranslations('landing')
   const tPlans = useTranslations('plans')
+  const locale = useLocale()
 
   const [duration, setDuration] = useState<DurationId>('month')
 
@@ -132,7 +133,7 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
                           transition={{ duration: 0.25 }}
                           className="font-display text-4xl font-bold"
                         >
-                          {price === 0 ? t('pricingFree') : `${price.toLocaleString('fr-FR')} €`}
+                          {price === 0 ? t('pricingFree') : `${price.toLocaleString(locale)} €`}
                         </motion.span>
                       </AnimatePresence>
                       {price !== 0 && (

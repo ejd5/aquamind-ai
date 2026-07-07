@@ -4,7 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Providers } from "@/components/providers";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,16 +24,28 @@ const playfairDisplay = Playfair_Display({
   style: ["normal", "italic"],
 });
 
-export const metadata: Metadata = {
-  title: "AQWELIA — Copilote Intelligent pour Piscine",
-  description: "AQWELIA — l'application révolutionnaire de gestion de piscine propulsée par l'IA : assistant expert, analyse visuelle de l'eau, plan d'action déterministe et plus encore.",
-  keywords: ["piscine", "IA", "entretien", "qualité eau", "assistant intelligent", "AQWELIA", "aqua", "well"],
-  authors: [{ name: "AQWELIA" }],
-  icons: {
-    icon: "/icon.png",
-    apple: "/apple-touch-icon.png",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("metadata");
+  return {
+    title: t("layoutTitle"),
+    description: t("layoutDescription"),
+    keywords: [
+      t("layoutKeywordPool"),
+      t("layoutKeywordAI"),
+      t("layoutKeywordMaintenance"),
+      t("layoutKeywordWaterQuality"),
+      t("layoutKeywordSmartAssistant"),
+      "AQWELIA",
+      "aqua",
+      "well",
+    ],
+    authors: [{ name: "AQWELIA" }],
+    icons: {
+      icon: "/icon.png",
+      apple: "/apple-touch-icon.png",
+    },
+  };
+}
 
 export default async function RootLayout({
   children,

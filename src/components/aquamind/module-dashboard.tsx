@@ -29,7 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import type { TabId } from './app-shell'
 import { evaluateParam } from '@/lib/pool/targets'
 import { offlineApi } from '@/lib/offline/api-cache'
@@ -175,7 +175,20 @@ function Gauge({ value, label, color }: { value: number; label: string; color: s
 interface WeatherLite {
   weather?: { location?: string; currentTempC?: number; weatherDesc?: string } | null
   assessment?: {
-    alerts: { id: string; type: string; severity: 'low' | 'medium' | 'high' | 'extreme'; title: string; message: string; action: string }[]
+    alerts: {
+      id: string
+      type: string
+      severity: 'low' | 'medium' | 'high' | 'extreme'
+      title: string
+      titleKey: string
+      message: string
+      messageKey: string
+      messageParams?: Record<string, string | number>
+      action: string
+      actionKey: string
+      when: string
+      whenKey: string
+    }[]
     algaeRisk?: 'low' | 'medium' | 'high' | 'extreme'
   } | null
 }
@@ -184,11 +197,26 @@ interface ReminderLite {
   id: string
   type: string
   title: string
+  titleKey: string
   detail: string
+  detailKey: string
   action: string
+  actionKey: string
+  params?: Record<string, string | number>
   priority: 'low' | 'medium' | 'high' | 'urgent'
   dueInHours: number
   source: string
+}
+
+// Maps the snake_case `source` field returned by the API to the camelCase
+// keys used in the locale file (modules.reminders.source.*).
+const REMINDER_SOURCE_KEY: Record<string, string> = {
+  weather: 'weather',
+  test_history: 'testHistory',
+  inventory: 'inventory',
+  equipment: 'equipment',
+  schedule: 'schedule',
+  manual: 'manual',
 }
 
 const WEATHER_ALERT_CFG: Record<string, { cls: string; dot: string; icon: typeof CloudSun }> = {
@@ -219,6 +247,10 @@ function weatherAlertIcon(type: string) {
 
 export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }: Props) {
   const t = useTranslations('modules.dashboard')
+  const tWeather = useTranslations('weather')
+  const tReminders = useTranslations('reminders')
+  const tReminderMod = useTranslations('modules.reminders')
+  const locale = useLocale()
   const [data, setData] = useState<DashboardData | null>(null)
   const [weather, setWeather] = useState<WeatherLite | null>(null)
   const [reminders, setReminders] = useState<ReminderLite[]>([])
@@ -384,7 +416,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
               <p className="text-center text-[11px] text-muted-foreground">
                 {latestTest
                   ? t('measuredAt', {
-                      date: new Date(latestTest.createdAt).toLocaleDateString('fr-FR', {
+                      date: new Date(latestTest.createdAt).toLocaleDateString(locale, {
                         day: '2-digit',
                         month: 'short',
                         hour: '2-digit',
@@ -590,7 +622,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                       <div
                         key={i}
                         className="flex flex-1 flex-col items-center gap-1"
-                        title={`pH ${t.ph} — ${new Date(t.createdAt).toLocaleDateString('fr-FR')}`}
+                        title={`pH ${t.ph} — ${new Date(t.createdAt).toLocaleDateString(locale)}`}
                       >
                         <span className="text-[9px] font-medium text-muted-foreground">
                           {t.ph.toFixed(1)}
@@ -604,7 +636,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                           style={{ height: `${h}%` }}
                         />
                         <span className="text-[8px] text-muted-foreground">
-                          {new Date(t.createdAt).toLocaleDateString('fr-FR', {
+                          {new Date(t.createdAt).toLocaleDateString(locale, {
                             day: '2-digit',
                             month: '2-digit',
                           })}
@@ -692,12 +724,12 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                     <span className={`absolute left-0 top-0 h-full w-1 ${cfg.dot}`} />
                     <div className="flex items-center gap-2">
                       <Icon className="h-4 w-4" />
-                      <p className="font-display text-sm font-bold">{a.title}</p>
+                      <p className="font-display text-sm font-bold">{tWeather(a.titleKey as any)}</p>
                       <Badge variant="outline" className={`ml-auto text-[9px] uppercase tracking-wide ${cfg.cls}`}>
                         {a.severity}
                       </Badge>
                     </div>
-                    <p className="mt-1 line-clamp-2 text-xs opacity-90">{a.message}</p>
+                    <p className="mt-1 line-clamp-2 text-xs opacity-90">{tWeather(a.messageKey as any, a.messageParams || {})}</p>
                     <Button
                       size="sm"
                       variant="outline"
@@ -755,16 +787,16 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                   <span className={`absolute left-0 top-0 h-full w-1 ${cfg.stripe}`} />
                   <div className="flex items-center gap-2">
                     <Bell className={`h-4 w-4 ${cfg.cls}`} />
-                    <p className="font-display text-sm font-bold">{r.title}</p>
+                    <p className="font-display text-sm font-bold">{tReminders(r.titleKey as any, r.params || {})}</p>
                     <Badge variant="outline" className={`ml-auto text-[9px] ${cfg.cls}`}>
                       {t(cfg.labelKey as any)}
                     </Badge>
                   </div>
-                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{r.detail}</p>
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{tReminders(r.detailKey as any, r.params || {})}</p>
                   <div className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground">
                     <Clock className="h-3 w-3" />
                     {r.dueInHours <= 0 ? t('now') : r.dueInHours < 24 ? t('inHours', { hours: r.dueInHours }) : t('inDays', { days: Math.round(r.dueInHours / 24) })}
-                    <span className="ml-1 rounded-full bg-secondary/60 px-1.5 py-0.5 capitalize">{r.source}</span>
+                    <span className="ml-1 rounded-full bg-secondary/60 px-1.5 py-0.5 capitalize">{tReminderMod(`source.${REMINDER_SOURCE_KEY[r.source] || r.source}` as any)}</span>
                   </div>
                   <Button
                     size="sm"

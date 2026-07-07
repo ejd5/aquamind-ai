@@ -1,0 +1,2172 @@
+{
+  "weather.alerts.storm_soon": {
+    "title": {
+      "fr": "Orage prévu demain",
+      "en": "Storm expected tomorrow"
+    },
+    "message": {
+      "fr": "{percent} % de risque d'orage. L'orage dilue le chlore et fait monter le pH.",
+      "en": "{percent}% chance of storm. Lightning dilutes chlorine and raises pH."
+    },
+    "action": {
+      "fr": "Vérifiez le chlore libre ce soir avant l'orage. Renforcez la filtration demain.",
+      "en": "Check free chlorine tonight before the storm. Increase filtration tomorrow."
+    },
+    "when": {
+      "fr": "Ce soir avant 20h",
+      "en": "Tonight before 8 PM"
+    }
+  },
+  "weather.alerts.heat_extreme": {
+    "title": {
+      "fr": "Canicule prévue",
+      "en": "Heatwave expected"
+    },
+    "message": {
+      "fr": "{temp} °C prévu. Eau très chaude = chlore consommé plus vite + prolifération algues.",
+      "en": "{temp}°C expected. Very hot water = chlorine consumed faster + algae proliferation."
+    },
+    "action": {
+      "fr": "Augmentez la filtration de 2h/jour. Vérifiez le chlore chaque matin. Envisagez anti-algues préventif.",
+      "en": "Increase filtration by 2h/day. Check chlorine every morning. Consider preventive anti-algae."
+    },
+    "when": {
+      "fr": "Dès maintenant et pendant la vague",
+      "en": "From now and during the heatwave"
+    }
+  },
+  "weather.alerts.heat_high": {
+    "title": {
+      "fr": "Forte chaleur prévue",
+      "en": "High heat expected"
+    },
+    "message": {
+      "fr": "{temp} °C prévu. Surconsommation de chlore probable.",
+      "en": "{temp}°C expected. Likely chlorine overconsumption."
+    },
+    "action": {
+      "fr": "Augmentez la filtration d'1h/jour et testez le chlore demain.",
+      "en": "Increase filtration by 1h/day and test chlorine tomorrow."
+    },
+    "when": {
+      "fr": "Demain matin",
+      "en": "Tomorrow morning"
+    }
+  },
+  "weather.alerts.heavy_rain": {
+    "title": {
+      "fr": "Fortes pluies attendues",
+      "en": "Heavy rain expected"
+    },
+    "message": {
+      "fr": "La pluie dilue les produits, fait baisser le pH et apporte des débris.",
+      "en": "Rain dilutes chemicals, lowers pH and brings debris."
+    },
+    "action": {
+      "fr": "Après la pluie : vérifiez pH et chlore, nettoyez skimmer et panier de pompe.",
+      "en": "After rain: check pH and chlorine, clean skimmer and pump basket."
+    },
+    "when": {
+      "fr": "Après la pluie",
+      "en": "After the rain"
+    }
+  },
+  "weather.alerts.wind_strong": {
+    "title": {
+      "fr": "Vent fort prévu",
+      "en": "Strong wind expected"
+    },
+    "message": {
+      "fr": "{wind} km/h. Débris, feuilles, poussière dans la piscine.",
+      "en": "{wind} km/h. Debris, leaves, dust in the pool."
+    },
+    "action": {
+      "fr": "Vérifiez skimmer et panier de pompe. Nettoyez la ligne d'eau.",
+      "en": "Check skimmer and pump basket. Clean the water line."
+    },
+    "when": {
+      "fr": "Après le vent",
+      "en": "After the wind"
+    }
+  },
+  "weather.alerts.uv_high": {
+    "title": {
+      "fr": "UV très élevés",
+      "en": "Very high UV"
+    },
+    "message": {
+      "fr": "Le soleil dégrade le chlore non stabilisé plus vite.",
+      "en": "Sunlight degrades unstabilized chlorine faster."
+    },
+    "action": {
+      "fr": "Vérifiez votre stabilisant (CYA) et le chlore libre.",
+      "en": "Check your stabilizer (CYA) and free chlorine."
+    },
+    "when": {
+      "fr": "Cette semaine",
+      "en": "This week"
+    }
+  },
+  "weather.alerts.frost_risk": {
+    "title": {
+      "fr": "Risque de gel",
+      "en": "Frost risk"
+    },
+    "message": {
+      "fr": "Température négative prévue. Risque pour les équipements et canalisations.",
+      "en": "Negative temperature expected. Risk to equipment and pipes."
+    },
+    "action": {
+      "fr": "Protégez le local technique. Laissez tourner la filtration la nuit pour éviter le gel. Hivernez si pas fait.",
+      "en": "Protect the technical room. Keep filtration running at night to prevent freezing. Winterize if not done."
+    },
+    "when": {
+      "fr": "Cette nuit",
+      "en": "Tonight"
+    }
+  },
+  "weather.summary": {
+    "calm": {
+      "fr": "Météo clémente à {location}. Pas d'alerte particulière. Filtrez {hours}h/jour.",
+      "en": "Mild weather in {location}. No specific alert. Filter {hours}h/day."
+    },
+    "withAlerts": {
+      "fr": "{count} alerte(s) météo : {titles}. Suivez les actions recommandées.",
+      "en": "{count} weather alert(s): {titles}. Follow the recommended actions."
+    }
+  },
+  "weather.testReason": {
+    "before_storm": {
+      "fr": "Test recommandé avant l'orage prévu demain.",
+      "en": "Test recommended before tomorrow's expected storm."
+    },
+    "during_heatwave": {
+      "fr": "Test quotidien recommandé pendant la canicule.",
+      "en": "Daily test recommended during the heatwave."
+    },
+    "after_rain": {
+      "fr": "Test pH + chlore recommandé après la pluie.",
+      "en": "pH + chlorine test recommended after rain."
+    },
+    "routine": {
+      "fr": "Dernier test il y a {days} jours. Test de routine recommandé.",
+      "en": "Last test {days} days ago. Routine test recommended."
+    },
+    "urgent": {
+      "fr": "Dernier test il y a {days} jours : test urgent recommandé.",
+      "en": "Last test {days} days ago: urgent test recommended."
+    }
+  },
+  "weather.filtration": {
+    "reason": {
+      "fr": "Règle : moitié de la température de l'eau ({temp} °C) en heures de filtration.",
+      "en": "Rule: half the water temperature ({temp}°C) in filtration hours."
+    },
+    "scheduleNocturnal": {
+      "fr": "Préférez la filtration nocturne (moins d'évaporation, meilleure efficacité chlore).",
+      "en": "Prefer nighttime filtration (less evaporation, better chlorine efficiency)."
+    },
+    "scheduleDiurnal": {
+      "fr": "Filtration diurne recommandée.",
+      "en": "Daytime filtration recommended."
+    }
+  },
+  "weather.codes.113": {
+    "fr": "Ensoleillé",
+    "en": "Sunny"
+  },
+  "weather.codes.116": {
+    "fr": "Partiellement nuageux",
+    "en": "Partly cloudy"
+  },
+  "weather.codes.119": {
+    "fr": "Nuageux",
+    "en": "Cloudy"
+  },
+  "weather.codes.122": {
+    "fr": "Très nuageux",
+    "en": "Very cloudy"
+  },
+  "weather.codes.143": {
+    "fr": "Brume",
+    "en": "Mist"
+  },
+  "weather.codes.176": {
+    "fr": "Pluies éparses",
+    "en": "Patchy rain"
+  },
+  "weather.codes.179": {
+    "fr": "Neige éparses",
+    "en": "Patchy snow"
+  },
+  "weather.codes.182": {
+    "fr": "Grésil épars",
+    "en": "Patchy sleet"
+  },
+  "weather.codes.185": {
+    "fr": "Pluie verglaçante éparses",
+    "en": "Patchy freezing rain"
+  },
+  "weather.codes.200": {
+    "fr": "Orageux",
+    "en": "Thundery"
+  },
+  "weather.codes.227": {
+    "fr": "Neige",
+    "en": "Snow"
+  },
+  "weather.codes.230": {
+    "fr": "Fortes chutes de neige",
+    "en": "Heavy snow"
+  },
+  "weather.codes.248": {
+    "fr": "Brouillard",
+    "en": "Fog"
+  },
+  "weather.codes.260": {
+    "fr": "Brouillard givrant",
+    "en": "Freezing fog"
+  },
+  "weather.codes.263": {
+    "fr": "Pluie légère",
+    "en": "Light rain"
+  },
+  "weather.codes.266": {
+    "fr": "Pluie légère",
+    "en": "Light rain"
+  },
+  "weather.codes.281": {
+    "fr": "Pluie verglaçante",
+    "en": "Freezing rain"
+  },
+  "weather.codes.284": {
+    "fr": "Forte pluie verglaçante",
+    "en": "Heavy freezing rain"
+  },
+  "weather.codes.293": {
+    "fr": "Pluies éparses",
+    "en": "Patchy rain"
+  },
+  "weather.codes.296": {
+    "fr": "Pluie",
+    "en": "Rain"
+  },
+  "weather.codes.299": {
+    "fr": "Forte pluie",
+    "en": "Heavy rain"
+  },
+  "weather.codes.302": {
+    "fr": "Très forte pluie",
+    "en": "Very heavy rain"
+  },
+  "weather.codes.305": {
+    "fr": "Pluies violentes",
+    "en": "Violent rain"
+  },
+  "weather.codes.308": {
+    "fr": "Pluies torrentielles",
+    "en": "Torrential rain"
+  },
+  "weather.codes.311": {
+    "fr": "Pluie verglaçante",
+    "en": "Freezing rain"
+  },
+  "weather.codes.314": {
+    "fr": "Pluie verglaçante forte",
+    "en": "Heavy freezing rain"
+  },
+  "weather.codes.317": {
+    "fr": "Grésil",
+    "en": "Sleet"
+  },
+  "weather.codes.320": {
+    "fr": "Neige",
+    "en": "Snow"
+  },
+  "weather.codes.323": {
+    "fr": "Neige éparses",
+    "en": "Patchy snow"
+  },
+  "weather.codes.326": {
+    "fr": "Neige",
+    "en": "Snow"
+  },
+  "weather.codes.329": {
+    "fr": "Fortes chutes",
+    "en": "Heavy snow"
+  },
+  "weather.codes.332": {
+    "fr": "Fortes chutes",
+    "en": "Heavy snow"
+  },
+  "weather.codes.335": {
+    "fr": "Très fortes chutes",
+    "en": "Very heavy snow"
+  },
+  "weather.codes.338": {
+    "fr": "Blizzard",
+    "en": "Blizzard"
+  },
+  "weather.codes.350": {
+    "fr": "Grésil",
+    "en": "Sleet"
+  },
+  "weather.codes.353": {
+    "fr": "Averses",
+    "en": "Showers"
+  },
+  "weather.codes.356": {
+    "fr": "Forte averse",
+    "en": "Heavy shower"
+  },
+  "weather.codes.359": {
+    "fr": "Averse violente",
+    "en": "Violent shower"
+  },
+  "weather.codes.362": {
+    "fr": "Averse grésil",
+    "en": "Sleet shower"
+  },
+  "weather.codes.365": {
+    "fr": "Forte averse grésil",
+    "en": "Heavy sleet shower"
+  },
+  "weather.codes.368": {
+    "fr": "Averse neige",
+    "en": "Snow shower"
+  },
+  "weather.codes.371": {
+    "fr": "Forte averse neige",
+    "en": "Heavy snow shower"
+  },
+  "weather.codes.374": {
+    "fr": "Averse grésil",
+    "en": "Sleet shower"
+  },
+  "weather.codes.377": {
+    "fr": "Averse pluie verglaçante",
+    "en": "Freezing rain shower"
+  },
+  "weather.codes.386": {
+    "fr": "Orage épars",
+    "en": "Patchy thunderstorm"
+  },
+  "weather.codes.389": {
+    "fr": "Orage fort",
+    "en": "Heavy thunderstorm"
+  },
+  "weather.codes.392": {
+    "fr": "Orage neige",
+    "en": "Snow thunderstorm"
+  },
+  "weather.codes.395": {
+    "fr": "Fort orage neige",
+    "en": "Heavy snow thunderstorm"
+  },
+  "reminders.test_overdue": {
+    "title": {
+      "fr": "Test d'eau à refaire",
+      "en": "Water test to redo"
+    },
+    "detail": {
+      "fr": "Dernier test il y a {days} jours. La qualité de l'eau change vite.",
+      "en": "Last test {days} days ago. Water quality changes fast."
+    },
+    "action": {
+      "fr": "Faites un test complet pH + chlore + TAC.",
+      "en": "Do a full test: pH + chlorine + TAC."
+    }
+  },
+  "reminders.test_soon": {
+    "title": {
+      "fr": "Test de routine",
+      "en": "Routine test"
+    },
+    "detail": {
+      "fr": "Dernier test il y a {days} jours.",
+      "en": "Last test {days} days ago."
+    },
+    "action": {
+      "fr": "Vérifiez pH et chlore libre.",
+      "en": "Check pH and free chlorine."
+    }
+  },
+  "reminders.test_first": {
+    "title": {
+      "fr": "Premier test d'eau",
+      "en": "First water test"
+    },
+    "detail": {
+      "fr": "Aucun test enregistré. Activez le suivi.",
+      "en": "No test recorded. Activate tracking."
+    },
+    "action": {
+      "fr": "Entrez votre premier test (pH minimum).",
+      "en": "Enter your first test (pH minimum)."
+    }
+  },
+  "reminders.retest_product": {
+    "title": {
+      "fr": "Re-test après traitement",
+      "en": "Re-test after treatment"
+    },
+    "detail": {
+      "fr": "Vous avez ajouté un produit récemment. Vérifiez l'effet.",
+      "en": "You recently added a product. Check the effect."
+    },
+    "action": {
+      "fr": "Refaire un test pH + chlore dans les heures qui suivent.",
+      "en": "Do another pH + chlorine test within the next few hours."
+    }
+  },
+  "reminders.wx_test": {
+    "title": {
+      "fr": "Test recommandé (météo)",
+      "en": "Test recommended (weather)"
+    },
+    "action": {
+      "fr": "Testez pH et chlore.",
+      "en": "Test pH and chlorine."
+    }
+  },
+  "reminders.filter_clean": {
+    "title": {
+      "fr": "Nettoyage du filtre",
+      "en": "Filter cleaning"
+    },
+    "detailSand": {
+      "fr": "Backwash du filtre à sable recommandé.",
+      "en": "Sand filter backwash recommended."
+    },
+    "detailCartridge": {
+      "fr": "Rinçage de la cartouche recommandé.",
+      "en": "Cartridge rinse recommended."
+    },
+    "detailGeneric": {
+      "fr": "Vérification du filtre recommandée.",
+      "en": "Filter check recommended."
+    },
+    "actionSand": {
+      "fr": "Faites un backwash (contre-lavage).",
+      "en": "Do a backwash (counter-rinse)."
+    },
+    "actionCartridge": {
+      "fr": "Démontez et rincez la cartouche.",
+      "en": "Remove and rinse the cartridge."
+    }
+  },
+  "reminders.cell_clean": {
+    "title": {
+      "fr": "Nettoyage cellule électrolyseur",
+      "en": "Electrolyzer cell cleaning"
+    },
+    "detail": {
+      "fr": "La cellule s'entartre avec le temps. Nettoyage acide tous les 3-6 mois.",
+      "en": "The cell scales up over time. Acid cleaning every 3-6 months."
+    },
+    "action": {
+      "fr": "Démontez la cellule, trempez dans solution acide diluée 10-15 min, rincez.",
+      "en": "Remove the cell, soak in diluted acid solution 10-15 min, rinse."
+    }
+  },
+  "reminders.skimmer_clean": {
+    "title": {
+      "fr": "Vérifier skimmer et panier",
+      "en": "Check skimmer and basket"
+    },
+    "detail": {
+      "fr": "Débris, feuilles, insectes à retirer régulièrement.",
+      "en": "Debris, leaves, insects to remove regularly."
+    },
+    "action": {
+      "fr": "Videz le panier du skimmer et celui de la pompe.",
+      "en": "Empty the skimmer basket and the pump basket."
+    }
+  },
+  "reminders.low_product": {
+    "title": {
+      "fr": "Stock bas : {name}",
+      "en": "Low stock: {name}"
+    },
+    "detail": {
+      "fr": "Il reste peu de ce produit.",
+      "en": "Little of this product left."
+    },
+    "action": {
+      "fr": "Pensez à racheter avant de manquer.",
+      "en": "Consider repurchasing before running out."
+    }
+  },
+  "reminders.equipment_overdue": {
+    "title": {
+      "fr": "Maintenance {type}",
+      "en": "Maintenance {type}"
+    },
+    "detail": {
+      "fr": "Maintenance en retard de {days} jours.",
+      "en": "Maintenance overdue by {days} days."
+    },
+    "action": {
+      "fr": "Planifiez une maintenance de cet équipement.",
+      "en": "Schedule maintenance for this equipment."
+    }
+  },
+  "reminders.startup": {
+    "title": {
+      "fr": "Remise en route de saison",
+      "en": "Season start-up"
+    },
+    "detail": {
+      "fr": "Le printemps arrive : préparez la piscine pour la saison.",
+      "en": "Spring is coming: prepare the pool for the season."
+    },
+    "action": {
+      "fr": "Suivez le guide remise en route : nettoyage, traitement, filtration.",
+      "en": "Follow the start-up guide: cleaning, treatment, filtration."
+    }
+  },
+  "reminders.winterize": {
+    "title": {
+      "fr": "Préparer l'hivernage",
+      "en": "Prepare winterization"
+    },
+    "detail": {
+      "fr": "L'automne est là : anticipez l'hivernage.",
+      "en": "Fall is here: anticipate winterization."
+    },
+    "action": {
+      "fr": "Suivez le guide hivernage : eau froide, produits d'hiver, couverture.",
+      "en": "Follow the winterization guide: cold water, winter products, cover."
+    }
+  },
+  "plans.free.features": {
+    "1pool": {
+      "fr": "1 piscine",
+      "en": "1 pool"
+    },
+    "unlimitedManualTests": {
+      "fr": "Test d'eau illimité (manuel)",
+      "en": "Unlimited water tests (manual)"
+    },
+    "clearWaterIndex": {
+      "fr": "Indice eau claire + sécurité baignade",
+      "en": "Clear water index + swim safety"
+    },
+    "2scans": {
+      "fr": "2 scans photo / mois",
+      "en": "2 photo scans / month"
+    },
+    "simpleWeather": {
+      "fr": "Météo simple",
+      "en": "Simple weather"
+    },
+    "5guides": {
+      "fr": "5 guides de base",
+      "en": "5 basic guides"
+    },
+    "history14": {
+      "fr": "Historique 14 jours",
+      "en": "14-day history"
+    }
+  },
+  "plans.premium.features": {
+    "3pools": {
+      "fr": "3 piscines",
+      "en": "3 pools"
+    },
+    "unlimitedScans": {
+      "fr": "Scans photo illimités",
+      "en": "Unlimited photo scans"
+    },
+    "advancedWeather": {
+      "fr": "Météo avancée + alertes",
+      "en": "Advanced weather + alerts"
+    },
+    "allGuidesVideos": {
+      "fr": "Tous les guides + vidéos",
+      "en": "All guides + videos"
+    },
+    "smartReminders": {
+      "fr": "Rappels intelligents",
+      "en": "Smart reminders"
+    },
+    "pdfReport": {
+      "fr": "Rapport PDF partageable",
+      "en": "Shareable PDF report"
+    },
+    "proMode": {
+      "fr": "Mode pro (LSI avancé)",
+      "en": "Pro mode (advanced LSI)"
+    },
+    "spaSupport": {
+      "fr": "Spa et eau chaude (brome, oxygène actif)",
+      "en": "Spa and hot water (bromine, active oxygen)"
+    },
+    "unlimitedHistory": {
+      "fr": "Historique illimité",
+      "en": "Unlimited history"
+    },
+    "prioritySupport": {
+      "fr": "Support prioritaire",
+      "en": "Priority support"
+    }
+  },
+  "plans.expert.features": {
+    "allPremium": {
+      "fr": "Tout Premium",
+      "en": "Everything in Premium"
+    },
+    "multiClients": {
+      "fr": "Multi-clients illimité",
+      "en": "Unlimited multi-client"
+    },
+    "quotesVisits": {
+      "fr": "Devis et planning visites",
+      "en": "Quotes and visit planning"
+    },
+    "photosBeforeAfter": {
+      "fr": "Photos avant/après",
+      "en": "Before/after photos"
+    },
+    "advancedTechNotes": {
+      "fr": "Notes techniques avancées",
+      "en": "Advanced technical notes"
+    },
+    "accountingExport": {
+      "fr": "Export comptable",
+      "en": "Accounting export"
+    },
+    "apiIntegrations": {
+      "fr": "API + intégrations",
+      "en": "API + integrations"
+    }
+  },
+  "plans.gates": {
+    "photo_scan_limit": {
+      "fr": "Limite de {n} scans/mois atteinte.",
+      "en": "{n} scans/month limit reached."
+    },
+    "weather_advanced": {
+      "fr": "Météo avancée réservée aux plans payants.",
+      "en": "Advanced weather is reserved for paid plans."
+    },
+    "smart_reminders": {
+      "fr": "Rappels intelligents réservés aux plans payants.",
+      "en": "Smart reminders are reserved for paid plans."
+    },
+    "guides_premium": {
+      "fr": "Guides premium réservés aux plans payants.",
+      "en": "Premium guides are reserved for paid plans."
+    },
+    "multi_pool": {
+      "fr": "Multi-piscines réservé à Premium et Expert.",
+      "en": "Multi-pool is reserved for Premium and Expert."
+    },
+    "pdf_report": {
+      "fr": "Rapport PDF réservé à Premium et Expert.",
+      "en": "PDF report is reserved for Premium and Expert."
+    },
+    "pro_mode": {
+      "fr": "Mode pro réservé à Premium et Expert.",
+      "en": "Pro mode is reserved for Premium and Expert."
+    },
+    "history_extended": {
+      "fr": "Historique étendu réservé aux plans payants.",
+      "en": "Extended history is reserved for paid plans."
+    },
+    "spa_support": {
+      "fr": "Le support des spas est réservé au plan Premium.",
+      "en": "Spa support is reserved for the Premium plan."
+    }
+  },
+  "guidesData.green-water": {
+    "title": {
+      "fr": "Eau verte : diagnostic et plan d'action",
+      "en": "Green water: diagnosis and action plan"
+    },
+    "summary": {
+      "fr": "Identify the cause of green water and treat it step by step without overdosing.",
+      "en": "Identify the cause of green water and treat it step by step without overdosing."
+    }
+  },
+  "guidesData.cloudy-water": {
+    "title": {
+      "fr": "Eau trouble ou laiteuse",
+      "en": "Cloudy or milky water"
+    },
+    "summary": {
+      "fr": "Distinguer les causes d'une eau trouble et appliquer le bon traitement.",
+      "en": "Distinguish the causes of cloudy water and apply the right treatment."
+    }
+  },
+  "guidesData.chlorine-shock": {
+    "title": {
+      "fr": "Quand et comment faire un chlore choc",
+      "en": "When and how to do a chlorine shock"
+    },
+    "summary": {
+      "fr": "Le traitement choc : indications, dosage, sécurité, délais baignade.",
+      "en": "Shock treatment: indications, dosage, safety, swim delays."
+    }
+  },
+  "guidesData.combined-chlorine": {
+    "title": {
+      "fr": "Odeur forte de chlore et yeux qui piquent",
+      "en": "Strong chlorine smell and stinging eyes"
+    },
+    "summary": {
+      "fr": "Comprendre les chloramines et comment s'en débarrasser.",
+      "en": "Understand chloramines and how to get rid of them."
+    }
+  },
+  "guidesData.filter-backwash": {
+    "title": {
+      "fr": "Backwash (contre-lavage) du filtre à sable",
+      "en": "Sand filter backwash (counter-rinse)"
+    },
+    "summary": {
+      "fr": "Quand et comment faire un backwash efficacement.",
+      "en": "When and how to do an effective backwash."
+    }
+  },
+  "guidesData.filter-cartridge-clean": {
+    "title": {
+      "fr": "Nettoyer un filtre à cartouche",
+      "en": "Clean a cartridge filter"
+    },
+    "summary": {
+      "fr": "Démontage et rinçage d'une cartouche de filtration.",
+      "en": "Disassembly and rinsing of a filter cartridge."
+    }
+  },
+  "guidesData.cell-clean": {
+    "title": {
+      "fr": "Nettoyer la cellule de l'électrolyseur",
+      "en": "Clean the electrolyzer cell"
+    },
+    "summary": {
+      "fr": "Détartrer la cellule d'électrolyseur au sel pour maintenir la production de chlore.",
+      "en": "Descale the salt electrolyzer cell to maintain chlorine production."
+    }
+  },
+  "guidesData.salt-system-basics": {
+    "title": {
+      "fr": "Comprendre son électrolyseur au sel",
+      "en": "Understand your salt electrolyzer"
+    },
+    "summary": {
+      "fr": "Principe, taux de sel, production, entretien courant.",
+      "en": "Principle, salt level, production, routine maintenance."
+    }
+  },
+  "guidesData.ph-control": {
+    "title": {
+      "fr": "Maîtriser son pH",
+      "en": "Master your pH"
+    },
+    "summary": {
+      "fr": "Pourquoi le pH est le paramètre n°1, comment l'ajuster.",
+      "en": "Why pH is the #1 parameter, how to adjust it."
+    }
+  },
+  "guidesData.tac-control": {
+    "title": {
+      "fr": "Comprendre l'alcalinité (TAC)",
+      "en": "Understand alkalinity (TAC)"
+    },
+    "summary": {
+      "fr": "Le TAC est le tampon du pH. Sans bon TAC, le pH devient instable.",
+      "en": "TAC is the pH buffer. Without good TAC, pH becomes unstable."
+    }
+  },
+  "guidesData.after-storm": {
+    "title": {
+      "fr": "Que faire après un orage ?",
+      "en": "What to do after a storm?"
+    },
+    "summary": {
+      "fr": "L'orage dilue le chlore et modifie le pH. Routine post-orage.",
+      "en": "Lightning dilutes chlorine and changes pH. Post-storm routine."
+    }
+  },
+  "guidesData.vacation-mode": {
+    "title": {
+      "fr": "Avant de partir en vacances",
+      "en": "Before going on vacation"
+    },
+    "summary": {
+      "fr": "Préparer sa piscine pour une absence de plusieurs jours/semaines.",
+      "en": "Prepare your pool for an absence of several days/weeks."
+    }
+  },
+  "guidesData.winterization": {
+    "title": {
+      "fr": "Hiverner sa piscine",
+      "en": "Winterize your pool"
+    },
+    "summary": {
+      "fr": "Mettre la piscine en hivernage pour l'hiver sans abîmer les équipements.",
+      "en": "Put the pool into winterization without damaging equipment."
+    }
+  },
+  "guidesData.startup": {
+    "title": {
+      "fr": "Remise en route au printemps",
+      "en": "Spring start-up"
+    },
+    "summary": {
+      "fr": "Réveiller sa piscine après l'hiver en douceur.",
+      "en": "Wake up your pool after winter gently."
+    }
+  },
+  "guidesData.swim-safety": {
+    "title": {
+      "fr": "Sécurité baignade : quand peut-on se baigner ?",
+      "en": "Swim safety: when can you swim?"
+    },
+    "summary": {
+      "fr": "Critères de sécurité pour une baignade sans risque.",
+      "en": "Safety criteria for risk-free swimming."
+    }
+  },
+  "guidesData.product-safety": {
+    "title": {
+      "fr": "Sécurité produits chimiques",
+      "en": "Chemical product safety"
+    },
+    "summary": {
+      "fr": "Les règles d'or pour manipuler et stocker les produits piscine.",
+      "en": "Golden rules for handling and storing pool products."
+    }
+  },
+  "guidesData.getting-started": {
+    "title": {
+      "fr": "Débuter avec sa piscine",
+      "en": "Getting started with your pool"
+    },
+    "summary": {
+      "fr": "Les 10 premières choses à savoir quand on devient propriétaire d'une piscine.",
+      "en": "The first 10 things to know when you become a pool owner."
+    }
+  },
+  "guidesData.getting-started-spa": {
+    "title": {
+      "fr": "Spécificités du spa",
+      "en": "Spa specifics"
+    },
+    "summary": {
+      "fr": "Le spa a ses règles : eau chaude, volume réduit, brome plutôt que chlore.",
+      "en": "The spa has its own rules: hot water, reduced volume, bromine over chlorine."
+    }
+  },
+  "guidesData.faq-test-frequency": {
+    "title": {
+      "fr": "À quelle fréquence tester son eau ?",
+      "en": "How often should you test your water?"
+    },
+    "summary": {
+      "fr": "Rythme recommandé selon saison et usage.",
+      "en": "Recommended frequency by season and usage."
+    }
+  },
+  "guidesData.faq-cya-high": {
+    "title": {
+      "fr": "Mon stabilisant (CYA) est trop haut",
+      "en": "My stabilizer (CYA) is too high"
+    },
+    "summary": {
+      "fr": "Que faire quand le CYA dépasse 50-60 mg/L ?",
+      "en": "What to do when CYA exceeds 50-60 mg/L?"
+    }
+  },
+  "guidesData.green-water.steps.1": {
+    "title": {
+      "fr": "Mesurer pH et chlore libre",
+      "en": "Measure pH and free chlorine"
+    },
+    "detail": {
+      "fr": "Une eau verte est presque toujours due à un manque de désinfectant ou un pH déséquilibré.",
+      "en": "Green water is almost always due to a lack of disinfectant or unbalanced pH."
+    },
+    "warning": {
+      "fr": "Ne jamais ajouter d'anti-algues avant d'avoir équilibré le pH.",
+      "en": "Never add anti-algae before balancing the pH."
+    }
+  },
+  "guidesData.green-water.steps.2": {
+    "title": {
+      "fr": "Équilibrer le pH (7.0-7.4)",
+      "en": "Balance the pH (7.0-7.4)"
+    },
+    "detail": {
+      "fr": "Si le pH est > 7.4, ajoutez du pH- dilué. Attendez 2-3h de filtration.",
+      "en": "If pH > 7.4, add diluted pH-. Wait 2-3h of filtration."
+    },
+    "tip": {
+      "fr": "Le chlore est 10x plus efficace à pH 7.2 qu'à pH 8.0.",
+      "en": "Chlorine is 10x more effective at pH 7.2 than at pH 8.0."
+    }
+  },
+  "guidesData.green-water.steps.3": {
+    "title": {
+      "fr": "Brosser les parois et le fond",
+      "en": "Brush the walls and floor"
+    },
+    "detail": {
+      "fr": "Décrocher les algues aide le traitement à pénétrer.",
+      "en": "Dislodging algae helps the treatment penetrate."
+    }
+  },
+  "guidesData.green-water.steps.4": {
+    "title": {
+      "fr": "Faire un traitement choc",
+      "en": "Do a shock treatment"
+    },
+    "detail": {
+      "fr": "Chlore choc (après pH équilibré). Filtration continue 24h.",
+      "en": "Shock chlorine (after pH balanced). Continuous filtration 24h."
+    },
+    "warning": {
+      "fr": "Baignade interdite 8h minimum après le choc.",
+      "en": "No swimming for at least 8h after the shock."
+    }
+  },
+  "guidesData.green-water.steps.5": {
+    "title": {
+      "fr": "Ajouter un anti-algues curatif",
+      "en": "Add a curative anti-algae"
+    },
+    "detail": {
+      "fr": "Après le choc, l'anti-algues prévient la repousse.",
+      "en": "After the shock, anti-algae prevents regrowth."
+    }
+  },
+  "guidesData.green-water.steps.6": {
+    "title": {
+      "fr": "Filtrer en continu 24-48h",
+      "en": "Filter continuously 24-48h"
+    },
+    "detail": {
+      "fr": "La filtration est aussi importante que les produits.",
+      "en": "Filtration is as important as chemicals."
+    }
+  },
+  "guidesData.green-water.steps.7": {
+    "title": {
+      "fr": "Re-tester après 24h",
+      "en": "Re-test after 24h"
+    },
+    "detail": {
+      "fr": "Vérifiez pH et chlore. Si l'eau reste verte, le filtre est peut-être à nettoyer.",
+      "en": "Check pH and chlorine. If the water is still green, the filter may need cleaning."
+    }
+  },
+  "guidesData.cloudy-water.steps.1": {
+    "title": {
+      "fr": "Vérifier la filtration",
+      "en": "Check the filtration"
+    },
+    "detail": {
+      "fr": "80% des eaux troubles viennent d'un problème de filtration. Vérifiez pression, durée, propreté du filtre.",
+      "en": "80% of cloudy water comes from a filtration problem. Check pressure, duration, filter cleanliness."
+    }
+  },
+  "guidesData.cloudy-water.steps.2": {
+    "title": {
+      "fr": "Tester pH et chlore",
+      "en": "Test pH and chlorine"
+    },
+    "detail": {
+      "fr": "pH hors plage ou chlore bas = eau trouble.",
+      "en": "Out-of-range pH or low chlorine = cloudy water."
+    }
+  },
+  "guidesData.cloudy-water.steps.3": {
+    "title": {
+      "fr": "Nettoyer ou backwash le filtre",
+      "en": "Clean or backwash the filter"
+    },
+    "detail": {
+      "fr": "Filtre encrassé = eau trouble.",
+      "en": "Clogged filter = cloudy water."
+    }
+  },
+  "guidesData.cloudy-water.steps.4": {
+    "title": {
+      "fr": "Utiliser un floculant (si filtre à sable)",
+      "en": "Use a flocculant (if sand filter)"
+    },
+    "detail": {
+      "fr": "Le floculant agglomère les particules fines pour que le filtre les retienne.",
+      "en": "Flocculant clumps fine particles so the filter can catch them."
+    },
+    "warning": {
+      "fr": "Floculant uniquement avec filtre à sable. Pas avec cartouche.",
+      "en": "Flocculant only with sand filter. Not with cartridge."
+    }
+  },
+  "guidesData.cloudy-water.steps.5": {
+    "title": {
+      "fr": "Filtrer 24h puis aspirer les dépôts",
+      "en": "Filter 24h then vacuum deposits"
+    },
+    "detail": {
+      "fr": "Après floculation, des dépôts se forment au fond : aspirez-les.",
+      "en": "After flocculation, deposits form at the bottom: vacuum them up."
+    }
+  },
+  "guidesData.chlorine-shock.steps.1": {
+    "title": {
+      "fr": "Vérifier le pH AVANT",
+      "en": "Check pH BEFORE"
+    },
+    "detail": {
+      "fr": "Un choc est inefficace si le pH > 7.6. Équilibrez d'abord.",
+      "en": "A shock is ineffective if pH > 7.6. Balance first."
+    },
+    "warning": {
+      "fr": "Ne JAMAIS faire un choc sans avoir vérifié le pH.",
+      "en": "NEVER shock without checking pH first."
+    }
+  },
+  "guidesData.chlorine-shock.steps.2": {
+    "title": {
+      "fr": "Choisir le bon moment",
+      "en": "Choose the right time"
+    },
+    "detail": {
+      "fr": "Le soir, sans baigneurs, filtration en marche.",
+      "en": "In the evening, no swimmers, filtration running."
+    }
+  },
+  "guidesData.chlorine-shock.steps.3": {
+    "title": {
+      "fr": "Doser selon le volume",
+      "en": "Dose according to volume"
+    },
+    "detail": {
+      "fr": "AQWELIA calcule la quantité selon votre volume de bassin.",
+      "en": "AQWELIA calculates the amount based on your basin volume."
+    }
+  },
+  "guidesData.chlorine-shock.steps.4": {
+    "title": {
+      "fr": "Dissoudre dans un seau",
+      "en": "Dissolve in a bucket"
+    },
+    "detail": {
+      "fr": "Ne jamais verser le choc en poudre directement au bord.",
+      "en": "Never pour powder shock directly at the edge."
+    }
+  },
+  "guidesData.chlorine-shock.steps.5": {
+    "title": {
+      "fr": "Filtrer 4h minimum",
+      "en": "Filter at least 4h"
+    },
+    "detail": {
+      "fr": "Le chlore doit être bien réparti.",
+      "en": "Chlorine must be well distributed."
+    }
+  },
+  "guidesData.chlorine-shock.steps.6": {
+    "title": {
+      "fr": "Attendre 8h avant baignade",
+      "en": "Wait 8h before swimming"
+    },
+    "detail": {
+      "fr": "Vérifiez le chlore libre avant de se baigner (doit être < 3 mg/L).",
+      "en": "Check free chlorine before swimming (must be < 3 mg/L)."
+    },
+    "warning": {
+      "fr": "Baignade interdite pendant 8h minimum.",
+      "en": "No swimming for at least 8h."
+    }
+  },
+  "guidesData.combined-chlorine.steps.1": {
+    "title": {
+      "fr": "Comprendre la cause",
+      "en": "Understand the cause"
+    },
+    "detail": {
+      "fr": "L'odeur forte de chlore n'est PAS un excès de chlore : ce sont les chloramines (chlore combiné), sous-produits de la désinfection.",
+      "en": "Strong chlorine smell is NOT excess chlorine: it is chloramines (combined chlorine), disinfection by-products."
+    }
+  },
+  "guidesData.combined-chlorine.steps.2": {
+    "title": {
+      "fr": "Mesurer chlore libre ET total",
+      "en": "Measure BOTH free and total chlorine"
+    },
+    "detail": {
+      "fr": "Chlore combiné = chlore total - chlore libre. Si > 0.4 mg/L, traitement nécessaire.",
+      "en": "Combined chlorine = total chlorine - free chlorine. If > 0.4 mg/L, treatment needed."
+    }
+  },
+  "guidesData.combined-chlorine.steps.3": {
+    "title": {
+      "fr": "Faire un traitement choc",
+      "en": "Do a shock treatment"
+    },
+    "detail": {
+      "fr": "Le choc casse les chloramines et libère du chlore libre actif.",
+      "en": "Shock breaks down chloramines and releases active free chlorine."
+    }
+  },
+  "guidesData.combined-chlorine.steps.4": {
+    "title": {
+      "fr": "Vérifier le pH",
+      "en": "Check the pH"
+    },
+    "detail": {
+      "fr": "Un pH haut aggrave les chloramines.",
+      "en": "High pH worsens chloramines."
+    }
+  },
+  "guidesData.filter-backwash.steps.1": {
+    "title": {
+      "fr": "Quand backwash ?",
+      "en": "When to backwash?"
+    },
+    "detail": {
+      "fr": "Quand la pression monte de 0.3-0.5 bar au-dessus de la pression de service, ou toutes les 2-4 semaines.",
+      "en": "When pressure rises 0.3-0.5 bar above service pressure, or every 2-4 weeks."
+    }
+  },
+  "guidesData.filter-backwash.steps.2": {
+    "title": {
+      "fr": "Éteindre la pompe",
+      "en": "Turn off the pump"
+    },
+    "detail": {
+      "fr": "TOUJOURS éteindre la pompe avant de manipuler la vanne.",
+      "en": "ALWAYS turn off the pump before handling the valve."
+    },
+    "warning": {
+      "fr": "Risque électrique et matériel.",
+      "en": "Electrical and material risk."
+    }
+  },
+  "guidesData.filter-backwash.steps.3": {
+    "title": {
+      "fr": "Placer la vanne sur BACKWASH",
+      "en": "Set valve to BACKWASH"
+    },
+    "detail": {
+      "fr": "Tourner fermement la vanne multivoies.",
+      "en": "Turn the multi-port valve firmly."
+    }
+  },
+  "guidesData.filter-backwash.steps.4": {
+    "title": {
+      "fr": "Rallumer la pompe 2-3 min",
+      "en": "Turn the pump back on 2-3 min"
+    },
+    "detail": {
+      "fr": "L'eau s'écoule à l'égout jusqu'à ce qu'elle redevienne claire.",
+      "en": "Water flows to the drain until it becomes clear again."
+    }
+  },
+  "guidesData.filter-backwash.steps.5": {
+    "title": {
+      "fr": "Éteindre, vanne sur RINSE 30s",
+      "en": "Turn off, valve to RINSE 30s"
+    },
+    "detail": {
+      "fr": "Le rinçage re-tasse le sable et évite le retour de saletés.",
+      "en": "Rinsing repacks the sand and prevents dirt return."
+    }
+  },
+  "guidesData.filter-backwash.steps.6": {
+    "title": {
+      "fr": "Revenir en position FILTER",
+      "en": "Return to FILTER position"
+    },
+    "detail": {
+      "fr": "Remettre la vanne en filtration normale.",
+      "en": "Set the valve back to normal filtration."
+    }
+  },
+  "guidesData.filter-cartridge-clean.steps.1": {
+    "title": {
+      "fr": "Éteindre la pompe",
+      "en": "Turn off the pump"
+    },
+    "detail": {
+      "fr": "Couper l'alimentation électrique.",
+      "en": "Cut the power supply."
+    },
+    "warning": {
+      "fr": "Sécurité électrique obligatoire.",
+      "en": "Electrical safety mandatory."
+    }
+  },
+  "guidesData.filter-cartridge-clean.steps.2": {
+    "title": {
+      "fr": "Démonter la cartouche",
+      "en": "Remove the cartridge"
+    },
+    "detail": {
+      "fr": "Ouvrir le corps du filtre selon le modèle.",
+      "en": "Open the filter body according to the model."
+    }
+  },
+  "guidesData.filter-cartridge-clean.steps.3": {
+    "title": {
+      "fr": "Rincer au jet",
+      "en": "Rinse with a jet"
+    },
+    "detail": {
+      "fr": "Jet d'eau doux, des haut vers le bas, entre les plis.",
+      "en": "Gentle water jet, top to bottom, between the folds."
+    }
+  },
+  "guidesData.filter-cartridge-clean.steps.4": {
+    "title": {
+      "fr": "Tremper dans un nettoyant filtre (optionnel)",
+      "en": "Soak in a filter cleaner (optional)"
+    },
+    "detail": {
+      "fr": "Tous les 2-3 nettoyages, dégraissage et détartrage.",
+      "en": "Every 2-3 cleanings, degreasing and descaling."
+    }
+  },
+  "guidesData.filter-cartridge-clean.steps.5": {
+    "title": {
+      "fr": "Remonter et redémarrer",
+      "en": "Reassemble and restart"
+    },
+    "detail": {
+      "fr": "Bien repositionner les joints.",
+      "en": "Reposition the seals properly."
+    }
+  },
+  "guidesData.cell-clean.steps.1": {
+    "title": {
+      "fr": "Couper l'alimentation",
+      "en": "Cut the power"
+    },
+    "detail": {
+      "fr": "Éteindre l'électrolyseur et la pompe.",
+      "en": "Turn off the electrolyzer and the pump."
+    },
+    "warning": {
+      "fr": "Sécurité électrique. Ne jamais manipuler la cellule sous tension.",
+      "en": "Electrical safety. Never handle the cell under power."
+    }
+  },
+  "guidesData.cell-clean.steps.2": {
+    "title": {
+      "fr": "Démonter la cellule",
+      "en": "Remove the cell"
+    },
+    "detail": {
+      "fr": "Dévisser selon le modèle. Vérifier l'état des électrodes.",
+      "en": "Unscrew according to the model. Check the electrodes."
+    }
+  },
+  "guidesData.cell-clean.steps.3": {
+    "title": {
+      "fr": "Préparer une solution acide diluée",
+      "en": "Prepare a diluted acid solution"
+    },
+    "detail": {
+      "fr": "1/3 acide chlorhydrique + 2/3 eau dans un récipient plastique.",
+      "en": "1/3 hydrochloric acid + 2/3 water in a plastic container."
+    },
+    "warning": {
+      "fr": "TOUJOURS verser l'acide dans l'eau, jamais l'inverse. Gants et lunettes obligatoires. Aération.",
+      "en": "ALWAYS pour acid into water, never the reverse. Gloves and goggles mandatory. Ventilation."
+    }
+  },
+  "guidesData.cell-clean.steps.4": {
+    "title": {
+      "fr": "Tremper 10-15 min",
+      "en": "Soak 10-15 min"
+    },
+    "detail": {
+      "fr": "Le tartre se dissout. Ne pas laisser trop longtemps.",
+      "en": "Scale dissolves. Do not leave too long."
+    }
+  },
+  "guidesData.cell-clean.steps.5": {
+    "title": {
+      "fr": "Rincer abondamment",
+      "en": "Rinse thoroughly"
+    },
+    "detail": {
+      "fr": "À l'eau claire jusqu'à disparition de l'odeur.",
+      "en": "With clean water until the smell disappears."
+    }
+  },
+  "guidesData.cell-clean.steps.6": {
+    "title": {
+      "fr": "Remonter et redémarrer",
+      "en": "Reassemble and restart"
+    },
+    "detail": {
+      "fr": "Vérifier la production sur l'afficheur.",
+      "en": "Check production on the display."
+    }
+  },
+  "guidesData.salt-system-basics.steps.1": {
+    "title": {
+      "fr": "Le principe",
+      "en": "The principle"
+    },
+    "detail": {
+      "fr": "Le sel (NaCl) est électrolysé en chlore actif in-situ. Pas de stockage de chlore, eau plus douce.",
+      "en": "Salt (NaCl) is electrolyzed into active chlorine in-situ. No chlorine storage, softer water."
+    }
+  },
+  "guidesData.salt-system-basics.steps.2": {
+    "title": {
+      "fr": "Taux de sel requis",
+      "en": "Required salt level"
+    },
+    "detail": {
+      "fr": "Selon le modèle : généralement 3-7 g/L. Vérifiez la notice. Trop bas = pas de production ; trop haut = surconsommation.",
+      "en": "Depending on the model: generally 3-7 g/L. Check the manual. Too low = no production; too high = overconsumption."
+    }
+  },
+  "guidesData.salt-system-basics.steps.3": {
+    "title": {
+      "fr": "Stabilisant (CYA) indispensable",
+      "en": "Stabilizer (CYA) essential"
+    },
+    "detail": {
+      "fr": "Sans stabilisant, le chlore produit est détruit par le soleil en 2h.",
+      "en": "Without stabilizer, the produced chlorine is destroyed by the sun in 2h."
+    }
+  },
+  "guidesData.salt-system-basics.steps.4": {
+    "title": {
+      "fr": "Surveiller le pH",
+      "en": "Monitor the pH"
+    },
+    "detail": {
+      "fr": "L'électrolyseur fait monter le pH. Régulation fréquente nécessaire.",
+      "en": "The electrolyzer raises the pH. Frequent regulation needed."
+    }
+  },
+  "guidesData.salt-system-basics.steps.5": {
+    "title": {
+      "fr": "Production selon température",
+      "en": "Production by temperature"
+    },
+    "detail": {
+      "fr": "En eau froide (< 15°C), la production chute. Ne pas s'inquiéter en hiver.",
+      "en": "In cold water (< 15°C), production drops. Do not worry in winter."
+    }
+  },
+  "guidesData.salt-system-basics.steps.6": {
+    "title": {
+      "fr": "Entretien cellule",
+      "en": "Cell maintenance"
+    },
+    "detail": {
+      "fr": "Nettoyage acide tous les 3-6 mois selon dureté de l'eau.",
+      "en": "Acid cleaning every 3-6 months depending on water hardness."
+    }
+  },
+  "guidesData.ph-control.steps.1": {
+    "title": {
+      "fr": "Le pH est prioritaire",
+      "en": "pH is the priority"
+    },
+    "detail": {
+      "fr": "Tout part du pH : efficacité du chlore, confort baignade, protection équipements.",
+      "en": "Everything starts with pH: chlorine effectiveness, swim comfort, equipment protection."
+    }
+  },
+  "guidesData.ph-control.steps.2": {
+    "title": {
+      "fr": "Plage idéale 7.0-7.4",
+      "en": "Ideal range 7.0-7.4"
+    },
+    "detail": {
+      "fr": "Plus près de 7.2 = chlore optimal.",
+      "en": "Closer to 7.2 = optimal chlorine."
+    }
+  },
+  "guidesData.ph-control.steps.3": {
+    "title": {
+      "fr": "Ajuster le TAC avant le pH si instable",
+      "en": "Adjust TAC before pH if unstable"
+    },
+    "detail": {
+      "fr": "Un TAC bas rend le pH instable.",
+      "en": "A low TAC makes pH unstable."
+    }
+  },
+  "guidesData.ph-control.steps.4": {
+    "title": {
+      "fr": "Doser par petite quantité",
+      "en": "Dose in small amounts"
+    },
+    "detail": {
+      "fr": "Ne jamais modifier le pH de plus de 0.3 d'un coup.",
+      "en": "Never change pH by more than 0.3 at once."
+    }
+  },
+  "guidesData.ph-control.steps.5": {
+    "title": {
+      "fr": "Filtrer 2-3h puis re-tester",
+      "en": "Filter 2-3h then re-test"
+    },
+    "detail": {
+      "fr": "Le mélange doit être homogène.",
+      "en": "The mixture must be homogeneous."
+    }
+  },
+  "guidesData.tac-control.steps.1": {
+    "title": {
+      "fr": "Rôle du TAC",
+      "en": "Role of TAC"
+    },
+    "detail": {
+      "fr": "Le TAC (alcalinité totale) stabilise le pH. Sans lui, le pH saute à chaque ajout de produit.",
+      "en": "TAC (total alkalinity) stabilizes pH. Without it, pH jumps with every chemical addition."
+    }
+  },
+  "guidesData.tac-control.steps.2": {
+    "title": {
+      "fr": "Plage idéale 80-120 mg/L",
+      "en": "Ideal range 80-120 mg/L"
+    },
+    "detail": {
+      "fr": "Cible 100 mg/L.",
+      "en": "Target 100 mg/L."
+    }
+  },
+  "guidesData.tac-control.steps.3": {
+    "title": {
+      "fr": "Ajuster AVANT le pH",
+      "en": "Adjust BEFORE pH"
+    },
+    "detail": {
+      "fr": "Toujours équilibrer le TAC d'abord, sinon le pH ne tiendra pas.",
+      "en": "Always balance TAC first, otherwise pH will not hold."
+    }
+  },
+  "guidesData.tac-control.steps.4": {
+    "title": {
+      "fr": "Pour remonter : bicarbonate de sodium",
+      "en": "To raise: sodium bicarbonate"
+    },
+    "detail": {
+      "fr": "Diluer, répartir, filtration 3h.",
+      "en": "Dilute, distribute, filtration 3h."
+    }
+  },
+  "guidesData.tac-control.steps.5": {
+    "title": {
+      "fr": "Pour baisser : acide",
+      "en": "To lower: acid"
+    },
+    "detail": {
+      "fr": "Plus complexe, se fait lentement avec un pH-.",
+      "en": "More complex, done slowly with a pH-."
+    }
+  },
+  "guidesData.after-storm.steps.1": {
+    "title": {
+      "fr": "Tester pH et chlore",
+      "en": "Test pH and chlorine"
+    },
+    "detail": {
+      "fr": "L'orage acidifie souvent l'eau et dilue le chlore.",
+      "en": "Storms often acidify water and dilute chlorine."
+    }
+  },
+  "guidesData.after-storm.steps.2": {
+    "title": {
+      "fr": "Nettoyer skimmer et panier",
+      "en": "Clean skimmer and basket"
+    },
+    "detail": {
+      "fr": "Débris apportés par la pluie et le vent.",
+      "en": "Debris brought by rain and wind."
+    }
+  },
+  "guidesData.after-storm.steps.3": {
+    "title": {
+      "fr": "Ajuster le pH si nécessaire",
+      "en": "Adjust pH if necessary"
+    },
+    "detail": {
+      "fr": "Priorité au pH avant tout ajout de chlore.",
+      "en": "Priority to pH before any chlorine addition."
+    }
+  },
+  "guidesData.after-storm.steps.4": {
+    "title": {
+      "fr": "Compléter le chlore si bas",
+      "en": "Top up chlorine if low"
+    },
+    "detail": {
+      "fr": "Chlore lent ou choc selon l'écart.",
+      "en": "Slow or shock chlorine depending on the gap."
+    }
+  },
+  "guidesData.after-storm.steps.5": {
+    "title": {
+      "fr": "Filtrer 4-6h",
+      "en": "Filter 4-6h"
+    },
+    "detail": {
+      "fr": "Bien répartir les corrections.",
+      "en": "Distribute corrections well."
+    }
+  },
+  "guidesData.vacation-mode.steps.1": {
+    "title": {
+      "fr": "Faire un test complet",
+      "en": "Do a full test"
+    },
+    "detail": {
+      "fr": "Tout équilibrer avant le départ : pH, chlore, TAC.",
+      "en": "Balance everything before leaving: pH, chlorine, TAC."
+    }
+  },
+  "guidesData.vacation-mode.steps.2": {
+    "title": {
+      "fr": "Chlore choc la veille",
+      "en": "Shock chlorine the day before"
+    },
+    "detail": {
+      "fr": "Désinfecter en profondeur.",
+      "en": "Disinfect deeply."
+    }
+  },
+  "guidesData.vacation-mode.steps.3": {
+    "title": {
+      "fr": "Remplir le distributeur de chlore lent",
+      "en": "Fill the slow chlorine dispenser"
+    },
+    "detail": {
+      "fr": "Pour une absence < 1 semaine.",
+      "en": "For an absence < 1 week."
+    }
+  },
+  "guidesData.vacation-mode.steps.4": {
+    "title": {
+      "fr": "Régler la minuterie filtration",
+      "en": "Set the filtration timer"
+    },
+    "detail": {
+      "fr": "Au moins 4-6h/jour, de préférence la nuit.",
+      "en": "At least 4-6h/day, preferably at night."
+    }
+  },
+  "guidesData.vacation-mode.steps.5": {
+    "title": {
+      "fr": "Couvrir la piscine",
+      "en": "Cover the pool"
+    },
+    "detail": {
+      "fr": "Bâche ou volet : limite débris et évaporation.",
+      "en": "Tarp or cover: limits debris and evaporation."
+    }
+  },
+  "guidesData.vacation-mode.steps.6": {
+    "title": {
+      "fr": "Pour une longue absence : voisin ou robot",
+      "en": "For a long absence: neighbor or robot"
+    },
+    "detail": {
+      "fr": "Faites vérifier ou installez un robot.",
+      "en": "Have someone check or install a robot."
+    }
+  },
+  "guidesData.vacation-mode.steps.7": {
+    "title": {
+      "fr": "Selon saison : hivernage actif ou passif",
+      "en": "Depending on season: active or passive winterization"
+    },
+    "detail": {
+      "fr": "En été, filtration réduite suffit. En hiver, hivernage complet.",
+      "en": "In summer, reduced filtration is enough. In winter, full winterization."
+    }
+  },
+  "guidesData.winterization.steps.1": {
+    "title": {
+      "fr": "Choisir hivernage actif ou passif",
+      "en": "Choose active or passive winterization"
+    },
+    "detail": {
+      "fr": "Actif : filtration réduite. Passif : arrêt total. Dépend du climat.",
+      "en": "Active: reduced filtration. Passive: full stop. Depends on climate."
+    }
+  },
+  "guidesData.winterization.steps.2": {
+    "title": {
+      "fr": "Nettoyer en profondeur",
+      "en": "Deep clean"
+    },
+    "detail": {
+      "fr": "Eau, parois, fond, filtre, ligne d'eau.",
+      "en": "Water, walls, floor, filter, water line."
+    }
+  },
+  "guidesData.winterization.steps.3": {
+    "title": {
+      "fr": "Faire un traitement d'hiver",
+      "en": "Do a winter treatment"
+    },
+    "detail": {
+      "fr": "Produit d'hivernage anti-algues et anticalcaire.",
+      "en": "Winterizing product, anti-algae and anti-scale."
+    }
+  },
+  "guidesData.winterization.steps.4": {
+    "title": {
+      "fr": "Baisser le niveau d'eau",
+      "en": "Lower the water level"
+    },
+    "detail": {
+      "fr": "10-15 cm sous les buses pour passif.",
+      "en": "10-15 cm below the jets for passive."
+    }
+  },
+  "guidesData.winterization.steps.5": {
+    "title": {
+      "fr": "Vider les canalisations sensibles",
+      "en": "Drain sensitive pipes"
+    },
+    "detail": {
+      "fr": "Protéger du gel.",
+      "en": "Protect from freezing."
+    }
+  },
+  "guidesData.winterization.steps.6": {
+    "title": {
+      "fr": "Couvrir la piscine",
+      "en": "Cover the pool"
+    },
+    "detail": {
+      "fr": "Bâche d'hiver ou volet.",
+      "en": "Winter tarp or cover."
+    }
+  },
+  "guidesData.winterization.steps.7": {
+    "title": {
+      "fr": "Hivernage actif : filtration 2-3h/jour",
+      "en": "Active winterization: filtration 2-3h/day"
+    },
+    "detail": {
+      "fr": "Surtout pendant les périodes de gel.",
+      "en": "Especially during freezing periods."
+    }
+  },
+  "guidesData.startup.steps.1": {
+    "title": {
+      "fr": "Retirer la couverture et nettoyer",
+      "en": "Remove the cover and clean"
+    },
+    "detail": {
+      "fr": "Enlever feuilles et débris accumulés.",
+      "en": "Remove accumulated leaves and debris."
+    }
+  },
+  "guidesData.startup.steps.2": {
+    "title": {
+      "fr": "Remettre en eau si niveau bas",
+      "en": "Refill if water level is low"
+    },
+    "detail": {
+      "fr": "Refaire le niveau.",
+      "en": "Restore the level."
+    }
+  },
+  "guidesData.startup.steps.3": {
+    "title": {
+      "fr": "Démarrer la filtration",
+      "en": "Start the filtration"
+    },
+    "detail": {
+      "fr": "Vérifier le filtre (backwash si nécessaire).",
+      "en": "Check the filter (backwash if needed)."
+    }
+  },
+  "guidesData.startup.steps.4": {
+    "title": {
+      "fr": "Tester l'eau",
+      "en": "Test the water"
+    },
+    "detail": {
+      "fr": "pH, chlore, TAC, stabilisant.",
+      "en": "pH, chlorine, TAC, stabilizer."
+    }
+  },
+  "guidesData.startup.steps.5": {
+    "title": {
+      "fr": "Équilibrer progressivement",
+      "en": "Balance gradually"
+    },
+    "detail": {
+      "fr": "TAC → pH → chlore. Pas de précipitation.",
+      "en": "TAC → pH → chlorine. No rush."
+    }
+  },
+  "guidesData.startup.steps.6": {
+    "title": {
+      "fr": "Faire un traitement choc",
+      "en": "Do a shock treatment"
+    },
+    "detail": {
+      "fr": "Pour repartir sur une base saine.",
+      "en": "To start on a healthy base."
+    }
+  },
+  "guidesData.startup.steps.7": {
+    "title": {
+      "fr": "Vérifier les équipements",
+      "en": "Check the equipment"
+    },
+    "detail": {
+      "fr": "Pompe, électrolyseur, joints, manomètre.",
+      "en": "Pump, electrolyzer, seals, pressure gauge."
+    }
+  },
+  "guidesData.swim-safety.steps.1": {
+    "title": {
+      "fr": "pH entre 7.0 et 7.6",
+      "en": "pH between 7.0 and 7.6"
+    },
+    "detail": {
+      "fr": "Hors de cette plage : irritation possible.",
+      "en": "Outside this range: possible irritation."
+    }
+  },
+  "guidesData.swim-safety.steps.2": {
+    "title": {
+      "fr": "Chlore libre entre 1 et 3 mg/L",
+      "en": "Free chlorine between 1 and 3 mg/L"
+    },
+    "detail": {
+      "fr": "Moins = désinfection insuffisante. Plus = irritation.",
+      "en": "Less = insufficient disinfection. More = irritation."
+    }
+  },
+  "guidesData.swim-safety.steps.3": {
+    "title": {
+      "fr": "Chlore combiné < 0.4 mg/L",
+      "en": "Combined chlorine < 0.4 mg/L"
+    },
+    "detail": {
+      "fr": "Au-dessus : odeur forte, yeux qui piquent.",
+      "en": "Above: strong smell, stinging eyes."
+    }
+  },
+  "guidesData.swim-safety.steps.4": {
+    "title": {
+      "fr": "Respecter les délais après traitement",
+      "en": "Respect delays after treatment"
+    },
+    "detail": {
+      "fr": "2h après pH, 8h après chlore choc.",
+      "en": "2h after pH, 8h after chlorine shock."
+    }
+  },
+  "guidesData.swim-safety.steps.5": {
+    "title": {
+      "fr": "En cas de doute : ne pas se baigner",
+      "en": "If in doubt: do not swim"
+    },
+    "detail": {
+      "fr": "Mieux vaut attendre un test qu'aller dans une eau douteuse.",
+      "en": "Better to wait for a test than to go into questionable water."
+    }
+  },
+  "guidesData.product-safety.steps.1": {
+    "title": {
+      "fr": "Ne JAMAIS mélanger les produits",
+      "en": "NEVER mix products"
+    },
+    "detail": {
+      "fr": "Chlore + acide = gaz toxique mortel. Toujours diluer séparément.",
+      "en": "Chlorine + acid = deadly toxic gas. Always dilute separately."
+    },
+    "warning": {
+      "fr": "Règle absolue de survie.",
+      "en": "Absolute survival rule."
+    }
+  },
+  "guidesData.product-safety.steps.2": {
+    "title": {
+      "fr": "Toujours ajouter le produit dans l'eau",
+      "en": "Always add product to water"
+    },
+    "detail": {
+      "fr": "Jamais l'eau dans le produit acide (projection).",
+      "en": "Never water into acid product (splashing)."
+    }
+  },
+  "guidesData.product-safety.steps.3": {
+    "title": {
+      "fr": "Porter gants et lunettes",
+      "en": "Wear gloves and goggles"
+    },
+    "detail": {
+      "fr": "Surtout pour les acides et le chlore concentré.",
+      "en": "Especially for acids and concentrated chlorine."
+    }
+  },
+  "guidesData.product-safety.steps.4": {
+    "title": {
+      "fr": "Stocker au sec, frais, ventilé",
+      "en": "Store dry, cool, ventilated"
+    },
+    "detail": {
+      "fr": "Séparer acides et chlores. Hors portée des enfants.",
+      "en": "Separate acids and chlorine. Out of reach of children."
+    }
+  },
+  "guidesData.product-safety.steps.5": {
+    "title": {
+      "fr": "Respecter les notices",
+      "en": "Follow the instructions"
+    },
+    "detail": {
+      "fr": "Chaque produit a ses règles de dosage et d'application.",
+      "en": "Each product has its dosage and application rules."
+    }
+  },
+  "guidesData.product-safety.steps.6": {
+    "title": {
+      "fr": "En cas d'incident : appeler le 15 ou le centre antipoison",
+      "en": "In case of incident: call emergency services or poison control"
+    },
+    "detail": {
+      "fr": "Ne pas faire vomir, consulter immédiatement.",
+      "en": "Do not induce vomiting, consult immediately."
+    }
+  },
+  "guidesData.getting-started.steps.1": {
+    "title": {
+      "fr": "Connaître le volume de sa piscine",
+      "en": "Know your pool volume"
+    },
+    "detail": {
+      "fr": "Indispensable pour tout dosage. AQWELIA le calcule à partir des dimensions.",
+      "en": "Essential for any dosage. AQWELIA calculates it from dimensions."
+    }
+  },
+  "guidesData.getting-started.steps.2": {
+    "title": {
+      "fr": "Comprendre le pH",
+      "en": "Understand pH"
+    },
+    "detail": {
+      "fr": "Le paramètre n°1. Tout part de là.",
+      "en": "The #1 parameter. Everything starts here."
+    }
+  },
+  "guidesData.getting-started.steps.3": {
+    "title": {
+      "fr": "Comprendre le chlore",
+      "en": "Understand chlorine"
+    },
+    "detail": {
+      "fr": "Libre, total, combiné. AQWELIA vous guide.",
+      "en": "Free, total, combined. AQWELIA guides you."
+    }
+  },
+  "guidesData.getting-started.steps.4": {
+    "title": {
+      "fr": "Filtrer suffisamment",
+      "en": "Filter enough"
+    },
+    "detail": {
+      "fr": "Moitié de la température de l'eau en heures.",
+      "en": "Half the water temperature in hours."
+    }
+  },
+  "guidesData.getting-started.steps.5": {
+    "title": {
+      "fr": "Tester 1-2x par semaine",
+      "en": "Test 1-2x per week"
+    },
+    "detail": {
+      "fr": "Plus souvent par forte chaleur.",
+      "en": "More often in hot weather."
+    }
+  },
+  "guidesData.getting-started.steps.6": {
+    "title": {
+      "fr": "Entretenir le filtre",
+      "en": "Maintain the filter"
+    },
+    "detail": {
+      "fr": "Backwash ou rinçage régulier.",
+      "en": "Regular backwash or rinse."
+    }
+  },
+  "guidesData.getting-started.steps.7": {
+    "title": {
+      "fr": "Surveiller le niveau d'eau",
+      "en": "Monitor the water level"
+    },
+    "detail": {
+      "fr": "Trop bas = pompe en danger ; trop haut = skimmer inefficace.",
+      "en": "Too low = pump at risk; too high = inefficient skimmer."
+    }
+  },
+  "guidesData.getting-started.steps.8": {
+    "title": {
+      "fr": "Brosser et nettoyer la ligne d'eau",
+      "en": "Brush and clean the water line"
+    },
+    "detail": {
+      "fr": "Évite algues et dépôts.",
+      "en": "Prevents algae and deposits."
+    }
+  },
+  "guidesData.getting-started.steps.9": {
+    "title": {
+      "fr": "Anticiper la météo",
+      "en": "Anticipate the weather"
+    },
+    "detail": {
+      "fr": "Orage, canicule, vacances : prévenir plutôt que guérir.",
+      "en": "Storm, heatwave, vacation: prevent rather than cure."
+    }
+  },
+  "guidesData.getting-started.steps.10": {
+    "title": {
+      "fr": "Garder un carnet",
+      "en": "Keep a log"
+    },
+    "detail": {
+      "fr": "AQWELIA garde l'historique pour vous.",
+      "en": "AQWELIA keeps the history for you."
+    }
+  },
+  "guidesData.getting-started-spa.steps.1": {
+    "title": {
+      "fr": "Volume réduit = réactions rapides",
+      "en": "Reduced volume = fast reactions"
+    },
+    "detail": {
+      "fr": "L'eau tourne vite. Tests plus fréquents.",
+      "en": "Water turns quickly. More frequent tests."
+    }
+  },
+  "guidesData.getting-started-spa.steps.2": {
+    "title": {
+      "fr": "Préférer le brome au chlore",
+      "en": "Prefer bromine over chlorine"
+    },
+    "detail": {
+      "fr": "Le brome est plus stable à chaud et moins odorant.",
+      "en": "Bromine is more stable when hot and less odorous."
+    }
+  },
+  "guidesData.getting-started-spa.steps.3": {
+    "title": {
+      "fr": "Température et pH",
+      "en": "Temperature and pH"
+    },
+    "detail": {
+      "fr": "Le pH bouge avec la température. Tester à température de bain.",
+      "en": "pH changes with temperature. Test at bathing temperature."
+    }
+  },
+  "guidesData.getting-started-spa.steps.4": {
+    "title": {
+      "fr": "Choc hebdomadaire",
+      "en": "Weekly shock"
+    },
+    "detail": {
+      "fr": "Plus nécessaire qu'en piscine.",
+      "en": "More necessary than in a pool."
+    }
+  },
+  "guidesData.getting-started-spa.steps.5": {
+    "title": {
+      "fr": "Vidange périodique",
+      "en": "Periodic draining"
+    },
+    "detail": {
+      "fr": "Tous les 3-4 mois selon usage.",
+      "en": "Every 3-4 months depending on usage."
+    }
+  },
+  "guidesData.faq-test-frequency.steps.1": {
+    "title": {
+      "fr": "En saison chaide",
+      "en": "In warm season"
+    },
+    "detail": {
+      "fr": "2 fois par semaine minimum, plus si forte chaleur.",
+      "en": "At least twice a week, more in hot weather."
+    }
+  },
+  "guidesData.faq-test-frequency.steps.2": {
+    "title": {
+      "fr": "En saison froide (hivernage actif)",
+      "en": "In cold season (active winterization)"
+    },
+    "detail": {
+      "fr": "1 fois tous les 15 jours.",
+      "en": "Once every 2 weeks."
+    }
+  },
+  "guidesData.faq-test-frequency.steps.3": {
+    "title": {
+      "fr": "Après tout traitement",
+      "en": "After any treatment"
+    },
+    "detail": {
+      "fr": "Re-test dans les 3-24h selon produit.",
+      "en": "Re-test within 3-24h depending on product."
+    }
+  },
+  "guidesData.faq-test-frequency.steps.4": {
+    "title": {
+      "fr": "Après orage",
+      "en": "After a storm"
+    },
+    "detail": {
+      "fr": "Test systématique.",
+      "en": "Systematic test."
+    }
+  },
+  "guidesData.faq-test-frequency.steps.5": {
+    "title": {
+      "fr": "Avant baignade si doute",
+      "en": "Before swimming if in doubt"
+    },
+    "detail": {
+      "fr": "Toujours.",
+      "en": "Always."
+    }
+  },
+  "guidesData.faq-cya-high.steps.1": {
+    "title": {
+      "fr": "Pourquoi c'est un problème",
+      "en": "Why it's a problem"
+    },
+    "detail": {
+      "fr": "Un CYA trop haut \"bloque\" le chlore : il est présent mais inactif. Risque algues malgré un chlore normal.",
+      "en": "Too-high CYA \"locks\" chlorine: it is present but inactive. Algae risk despite normal chlorine."
+    }
+  },
+  "guidesData.faq-cya-high.steps.2": {
+    "title": {
+      "fr": "Il n'existe pas de produit pour baisser le CYA",
+      "en": "There is no product to lower CYA"
+    },
+    "detail": {
+      "fr": "Seule solution : diluer l'eau.",
+      "en": "Only solution: dilute the water."
+    }
+  },
+  "guidesData.faq-cya-high.steps.3": {
+    "title": {
+      "fr": "Renouveler 20-30% de l'eau",
+      "en": "Renew 20-30% of the water"
+    },
+    "detail": {
+      "fr": "Vidange partielle puis complément.",
+      "en": "Partial drain then top up."
+    }
+  },
+  "guidesData.faq-cya-high.steps.4": {
+    "title": {
+      "fr": "Re-tester après renouvellement",
+      "en": "Re-test after renewal"
+    },
+    "detail": {
+      "fr": "Vérifier la nouvelle valeur.",
+      "en": "Check the new value."
+    }
+  },
+  "guidesData.faq-cya-high.steps.5": {
+    "title": {
+      "fr": "À l'avenir : utiliser moins de chlore stabilisé",
+      "en": "In future: use less stabilized chlorine"
+    },
+    "detail": {
+      "fr": "Préférer chlore non stabilisé ou électrolyseur.",
+      "en": "Prefer non-stabilized chlorine or electrolyzer."
+    }
+  },
+  "spaData.freq": {
+    "daily": {
+      "fr": "Quotidien",
+      "en": "Daily"
+    },
+    "weekly": {
+      "fr": "Hebdomadaire",
+      "en": "Weekly"
+    },
+    "every_3_4_months": {
+      "fr": "Tous les 3-4 mois",
+      "en": "Every 3-4 months"
+    },
+    "per_usage": {
+      "fr": "Selon usage",
+      "en": "Per usage"
+    },
+    "config": {
+      "fr": "Configuration",
+      "en": "Configuration"
+    },
+    "per_drain": {
+      "fr": "À chaque vidange",
+      "en": "Each drain"
+    }
+  },
+  "spaData": {
+    "seats_label": {
+      "fr": "Nombre de places assises",
+      "en": "Number of seats"
+    },
+    "usage_occasional": {
+      "fr": "Occasionnel (1-2x/semaine)",
+      "en": "Occasional (1-2x/week)"
+    },
+    "usage_regular": {
+      "fr": "Régulier (3-4x/semaine)",
+      "en": "Regular (3-4x/week)"
+    },
+    "usage_intensive": {
+      "fr": "Intensif (5+/semaine)",
+      "en": "Intensive (5+/week)"
+    },
+    "rec_temp_high_chlorine_warning": {
+      "fr": "⚠️ Température élevée — le chlore n'est PAS recommandé. Utilisez du brome.",
+      "en": "⚠️ High temperature — chlorine is NOT recommended. Use bromine."
+    },
+    "rec_temp_high_session_limit": {
+      "fr": "Surveillez la température: au-delà de 38°C, limitez les sessions à 15-20 min.",
+      "en": "Monitor temperature: above 38°C, limit sessions to 15-20 min."
+    },
+    "rec_temp_critical_health": {
+      "fr": "🔴 Température critique (>38°C) — risquez pour la santé. Réduisez la température.",
+      "en": "🔴 Critical temperature (>38°C) — health risk. Lower the temperature."
+    },
+    "rec_chlorine_evaporates": {
+      "fr": "⚠️ Le chlore s'évapore rapidement en eau chaude. Passez au brome pour plus d'efficacité.",
+      "en": "⚠️ Chlorine evaporates quickly in hot water. Switch to bromine for better efficiency."
+    },
+    "rec_cover_after_use": {
+      "fr": "Couvrez le spa après chaque utilisation pour éviter l'évaporation et la photosynthèse.",
+      "en": "Cover the spa after each use to prevent evaporation and photosynthesis."
+    },
+    "rec_drain_economic": {
+      "fr": "Vidangez tous les 3-4 mois — c'est plus économique que de sur-traiter.",
+      "en": "Drain every 3-4 months — it is more economical than over-treating."
+    },
+    "drainage_reason_intensive": {
+      "fr": "Usage intensif détecté — vidange recommandée tous les {months} mois pour éviter la saturation en produits.",
+      "en": "Intensive usage detected — drain recommended every {months} months to avoid chemical saturation."
+    },
+    "drainage_reason_standard": {
+      "fr": "Vidange recommandée tous les {months} mois (plus économique que sur-traitement).",
+      "en": "Drain recommended every {months} months (more economical than over-treatment)."
+    }
+  }
+}

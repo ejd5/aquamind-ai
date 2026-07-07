@@ -1,0 +1,252 @@
+{
+  "admin.accessDenied": {
+    "fr": "Accès refusé.",
+    "en": "Access denied.",
+    "reason": "placeholder"
+  },
+  "admin.analyticsComingSoonFull": {
+    "fr": "Données détaillées à venir — Connexion API /api/analytics",
+    "en": "Detailed data coming soon — API connection /api/analytics",
+    "reason": "placeholder"
+  },
+  "admin.backToSiteArrow": {
+    "fr": "← Retour au site",
+    "en": "← Back to site",
+    "reason": "placeholder"
+  },
+  "admin.bannerDefaultText": {
+    "fr": "☀️ Été 2026 — Profitez de -20% sur le plan Lagoon !",
+    "en": "☀️ Summer 2026 — Get 20% off the Lagoon plan!",
+    "reason": "placeholder"
+  },
+  "admin.bannerDescFull": {
+    "fr": "Personnalisez la bannière promotionnelle en haut de l'app. Idéal pour les saisons, promotions, annonces.",
+    "en": "Customize the promotional banner at the top of the app. Ideal for seasons, promotions, announcements.",
+    "reason": "placeholder"
+  },
+  "admin.bannerSavedToast": {
+    "fr": "Bannière enregistrée",
+    "en": "Banner saved",
+    "reason": "placeholder"
+  },
+  "admin.contentComingSoonFull": {
+    "fr": "Module à venir — Éditeur de contenu WYSIWYG pour landing page, guides, emails...",
+    "en": "Coming soon — WYSIWYG content editor for landing page, guides, emails...",
+    "reason": "placeholder"
+  },
+  "admin.delete": {
+    "fr": "Supprimer",
+    "en": "Delete",
+    "reason": "placeholder"
+  },
+  "admin.learnMore": {
+    "fr": "En savoir plus →",
+    "en": "Learn more →",
+    "reason": "placeholder"
+  },
+  "admin.popupDefaultBody": {
+    "fr": "Description de la promo...",
+    "en": "Promo description...",
+    "reason": "placeholder"
+  },
+  "admin.popupDefaultCta": {
+    "fr": "En profiter",
+    "en": "Take advantage",
+    "reason": "placeholder"
+  },
+  "admin.popupDefaultTitle": {
+    "fr": "Nouveau popup promo",
+    "en": "New promo popup",
+    "reason": "placeholder"
+  },
+  "admin.popupDescFull": {
+    "fr": "Créez des popups qui s'affichent selon des déclencheurs. Upload d'images promo à venir.",
+    "en": "Create popups that appear based on triggers. Promo image upload coming soon.",
+    "reason": "placeholder"
+  },
+  "admin.popupImagePlaceholder": {
+    "fr": "URL image promo (à venir: upload)",
+    "en": "Promo image URL (upload coming soon)",
+    "reason": "placeholder"
+  },
+  "admin.popupTriggerManual": {
+    "fr": "Manuel",
+    "en": "Manual",
+    "reason": "identical_to_en"
+  },
+  "admin.popupsSavedToast": {
+    "fr": "Popups enregistrés",
+    "en": "Popups saved",
+    "reason": "placeholder"
+  },
+  "admin.title": {
+    "fr": "AQWELIA Admin",
+    "en": "AQWELIA Admin",
+    "reason": "identical_to_en"
+  },
+  "admin.usersComingSoonFull": {
+    "fr": "Module à venir — Liste utilisateurs, gestion abonnements, support...",
+    "en": "Coming soon — User list, subscription management, support...",
+    "reason": "placeholder"
+  },
+  "admin.usersDescFull": {
+    "fr": "Gérez les utilisateurs, abonnements et accès.",
+    "en": "Manage users, subscriptions and access.",
+    "reason": "placeholder"
+  },
+  "admin.wrongPassword": {
+    "fr": "Mot de passe incorrect",
+    "en": "Incorrect password",
+    "reason": "placeholder"
+  },
+  "common.error": {
+    "fr": "Erreur",
+    "en": "Error",
+    "reason": "identical_to_en"
+  },
+  "diagnostic.error": {
+    "fr": "Erreur",
+    "en": "Error",
+    "reason": "identical_to_en"
+  },
+  "diagnostic.errorTitle": {
+    "fr": "Erreur",
+    "en": "Error",
+    "reason": "identical_to_en"
+  },
+  "diagnostic.typeOtherDesc": {
+    "fr": "Robot, skimmer…",
+    "en": "Robot, skimmer…",
+    "reason": "identical_to_en"
+  },
+  "diagnosticActionPlan.afterTreatment": {
+    "fr": "Après traitement",
+    "en": "After treatment",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cancelValidation": {
+    "fr": "Annuler la validation",
+    "en": "Cancel validation",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS1I1": {
+    "fr": "Coupez la pompe avant toute intervention de sécurité.",
+    "en": "Turn off the pump before any safety intervention.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS1I2": {
+    "fr": "Vérifiez la pression au manomètre : si > 0.3 bar au-dessus de la valeur initiale → nettoyer.",
+    "en": "Check pressure gauge: if > 0.3 bar above initial value → clean.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS1I3": {
+    "fr": "Filtre à sable : faites un backwash (contre-lavage) 2-3 min puis rinçage 30 s.",
+    "en": "Sand filter: backwash 2-3 min then rinse 30 s.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS1I4": {
+    "fr": "Filtre à cartouche : démontez, rincez au jet, remplacez si > 2 ans.",
+    "en": "Cartridge filter: disassemble, hose off, replace if > 2 years old.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS1I5": {
+    "fr": "Videz et nettoyez les paniers de skimmer et de pré-filtre de pompe.",
+    "en": "Empty and clean skimmer and pump pre-filter baskets.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS1I6": {
+    "fr": "Remettez en route et vérifiez que le débit est bon (buses de refoulement).",
+    "en": "Restart and check that flow is good (return jets).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS1Intro": {
+    "fr": "Une eau trouble vient le plus souvent d'une filtration inefficace. On commence toujours par là.",
+    "en": "Cloudy water usually comes from ineffective filtration. Always start here.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS1Title": {
+    "fr": "1. Vérifier et nettoyer la filtration",
+    "en": "1. Check and clean filtration",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2Dosage": {
+    "fr": "~{qty} g de pH- / 0.1 unité (pour {volume} m³)",
+    "en": "~{qty} g of pH- / 0.1 unit (for {volume} m³)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2I1": {
+    "fr": "Mesurez le pH à 30 cm de profondeur.",
+    "en": "Measure pH at 30 cm depth.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2I2": {
+    "fr": "Si pH > 7.4 → ajoutez du pH- ; si pH < 7.0 → ajoutez du pH+.",
+    "en": "If pH > 7.4 → add pH-; if pH < 7.0 → add pH+.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2I3": {
+    "fr": "Référence : ~{qty} g de pH- pour abaisser de 0.1 unité sur {volume} m³.",
+    "en": "Reference: ~{qty} g of pH- to lower by 0.1 unit on {volume} m³.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2I4": {
+    "fr": "Diluez dans un seau d'eau de piscine, versez devant les refoulements.",
+    "en": "Dilute in a bucket of pool water, pour in front of return jets.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2I5": {
+    "fr": "Filtration en marche pendant 2h avant de re-tester.",
+    "en": "Filtration running for 2h before re-testing.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2Intro": {
+    "fr": "Un pH déséquilibré favorise la turbidité et diminue l'efficacité du chlore.",
+    "en": "An unbalanced pH promotes turbidity and reduces chlorine effectiveness.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2Product": {
+    "fr": "pH- ou pH+ (selon votre mesure)",
+    "en": "pH- or pH+ (per your measurement)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2Title": {
+    "fr": "2. Mesurer et ajuster le pH",
+    "en": "2. Measure and adjust pH",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3Dosage": {
+    "fr": "{qty} mL de floculant (pour {volume} m³)",
+    "en": "{qty} mL of flocculant (for {volume} m³)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3I1": {
+    "fr": "⚠ Ne JAMAIS utiliser de floculant avec un filtre à cartouche (colmatage).",
+    "en": "⚠ NEVER use flocculant with a cartridge filter (clogging).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3I2": {
+    "fr": "Dosage : ~5 mL de floculant liquide par m³.",
+    "en": "Dose: ~5 mL of liquid flocculant per m³.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3I3": {
+    "fr": "Pour {volume} m³ : {qty} mL de floculant.",
+    "en": "For {volume} m³: {qty} mL of flocculant.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3I4": {
+    "fr": "Versez devant les refoulements, filtration en marche 1h.",
+    "en": "Pour in front of return jets, pump running 1h.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3I5": {
+    "fr": "Coupez ensuite la filtration 12h pour laisser décanter.",
+    "en": "Then turn off filtration 12h to let it settle.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3I6": {
+    "fr": "Les flocons tombent au fond — aspirez-les au robot ou à l'aspirateur manuel.",
+    "en": "Flocs fall to the bottom — vacuum them with robot or manual vacuum.",
+    "reason": "placeholder"
+  }
+}

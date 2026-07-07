@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import {
   CloudSun,
   CloudRain,
@@ -38,12 +38,13 @@ interface WeatherData {
   uvIndex: number
   windKmph: number
   precipMm: number
+  weatherCode: number
   weatherDesc: string
   tomorrowMaxC: number
   tomorrowMinC: number
   tomorrowChanceRain: number
   tomorrowChanceStorm: number
-  next3days: { date: string; maxC: number; chanceRain: number; desc: string }[]
+  next3days: { date: string; maxC: number; chanceRain: number; desc: string; code?: number }[]
 }
 
 interface WeatherAlert {
@@ -51,19 +52,35 @@ interface WeatherAlert {
   type: 'storm' | 'heat' | 'rain' | 'wind' | 'uv' | 'cold'
   severity: 'low' | 'medium' | 'high' | 'extreme'
   title: string
+  titleKey: string
   message: string
+  messageKey: string
+  messageParams?: Record<string, string | number>
   action: string
+  actionKey: string
   when: string
+  whenKey: string
 }
 
 interface Assessment {
   alerts: WeatherAlert[]
-  filtration: { hoursPerDay: number; reason: string; schedule: string }
+  filtration: {
+    hoursPerDay: number
+    reason: string
+    reasonKey: string
+    reasonParams?: Record<string, string | number>
+    schedule: string
+    scheduleKey: string
+  }
   algaeRisk: 'low' | 'medium' | 'high' | 'extreme'
   testRecommended: boolean
   testReason: string
+  testReasonKey: string
+  testReasonParams?: Record<string, string | number>
   swimComfort: 'ideal' | 'good' | 'fresh' | 'cold' | 'too_cold'
   summary: string
+  summaryKey: string
+  summaryParams?: Record<string, string | number>
 }
 
 interface WeatherResponse {
@@ -141,6 +158,7 @@ interface LoadOpts {
 
 export function ModuleWeather({ onNavigate }: Props) {
   const t = useTranslations('weather')
+  const locale = useLocale()
   const [data, setData] = useState<WeatherResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -394,7 +412,7 @@ export function ModuleWeather({ onNavigate }: Props) {
             </div>
             <div className="flex-1">
               <p className="font-display text-sm font-bold text-gold">{t('testRecommended')}</p>
-              <p className="text-xs text-foreground/80">{assessment.testReason}</p>
+              <p className="text-xs text-foreground/80">{t(assessment.testReasonKey as any, assessment.testReasonParams)}</p>
             </div>
             {onNavigate && (
               <Button
@@ -428,7 +446,7 @@ export function ModuleWeather({ onNavigate }: Props) {
               <div>
                 <p className="font-display text-5xl font-bold text-primary">{weather.currentTempC}°C</p>
                 <p className="text-xs text-muted-foreground">
-                  {t('feelsLike')} {weather.feelsLikeC}°C · {weather.weatherDesc}
+                  {t('feelsLike')} {weather.feelsLikeC}°C · {t(`codes.${weather.weatherCode}`)}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
@@ -441,7 +459,7 @@ export function ModuleWeather({ onNavigate }: Props) {
               </div>
             </div>
             <p className="mt-3 rounded-lg border border-border/40 bg-background/40 p-2.5 text-xs leading-relaxed text-foreground/80">
-              {assessment.summary}
+              {t(assessment.summaryKey as any, assessment.summaryParams)}
             </p>
           </CardContent>
         </Card>
@@ -513,20 +531,20 @@ export function ModuleWeather({ onNavigate }: Props) {
                   <div className="pl-2">
                     <div className="flex items-center gap-2">
                       <span className="text-current">{alertTypeIcon(a.type)}</span>
-                      <p className="font-display text-sm font-bold">{a.title}</p>
+                      <p className="font-display text-sm font-bold">{t(a.titleKey as any)}</p>
                       <Badge variant="outline" className={`ml-auto text-[9px] uppercase tracking-wide ${cfg.cls}`}>
                         {t(`severity.${cfg.labelKey}`)}
                       </Badge>
                     </div>
-                    <p className="mt-1 text-xs leading-relaxed opacity-90">{a.message}</p>
+                    <p className="mt-1 text-xs leading-relaxed opacity-90">{t(a.messageKey as any, a.messageParams)}</p>
                     <div className="mt-2 rounded-lg bg-background/60 p-2 text-xs">
                       <p className="font-semibold text-foreground">
                         <Sparkles className="mr-1 inline h-3 w-3 text-gold" />
-                        {t('actionLabel')} : {a.action}
+                        {t('actionLabel')} : {t(a.actionKey as any)}
                       </p>
                       <p className="mt-0.5 flex items-center gap-1 text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        {t('whenLabel')} : {a.when}
+                        {t('whenLabel')} : {t(a.whenKey as any)}
                       </p>
                     </div>
                   </div>
@@ -553,9 +571,9 @@ export function ModuleWeather({ onNavigate }: Props) {
               <span className="ml-1 text-lg text-muted-foreground">{t('hoursPerDayShort')}</span>
             </p>
             <div className="flex-1">
-              <p className="text-xs text-foreground/80">{assessment.filtration.reason}</p>
+              <p className="text-xs text-foreground/80">{t(assessment.filtration.reasonKey as any, assessment.filtration.reasonParams)}</p>
               <p className="mt-1 rounded-md bg-secondary/60 p-2 text-xs text-muted-foreground">
-                {assessment.filtration.schedule}
+                {t(assessment.filtration.scheduleKey as any)}
               </p>
             </div>
           </div>
@@ -575,13 +593,16 @@ export function ModuleWeather({ onNavigate }: Props) {
                 className="flex flex-col items-center gap-1 rounded-xl border border-border/50 bg-background/40 p-3 text-center"
               >
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {i === 0 ? t('today') : i === 1 ? t('tomorrow') : new Date(d.date).toLocaleDateString('fr-FR', { weekday: 'short' })}
+                  {i === 0 ? t('today') : i === 1 ? t('tomorrow') : new Date(d.date).toLocaleDateString(locale, { weekday: 'short' })}
                 </span>
                 <span className="text-2xl">{descToIcon(d.desc)}</span>
                 <span className="font-display text-lg font-bold text-primary">{d.maxC}°C</span>
                 <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
                   <CloudRain className="h-3 w-3" />
                   {d.chanceRain}%
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  {d.code ? t(`codes.${d.code}`) : d.desc}
                 </span>
               </div>
             ))}

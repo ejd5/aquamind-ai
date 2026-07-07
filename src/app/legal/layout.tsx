@@ -9,8 +9,10 @@
 import Link from 'next/link'
 import { Sparkles, ArrowLeft } from 'lucide-react'
 import { Footer } from '@/components/aquamind/footer'
+import { getTranslations } from 'next-intl/server'
 
-export default function LegalLayout({ children }: { children: React.ReactNode }) {
+export default async function LegalLayout({ children }: { children: React.ReactNode }) {
+  const t = await getTranslations('legal')
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
       {/* Top brand bar */}
@@ -21,7 +23,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Retour à l&apos;accueil
+            {t('backHome')}
           </Link>
 
           <Link href="/" className="flex items-center gap-2.5">

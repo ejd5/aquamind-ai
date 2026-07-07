@@ -1,0 +1,538 @@
+{
+  "landing": {
+    "heroPhoneChlorine": {
+      "fr": "Chlore",
+      "en": "Chlorine"
+    }
+  },
+  "mobile.screens": {
+    "analysesAriaSubtabs": {
+      "fr": "Sous-onglets Analyses",
+      "en": "Analyses sub-tabs"
+    },
+    "analysesSubtabMesures": {
+      "fr": "Mesures",
+      "en": "Measurements"
+    },
+    "analysesSubtabPhoto": {
+      "fr": "Photo",
+      "en": "Photo"
+    },
+    "analysesSubtabLogbook": {
+      "fr": "Carnet",
+      "en": "Logbook"
+    },
+    "maintenanceAriaSubtabs": {
+      "fr": "Sous-onglets Entretien",
+      "en": "Maintenance sub-tabs"
+    },
+    "maintenanceSubtabActions": {
+      "fr": "Actions",
+      "en": "Actions"
+    },
+    "profileAriaPoolProfile": {
+      "fr": "Profil piscine",
+      "en": "Pool profile"
+    },
+    "profilePoolNotConfigured": {
+      "fr": "Piscine non configurée",
+      "en": "Pool not configured"
+    },
+    "profileConfigureToStart": {
+      "fr": "Configurez votre piscine pour commencer",
+      "en": "Configure your pool to get started"
+    },
+    "profileElectrolysisSalt": {
+      "fr": "Électrolyse sel",
+      "en": "Salt electrolysis"
+    },
+    "profileAriaSubscription": {
+      "fr": "Abonnement",
+      "en": "Subscription"
+    },
+    "profileSubscriptionTitle": {
+      "fr": "Abonnement",
+      "en": "Subscription"
+    },
+    "profileAriaSettings": {
+      "fr": "Paramètres",
+      "en": "Settings"
+    },
+    "profileNotifReminders": {
+      "fr": "Notifications & rappels",
+      "en": "Notifications & reminders"
+    },
+    "profilePrivacyData": {
+      "fr": "Confidentialité & données",
+      "en": "Privacy & data"
+    },
+    "profileHelpSupport": {
+      "fr": "Aide & support",
+      "en": "Help & support"
+    },
+    "profileFaqContact": {
+      "fr": "FAQ + contact",
+      "en": "FAQ + contact"
+    },
+    "profileVersionLine": {
+      "fr": "AQWELIA Pro · v1.0.0-mobile",
+      "en": "AQWELIA Pro · v1.0.0-mobile"
+    }
+  },
+  "admin": {
+    "wrongPassword": {
+      "fr": "Mot de passe incorrect",
+      "en": "Incorrect password"
+    },
+    "accessDenied": {
+      "fr": "Accès refusé.",
+      "en": "Access denied."
+    },
+    "bannerSavedToast": {
+      "fr": "Bannière enregistrée",
+      "en": "Banner saved"
+    },
+    "popupsSavedToast": {
+      "fr": "Popups enregistrés",
+      "en": "Popups saved"
+    },
+    "learnMore": {
+      "fr": "En savoir plus →",
+      "en": "Learn more →"
+    },
+    "delete": {
+      "fr": "Supprimer",
+      "en": "Delete"
+    },
+    "popupDefaultTitle": {
+      "fr": "Nouveau popup promo",
+      "en": "New promo popup"
+    },
+    "popupDefaultBody": {
+      "fr": "Description de la promo...",
+      "en": "Promo description..."
+    },
+    "popupDefaultCta": {
+      "fr": "En profiter",
+      "en": "Take advantage"
+    },
+    "popupImagePlaceholder": {
+      "fr": "URL image promo (à venir: upload)",
+      "en": "Promo image URL (upload coming soon)"
+    },
+    "bannerDefaultText": {
+      "fr": "☀️ Été 2026 — Profitez de -20% sur le plan Lagoon !",
+      "en": "☀️ Summer 2026 — Get 20% off the Lagoon plan!"
+    },
+    "bannerDescFull": {
+      "fr": "Personnalisez la bannière promotionnelle en haut de l'app. Idéal pour les saisons, promotions, annonces.",
+      "en": "Customize the promotional banner at the top of the app. Ideal for seasons, promotions, announcements."
+    },
+    "popupDescFull": {
+      "fr": "Créez des popups qui s'affichent selon des déclencheurs. Upload d'images promo à venir.",
+      "en": "Create popups that appear based on triggers. Promo image upload coming soon."
+    },
+    "contentComingSoonFull": {
+      "fr": "Module à venir — Éditeur de contenu WYSIWYG pour landing page, guides, emails...",
+      "en": "Coming soon — WYSIWYG content editor for landing page, guides, emails..."
+    },
+    "analyticsComingSoonFull": {
+      "fr": "Données détaillées à venir — Connexion API /api/analytics",
+      "en": "Detailed data coming soon — API connection /api/analytics"
+    },
+    "usersComingSoonFull": {
+      "fr": "Module à venir — Liste utilisateurs, gestion abonnements, support...",
+      "en": "Coming soon — User list, subscription management, support..."
+    },
+    "usersDescFull": {
+      "fr": "Gérez les utilisateurs, abonnements et accès.",
+      "en": "Manage users, subscriptions and access."
+    },
+    "backToSiteArrow": {
+      "fr": "← Retour au site",
+      "en": "← Back to site"
+    }
+  },
+  "settings": {
+    "exportFailedDesc": {
+      "fr": "Export échec",
+      "en": "Export failed"
+    },
+    "deleteFailedDesc": {
+      "fr": "Suppression échec",
+      "en": "Deletion failed"
+    }
+  },
+  "metadata": {
+    "layoutTitle": {
+      "fr": "AQWELIA — Copilote Intelligent pour Piscine",
+      "en": "AQWELIA — Intelligent Copilot for Pool"
+    },
+    "layoutDescription": {
+      "fr": "AQWELIA — l'application révolutionnaire de gestion de piscine propulsée par l'IA : assistant expert, analyse visuelle de l'eau, plan d'action déterministe et plus encore.",
+      "en": "AQWELIA — the revolutionary AI-powered pool management app: expert assistant, visual water analysis, deterministic action plan and more."
+    },
+    "layoutKeywordPool": { "fr": "piscine", "en": "pool" },
+    "layoutKeywordAI": { "fr": "IA", "en": "AI" },
+    "layoutKeywordMaintenance": { "fr": "entretien", "en": "maintenance" },
+    "layoutKeywordWaterQuality": { "fr": "qualité eau", "en": "water quality" },
+    "layoutKeywordSmartAssistant": { "fr": "assistant intelligent", "en": "smart assistant" }
+  },
+  "legal": {
+    "backHome": {
+      "fr": "Retour à l'accueil",
+      "en": "Back to home"
+    },
+    "lastUpdatedLabel": {
+      "fr": "Dernière mise à jour :",
+      "en": "Last updated:"
+    },
+    "cgu": {
+      "metaTitle": {
+        "fr": "CGU — AQWELIA",
+        "en": "Terms of Use — AQWELIA"
+      },
+      "metaDescription": {
+        "fr": "Conditions générales d'utilisation du service AQWELIA.",
+        "en": "Terms of use of the AQWELIA service."
+      },
+      "eyebrow": {
+        "fr": "Mentions légales",
+        "en": "Legal notice"
+      },
+      "title": {
+        "fr": "Conditions Générales d'Utilisation",
+        "en": "Terms of Use"
+      },
+      "article1Title": { "fr": "Article 1 — Objet", "en": "Article 1 — Purpose" },
+      "article1Body1": {
+        "fr": "Les présentes Conditions Générales d'Utilisation (« <bold>CGU</bold> ») définissent les modalités et conditions d'accès et d'utilisation de l'application AQWELIA (« <bold>le Service</bold> »), éditée par la société AQWELIA, ainsi que les droits et obligations des parties dans ce cadre.",
+        "en": "These Terms of Use (\"<bold>TOU</bold>\") define the terms and conditions of access to and use of the AQWELIA application (\"<bold>the Service</bold>\"), published by the company AQWELIA, as well as the rights and obligations of the parties in this context."
+      },
+      "article1Body2": {
+        "fr": "L'utilisation du Service implique l'acceptation pleine et entière des présentes CGU. Si vous n'êtes pas d'accord avec l'une quelconque de ces conditions, vous ne devez pas utiliser le Service.",
+        "en": "Use of the Service implies full and complete acceptance of these TOU. If you do not agree with any of these conditions, you must not use the Service."
+      },
+      "article2Title": { "fr": "Article 2 — Définitions", "en": "Article 2 — Definitions" },
+      "article2Item1": { "fr": "« <bold>Utilisateur</bold> » : toute personne physique qui utilise le Service.", "en": "\"<bold>User</bold>\": any natural person who uses the Service." },
+      "article2Item2": { "fr": "« <bold>Compte</bold> » : espace personnel créé par l'Utilisateur pour accéder au Service.", "en": "\"<bold>Account</bold>\": personal space created by the User to access the Service." },
+      "article2Item3": { "fr": "« <bold>Données</bold> » : informations saisies par l'Utilisateur (mesures, photos, profil de piscine, etc.).", "en": "\"<bold>Data</bold>\": information entered by the User (measurements, photos, pool profile, etc.)." },
+      "article2Item4": { "fr": "« <bold>Plan</bold> » : formule d'abonnement (Free, Premium ou Expert) à laquelle l'Utilisateur souscrit.", "en": "\"<bold>Plan</bold>\": subscription formula (Free, Premium or Expert) to which the User subscribes." },
+      "article2Item5": { "fr": "« <bold>Contenu</bold> » : recommandations, plans d'action, analyses, guides et textes générés par le Service.", "en": "\"<bold>Content</bold>\": recommendations, action plans, analyses, guides and texts generated by the Service." },
+      "article3Title": { "fr": "Article 3 — Description du service", "en": "Article 3 — Description of the service" },
+      "article3Body1": {
+        "fr": "AQWELIA est un copilote intelligent d'entretien de piscine. Le Service permet à l'Utilisateur de :",
+        "en": "AQWELIA is an intelligent pool maintenance copilot. The Service allows the User to:"
+      },
+      "article3Item1": { "fr": "suivre et analyser la qualité de l'eau de sa piscine (pH, chlore, TAC, TH, etc.) ;", "en": "monitor and analyze the quality of their pool water (pH, chlorine, TAC, TH, etc.);" },
+      "article3Item2": { "fr": "obtenir des plans d'action personnalisés (dosages, filtration, baignabilité) ;", "en": "obtain personalized action plans (dosages, filtration, swimability);" },
+      "article3Item3": { "fr": "diagnostiquer visuellement l'eau et les équipements via photo ;", "en": "visually diagnose water and equipment via photo;" },
+      "article3Item4": { "fr": "consulter un assistant IA pour toute question d'entretien ;", "en": "consult an AI assistant for any maintenance question;" },
+      "article3Item5": { "fr": "recevoir des rappels intelligents (météo, équipements, stocks produits) ;", "en": "receive smart reminders (weather, equipment, product stocks);" },
+      "article3Item6": { "fr": "consulter des guides et ressources pédagogiques.", "en": "consult educational guides and resources." },
+      "article3Body2": {
+        "fr": "Le Service est fourni à titre indicatif et ne remplace pas l'intervention d'un professionnel qualifié (pisciniste, revendeur, sauveteur).",
+        "en": "The Service is provided for informational purposes and does not replace the intervention of a qualified professional (pool specialist, retailer, lifeguard)."
+      },
+      "article4Title": { "fr": "Article 4 — Inscription et compte", "en": "Article 4 — Registration and account" },
+      "article4Body1": {
+        "fr": "L'inscription au Service nécessite la création d'un Compte via une adresse e-mail valide et un mot de passe. L'Utilisateur s'engage à fournir des informations exactes et à les maintenir à jour.",
+        "en": "Registration for the Service requires creating an Account via a valid email address and a password. The User agrees to provide accurate information and to keep it up to date."
+      },
+      "article4Body2": {
+        "fr": "L'Utilisateur est seul responsable de la confidentialité de ses identifiants et de toute utilisation de son Compte. Toute activité réalisée depuis son Compte est réputée effectuée par l'Utilisateur.",
+        "en": "The User is solely responsible for the confidentiality of their credentials and any use of their Account. Any activity performed from their Account is deemed to be performed by the User."
+      },
+      "article4Body3": {
+        "fr": "AQWELIA se réserve le droit de refuser ou de clôturer un Compte en cas de non-respect des présentes CGU ou de comportement frauduleux.",
+        "en": "AQWELIA reserves the right to refuse or close an Account in the event of non-compliance with these TOU or fraudulent behavior."
+      },
+      "article5Title": { "fr": "Article 5 — Utilisation du service", "en": "Article 5 — Use of the service" },
+      "article5Body1": { "fr": "L'Utilisateur s'engage à :", "en": "The User agrees to:" },
+      "article5Item1": { "fr": "utiliser le Service conformément à sa destination et au droit applicable ;", "en": "use the Service in accordance with its intended purpose and applicable law;" },
+      "article5Item2": { "fr": "ne pas tenter de détourner, désactiver ou compromettre la sécurité du Service ;", "en": "not attempt to divert, disable or compromise the security of the Service;" },
+      "article5Item3": { "fr": "ne pas importer de Contenu illicite, diffamatoire ou portant atteinte aux droits des tiers ;", "en": "not upload Content that is unlawful, defamatory or infringes the rights of third parties;" },
+      "article5Item4": { "fr": "respecter les notices des produits chimiques utilisés pour l'entretien de sa piscine.", "en": "comply with the instructions of the chemical products used for maintaining their pool." },
+      "article5Body2": {
+        "fr": "L'Utilisateur reconnaît que les recommandations fournies par le Service sont indicatives et qu'il reste seul responsable des actes qu'il pose sur sa piscine.",
+        "en": "The User acknowledges that the recommendations provided by the Service are indicative and that they remain solely responsible for the actions they take on their pool."
+      },
+      "article6Title": { "fr": "Article 6 — Abonnements", "en": "Article 6 — Subscriptions" },
+      "article6Body1": { "fr": "Le Service propose trois Plans :", "en": "The Service offers three Plans:" },
+      "article6Item1": { "fr": "<bold>Free</bold> : gratuit, inclut 1 piscine, mesures manuelles de base, assistant limité.", "en": "<bold>Free</bold>: free, includes 1 pool, basic manual measurements, limited assistant." },
+      "article6Item2": { "fr": "<bold>Premium</bold> : jusqu'à 3 piscines, diagnostic photo illimité, assistant IA complet, rappels météo, guides avancés.", "en": "<bold>Premium</bold>: up to 3 pools, unlimited photo diagnostic, full AI assistant, weather reminders, advanced guides." },
+      "article6Item3": { "fr": "<bold>Expert</bold> : illimité (piscinistes professionnels), multi-clients, exports, support prioritaire.", "en": "<bold>Expert</bold>: unlimited (professional pool specialists), multi-client, exports, priority support." },
+      "article6Body2": {
+        "fr": "Les fonctionnalités et tarifs de chaque Plan sont détaillés sur la page <link>Tarifs</link>. AQWELIA se réserve le droit de modifier ces offres à tout moment, sous réserve d'en informer les Utilisateurs abonnés au moins 30 jours avant l'entrée en vigueur.",
+        "en": "The features and pricing of each Plan are detailed on the <link>Pricing</link> page. AQWELIA reserves the right to modify these offers at any time, subject to informing subscribed Users at least 30 days before entry into force."
+      },
+      "article7Title": { "fr": "Article 7 — Paiement", "en": "Article 7 — Payment" },
+      "article7Body1": {
+        "fr": "Le paiement des abonnements Premium et Expert s'effectue selon la plateforme utilisée :",
+        "en": "Payment for Premium and Expert subscriptions is made according to the platform used:"
+      },
+      "article7Item1": { "fr": "<bold>Web</bold> : via Stripe (carte bancaire, paiement sécurisé).", "en": "<bold>Web</bold>: via Stripe (bank card, secure payment)." },
+      "article7Item2": { "fr": "<bold>iOS</bold> : via Apple In-App Purchase (géré par Apple).", "en": "<bold>iOS</bold>: via Apple In-App Purchase (managed by Apple)." },
+      "article7Item3": { "fr": "<bold>Android</bold> : via Google Play Billing (géré par Google).", "en": "<bold>Android</bold>: via Google Play Billing (managed by Google)." },
+      "article7Body2": {
+        "fr": "Le renouvellement est automatique à la fin de la période souscrite, sauf désactivation par l'Utilisateur dans les paramètres de son compte Apple/Google ou via le portail client Stripe.",
+        "en": "Renewal is automatic at the end of the subscribed period, unless deactivated by the User in their Apple/Google account settings or via the Stripe customer portal."
+      },
+      "article8Title": { "fr": "Article 8 — Résiliation", "en": "Article 8 — Termination" },
+      "article8Body1": {
+        "fr": "L'Utilisateur peut résilier son abonnement à tout moment depuis l'application (page <link>Paramètres</link>) ou depuis les réglages de l'App Store / Google Play. La résiliation prend effet à la fin de la période de facturation en cours.",
+        "en": "The User can cancel their subscription at any time from the application (<link>Settings</link> page) or from the App Store / Google Play settings. Cancellation takes effect at the end of the current billing period."
+      },
+      "article8Body2": {
+        "fr": "AQWELIA se réserve le droit de résilier ou suspendre l'accès au Service en cas de manquement aux CGU, après notification préalable sauf urgence.",
+        "en": "AQWELIA reserves the right to terminate or suspend access to the Service in the event of a breach of the TOU, after prior notification except in an emergency."
+      },
+      "article9Title": { "fr": "Article 9 — Données personnelles (RGPD)", "en": "Article 9 — Personal data (GDPR)" },
+      "article9Body1": {
+        "fr": "Le traitement des données personnelles de l'Utilisateur est régi par notre <link>Politique de confidentialité</link>, conformément au Règlement Général sur la Protection des Données (RGPD, UE 2016/679).",
+        "en": "The processing of the User's personal data is governed by our <link>Privacy Policy</link>, in accordance with the General Data Protection Regulation (GDPR, EU 2016/679)."
+      },
+      "article9Body2": {
+        "fr": "L'Utilisateur dispose d'un droit d'accès, de rectification, d'effacement, de portabilité et d'opposition. Ces droits peuvent être exercés depuis la page <link>Paramètres</link> ou par e-mail à <alink>privacy@aqwelia.app</alink>.",
+        "en": "The User has the right of access, rectification, erasure, portability and objection. These rights can be exercised from the <link>Settings</link> page or by email at <alink>privacy@aqwelia.app</alink>."
+      },
+      "article10Title": { "fr": "Article 10 — Responsabilité", "en": "Article 10 — Liability" },
+      "article10Body1": {
+        "fr": "AQWELIA met tout en œuvre pour assurer la disponibilité et la fiabilité du Service, mais ne peut garantir une absence totale d'erreurs ou d'interruptions.",
+        "en": "AQWELIA makes every effort to ensure the availability and reliability of the Service, but cannot guarantee a total absence of errors or interruptions."
+      },
+      "article10Body2": {
+        "fr": "Le Service étant fourni à titre indicatif, AQWELIA ne saurait être tenu responsable des dommages directs ou indirects résultant de l'application des recommandations (notamment : dommages matériels, pertes de baignade, détérioration d'équipement, réactions chimiques). En cas de doute, l'Utilisateur doit consulter un professionnel.",
+        "en": "As the Service is provided for informational purposes, AQWELIA cannot be held liable for direct or indirect damages resulting from the application of the recommendations (including: material damage, loss of swimming, equipment deterioration, chemical reactions). In case of doubt, the User should consult a professional."
+      },
+      "article11Title": { "fr": "Article 11 — Propriété intellectuelle", "en": "Article 11 — Intellectual property" },
+      "article11Body1": {
+        "fr": "L'ensemble des éléments du Service (marque, logo, textes, algorithmes, design, guides) est la propriété exclusive d'AQWELIA ou de ses partenaires. Toute reproduction, représentation ou diffusion, totale ou partielle, sans autorisation écrite préalable est interdite.",
+        "en": "All elements of the Service (brand, logo, texts, algorithms, design, guides) are the exclusive property of AQWELIA or its partners. Any reproduction, representation or distribution, in whole or in part, without prior written authorization is prohibited."
+      },
+      "article11Body2": {
+        "fr": "Les Données saisies par l'Utilisateur restent sa propriété. L'Utilisateur accorde à AQWELIA une licence non exclusive d'utilisation de ces Données dans la mesure nécessaire à la fourniture et à l'amélioration du Service.",
+        "en": "The Data entered by the User remains their property. The User grants AQWELIA a non-exclusive license to use this Data to the extent necessary for the provision and improvement of the Service."
+      },
+      "article12Title": { "fr": "Article 12 — Modifications des CGU", "en": "Article 12 — Modifications of the TOU" },
+      "article12Body1": {
+        "fr": "AQWELIA peut modifier les présentes CGU à tout moment. Les CGU applicables sont celles en vigueur au moment de l'utilisation du Service. Les modifications substantielles seront notifiées par e-mail ou via l'application au moins 30 jours avant leur entrée en vigueur.",
+        "en": "AQWELIA may modify these TOU at any time. The applicable TOU are those in force at the time of use of the Service. Substantial modifications will be notified by email or via the application at least 30 days before their entry into force."
+      },
+      "article13Title": { "fr": "Article 13 — Droit applicable", "en": "Article 13 — Applicable law" },
+      "article13Body1": {
+        "fr": "Les présentes CGU sont régies par le droit français. En cas de litige, les parties s'engagent à rechercher une solution amiable avant toute action judiciaire. À défaut d'accord, les tribunaux français seront seuls compétents.",
+        "en": "These TOU are governed by French law. In the event of a dispute, the parties agree to seek an amicable solution before any legal action. Failing agreement, the French courts shall have sole jurisdiction."
+      },
+      "contactTitle": { "fr": "Contact", "en": "Contact" },
+      "contactBody1": {
+        "fr": "Pour toute question relative aux présentes CGU : <alink>legal@aqwelia.app</alink>",
+        "en": "For any question regarding these TOU: <alink>legal@aqwelia.app</alink>"
+      },
+      "contactBody2": {
+        "fr": "Pour toute question relative à vos données : <alink>privacy@aqwelia.app</alink>",
+        "en": "For any question regarding your data: <alink>privacy@aqwelia.app</alink>"
+      },
+      "contactBody3": {
+        "fr": "Pour toute demande de support : <link>page Support</link>.",
+        "en": "For any support request: <link>Support page</link>."
+      }
+    },
+    "privacy": {
+      "metaTitle": {
+        "fr": "Politique de confidentialité — AQWELIA",
+        "en": "Privacy Policy — AQWELIA"
+      },
+      "metaDescription": {
+        "fr": "Politique de protection des données personnelles AQWELIA (RGPD).",
+        "en": "AQWELIA personal data protection policy (GDPR)."
+      },
+      "eyebrow": { "fr": "RGPD", "en": "GDPR" },
+      "title": { "fr": "Politique de confidentialité", "en": "Privacy Policy" },
+      "section1Title": { "fr": "1. Responsable du traitement", "en": "1. Data controller" },
+      "section1Body1": {
+        "fr": "Le responsable du traitement des données personnelles collectées via l'application AQWELIA est la société <bold>AQWELIA</bold>, éditrice du Service.",
+        "en": "The controller of the personal data collected via the AQWELIA application is the company <bold>AQWELIA</bold>, publisher of the Service."
+      },
+      "section1Body2": {
+        "fr": "Contact DPO : <alink>privacy@aqwelia.app</alink>",
+        "en": "DPO contact: <alink>privacy@aqwelia.app</alink>"
+      },
+      "section2Title": { "fr": "2. Données collectées", "en": "2. Data collected" },
+      "section2Body1": { "fr": "Le Service collecte les catégories de données suivantes :", "en": "The Service collects the following categories of data:" },
+      "section2Item1": { "fr": "<bold>Identifiants de compte</bold> : adresse e-mail, nom (facultatif), mot de passe (haché).", "en": "<bold>Account identifiers</bold>: email address, name (optional), password (hashed)." },
+      "section2Item2": { "fr": "<bold>Profil de piscine</bold> : volume, forme, revêtement, traitement, filtre, exposition, région.", "en": "<bold>Pool profile</bold>: volume, shape, surface, treatment, filter, exposure, region." },
+      "section2Item3": { "fr": "<bold>Données d'eau</bold> : mesures (pH, chlore, TAC, TH, CYA, sel, température, etc.) saisies ou importées.", "en": "<bold>Water data</bold>: measurements (pH, chlorine, TAC, TH, CYA, salt, temperature, etc.) entered or imported." },
+      "section2Item4": { "fr": "<bold>Photos</bold> : images de l'eau, des parois, du filtre, des électrolyseurs et produits, utilisées pour le diagnostic visuel IA.", "en": "<bold>Photos</bold>: images of water, walls, filter, electrolyzers and products, used for AI visual diagnostic." },
+      "section2Item5": { "fr": "<bold>Équipements & inventaire</bold> : marque, modèle, dates de maintenance, produits chimiques en stock.", "en": "<bold>Equipment & inventory</bold>: brand, model, maintenance dates, chemicals in stock." },
+      "section2Item6": { "fr": "<bold>Historique</bold> : conversations avec l'assistant IA, plans d'action générés, diagnostics photo.", "en": "<bold>History</bold>: conversations with the AI assistant, generated action plans, photo diagnostics." },
+      "section2Item7": { "fr": "<bold>Données de facturation</bold> : plan souscrit, période, statut (les informations de paiement sont traitées par Stripe, Apple ou Google — AQWELIA ne stocke pas les numéros de carte).", "en": "<bold>Billing data</bold>: subscribed plan, period, status (payment information is processed by Stripe, Apple or Google — AQWELIA does not store card numbers)." },
+      "section2Item8": { "fr": "<bold>Données d'usage</bold> : événements analytics (consultation de guides, ouverture de paywall, fréquence d'utilisation).", "en": "<bold>Usage data</bold>: analytics events (guide views, paywall opens, frequency of use)." },
+      "section3Title": { "fr": "3. Finalités", "en": "3. Purposes" },
+      "section3Body1": { "fr": "Les données sont traitées pour les finalités suivantes :", "en": "The data is processed for the following purposes:" },
+      "section3Item1": { "fr": "fonctionnement du Service (génération de plans d'action, calculs de dosage, suivi de l'eau) ;", "en": "operation of the Service (generation of action plans, dosage calculations, water monitoring);" },
+      "section3Item2": { "fr": "amélioration des modèles d'IA (diagnostic photo, recommandations) — sur la base d'une anonymisation préalable lorsque c'est possible ;", "en": "improvement of AI models (photo diagnostic, recommendations) — based on prior anonymization when possible;" },
+      "section3Item3": { "fr": "facturation et gestion des abonnements ;", "en": "billing and subscription management;" },
+      "section3Item4": { "fr": "support utilisateur ;", "en": "user support;" },
+      "section3Item5": { "fr": "analyse d'usage et amélioration de l'expérience ;", "en": "usage analysis and experience improvement;" },
+      "section3Item6": { "fr": "respect des obligations légales et comptables.", "en": "compliance with legal and accounting obligations." },
+      "section4Title": { "fr": "4. Base légale", "en": "4. Legal basis" },
+      "section4Body1": { "fr": "Conformément à l'article 6 du RGPD, les traitements reposent sur les bases légales suivantes :", "en": "In accordance with Article 6 of the GDPR, the processing is based on the following legal bases:" },
+      "section4Item1": { "fr": "<bold>Exécution du contrat</bold> (art. 6.1.b) : fourniture du Service souscrit.", "en": "<bold>Contract performance</bold> (art. 6.1.b): provision of the subscribed Service." },
+      "section4Item2": { "fr": "<bold>Consentement</bold> (art. 6.1.a) : photos envoyées pour diagnostic, notifications, communications marketing éventuelles.", "en": "<bold>Consent</bold> (art. 6.1.a): photos sent for diagnostic, notifications, possible marketing communications." },
+      "section4Item3": { "fr": "<bold>Intérêt légitime</bold> (art. 6.1.f) : amélioration du Service, sécurité, prévention de la fraude.", "en": "<bold>Legitimate interest</bold> (art. 6.1.f): Service improvement, security, fraud prevention." },
+      "section4Item4": { "fr": "<bold>Obligation légale</bold> (art. 6.1.c) : conservation des factures et traces comptables.", "en": "<bold>Legal obligation</bold> (art. 6.1.c): retention of invoices and accounting records." },
+      "section4Body2": {
+        "fr": "L'Utilisateur peut retirer son consentement à tout moment depuis la page <link>Paramètres</link>, sans porter atteinte à la licéité du traitement antérieur.",
+        "en": "The User can withdraw their consent at any time from the <link>Settings</link> page, without affecting the lawfulness of the prior processing."
+      },
+      "section5Title": { "fr": "5. Durée de conservation", "en": "5. Retention period" },
+      "section5Item1": { "fr": "<bold>Compte actif</bold> : durée d'utilisation du Service.", "en": "<bold>Active account</bold>: duration of use of the Service." },
+      "section5Item2": { "fr": "<bold>Données de piscine, mesures, photos</bold> : conservées tant que le Compte est actif, plus 90 jours après suppression (pour restauration éventuelle), puis effacées définitivement.", "en": "<bold>Pool data, measurements, photos</bold>: retained as long as the Account is active, plus 90 days after deletion (for possible restoration), then permanently erased." },
+      "section5Item3": { "fr": "<bold>Factures</bold> : 10 ans (obligation comptable légale en France).", "en": "<bold>Invoices</bold>: 10 years (legal accounting obligation in France)." },
+      "section5Item4": { "fr": "<bold>Logs de sécurité</bold> : 12 mois.", "en": "<bold>Security logs</bold>: 12 months." },
+      "section5Item5": { "fr": "<bold>Compte inactif</bold> : après 24 mois sans connexion, notification par e-mail puis suppression du Compte et de ses données.", "en": "<bold>Inactive account</bold>: after 24 months without login, notification by email then deletion of the Account and its data." },
+      "section6Title": { "fr": "6. Destinataires", "en": "6. Recipients" },
+      "section6Body1": { "fr": "Les données sont accessibles aux destinataires suivants :", "en": "The data is accessible to the following recipients:" },
+      "section6Item1": { "fr": "<bold>AQWELIA</bold> : personnel autorisé (ingénieurs, support) sous accord de confidentialité.", "en": "<bold>AQWELIA</bold>: authorized personnel (engineers, support) under confidentiality agreement." },
+      "section6Item2": { "fr": "<bold>Hébergeur cloud</bold> : stockage et calcul (localisé UE).", "en": "<bold>Cloud host</bold>: storage and computing (EU located)." },
+      "section6Item3": { "fr": "<bold>Stripe</bold> : traitement des paiements web (soumis à son propre RGPD).", "en": "<bold>Stripe</bold>: web payment processing (subject to its own GDPR)." },
+      "section6Item4": { "fr": "<bold>RevenueCat</bold> : gestion unifiée des abonnements iOS/Android.", "en": "<bold>RevenueCat</bold>: unified iOS/Android subscription management." },
+      "section6Item5": { "fr": "<bold>Apple / Google</bold> : paiements In-App (soumis à leurs propres conditions).", "en": "<bold>Apple / Google</bold>: In-App payments (subject to their own terms)." },
+      "section6Item6": { "fr": "<bold>Prestataires IA</bold> : pour le diagnostic photo et l'assistant — uniquement les données strictement nécessaires, sans stockage au-delà de la session.", "en": "<bold>AI providers</bold>: for photo diagnostic and the assistant — only strictly necessary data, with no storage beyond the session." },
+      "section6Body2": {
+        "fr": "AQWELIA ne vend jamais vos données à des tiers à des fins marketing.",
+        "en": "AQWELIA never sells your data to third parties for marketing purposes."
+      },
+      "section7Title": { "fr": "7. Transferts hors UE", "en": "7. Transfers outside the EU" },
+      "section7Body1": {
+        "fr": "L'hébergement principal est localisé dans l'Union Européenne. Tout transfert hors UE éventuel (par exemple vers un prestataire IA basé aux États-Unis) est encadré par les clauses contractuelles types de la Commission Européenne (décision 2021/914) et accompagné de garanties appropriées (chiffrement, minimisation, pseudonymisation).",
+        "en": "The main hosting is located in the European Union. Any possible transfer outside the EU (for example to an AI provider based in the United States) is framed by the standard contractual clauses of the European Commission (decision 2021/914) and accompanied by appropriate safeguards (encryption, minimization, pseudonymization)."
+      },
+      "section8Title": { "fr": "8. Vos droits", "en": "8. Your rights" },
+      "section8Body1": { "fr": "Conformément aux articles 15 à 22 du RGPD, vous disposez des droits suivants :", "en": "In accordance with Articles 15 to 22 of the GDPR, you have the following rights:" },
+      "section8Item1": { "fr": "<bold>Droit d'accès</bold> : obtenir une copie de vos données.", "en": "<bold>Right of access</bold>: obtain a copy of your data." },
+      "section8Item2": { "fr": "<bold>Droit de rectification</bold> : corriger des données inexactes.", "en": "<bold>Right to rectification</bold>: correct inaccurate data." },
+      "section8Item3": { "fr": "<bold>Droit à l'effacement</bold> (« droit à l'oubli ») : supprimer votre Compte et vos données.", "en": "<bold>Right to erasure</bold> (\"right to be forgotten\"): delete your Account and your data." },
+      "section8Item4": { "fr": "<bold>Droit à la portabilité</bold> : recevoir vos données dans un format structuré et réutilisable.", "en": "<bold>Right to portability</bold>: receive your data in a structured and reusable format." },
+      "section8Item5": { "fr": "<bold>Droit d'opposition</bold> : refuser un traitement fondé sur l'intérêt légitime.", "en": "<bold>Right to object</bold>: refuse processing based on legitimate interest." },
+      "section8Item6": { "fr": "<bold>Droit à la limitation</bold> : geler temporairement un traitement.", "en": "<bold>Right to restriction</bold>: temporarily freeze processing." },
+      "section8Item7": { "fr": "<bold>Droit de retirer votre consentement</bold> à tout moment.", "en": "<bold>Right to withdraw your consent</bold> at any time." },
+      "section8Body2": {
+        "fr": "Ces droits sont exerçables directement depuis la page <link>Paramètres</link> (export JSON, suppression du compte), ou par e-mail à <alink>privacy@aqwelia.app</alink>.",
+        "en": "These rights can be exercised directly from the <link>Settings</link> page (JSON export, account deletion), or by email at <alink>privacy@aqwelia.app</alink>."
+      },
+      "section8Body3": {
+        "fr": "Vous pouvez également introduire une réclamation auprès de la CNIL (www.cnil.fr) ou de l'autorité de contrôle de votre pays.",
+        "en": "You can also file a complaint with the CNIL (www.cnil.fr) or the supervisory authority of your country."
+      },
+      "section9Title": { "fr": "9. Cookies et traceurs", "en": "9. Cookies and trackers" },
+      "section9Body1": {
+        "fr": "AQWELIA utilise un minimum de traceurs strictement nécessaires au fonctionnement du Service (session d'authentification, préférences de langue et de thème). Aucun cookie publicitaire ou de tracking tiers n'est déposé sans consentement.",
+        "en": "AQWELIA uses a minimum of trackers strictly necessary for the operation of the Service (authentication session, language and theme preferences). No advertising or third-party tracking cookies are deposited without consent."
+      },
+      "section9Body2": {
+        "fr": "Les préférences peuvent être gérées depuis la page <link>Paramètres</link>.",
+        "en": "Preferences can be managed from the <link>Settings</link> page."
+      },
+      "section10Title": { "fr": "10. Sécurité", "en": "10. Security" },
+      "section10Body1": {
+        "fr": "AQWELIA met en œuvre les mesures techniques et organisationnelles appropriées pour protéger vos données :",
+        "en": "AQWELIA implements appropriate technical and organizational measures to protect your data:"
+      },
+      "section10Item1": { "fr": "chiffrement des mots de passe (scrypt, algorithme résistant au brute-force) ;", "en": "password encryption (scrypt, brute-force resistant algorithm);" },
+      "section10Item2": { "fr": "chiffrement des données en transit (TLS 1.2+) et au repos (chiffrement base de données) ;", "en": "encryption of data in transit (TLS 1.2+) and at rest (database encryption);" },
+      "section10Item3": { "fr": "authentification par JWT signé, durée de vie limitée (30 jours) ;", "en": "authentication via signed JWT, limited lifetime (30 days);" },
+      "section10Item4": { "fr": "accès restreint aux données personnelles (principe du moindre privilège) ;", "en": "restricted access to personal data (principle of least privilege);" },
+      "section10Item5": { "fr": "sauvegardes chiffrées et tests d'intrusion réguliers.", "en": "encrypted backups and regular penetration tests." },
+      "section10Body2": {
+        "fr": "En cas de violation de données susceptible d'engendrer un risque pour vos droits et libertés, AQWELIA vous notifiera dans les meilleurs délais conformément à l'article 34 du RGPD.",
+        "en": "In the event of a data breach likely to result in a risk to your rights and freedoms, AQWELIA will notify you without undue delay in accordance with Article 34 of the GDPR."
+      },
+      "section11Title": { "fr": "11. Contact DPO", "en": "11. DPO Contact" },
+      "section11Body1": {
+        "fr": "Pour toute question relative à la protection de vos données, contactez notre DPO :",
+        "en": "For any question regarding the protection of your data, contact our DPO:"
+      },
+      "section11Body2": {
+        "fr": "Voir aussi nos <link>CGU</link> et notre <link2>page Support</link2>.",
+        "en": "See also our <link>TOU</link> and our <link2>Support page</link2>."
+      }
+    },
+    "support": {
+      "metaTitle": {
+        "fr": "Support — AQWELIA",
+        "en": "Support — AQWELIA"
+      },
+      "metaDescription": {
+        "fr": "Contacter le support AQWELIA, FAQ, signaler un bug, demander une fonctionnalité.",
+        "en": "Contact AQWELIA support, FAQ, report a bug, request a feature."
+      },
+      "eyebrow": { "fr": "Aide & support", "en": "Help & support" },
+      "title": { "fr": "Contacter le support", "en": "Contact support" },
+      "subtitle": {
+        "fr": "Notre équipe est disponible pour vous aider à tirer le meilleur d'AQWELIA.",
+        "en": "Our team is available to help you get the most out of AQWELIA."
+      },
+      "emailTitle": { "fr": "Email", "en": "Email" },
+      "emailDesc": {
+        "fr": "La meilleure façon de nous joindre. Réponse sous 48h ouvrées.",
+        "en": "The best way to reach us. Response within 48 business hours."
+      },
+      "responseTimeTitle": { "fr": "Temps de réponse", "en": "Response time" },
+      "responseTimeFree": {
+        "fr": "<bold>Plan Free</bold> : réponse sous 72h ouvrées.",
+        "en": "<bold>Free plan</bold>: response within 72 business hours."
+      },
+      "responseTimePremium": {
+        "fr": "<bold>Plan Premium</bold> : réponse sous 48h ouvrées.",
+        "en": "<bold>Premium plan</bold>: response within 48 business hours."
+      },
+      "responseTimeExpert": {
+        "fr": "<bold>Plan Expert</bold> : réponse sous 24h, support prioritaire.",
+        "en": "<bold>Expert plan</bold>: response within 24h, priority support."
+      },
+      "cardFaqTitle": { "fr": "FAQ", "en": "FAQ" },
+      "cardFaqDesc": {
+        "fr": "Réponses aux questions les plus fréquentes : abonnements, données, piscine, compatibilité.",
+        "en": "Answers to the most frequent questions: subscriptions, data, pool, compatibility."
+      },
+      "cardFaqLink": { "fr": "Voir la FAQ", "en": "View FAQ" },
+      "cardKbTitle": { "fr": "Base de connaissances", "en": "Knowledge base" },
+      "cardKbDesc": {
+        "fr": "Guides détaillés, tutoriels vidéo et articles d'aide. À venir.",
+        "en": "Detailed guides, video tutorials and help articles. Coming soon."
+      },
+      "cardKbLink": { "fr": "Bientôt disponible", "en": "Coming soon" },
+      "cardBugTitle": { "fr": "Signaler un bug", "en": "Report a bug" },
+      "cardBugDesc": {
+        "fr": "Vous avez repéré un comportement inattendu ? Décrivez-le nous avec une capture si possible.",
+        "en": "Have you noticed unexpected behavior? Describe it to us with a screenshot if possible."
+      },
+      "cardBugLink": { "fr": "Signaler par email", "en": "Report by email" },
+      "cardFeatureTitle": { "fr": "Demander une fonctionnalité", "en": "Request a feature" },
+      "cardFeatureSubject": { "fr": "Idée fonctionnalité AQWELIA", "en": "Feature idea AQWELIA" },
+      "cardFeatureDesc": {
+        "fr": "Une idée pour améliorer AQWELIA ? Nous lisons toutes les suggestions.",
+        "en": "An idea to improve AQWELIA? We read all suggestions."
+      },
+      "cardFeatureLink": { "fr": "Partager mon idée", "en": "Share my idea" },
+      "cardAssistantTitle": { "fr": "Assistant IA intégré", "en": "Built-in AI assistant" },
+      "cardAssistantDesc": {
+        "fr": "Pour une question rapide sur votre piscine, interrogez l'assistant directement dans l'app.",
+        "en": "For a quick question about your pool, ask the assistant directly in the app."
+      },
+      "cardAssistantLink": { "fr": "Ouvrir l'app", "en": "Open the app" },
+      "cardLegalTitle": { "fr": "Questions légales", "en": "Legal questions" },
+      "cardLegalDesc": {
+        "fr": "Pour les sujets RGPD, confidentialité ou CGU, écrivez à privacy@aqwelia.app.",
+        "en": "For GDPR, privacy or TOU topics, write to privacy@aqwelia.app."
+      },
+      "cardLegalLink": { "fr": "Contacter le DPO", "en": "Contact the DPO" },
+      "resourcesTitle": { "fr": "Ressources associées", "en": "Related resources" },
+      "resourcesCguLink": { "fr": "Conditions générales", "en": "Terms of use" },
+      "resourcesPrivacyLink": { "fr": "Politique de confidentialité", "en": "Privacy policy" },
+      "resourcesSettingsLink": { "fr": "Paramètres du compte", "en": "Account settings" }
+    }
+  }
+}

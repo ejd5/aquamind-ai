@@ -11,6 +11,7 @@ export const runtime = 'nodejs'
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
+    // TODO: i18n — return a translation key for the client to localise.
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
   const userId = session.user.id
@@ -27,6 +28,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
+    // TODO: i18n — return a translation key for the client to localise.
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
   const userId = session.user.id
@@ -34,7 +36,11 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const ph = Number(body.ph)
-    if (isNaN(ph)) return NextResponse.json({ error: 'pH requis' }, { status: 400 })
+    if (isNaN(ph)) {
+      // TODO: i18n — return a translation key (common.errors.phRequired)
+      // for the client to localise. French fallback kept for now.
+      return NextResponse.json({ error: 'pH requis' }, { status: 400 })
+    }
 
     const test = {
       ph,
@@ -101,6 +107,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ test: created, actionPlan, lsiInfo: lsiInterpretation(lsi) })
   } catch (e) {
+    // TODO: i18n — return a translation key for the client to localise.
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Erreur' }, { status: 500 })
   }
 }
@@ -108,6 +115,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
+    // TODO: i18n — return a translation key for the client to localise.
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
   const userId = session.user.id

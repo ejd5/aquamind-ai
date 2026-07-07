@@ -235,6 +235,17 @@
           ]
         }
       }
+    },
+    "defaultPoolName": "Mi piscina",
+    "demoAccountName": "Cuenta de demostración",
+    "demoPoolName": "Piscina de demo",
+    "errors": {
+      "accountCreateError": "Error al crear la cuenta",
+      "accountDeleteError": "Error al eliminar la cuenta",
+      "accountExists": "Ya existe una cuenta con este email",
+      "demoCreateError": "Error al crear la cuenta de demo",
+      "phRequired": "pH obligatorio",
+      "poolProfileRequired": "Perfil de piscina requerido"
     }
   },
   "nav": {
@@ -641,7 +652,7 @@
     "footerContact": "Contacto",
     "footerCGU": "Términos",
     "footerPrivacy": "Privacidad",
-    "footerLegal": "Legal",
+    "footerLegal": "Avisos legales",
     "footerSettings": "Ajustes",
     "footerSupport": "Soporte",
     "footerCopyright": "Agua siempre cristalina.",
@@ -650,20 +661,51 @@
     "footerTagline2": "Copiloto de piscina",
     "signIn": "Iniciar sesión",
     "footerComingSoon": "próximamente",
-    "disclaimerLabel": "Aviso."
+    "disclaimerLabel": "Aviso.",
+    "heroPhoneChlorine": "Cloro"
   },
   "plans": {
     "free": {
       "name": "Gratis",
-      "tagline": "Gratis — para descubrir"
+      "tagline": "Gratis — para descubrir",
+      "features": {
+        "1pool": "1 piscina",
+        "unlimitedManualTests": "Análisis de agua ilimitados (manual)",
+        "clearWaterIndex": "Índice de agua clara + seguridad para nadar",
+        "2scans": "2 escaneos de fotos / mes",
+        "simpleWeather": "Clima simple",
+        "5guides": "5 guías básicas",
+        "history14": "Historial de 14 días"
+      }
     },
     "premium": {
       "name": "Premium",
-      "tagline": "El copiloto completo"
+      "tagline": "El copiloto completo",
+      "features": {
+        "3pools": "3 piscinas",
+        "unlimitedScans": "Escaneos por foto ilimitados",
+        "advancedWeather": "Clima avanzado + alertas",
+        "allGuidesVideos": "Todas las guías + vídeos",
+        "smartReminders": "Recordatorios inteligentes",
+        "pdfReport": "Informe PDF compartible",
+        "proMode": "Modo pro (LSI avanzado)",
+        "spaSupport": "Spa y agua caliente (bromo, oxígeno activo)",
+        "unlimitedHistory": "Historial ilimitado",
+        "prioritySupport": "Soporte prioritario"
+      }
     },
     "expert": {
       "name": "Expert",
-      "tagline": "Para profesionales y técnicos de piscina"
+      "tagline": "Para profesionales y técnicos de piscina",
+      "features": {
+        "allPremium": "Todo lo de Premium",
+        "multiClients": "Multi-cliente ilimitado",
+        "quotesVisits": "Presupuestos y planificación de visitas",
+        "photosBeforeAfter": "Fotos antes/después",
+        "advancedTechNotes": "Notas técnicas avanzadas",
+        "accountingExport": "Exportación contable",
+        "apiIntegrations": "API + integraciones"
+      }
     },
     "freeFeatures": [
       "1 pool",
@@ -813,7 +855,18 @@
       "API + integrations",
       "White label (your company logo)",
       "Dedicated support (response < 24h)"
-    ]
+    ],
+    "gates": {
+      "photo_scan_limit": "Límite de {n} escaneos/mes alcanzado.",
+      "weather_advanced": "Clima avanzado reservado a los planes de pago.",
+      "smart_reminders": "Recordatorios inteligentes reservados a los planes de pago.",
+      "guides_premium": "Guías premium reservadas a los planes de pago.",
+      "multi_pool": "Multi-piscina reservado a Premium y Expert.",
+      "pdf_report": "Informe PDF reservado a Premium y Expert.",
+      "pro_mode": "Modo pro reservado a Premium y Expert.",
+      "history_extended": "Historial ampliado reservado a los planes de pago.",
+      "spa_support": "El soporte de spas está reservado al plan Premium."
+    }
   },
   "onboarding": {
     "welcome": "Bienvenido a AQWELIA",
@@ -1059,13 +1112,15 @@
     "metricLower": "métrico",
     "imperialLower": "imperial",
     "metricPlural": "métrico",
-    "imperialPlural": "imperial",
+    "imperialPlural": "imperiales",
     "unknownUser": "usuario",
     "ariaLang": "Idioma de la interfaz",
     "ariaCountry": "País",
     "ariaMainNav": "Navegación principal",
     "unknownError": "Error desconocido",
-    "footerNote": "AQWELIA — Agua siempre cristalina. © {year}"
+    "footerNote": "AQWELIA — Agua siempre cristalina. © {year}",
+    "exportFailedDesc": "Exportación fallida",
+    "deleteFailedDesc": "Supresión fallida"
   },
   "auth": {
     "backHome": "Volver al inicio",
@@ -1228,7 +1283,25 @@
     "previewAlt": "Vista previa",
     "eyebrowLabel": "Diagnóstico visual",
     "error": "Error",
-    "failed": "Fallido"
+    "failed": "Fallido",
+    "swimReasonPhCriticalAcidic": "pH {ph} fuera del rango de seguridad (demasiado ácido).",
+    "swimReasonPhCriticalBasic": "pH {ph} fuera del rango de seguridad (demasiado básico).",
+    "swimReasonPhWarning": "pH {ph} ligeramente fuera del rango ideal.",
+    "swimReasonChlorineInsufficient": "Cloro libre insuficiente: desinfección no garantizada.",
+    "swimReasonChlorineTooHigh": "Cloro libre {chlorine} mg/L demasiado alto: irritación, sobredosis.",
+    "swimReasonChlorineHighLimit": "Cloro libre en el límite alto.",
+    "swimReasonChlorineNotMeasured": "Cloro libre no medido.",
+    "swimReasonCombinedChlorine": "Cloro combinado {combined} mg/L: cloraminas irritantes, olor fuerte.",
+    "lsiBalancedLabel": "Equilibrada",
+    "lsiSlightlyScalingLabel": "Ligeramente incrustante",
+    "lsiScalingLabel": "Incrustante",
+    "lsiSlightlyAgressiveLabel": "Ligeramente agresiva",
+    "lsiAgressiveLabel": "Agua agresiva",
+    "lsiMissingLabel": "-",
+    "clarityPerfect": "Agua perfecta",
+    "clarityWatch": "A vigilar",
+    "clarityAction": "Acción recomendada",
+    "clarityUrgent": "Urgente"
   },
   "weather": {
     "locateMe": "Ubicarme",
@@ -1246,7 +1319,50 @@
     "wind": "Viento",
     "precip": "Precipitación",
     "tomorrow": "Mañana",
-    "alerts": "Alertas",
+    "alerts": {
+      "storm_soon": {
+        "title": "Tormenta prevista mañana",
+        "message": "{percent} % de riesgo de tormenta. La tormenta diluye el cloro y sube el pH.",
+        "action": "Compruebe el cloro libre esta noche antes de la tormenta. Refuerce la filtración mañana.",
+        "when": "Esta noche antes de las 20h"
+      },
+      "heat_extreme": {
+        "title": "Ola de calor prevista",
+        "message": "{temp} °C previsto. Agua muy caliente = cloro consumido más rápido + proliferación de algas.",
+        "action": "Aumente la filtración 2h/día. Compruebe el cloro cada mañana. Considere un anti-algas preventivo.",
+        "when": "Desde ahora y durante la ola"
+      },
+      "heat_high": {
+        "title": "Fuerte calor previsto",
+        "message": "{temp} °C previsto. Probable sobreconsumo de cloro.",
+        "action": "Aumente la filtración 1h/día y analice el cloro mañana.",
+        "when": "Mañana por la mañana"
+      },
+      "heavy_rain": {
+        "title": "Lluvias fuertes previstas",
+        "message": "La lluvia diluye los productos, baja el pH y aporta restos.",
+        "action": "Tras la lluvia: compruebe pH y cloro, limpie el skimmer y la cesta de la bomba.",
+        "when": "Tras la lluvia"
+      },
+      "wind_strong": {
+        "title": "Viento fuerte previsto",
+        "message": "{wind} km/h. Restos, hojas, polvo en la piscina.",
+        "action": "Compruebe el skimmer y la cesta de la bomba. Limpie la línea de agua.",
+        "when": "Tras el viento"
+      },
+      "uv_high": {
+        "title": "UV muy altos",
+        "message": "El sol degrada el cloro no estabilizado más rápido.",
+        "action": "Compruebe su estabilizante (CYA) y el cloro libre.",
+        "when": "Esta semana"
+      },
+      "frost_risk": {
+        "title": "Riesgo de heladas",
+        "message": "Temperatura negativa prevista. Riesgo para equipos y tuberías.",
+        "action": "Proteja el local técnico. Deje la filtración funcionando de noche para evitar la congelación. Hiberne si no lo ha hecho.",
+        "when": "Esta noche"
+      }
+    },
     "noAlerts": "Sin alertas meteorológicas",
     "autoLocate": "Localízame automáticamente",
     "retry": "Reintentar",
@@ -1310,6 +1426,72 @@
       "fresh": "Fresco",
       "cold": "Frío",
       "tooCold": "Demasiado frío"
+    },
+    "summary": {
+      "calm": "Clima benigno en {location}. Sin alerta particular. Filtre {hours}h/día.",
+      "withAlerts": "{count} alerta(s) meteorológica(s): {titles}. Siga las acciones recomendadas."
+    },
+    "testReason": {
+      "before_storm": "Análisis recomendado antes de la tormenta prevista mañana.",
+      "during_heatwave": "Análisis diario recomendado durante la ola de calor.",
+      "after_rain": "Análisis de pH + cloro recomendado tras la lluvia.",
+      "routine": "Último análisis hace {days} días. Análisis rutinario recomendado.",
+      "urgent": "Último análisis hace {days} días: análisis urgente recomendado."
+    },
+    "filtration": {
+      "reason": "Regla: la mitad de la temperatura del agua ({temp} °C) en horas de filtración.",
+      "scheduleNocturnal": "Prefiera la filtración nocturna (menos evaporación, mejor eficacia del cloro).",
+      "scheduleDiurnal": "Filtración diurna recomendada."
+    },
+    "codes": {
+      "113": {},
+      "116": {},
+      "119": {},
+      "122": {},
+      "143": {},
+      "176": {},
+      "179": {},
+      "182": {},
+      "185": {},
+      "200": {},
+      "227": {},
+      "230": {},
+      "248": {},
+      "260": {},
+      "263": {},
+      "266": {},
+      "281": {},
+      "284": {},
+      "293": {},
+      "296": {},
+      "299": {},
+      "302": {},
+      "305": {},
+      "308": {},
+      "311": {},
+      "314": {},
+      "317": {},
+      "320": {},
+      "323": {},
+      "326": {},
+      "329": {},
+      "332": {},
+      "335": {},
+      "338": {},
+      "350": {},
+      "353": {},
+      "356": {},
+      "359": {},
+      "362": {},
+      "365": {},
+      "368": {},
+      "371": {},
+      "374": {},
+      "377": {},
+      "386": {},
+      "389": {},
+      "392": {},
+      "395": {}
     }
   },
   "admin": {
@@ -1365,7 +1547,25 @@
     "analyticsComingSoon": "Datos detallados próximamente",
     "usersTitle": "Usuarios",
     "usersDesc": "Gestiona usuarios, suscripciones y accesos.",
-    "usersComingSoon": "Próximamente"
+    "usersComingSoon": "Próximamente",
+    "wrongPassword": "Contraseña incorrecta",
+    "accessDenied": "Acceso denegado.",
+    "bannerSavedToast": "Banner guardado",
+    "popupsSavedToast": "Popups guardados",
+    "learnMore": "Saber más →",
+    "delete": "Eliminar",
+    "popupDefaultTitle": "Nuevo popup promo",
+    "popupDefaultBody": "Descripción de la promo...",
+    "popupDefaultCta": "Aprovechar",
+    "popupImagePlaceholder": "URL de imagen promo (subida próximamente)",
+    "bannerDefaultText": "☀️ Verano 2026 — ¡Aprovecha un -20% en el plan Lagoon!",
+    "bannerDescFull": "Personaliza el banner promocional en la parte superior de la app. Ideal para temporadas, promociones, anuncios.",
+    "popupDescFull": "Crea popups que aparecen según disparadores. Subida de imágenes promo próximamente.",
+    "contentComingSoonFull": "Módulo próximamente — Editor de contenido WYSIWYG para landing page, guías, emails...",
+    "analyticsComingSoonFull": "Datos detallados próximamente — Conexión API /api/analytics",
+    "usersComingSoonFull": "Módulo próximamente — Lista de usuarios, gestión de suscripciones, soporte...",
+    "usersDescFull": "Gestiona usuarios, suscripciones y accesos.",
+    "backToSiteArrow": "← Volver al sitio"
   },
   "spa": {
     "title": "Spa y baño",
@@ -1461,7 +1661,7 @@
       "noReminders": "Sin recordatorios",
       "labelPh": "pH",
       "labelChlorine": "Cloro",
-      "labelTac": "TA",
+      "labelTac": "TAC",
       "labelCya": "CYA",
       "labelTemp": "Temp."
     },
@@ -1514,7 +1714,7 @@
       "sourceDevice": "Dispositivo",
       "sourceImported": "Importado",
       "status": "Estado",
-      "statusOk": "Ok",
+      "statusOk": "OK",
       "statusWarning": "Advertencia",
       "statusCritical": "Crítico",
       "balanced": "Equilibrado",
@@ -1636,7 +1836,7 @@
         "chlorine_slow": "Cloro lento",
         "chlorine_shock": "Cloro shock",
         "salt": "Sal",
-        "alkalinity_plus": "TA+",
+        "alkalinity_plus": "TAC+",
         "stabilizer": "Estabilizador",
         "flocculant": "Floculante",
         "anti_algae": "Anti-algas",
@@ -1864,7 +2064,7 @@
       "cached": "datos en caché",
       "deleteError": "No se ha podido eliminar",
       "freeChlorine": "Cl libre",
-      "alkalinity": "TA"
+      "alkalinity": "TAC"
     }
   },
   "spaData": {
@@ -1919,94 +2119,1360 @@
     "brand_other_notes": "Spa genérico chino, sin marca",
     "recommended": "Recomendado",
     "notRecommended": "No recomendado",
-    "maxTemp": "Temp. máxima recomendada"
+    "maxTemp": "Temp. máxima recomendada",
+    "freq": {
+      "daily": "Diario",
+      "weekly": "Semanal",
+      "every_3_4_months": "Cada 3-4 meses",
+      "per_usage": "Según uso",
+      "config": "Configuración",
+      "per_drain": "En cada drenaje"
+    },
+    "seats_label": "Número de plazas",
+    "usage_occasional": "Ocasional (1-2x/semana)",
+    "usage_regular": "Regular (3-4x/semana)",
+    "usage_intensive": "Intensivo (5+/semana)",
+    "rec_temp_high_chlorine_warning": "⚠️ Temperatura alta — el cloro NO está recomendado. Use bromo.",
+    "rec_temp_high_session_limit": "Controle la temperatura: por encima de 38°C, limite las sesiones a 15-20 min.",
+    "rec_temp_critical_health": "🔴 Temperatura crítica (>38°C) — riesgo para la salud. Baje la temperatura.",
+    "rec_chlorine_evaporates": "⚠️ El cloro se evapora rápidamente en agua caliente. Cambie a bromo para mayor eficacia.",
+    "rec_cover_after_use": "Cubra el spa tras cada uso para evitar la evaporación y la fotosíntesis.",
+    "rec_drain_economic": "Drene cada 3-4 meses — es más económico que sobretratar.",
+    "drainage_reason_intensive": "Uso intensivo detectado — drenaje recomendado cada {months} meses para evitar la saturación de productos.",
+    "drainage_reason_standard": "Drenaje recomendado cada {months} meses (más económico que el sobretratamiento).",
+    "freq_daily": "Diario",
+    "freq_weekly": "Semanal",
+    "freq_every_3_4_months": "Cada 3-4 meses",
+    "freq_per_usage": "Según uso",
+    "freq_config": "Configuración",
+    "freq_per_drain": "En cada drenaje"
   },
   "guidesData": {
-    "cat_getting_started": "Getting started",
-    "cat_problems": "Water problems",
-    "cat_products": "Products & dosing",
-    "cat_equipment": "Equipment",
-    "cat_weather_seasons": "Weather & seasons",
-    "cat_safety": "Safety & swimming",
-    "cat_treatments": "Treatments (chlorine/salt/bromine)",
+    "cat_getting_started": "Empezar",
+    "cat_problems": "Problemas del agua",
+    "cat_products": "Productos y dosificación",
+    "cat_equipment": "Equipamientos",
+    "cat_weather_seasons": "Clima y estaciones",
+    "cat_safety": "Seguridad y baño",
+    "cat_treatments": "Tratamientos (cloro/sal/bromo)",
     "cat_faq": "FAQ",
-    "level_beginner": "Beginner",
-    "level_intermediate": "Intermediate",
-    "level_expert": "Expert",
-    "tag_algues": "algae",
-    "tag_chlore": "chlorine",
-    "tag_vert": "green",
-    "tag_trouble": "cloudy",
-    "tag_filtration": "filtration",
-    "tag_floculant": "flocculant",
-    "tag_choc": "shock",
-    "tag_securite": "safety",
-    "tag_sel": "salt",
-    "tag_electrolyseur": "electrolyzer",
+    "level_beginner": "Principiante",
+    "level_intermediate": "Intermedio",
+    "level_expert": "Experto",
+    "tag_algues": "algas",
+    "tag_chlore": "cloro",
+    "tag_vert": "verde",
+    "tag_trouble": "turbia",
+    "tag_filtration": "filtración",
+    "tag_floculant": "floculante",
+    "tag_choc": "choque",
+    "tag_securite": "seguridad",
+    "tag_sel": "sal",
+    "tag_electrolyseur": "electrólizador",
     "tag_ph": "pH",
-    "tag_debutant": "beginner",
-    "tag_filtre": "filter",
-    "tag_backwash": "backwash",
-    "tag_cartouche": "cartridge",
-    "tag_chloramines": "chloramines",
-    "tag_odeur": "odor",
-    "tag_yeux": "eyes",
-    "guide_gs1_title": "Getting started with your pool",
-    "guide_gs1_summary": "The first 10 things to know when you become a pool owner.",
-    "guide_tr1_title": "Understanding your salt electrolyzer",
-    "guide_tr1_summary": "Principle, salt level, production, routine maintenance.",
-    "guide_pb1_title": "Green water: diagnosis and action plan",
-    "guide_pb1_summary": "Identify the cause of green water and treat it step by step without overdosing.",
-    "guide_pb2_title": "Cloudy or milky water",
-    "guide_pb2_summary": "Distinguish the causes of cloudy water and apply the right treatment.",
-    "guide_pr1_title": "When and how to shock chlorinate",
-    "guide_pr1_summary": "Shock treatment: indications, dosage, safety, swimming delays.",
-    "guide_pb3_title": "Strong chlorine odor and burning eyes",
-    "guide_pb3_summary": "Understand chloramines and how to get rid of them.",
-    "guide_eq1_title": "Backwashing a sand filter",
-    "guide_eq1_summary": "When and how to do an effective backwash.",
-    "guide_eq2_title": "Cleaning a cartridge filter",
-    "guide_eq2_summary": "Disassembly and rinsing of a filter cartridge.",
-    "reminder_filter_clean": "Filter cleaning",
-    "reminder_filter_clean_desc": "Sand filter backwash recommended.",
-    "reminder_filter_clean_action": "Do a backwash (counter-wash).",
-    "reminder_skimmer": "Check skimmer and basket",
-    "reminder_skimmer_desc": "Debris, leaves, insects to remove regularly.",
-    "reminder_skimmer_action": "Empty the skimmer basket and the pump basket.",
-    "reminder_test_water_title": "Water test",
-    "reminder_test_water_detail": "It's time to test your water.",
-    "reminder_test_water_action": "Do a full test (pH, chlorine, TA).",
+    "tag_debutant": "principiante",
+    "tag_filtre": "filtro",
+    "tag_backwash": "lavado a contracorriente",
+    "tag_cartouche": "cartucho",
+    "tag_chloramines": "cloraminas",
+    "tag_odeur": "olor",
+    "tag_yeux": "ojos",
+    "guide_gs1_title": "Empezar con tu piscina",
+    "guide_gs1_summary": "Las 10 primeras cosas que hay que saber cuando te conviertes en propietario de una piscina.",
+    "guide_tr1_title": "Entender tu electrolizador de sal",
+    "guide_tr1_summary": "Principio, nivel de sal, producción, mantenimiento rutinario.",
+    "guide_pb1_title": "Agua verde: diagnóstico y plan de acción",
+    "guide_pb1_summary": "Identificar la causa del agua verde y tratarla paso a paso sin sobredosificar.",
+    "guide_pb2_title": "Agua turbia o lechosa",
+    "guide_pb2_summary": "Distinguir las causas del agua turbia y aplicar el tratamiento adecuado.",
+    "guide_pr1_title": "Cuándo y cómo hacer un cloro de choque",
+    "guide_pr1_summary": "El tratamiento de choque: indicaciones, dosificación, seguridad, tiempos de baño.",
+    "guide_pb3_title": "Fuerte olor a cloro y ojos que arden",
+    "guide_pb3_summary": "Entender las cloraminas y cómo eliminarlas.",
+    "guide_eq1_title": "Retrolavado del filtro de arena",
+    "guide_eq1_summary": "Cuándo y cómo hacer un retrolavado eficaz.",
+    "guide_eq2_title": "Limpiar un filtro de cartucho",
+    "guide_eq2_summary": "Desmontaje y aclarado de un cartucho de filtración.",
+    "reminder_filter_clean": "Limpieza del filtro",
+    "reminder_filter_clean_desc": "Retrolavado del filtro de arena recomendado.",
+    "reminder_filter_clean_action": "Haz un retrolavado.",
+    "reminder_skimmer": "Revisar skimmer y cesta",
+    "reminder_skimmer_desc": "Restos, hojas e insectos que retirar con regularidad.",
+    "reminder_skimmer_action": "Vacíe la cesta del skimmer y la de la bomba.",
+    "reminder_test_water_title": "Análisis del agua",
+    "reminder_test_water_detail": "Es hora de analizar el agua.",
+    "reminder_test_water_action": "Haga un análisis completo (pH, cloro, TAC).",
     "reminder_retest_after_product_title": "Retest After Product",
-    "reminder_retest_after_product_detail": "Detail for retest_after_product",
-    "reminder_retest_after_product_action": "Action for retest_after_product",
-    "reminder_after_storm_title": "After the storm",
-    "reminder_after_storm_detail": "The storm may have unbalanced your water.",
-    "reminder_after_storm_action": "Test chlorine and pH.",
-    "reminder_filter_clean_title": "Filter cleaning",
-    "reminder_filter_clean_detail": "Sand filter backwash recommended.",
+    "reminder_retest_after_product_detail": "Detalle para retest_after_product",
+    "reminder_retest_after_product_action": "Acción para retest_after_product",
+    "reminder_after_storm_title": "Después de la tormenta",
+    "reminder_after_storm_detail": "La tormenta puede haber desequilibrado tu agua.",
+    "reminder_after_storm_action": "Testa el cloro y el pH.",
+    "reminder_filter_clean_title": "Limpieza del filtro",
+    "reminder_filter_clean_detail": "Retrolavado del filtro de arena recomendado.",
     "reminder_cell_clean_title": "Cell Clean",
-    "reminder_cell_clean_detail": "Detail for cell_clean",
-    "reminder_cell_clean_action": "Action for cell_clean",
+    "reminder_cell_clean_detail": "Detalle para cell_clean",
+    "reminder_cell_clean_action": "Acción para cell_clean",
     "reminder_ph_check_title": "Ph Check",
-    "reminder_ph_check_detail": "Detail for ph_check",
-    "reminder_ph_check_action": "Action for ph_check",
+    "reminder_ph_check_detail": "Detalle para ph_check",
+    "reminder_ph_check_action": "Acción para ph_check",
     "reminder_chlorine_check_title": "Chlorine Check",
-    "reminder_chlorine_check_detail": "Detail for chlorine_check",
-    "reminder_chlorine_check_action": "Action for chlorine_check",
-    "reminder_skimmer_check_title": "Check skimmer and basket",
-    "reminder_skimmer_check_detail": "Debris, leaves, insects to remove regularly.",
-    "reminder_skimmer_check_action": "Empty the skimmer basket and the pump basket.",
-    "reminder_shock_treatment_title": "Shock Treatment",
-    "reminder_shock_treatment_detail": "Detail for shock_treatment",
-    "reminder_shock_treatment_action": "Action for shock_treatment",
-    "reminder_winterize_title": "Winterize",
-    "reminder_winterize_detail": "Detail for winterize",
-    "reminder_winterize_action": "Action for winterize",
+    "reminder_chlorine_check_detail": "Detalle para chlorine_check",
+    "reminder_chlorine_check_action": "Acción para chlorine_check",
+    "reminder_skimmer_check_title": "Revisar skimmer y cesta",
+    "reminder_skimmer_check_detail": "Restos, hojas e insectos que retirar con regularidad.",
+    "reminder_skimmer_check_action": "Vacíe la cesta del skimmer y la de la bomba.",
+    "reminder_shock_treatment_title": "Tratamiento de choque",
+    "reminder_shock_treatment_detail": "Detalle para tratamiento de choque",
+    "reminder_shock_treatment_action": "Acción para tratamiento de choque",
+    "reminder_winterize_title": "Invernado",
+    "reminder_winterize_detail": "Detalle para invernado",
+    "reminder_winterize_action": "Acción para invernado",
     "reminder_open_pool_title": "Open Pool",
-    "reminder_open_pool_detail": "Detail for open_pool",
-    "reminder_open_pool_action": "Action for open_pool",
+    "reminder_open_pool_detail": "Detalle para open_pool",
+    "reminder_open_pool_action": "Acción para open_pool",
     "reminder_algae_prevent_title": "Algae Prevent",
-    "reminder_algae_prevent_detail": "Detail for algae_prevent",
-    "reminder_algae_prevent_action": "Action for algae_prevent"
+    "reminder_algae_prevent_detail": "Detalle para algae_prevent",
+    "reminder_algae_prevent_action": "Acción para algae_prevent",
+    "green-water": {
+      "title": "Agua verde: diagnóstico y plan de acción",
+      "summary": "Identificar la causa del agua verde y tratarla paso a paso sin sobredosificar.",
+      "steps": {
+        "1": {
+          "title": "Medir pH y cloro libre",
+          "detail": "El agua verde casi siempre se debe a falta de desinfectante o a un pH desequilibrado.",
+          "warning": "Nunca añadir anti-algas antes de haber equilibrado el pH."
+        },
+        "2": {
+          "title": "Equilibrar el pH (7.0-7.4)",
+          "detail": "Si el pH > 7.4, añade pH- diluido. Espera 2-3h de filtración.",
+          "tip": "El cloro es 10x más eficaz a pH 7.2 que a pH 8.0."
+        },
+        "3": {
+          "title": "Cepillar las paredes y el fondo",
+          "detail": "Despegar las algas ayuda al tratamiento a penetrar."
+        },
+        "4": {
+          "title": "Hacer un tratamiento de choque",
+          "detail": "Cloro de choque (tras equilibrar el pH). Filtración continua 24h.",
+          "warning": "Baño prohibido 8h mínimo después del choque."
+        },
+        "5": {
+          "title": "Añadir un anti-algas curativo",
+          "detail": "Tras el choque, el anti-algas previene el rebrote."
+        },
+        "6": {
+          "title": "Filtrar de forma continua 24-48h",
+          "detail": "La filtración es tan importante como los productos químicos."
+        },
+        "7": {
+          "title": "Volver a testar tras 24h",
+          "detail": "Verifica pH y cloro. Si el agua sigue verde, puede que el filtro necesite limpieza."
+        }
+      }
+    },
+    "cloudy-water": {
+      "title": "Agua turbia o lechosa",
+      "summary": "Distinguir las causas del agua turbia y aplicar el tratamiento adecuado.",
+      "steps": {
+        "1": {
+          "title": "Verificar la filtración",
+          "detail": "El 80% de las aguas turbias se deben a un problema de filtración. Verifica presión, duración y limpieza del filtro."
+        },
+        "2": {
+          "title": "Testar pH y cloro",
+          "detail": "pH fuera de rango o cloro bajo = agua turbia."
+        },
+        "3": {
+          "title": "Limpiar o retrolavar el filtro",
+          "detail": "Filtro saturado = agua turbia."
+        },
+        "4": {
+          "title": "Usar un floculante (si filtro de arena)",
+          "detail": "El floculante aglomera las partículas finas para que el filtro las retenga.",
+          "warning": "Floculante solo con filtro de arena. No con cartucho."
+        },
+        "5": {
+          "title": "Filtrar 24h y luego aspirar los depósitos",
+          "detail": "Tras la floculación, se forman depósitos en el fondo: asípiralos."
+        }
+      }
+    },
+    "chlorine-shock": {
+      "title": "Cuándo y cómo hacer un cloro de choque",
+      "summary": "El tratamiento de choque: indicaciones, dosificación, seguridad, tiempos de baño.",
+      "steps": {
+        "1": {
+          "title": "Verificar el pH ANTES",
+          "detail": "Un choque es ineficaz si el pH > 7.6. Equilibra primero.",
+          "warning": "NUNCA hacer un choque sin haber verificado antes el pH."
+        },
+        "2": {
+          "title": "Elegir el buen momento",
+          "detail": "Por la tarde, sin bañistas, filtración en marcha."
+        },
+        "3": {
+          "title": "Dosificar según el volumen",
+          "detail": "AQWELIA calcula la cantidad según el volumen de tu vaso."
+        },
+        "4": {
+          "title": "Disolver en un cubo",
+          "detail": "Nunca verter el choque en polvo directamente en el borde."
+        },
+        "5": {
+          "title": "Filtrar 4h mínimo",
+          "detail": "El cloro debe quedar bien repartido."
+        },
+        "6": {
+          "title": "Esperar 8h antes del baño",
+          "detail": "Verifica el cloro libre antes de bañarte (debe ser < 3 mg/L).",
+          "warning": "Baño prohibido durante 8h mínimo."
+        }
+      }
+    },
+    "combined-chlorine": {
+      "title": "Fuerte olor a cloro y ojos que pican",
+      "summary": "Entender las cloraminas y cómo eliminarlas.",
+      "steps": {
+        "1": {
+          "title": "Entender la causa",
+          "detail": "El fuerte olor a cloro NO es un exceso de cloro: son las cloraminas (cloro combinado), subproductos de la desinfección."
+        },
+        "2": {
+          "title": "Medir el cloro libre Y el total",
+          "detail": "Cloro combinado = cloro total - cloro libre. Si > 0.4 mg/L, hace falta tratamiento."
+        },
+        "3": {
+          "title": "Hacer un tratamiento de choque",
+          "detail": "El choque rompe las cloraminas y libera cloro libre activo."
+        },
+        "4": {
+          "title": "Verificar el pH",
+          "detail": "Un pH alto agrava las cloraminas."
+        }
+      }
+    },
+    "filter-backwash": {
+      "title": "Retrolavado del filtro de arena",
+      "summary": "Cuándo y cómo hacer un retrolavado eficaz.",
+      "steps": {
+        "1": {
+          "title": "¿Cuándo retrolavar?",
+          "detail": "Cuando la presión sube 0.3-0.5 bar por encima de la presión de servicio, o cada 2-4 semanas."
+        },
+        "2": {
+          "title": "Apagar la bomba",
+          "detail": "SIEMPRE apagar la bomba antes de manipular la válvula.",
+          "warning": "Riesgo eléctrico y material."
+        },
+        "3": {
+          "title": "Poner la válvula en BACKWASH",
+          "detail": "Girar firmemente la válvula multivía."
+        },
+        "4": {
+          "title": "Encender la bomba 2-3 min",
+          "detail": "El agua fluye al desagüe hasta que vuelve a estar clara."
+        },
+        "5": {
+          "title": "Apagar, válvula en RINSE 30s",
+          "detail": "El aclarado recomprime la arena y evita el retorno de suciedad."
+        },
+        "6": {
+          "title": "Volver a la posición FILTER",
+          "detail": "Volver a poner la válvula en filtración normal."
+        }
+      }
+    },
+    "filter-cartridge-clean": {
+      "title": "Limpiar un filtro de cartucho",
+      "summary": "Desmontaje y aclarado de un cartucho de filtración.",
+      "steps": {
+        "1": {
+          "title": "Apagar la bomba",
+          "detail": "Cortar la alimentación eléctrica.",
+          "warning": "Seguridad eléctrica obligatoria."
+        },
+        "2": {
+          "title": "Desmontar el cartucho",
+          "detail": "Abrir el cuerpo del filtro según el modelo."
+        },
+        "3": {
+          "title": "Aclarar con chorro",
+          "detail": "Chorro de agua suave, de arriba abajo, entre los pliegues."
+        },
+        "4": {
+          "title": "Sumergir en un limpiador de filtros (opcional)",
+          "detail": "Cada 2-3 limpiezas, desengrase y desincrustado."
+        },
+        "5": {
+          "title": "Volver a montar y reiniciar",
+          "detail": "Reposicionar bien las juntas."
+        }
+      }
+    },
+    "cell-clean": {
+      "title": "Limpiar la célula del electrolizador",
+      "summary": "Desincrustar la célula del electrolizador de sal para mantener la producción de cloro.",
+      "steps": {
+        "1": {
+          "title": "Cortar la alimentación",
+          "detail": "Apagar el electrolizador y la bomba.",
+          "warning": "Seguridad eléctrica. Nunca manipular la célula con tensión."
+        },
+        "2": {
+          "title": "Desmontar la célula",
+          "detail": "Desenroscar según el modelo. Verificar el estado de los electrodos."
+        },
+        "3": {
+          "title": "Preparar una solución ácida diluida",
+          "detail": "1/3 ácido clorhídrico + 2/3 agua en un recipiente de plástico.",
+          "warning": "SIEMPRE verter el ácido sobre el agua, nunca al revés. Guantes y gafas obligatorios. Ventilación."
+        },
+        "4": {
+          "title": "Sumergir 10-15 min",
+          "detail": "La cal se disuelve. No dejar demasiado tiempo."
+        },
+        "5": {
+          "title": "Aclarar abundantemente",
+          "detail": "Con agua limpia hasta que desaparezca el olor."
+        },
+        "6": {
+          "title": "Volver a montar y reiniciar",
+          "detail": "Verificar la producción en la pantalla."
+        }
+      }
+    },
+    "salt-system-basics": {
+      "title": "Entender su electrólizador de sal",
+      "summary": "Principio, nivel de sal, producción, mantenimiento rutinario.",
+      "steps": {
+        "1": {
+          "title": "El principio",
+          "detail": "La sal (NaCl) se electroliza en cloro activo in situ. Sin almacenamiento de cloro, agua más suave."
+        },
+        "2": {
+          "title": "Nivel de sal requerido",
+          "detail": "Según el modelo: generalmente 3-7 g/L. Consulte el manual. Demasiado bajo = sin producción; demasiado alto = sobreconsumo."
+        },
+        "3": {
+          "title": "Estabilizante (CYA) imprescindible",
+          "detail": "Sin estabilizante, el cloro producido es destruido por el sol en 2h."
+        },
+        "4": {
+          "title": "Vigilar el pH",
+          "detail": "El electrólizador sube el pH. Se necesita regulación frecuente."
+        },
+        "5": {
+          "title": "Producción según temperatura",
+          "detail": "En agua fría (< 15°C), la producción cae. No preocuparse en invierno."
+        },
+        "6": {
+          "title": "Mantenimiento de la célula",
+          "detail": "Limpieza ácida cada 3-6 meses según la dureza del agua."
+        }
+      }
+    },
+    "ph-control": {
+      "title": "Dominar tu pH",
+      "summary": "Por qué el pH es el parámetro nº1 y cómo ajustarlo.",
+      "steps": {
+        "1": {
+          "title": "El pH es prioritario",
+          "detail": "Todo empieza por el pH: eficacia del cloro, confort del baño, protección de los equipos."
+        },
+        "2": {
+          "title": "Rango ideal 7.0-7.4",
+          "detail": "Más cerca de 7.2 = cloro óptimo."
+        },
+        "3": {
+          "title": "Ajustar el TAC antes del pH si es inestable",
+          "detail": "Un TAC bajo hace el pH inestable."
+        },
+        "4": {
+          "title": "Dosificar en pequeñas cantidades",
+          "detail": "Nunca modificar el pH en más de 0.3 de una vez."
+        },
+        "5": {
+          "title": "Filtrar 2-3h y luego volver a testar",
+          "detail": "La mezcla debe ser homogénea."
+        }
+      }
+    },
+    "tac-control": {
+      "title": "Entender la alcalinidad (TAC)",
+      "summary": "El TAC es el amortiguador del pH. Sin un buen TAC, el pH se vuelve inestable.",
+      "steps": {
+        "1": {
+          "title": "Función del TAC",
+          "detail": "El TAC (alcalinidad total) estabiliza el pH. Sin él, el pH salta con cada adición de producto."
+        },
+        "2": {
+          "title": "Rango ideal 80-120 mg/L",
+          "detail": "Objetivo 100 mg/L."
+        },
+        "3": {
+          "title": "Ajustar ANTES del pH",
+          "detail": "Equilibrar siempre el TAC primero; de lo contrario el pH no se mantendrá."
+        },
+        "4": {
+          "title": "Para subir: bicarbonato de sodio",
+          "detail": "Diluir, distribuir, filtración 3h."
+        },
+        "5": {
+          "title": "Para bajar: ácido",
+          "detail": "Más complejo, se hace lentamente con un pH-."
+        }
+      }
+    },
+    "after-storm": {
+      "title": "¿Qué hacer después de una tormenta?",
+      "summary": "La tormenta diluye el cloro y modifica el pH. Rutina post-tormenta.",
+      "steps": {
+        "1": {
+          "title": "Testar pH y cloro",
+          "detail": "La tormenta suele acidificar el agua y diluir el cloro."
+        },
+        "2": {
+          "title": "Limpiar el skimmer y el cesto",
+          "detail": "Residuos traídos por la lluvia y el viento."
+        },
+        "3": {
+          "title": "Ajustar el pH si es necesario",
+          "detail": "Prioridad al pH antes de cualquier adición de cloro."
+        },
+        "4": {
+          "title": "Reponer el cloro si está bajo",
+          "detail": "Cloro lento o de choque según la diferencia."
+        },
+        "5": {
+          "title": "Filtrar 4-6h",
+          "detail": "Reparte bien las correcciones."
+        }
+      }
+    },
+    "vacation-mode": {
+      "title": "Antes de irse de vacaciones",
+      "summary": "Preparar la piscina para una ausencia de varios días/semanas.",
+      "steps": {
+        "1": {
+          "title": "Hacer un análisis completo",
+          "detail": "Equilibrar todo antes de partir: pH, cloro, TAC."
+        },
+        "2": {
+          "title": "Cloro de choque la víspera",
+          "detail": "Desinfectar a fondo."
+        },
+        "3": {
+          "title": "Llenar el distribuidor de cloro lento",
+          "detail": "Para una ausencia < 1 semana."
+        },
+        "4": {
+          "title": "Programar el temporizador de filtración",
+          "detail": "Al menos 4-6h/día, preferiblemente de noche."
+        },
+        "5": {
+          "title": "Cubrir la piscina",
+          "detail": "Lona o cubierta: limita restos y evaporación."
+        },
+        "6": {
+          "title": "Para una ausencia larga: vecino o robot",
+          "detail": "Pida a alguien que revise o instale un robot."
+        },
+        "7": {
+          "title": "Según la temporada: hibernación activa o pasiva",
+          "detail": "En verano, basta con filtración reducida. En invierno, hibernación completa."
+        }
+      }
+    },
+    "winterization": {
+      "title": "Hibernar la piscina",
+      "summary": "Poner la piscina en hibernación para el invierno sin dañar los equipos.",
+      "steps": {
+        "1": {
+          "title": "Elegir hibernación activa o pasiva",
+          "detail": "Activa: filtración reducida. Pasiva: parada total. Depende del clima."
+        },
+        "2": {
+          "title": "Limpieza a fondo",
+          "detail": "Agua, paredes, fondo, filtro, línea de agua."
+        },
+        "3": {
+          "title": "Hacer un tratamiento de invierno",
+          "detail": "Producto de hibernación, anti-algas y anti-cal."
+        },
+        "4": {
+          "title": "Bajar el nivel del agua",
+          "detail": "10-15 cm por debajo de los chorros para pasiva."
+        },
+        "5": {
+          "title": "Vaciar las tuberías sensibles",
+          "detail": "Proteger de la congelación."
+        },
+        "6": {
+          "title": "Cubrir la piscina",
+          "detail": "Lona de invierno o cubierta."
+        },
+        "7": {
+          "title": "Hibernación activa: filtración 2-3h/día",
+          "detail": "Sobre todo durante los periodos de heladas."
+        }
+      }
+    },
+    "startup": {
+      "title": "Puesta en marcha en primavera",
+      "summary": "Despertar la piscina tras el invierno con suavidad.",
+      "steps": {
+        "1": {
+          "title": "Quitar la cubierta y limpiar",
+          "detail": "Retirar hojas y restos acumulados."
+        },
+        "2": {
+          "title": "Rellenar si el nivel está bajo",
+          "detail": "Restaurar el nivel."
+        },
+        "3": {
+          "title": "Arrancar la filtración",
+          "detail": "Revisar el filtro (lavado a contracorriente si es necesario)."
+        },
+        "4": {
+          "title": "Analizar el agua",
+          "detail": "pH, cloro, TAC, estabilizante."
+        },
+        "5": {
+          "title": "Equilibrar progresivamente",
+          "detail": "TAC → pH → cloro. Sin prisas."
+        },
+        "6": {
+          "title": "Hacer un tratamiento de choque",
+          "detail": "Para retomar sobre una base sana."
+        },
+        "7": {
+          "title": "Revisar los equipos",
+          "detail": "Bomba, electrólizador, juntas, manómetro."
+        }
+      }
+    },
+    "swim-safety": {
+      "title": "Seguridad del baño: ¿cuándo se puede bañar?",
+      "summary": "Criterios de seguridad para un baño sin riesgo.",
+      "steps": {
+        "1": {
+          "title": "pH entre 7.0 y 7.6",
+          "detail": "Fuera de este rango: posible irritación."
+        },
+        "2": {
+          "title": "Cloro libre entre 1 y 3 mg/L",
+          "detail": "Menos = desinfección insuficiente. Más = irritación."
+        },
+        "3": {
+          "title": "Cloro combinado < 0.4 mg/L",
+          "detail": "Por encima: olor fuerte, picores en los ojos."
+        },
+        "4": {
+          "title": "Respetar los tiempos tras el tratamiento",
+          "detail": "2h tras pH, 8h tras cloro de choque."
+        },
+        "5": {
+          "title": "En caso de duda: no bañarse",
+          "detail": "Mejor esperar a un análisis que bañarse en agua dudosa."
+        }
+      }
+    },
+    "product-safety": {
+      "title": "Seguridad de los productos químicos",
+      "summary": "Las reglas de oro para manipular y almacenar los productos de piscina.",
+      "steps": {
+        "1": {
+          "title": "NUNCA mezclar los productos",
+          "detail": "Cloro + ácido = gas tóxico mortal. Siempre diluir por separado.",
+          "warning": "Regla absoluta de supervivencia."
+        },
+        "2": {
+          "title": "Siempre añadir el producto al agua",
+          "detail": "Nunca agua sobre el producto ácido (salpicaduras)."
+        },
+        "3": {
+          "title": "Llevar guantes y gafas",
+          "detail": "Sobre todo para los ácidos y el cloro concentrado."
+        },
+        "4": {
+          "title": "Almacenar en lugar seco, fresco y ventilado",
+          "detail": "Separar ácidos y cloros. Fuera del alcance de los niños."
+        },
+        "5": {
+          "title": "Respetar las instrucciones",
+          "detail": "Cada producto tiene sus reglas de dosificación y aplicación."
+        },
+        "6": {
+          "title": "En caso de incidente: llamar al 112 o al centro de toxicología",
+          "detail": "No provocar el vómito, consultar inmediatamente."
+        }
+      }
+    },
+    "getting-started": {
+      "title": "Empezar con tu piscina",
+      "summary": "Las 10 primeras cosas que hay que saber cuando te conviertes en propietario de una piscina.",
+      "steps": {
+        "1": {
+          "title": "Conocer el volumen de tu piscina",
+          "detail": "Imprescindible para cualquier dosificación. AQWELIA lo calcula a partir de las dimensiones."
+        },
+        "2": {
+          "title": "Entender el pH",
+          "detail": "El parámetro nº1. Todo empieza ahí."
+        },
+        "3": {
+          "title": "Entender el cloro",
+          "detail": "Libre, total, combinado. AQWELIA te guía."
+        },
+        "4": {
+          "title": "Filtrar lo suficiente",
+          "detail": "La mitad de la temperatura del agua en horas."
+        },
+        "5": {
+          "title": "Testar 1-2 veces por semana",
+          "detail": "Más a menudo con calor."
+        },
+        "6": {
+          "title": "Mantener el filtro",
+          "detail": "Retrolavado o aclarado regular."
+        },
+        "7": {
+          "title": "Vigilar el nivel del agua",
+          "detail": "Demasiado bajo = bomba en peligro; demasiado alto = skimmer ineficaz."
+        },
+        "8": {
+          "title": "Cepillar y limpiar la línea de agua",
+          "detail": "Evita algas y depósitos."
+        },
+        "9": {
+          "title": "Anticipar el clima",
+          "detail": "Tormenta, ola de calor, vacaciones: prevenir antes que curar."
+        },
+        "10": {
+          "title": "Llevar un cuaderno",
+          "detail": "AQWELIA guarda el historial por ti."
+        }
+      }
+    },
+    "getting-started-spa": {
+      "title": "Especificidades del spa",
+      "summary": "El spa tiene sus propias reglas: agua caliente, volumen reducido, bromo en lugar de cloro.",
+      "steps": {
+        "1": {
+          "title": "Volumen reducido = reacciones rápidas",
+          "detail": "El agua cambia rápido. Tests más frecuentes."
+        },
+        "2": {
+          "title": "Preferir el bromo al cloro",
+          "detail": "El bromo es más estable en caliente y menos odorante."
+        },
+        "3": {
+          "title": "Temperatura y pH",
+          "detail": "El pH cambia con la temperatura. Testar a la temperatura de baño."
+        },
+        "4": {
+          "title": "Choque semanal",
+          "detail": "Más necesario que en la piscina."
+        },
+        "5": {
+          "title": "Vaciado periódico",
+          "detail": "Cada 3-4 meses según el uso."
+        }
+      }
+    },
+    "faq-test-frequency": {
+      "title": "¿Con qué frecuencia testar el agua?",
+      "summary": "Ritmo recomendado según temporada y uso.",
+      "steps": {
+        "1": {
+          "title": "En temporada cálida",
+          "detail": "Mínimo 2 veces por semana, más si hace mucho calor."
+        },
+        "2": {
+          "title": "En temporada fría (invernado activo)",
+          "detail": "1 vez cada 15 días."
+        },
+        "3": {
+          "title": "Después de cualquier tratamiento",
+          "detail": "Volver a testar en 3-24h según el producto."
+        },
+        "4": {
+          "title": "Después de una tormenta",
+          "detail": "Test sistemático."
+        },
+        "5": {
+          "title": "Antes del baño si hay dudas",
+          "detail": "Siempre."
+        }
+      }
+    },
+    "faq-cya-high": {
+      "title": "Mi estabilizante (CYA) está demasiado alto",
+      "summary": "¿Qué hacer cuando el CYA supera los 50-60 mg/L?",
+      "steps": {
+        "1": {
+          "title": "Por qué es un problema",
+          "detail": "Un CYA demasiado alto «bloquea» el cloro: está presente pero inactivo. Riesgo de algas a pesar de un cloro normal."
+        },
+        "2": {
+          "title": "No existe ningún producto para bajar el CYA",
+          "detail": "Única solución: diluir el agua."
+        },
+        "3": {
+          "title": "Renovar el 20-30% del agua",
+          "detail": "Vaciado parcial y luego relleno."
+        },
+        "4": {
+          "title": "Volver a testar tras la renovación",
+          "detail": "Verificar el nuevo valor."
+        },
+        "5": {
+          "title": "En el futuro: usar menos cloro estabilizado",
+          "detail": "Preferir cloro no estabilizado o electrolizador."
+        }
+      }
+    }
+  },
+  "diagnosticActionPlan": {
+    "urgencyCritical": "Urgente",
+    "urgencyImportant": "Importante",
+    "urgencyModerate": "A vigilar",
+    "urgencyLow": "OK",
+    "fieldPhLabel": "Introduce tu pH medido",
+    "fieldChlorineLabel": "Cloro libre medido",
+    "fieldTacLabel": "TAC medido",
+    "title": "Plan de acción guiado",
+    "poolDetected": "Piscina detectada:",
+    "poolDetectedSuffix": "— dosificaciones calculadas automáticamente.",
+    "progress": "Progreso",
+    "stepsCount": "{done}/{total} pasos",
+    "poolState": "Estado de tu piscina",
+    "initialState": "Estado inicial",
+    "afterTreatment": "Después del tratamiento",
+    "instructionsTitle": "Instrucciones detalladas",
+    "product": "Producto",
+    "dosage": "Dosificación",
+    "waitTime": "Tiempo de espera",
+    "immediate": "Inmediato",
+    "recommendation": "Recomendación para tu medición",
+    "recordMeasures": "Guardar tus mediciones",
+    "waterTestNote": "Las mediciones se guardan en tu cuaderno (",
+    "waterTestNoteSuffix": ") vía API.",
+    "validating": "Guardando…",
+    "validateAndSave": "Validar y guardar",
+    "markAsDone": "Marcar como hecho",
+    "skipStep": "Saltar este paso",
+    "cancelValidation": "Cancelar la validación",
+    "reminderTitle": "Recordatorio",
+    "reminderDesc": "Te quedan {count} paso(s) por completar. Sigue el plan hasta el final para resolver el problema de forma duradera.",
+    "lastMeasureTitle": "Última medición guardada",
+    "lastMeasureDesc": "Se utilizará como valor «antes» para comparar tus nuevas mediciones.",
+    "lastMeasureChlorine": "cloro",
+    "lastMeasureTac": "TAC",
+    "recheckButton": "Verificar el resultado (nueva foto)",
+    "recheckTakeNewPhoto": "Haz una nueva foto para verificar",
+    "recheckNewPhotoAlt": "Nueva foto",
+    "recheckClickToUpload": "Haz clic para subir una foto",
+    "recheckAnalyzing": "Analizando...",
+    "recheckAnalyze": "Analizar y verificar",
+    "recheckBefore": "Antes",
+    "recheckAfter": "Después",
+    "recheckImprovement": "¡Mejora de +{n}%! Sigue así.",
+    "recheckLittleImprovement": "Poca mejora. Ajusta tu enfoque con el nuevo plan a continuación.",
+    "recheckAnalyzeNewPhoto": "Análisis de tu nueva foto",
+    "recheckPersistentIssues": "Problemas que siguen presentes:",
+    "recheckNewPlan": "Nuevo plan complementario",
+    "recheckNewPlanDesc": "Según el análisis de tu nueva foto, estos son los pasos complementarios recomendados:",
+    "recheckAgain": "Volver a verificar",
+    "resolvedTitle": "✅ Resuelto con AQWELIA",
+    "resolvedDesc": "Tu piscina ya está sana. El análisis de control confirma que el problema está resuelto.",
+    "toastStepValidated": "Paso validado",
+    "toastStepValidatedNoMeasure": "Paso validado (sin medición)",
+    "toastMeasureSaved": "Medición guardada ✓",
+    "toastMeasureSavedDesc": "{measures} → cuaderno actualizado.",
+    "toastMissingRequired": "Faltan campos obligatorios",
+    "toastMissingRequiredDesc": "Rellena todos los campos obligatorios (*) antes de validar.",
+    "toastSaveFailedTitle": "Error al guardar",
+    "toastSaveFailed": "No se pudo guardar",
+    "toastRecheckResolvedTitle": "¡Problema resuelto!",
+    "toastRecheckResolvedDesc": "✅ Tu piscina ya está sana.",
+    "toastRecheckNotResolvedTitle": "Todavía no resuelto",
+    "toastRecheckNotResolvedDesc": "Continúa el tratamiento y vuelve a verificar más tarde.",
+    "toastRecheckErrorTitle": "Error",
+    "toastRecheckErrorDesc": "No se pudo analizar",
+    "noteActionPlan": "Paso del plan de acción: {title}",
+    "phIdeal": "✅ pH en el rango ideal (7.0 - 7.4). No necesita ajuste.",
+    "phHigh": "Tu pH {ph} es demasiado alto. Añade {qty} de pH- para volver hacia 7.4 (bajada de ~{delta} unidad).",
+    "phHighWarning": "Vierte delante de las boquillas de impulsión, filtración en marcha. Nunca verter pH- puro directamente.",
+    "phLow": "Tu pH {ph} es demasiado bajo. Añade {qty} de pH+ para subir hacia 7.0 (subida de ~{delta} unidad).",
+    "phLowWarning": "Diluir en un cubo de agua de la piscina antes de verter delante de las impulsiones.",
+    "productPhMinus": "pH- (polvo, bisulfato sódico)",
+    "productPhPlus": "pH+ (carbonato sódico)",
+    "genericTitle1": "1. Seguir la recomendación",
+    "genericIntro1": "La IA ha identificado un problema pero sin patrón típico (agua verde / turbia). Sigue la recomendación a continuación.",
+    "genericInstruction1Default": "Sigue las recomendaciones de la IA mostradas arriba.",
+    "genericInstruction2": "Mide tu pH antes de cualquier tratamiento (objetivo: 7.0 - 7.4).",
+    "genericInstruction3": "Ajusta si es necesario con pH- o pH+.",
+    "genericInstruction4": "Registra tu medición a continuación para el historial.",
+    "genericInstruction5": "Verifica que la filtración funciona al menos 8h/día.",
+    "genericProduct": "Según recomendación",
+    "genericTitle2": "2. Verificar el resultado (24h)",
+    "genericIntro2": "Tras aplicar las recomendaciones, haz una nueva foto para confirmar la resolución.",
+    "genericInstruction2_1": "Espera al menos 24h de filtración continua.",
+    "genericInstruction2_2": "Haz una nueva foto en las mismas condiciones (mismo lugar, misma iluminación).",
+    "genericInstruction2_3": "Haz clic en Verificar el resultado al final del plan.",
+    "genericInstruction2_4": "La IA comparará y dirá si el problema está resuelto.",
+    "greenS1Title": "1. Medir y ajustar el pH",
+    "greenS1Intro": "El pH debe estar entre 7.0 y 7.4 ANTES de cualquier tratamiento. Un pH incorrecto hace el cloro ineficaz (hasta -90%).",
+    "greenS1I1": "Toma tu kit de test (gotas o tira) o un testador electrónico.",
+    "greenS1I2": "Recoge una muestra de agua a 30 cm de profundidad, lejos de las boquillas de impulsión.",
+    "greenS1I3": "Mide el pH actual y anótalo a continuación.",
+    "greenS1I4": "Si pH > 7.4 → añade pH- (ácido). Si pH < 7.0 → añade pH+ (base).",
+    "greenS1I5": "Dosificación de referencia: ~{qty} g de pH- para bajar 0.1 unidad en {volume} m³.",
+    "greenS1I6": "Diluye el producto en un cubo de agua de la piscina, nunca puro directamente.",
+    "greenS1I7": "Vierte lentamente delante de las boquillas de impulsión, filtración en marcha.",
+    "greenS1I8": "Espera 2 horas con la filtración en marcha antes de volver a testar.",
+    "greenS1Product": "pH- o pH+ (según tu medición)",
+    "greenS1Dosage": "~{qty} g de pH- / 0.1 unidad a bajar (piscina de {volume} m³)",
+    "greenS2Title": "2. Volver a testar el pH (después de 2h)",
+    "greenS2Intro": "Tras 2h de filtración, el pH ha tenido tiempo de estabilizarse. Verifica que ya está en el rango objetivo.",
+    "greenS2I1": "Toma una nueva muestra de agua a 30 cm de profundidad.",
+    "greenS2I2": "Mide de nuevo el pH.",
+    "greenS2I3": "Si pH entre 7.0 y 7.4 → ✅ pasa al siguiente paso (tratamiento de choque).",
+    "greenS2I4": "Si pH todavía demasiado alto/bajo → ajusta de nuevo con la MITAD de la dosis anterior.",
+    "greenS2I5": "Vuelve a testar 1h después de este segundo ajuste.",
+    "greenS2Product": "pH- o pH+ (dosis reducida si se reajusta)",
+    "greenS2Dosage": "Reajuste: mitad de la dosis inicial (~{qty} g máx para {volume} m³)",
+    "greenS3Title": "3. Tratamiento de choque con cloro",
+    "greenS3Intro": "El cloro de choque destruye algas, bacterias y virus. Es el paso más importante contra el agua verde.",
+    "greenS3I1": "⚠ Verifica que el pH es correcto (pasos 1-2). Si no, el choque será ineficaz.",
+    "greenS3I2": "Calcula la dosis curativa: aproximadamente 10 g de cloro de choque por m³.",
+    "greenS3I3": "Para tu piscina de {volume} m³: {qty} g de cloro de choque (es decir, ~{tablets} pastillas de 20 g).",
+    "greenS3I4": "Prefiere hacerlo por la tarde, sin bañistas, filtración en marcha.",
+    "greenS3I5": "Diluye el cloro en polvo/gránulos en un cubo de agua de la piscina.",
+    "greenS3I6": "Viértelo delante de las boquillas de impulsión, nunca en el skimmer.",
+    "greenS3I7": "🚫 PROHIBIDO BAÑARSE durante 8 horas mínimo.",
+    "greenS3Product": "Cloro de choque (65% activo, gránulos o pastillas)",
+    "greenS3Dosage": "{qty} g de cloro de choque (para {volume} m³)",
+    "greenS4Title": "4. Anti-algas (preventivo curativo)",
+    "greenS4Intro": "El anti-algas complementa al cloro destruyendo las algas resistentes e impidiendo que vuelvan a crecer.",
+    "greenS4I1": "Espera al menos 2h tras el tratamiento de choque (nunca mezclar directamente).",
+    "greenS4I2": "Dosis curativa: ~20 mL de anti-algas por m³.",
+    "greenS4I3": "Para {volume} m³: {qty} mL de anti-algas (es decir, {liters} L).",
+    "greenS4I4": "Viértelo directamente delante de las boquillas de impulsión, filtración en marcha.",
+    "greenS4I5": "Cepilla las paredes justo después (ver siguiente paso) para despegar las algas.",
+    "greenS4Product": "Anti-algas curativo",
+    "greenS4Dosage": "{qty} mL de anti-algas (para {volume} m³)",
+    "greenS5Title": "5. Cepillar las paredes y el fondo",
+    "greenS5Intro": "El cepillado despega las algas incrustadas. Sin este paso, el tratamiento químico no basta.",
+    "greenS5I1": "Usa un cepillo adecuado para tu revestimiento: cepillo de nailon para liner/poliéster, cepillo de acero para hormigón.",
+    "greenS5I2": "🚫 Nunca uses cepillo metálico sobre liner o membrana armada — la perforarías.",
+    "greenS5I3": "Cepilla de arriba abajo, en secciones de 1 m².",
+    "greenS5I4": "Insiste en las esquinas, escalones, boquillas, escaleras y la línea de agua.",
+    "greenS5I5": "Cepilla también el fondo si es accesible (pértiga telescópica).",
+    "greenS5I6": "Es físico (15-30 min) pero INDISPENSABLE — sin ello las algas vuelven en 48h.",
+    "greenS6Title": "6. Filtración continua 24h",
+    "greenS6Intro": "La filtración debe funcionar 24h sin interrupción para evacuar las algas muertas y las partículas.",
+    "greenS6I1": "Ajusta la bomba en marcha forzada (24h/24) — sin programación horaria.",
+    "greenS6I2": "Verifica la presión del manómetro del filtro.",
+    "greenS6I3": "Si la presión sube > 0.3 bar por encima de lo normal → haz un retrolavado.",
+    "greenS6I4": "Limpia el prefiltro de la bomba (cesto) si está lleno de residuos.",
+    "greenS6I5": "Vacia los skimmers regularmente durante estas 24h.",
+    "greenS6I6": "Para un filtro de cartucho: acláralo a mitad de camino si baja el caudal.",
+    "greenS7Title": "7. Re-test completo del agua",
+    "greenS7Intro": "Tras 24h de filtración, haz un test completo para verificar que el agua es sana y equilibrada.",
+    "greenS7I1": "Toma una muestra a 30 cm de profundidad.",
+    "greenS7I2": "Mide el pH (objetivo: 7.0 - 7.4).",
+    "greenS7I3": "Mide el cloro libre (objetivo: 1 - 3 mg/L).",
+    "greenS7I4": "Mide el TAC / alcalinidad (objetivo: 80 - 120 mg/L).",
+    "greenS7I5": "Introduce tus 3 valores a continuación — se guardarán en tu cuaderno.",
+    "greenS7I6": "Si todo está en los rangos → puedes volver a bañarte. Si no, ajusta.",
+    "cloudyS1Title": "1. Verificar y limpiar la filtración",
+    "cloudyS1Intro": "El agua turbia suele provenir de una filtración ineficaz. Siempre se empieza por ahí.",
+    "cloudyS1I1": "Apaga la bomba antes de cualquier intervención de seguridad.",
+    "cloudyS1I2": "Verifica la presión en el manómetro: si > 0.3 bar por encima del valor inicial → limpiar.",
+    "cloudyS1I3": "Filtro de arena: haz un retrolavado de 2-3 min y luego aclarado 30 s.",
+    "cloudyS1I4": "Filtro de cartucho: desmóntalo, acláralo con manguera, sustitúyelo si tiene > 2 años.",
+    "cloudyS1I5": "Vacia y limpia los cestos del skimmer y del prefiltro de la bomba.",
+    "cloudyS1I6": "Vuelve a poner en marcha y verifica que el caudal es bueno (boquillas de impulsión).",
+    "cloudyS2Title": "2. Medir y ajustar el pH",
+    "cloudyS2Intro": "Un pH desequilibrado favorece la turbidez y reduce la eficacia del cloro.",
+    "cloudyS2I1": "Mide el pH a 30 cm de profundidad.",
+    "cloudyS2I2": "Si pH > 7.4 → añade pH-; si pH < 7.0 → añade pH+.",
+    "cloudyS2I3": "Referencia: ~{qty} g de pH- para bajar 0.1 unidad en {volume} m³.",
+    "cloudyS2I4": "Dilúyelo en un cubo de agua de la piscina, viértelo delante de las boquillas de impulsión.",
+    "cloudyS2I5": "Filtración en marcha durante 2h antes de volver a testar.",
+    "cloudyS2Product": "pH- o pH+ (según tu medición)",
+    "cloudyS2Dosage": "~{qty} g de pH- / 0.1 unidad (para {volume} m³)",
+    "cloudyS3Title": "3. Añadir un floculante (si filtro de arena)",
+    "cloudyS3Intro": "El floculante aglomera las partículas finas en flóculos que el filtro puede retener. ⚠ Solo para filtro de arena.",
+    "cloudyS3I1": "⚠ NUNCA usar floculante con un filtro de cartucho (atascos).",
+    "cloudyS3I2": "Dosificación: ~5 mL de floculante líquido por m³.",
+    "cloudyS3I3": "Para {volume} m³: {qty} mL de floculante.",
+    "cloudyS3I4": "Viértelo delante de las boquillas de impulsión, filtración en marcha 1h.",
+    "cloudyS3I5": "Después apaga la filtración 12h para dejar que decante.",
+    "cloudyS3I6": "Los flóculos caen al fondo — asípiralos con robot o aspirador manual.",
+    "cloudyS3Product": "Floculante líquido (solo filtro de arena)",
+    "cloudyS3Dosage": "{qty} mL de floculante (para {volume} m³)",
+    "cloudyS4Title": "4. Filtración continua 12h",
+    "cloudyS4Intro": "Deja que la filtración funcione 12h para aclarar el agua tras la floculación/aspirado.",
+    "cloudyS4I1": "Vuelve a poner la bomba en marcha forzada tras aspirar los flóculos.",
+    "cloudyS4I2": "Supervisa la presión del filtro — retrolavado si sube.",
+    "cloudyS4I3": "Verifica el cesto del skimmer cada 4h.",
+    "cloudyS4I4": "Al cabo de 12h, el agua debe volver a ser transparente.",
+    "cloudyS5Title": "5. Volver a testar el agua",
+    "cloudyS5Intro": "Verifica que el agua está equilibrada y que el cloro está activo.",
+    "cloudyS5I1": "Mide el pH (objetivo: 7.0 - 7.4).",
+    "cloudyS5I2": "Mide el cloro libre (objetivo: 1 - 3 mg/L).",
+    "cloudyS5I3": "Introduce tus valores a continuación — se guardarán en tu cuaderno.",
+    "cloudyS5I4": "Si los valores son OK y el agua clara → problema resuelto.",
+    "compAlgae1Title": "{n}. Duplicar la dosis de tratamiento de choque",
+    "compAlgae1Desc": "Las algas siguen presentes a pesar del primer tratamiento. Repite el tratamiento de choque con 1.5x la dosis anterior. Verifica que el pH está entre 7.0-7.4 ANTES. Prefiere un cloro de choque de marca diferente (las algas pueden desarrollar resistencia).",
+    "compAlgae1Reason": "Las algas pueden ser resistentes. Se necesita una dosis más fuerte y un producto diferente.",
+    "compAlgae2Title": "{n}. Verificar la duración de la filtración",
+    "compAlgae2Desc": "Cuenta el número de horas de filtración al día. Para agua verde, hay que filtrar como mínimo 12h/24. Idealmente 24h/24 durante 3 días consecutivos.",
+    "compAlgae2Reason": "Una filtración insuficiente impide eliminar las algas muertas y aclarar el agua.",
+    "compAlgae3Title": "{n}. Limpiar el filtro a fondo",
+    "compAlgae3Desc": "Si tienes un filtro de arena, haz un retrolavado de 3 minutos seguido de un aclarado de 30s. Si es de cartucho, sácalo y límpialo con manguera. Un filtro saturado no retiene las algas y las devuelve al vaso.",
+    "compAlgae3Reason": "El filtro puede estar saturado de algas tras el primer tratamiento.",
+    "compCloudy1Title": "{n}. Añadir un floculante líquido",
+    "compCloudy1Desc": "El agua sigue turbia. Vierte un floculante LÍQUIDO (no en media) directamente delante de las boquillas de impulsión, con la filtración en marcha. Filtra 1h y luego apaga 12h para que decante. Las partículas se aglomerarán y caerán al fondo.",
+    "compCloudy1Reason": "El floculante aglomera las partículas finas que el filtro no retiene.",
+    "compCloudy2Title": "{n}. Aspirar el fondo tras la floculación",
+    "compCloudy2Desc": "Tras 12h de decantación, los residuos estarán en el fondo. Aspira lentamente en posición 'desagüe' (waste) para no devolverlos al filtro. Vuelve a poner la válvula en filtración solo después de terminar la aspiración.",
+    "compCloudy2Reason": "Los flóculos son demasiado pesados para el filtro normal.",
+    "compCloudy3Title": "{n}. Verificar el medio filtrante",
+    "compCloudy3Desc": "Si el agua sigue turbia a pesar de la floculación + filtración: puede que tu arena/cartucho haya que sustituirlo. La arena se cambia cada 5-7 años, el cartucho cada 2 años. Un medio desgastado ya no retiene las partículas finas.",
+    "compCloudy3Reason": "Un filtro al final de su vida útil es una causa frecuente de agua turbia persistente.",
+    "compNewIssuesTitle": "{n}. Tratar los nuevos problemas detectados",
+    "compNewIssuesDesc": "Nuevo(s) problema(s) aparecido(s): {issues}. Analiza la causa probable (sobrecloración, sobredosificación de floculante, precipitación de cal, etc.) antes de actuar. En caso de duda, repite un test completo pH/cloro/TAC/TH.",
+    "compNewIssuesReason": "Algunos tratamientos pueden crear nuevos desequilibrios. Hay que corregirlos antes de que empeoren la situación.",
+    "compFallback1Title": "1. Continuar la filtración 24h más",
+    "compFallback1Desc": "El agua mejora pero todavía no está perfecta. Deja que la filtración funcione 24h más de forma continua. Supervisa la presión del filtro (retrolavado si sube +0.3 bar).",
+    "compFallback1Reason": "El tratamiento está en curso, hay que darle tiempo para actuar.",
+    "compFallback2Title": "2. Volver a testar en 24h",
+    "compFallback2Desc": "Repite un test completo (pH, cloro, TAC) en 24h y haz una nueva foto para verificar. Si la puntuación de satisfacción se estanca, considera vaciar un 20-30% del agua para volver a una base sana.",
+    "compFallback2Reason": "Hay que dar tiempo al tratamiento para hacer efecto antes de concluir un fracaso."
+  },
+  "mobile": {
+    "screens": {
+      "analysesAriaSubtabs": "Subpestañas Análisis",
+      "analysesSubtabMesures": "Mediciones",
+      "analysesSubtabPhoto": "Foto",
+      "analysesSubtabLogbook": "Cuaderno",
+      "maintenanceAriaSubtabs": "Subpestañas Mantenimiento",
+      "maintenanceSubtabActions": "Acciones",
+      "profileAriaPoolProfile": "Perfil de piscina",
+      "profilePoolNotConfigured": "Piscina no configurada",
+      "profileConfigureToStart": "Configure su piscina para empezar",
+      "profileElectrolysisSalt": "Electrólisis de sal",
+      "profileAriaSubscription": "Suscripción",
+      "profileSubscriptionTitle": "Suscripción",
+      "profileAriaSettings": "Ajustes",
+      "profileNotifReminders": "Notificaciones y recordatorios",
+      "profilePrivacyData": "Privacidad y datos",
+      "profileHelpSupport": "Ayuda y soporte",
+      "profileFaqContact": "FAQ + contacto",
+      "profileVersionLine": "AQWELIA Pro · v1.0.0-mobile"
+    }
+  },
+  "metadata": {
+    "layoutTitle": "AQWELIA — Copiloto Inteligente para Piscina",
+    "layoutDescription": "AQWELIA — la aplicación revolucionaria de gestión de piscina impulsada por IA: asistente experto, análisis visual del agua, plan de acción determinista y mucho más.",
+    "layoutKeywordPool": "piscina",
+    "layoutKeywordAI": "IA",
+    "layoutKeywordMaintenance": "mantenimiento",
+    "layoutKeywordWaterQuality": "calidad del agua",
+    "layoutKeywordSmartAssistant": "asistente inteligente"
+  },
+  "legal": {
+    "backHome": "Volver al inicio",
+    "lastUpdatedLabel": "Última actualización:",
+    "cgu": {
+      "metaTitle": "CGU — AQWELIA",
+      "metaDescription": "Condiciones generales de uso del servicio AQWELIA.",
+      "eyebrow": "Avisos legales",
+      "title": "Condiciones Generales de Uso",
+      "article1Title": "Artículo 1 — Objeto",
+      "article1Body1": "Las presentes Condiciones Generales de Uso (« <bold>CGU</bold> ») definen las modalidades y condiciones de acceso y uso de la aplicación AQWELIA (« <bold>el Servicio</bold> »), publicada por la sociedad AQWELIA, así como los derechos y obligaciones de las partes en este marco.",
+      "article1Body2": "El uso del Servicio implica la aceptación plena y completa de las presentes CGU. Si no está de acuerdo con alguna de estas condiciones, no debe usar el Servicio.",
+      "article2Title": "Artículo 2 — Definiciones",
+      "article2Item1": "« <bold>Usuario</bold> »: cualquier persona física que utilice el Servicio.",
+      "article2Item2": "« <bold>Cuenta</bold> »: espacio personal creado por el Usuario para acceder al Servicio.",
+      "article2Item3": "« <bold>Datos</bold> »: información introducida por el Usuario (mediciones, fotos, perfil de piscina, etc.).",
+      "article2Item4": "« <bold>Plan</bold> »: fórmula de suscripción (Free, Premium o Expert) a la que se suscribe el Usuario.",
+      "article2Item5": "« <bold>Contenido</bold> »: recomendaciones, planes de acción, análisis, guías y textos generados por el Servicio.",
+      "article3Title": "Artículo 3 — Descripción del servicio",
+      "article3Body1": "AQWELIA es un copiloto inteligente de mantenimiento de piscina. El Servicio permite al Usuario:",
+      "article3Item1": "seguir y analizar la calidad del agua de su piscina (pH, cloro, TAC, TH, etc.);",
+      "article3Item2": "obtener planes de acción personalizados (dosificaciones, filtración, aptitud para el baño);",
+      "article3Item3": "diagnosticar visualmente el agua y los equipos mediante foto;",
+      "article3Item4": "consultar a un asistente de IA para cualquier pregunta de mantenimiento;",
+      "article3Item5": "recibir recordatorios inteligentes (clima, equipos, existencias de productos);",
+      "article3Item6": "consultar guías y recursos educativos.",
+      "article3Body2": "El Servicio se proporciona con carácter informativo y no sustituye la intervención de un profesional cualificado (piscinero, distribuidor, socorrista).",
+      "article4Title": "Artículo 4 — Registro y cuenta",
+      "article4Body1": "El registro en el Servicio requiere la creación de una Cuenta mediante una dirección de correo electrónico válida y una contraseña. El Usuario se compromete a proporcionar información exacta y a mantenerla actualizada.",
+      "article4Body2": "El Usuario es el único responsable de la confidencialidad de sus credenciales y de cualquier uso de su Cuenta. Cualquier actividad realizada desde su Cuenta se considera efectuada por el Usuario.",
+      "article4Body3": "AQWELIA se reserva el derecho de rechazar o cerrar una Cuenta en caso de incumplimiento de las presentes CGU o de comportamiento fraudulento.",
+      "article5Title": "Artículo 5 — Uso del servicio",
+      "article5Body1": "El Usuario se compromete a:",
+      "article5Item1": "usar el Servicio conforme a su finalidad y al derecho aplicable;",
+      "article5Item2": "no intentar desviar, desactivar o comprometer la seguridad del Servicio;",
+      "article5Item3": "no subir Contenido ilícito, difamatorio o que atente contra los derechos de terceros;",
+      "article5Item4": "cumplir las instrucciones de los productos químicos usados para el mantenimiento de su piscina.",
+      "article5Body2": "El Usuario reconoce que las recomendaciones proporcionadas por el Servicio son indicativas y que sigue siendo el único responsable de los actos que realiza en su piscina.",
+      "article6Title": "Artículo 6 — Suscripciones",
+      "article6Body1": "El Servicio ofrece tres Planes:",
+      "article6Item1": "<bold>Free</bold>: gratuito, incluye 1 piscina, mediciones manuales básicas, asistente limitado.",
+      "article6Item2": "<bold>Premium</bold>: hasta 3 piscinas, diagnóstico por foto ilimitado, asistente de IA completo, recordatorios meteorológicos, guías avanzadas.",
+      "article6Item3": "<bold>Expert</bold>: ilimitado (piscineros profesionales), multi-cliente, exportaciones, soporte prioritario.",
+      "article6Body2": "Las funcionalidades y tarifas de cada Plan se detallan en la página <link>Tarifas</link>. AQWELIA se reserva el derecho de modificar estas ofertas en cualquier momento, sujeto a informar a los Usuarios suscritos al menos 30 días antes de su entrada en vigor.",
+      "article7Title": "Artículo 7 — Pago",
+      "article7Body1": "El pago de las suscripciones Premium y Expert se realiza según la plataforma utilizada:",
+      "article7Item1": "<bold>Web</bold>: vía Stripe (tarjeta bancaria, pago seguro).",
+      "article7Item2": "<bold>iOS</bold>: vía Apple In-App Purchase (gestionado por Apple).",
+      "article7Item3": "<bold>Android</bold>: vía Google Play Billing (gestionado por Google).",
+      "article7Body2": "La renovación es automática al final del período suscrito, salvo desactivación por parte del Usuario en la configuración de su cuenta Apple/Google o a través del portal de clientes de Stripe.",
+      "article8Title": "Artículo 8 — Cancelación",
+      "article8Body1": "El Usuario puede cancelar su suscripción en cualquier momento desde la aplicación (página <link>Ajustes</link>) o desde la configuración de App Store / Google Play. La cancelación surte efecto al final del período de facturación en curso.",
+      "article8Body2": "AQWELIA se reserva el derecho de cancelar o suspender el acceso al Servicio en caso de incumplimiento de las CGU, previa notificación salvo urgencia.",
+      "article9Title": "Artículo 9 — Datos personales (RGPD)",
+      "article9Body1": "El tratamiento de los datos personales del Usuario se rige por nuestra <link>Política de privacidad</link>, conforme al Reglamento General de Protección de Datos (RGPD, UE 2016/679).",
+      "article9Body2": "El Usuario dispone de derecho de acceso, rectificación, supresión, portabilidad y oposición. Estos derechos pueden ejercerse desde la página <link>Ajustes</link> o por correo electrónico a <alink>privacy@aqwelia.app</alink>.",
+      "article10Title": "Artículo 10 — Responsabilidad",
+      "article10Body1": "AQWELIA hace todo lo posible para garantizar la disponibilidad y fiabilidad del Servicio, pero no puede garantizar la ausencia total de errores o interrupciones.",
+      "article10Body2": "Dado que el Servicio se proporciona con carácter informativo, AQWELIA no podrá ser responsable de los daños directos o indirectos derivados de la aplicación de las recomendaciones (en particular: daños materiales, pérdida de baño, deterioro de equipos, reacciones químicas). En caso de duda, el Usuario debe consultar a un profesional.",
+      "article11Title": "Artículo 11 — Propiedad intelectual",
+      "article11Body1": "El conjunto de los elementos del Servicio (marca, logotipo, textos, algoritmos, diseño, guías) es propiedad exclusiva de AQWELIA o de sus socios. Toda reproducción, representación o difusión, total o parcial, sin autorización escrita previa está prohibida.",
+      "article11Body2": "Los Datos introducidos por el Usuario siguen siendo de su propiedad. El Usuario concede a AQWELIA una licencia no exclusiva de uso de dichos Datos en la medida necesaria para la prestación y mejora del Servicio.",
+      "article12Title": "Artículo 12 — Modificaciones de las CGU",
+      "article12Body1": "AQWELIA podrá modificar las presentes CGU en cualquier momento. Las CGU aplicables son las vigentes en el momento de uso del Servicio. Las modificaciones sustanciales se notificarán por correo electrónico o a través de la aplicación al menos 30 días antes de su entrada en vigor.",
+      "article13Title": "Artículo 13 — Derecho aplicable",
+      "article13Body1": "Las presentes CGU se rigen por el derecho francés. En caso de litigio, las partes se comprometen a buscar una solución amistosa antes de cualquier acción judicial. En defecto de acuerdo, los tribunales franceses serán los únicos competentes.",
+      "contactTitle": "Contacto",
+      "contactBody1": "Para cualquier pregunta relativa a las presentes CGU: <alink>legal@aqwelia.app</alink>",
+      "contactBody2": "Para cualquier pregunta relativa a sus datos: <alink>privacy@aqwelia.app</alink>",
+      "contactBody3": "Para cualquier solicitud de soporte: <link>página de Soporte</link>."
+    },
+    "privacy": {
+      "metaTitle": "Política de privacidad — AQWELIA",
+      "metaDescription": "Política de protección de datos personales de AQWELIA (RGPD).",
+      "eyebrow": "RGPD",
+      "title": "Política de privacidad",
+      "section1Title": "1. Responsable del tratamiento",
+      "section1Body1": "El responsable del tratamiento de los datos personales recopilados a través de la aplicación AQWELIA es la sociedad <bold>AQWELIA</bold>, editora del Servicio.",
+      "section1Body2": "Contacto DPO: <alink>privacy@aqwelia.app</alink>",
+      "section2Title": "2. Datos recopilados",
+      "section2Body1": "El Servicio recopila las siguientes categorías de datos:",
+      "section2Item1": "<bold>Identificadores de cuenta</bold>: dirección de correo electrónico, nombre (opcional), contraseña (hash).",
+      "section2Item2": "<bold>Perfil de piscina</bold>: volumen, forma, revestimiento, tratamiento, filtro, exposición, región.",
+      "section2Item3": "<bold>Datos del agua</bold>: mediciones (pH, cloro, TAC, TH, CYA, sal, temperatura, etc.) introducidas o importadas.",
+      "section2Item4": "<bold>Fotos</bold>: imágenes del agua, de las paredes, del filtro, de los electrólizadores y productos, usadas para el diagnóstico visual por IA.",
+      "section2Item5": "<bold>Equipos e inventario</bold>: marca, modelo, fechas de mantenimiento, productos químicos en stock.",
+      "section2Item6": "<bold>Historial</bold>: conversaciones con el asistente de IA, planes de acción generados, diagnósticos por foto.",
+      "section2Item7": "<bold>Datos de facturación</bold>: plan suscrito, período, estado (la información de pago es procesada por Stripe, Apple o Google — AQWELIA no almacena los números de tarjeta).",
+      "section2Item8": "<bold>Datos de uso</bold>: eventos analíticos (consulta de guías, apertura de muro de pago, frecuencia de uso).",
+      "section3Title": "3. Finalidades",
+      "section3Body1": "Los datos se tratan para las siguientes finalidades:",
+      "section3Item1": "funcionamiento del Servicio (generación de planes de acción, cálculos de dosificación, seguimiento del agua);",
+      "section3Item2": "mejora de los modelos de IA (diagnóstico por foto, recomendaciones) — sobre la base de una anonimización previa cuando sea posible;",
+      "section3Item3": "facturación y gestión de suscripciones;",
+      "section3Item4": "soporte al usuario;",
+      "section3Item5": "análisis de uso y mejora de la experiencia;",
+      "section3Item6": "cumplimiento de las obligaciones legales y contables.",
+      "section4Title": "4. Base legal",
+      "section4Body1": "Conforme al artículo 6 del RGPD, los tratamientos se basan en las siguientes bases legales:",
+      "section4Item1": "<bold>Ejecución del contrato</bold> (art. 6.1.b): prestación del Servicio suscrito.",
+      "section4Item2": "<bold>Consentimiento</bold> (art. 6.1.a): fotos enviadas para diagnóstico, notificaciones, posibles comunicaciones de marketing.",
+      "section4Item3": "<bold>Interés legítimo</bold> (art. 6.1.f): mejora del Servicio, seguridad, prevención del fraude.",
+      "section4Item4": "<bold>Obligación legal</bold> (art. 6.1.c): conservación de facturas y registros contables.",
+      "section4Body2": "El Usuario puede retirar su consentimiento en cualquier momento desde la página <link>Ajustes</link>, sin afectar a la licitud del tratamiento anterior.",
+      "section5Title": "5. Período de conservación",
+      "section5Item1": "<bold>Cuenta activa</bold>: duración de uso del Servicio.",
+      "section5Item2": "<bold>Datos de piscina, mediciones, fotos</bold>: conservados mientras la Cuenta esté activa, más 90 días tras la supresión (para posible restauración), y luego borrados definitivamente.",
+      "section5Item3": "<bold>Facturas</bold>: 10 años (obligación contable legal en Francia).",
+      "section5Item4": "<bold>Registros de seguridad</bold>: 12 meses.",
+      "section5Item5": "<bold>Cuenta inactiva</bold>: tras 24 meses sin conexión, notificación por correo electrónico y luego supresión de la Cuenta y de sus datos.",
+      "section6Title": "6. Destinatarios",
+      "section6Body1": "Los datos son accesibles para los siguientes destinatarios:",
+      "section6Item1": "<bold>AQWELIA</bold>: personal autorizado (ingenieros, soporte) bajo acuerdo de confidencialidad.",
+      "section6Item2": "<bold>Proveedor de hosting en la nube</bold>: almacenamiento y cálculo (ubicado en la UE).",
+      "section6Item3": "<bold>Stripe</bold>: procesamiento de pagos web (sujeto a su propio RGPD).",
+      "section6Item4": "<bold>RevenueCat</bold>: gestión unificada de suscripciones iOS/Android.",
+      "section6Item5": "<bold>Apple / Google</bold>: pagos In-App (sujetos a sus propias condiciones).",
+      "section6Item6": "<bold>Proveedores de IA</bold>: para el diagnóstico por foto y el asistente — únicamente los datos estrictamente necesarios, sin almacenamiento más allá de la sesión.",
+      "section6Body2": "AQWELIA nunca vende sus datos a terceros con fines de marketing.",
+      "section7Title": "7. Transferencias fuera de la UE",
+      "section7Body1": "El hosting principal está ubicado en la Unión Europea. Cualquier posible transferencia fuera de la UE (por ejemplo, a un proveedor de IA con sede en Estados Unidos) se rige por las cláusulas contractuales tipo de la Comisión Europea (decisión 2021/914) y se acompaña de garantías apropiadas (cifrado, minimización, seudonimización).",
+      "section8Title": "8. Sus derechos",
+      "section8Body1": "Conforme a los artículos 15 a 22 del RGPD, dispone de los siguientes derechos:",
+      "section8Item1": "<bold>Derecho de acceso</bold>: obtener una copia de sus datos.",
+      "section8Item2": "<bold>Derecho de rectificación</bold>: corregir datos inexactos.",
+      "section8Item3": "<bold>Derecho de supresión</bold> («derecho al olvido»): suprimir su Cuenta y sus datos.",
+      "section8Item4": "<bold>Derecho a la portabilidad</bold>: recibir sus datos en un formato estructurado y reutilizable.",
+      "section8Item5": "<bold>Derecho de oposición</bold>: rechazar un tratamiento basado en el interés legítimo.",
+      "section8Item6": "<bold>Derecho a la limitación</bold>: congelar temporalmente un tratamiento.",
+      "section8Item7": "<bold>Derecho a retirar su consentimiento</bold> en cualquier momento.",
+      "section8Body2": "Estos derechos pueden ejercerse directamente desde la página <link>Ajustes</link> (exportación JSON, supresión de la cuenta), o por correo electrónico a <alink>privacy@aqwelia.app</alink>.",
+      "section8Body3": "También puede presentar una reclamación ante la CNIL (www.cnil.fr) o ante la autoridad de control de su país.",
+      "section9Title": "9. Cookies y rastreadores",
+      "section9Body1": "AQWELIA utiliza un mínimo de rastreadores estrictamente necesarios para el funcionamiento del Servicio (sesión de autenticación, preferencias de idioma y tema). No se deposita ninguna cookie publicitaria ni de seguimiento de terceros sin consentimiento.",
+      "section9Body2": "Las preferencias pueden gestionarse desde la página <link>Ajustes</link>.",
+      "section10Title": "10. Seguridad",
+      "section10Body1": "AQWELIA aplica las medidas técnicas y organizativas apropiadas para proteger sus datos:",
+      "section10Item1": "cifrado de contraseñas (scrypt, algoritmo resistente a fuerza bruta);",
+      "section10Item2": "cifrado de datos en tránsito (TLS 1.2+) y en reposo (cifrado de base de datos);",
+      "section10Item3": "autenticación mediante JWT firmado, duración limitada (30 días);",
+      "section10Item4": "acceso restringido a datos personales (principio de mínimo privilegio);",
+      "section10Item5": "copias de seguridad cifradas y pruebas de intrusión periódicas.",
+      "section10Body2": "En caso de violación de datos susceptible de generar un riesgo para sus derechos y libertades, AQWELIA le notificará sin dilación indebida conforme al artículo 34 del RGPD.",
+      "section11Title": "11. Contacto DPO",
+      "section11Body1": "Para cualquier pregunta relativa a la protección de sus datos, contacte con nuestro DPO:",
+      "section11Body2": "Ver también nuestras <link>CGU</link> y nuestra <link2>página de Soporte</link2>."
+    },
+    "support": {
+      "metaTitle": "Soporte — AQWELIA",
+      "metaDescription": "Contactar con el soporte de AQWELIA, FAQ, reportar un error, solicitar una funcionalidad.",
+      "eyebrow": "Ayuda y soporte",
+      "title": "Contactar con el soporte",
+      "subtitle": "Nuestro equipo está disponible para ayudarle a sacar lo mejor de AQWELIA.",
+      "emailTitle": "Correo electrónico",
+      "emailDesc": "La mejor forma de contactarnos. Respuesta en 48 horas laborables.",
+      "responseTimeTitle": "Tiempo de respuesta",
+      "responseTimeFree": "<bold>Plan Free</bold>: respuesta en 72 horas laborables.",
+      "responseTimePremium": "<bold>Plan Premium</bold>: respuesta en 48 horas laborables.",
+      "responseTimeExpert": "<bold>Plan Expert</bold>: respuesta en 24h, soporte prioritario.",
+      "cardFaqTitle": "FAQ",
+      "cardFaqDesc": "Respuestas a las preguntas más frecuentes: suscripciones, datos, piscina, compatibilidad.",
+      "cardFaqLink": "Ver las FAQ",
+      "cardKbTitle": "Base de conocimiento",
+      "cardKbDesc": "Guías detalladas, tutoriales en vídeo y artículos de ayuda. Próximamente.",
+      "cardKbLink": "Próximamente",
+      "cardBugTitle": "Reportar un error",
+      "cardBugDesc": "¿Ha detectado un comportamiento inesperado? Descríbanoslo con una captura si es posible.",
+      "cardBugLink": "Reportar por correo electrónico",
+      "cardFeatureTitle": "Solicitar una funcionalidad",
+      "cardFeatureSubject": "Idea de funcionalidad AQWELIA",
+      "cardFeatureDesc": "¿Una idea para mejorar AQWELIA? Leemos todas las sugerencias.",
+      "cardFeatureLink": "Compartir mi idea",
+      "cardAssistantTitle": "Asistente de IA integrado",
+      "cardAssistantDesc": "Para una pregunta rápida sobre su piscina, consulte al asistente directamente en la app.",
+      "cardAssistantLink": "Abrir la app",
+      "cardLegalTitle": "Cuestiones legales",
+      "cardLegalDesc": "Para temas de RGPD, privacidad o CGU, escriba a privacy@aqwelia.app.",
+      "cardLegalLink": "Contactar con el DPO",
+      "resourcesTitle": "Recursos relacionados",
+      "resourcesCguLink": "Condiciones generales",
+      "resourcesPrivacyLink": "Política de privacidad",
+      "resourcesSettingsLink": "Ajustes de la cuenta"
+    }
+  },
+  "reminders": {
+    "test_overdue": {
+      "title": "Análisis del agua pendiente de repetir",
+      "detail": "Último análisis hace {days} días. La calidad del agua cambia rápido.",
+      "action": "Haga un análisis completo: pH + cloro + TAC."
+    },
+    "test_soon": {
+      "title": "Análisis rutinario",
+      "detail": "Último análisis hace {days} días.",
+      "action": "Compruebe el pH y el cloro libre."
+    },
+    "test_first": {
+      "title": "Primer análisis del agua",
+      "detail": "Ningún análisis registrado. Active el seguimiento.",
+      "action": "Introduzca su primer análisis (pH mínimo)."
+    },
+    "retest_product": {
+      "title": "Reanálisis tras el tratamiento",
+      "detail": "Ha añadido un producto recientemente. Compruebe el efecto.",
+      "action": "Hacer otro análisis de pH + cloro en las horas siguientes."
+    },
+    "wx_test": {
+      "title": "Análisis recomendado (clima)",
+      "action": "Analice el pH y el cloro."
+    },
+    "filter_clean": {
+      "title": "Limpieza del filtro",
+      "detailSand": "Lavado a contracorriente del filtro de arena recomendado.",
+      "detailCartridge": "Enjuague del cartucho recomendado.",
+      "detailGeneric": "Revisión del filtro recomendada.",
+      "actionSand": "Haga un lavado a contracorriente.",
+      "actionCartridge": "Desmonte y enjuague el cartucho."
+    },
+    "cell_clean": {
+      "title": "Limpieza de la célula del electrólizador",
+      "detail": "La célula se incrusta con el tiempo. Limpieza ácida cada 3-6 meses.",
+      "action": "Desmonte la célula, sumérjala en solución ácida diluida 10-15 min, enjuáguela."
+    },
+    "skimmer_clean": {
+      "title": "Revisar skimmer y cesta",
+      "detail": "Restos, hojas e insectos que retirar con regularidad.",
+      "action": "Vacíe la cesta del skimmer y la de la bomba."
+    },
+    "low_product": {
+      "title": "Existencias bajas: {name}",
+      "detail": "Queda poco de este producto.",
+      "action": "Considere recomprar antes de agotarse."
+    },
+    "equipment_overdue": {
+      "title": "Mantenimiento {type}",
+      "detail": "Mantenimiento retrasado {days} días.",
+      "action": "Programe un mantenimiento de este equipo."
+    },
+    "startup": {
+      "title": "Puesta en marcha de temporada",
+      "detail": "Llega la primavera: prepare la piscina para la temporada.",
+      "action": "Siga la guía de puesta en marcha: limpieza, tratamiento, filtración."
+    },
+    "winterize": {
+      "title": "Preparar la hibernación",
+      "detail": "Llega el otoño: anticipe la hibernación.",
+      "action": "Siga la guía de hibernación: agua fría, productos de invierno, cubierta."
+    }
+  },
+  "actionPlan": {
+    "iaAdjustTac": "Ajustar la alcalinidad (TAC)",
+    "iaLowerPh": "Bajar el pH",
+    "iaRaisePh": "Subir el pH",
+    "iaPhOk": "pH correcto",
+    "iaChlorineShock": "Cloración shock",
+    "iaAddSlowChlorine": "Añadir cloro lento",
+    "iaTreatChloramines": "Tratamiento de cloraminas",
+    "iaAddStabilizer": "Añadir estabilizante",
+    "iaDiluteWater": "Diluir el agua (CYA demasiado alto)",
+    "iaAddSalt": "Añadir sal",
+    "iaTreatPhosphates": "Tratar los fosfatos",
+    "iaMaintainFiltration": "Mantener la filtración",
+    "iaRetest": "Reanalizar el agua",
+    "iaAdjustTacDetail": "TAC {current} mg/L objetivo {target} mg/L. Hacer ANTES del pH.",
+    "iaLowerPhDetail": "pH {current} objetivo {target}. Indispensable antes de cualquier tratamiento de cloro.",
+    "iaRaisePhDetail": "pH {current} objetivo {target}.",
+    "iaPhOkDetail": "pH {ph} en el rango ideal. No tocar.",
+    "iaChlorineShockDetail": "Cloro libre {chlorine} mg/L demasiado bajo. Hacer un tratamiento shock (después de equilibrar el pH).",
+    "iaAddSlowChlorineDetail": "Cloro libre {chlorine} mg/L un poco bajo. Completar con cloro lento.",
+    "iaTreatChloraminesDetail": "Cloro combinado {combined} mg/L alto. Cloración shock para romper las cloraminas (olor, irritación).",
+    "iaAddStabilizerDetail": "CYA {current} mg/L objetivo {target} mg/L.",
+    "iaDiluteWaterDetail": "CYA {cya} mg/L bloquea el cloro. Renovar el 20-30% del agua.",
+    "iaAddSaltDetail": "Sal {salt} g/L demasiado baja para el electrolizador.",
+    "iaTreatPhosphatesDetail": "Fosfatos {phosphates} mg/L: alimentan las algas. Usar un reductor de fosfatos.",
+    "iaMaintainFiltrationHours": "Filtrar al menos {hours}h para repartir bien los productos.",
+    "iaMaintainFiltrationNormal": "Filtración normal (la mitad de la temperatura del agua en horas).",
+    "iaRetestHours": "Repetir el análisis en {hours}h para verificar el efecto.",
+    "iaRetestDefault": "Repetir el análisis en 24-48h.",
+    "iaAdjustTacProduct": "TAC+",
+    "iaLowerPhProduct": "pH-",
+    "iaRaisePhProduct": "pH+",
+    "iaChlorineShockProduct": "Cloro shock",
+    "iaAddSlowChlorineProduct": "Cloro lento",
+    "dndNoMixChemicals": "Nunca mezclar dos productos químicos diferentes (cloro + ácido = gas tóxico).",
+    "dndNoPurePour": "Nunca verter producto puro directamente en la piscina sin diluir (excepto la sal).",
+    "dndWaterIntoAcid": "Nunca añadir agua a un producto ácido: siempre añadir el producto al agua.",
+    "dndNoShockWithoutPh": "Nunca hacer una cloración shock sin haber verificado antes el pH.",
+    "dndNoBathAfterShock": "Nunca bañarse durante o justo después de un tratamiento shock.",
+    "dndNoStoreChlorineAcid": "Nunca almacenar el cloro y el ácido uno al lado del otro.",
+    "dndNoCyaOver50": "No superar 50 mg/L de estabilizante (CYA): el cloro pierde eficacia.",
+    "dndNoBath8h": "No bañarse durante al menos 8h después del tratamiento shock.",
+    "dndNoMaskChlorineSmell": "No enmascarar el olor a cloro con perfume: es un signo de cloraminas.",
+    "dndNoAddStabilizer": "No añadir estabilizante: el nivel ya es demasiado alto.",
+    "diagBalanced": "Su agua está globalmente equilibrada (índice {cwi}/100). Mantenga el ritmo de análisis y filtración. Baño: {swim}.",
+    "diagIssues": "Diagnóstico ({sevLabel}) índice de agua clara {cwi}/100. Puntos a tratar: {issues}. Siga el plan de acción ordenado a continuación. Baño: {swim}.",
+    "sevLabelUrgent": "URGENTE",
+    "sevLabelHigh": "Acción recomendada",
+    "sevLabelMedium": "A vigilar",
+    "swimLabelAllowed": "permitido",
+    "swimLabelAvoid": "no recomendado",
+    "swimLabelForbidden": "prohibido",
+    "swimLabelUnknown": "a confirmar tras las mediciones",
+    "issuePh": "pH {ph}",
+    "issueFreeChlorine": "cloro libre {chlorine} mg/L",
+    "issueCombinedChlorine": "cloraminas altas",
+    "issueTac": "TAC {tac}",
+    "proPhExtreme": "pH extremo: un profesional puede ayudar a reequilibrar sin riesgo.",
+    "proOverChlorination": "Sobredosificación masiva de cloro: plantee una dilución parcial o un profesional.",
+    "proHighChloramines": "Cloraminas muy altas: shock necesario, un profesional puede supervisar la operación.",
+    "dosePhMinusProduct": "pH- (ácido)",
+    "dosePhMinusMethod": "Diluir en un cubo de agua de la piscina, repartir delante de los chorros de retorno, filtración en marcha.",
+    "dosePhMinusWarningGap": "Desviación demasiado grande: tratamiento limitado a -{delta} pH. Repetir el análisis después de la filtración.",
+    "dosePhPlusProduct": "pH+ (carbonato de sodio)",
+    "dosePhPlusMethod": "Diluir en un cubo, repartir delante de los chorros de retorno, filtración en marcha.",
+    "dosePhPlusWarningGap": "Desviación demasiado grande: tratamiento limitado a +{delta} pH.",
+    "doseChlorineShockProduct": "Cloro shock (65% activo)",
+    "doseChlorineShockMethod": "Disolver en un cubo de agua, verter delante de los chorros de retorno. Preferir por la noche, sin bañistas.",
+    "doseChlorineShockWarningBath": "ATENCIÓN: cloración shock. Prohibido bañarse durante al menos 8h.",
+    "doseChlorineShockWarningMix": "Nunca mezclar cloro shock y pH-.",
+    "doseChlorineShockWarningPh": "Verificar el pH ANTES del shock (ideal 7.2-7.4).",
+    "doseChlorineSlowProduct": "Cloro lento (pastillas 20g)",
+    "doseChlorineSlowMethod": "Colocar en el skimmer o dispensador. Renovar según consumo.",
+    "doseChlorineSlowWarningSkimmer": "No colocar en el skimmer si hay tratamiento anti-algas simultáneo.",
+    "doseAlkalinityPlusProduct": "TAC+ (bicarbonato de sodio)",
+    "doseAlkalinityPlusMethod": "Diluir, repartir, filtración en marcha. Esperar antes de reajustar el pH.",
+    "doseAlkalinityPlusWarningOrder": "Ajustar el TAC ANTES del pH.",
+    "doseCalciumPlusProduct": "Calcio+ (cloruro de calcio)",
+    "doseCalciumPlusMethod": "Diluir en un cubo, verter lentamente delante de los chorros de retorno.",
+    "doseStabilizerPlusProduct": "Estabilizante (ácido cianúrico)",
+    "doseStabilizerPlusMethod": "Verter lentamente en el skimmer, filtración en marcha. Disolución lenta (24-48h).",
+    "doseStabilizerPlusWarningMax": "No superar 50 mg/L. Un exceso de estabilizante bloquea el cloro.",
+    "doseSaltPlusProduct": "Sal para piscina (NaCl)",
+    "doseSaltPlusMethod": "Verter la sal directamente en la piscina, filtración en marcha hasta disolución completa.",
+    "doseSaltPlusWarningCheck": "Verificar la sal requerida por su electrolizador antes de añadirla.",
+    "doseAntiAlgaeProduct": "Anti-algas (curativo)",
+    "doseAntiAlgaeMethod": "Verter delante de los chorros de retorno, filtración en marcha. Cepillar las paredes.",
+    "doseAntiAlgaeWarningPh": "El pH debe estar equilibrado ANTES. Eficaz sobre todo como prevención.",
+    "doseFlocculantProduct": "Floculante",
+    "doseFlocculantMethod": "Verter delante de los chorros de retorno, filtración 1h y luego parada 12h para decantación, después aspirado.",
+    "doseFlocculantWarningFilter": "Compatible únicamente con filtro de arena. No usar con filtro de cartucho."
+  },
+  "targets": {
+    "ph": {
+      "label": "pH",
+      "consequenceLow": "Agua ácida: irritación, corrosión de equipos, cloro inestable.",
+      "consequenceHigh": "Agua básica: cloro menos eficaz, sarro, agua turbia."
+    },
+    "freeChlorine": {
+      "label": "Cloro libre",
+      "consequenceLow": "Desinfección insuficiente: riesgo de algas y bacterias.",
+      "consequenceHigh": "Cloro libre en el límite alto."
+    },
+    "combinedChlorine": {
+      "label": "Cloro combinado",
+      "consequenceHigh": "Cloro combinado alto: olor fuerte, irritación de ojos, cloraminas."
+    },
+    "alkalinity": {
+      "label": "Alcalinidad (TAC)",
+      "consequenceLow": "pH inestable, variaciones rápidas.",
+      "consequenceHigh": "pH difícil de ajustar, agua turbia."
+    },
+    "calciumHardness": {
+      "label": "Dureza calcio (TH)",
+      "consequenceLow": "Agua agresiva: corrosión, espuma.",
+      "consequenceHigh": "Sarro, depósitos, agua turbia."
+    },
+    "cyanuricAcid": {
+      "label": "Estabilizante (CYA)",
+      "consequenceLow": "Cloro degradado rápido por el sol.",
+      "consequenceHigh": "Cloro bloqueado: tratamiento ineficaz, riesgo de algas."
+    },
+    "salt": {
+      "label": "Sal",
+      "consequenceLow": "Electrolizador no produce suficiente cloro.",
+      "consequenceHigh": "Sobreconsumo del electrolizador, sabor."
+    },
+    "bromine": {
+      "label": "Bromo",
+      "consequenceLow": "Desinfección insuficiente.",
+      "consequenceHigh": "Sobredosis, irritación."
+    },
+    "phosphates": {
+      "label": "Fosfatos",
+      "consequenceHigh": "Nutre las algas: riesgo alto de agua verde."
+    },
+    "temperature": {
+      "label": "Temperatura",
+      "consequenceHigh": "Evaporación, algas, sobreconsumo de cloro.",
+      "consequenceLow": "Agua fría, baja actividad química."
+    }
   }
 }

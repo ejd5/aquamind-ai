@@ -1,0 +1,252 @@
+{
+  "guidesData.getting-started.steps.9.detail": {
+    "fr": "Orage, canicule, vacances : prévenir plutôt que guérir.",
+    "en": "Storm, heatwave, vacation: prevent rather than cure.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.9.title": {
+    "fr": "Anticiper la météo",
+    "en": "Anticipate the weather",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.summary": {
+    "fr": "Les 10 premières choses à savoir quand on devient propriétaire d'une piscine.",
+    "en": "The first 10 things to know when you become a pool owner.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.title": {
+    "fr": "Débuter avec sa piscine",
+    "en": "Getting started with your pool",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.1.detail": {
+    "fr": "Une eau verte est presque toujours due à un manque de désinfectant ou un pH déséquilibré.",
+    "en": "Green water is almost always due to a lack of disinfectant or unbalanced pH.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.1.title": {
+    "fr": "Mesurer pH et chlore libre",
+    "en": "Measure pH and free chlorine",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.1.warning": {
+    "fr": "Ne jamais ajouter d'anti-algues avant d'avoir équilibré le pH.",
+    "en": "Never add anti-algae before balancing the pH.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.2.detail": {
+    "fr": "Si le pH est > 7.4, ajoutez du pH- dilué. Attendez 2-3h de filtration.",
+    "en": "If pH > 7.4, add diluted pH-. Wait 2-3h of filtration.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.2.tip": {
+    "fr": "Le chlore est 10x plus efficace à pH 7.2 qu'à pH 8.0.",
+    "en": "Chlorine is 10x more effective at pH 7.2 than at pH 8.0.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.2.title": {
+    "fr": "Équilibrer le pH (7.0-7.4)",
+    "en": "Balance the pH (7.0-7.4)",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.3.detail": {
+    "fr": "Décrocher les algues aide le traitement à pénétrer.",
+    "en": "Dislodging algae helps the treatment penetrate.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.3.title": {
+    "fr": "Brosser les parois et le fond",
+    "en": "Brush the walls and floor",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.4.detail": {
+    "fr": "Chlore choc (après pH équilibré). Filtration continue 24h.",
+    "en": "Shock chlorine (after pH balanced). Continuous filtration 24h.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.4.title": {
+    "fr": "Faire un traitement choc",
+    "en": "Do a shock treatment",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.4.warning": {
+    "fr": "Baignade interdite 8h minimum après le choc.",
+    "en": "No swimming for at least 8h after the shock.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.5.detail": {
+    "fr": "Après le choc, l'anti-algues prévient la repousse.",
+    "en": "After the shock, anti-algae prevents regrowth.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.5.title": {
+    "fr": "Ajouter un anti-algues curatif",
+    "en": "Add a curative anti-algae",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.6.detail": {
+    "fr": "La filtration est aussi importante que les produits.",
+    "en": "Filtration is as important as chemicals.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.6.title": {
+    "fr": "Filtrer en continu 24-48h",
+    "en": "Filter continuously 24-48h",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.7.detail": {
+    "fr": "Vérifiez pH et chlore. Si l'eau reste verte, le filtre est peut-être à nettoyer.",
+    "en": "Check pH and chlorine. If the water is still green, the filter may need cleaning.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.7.title": {
+    "fr": "Re-tester après 24h",
+    "en": "Re-test after 24h",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.summary": {
+    "fr": "Identify the cause of green water and treat it step by step without overdosing.",
+    "en": "Identify the cause of green water and treat it step by step without overdosing.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.title": {
+    "fr": "Eau verte : diagnostic et plan d'action",
+    "en": "Green water: diagnosis and action plan",
+    "reason": "placeholder"
+  },
+  "guidesData.guide_eq1_summary": {
+    "fr": "Quand et comment faire un backwash efficace.",
+    "en": "When and how to do an effective backwash.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_eq1_title": {
+    "fr": "Backwash (contre-lavage) du filtre à sable",
+    "en": "Backwashing a sand filter",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_eq2_summary": {
+    "fr": "Démontage et rinçage d'une cartouche de filtration.",
+    "en": "Disassembly and rinsing of a filter cartridge.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_eq2_title": {
+    "fr": "Nettoyer un filtre à cartouche",
+    "en": "Cleaning a cartridge filter",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_gs1_summary": {
+    "fr": "Les 10 premières choses à savoir quand on devient propriétaire d'une piscine.",
+    "en": "The first 10 things to know when you become a pool owner.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_gs1_title": {
+    "fr": "Débuter avec sa piscine",
+    "en": "Getting started with your pool",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_pb1_summary": {
+    "fr": "Identifier la cause d'une eau verte et la traiter étape par étape sans surdoser.",
+    "en": "Identify the cause of green water and treat it step by step without overdosing.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_pb1_title": {
+    "fr": "Eau verte : diagnostic et plan d'action",
+    "en": "Green water: diagnosis and action plan",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_pb2_summary": {
+    "fr": "Distinguer les causes d'une eau trouble et appliquer le bon traitement.",
+    "en": "Distinguish the causes of cloudy water and apply the right treatment.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_pb2_title": {
+    "fr": "Eau trouble ou laiteuse",
+    "en": "Cloudy or milky water",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_pb3_summary": {
+    "fr": "Comprendre les chloramines et comment s'en débarrasser.",
+    "en": "Understand chloramines and how to get rid of them.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_pb3_title": {
+    "fr": "Odeur forte de chlore et yeux qui piquent",
+    "en": "Strong chlorine odor and burning eyes",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_pr1_summary": {
+    "fr": "Le traitement choc : indications, dosage, sécurité, délais baignade.",
+    "en": "Shock treatment: indications, dosage, safety, swimming delays.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_pr1_title": {
+    "fr": "Quand et comment faire un chlore choc",
+    "en": "When and how to shock chlorinate",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_tr1_summary": {
+    "fr": "Principe, taux de sel, production, entretien courant.",
+    "en": "Principle, salt level, production, routine maintenance.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_tr1_title": {
+    "fr": "Comprendre son électrolyseur au sel",
+    "en": "Understanding your salt electrolyzer",
+    "reason": "identical_to_en"
+  },
+  "guidesData.level_beginner": {
+    "fr": "Débutant",
+    "en": "Beginner",
+    "reason": "identical_to_en"
+  },
+  "guidesData.level_expert": {
+    "fr": "Expert",
+    "en": "Expert",
+    "reason": "identical_to_en"
+  },
+  "guidesData.level_intermediate": {
+    "fr": "Intermédiaire",
+    "en": "Intermediate",
+    "reason": "identical_to_en"
+  },
+  "guidesData.ph-control.steps.1.detail": {
+    "fr": "Tout part du pH : efficacité du chlore, confort baignade, protection équipements.",
+    "en": "Everything starts with pH: chlorine effectiveness, swim comfort, equipment protection.",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.1.title": {
+    "fr": "Le pH est prioritaire",
+    "en": "pH is the priority",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.2.detail": {
+    "fr": "Plus près de 7.2 = chlore optimal.",
+    "en": "Closer to 7.2 = optimal chlorine.",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.2.title": {
+    "fr": "Plage idéale 7.0-7.4",
+    "en": "Ideal range 7.0-7.4",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.3.detail": {
+    "fr": "Un TAC bas rend le pH instable.",
+    "en": "A low TAC makes pH unstable.",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.3.title": {
+    "fr": "Ajuster le TAC avant le pH si instable",
+    "en": "Adjust TAC before pH if unstable",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.4.detail": {
+    "fr": "Ne jamais modifier le pH de plus de 0.3 d'un coup.",
+    "en": "Never change pH by more than 0.3 at once.",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.4.title": {
+    "fr": "Doser par petite quantité",
+    "en": "Dose in small amounts",
+    "reason": "placeholder"
+  }
+}

@@ -6,172 +6,161 @@
  */
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { getTranslations, getLocale } from 'next-intl/server'
 
-export const metadata: Metadata = {
-  title: 'Politique de confidentialité — AQWELIA',
-  description: 'Politique de protection des données personnelles AQWELIA (RGPD).',
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('legal.privacy')
+  return {
+    title: t('metaTitle'),
+    description: t('metaDescription'),
+  }
 }
 
-const LAST_UPDATED = '15 janvier 2026'
+const LAST_UPDATED_ISO = '2026-01-15'
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const t = await getTranslations('legal.privacy')
+  const tLegal = await getTranslations('legal')
+  const locale = await getLocale()
+  const lastUpdated = new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(LAST_UPDATED_ISO))
+
   return (
     <article className="space-y-8">
       <header className="space-y-3">
-        <p className="section-label">RGPD</p>
+        <p className="section-label">{t('eyebrow')}</p>
         <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Politique de confidentialité
+          {t('title')}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Dernière mise à jour : {LAST_UPDATED}
+          {tLegal('lastUpdatedLabel')} {lastUpdated}
         </p>
         <div className="gold-divider" />
       </header>
 
-      <Section title="1. Responsable du traitement">
+      <Section title={t('section1Title')}>
+        <p>{t.rich('section1Body1', { bold: (chunks) => <strong>{chunks}</strong> })}</p>
         <p>
-          Le responsable du traitement des données personnelles collectées via l&apos;application
-          AQWELIA est la société <strong>AQWELIA</strong>, éditrice du Service.
-        </p>
-        <p>
-          Contact DPO : <a href="mailto:privacy@aqwelia.app" className="text-gold underline">privacy@aqwelia.app</a>
+          {t.rich('section1Body2', {
+            alink: (chunks) => <a href="mailto:privacy@aqwelia.app" className="text-gold underline">{chunks}</a>,
+          })}
         </p>
       </Section>
 
-      <Section title="2. Données collectées">
-        <p>Le Service collecte les catégories de données suivantes :</p>
+      <Section title={t('section2Title')}>
+        <p>{t('section2Body1')}</p>
         <ul className="list-disc space-y-1 pl-5">
-          <li><strong>Identifiants de compte</strong> : adresse e-mail, nom (facultatif), mot de passe (haché).</li>
-          <li><strong>Profil de piscine</strong> : volume, forme, revêtement, traitement, filtre, exposition, région.</li>
-          <li><strong>Données d&apos;eau</strong> : mesures (pH, chlore, TAC, TH, CYA, sel, température, etc.) saisies ou importées.</li>
-          <li><strong>Photos</strong> : images de l&apos;eau, des parois, du filtre, des électrolyseurs et produits, utilisées pour le diagnostic visuel IA.</li>
-          <li><strong>Équipements & inventaire</strong> : marque, modèle, dates de maintenance, produits chimiques en stock.</li>
-          <li><strong>Historique</strong> : conversations avec l&apos;assistant IA, plans d&apos;action générés, diagnostics photo.</li>
-          <li><strong>Données de facturation</strong> : plan souscrit, période, statut (les informations de paiement sont traitées par Stripe, Apple ou Google — AQWELIA ne stocke pas les numéros de carte).</li>
-          <li><strong>Données d&apos;usage</strong> : événements analytics (consultation de guides, ouverture de paywall, fréquence d&apos;utilisation).</li>
+          <li>{t.rich('section2Item1', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section2Item2', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section2Item3', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section2Item4', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section2Item5', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section2Item6', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section2Item7', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section2Item8', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
         </ul>
       </Section>
 
-      <Section title="3. Finalités">
-        <p>Les données sont traitées pour les finalités suivantes :</p>
+      <Section title={t('section3Title')}>
+        <p>{t('section3Body1')}</p>
         <ul className="list-disc space-y-1 pl-5">
-          <li>fonctionnement du Service (génération de plans d&apos;action, calculs de dosage, suivi de l&apos;eau) ;</li>
-          <li>amélioration des modèles d&apos;IA (diagnostic photo, recommandations) — sur la base d&apos;une anonymisation préalable lorsque c&apos;est possible ;</li>
-          <li>facturation et gestion des abonnements ;</li>
-          <li>support utilisateur ;</li>
-          <li>analyse d&apos;usage et amélioration de l&apos;expérience ;</li>
-          <li>respect des obligations légales et comptables.</li>
+          <li>{t('section3Item1')}</li>
+          <li>{t('section3Item2')}</li>
+          <li>{t('section3Item3')}</li>
+          <li>{t('section3Item4')}</li>
+          <li>{t('section3Item5')}</li>
+          <li>{t('section3Item6')}</li>
         </ul>
       </Section>
 
-      <Section title="4. Base légale">
-        <p>Conformément à l&apos;article 6 du RGPD, les traitements reposent sur les bases légales suivantes :</p>
+      <Section title={t('section4Title')}>
+        <p>{t('section4Body1')}</p>
         <ul className="list-disc space-y-1 pl-5">
-          <li><strong>Exécution du contrat</strong> (art. 6.1.b) : fourniture du Service souscrit.</li>
-          <li><strong>Consentement</strong> (art. 6.1.a) : photos envoyées pour diagnostic, notifications, communications marketing éventuelles.</li>
-          <li><strong>Intérêt légitime</strong> (art. 6.1.f) : amélioration du Service, sécurité, prévention de la fraude.</li>
-          <li><strong>Obligation légale</strong> (art. 6.1.c) : conservation des factures et traces comptables.</li>
+          <li>{t.rich('section4Item1', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section4Item2', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section4Item3', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section4Item4', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
         </ul>
         <p>
-          L&apos;Utilisateur peut retirer son consentement à tout moment depuis la page{' '}
-          <Link href="/settings" className="text-gold underline">Paramètres</Link>, sans porter
-          atteinte à la licéité du traitement antérieur.
+          {t.rich('section4Body2', {
+            link: (chunks) => <Link href="/settings" className="text-gold underline">{chunks}</Link>,
+          })}
         </p>
       </Section>
 
-      <Section title="5. Durée de conservation">
+      <Section title={t('section5Title')}>
         <ul className="list-disc space-y-1 pl-5">
-          <li><strong>Compte actif</strong> : durée d&apos;utilisation du Service.</li>
-          <li><strong>Données de piscine, mesures, photos</strong> : conservées tant que le Compte est actif, plus 90 jours après suppression (pour restauration éventuelle), puis effacées définitivement.</li>
-          <li><strong>Factures</strong> : 10 ans (obligation comptable légale en France).</li>
-          <li><strong>Logs de sécurité</strong> : 12 mois.</li>
-          <li><strong>Compte inactif</strong> : après 24 mois sans connexion, notification par e-mail puis suppression du Compte et de ses données.</li>
+          <li>{t.rich('section5Item1', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section5Item2', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section5Item3', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section5Item4', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section5Item5', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
         </ul>
       </Section>
 
-      <Section title="6. Destinataires">
-        <p>Les données sont accessibles aux destinataires suivants :</p>
+      <Section title={t('section6Title')}>
+        <p>{t('section6Body1')}</p>
         <ul className="list-disc space-y-1 pl-5">
-          <li><strong>AQWELIA</strong> : personnel autorisé (ingénieurs, support) sous accord de confidentialité.</li>
-          <li><strong>Hébergeur cloud</strong> : stockage et calcul (localisé UE).</li>
-          <li><strong>Stripe</strong> : traitement des paiements web (soumis à son propre RGPD).</li>
-          <li><strong>RevenueCat</strong> : gestion unifiée des abonnements iOS/Android.</li>
-          <li><strong>Apple / Google</strong> : paiements In-App (soumis à leurs propres conditions).</li>
-          <li><strong>Prestataires IA</strong> : pour le diagnostic photo et l&apos;assistant — uniquement les données strictement nécessaires, sans stockage au-delà de la session.</li>
+          <li>{t.rich('section6Item1', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section6Item2', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section6Item3', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section6Item4', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section6Item5', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section6Item6', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+        </ul>
+        <p>{t('section6Body2')}</p>
+      </Section>
+
+      <Section title={t('section7Title')}>
+        <p>{t('section7Body1')}</p>
+      </Section>
+
+      <Section title={t('section8Title')}>
+        <p>{t('section8Body1')}</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>{t.rich('section8Item1', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section8Item2', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section8Item3', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section8Item4', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section8Item5', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section8Item6', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
+          <li>{t.rich('section8Item7', { bold: (chunks) => <strong>{chunks}</strong> })}</li>
         </ul>
         <p>
-          AQWELIA ne vend jamais vos données à des tiers à des fins marketing.
+          {t.rich('section8Body2', {
+            link: (chunks) => <Link href="/settings" className="text-gold underline">{chunks}</Link>,
+            alink: (chunks) => <a href="mailto:privacy@aqwelia.app" className="text-gold underline">{chunks}</a>,
+          })}
         </p>
+        <p>{t('section8Body3')}</p>
       </Section>
 
-      <Section title="7. Transferts hors UE">
+      <Section title={t('section9Title')}>
+        <p>{t('section9Body1')}</p>
         <p>
-          L&apos;hébergement principal est localisé dans l&apos;Union Européenne. Tout transfert
-          hors UE éventuel (par exemple vers un prestataire IA basé aux États-Unis) est
-          encadré par les clauses contractuelles types de la Commission Européenne (décision
-          2021/914) et accompagné de garanties appropriées (chiffrement, minimisation,
-          pseudonymisation).
+          {t.rich('section9Body2', {
+            link: (chunks) => <Link href="/settings" className="text-gold underline">{chunks}</Link>,
+          })}
         </p>
       </Section>
 
-      <Section title="8. Vos droits">
-        <p>Conformément aux articles 15 à 22 du RGPD, vous disposez des droits suivants :</p>
+      <Section title={t('section10Title')}>
+        <p>{t('section10Body1')}</p>
         <ul className="list-disc space-y-1 pl-5">
-          <li><strong>Droit d&apos;accès</strong> : obtenir une copie de vos données.</li>
-          <li><strong>Droit de rectification</strong> : corriger des données inexactes.</li>
-          <li><strong>Droit à l&apos;effacement</strong> (« droit à l&apos;oubli ») : supprimer votre Compte et vos données.</li>
-          <li><strong>Droit à la portabilité</strong> : recevoir vos données dans un format structuré et réutilisable.</li>
-          <li><strong>Droit d&apos;opposition</strong> : refuser un traitement fondé sur l&apos;intérêt légitime.</li>
-          <li><strong>Droit à la limitation</strong> : geler temporairement un traitement.</li>
-          <li><strong>Droit de retirer votre consentement</strong> à tout moment.</li>
+          <li>{t('section10Item1')}</li>
+          <li>{t('section10Item2')}</li>
+          <li>{t('section10Item3')}</li>
+          <li>{t('section10Item4')}</li>
+          <li>{t('section10Item5')}</li>
         </ul>
-        <p>
-          Ces droits sont exerçables directement depuis la page{' '}
-          <Link href="/settings" className="text-gold underline">Paramètres</Link> (export
-          JSON, suppression du compte), ou par e-mail à{' '}
-          <a href="mailto:privacy@aqwelia.app" className="text-gold underline">privacy@aqwelia.app</a>.
-        </p>
-        <p>
-          Vous pouvez également introduire une réclamation auprès de la CNIL
-          (www.cnil.fr) ou de l&apos;autorité de contrôle de votre pays.
-        </p>
+        <p>{t('section10Body2')}</p>
       </Section>
 
-      <Section title="9. Cookies et traceurs">
-        <p>
-          AQWELIA utilise un minimum de traceurs strictement nécessaires au fonctionnement du
-          Service (session d&apos;authentification, préférences de langue et de thème). Aucun
-          cookie publicitaire ou de tracking tiers n&apos;est déposé sans consentement.
-        </p>
-        <p>
-          Les préférences peuvent être gérées depuis la page{' '}
-          <Link href="/settings" className="text-gold underline">Paramètres</Link>.
-        </p>
-      </Section>
-
-      <Section title="10. Sécurité">
-        <p>
-          AQWELIA met en œuvre les mesures techniques et organisationnelles appropriées pour
-          protéger vos données :
-        </p>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>chiffrement des mots de passe (scrypt, algorithme résistant au brute-force) ;</li>
-          <li>chiffrement des données en transit (TLS 1.2+) et au repos (chiffrement base de données) ;</li>
-          <li>authentification par JWT signé, durée de vie limitée (30 jours) ;</li>
-          <li>accès restreint aux données personnelles (principe du moindre privilège) ;</li>
-          <li>sauvegardes chiffrées et tests d&apos;intrusion réguliers.</li>
-        </ul>
-        <p>
-          En cas de violation de données susceptible d&apos;engendrer un risque pour vos droits
-          et libertés, AQWELIA vous notifiera dans les meilleurs délais conformément à
-          l&apos;article 34 du RGPD.
-        </p>
-      </Section>
-
-      <Section title="11. Contact DPO">
-        <p>
-          Pour toute question relative à la protection de vos données, contactez notre DPO :
-        </p>
+      <Section title={t('section11Title')}>
+        <p>{t('section11Body1')}</p>
         <p className="mt-2">
           <a
             href="mailto:privacy@aqwelia.app"
@@ -181,8 +170,10 @@ export default function PrivacyPage() {
           </a>
         </p>
         <p className="mt-4 text-xs">
-          Voir aussi nos <Link href="/legal/cgu" className="text-gold underline">CGU</Link> et
-          notre <Link href="/legal/support" className="text-gold underline">page Support</Link>.
+          {t.rich('section11Body2', {
+            link: (chunks) => <Link href="/legal/cgu" className="text-gold underline">{chunks}</Link>,
+            link2: (chunks) => <Link href="/legal/support" className="text-gold underline">{chunks}</Link>,
+          })}
         </p>
       </Section>
     </article>

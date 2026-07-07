@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/hooks/use-toast'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { offlineApi } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
@@ -72,6 +72,43 @@ const SWIM_CLS: Record<string, { cls: string; icon: string }> = {
 
 export function ModuleActionPlan({ onNavigate }: Props) {
   const t = useTranslations('diagnostic')
+  const tAct = useTranslations('actionPlan')
+
+  // Helper: translate via key with French fallback (for DB-stored plans without keys)
+  const tr = useCallback((fr: string, key?: string | null, params?: Record<string, string | number> | null): string => {
+    if (key) {
+      try { return tAct(key as any, params || {}) } catch { return fr }
+    }
+    return fr
+  }, [tAct])
+
+  // Helper: render diagnosis with pre-translated ICU params (sevLabel, swim, issues are themselves keys)
+  const renderDiagnosis = useCallback((data: any): string => {
+    const key = data?.diagnosisKey
+    if (!key) return data?.diagnosis as string
+    const params: Record<string, any> = { ...(data.diagnosisParams || {}) }
+    // Pre-translate sevLabel and swim (they are keys in actionPlan namespace)
+    if (typeof params.sevLabel === 'string') {
+      try { params.sevLabel = tAct(params.sevLabel as any) } catch { /* keep */ }
+    }
+    if (typeof params.swim === 'string') {
+      try { params.swim = tAct(params.swim as any) } catch { /* keep */ }
+    }
+    // Rebuild issues from issueKeys + issueParams (CSV + JSON)
+    if (typeof params.issueKeys === 'string' && typeof params.issueParams === 'string') {
+      try {
+        const keys = params.issueKeys.split(',')
+        const arr = JSON.parse(params.issueParams) as Record<string, any>[]
+        params.issues = keys.map((k: string, i: number) => {
+          try { return tAct(k as any, arr[i] || {}) } catch { return '' }
+        }).filter(Boolean).join(', ')
+      } catch { /* keep */ }
+    }
+    delete params.issueKeys
+    delete params.issueParams
+    try { return tAct(key as any, params) } catch { return data?.diagnosis as string }
+  }, [tAct])
+  const locale = useLocale()
   const [plan, setPlan] = useState<LatestPlan | null>(null)
   const [loading, setLoading] = useState(true)
   const [regenerating, setRegenerating] = useState(false)
@@ -199,7 +236,7 @@ export function ModuleActionPlan({ onNavigate }: Props) {
                 {t(`severity.${plan.severity}`)}
               </Badge>
               <span className="text-[10px] text-muted-foreground">
-                {new Date(plan.createdAt).toLocaleDateString('fr-FR', {
+                {new Date(plan.createdAt).toLocaleDateString(locale, {
                   day: '2-digit',
                   month: 'short',
                   hour: '2-digit',
@@ -209,7 +246,7 @@ export function ModuleActionPlan({ onNavigate }: Props) {
             </div>
           </div>
           <CardDescription className="pt-2 text-sm leading-relaxed text-foreground/80">
-            {plan.diagnosis}
+            {renderDiagnosis(plan)}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -241,25 +278,28 @@ export function ModuleActionPlan({ onNavigate }: Props) {
           </CardHeader>
           <CardContent>
             <ol className="space-y-2.5">
-              {plan.immediateActions.map((a, i) => (
+              {plan.immediateActions.map((item, i) => {
+                const ai = item as any
+                return (
                 <li
                   key={i}
                   className="flex items-start gap-3 rounded-xl border border-border/50 bg-background/60 p-3"
                 >
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-gold text-xs font-bold text-primary-foreground shadow-md shadow-primary/30">
-                    {a.order}
+                    {ai.order}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">{a.action}</p>
-                    <p className="text-xs text-muted-foreground">{a.detail}</p>
-                    {a.product && (
+                    <p className="text-sm font-semibold">{tr(ai.action, ai.actionKey)}</p>
+                    <p className="text-xs text-muted-foreground">{tr(ai.detail, ai.detailKey, ai.detailParams)}</p>
+                    {ai.product && (
                       <span className="mt-1 inline-block rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium">
-                        {a.product}
+                        {tr(ai.product, ai.productKey)}
                       </span>
                     )}
                   </div>
                 </li>
-              ))}
+                )
+              })}
             </ol>
           </CardContent>
         </Card>
@@ -301,13 +341,13 @@ export function ModuleActionPlan({ onNavigate }: Props) {
             </CardContent>
           </Card>
 
-          {plan.whenToCallProfessional && (
+          {((plan as any).whenToCallProfessional || (plan as any).whenToCallProfessionalKey) && (
             <div className="rounded-xl border border-gold/30 bg-gold/5 p-3 text-xs">
               <p className="flex items-center gap-1.5 font-semibold text-gold">
                 <PhoneCall className="h-3.5 w-3.5" />
                 {t('callPro')}
               </p>
-              <p className="mt-1 text-foreground/80">{plan.whenToCallProfessional}</p>
+              <p className="mt-1 text-foreground/80">{tr((plan as any).whenToCallProfessional, (plan as any).whenToCallProfessionalKey, (plan as any).whenToCallProfessionalParams)}</p>
             </div>
           )}
         </div>
@@ -327,7 +367,9 @@ export function ModuleActionPlan({ onNavigate }: Props) {
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {plan.chemicalDosages.map((d, i) => (
+              {plan.chemicalDosages.map((dosage, i) => {
+                const di = dosage as any
+                return (
                 <div
                   key={i}
                   className="rounded-xl border border-border/50 bg-background/60 p-3 transition-all hover:border-gold/30 hover:shadow-md"
@@ -335,42 +377,43 @@ export function ModuleActionPlan({ onNavigate }: Props) {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        {d.param}
+                        {di.param}
                       </p>
-                      <p className="font-display text-sm font-semibold">{d.product}</p>
+                      <p className="font-display text-sm font-semibold">{tr(di.product, di.productKey)}</p>
                     </div>
-                    <p className="font-display text-2xl font-bold text-gold">{d.quantity}</p>
+                    <p className="font-display text-2xl font-bold text-gold">{di.quantity}</p>
                   </div>
-                  <p className="mt-1.5 text-xs text-muted-foreground">{d.method}</p>
+                  <p className="mt-1.5 text-xs text-muted-foreground">{tr(di.method, di.methodKey)}</p>
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
                     <span className="flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5">
                       <Clock className="h-3 w-3" />
-                      {t('filtrationHoursShort', { n: d.filtrationHours })}
+                      {t('filtrationHoursShort', { n: di.filtrationHours })}
                     </span>
                     <span className="flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5">
                       <ArrowRight className="h-3 w-3" />
-                      {t('retestHoursShort', { n: d.retestInHours })}
+                      {t('retestHoursShort', { n: di.retestInHours })}
                     </span>
-                    {d.waitBeforeSwimHours > 0 && (
+                    {di.waitBeforeSwimHours > 0 && (
                       <span className="flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-destructive">
-                        ⌛ {t('swimWaitHours', { n: d.waitBeforeSwimHours })}
+                        ⌛ {t('swimWaitHours', { n: di.waitBeforeSwimHours })}
                       </span>
                     )}
                   </div>
-                  {d.estimatedCost && d.estimatedCost !== '—' && (
+                  {di.estimatedCost && di.estimatedCost !== '—' && (
                     <p className="mt-1.5 text-[10px] text-muted-foreground">
-                      ≈ <span className="font-semibold text-gold">{d.estimatedCost}</span>
+                      ≈ <span className="font-semibold text-gold">{di.estimatedCost}</span>
                     </p>
                   )}
-                  {d.warnings.length > 0 && (
+                  {di.warnings?.length > 0 && (
                     <ul className="mt-2 space-y-0.5 text-[10px] text-destructive">
-                      {d.warnings.map((w, j) => (
-                        <li key={j}>⚠ {w}</li>
+                      {di.warnings.map((w: string, j: number) => (
+                        <li key={j}>⚠ {tr(w, di.warningKeys?.[j], di.warningParams?.[j])}</li>
                       ))}
                     </ul>
                   )}
                 </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>
@@ -386,10 +429,10 @@ export function ModuleActionPlan({ onNavigate }: Props) {
         </CardHeader>
         <CardContent>
           <ul className="grid gap-1.5 text-xs text-destructive/90 sm:grid-cols-2">
-            {plan.doNotDo.map((d, i) => (
+            {plan.doNotDo.map((dnd: string, i: number) => (
               <li key={i} className="flex items-start gap-2 rounded-lg bg-background/40 p-2">
                 <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-destructive" />
-                {d}
+                {tr(dnd, (plan as any).doNotDoKeys?.[i])}
               </li>
             ))}
           </ul>

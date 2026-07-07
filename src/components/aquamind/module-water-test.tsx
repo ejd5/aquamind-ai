@@ -22,7 +22,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { toast } from '@/hooks/use-toast'
 import { TARGETS, evaluateParam, type ParamStatus } from '@/lib/pool/targets'
 import type { TabId } from './app-shell'
@@ -128,6 +128,42 @@ const SWIM_LABEL_KEY: Record<string, string> = {
 
 export function ModuleWaterTest({ onNavigate }: Props) {
   const t = useTranslations('modules.waterTest')
+  const tAct = useTranslations('actionPlan')
+  const tTargets = useTranslations('targets')
+
+  // Helper: translate via key with French fallback (for DB-stored plans without keys)
+  const trAct = useCallback((fr: string, key?: string | null, params?: Record<string, string | number> | null): string => {
+    if (key) {
+      try { return tAct(key as any, params || {}) } catch { return fr }
+    }
+    return fr
+  }, [tAct])
+
+  // Helper: render diagnosis with pre-translated ICU params
+  const renderDiagnosis = useCallback((data: any): string => {
+    const key = data?.diagnosisKey
+    if (!key) return data?.diagnosis as string
+    const params: Record<string, any> = { ...(data.diagnosisParams || {}) }
+    if (typeof params.sevLabel === 'string') {
+      try { params.sevLabel = tAct(params.sevLabel as any) } catch { /* keep */ }
+    }
+    if (typeof params.swim === 'string') {
+      try { params.swim = tAct(params.swim as any) } catch { /* keep */ }
+    }
+    if (typeof params.issueKeys === 'string' && typeof params.issueParams === 'string') {
+      try {
+        const keys = params.issueKeys.split(',')
+        const arr = JSON.parse(params.issueParams) as Record<string, any>[]
+        params.issues = keys.map((k: string, i: number) => {
+          try { return tAct(k as any, arr[i] || {}) } catch { return '' }
+        }).filter(Boolean).join(', ')
+      } catch { /* keep */ }
+    }
+    delete params.issueKeys
+    delete params.issueParams
+    try { return tAct(key as any, params) } catch { return data?.diagnosis as string }
+  }, [tAct])
+  const locale = useLocale()
   const [values, setValues] = useState<Record<string, string>>({
     ph: '',
     freeChlorine: '',
@@ -231,7 +267,7 @@ export function ModuleWaterTest({ onNavigate }: Props) {
         queueAction({ method: 'DELETE', path: `/api/pool/water-test?id=${id}` })
         setTests((t) => t.filter((x) => x.id !== id))
         toast({
-          title: t('actionRecorded') !== 'Action enregistrée' ? t('measureDeleted') : t('measureDeleted'),
+          title: t('measureDeleted'),
           description: t('measureRecordedOffline'),
         })
         return
@@ -375,15 +411,15 @@ export function ModuleWaterTest({ onNavigate }: Props) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-1.5">
-            {Object.entries(TARGETS).map(([key, t]) => (
+            {Object.entries(TARGETS).map(([key, tg]) => (
               <div
                 key={key}
                 className="flex items-center justify-between rounded-lg border border-border/40 bg-background/40 px-3 py-1.5 text-xs"
               >
-                <span className="font-medium">{t.label}</span>
+                <span className="font-medium">{tg.labelKey ? tTargets(tg.labelKey as any) : tg.label}</span>
                 <span className="font-mono text-gold">
-                  {t.idealLow}–{t.idealHigh}
-                  <span className="ml-1 text-[10px] text-muted-foreground">{t.unit}</span>
+                  {tg.idealLow}–{tg.idealHigh}
+                  <span className="ml-1 text-[10px] text-muted-foreground">{tg.unit}</span>
                 </span>
               </div>
             ))}
@@ -410,7 +446,7 @@ export function ModuleWaterTest({ onNavigate }: Props) {
               </div>
             </div>
             <CardDescription className="text-sm leading-relaxed text-foreground/80">
-              {plan.diagnosis}
+              {renderDiagnosis(plan)}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -422,25 +458,28 @@ export function ModuleWaterTest({ onNavigate }: Props) {
                   {t('immediateActions')}
                 </p>
                 <ol className="space-y-2">
-                  {plan.immediateActions.map((a, i) => (
+                  {plan.immediateActions.map((item, i) => {
+                    const ai = item as any
+                    return (
                     <li
                       key={i}
                       className="flex items-start gap-3 rounded-lg border border-border/50 bg-background/60 p-2.5"
                     >
                       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-gold text-xs font-bold text-primary-foreground">
-                        {a.order}
+                        {ai.order}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold">{a.action}</p>
-                        <p className="text-xs text-muted-foreground">{a.detail}</p>
-                        {a.product && (
+                        <p className="text-sm font-semibold">{trAct(ai.action, ai.actionKey)}</p>
+                        <p className="text-xs text-muted-foreground">{trAct(ai.detail, ai.detailKey, ai.detailParams)}</p>
+                        {ai.product && (
                           <span className="mt-1 inline-block rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium">
-                            {a.product}
+                            {trAct(ai.product, ai.productKey)}
                           </span>
                         )}
                       </div>
                     </li>
-                  ))}
+                    )
+                  })}
                 </ol>
               </div>
             )}
@@ -453,44 +492,47 @@ export function ModuleWaterTest({ onNavigate }: Props) {
                   {t('dosages')}
                 </p>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {plan.chemicalDosages.map((d, i) => (
+                  {plan.chemicalDosages.map((dosage, i) => {
+                    const di = dosage as any
+                    return (
                     <div
                       key={i}
                       className="rounded-lg border border-border/50 bg-background/60 p-3"
                     >
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="text-xs text-muted-foreground">{d.param}</p>
-                          <p className="font-display text-sm font-semibold">{d.product}</p>
+                          <p className="text-xs text-muted-foreground">{di.param}</p>
+                          <p className="font-display text-sm font-semibold">{trAct(di.product, di.productKey)}</p>
                         </div>
-                        <p className="font-display text-lg font-bold text-gold">{d.quantity}</p>
+                        <p className="font-display text-lg font-bold text-gold">{di.quantity}</p>
                       </div>
-                      <p className="mt-1.5 text-xs text-muted-foreground">{d.method}</p>
+                      <p className="mt-1.5 text-xs text-muted-foreground">{trAct(di.method, di.methodKey)}</p>
                       <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {t('filtration')} {d.filtrationHours}h
+                          {t('filtration')} {di.filtrationHours}h
                         </span>
                         <span className="flex items-center gap-1">
                           <ArrowRight className="h-3 w-3" />
-                          {t('retest')} {d.retestInHours}h
+                          {t('retest')} {di.retestInHours}h
                         </span>
-                        {d.estimatedCost && d.estimatedCost !== '—' && (
+                        {di.estimatedCost && di.estimatedCost !== '—' && (
                           <span className="flex items-center gap-1">
                             <Euro className="h-3 w-3" />
-                            {d.estimatedCost}
+                            {di.estimatedCost}
                           </span>
                         )}
                       </div>
-                      {d.warnings.length > 0 && (
+                      {di.warnings?.length > 0 && (
                         <ul className="mt-2 space-y-0.5 text-[10px] text-destructive">
-                          {d.warnings.map((w, j) => (
-                            <li key={j}>⚠ {w}</li>
+                          {di.warnings.map((w: string, j: number) => (
+                            <li key={j}>⚠ {trAct(w, di.warningKeys?.[j], di.warningParams?.[j])}</li>
                           ))}
                         </ul>
                       )}
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -503,8 +545,8 @@ export function ModuleWaterTest({ onNavigate }: Props) {
                   {t('doNotDo')}
                 </p>
                 <ul className="space-y-1 text-xs text-destructive/90">
-                  {plan.doNotDo.slice(0, 6).map((d, i) => (
-                    <li key={i}>• {d}</li>
+                  {plan.doNotDo.slice(0, 6).map((dnd: string, i: number) => (
+                    <li key={i}>• {trAct(dnd, (plan as any).doNotDoKeys?.[i])}</li>
                   ))}
                 </ul>
               </div>
@@ -526,11 +568,11 @@ export function ModuleWaterTest({ onNavigate }: Props) {
               </Button>
             </div>
 
-            {plan.whenToCallProfessional && (
+            {((plan as any).whenToCallProfessional || (plan as any).whenToCallProfessionalKey) && (
               <div className="flex items-start gap-2 rounded-lg border border-gold/30 bg-gold/5 p-3 text-xs">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold" />
                 <p className="text-foreground/80">
-                  <strong className="text-gold">{t('proAdvice')}</strong> {plan.whenToCallProfessional}
+                  <strong className="text-gold">{t('proAdvice')}</strong> {trAct((plan as any).whenToCallProfessional, (plan as any).whenToCallProfessionalKey, (plan as any).whenToCallProfessionalParams)}
                 </p>
               </div>
             )}
@@ -565,32 +607,32 @@ export function ModuleWaterTest({ onNavigate }: Props) {
             </div>
           ) : (
             <div className="custom-scroll max-h-96 space-y-2 overflow-y-auto pr-1">
-              {tests.map((t) => {
-                const st = STATUS_BADGE[t.status] || STATUS_BADGE.ok
+              {tests.map((row) => {
+                const st = STATUS_BADGE[row.status] || STATUS_BADGE.ok
                 return (
                   <div
-                    key={t.id}
+                    key={row.id}
                     className="flex flex-wrap items-center gap-3 rounded-xl border border-border/50 bg-background/60 p-3"
                   >
                     <div className="flex flex-col">
                       <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        {new Date(t.createdAt).toLocaleDateString('fr-FR', {
+                        {new Date(row.createdAt).toLocaleDateString(locale, {
                           day: '2-digit',
                           month: 'short',
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
                       </span>
-                      <span className="font-display text-lg font-bold">{t.ph.toFixed(2)}</span>
+                      <span className="font-display text-lg font-bold">{row.ph.toFixed(2)}</span>
                       <span className="text-[10px] text-muted-foreground">pH</span>
                     </div>
                     <div className="flex flex-1 flex-wrap gap-3 text-xs">
                       {[
-                        { l: 'Cl', v: t.freeChlorine },
-                        { l: 'TAC', v: t.alkalinity },
-                        { l: 'TH', v: t.calciumHardness },
-                        { l: 'CYA', v: t.cyanuricAcid },
-                        { l: t2('labelChlorine'), v: t.salt },
+                        { l: 'Cl', v: row.freeChlorine },
+                        { l: 'TAC', v: row.alkalinity },
+                        { l: 'TH', v: row.calciumHardness },
+                        { l: 'CYA', v: row.cyanuricAcid },
+                        { l: t('saltLabel'), v: row.salt },
                       ].map(
                         (m) =>
                           m.v != null && (
@@ -602,15 +644,15 @@ export function ModuleWaterTest({ onNavigate }: Props) {
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className={st.cls}>
-                        {this.t(st.labelKey as any)}
+                        {t(st.labelKey as any)}
                       </Badge>
                       <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold">
-                        {t.clearWaterIndex}/100
+                        {row.clearWaterIndex}/100
                       </span>
                       <button
-                        onClick={() => removeTest(t.id)}
+                        onClick={() => removeTest(row.id)}
                         className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                        aria-label={this.t('delete')}
+                        aria-label={t('delete')}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>

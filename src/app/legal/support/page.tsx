@@ -7,22 +7,79 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { Mail, Clock, HelpCircle, Bug, Lightbulb, BookOpen, MessageSquare, ChevronRight } from 'lucide-react'
+import { getTranslations } from 'next-intl/server'
 
-export const metadata: Metadata = {
-  title: 'Support — AQWELIA',
-  description: 'Contacter le support AQWELIA, FAQ, signaler un bug, demander une fonctionnalité.',
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('legal.support')
+  return {
+    title: t('metaTitle'),
+    description: t('metaDescription'),
+  }
 }
 
-export default function SupportPage() {
+export default async function SupportPage() {
+  const t = await getTranslations('legal.support')
+
+  const cards = [
+    {
+      icon: <HelpCircle className="h-5 w-5" />,
+      title: t('cardFaqTitle'),
+      description: t('cardFaqDesc'),
+      link: '/#faq',
+      linkLabel: t('cardFaqLink'),
+      disabled: false,
+    },
+    {
+      icon: <BookOpen className="h-5 w-5" />,
+      title: t('cardKbTitle'),
+      description: t('cardKbDesc'),
+      link: '/#faq',
+      linkLabel: t('cardKbLink'),
+      disabled: true,
+    },
+    {
+      icon: <Bug className="h-5 w-5" />,
+      title: t('cardBugTitle'),
+      description: t('cardBugDesc'),
+      link: 'mailto:support@aqwelia.app?subject=Bug%20AQWELIA',
+      linkLabel: t('cardBugLink'),
+      disabled: false,
+    },
+    {
+      icon: <Lightbulb className="h-5 w-5" />,
+      title: t('cardFeatureTitle'),
+      description: t('cardFeatureDesc'),
+      link: `mailto:support@aqwelia.app?subject=${encodeURIComponent(t('cardFeatureSubject'))}`,
+      linkLabel: t('cardFeatureLink'),
+      disabled: false,
+    },
+    {
+      icon: <MessageSquare className="h-5 w-5" />,
+      title: t('cardAssistantTitle'),
+      description: t('cardAssistantDesc'),
+      link: '/',
+      linkLabel: t('cardAssistantLink'),
+      disabled: false,
+    },
+    {
+      icon: <Mail className="h-5 w-5" />,
+      title: t('cardLegalTitle'),
+      description: t('cardLegalDesc'),
+      link: 'mailto:privacy@aqwelia.app',
+      linkLabel: t('cardLegalLink'),
+      disabled: false,
+    },
+  ]
+
   return (
     <article className="space-y-8">
       <header className="space-y-3">
-        <p className="section-label">Aide & support</p>
+        <p className="section-label">{t('eyebrow')}</p>
         <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Contacter le support
+          {t('title')}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Notre équipe est disponible pour vous aider à tirer le meilleur d&apos;AQWELIA.
+          {t('subtitle')}
         </p>
         <div className="gold-divider" />
       </header>
@@ -36,10 +93,10 @@ export default function SupportPage() {
             </div>
             <div>
               <h2 className="font-display text-xl font-bold tracking-tight text-foreground">
-                Email
+                {t('emailTitle')}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                La meilleure façon de nous joindre. Réponse sous 48h ouvrées.
+                {t('emailDesc')}
               </p>
               <a
                 href="mailto:support@aqwelia.app"
@@ -60,95 +117,63 @@ export default function SupportPage() {
             <Clock className="h-4 w-4" />
           </div>
           <h2 className="font-display text-xl font-bold tracking-tight text-foreground">
-            Temps de réponse
+            {t('responseTimeTitle')}
           </h2>
         </div>
         <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
           <li className="flex items-center gap-2">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold" />
-            <strong className="text-foreground">Plan Free</strong> : réponse sous 72h ouvrées.
+            {t.rich('responseTimeFree', { bold: (chunks) => <strong className="text-foreground">{chunks}</strong> })}
           </li>
           <li className="flex items-center gap-2">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold" />
-            <strong className="text-foreground">Plan Premium</strong> : réponse sous 48h ouvrées.
+            {t.rich('responseTimePremium', { bold: (chunks) => <strong className="text-foreground">{chunks}</strong> })}
           </li>
           <li className="flex items-center gap-2">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold" />
-            <strong className="text-foreground">Plan Expert</strong> : réponse sous 24h, support prioritaire.
+            {t.rich('responseTimeExpert', { bold: (chunks) => <strong className="text-foreground">{chunks}</strong> })}
           </li>
         </ul>
       </section>
 
       {/* Quick links grid */}
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <SupportCard
-          icon={<HelpCircle className="h-5 w-5" />}
-          title="FAQ"
-          description="Réponses aux questions les plus fréquentes : abonnements, données, piscine, compatibilité."
-          link="/#faq"
-          linkLabel="Voir la FAQ"
-        />
-        <SupportCard
-          icon={<BookOpen className="h-5 w-5" />}
-          title="Base de connaissances"
-          description="Guides détaillés, tutoriels vidéo et articles d’aide. À venir."
-          link="/#faq"
-          linkLabel="Bientôt disponible"
-          disabled
-        />
-        <SupportCard
-          icon={<Bug className="h-5 w-5" />}
-          title="Signaler un bug"
-          description="Vous avez repéré un comportement inattendu ? Décrivez-le nous avec une capture si possible."
-          link="mailto:support@aqwelia.app?subject=Bug%20AQWELIA"
-          linkLabel="Signaler par email"
-        />
-        <SupportCard
-          icon={<Lightbulb className="h-5 w-5" />}
-          title="Demander une fonctionnalité"
-          description="Une idée pour améliorer AQWELIA ? Nous lisons toutes les suggestions."
-          link="mailto:support@aqwelia.app?subject=Idée%20fonctionnalité%20AQWELIA"
-          linkLabel="Partager mon idée"
-        />
-        <SupportCard
-          icon={<MessageSquare className="h-5 w-5" />}
-          title="Assistant IA intégré"
-          description="Pour une question rapide sur votre piscine, interrogez l’assistant directement dans l’app."
-          link="/"
-          linkLabel="Ouvrir l’app"
-        />
-        <SupportCard
-          icon={<Mail className="h-5 w-5" />}
-          title="Questions légales"
-          description="Pour les sujets RGPD, confidentialité ou CGU, écrivez à privacy@aqwelia.app."
-          link="mailto:privacy@aqwelia.app"
-          linkLabel="Contacter le DPO"
-        />
+        {cards.map((card) => (
+          <SupportCard
+            key={card.title}
+            icon={card.icon}
+            title={card.title}
+            description={card.description}
+            link={card.link}
+            linkLabel={card.linkLabel}
+            disabled={card.disabled}
+          />
+        ))}
       </section>
 
       {/* Bottom links */}
       <section className="glass-card rounded-2xl p-6 sm:p-8">
         <h2 className="font-display text-xl font-bold tracking-tight text-foreground">
-          Ressources associées
+          {t('resourcesTitle')}
         </h2>
         <div className="mt-4 flex flex-wrap gap-3 text-sm">
           <Link
             href="/legal/cgu"
             className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-2 font-semibold text-gold transition-colors hover:bg-gold/20"
           >
-            Conditions générales
+            {t('resourcesCguLink')}
           </Link>
           <Link
             href="/legal/privacy"
             className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-2 font-semibold text-gold transition-colors hover:bg-gold/20"
           >
-            Politique de confidentialité
+            {t('resourcesPrivacyLink')}
           </Link>
           <Link
             href="/settings"
             className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary/50 px-4 py-2 font-medium text-foreground transition-colors hover:bg-secondary"
           >
-            Paramètres du compte
+            {t('resourcesSettingsLink')}
           </Link>
         </div>
       </section>

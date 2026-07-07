@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import {
   Wrench,
   Droplets,
@@ -145,6 +145,7 @@ export function ModuleMaintenance() {
 
 function EquipmentPanel() {
   const t = useTranslations('modules.maintenance')
+  const locale = useLocale()
   const [items, setItems] = useState<EquipmentRow[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -418,7 +419,7 @@ function EquipmentPanel() {
                         {eq.lastMaintenanceAt && (
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {t('maintainedDate')} {new Date(eq.lastMaintenanceAt).toLocaleDateString('fr-FR')}
+                            {t('maintainedDate')} {new Date(eq.lastMaintenanceAt).toLocaleDateString(locale)}
                           </span>
                         )}
                         {eq.nextMaintenanceAt && (
@@ -426,7 +427,7 @@ function EquipmentPanel() {
                             className={`flex items-center gap-1 ${dueSoon ? 'font-semibold text-gold' : ''}`}
                           >
                             <Calendar className="h-3 w-3" />
-                            {t('nextDate')} {new Date(eq.nextMaintenanceAt).toLocaleDateString('fr-FR')}
+                            {t('nextDate')} {new Date(eq.nextMaintenanceAt).toLocaleDateString(locale)}
                           </span>
                         )}
                       </div>

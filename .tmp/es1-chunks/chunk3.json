@@ -1,0 +1,252 @@
+{
+  "diagnosticActionPlan.greenS4Title": {
+    "fr": "4. Anti-algues (préventif curatif)",
+    "en": "4. Anti-algae (preventive curative)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS5I1": {
+    "fr": "Utilisez une brosse adaptée à votre revêtement : brosse nylon pour liner/coque, brosse acier pour béton.",
+    "en": "Use a brush suited to your surface: nylon brush for liner/shell, steel brush for concrete.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS5I2": {
+    "fr": "🚫 Jamais de brosse métallique sur liner ou membrane armée — vous la perceriez.",
+    "en": "🚫 Never use a metal brush on liner or reinforced membrane — you would puncture it.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS5I3": {
+    "fr": "Brossez du haut vers le bas, par sections de 1 m².",
+    "en": "Brush top to bottom, in 1 m² sections.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS5I4": {
+    "fr": "Insistez sur les coins, marches, buses, échelles et la ligne d'eau.",
+    "en": "Focus on corners, steps, jets, ladders and the water line.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS5I5": {
+    "fr": "Brossez aussi le fond si accessible (perche télescopique).",
+    "en": "Also brush the floor if accessible (telescopic pole).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS5I6": {
+    "fr": "C'est physique (15-30 min) mais INDISPENSABLE — sans ça les algues reviennent en 48h.",
+    "en": "It's physical (15-30 min) but ESSENTIAL — without it algae return in 48h.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS5Intro": {
+    "fr": "Le brossage décolle les algues incrustées. Sans cette étape, le traitement chimique ne suffit pas.",
+    "en": "Brushing dislodges embedded algae. Without this step, chemical treatment is not enough.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS5Title": {
+    "fr": "5. Brosser les parois et le fond",
+    "en": "5. Brush walls and floor",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS6I1": {
+    "fr": "Réglez la pompe en marche forcée (24h/24) — pas de programme horaire.",
+    "en": "Set the pump to forced mode (24/7) — no timer program.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS6I2": {
+    "fr": "Vérifiez la pression du manomètre du filtre.",
+    "en": "Check the filter pressure gauge.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS6I3": {
+    "fr": "Si la pression monte > 0.3 bar au-dessus de la normale → faites un backwash (contre-lavage).",
+    "en": "If pressure rises > 0.3 bar above normal → do a backwash.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS6I4": {
+    "fr": "Nettoyez le pré-filtre de la pompe (panier) s'il est plein de débris.",
+    "en": "Clean the pump pre-filter (basket) if full of debris.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS6I5": {
+    "fr": "Videz les skimmers régulièrement pendant ces 24h.",
+    "en": "Empty skimmers regularly during these 24h.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS6I6": {
+    "fr": "Pour un filtre à cartouche : rincez-la à mi-parcours si le débit baisse.",
+    "en": "For a cartridge filter: rinse it midway if flow drops.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS6Intro": {
+    "fr": "La filtration doit tourner 24h sans interruption pour évacuer les algues mortes et les particules.",
+    "en": "Filtration must run 24h without interruption to remove dead algae and particles.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS6Title": {
+    "fr": "6. Filtration continue 24h",
+    "en": "6. Continuous filtration 24h",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS7I1": {
+    "fr": "Reprenez un échantillon à 30 cm de profondeur.",
+    "en": "Take a sample at 30 cm depth.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS7I2": {
+    "fr": "Mesurez le pH (cible : 7.0 - 7.4).",
+    "en": "Measure pH (target: 7.0 - 7.4).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS7I3": {
+    "fr": "Mesurez le chlore libre (cible : 1 - 3 mg/L).",
+    "en": "Measure free chlorine (target: 1 - 3 mg/L).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS7I4": {
+    "fr": "Mesurez le TAC / alcalinité (cible : 80 - 120 mg/L).",
+    "en": "Measure TA / alkalinity (target: 80 - 120 mg/L).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS7I5": {
+    "fr": "Entrez vos 3 valeurs ci-dessous — elles seront enregistrées dans votre carnet.",
+    "en": "Enter your 3 values below — they will be saved in your logbook.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS7I6": {
+    "fr": "Si tout est dans les plages → vous pouvez re-baigner. Sinon, ajustez.",
+    "en": "If everything is in range → you can swim again. Otherwise, adjust.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS7Intro": {
+    "fr": "Après 24h de filtration, faites un test complet pour vérifier que l'eau est saine et équilibrée.",
+    "en": "After 24h of filtration, do a full test to verify water is safe and balanced.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS7Title": {
+    "fr": "7. Re-test complet de l'eau",
+    "en": "7. Full water re-test",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.immediate": {
+    "fr": "Immédiat",
+    "en": "Immediate",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.initialState": {
+    "fr": "État initial",
+    "en": "Initial state",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.instructionsTitle": {
+    "fr": "Instructions détaillées",
+    "en": "Detailed instructions",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.lastMeasureChlorine": {
+    "fr": "chlore",
+    "en": "chlorine",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.lastMeasureDesc": {
+    "fr": "Sera utilisée comme valeur « avant » pour comparer vos nouvelles mesures.",
+    "en": "Will be used as the 'before' value to compare your new measurements.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.lastMeasureTac": {
+    "fr": "TAC",
+    "en": "TA",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.lastMeasureTitle": {
+    "fr": "Dernière mesure enregistrée",
+    "en": "Last saved measurement",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.markAsDone": {
+    "fr": "Marquer comme fait",
+    "en": "Mark as done",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.noteActionPlan": {
+    "fr": "Étape plan d'action: {title}",
+    "en": "Action plan step: {title}",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.phHigh": {
+    "fr": "Votre pH {ph} est trop haut. Ajoutez {qty} de pH- pour revenir vers 7.4 (baisse de ~{delta} unité).",
+    "en": "Your pH {ph} is too high. Add {qty} of pH- to get back to 7.4 (drop of ~{delta} unit).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.phHighWarning": {
+    "fr": "Verser devant les buses de refoulement, filtration en marche. Ne jamais verser pH- pur directement.",
+    "en": "Pour in front of return jets, pump running. Never pour pure pH- directly.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.phIdeal": {
+    "fr": "✅ pH dans la plage idéale (7.0 - 7.4). Aucun ajustement nécessaire.",
+    "en": "✅ pH in the ideal range (7.0 - 7.4). No adjustment needed.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.phLow": {
+    "fr": "Votre pH {ph} est trop bas. Ajoutez {qty} de pH+ pour remonter vers 7.0 (hausse de ~{delta} unité).",
+    "en": "Your pH {ph} is too low. Add {qty} of pH+ to bring it back to 7.0 (rise of ~{delta} unit).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.phLowWarning": {
+    "fr": "Diluer dans un seau d'eau de piscine avant de verser devant les refoulements.",
+    "en": "Dilute in a bucket of pool water before pouring in front of returns.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.poolDetected": {
+    "fr": "Piscine détectée :",
+    "en": "Pool detected:",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.poolDetectedSuffix": {
+    "fr": "— dosages calculés automatiquement.",
+    "en": "— dosages calculated automatically.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.poolState": {
+    "fr": "État de votre piscine",
+    "en": "Pool condition",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.product": {
+    "fr": "Produit",
+    "en": "Product",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.productPhMinus": {
+    "fr": "pH- (poudre, bisulfate de sodium)",
+    "en": "pH- (powder, sodium bisulfate)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.productPhPlus": {
+    "fr": "pH+ (carbonate de sodium)",
+    "en": "pH+ (sodium carbonate)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.progress": {
+    "fr": "Progression",
+    "en": "Progress",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckAfter": {
+    "fr": "Après",
+    "en": "After",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckAgain": {
+    "fr": "Refaire une vérification",
+    "en": "Re-check",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckAnalyze": {
+    "fr": "Analyser et vérifier",
+    "en": "Analyze & verify",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckAnalyzeNewPhoto": {
+    "fr": "Analyse de votre nouvelle photo",
+    "en": "Analysis of your new photo",
+    "reason": "placeholder"
+  }
+}

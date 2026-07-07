@@ -30,7 +30,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { toast } from '@/hooks/use-toast'
 import { takePhoto, pickFromGallery, requestCameraPermission } from '@/lib/native/camera'
 import { isNative } from '@/lib/platform'
@@ -87,6 +87,7 @@ function safeParse<T>(s: string | null | undefined, fallback: T): T {
 
 export function ModuleDiagnostic() {
   const t = useTranslations('diagnostic')
+  const locale = useLocale()
   const [typeHint, setTypeHint] = useState<string>('water')
   const [image, setImage] = useState<string | null>(null)
   const [result, setResult] = useState<DiagnosticResult | null>(null)
@@ -548,7 +549,11 @@ export function ModuleDiagnostic() {
                   detected.length === 0 ||
                   summaryLower.includes('résolu') ||
                   summaryLower.includes('resolu') ||
-                  summaryLower.includes('sain')
+                  summaryLower.includes('resolved') ||
+                  summaryLower.includes('sain') ||
+                  summaryLower.includes('healthy') ||
+                  summaryLower.includes('clean') ||
+                  summaryLower.includes('clair')
                 return (
                   <div
                     key={d.id}
@@ -588,7 +593,7 @@ export function ModuleDiagnostic() {
                             {d.type}
                           </span>
                           <span className="text-[10px] text-muted-foreground">
-                            {new Date(d.createdAt).toLocaleDateString('fr-FR', {
+                            {new Date(d.createdAt).toLocaleDateString(locale, {
                               day: '2-digit',
                               month: 'short',
                               hour: '2-digit',
@@ -603,7 +608,7 @@ export function ModuleDiagnostic() {
                           )}
                         </div>
                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                          {d.aiSummary && !d.aiSummary.toLowerCase().includes('je ne peux pas')
+                          {d.aiSummary && !d.aiSummary.toLowerCase().includes('je ne peux pas') && !d.aiSummary.toLowerCase().includes("i can't") && !d.aiSummary.toLowerCase().includes('i cannot')
                             ? d.aiSummary
                             : t('noAnalysis')}
                         </p>
@@ -657,10 +662,10 @@ export function ModuleDiagnostic() {
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                {d.type} · {new Date(d.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                {d.type} · {new Date(d.createdAt).toLocaleDateString(locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                               </p>
                               <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                                {d.aiSummary && !d.aiSummary.toLowerCase().includes('je ne peux pas')
+                                {d.aiSummary && !d.aiSummary.toLowerCase().includes('je ne peux pas') && !d.aiSummary.toLowerCase().includes("i can't") && !d.aiSummary.toLowerCase().includes('i cannot')
                                   ? d.aiSummary
                                   : t('noAnalysis')}
                               </p>

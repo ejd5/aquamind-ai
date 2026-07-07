@@ -25,7 +25,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { toast } from '@/hooks/use-toast'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import type { PlanId } from '@/lib/pool/freemium'
 import { billing } from '@/lib/billing'
 import { isNative } from '@/lib/platform'
@@ -38,9 +38,12 @@ type Duration = 'week' | 'month' | 'quarter' | 'halfyear'
 interface Plan {
   id: PlanId
   name: string
+  nameKey: string
   tagline: string
+  taglineKey: string
   price: { week: number; month: number; quarter: number; halfyear: number }
   features: string[]
+  featureKeys: string[]
   limits: {
     maxPools: number
     maxPhotoScansPerMonth: number
@@ -83,6 +86,7 @@ const FAQ_KEYS = ['changePlan', 'endSubscription', 'annual', 'refund'] as const
 
 export function ModulePaywall() {
   const t = useTranslations('plans')
+  const locale = useLocale()
   const [plans, setPlans] = useState<Plan[]>([])
   const [currentPlanId, setCurrentPlanId] = useState<PlanId>('free')
   const [subscription, setSubscription] = useState<{ expiresAt?: string | null } | null>(null)
@@ -243,7 +247,7 @@ export function ModulePaywall() {
             {currentPlanId !== 'free' && (
               <Badge variant="outline" className="border-gold/40 bg-gold/10 px-3 py-1 text-xs font-bold text-gold">
                 <Crown className="mr-1 h-3 w-3" />
-                {t('currentPlan', { name: plans.find((p) => p.id === currentPlanId)?.name || '' })}
+                {t('currentPlan', { name: plans.find((p) => p.id === currentPlanId)?.nameKey ? t(plans.find((p) => p.id === currentPlanId)!.nameKey) : '' })}
               </Badge>
             )}
           </div>
@@ -301,8 +305,8 @@ export function ModulePaywall() {
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">{plan.icon}</span>
                   <div>
-                    <p className="font-display text-lg font-bold">{plan.name}</p>
-                    <p className="text-[11px] text-muted-foreground">{plan.tagline}</p>
+                    <p className="font-display text-lg font-bold">{t(plan.nameKey)}</p>
+                    <p className="text-[11px] text-muted-foreground">{t(plan.taglineKey)}</p>
                   </div>
                 </div>
                 <div className="flex items-end gap-1.5">
@@ -312,10 +316,10 @@ export function ModulePaywall() {
                   </span>
                 </div>
                 <ul className="flex-1 space-y-1.5 text-xs">
-                  {plan.features.map((f, i) => (
-                    <li key={i} className="flex items-start gap-2">
+                  {plan.featureKeys.map((f) => (
+                    <li key={f} className="flex items-start gap-2">
                       <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[oklch(0.7_0.15_155)]" />
-                      <span className="text-foreground/90">{f}</span>
+                      <span className="text-foreground/90">{t(f)}</span>
                     </li>
                   ))}
                 </ul>
@@ -338,7 +342,7 @@ export function ModulePaywall() {
                   ) : (
                     <>
                       <Crown className="h-4 w-4" />
-                      {t('choosePlan', { name: plan.name })}
+                      {t('choosePlan', { name: t(plan.nameKey) })}
                     </>
                   )}
                 </Button>
@@ -357,7 +361,7 @@ export function ModulePaywall() {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <p className="font-display text-sm font-bold">{freePlan.name}</p>
+                <p className="font-display text-sm font-bold">{t(freePlan.nameKey)}</p>
                 <span className="text-xs text-muted-foreground">— {t('freeTagline')}</span>
                 {currentPlanId === 'free' && (
                   <Badge variant="outline" className="border-border bg-secondary/60 text-[9px] text-muted-foreground">
@@ -366,7 +370,7 @@ export function ModulePaywall() {
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                {freePlan.features.slice(0, 3).join(' · ')}
+                {freePlan.featureKeys.slice(0, 3).map((k) => t(k)).join(' · ')}
               </p>
             </div>
             {currentPlanId !== 'free' && (
@@ -449,7 +453,7 @@ export function ModulePaywall() {
                   <th key={p.id} className="px-2 py-2 text-center text-xs font-semibold">
                     <div className="flex flex-col items-center gap-0.5">
                       <span className="text-base">{p.icon}</span>
-                      <span className="font-display text-sm">{p.name}</span>
+                      <span className="font-display text-sm">{t(p.nameKey)}</span>
                     </div>
                   </th>
                 ))}
@@ -516,7 +520,7 @@ export function ModulePaywall() {
 
       {subscription?.expiresAt && currentPlanId !== 'free' && (
         <p className="text-center text-[11px] text-muted-foreground">
-          {t('subscriptionActive', { date: new Date(subscription.expiresAt).toLocaleDateString('fr-FR', {
+          {t('subscriptionActive', { date: new Date(subscription.expiresAt).toLocaleDateString(locale, {
             day: '2-digit',
             month: 'long',
             year: 'numeric',

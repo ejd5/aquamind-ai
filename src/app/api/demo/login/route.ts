@@ -23,15 +23,39 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { hashPassword } from '@/lib/password'
+import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
 
 const DEMO_EMAIL = 'demo@aqwelia.app'
 const DEMO_PASSWORD = 'aqwelia-demo-2026'
-const DEMO_NAME = 'Compte Démonstration'
+// Default account / pool name shown when the locale can't be resolved or the
+// key is missing from the locale bundle. The actual name written to the DB is
+// resolved per-request via `translate(locale, 'common.demoAccountName', …)`
+// so a Spanish reviewer sees "Cuenta demo", an English reviewer sees
+// "Demo Account", etc. (Only FR + EN keys are added in this task; the other
+// 5 locales will fall back to this French default until translator agents
+// add their keys.)
+const DEMO_NAME_FALLBACK = 'Compte Démonstration'
+const DEMO_POOL_NAME_FALLBACK = 'Piscine démo'
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
+    // Resolve the user's UI locale so the demo account name + pool name are
+    // stored in the reviewer's language at creation time. The middleware
+    // (src/middleware.ts) rewrites `accept-language` to a 2-letter code.
+    const locale = pickLocale(req)
+    const demoName = await translate(
+      locale,
+      'common.demoAccountName',
+      DEMO_NAME_FALLBACK
+    )
+    const demoPoolName = await translate(
+      locale,
+      'common.demoPoolName',
+      DEMO_POOL_NAME_FALLBACK
+    )
+
     // Find or create the demo user.
     let user = await db.user.findUnique({ where: { email: DEMO_EMAIL } })
 
@@ -40,7 +64,7 @@ export async function POST() {
         data: {
           email: DEMO_EMAIL,
           passwordHash: hashPassword(DEMO_PASSWORD),
-          name: DEMO_NAME,
+          name: demoName,
         },
       })
 
@@ -49,7 +73,7 @@ export async function POST() {
       await db.poolProfile.create({
         data: {
           userId: user.id,
-          name: 'Piscine démo',
+          name: demoPoolName,
           volume: 40,
           unit: 'm3',
           shape: 'rectangular',
@@ -76,10 +100,13 @@ export async function POST() {
     return NextResponse.json({
       email: DEMO_EMAIL,
       password: DEMO_PASSWORD,
+      // TODO: i18n — return a translation key for the client to localise.
       message: 'Utilisez ces identifiants pour vous connecter',
     })
   } catch (err) {
     console.error('[demo/login] error:', err)
+    // TODO: i18n — return a translation key (common.errors.demoCreateError)
+    // for the client to localise. French fallback kept for now.
     return NextResponse.json(
       { error: 'Erreur lors de la création du compte démo' },
       { status: 500 }

@@ -34,6 +34,8 @@ import {
   LANGUAGES,
   COUNTRY_LIST,
   getCountryConfig,
+  getCountryDisplayName,
+  getLanguageDisplayName,
   detectCountryConfig,
   formatTemperature,
   convertTemperature,
@@ -266,7 +268,7 @@ export default function SettingsPage() {
     setExporting(true)
     try {
       const res = await fetch('/api/account/export', { credentials: 'include' })
-      if (!res.ok) throw new Error('Export échec')
+      if (!res.ok) throw new Error(t('exportFailedDesc'))
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -295,7 +297,7 @@ export default function SettingsPage() {
         method: 'POST',
         credentials: 'include',
       })
-      if (!res.ok) throw new Error('Suppression échec')
+      if (!res.ok) throw new Error(t('deleteFailedDesc'))
       toast({ title: t('accountDeleted'), description: t('redirecting') })
       await signOut({ callbackUrl: '/' })
     } catch (err) {
@@ -788,6 +790,9 @@ function PreferencesSection({
   const t = useTranslations('settings')
   const countryConfig = getCountryConfig(country)
   const norms = countryConfig.norms
+  // Display country & language names in the user's currently-selected locale
+  // (avoids hundreds of translation keys — Intl.DisplayNames handles it).
+  const countryDisplayName = getCountryDisplayName(country, language)
 
   // Les températures affichées dans la card Normes s'adaptent à l'unité choisie par l'utilisateur.
   const tempMaxPool = formatTemperature(
@@ -804,7 +809,7 @@ function PreferencesSection({
     setShowCustomUnits(false)
     toast({
       title: t('unitsReset'),
-      description: t('unitsResetDesc', { country: countryConfig.name }),
+      description: t('unitsResetDesc', { country: countryDisplayName }),
     })
   }
 
@@ -825,7 +830,7 @@ function PreferencesSection({
               <SelectItem key={lang.code} value={lang.code}>
                 <span className="mr-1.5">{lang.flag}</span>
                 {lang.nativeName}
-                <span className="ml-1.5 text-xs text-muted-foreground">({lang.name})</span>
+                <span className="ml-1.5 text-xs text-muted-foreground">({getLanguageDisplayName(lang.code, language)})</span>
               </SelectItem>
             ))}
           </SelectContent>
@@ -849,7 +854,7 @@ function PreferencesSection({
             {COUNTRY_LIST.map((c) => (
               <SelectItem key={c.code} value={c.code}>
                 <span className="mr-1.5">{c.flag}</span>
-                {c.name}
+                {getCountryDisplayName(c.code, language)}
                 <span className="ml-1.5 text-xs text-muted-foreground">
                   ({c.currency} · {c.units === 'imperial' ? t('imperialLower') : t('metricLower')})
                 </span>

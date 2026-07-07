@@ -3,15 +3,25 @@
 // radicalement différent de la piscine : le chlore s'y évapore trop vite,
 // il faut privilégier le brome ou l'oxygène actif, et programmer des vidanges
 // régulières (souvent plus économiques que de sur-traiter une eau saturée).
+//
+// i18n strategy:
+//   - SpaTreatment / SpaMaintenanceTask / SpaBrand already expose key fields
+//     (`name`, `pros`, `cons`, `notes`, `title`, `description`) whose values
+//     ARE translation keys (resolved by consumers via `t(key)` from the
+//     `spaData` namespace). We keep that convention and add `frequencyKey`
+//     to SpaMaintenanceTask, plus key-based returns for getSpaRecommendations
+//     and calculateDrainageFrequency.
+//   - SPA_SPECIFICS gains `seatsLabelKey` and `usageFrequencyOptionKeys`
+//     arrays so consumers can translate labels without literals.
 
 export type WaterBodyType = 'pool' | 'spa' | 'both'
 
 export interface SpaBrand {
   id: string
-  name: string
-  origin: string
+  name: string  // Brand name (proper noun — usually not translated)
+  origin: string  // Origin country (proper noun — usually not translated)
   category: 'premium' | 'mid_range' | 'budget'
-  notes: string
+  notes: string  // translation key under `spaData` namespace
 }
 
 export const SPA_BRANDS: SpaBrand[] = [
@@ -29,9 +39,9 @@ export const SPA_BRANDS: SpaBrand[] = [
 
 export interface SpaTreatment {
   type: string
-  name: string
-  pros: string[]
-  cons: string[]
+  name: string         // translation key under `spaData` namespace
+  pros: string[]       // translation keys
+  cons: string[]       // translation keys
   recommended: boolean
   temperatureMax: number // °C max recommended
 }
@@ -65,9 +75,11 @@ export const SPA_TREATMENTS: SpaTreatment[] = [
 
 export interface SpaMaintenanceTask {
   id: string
-  frequency: string
-  title: string
-  description: string
+  frequency: string       // French fallback (legacy)
+  frequencyKey: string    // translation key under `spaData` namespace (ICU params via frequencyParams?)
+  frequencyParams?: Record<string, string | number>
+  title: string           // translation key under `spaData` namespace
+  description: string     // translation key
   isDrainage?: boolean
 }
 
@@ -75,30 +87,35 @@ export const SPA_MAINTENANCE: SpaMaintenanceTask[] = [
   {
     id: 'daily_check',
     frequency: 'Quotidien',
+    frequencyKey: 'freq_daily',
     title: 'maint_daily_check',
     description: 'maint_daily_check_desc',
   },
   {
     id: 'weekly_test',
     frequency: 'Hebdomadaire',
+    frequencyKey: 'freq_weekly',
     title: 'maint_weekly_test',
     description: 'maint_weekly_test_desc',
   },
   {
     id: 'weekly_filter',
     frequency: 'Hebdomadaire',
+    frequencyKey: 'freq_weekly',
     title: 'maint_weekly_filter',
     description: 'maint_weekly_filter_desc',
   },
   {
     id: 'cover_daily',
     frequency: 'Quotidien',
+    frequencyKey: 'freq_daily',
     title: 'maint_cover_daily',
     description: 'maint_cover_daily_desc',
   },
   {
     id: 'drain_3months',
     frequency: 'Tous les 3-4 mois',
+    frequencyKey: 'freq_every_3_4_months',
     title: 'maint_drain_3months',
     description: 'maint_drain_3months_desc',
     isDrainage: true,
@@ -106,6 +123,7 @@ export const SPA_MAINTENANCE: SpaMaintenanceTask[] = [
   {
     id: 'drain_heavy_use',
     frequency: 'Selon usage',
+    frequencyKey: 'freq_per_usage',
     title: 'maint_drain_heavy_use',
     description: 'maint_drain_heavy_use_desc',
     isDrainage: true,
@@ -113,53 +131,70 @@ export const SPA_MAINTENANCE: SpaMaintenanceTask[] = [
   {
     id: 'pump_program',
     frequency: 'Configuration',
+    frequencyKey: 'freq_config',
     title: 'maint_pump_program',
     description: 'maint_pump_program_desc',
   },
   {
     id: 'shell_clean',
     frequency: 'À chaque vidange',
+    frequencyKey: 'freq_per_drain',
     title: 'maint_shell_clean',
     description: 'maint_shell_clean_desc',
   },
 ]
 
 export interface SpaSpecifics {
-  seatsRange: { min: number; max: number; label: string }
+  seatsRange: { min: number; max: number; label: string; labelKey: string }
   temperatureRange: { min: number; max: number; ideal: number; unit: string }
   volumeRange: { min: number; max: number; unit: string }
-  usageFrequencyOptions: string[]
+  usageFrequencyOptions: string[]            // French fallback (legacy)
+  usageFrequencyOptionKeys: string[]         // translation keys under `spaData` namespace
 }
 
 export const SPA_SPECIFICS: SpaSpecifics = {
-  seatsRange: { min: 2, max: 8, label: 'Nombre de places assises' },
+  seatsRange: { min: 2, max: 8, label: 'Nombre de places assises', labelKey: 'seats_label' },
   temperatureRange: { min: 28, max: 40, ideal: 37, unit: '°C' },
   volumeRange: { min: 0.8, max: 3, unit: 'm³' },
   usageFrequencyOptions: ['Occasionnel (1-2x/semaine)', 'Régulier (3-4x/semaine)', 'Intensif (5+/semaine)'],
+  usageFrequencyOptionKeys: ['usage_occasional', 'usage_regular', 'usage_intensive'],
 }
 
+/**
+ * Recommandations spa selon température + traitement.
+ * Renvoie un tableau de clés de traduction (namespace `spaData`).
+ * Les éléments peuvent être interpolés : pour une clé `rec_temp_high_warning`
+ * la valeur ICU sera par ex. `⚠️ Température élevée — le chlore n'est PAS recommandé. Utilisez du brome.`
+ * Pas d'interpolation actuellement — les recommandations sont statiques.
+ */
 export function getSpaRecommendations(temperature: number, treatmentType: string): string[] {
   const recs: string[] = []
 
   if (temperature > 35) {
-    recs.push('⚠️ Température élevée — le chlore n\'est PAS recommandé. Utilisez du brome.')
-    recs.push('Surveillez la température: au-delà de 38°C, limitez les sessions à 15-20 min.')
+    recs.push('rec_temp_high_chlorine_warning')
+    recs.push('rec_temp_high_session_limit')
   }
   if (temperature > 38) {
-    recs.push('🔴 Température critique (>38°C) — risquez pour la santé. Réduisez la température.')
+    recs.push('rec_temp_critical_health')
   }
 
   if (treatmentType === 'chlorine' && temperature > 30) {
-    recs.push('⚠️ Le chlore s\'évapore rapidement en eau chaude. Passez au brome pour plus d\'efficacité.')
+    recs.push('rec_chlorine_evaporates')
   }
 
-  recs.push('Couvrez le spa après chaque utilisation pour éviter l\'évaporation et la photosynthèse.')
-  recs.push('Vidangez tous les 3-4 mois — c\'est plus économique que de sur-traiter.')
+  recs.push('rec_cover_after_use')
+  recs.push('rec_drain_economic')
 
   return recs
 }
 
-export function calculateDrainageFrequency(usagePerWeek: number, seats: number): { months: number; reason: string } {
+export interface DrainageFrequencyResult {
+  months: number
+  reason: string        // French fallback (legacy)
+  reasonKey: string     // translation key (ICU { months })
+}
+
+export function calculateDrainageFrequency(usagePerWeek: number, seats: number): DrainageFrequencyResult {
   // Base: 3-4 months
   let months = 4
 
@@ -170,10 +205,12 @@ export function calculateDrainageFrequency(usagePerWeek: number, seats: number):
   // More seats = more bathers = more frequent
   if (seats >= 6) months = Math.max(2, months - 1)
 
+  const isIntensive = usagePerWeek >= 5
   return {
     months,
-    reason: usagePerWeek >= 5
+    reason: isIntensive
       ? 'Usage intensif détecté — vidange recommandée tous les ' + months + ' mois pour éviter la saturation en produits.'
       : 'Vidange recommandée tous les ' + months + ' mois (plus économique que sur-traitement).',
+    reasonKey: isIntensive ? 'drainage_reason_intensive' : 'drainage_reason_standard',
   }
 }

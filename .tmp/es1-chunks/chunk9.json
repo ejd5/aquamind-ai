@@ -1,0 +1,227 @@
+{
+  "guidesData.ph-control.steps.5.detail": {
+    "fr": "Le mélange doit être homogène.",
+    "en": "The mixture must be homogeneous.",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.5.title": {
+    "fr": "Filtrer 2-3h puis re-tester",
+    "en": "Filter 2-3h then re-test",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.summary": {
+    "fr": "Pourquoi le pH est le paramètre n°1, comment l'ajuster.",
+    "en": "Why pH is the #1 parameter, how to adjust it.",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.title": {
+    "fr": "Maîtriser son pH",
+    "en": "Master your pH",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.1.detail": {
+    "fr": "Chlore + acide = gaz toxique mortel. Toujours diluer séparément.",
+    "en": "Chlorine + acid = deadly toxic gas. Always dilute separately.",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.1.title": {
+    "fr": "Ne JAMAIS mélanger les produits",
+    "en": "NEVER mix products",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.1.warning": {
+    "fr": "Règle absolue de survie.",
+    "en": "Absolute survival rule.",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.2.detail": {
+    "fr": "Jamais l'eau dans le produit acide (projection).",
+    "en": "Never water into acid product (splashing).",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.2.title": {
+    "fr": "Toujours ajouter le produit dans l'eau",
+    "en": "Always add product to water",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.3.detail": {
+    "fr": "Surtout pour les acides et le chlore concentré.",
+    "en": "Especially for acids and concentrated chlorine.",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.3.title": {
+    "fr": "Porter gants et lunettes",
+    "en": "Wear gloves and goggles",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.4.detail": {
+    "fr": "Séparer acides et chlores. Hors portée des enfants.",
+    "en": "Separate acids and chlorine. Out of reach of children.",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.4.title": {
+    "fr": "Stocker au sec, frais, ventilé",
+    "en": "Store dry, cool, ventilated",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.5.detail": {
+    "fr": "Chaque produit a ses règles de dosage et d'application.",
+    "en": "Each product has its dosage and application rules.",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.5.title": {
+    "fr": "Respecter les notices",
+    "en": "Follow the instructions",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.6.detail": {
+    "fr": "Ne pas faire vomir, consulter immédiatement.",
+    "en": "Do not induce vomiting, consult immediately.",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.6.title": {
+    "fr": "En cas d'incident : appeler le 15 ou le centre antipoison",
+    "en": "In case of incident: call emergency services or poison control",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.summary": {
+    "fr": "Les règles d'or pour manipuler et stocker les produits piscine.",
+    "en": "Golden rules for handling and storing pool products.",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.title": {
+    "fr": "Sécurité produits chimiques",
+    "en": "Chemical product safety",
+    "reason": "placeholder"
+  },
+  "guidesData.reminder_after_storm_action": {
+    "fr": "Testez le chlore et le pH.",
+    "en": "Test chlorine and pH.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_after_storm_detail": {
+    "fr": "L'orage a pu déséquilibrer votre eau.",
+    "en": "The storm may have unbalanced your water.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_after_storm_title": {
+    "fr": "Après l'orage",
+    "en": "After the storm",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_algae_prevent_action": {
+    "fr": "Action pour algae_prevent",
+    "en": "Action for algae_prevent",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_algae_prevent_detail": {
+    "fr": "Détail pour algae_prevent",
+    "en": "Detail for algae_prevent",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_algae_prevent_title": {
+    "fr": "Algae Prevent",
+    "en": "Algae Prevent",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_cell_clean_action": {
+    "fr": "Action pour cell_clean",
+    "en": "Action for cell_clean",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_cell_clean_detail": {
+    "fr": "Détail pour cell_clean",
+    "en": "Detail for cell_clean",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_cell_clean_title": {
+    "fr": "Cell Clean",
+    "en": "Cell Clean",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_chlorine_check_action": {
+    "fr": "Action pour chlorine_check",
+    "en": "Action for chlorine_check",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_chlorine_check_detail": {
+    "fr": "Détail pour chlorine_check",
+    "en": "Detail for chlorine_check",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_chlorine_check_title": {
+    "fr": "Chlorine Check",
+    "en": "Chlorine Check",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_filter_clean": {
+    "fr": "Nettoyage du filtre",
+    "en": "Filter cleaning",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_filter_clean_action": {
+    "fr": "Faites un backwash (contre-lavage).",
+    "en": "Do a backwash (counter-wash).",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_filter_clean_desc": {
+    "fr": "Backwash du filtre à sable recommandé.",
+    "en": "Sand filter backwash recommended.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_filter_clean_detail": {
+    "fr": "Backwash du filtre à sable recommandé.",
+    "en": "Sand filter backwash recommended.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_filter_clean_title": {
+    "fr": "Nettoyage du filtre",
+    "en": "Filter cleaning",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_open_pool_action": {
+    "fr": "Action pour open_pool",
+    "en": "Action for open_pool",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_open_pool_detail": {
+    "fr": "Détail pour open_pool",
+    "en": "Detail for open_pool",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_open_pool_title": {
+    "fr": "Open Pool",
+    "en": "Open Pool",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_ph_check_action": {
+    "fr": "Action pour ph_check",
+    "en": "Action for ph_check",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_ph_check_detail": {
+    "fr": "Détail pour ph_check",
+    "en": "Detail for ph_check",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_ph_check_title": {
+    "fr": "Ph Check",
+    "en": "Ph Check",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_retest_after_product_action": {
+    "fr": "Action pour retest_after_product",
+    "en": "Action for retest_after_product",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_retest_after_product_detail": {
+    "fr": "Détail pour retest_after_product",
+    "en": "Detail for retest_after_product",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_retest_after_product_title": {
+    "fr": "Retest After Product",
+    "en": "Retest After Product",
+    "reason": "identical_to_en"
+  }
+}

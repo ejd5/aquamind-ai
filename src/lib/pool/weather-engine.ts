@@ -1,5 +1,10 @@
 // Weather Risk Engine — déterministe
 // Prend les conditions météo et génère des recommandations piscine concrètes.
+//
+// i18n strategy: each WeatherAlert / FiltrationRecommendation / WeatherAssessment
+// exposes `*Key` translation keys (under the `weather` namespace) alongside the
+// legacy French literals so consumers can call `t(alert.titleKey)` and
+// `t(alert.messageKey, { temp })` etc.
 
 export interface WeatherData {
   location: string
@@ -10,12 +15,12 @@ export interface WeatherData {
   windKmph: number
   precipMm: number
   weatherCode: number  // wttr.in code
-  weatherDesc: string
+  weatherDesc: string  // French fallback (legacy)
   tomorrowMaxC: number
   tomorrowMinC: number
   tomorrowChanceRain: number  // %
   tomorrowChanceStorm: number // %
-  next3days: { date: string; maxC: number; chanceRain: number; desc: string }[]
+  next3days: { date: string; maxC: number; chanceRain: number; desc: string; code?: number }[]
 }
 
 export type WeatherRisk = 'low' | 'medium' | 'high' | 'extreme'
@@ -24,16 +29,25 @@ export interface WeatherAlert {
   id: string
   type: 'storm' | 'heat' | 'rain' | 'wind' | 'uv' | 'cold'
   severity: WeatherRisk
-  title: string
-  message: string
-  action: string  // action concrète
-  when: string    // quand agir
+  title: string         // French fallback (legacy)
+  titleKey: string      // translation key, e.g. 'alerts.storm_soon.title'
+  message: string       // French fallback (legacy)
+  messageKey: string    // translation key (ICU params may apply, e.g. { percent }, { temp }, { wind })
+  action: string        // French fallback (legacy)
+  actionKey: string     // translation key
+  when: string          // French fallback (legacy)
+  whenKey: string       // translation key
+  /** ICU params for messageKey interpolation (passed to t(messageKey, params)). */
+  messageParams?: Record<string, string | number>
 }
 
 export interface FiltrationRecommendation {
   hoursPerDay: number
-  reason: string
-  schedule: string
+  reason: string        // French fallback (legacy)
+  reasonKey: string     // translation key (ICU { temp })
+  reasonParams?: Record<string, string | number>
+  schedule: string      // French fallback (legacy)
+  scheduleKey: string   // translation key — picks between nocturnal/diurnal variants
 }
 
 export interface WeatherAssessment {
@@ -41,9 +55,13 @@ export interface WeatherAssessment {
   filtration: FiltrationRecommendation
   algaeRisk: WeatherRisk
   testRecommended: boolean
-  testReason: string
+  testReason: string       // French fallback (legacy)
+  testReasonKey: string    // translation key (ICU { days } for some variants)
+  testReasonParams?: Record<string, string | number>
   swimComfort: 'ideal' | 'good' | 'fresh' | 'cold' | 'too_cold'
-  summary: string
+  summary: string          // French fallback (legacy)
+  summaryKey: string       // translation key (ICU { location, hours } or { count, titles })
+  summaryParams?: Record<string, string | number>
 }
 
 export function assessWeather(w: WeatherData, lastTestDaysAgo: number): WeatherAssessment {
@@ -51,6 +69,8 @@ export function assessWeather(w: WeatherData, lastTestDaysAgo: number): WeatherA
   let algaeRisk: WeatherRisk = 'low'
   let testRecommended = false
   let testReason = ''
+  let testReasonKey = ''
+  let testReasonParams: Record<string, string | number> | undefined
 
   // 1. Risque orage
   if (w.tomorrowChanceStorm >= 60) {
@@ -59,13 +79,19 @@ export function assessWeather(w: WeatherData, lastTestDaysAgo: number): WeatherA
       type: 'storm',
       severity: 'high',
       title: 'Orage prévu demain',
+      titleKey: 'alerts.storm_soon.title',
       message: `${w.tomorrowChanceStorm}% de risque d'orage. L'orage dilue le chlore et fait monter le pH.`,
+      messageKey: 'alerts.storm_soon.message',
+      messageParams: { percent: w.tomorrowChanceStorm },
       action: "Vérifiez le chlore libre ce soir avant l'orage. Renforcez la filtration demain.",
+      actionKey: 'alerts.storm_soon.action',
       when: 'Ce soir avant 20h',
+      whenKey: 'alerts.storm_soon.when',
     })
     algaeRisk = algaeRisk === 'low' ? 'medium' : algaeRisk
     testRecommended = true
     testReason = "Test recommandé avant l'orage prévu demain."
+    testReasonKey = 'testReason.before_storm'
   }
 
   // 2. Canicule / forte chaleur
@@ -75,22 +101,33 @@ export function assessWeather(w: WeatherData, lastTestDaysAgo: number): WeatherA
       type: 'heat',
       severity: 'extreme',
       title: 'Canicule prévue',
+      titleKey: 'alerts.heat_extreme.title',
       message: `${w.tomorrowMaxC}°C prévu. Eau très chaude = chlore consommé plus vite + prolifération algues.`,
+      messageKey: 'alerts.heat_extreme.message',
+      messageParams: { temp: w.tomorrowMaxC },
       action: 'Augmentez la filtration de 2h/jour. Vérifiez le chlore chaque matin. Envisagez anti-algues préventif.',
+      actionKey: 'alerts.heat_extreme.action',
       when: 'Dès maintenant et pendant la vague',
+      whenKey: 'alerts.heat_extreme.when',
     })
     algaeRisk = 'high'
     testRecommended = true
     testReason = 'Test quotidien recommandé pendant la canicule.'
+    testReasonKey = 'testReason.during_heatwave'
   } else if (w.tomorrowMaxC >= 30) {
     alerts.push({
       id: 'heat_high',
       type: 'heat',
       severity: 'medium',
       title: 'Forte chaleur prévue',
+      titleKey: 'alerts.heat_high.title',
       message: `${w.tomorrowMaxC}°C prévu. Surconsommation de chlore probable.`,
+      messageKey: 'alerts.heat_high.message',
+      messageParams: { temp: w.tomorrowMaxC },
       action: "Augmentez la filtration d'1h/jour et testez le chlore demain.",
+      actionKey: 'alerts.heat_high.action',
       when: 'Demain matin',
+      whenKey: 'alerts.heat_high.when',
     })
     if (algaeRisk === 'low') algaeRisk = 'medium'
   }
@@ -102,12 +139,19 @@ export function assessWeather(w: WeatherData, lastTestDaysAgo: number): WeatherA
       type: 'rain',
       severity: 'medium',
       title: 'Fortes pluies attendues',
+      titleKey: 'alerts.heavy_rain.title',
       message: 'La pluie dilue les produits, fait baisser le pH et apporte des débris.',
+      messageKey: 'alerts.heavy_rain.message',
       action: 'Après la pluie : vérifiez pH et chlore, nettoyez skimmer et panier de pompe.',
+      actionKey: 'alerts.heavy_rain.action',
       when: 'Après la pluie',
+      whenKey: 'alerts.heavy_rain.when',
     })
     testRecommended = true
-    if (!testReason) testReason = 'Test pH + chlore recommandé après la pluie.'
+    if (!testReason) {
+      testReason = 'Test pH + chlore recommandé après la pluie.'
+      testReasonKey = 'testReason.after_rain'
+    }
   }
 
   // 4. Vent fort
@@ -117,9 +161,14 @@ export function assessWeather(w: WeatherData, lastTestDaysAgo: number): WeatherA
       type: 'wind',
       severity: 'medium',
       title: 'Vent fort prévu',
+      titleKey: 'alerts.wind_strong.title',
       message: `${w.windKmph} km/h. Débris, feuilles, poussière dans la piscine.`,
+      messageKey: 'alerts.wind_strong.message',
+      messageParams: { wind: w.windKmph },
       action: "Vérifiez skimmer et panier de pompe. Nettoyez la ligne d'eau.",
+      actionKey: 'alerts.wind_strong.action',
       when: 'Après le vent',
+      whenKey: 'alerts.wind_strong.when',
     })
   }
 
@@ -130,9 +179,13 @@ export function assessWeather(w: WeatherData, lastTestDaysAgo: number): WeatherA
       type: 'uv',
       severity: 'medium',
       title: 'UV très élevés',
+      titleKey: 'alerts.uv_high.title',
       message: 'Le soleil dégrade le chlore non stabilisé plus vite.',
+      messageKey: 'alerts.uv_high.message',
       action: 'Vérifiez votre stabilisant (CYA) et le chlore libre.',
+      actionKey: 'alerts.uv_high.action',
       when: 'Cette semaine',
+      whenKey: 'alerts.uv_high.when',
     })
   }
 
@@ -143,9 +196,13 @@ export function assessWeather(w: WeatherData, lastTestDaysAgo: number): WeatherA
       type: 'cold',
       severity: 'high',
       title: 'Risque de gel',
+      titleKey: 'alerts.frost_risk.title',
       message: 'Température négative prévue. Risque pour les équipements et canalisations.',
+      messageKey: 'alerts.frost_risk.message',
       action: 'Protégez le local technique. Laissez tourner la filtration la nuit pour éviter le gel. Hivernez si pas fait.',
+      actionKey: 'alerts.frost_risk.action',
       when: 'Cette nuit',
+      whenKey: 'alerts.frost_risk.when',
     })
   }
 
@@ -153,9 +210,13 @@ export function assessWeather(w: WeatherData, lastTestDaysAgo: number): WeatherA
   if (lastTestDaysAgo >= 4 && !testRecommended) {
     testRecommended = true
     testReason = `Dernier test il y a ${lastTestDaysAgo} jours. Test de routine recommandé.`
+    testReasonKey = 'testReason.routine'
+    testReasonParams = { days: lastTestDaysAgo }
   } else if (lastTestDaysAgo >= 7) {
     testRecommended = true
     testReason = `Dernier test il y a ${lastTestDaysAgo} jours : test urgent recommandé.`
+    testReasonKey = 'testReason.urgent'
+    testReasonParams = { days: lastTestDaysAgo }
   }
 
   // Filtration recommandée (moitié de la température eau en heures, min 4h)
@@ -165,9 +226,12 @@ export function assessWeather(w: WeatherData, lastTestDaysAgo: number): WeatherA
   const filtration: FiltrationRecommendation = {
     hoursPerDay: filtrationHours,
     reason: `Règle : moitié de la température de l'eau (${Math.round(estWaterTemp)}°C) en heures de filtration.`,
+    reasonKey: 'filtration.reason',
+    reasonParams: { temp: Math.round(estWaterTemp) },
     schedule: estWaterTemp >= 25
       ? "Préférez la filtration nocturne (moins d'évaporation, meilleure efficacité chlore)."
       : 'Filtration diurne recommandée.',
+    scheduleKey: estWaterTemp >= 25 ? 'filtration.schedule.nocturnal' : 'filtration.schedule.diurnal',
   }
 
   // Confort baignade
@@ -178,14 +242,30 @@ export function assessWeather(w: WeatherData, lastTestDaysAgo: number): WeatherA
   else if (estWaterTemp >= 15) swimComfort = 'cold'
 
   // Résumé
-  const summary = alerts.length === 0
-    ? `Météo clémente à ${w.location}. Pas d'alerte particulière. Filtrez ${filtrationHours}h/jour.`
-    : `${alerts.length} alerte(s) météo : ${alerts.map(a => a.title).join(', ')}. Suivez les actions recommandées.`
+  let summary: string
+  let summaryKey: string
+  let summaryParams: Record<string, string | number> | undefined
+  if (alerts.length === 0) {
+    summary = `Météo clémente à ${w.location}. Pas d'alerte particulière. Filtrez ${filtrationHours}h/jour.`
+    summaryKey = 'summary.calm'
+    summaryParams = { location: w.location, hours: filtrationHours }
+  } else {
+    summary = `${alerts.length} alerte(s) météo : ${alerts.map(a => a.title).join(', ')}. Suivez les actions recommandées.`
+    summaryKey = 'summary.withAlerts'
+    summaryParams = { count: alerts.length, titles: alerts.map(a => a.title).join(', ') }
+  }
 
-  return { alerts, filtration, algaeRisk, testRecommended, testReason, swimComfort, summary }
+  return { alerts, filtration, algaeRisk, testRecommended, testReason, testReasonKey, testReasonParams, swimComfort, summary, summaryKey, summaryParams }
 }
 
-// Mapping code wttr.in → description FR
+// Mapping code wttr.in → clé de traduction (namespace weather.codes)
+// La fonction renvoie une clé (ex: 'codes.113') ; le fallback français
+// reste disponible via wttrCodeToFr() ci-dessous pour les consommateurs legacy.
+export function wttrCodeToKey(code: number): string {
+  return `codes.${code}`
+}
+
+// Mapping code wttr.in → description FR (legacy, gardé pour compat).
 export function wttrCodeToFr(code: number): string {
   const map: Record<number, string> = {
     113: 'Ensoleillé',

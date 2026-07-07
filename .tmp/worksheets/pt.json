@@ -1,0 +1,4947 @@
+{
+  "common.email": {
+    "fr": "Email",
+    "en": "Email",
+    "reason": "identical_to_en"
+  },
+  "nav.premium": {
+    "fr": "AQWELIA Premium",
+    "en": "AQWELIA Premium",
+    "reason": "identical_to_en"
+  },
+  "nav.pro": {
+    "fr": "Pro",
+    "en": "Pro",
+    "reason": "identical_to_en"
+  },
+  "nav.shortPremium": {
+    "fr": "Premium",
+    "en": "Premium",
+    "reason": "identical_to_en"
+  },
+  "nav.shortPremiumBadge": {
+    "fr": "PREMIUM",
+    "en": "PREMIUM",
+    "reason": "identical_to_en"
+  },
+  "landing.navFaq": {
+    "fr": "FAQ",
+    "en": "FAQ",
+    "reason": "identical_to_en"
+  },
+  "landing.heroPhoneStep1": {
+    "fr": "1. pH- 900 ml",
+    "en": "1. pH- 900 ml",
+    "reason": "identical_to_en"
+  },
+  "landing.savingsBar1": {
+    "fr": "AQWELIA Premium",
+    "en": "AQWELIA Premium",
+    "reason": "identical_to_en"
+  },
+  "landing.storyAquaWord": {
+    "fr": "(aqua)",
+    "en": "(aqua)",
+    "reason": "identical_to_en"
+  },
+  "landing.variationsFactor6Title": {
+    "fr": "UV",
+    "en": "UV",
+    "reason": "identical_to_en"
+  },
+  "landing.spaBrandCategoryPremium": {
+    "fr": "Premium",
+    "en": "Premium",
+    "reason": "identical_to_en"
+  },
+  "landing.faqEyebrow": {
+    "fr": "12 — FAQ",
+    "en": "12 — FAQ",
+    "reason": "identical_to_en"
+  },
+  "landing.footerProductFaq": {
+    "fr": "FAQ",
+    "en": "FAQ",
+    "reason": "identical_to_en"
+  },
+  "landing.footerLegal": {
+    "fr": "Mentions légales",
+    "en": "Legal",
+    "reason": "identical_to_en"
+  },
+  "landing.heroPhoneChlorine": {
+    "fr": "Chlore",
+    "en": "Chlorine",
+    "reason": "placeholder"
+  },
+  "plans.free.features.1pool": {
+    "fr": "1 piscine",
+    "en": "1 pool",
+    "reason": "placeholder"
+  },
+  "plans.free.features.unlimitedManualTests": {
+    "fr": "Test d'eau illimité (manuel)",
+    "en": "Unlimited water tests (manual)",
+    "reason": "placeholder"
+  },
+  "plans.free.features.clearWaterIndex": {
+    "fr": "Indice eau claire + sécurité baignade",
+    "en": "Clear water index + swim safety",
+    "reason": "placeholder"
+  },
+  "plans.free.features.2scans": {
+    "fr": "2 scans photo / mois",
+    "en": "2 photo scans / month",
+    "reason": "placeholder"
+  },
+  "plans.free.features.simpleWeather": {
+    "fr": "Météo simple",
+    "en": "Simple weather",
+    "reason": "placeholder"
+  },
+  "plans.free.features.5guides": {
+    "fr": "5 guides de base",
+    "en": "5 basic guides",
+    "reason": "placeholder"
+  },
+  "plans.free.features.history14": {
+    "fr": "Historique 14 jours",
+    "en": "14-day history",
+    "reason": "placeholder"
+  },
+  "plans.premium.name": {
+    "fr": "Premium",
+    "en": "Premium",
+    "reason": "identical_to_en"
+  },
+  "plans.premium.features.3pools": {
+    "fr": "3 piscines",
+    "en": "3 pools",
+    "reason": "placeholder"
+  },
+  "plans.premium.features.unlimitedScans": {
+    "fr": "Scans photo illimités",
+    "en": "Unlimited photo scans",
+    "reason": "placeholder"
+  },
+  "plans.premium.features.advancedWeather": {
+    "fr": "Météo avancée + alertes",
+    "en": "Advanced weather + alerts",
+    "reason": "placeholder"
+  },
+  "plans.premium.features.allGuidesVideos": {
+    "fr": "Tous les guides + vidéos",
+    "en": "All guides + videos",
+    "reason": "placeholder"
+  },
+  "plans.premium.features.smartReminders": {
+    "fr": "Rappels intelligents",
+    "en": "Smart reminders",
+    "reason": "placeholder"
+  },
+  "plans.premium.features.pdfReport": {
+    "fr": "Rapport PDF partageable",
+    "en": "Shareable PDF report",
+    "reason": "placeholder"
+  },
+  "plans.premium.features.proMode": {
+    "fr": "Mode pro (LSI avancé)",
+    "en": "Pro mode (advanced LSI)",
+    "reason": "placeholder"
+  },
+  "plans.premium.features.spaSupport": {
+    "fr": "Spa et eau chaude (brome, oxygène actif)",
+    "en": "Spa and hot water (bromine, active oxygen)",
+    "reason": "placeholder"
+  },
+  "plans.premium.features.unlimitedHistory": {
+    "fr": "Historique illimité",
+    "en": "Unlimited history",
+    "reason": "placeholder"
+  },
+  "plans.premium.features.prioritySupport": {
+    "fr": "Support prioritaire",
+    "en": "Priority support",
+    "reason": "placeholder"
+  },
+  "plans.expert.name": {
+    "fr": "Expert",
+    "en": "Expert",
+    "reason": "identical_to_en"
+  },
+  "plans.expert.features.allPremium": {
+    "fr": "Tout Premium",
+    "en": "Everything in Premium",
+    "reason": "placeholder"
+  },
+  "plans.expert.features.multiClients": {
+    "fr": "Multi-clients illimité",
+    "en": "Unlimited multi-client",
+    "reason": "placeholder"
+  },
+  "plans.expert.features.quotesVisits": {
+    "fr": "Devis et planning visites",
+    "en": "Quotes and visit planning",
+    "reason": "placeholder"
+  },
+  "plans.expert.features.photosBeforeAfter": {
+    "fr": "Photos avant/après",
+    "en": "Before/after photos",
+    "reason": "placeholder"
+  },
+  "plans.expert.features.advancedTechNotes": {
+    "fr": "Notes techniques avancées",
+    "en": "Advanced technical notes",
+    "reason": "placeholder"
+  },
+  "plans.expert.features.accountingExport": {
+    "fr": "Export comptable",
+    "en": "Accounting export",
+    "reason": "placeholder"
+  },
+  "plans.expert.features.apiIntegrations": {
+    "fr": "API + intégrations",
+    "en": "API + integrations",
+    "reason": "placeholder"
+  },
+  "plans.popular": {
+    "fr": "Populaire",
+    "en": "Popular",
+    "reason": "identical_to_en"
+  },
+  "plans.premiumLabel": {
+    "fr": "AQWELIA Premium",
+    "en": "AQWELIA Premium",
+    "reason": "identical_to_en"
+  },
+  "plans.daysShort": {
+    "fr": "{n} j",
+    "en": "{n} d",
+    "reason": "identical_to_en"
+  },
+  "plans.offline": {
+    "fr": "Hors connexion",
+    "en": "Offline",
+    "reason": "identical_to_en"
+  },
+  "plans.gates.photo_scan_limit": {
+    "fr": "Limite de {n} scans/mois atteinte.",
+    "en": "{n} scans/month limit reached.",
+    "reason": "placeholder"
+  },
+  "plans.gates.weather_advanced": {
+    "fr": "Météo avancée réservée aux plans payants.",
+    "en": "Advanced weather is reserved for paid plans.",
+    "reason": "placeholder"
+  },
+  "plans.gates.smart_reminders": {
+    "fr": "Rappels intelligents réservés aux plans payants.",
+    "en": "Smart reminders are reserved for paid plans.",
+    "reason": "placeholder"
+  },
+  "plans.gates.guides_premium": {
+    "fr": "Guides premium réservés aux plans payants.",
+    "en": "Premium guides are reserved for paid plans.",
+    "reason": "placeholder"
+  },
+  "plans.gates.multi_pool": {
+    "fr": "Multi-piscines réservé à Premium et Expert.",
+    "en": "Multi-pool is reserved for Premium and Expert.",
+    "reason": "placeholder"
+  },
+  "plans.gates.pdf_report": {
+    "fr": "Rapport PDF réservé à Premium et Expert.",
+    "en": "PDF report is reserved for Premium and Expert.",
+    "reason": "placeholder"
+  },
+  "plans.gates.pro_mode": {
+    "fr": "Mode pro réservé à Premium et Expert.",
+    "en": "Pro mode is reserved for Premium and Expert.",
+    "reason": "placeholder"
+  },
+  "plans.gates.history_extended": {
+    "fr": "Historique étendu réservé aux plans payants.",
+    "en": "Extended history is reserved for paid plans.",
+    "reason": "placeholder"
+  },
+  "plans.gates.spa_support": {
+    "fr": "Le support des spas est réservé au plan Premium.",
+    "en": "Spa support is reserved for the Premium plan.",
+    "reason": "placeholder"
+  },
+  "onboarding.spa": {
+    "fr": "Spa",
+    "en": "Spa",
+    "reason": "identical_to_en"
+  },
+  "onboarding.volume": {
+    "fr": "Volume",
+    "en": "Volume",
+    "reason": "identical_to_en"
+  },
+  "onboarding.shapeOval": {
+    "fr": "Ovale",
+    "en": "Oval",
+    "reason": "identical_to_en"
+  },
+  "onboarding.idealTemp": {
+    "fr": "Idéal :",
+    "en": "Ideal:",
+    "reason": "identical_to_en"
+  },
+  "onboarding.surfaceLiner": {
+    "fr": "Liner",
+    "en": "Liner",
+    "reason": "identical_to_en"
+  },
+  "onboarding.treatmentUV": {
+    "fr": "UV",
+    "en": "UV",
+    "reason": "identical_to_en"
+  },
+  "onboarding.spaUsageMedium": {
+    "fr": "Régulier",
+    "en": "Regular",
+    "reason": "identical_to_en"
+  },
+  "settings.unitsImperial": {
+    "fr": "Impérial",
+    "en": "Imperial",
+    "reason": "identical_to_en"
+  },
+  "settings.unitsVolume": {
+    "fr": "Volume",
+    "en": "Volume",
+    "reason": "identical_to_en"
+  },
+  "settings.planPremium": {
+    "fr": "Premium",
+    "en": "Premium",
+    "reason": "identical_to_en"
+  },
+  "settings.planExpert": {
+    "fr": "Expert",
+    "en": "Expert",
+    "reason": "identical_to_en"
+  },
+  "settings.imperialLower": {
+    "fr": "impérial",
+    "en": "imperial",
+    "reason": "identical_to_en"
+  },
+  "settings.imperialPlural": {
+    "fr": "impériales",
+    "en": "imperial",
+    "reason": "identical_to_en"
+  },
+  "settings.exportFailedDesc": {
+    "fr": "Export échec",
+    "en": "Export failed",
+    "reason": "placeholder"
+  },
+  "settings.deleteFailedDesc": {
+    "fr": "Suppression échec",
+    "en": "Deletion failed",
+    "reason": "placeholder"
+  },
+  "auth.emailLabel": {
+    "fr": "Email",
+    "en": "Email",
+    "reason": "identical_to_en"
+  },
+  "diagnostic.offlineTitle": {
+    "fr": "Hors connexion",
+    "en": "Offline",
+    "reason": "identical_to_en"
+  },
+  "weather.alerts.storm_soon.title": {
+    "fr": "Orage prévu demain",
+    "en": "Storm expected tomorrow",
+    "reason": "placeholder"
+  },
+  "weather.alerts.storm_soon.message": {
+    "fr": "{percent} % de risque d'orage. L'orage dilue le chlore et fait monter le pH.",
+    "en": "{percent}% chance of storm. Lightning dilutes chlorine and raises pH.",
+    "reason": "placeholder"
+  },
+  "weather.alerts.storm_soon.action": {
+    "fr": "Vérifiez le chlore libre ce soir avant l'orage. Renforcez la filtration demain.",
+    "en": "Check free chlorine tonight before the storm. Increase filtration tomorrow.",
+    "reason": "placeholder"
+  },
+  "weather.alerts.storm_soon.when": {
+    "fr": "Ce soir avant 20h",
+    "en": "Tonight before 8 PM",
+    "reason": "placeholder"
+  },
+  "weather.alerts.heat_extreme.title": {
+    "fr": "Canicule prévue",
+    "en": "Heatwave expected",
+    "reason": "placeholder"
+  },
+  "weather.alerts.heat_extreme.message": {
+    "fr": "{temp} °C prévu. Eau très chaude = chlore consommé plus vite + prolifération algues.",
+    "en": "{temp}°C expected. Very hot water = chlorine consumed faster + algae proliferation.",
+    "reason": "placeholder"
+  },
+  "weather.alerts.heat_extreme.action": {
+    "fr": "Augmentez la filtration de 2h/jour. Vérifiez le chlore chaque matin. Envisagez anti-algues préventif.",
+    "en": "Increase filtration by 2h/day. Check chlorine every morning. Consider preventive anti-algae.",
+    "reason": "placeholder"
+  },
+  "weather.alerts.heat_extreme.when": {
+    "fr": "Dès maintenant et pendant la vague",
+    "en": "From now and during the heatwave",
+    "reason": "placeholder"
+  },
+  "weather.alerts.heat_high.title": {
+    "fr": "Forte chaleur prévue",
+    "en": "High heat expected",
+    "reason": "placeholder"
+  },
+  "weather.alerts.heat_high.message": {
+    "fr": "{temp} °C prévu. Surconsommation de chlore probable.",
+    "en": "{temp}°C expected. Likely chlorine overconsumption.",
+    "reason": "placeholder"
+  },
+  "weather.alerts.heat_high.action": {
+    "fr": "Augmentez la filtration d'1h/jour et testez le chlore demain.",
+    "en": "Increase filtration by 1h/day and test chlorine tomorrow.",
+    "reason": "placeholder"
+  },
+  "weather.alerts.heat_high.when": {
+    "fr": "Demain matin",
+    "en": "Tomorrow morning",
+    "reason": "placeholder"
+  },
+  "weather.alerts.heavy_rain.title": {
+    "fr": "Fortes pluies attendues",
+    "en": "Heavy rain expected",
+    "reason": "placeholder"
+  },
+  "weather.alerts.heavy_rain.message": {
+    "fr": "La pluie dilue les produits, fait baisser le pH et apporte des débris.",
+    "en": "Rain dilutes chemicals, lowers pH and brings debris.",
+    "reason": "placeholder"
+  },
+  "weather.alerts.heavy_rain.action": {
+    "fr": "Après la pluie : vérifiez pH et chlore, nettoyez skimmer et panier de pompe.",
+    "en": "After rain: check pH and chlorine, clean skimmer and pump basket.",
+    "reason": "placeholder"
+  },
+  "weather.alerts.heavy_rain.when": {
+    "fr": "Après la pluie",
+    "en": "After the rain",
+    "reason": "placeholder"
+  },
+  "weather.alerts.wind_strong.title": {
+    "fr": "Vent fort prévu",
+    "en": "Strong wind expected",
+    "reason": "placeholder"
+  },
+  "weather.alerts.wind_strong.message": {
+    "fr": "{wind} km/h. Débris, feuilles, poussière dans la piscine.",
+    "en": "{wind} km/h. Debris, leaves, dust in the pool.",
+    "reason": "placeholder"
+  },
+  "weather.alerts.wind_strong.action": {
+    "fr": "Vérifiez skimmer et panier de pompe. Nettoyez la ligne d'eau.",
+    "en": "Check skimmer and pump basket. Clean the water line.",
+    "reason": "placeholder"
+  },
+  "weather.alerts.wind_strong.when": {
+    "fr": "Après le vent",
+    "en": "After the wind",
+    "reason": "placeholder"
+  },
+  "weather.alerts.uv_high.title": {
+    "fr": "UV très élevés",
+    "en": "Very high UV",
+    "reason": "placeholder"
+  },
+  "weather.alerts.uv_high.message": {
+    "fr": "Le soleil dégrade le chlore non stabilisé plus vite.",
+    "en": "Sunlight degrades unstabilized chlorine faster.",
+    "reason": "placeholder"
+  },
+  "weather.alerts.uv_high.action": {
+    "fr": "Vérifiez votre stabilisant (CYA) et le chlore libre.",
+    "en": "Check your stabilizer (CYA) and free chlorine.",
+    "reason": "placeholder"
+  },
+  "weather.alerts.uv_high.when": {
+    "fr": "Cette semaine",
+    "en": "This week",
+    "reason": "placeholder"
+  },
+  "weather.alerts.frost_risk.title": {
+    "fr": "Risque de gel",
+    "en": "Frost risk",
+    "reason": "placeholder"
+  },
+  "weather.alerts.frost_risk.message": {
+    "fr": "Température négative prévue. Risque pour les équipements et canalisations.",
+    "en": "Negative temperature expected. Risk to equipment and pipes.",
+    "reason": "placeholder"
+  },
+  "weather.alerts.frost_risk.action": {
+    "fr": "Protégez le local technique. Laissez tourner la filtration la nuit pour éviter le gel. Hivernez si pas fait.",
+    "en": "Protect the technical room. Keep filtration running at night to prevent freezing. Winterize if not done.",
+    "reason": "placeholder"
+  },
+  "weather.alerts.frost_risk.when": {
+    "fr": "Cette nuit",
+    "en": "Tonight",
+    "reason": "placeholder"
+  },
+  "weather.uvShort": {
+    "fr": "UV",
+    "en": "UV",
+    "reason": "identical_to_en"
+  },
+  "weather.precipShort": {
+    "fr": "Précip.",
+    "en": "Precip.",
+    "reason": "identical_to_en"
+  },
+  "weather.swim.ideal": {
+    "fr": "Idéale",
+    "en": "Ideal",
+    "reason": "identical_to_en"
+  },
+  "weather.summary.calm": {
+    "fr": "Météo clémente à {location}. Pas d'alerte particulière. Filtrez {hours}h/jour.",
+    "en": "Mild weather in {location}. No specific alert. Filter {hours}h/day.",
+    "reason": "placeholder"
+  },
+  "weather.summary.withAlerts": {
+    "fr": "{count} alerte(s) météo : {titles}. Suivez les actions recommandées.",
+    "en": "{count} weather alert(s): {titles}. Follow the recommended actions.",
+    "reason": "placeholder"
+  },
+  "weather.testReason.before_storm": {
+    "fr": "Test recommandé avant l'orage prévu demain.",
+    "en": "Test recommended before tomorrow's expected storm.",
+    "reason": "placeholder"
+  },
+  "weather.testReason.during_heatwave": {
+    "fr": "Test quotidien recommandé pendant la canicule.",
+    "en": "Daily test recommended during the heatwave.",
+    "reason": "placeholder"
+  },
+  "weather.testReason.after_rain": {
+    "fr": "Test pH + chlore recommandé après la pluie.",
+    "en": "pH + chlorine test recommended after rain.",
+    "reason": "placeholder"
+  },
+  "weather.testReason.routine": {
+    "fr": "Dernier test il y a {days} jours. Test de routine recommandé.",
+    "en": "Last test {days} days ago. Routine test recommended.",
+    "reason": "placeholder"
+  },
+  "weather.testReason.urgent": {
+    "fr": "Dernier test il y a {days} jours : test urgent recommandé.",
+    "en": "Last test {days} days ago: urgent test recommended.",
+    "reason": "placeholder"
+  },
+  "weather.filtration.reason": {
+    "fr": "Règle : moitié de la température de l'eau ({temp} °C) en heures de filtration.",
+    "en": "Rule: half the water temperature ({temp}°C) in filtration hours.",
+    "reason": "placeholder"
+  },
+  "weather.filtration.scheduleNocturnal": {
+    "fr": "Préférez la filtration nocturne (moins d'évaporation, meilleure efficacité chlore).",
+    "en": "Prefer nighttime filtration (less evaporation, better chlorine efficiency).",
+    "reason": "placeholder"
+  },
+  "weather.filtration.scheduleDiurnal": {
+    "fr": "Filtration diurne recommandée.",
+    "en": "Daytime filtration recommended.",
+    "reason": "placeholder"
+  },
+  "admin.title": {
+    "fr": "AQWELIA Admin",
+    "en": "AQWELIA Admin",
+    "reason": "identical_to_en"
+  },
+  "admin.popupTriggerManual": {
+    "fr": "Manuel",
+    "en": "Manual",
+    "reason": "identical_to_en"
+  },
+  "admin.wrongPassword": {
+    "fr": "Mot de passe incorrect",
+    "en": "Incorrect password",
+    "reason": "placeholder"
+  },
+  "admin.accessDenied": {
+    "fr": "Accès refusé.",
+    "en": "Access denied.",
+    "reason": "placeholder"
+  },
+  "admin.bannerSavedToast": {
+    "fr": "Bannière enregistrée",
+    "en": "Banner saved",
+    "reason": "placeholder"
+  },
+  "admin.popupsSavedToast": {
+    "fr": "Popups enregistrés",
+    "en": "Popups saved",
+    "reason": "placeholder"
+  },
+  "admin.learnMore": {
+    "fr": "En savoir plus →",
+    "en": "Learn more →",
+    "reason": "placeholder"
+  },
+  "admin.delete": {
+    "fr": "Supprimer",
+    "en": "Delete",
+    "reason": "placeholder"
+  },
+  "admin.popupDefaultTitle": {
+    "fr": "Nouveau popup promo",
+    "en": "New promo popup",
+    "reason": "placeholder"
+  },
+  "admin.popupDefaultBody": {
+    "fr": "Description de la promo...",
+    "en": "Promo description...",
+    "reason": "placeholder"
+  },
+  "admin.popupDefaultCta": {
+    "fr": "En profiter",
+    "en": "Take advantage",
+    "reason": "placeholder"
+  },
+  "admin.popupImagePlaceholder": {
+    "fr": "URL image promo (à venir: upload)",
+    "en": "Promo image URL (upload coming soon)",
+    "reason": "placeholder"
+  },
+  "admin.bannerDefaultText": {
+    "fr": "☀️ Été 2026 — Profitez de -20% sur le plan Lagoon !",
+    "en": "☀️ Summer 2026 — Get 20% off the Lagoon plan!",
+    "reason": "placeholder"
+  },
+  "admin.bannerDescFull": {
+    "fr": "Personnalisez la bannière promotionnelle en haut de l'app. Idéal pour les saisons, promotions, annonces.",
+    "en": "Customize the promotional banner at the top of the app. Ideal for seasons, promotions, announcements.",
+    "reason": "placeholder"
+  },
+  "admin.popupDescFull": {
+    "fr": "Créez des popups qui s'affichent selon des déclencheurs. Upload d'images promo à venir.",
+    "en": "Create popups that appear based on triggers. Promo image upload coming soon.",
+    "reason": "placeholder"
+  },
+  "admin.contentComingSoonFull": {
+    "fr": "Module à venir — Éditeur de contenu WYSIWYG pour landing page, guides, emails...",
+    "en": "Coming soon — WYSIWYG content editor for landing page, guides, emails...",
+    "reason": "placeholder"
+  },
+  "admin.analyticsComingSoonFull": {
+    "fr": "Données détaillées à venir — Connexion API /api/analytics",
+    "en": "Detailed data coming soon — API connection /api/analytics",
+    "reason": "placeholder"
+  },
+  "admin.usersComingSoonFull": {
+    "fr": "Module à venir — Liste utilisateurs, gestion abonnements, support...",
+    "en": "Coming soon — User list, subscription management, support...",
+    "reason": "placeholder"
+  },
+  "admin.usersDescFull": {
+    "fr": "Gérez les utilisateurs, abonnements et accès.",
+    "en": "Manage users, subscriptions and access.",
+    "reason": "placeholder"
+  },
+  "admin.backToSiteArrow": {
+    "fr": "← Retour au site",
+    "en": "← Back to site",
+    "reason": "placeholder"
+  },
+  "modules.dashboard.labelTac": {
+    "fr": "TAC",
+    "en": "TA",
+    "reason": "identical_to_en"
+  },
+  "modules.dashboard.labelTemp": {
+    "fr": "Temp.",
+    "en": "Temp.",
+    "reason": "identical_to_en"
+  },
+  "modules.waterTest.sourceManualShort": {
+    "fr": "Manuel",
+    "en": "Manual",
+    "reason": "identical_to_en"
+  },
+  "modules.waterTest.statusOk": {
+    "fr": "Ok",
+    "en": "Ok",
+    "reason": "identical_to_en"
+  },
+  "modules.maintenance.equipmentTypes.skimmer": {
+    "fr": "Skimmer",
+    "en": "Skimmer",
+    "reason": "identical_to_en"
+  },
+  "modules.maintenance.productCategories.ph_minus": {
+    "fr": "pH-",
+    "en": "pH-",
+    "reason": "identical_to_en"
+  },
+  "modules.maintenance.productCategories.ph_plus": {
+    "fr": "pH+",
+    "en": "pH+",
+    "reason": "identical_to_en"
+  },
+  "modules.maintenance.productCategories.alkalinity_plus": {
+    "fr": "TAC+",
+    "en": "TA+",
+    "reason": "identical_to_en"
+  },
+  "modules.reminders.source.manual": {
+    "fr": "Manuel",
+    "en": "Manual",
+    "reason": "identical_to_en"
+  },
+  "modules.guides.premiumBadge": {
+    "fr": "PREMIUM",
+    "en": "PREMIUM",
+    "reason": "identical_to_en"
+  },
+  "modules.guides.min": {
+    "fr": "min",
+    "en": "min",
+    "reason": "identical_to_en"
+  },
+  "modules.healthLog.alkalinity": {
+    "fr": "TAC",
+    "en": "TA",
+    "reason": "identical_to_en"
+  },
+  "spaData.freq.daily": {
+    "fr": "Quotidien",
+    "en": "Daily",
+    "reason": "placeholder"
+  },
+  "spaData.freq.weekly": {
+    "fr": "Hebdomadaire",
+    "en": "Weekly",
+    "reason": "placeholder"
+  },
+  "spaData.freq.every_3_4_months": {
+    "fr": "Tous les 3-4 mois",
+    "en": "Every 3-4 months",
+    "reason": "placeholder"
+  },
+  "spaData.freq.per_usage": {
+    "fr": "Selon usage",
+    "en": "Per usage",
+    "reason": "placeholder"
+  },
+  "spaData.freq.config": {
+    "fr": "Configuration",
+    "en": "Configuration",
+    "reason": "placeholder"
+  },
+  "spaData.freq.per_drain": {
+    "fr": "À chaque vidange",
+    "en": "Each drain",
+    "reason": "placeholder"
+  },
+  "spaData.seats_label": {
+    "fr": "Nombre de places assises",
+    "en": "Number of seats",
+    "reason": "placeholder"
+  },
+  "spaData.usage_occasional": {
+    "fr": "Occasionnel (1-2x/semaine)",
+    "en": "Occasional (1-2x/week)",
+    "reason": "placeholder"
+  },
+  "spaData.usage_regular": {
+    "fr": "Régulier (3-4x/semaine)",
+    "en": "Regular (3-4x/week)",
+    "reason": "placeholder"
+  },
+  "spaData.usage_intensive": {
+    "fr": "Intensif (5+/semaine)",
+    "en": "Intensive (5+/week)",
+    "reason": "placeholder"
+  },
+  "spaData.rec_temp_high_chlorine_warning": {
+    "fr": "⚠️ Température élevée — le chlore n'est PAS recommandé. Utilisez du brome.",
+    "en": "⚠️ High temperature — chlorine is NOT recommended. Use bromine.",
+    "reason": "placeholder"
+  },
+  "spaData.rec_temp_high_session_limit": {
+    "fr": "Surveillez la température: au-delà de 38°C, limitez les sessions à 15-20 min.",
+    "en": "Monitor temperature: above 38°C, limit sessions to 15-20 min.",
+    "reason": "placeholder"
+  },
+  "spaData.rec_temp_critical_health": {
+    "fr": "🔴 Température critique (>38°C) — risquez pour la santé. Réduisez la température.",
+    "en": "🔴 Critical temperature (>38°C) — health risk. Lower the temperature.",
+    "reason": "placeholder"
+  },
+  "spaData.rec_chlorine_evaporates": {
+    "fr": "⚠️ Le chlore s'évapore rapidement en eau chaude. Passez au brome pour plus d'efficacité.",
+    "en": "⚠️ Chlorine evaporates quickly in hot water. Switch to bromine for better efficiency.",
+    "reason": "placeholder"
+  },
+  "spaData.rec_cover_after_use": {
+    "fr": "Couvrez le spa après chaque utilisation pour éviter l'évaporation et la photosynthèse.",
+    "en": "Cover the spa after each use to prevent evaporation and photosynthesis.",
+    "reason": "placeholder"
+  },
+  "spaData.rec_drain_economic": {
+    "fr": "Vidangez tous les 3-4 mois — c'est plus économique que de sur-traiter.",
+    "en": "Drain every 3-4 months — it is more economical than over-treating.",
+    "reason": "placeholder"
+  },
+  "spaData.drainage_reason_intensive": {
+    "fr": "Usage intensif détecté — vidange recommandée tous les {months} mois pour éviter la saturation en produits.",
+    "en": "Intensive usage detected — drain recommended every {months} months to avoid chemical saturation.",
+    "reason": "placeholder"
+  },
+  "spaData.drainage_reason_standard": {
+    "fr": "Vidange recommandée tous les {months} mois (plus économique que sur-traitement).",
+    "en": "Drain recommended every {months} months (more economical than over-treatment).",
+    "reason": "placeholder"
+  },
+  "guidesData.cat_getting_started": {
+    "fr": "Débuter",
+    "en": "Getting started",
+    "reason": "identical_to_en"
+  },
+  "guidesData.cat_problems": {
+    "fr": "Problèmes d'eau",
+    "en": "Water problems",
+    "reason": "identical_to_en"
+  },
+  "guidesData.cat_products": {
+    "fr": "Produits & dosages",
+    "en": "Products & dosing",
+    "reason": "identical_to_en"
+  },
+  "guidesData.cat_equipment": {
+    "fr": "Équipements",
+    "en": "Equipment",
+    "reason": "identical_to_en"
+  },
+  "guidesData.cat_weather_seasons": {
+    "fr": "Météo & saisons",
+    "en": "Weather & seasons",
+    "reason": "identical_to_en"
+  },
+  "guidesData.cat_safety": {
+    "fr": "Sécurité & baignade",
+    "en": "Safety & swimming",
+    "reason": "identical_to_en"
+  },
+  "guidesData.cat_treatments": {
+    "fr": "Traitements (chlore/sel/brome)",
+    "en": "Treatments (chlorine/salt/bromine)",
+    "reason": "identical_to_en"
+  },
+  "guidesData.cat_faq": {
+    "fr": "FAQ",
+    "en": "FAQ",
+    "reason": "identical_to_en"
+  },
+  "guidesData.level_beginner": {
+    "fr": "Débutant",
+    "en": "Beginner",
+    "reason": "identical_to_en"
+  },
+  "guidesData.level_intermediate": {
+    "fr": "Intermédiaire",
+    "en": "Intermediate",
+    "reason": "identical_to_en"
+  },
+  "guidesData.level_expert": {
+    "fr": "Expert",
+    "en": "Expert",
+    "reason": "identical_to_en"
+  },
+  "guidesData.tag_algues": {
+    "fr": "algues",
+    "en": "algae",
+    "reason": "identical_to_en"
+  },
+  "guidesData.tag_chlore": {
+    "fr": "chlore",
+    "en": "chlorine",
+    "reason": "identical_to_en"
+  },
+  "guidesData.tag_vert": {
+    "fr": "vert",
+    "en": "green",
+    "reason": "identical_to_en"
+  },
+  "guidesData.tag_trouble": {
+    "fr": "trouble",
+    "en": "cloudy",
+    "reason": "identical_to_en"
+  },
+  "guidesData.tag_filtration": {
+    "fr": "filtration",
+    "en": "filtration",
+    "reason": "identical_to_en"
+  },
+  "guidesData.tag_floculant": {
+    "fr": "floculant",
+    "en": "flocculant",
+    "reason": "identical_to_en"
+  },
+  "guidesData.tag_choc": {
+    "fr": "choc",
+    "en": "shock",
+    "reason": "identical_to_en"
+  },
+  "guidesData.tag_securite": {
+    "fr": "sécurité",
+    "en": "safety",
+    "reason": "identical_to_en"
+  },
+  "guidesData.tag_sel": {
+    "fr": "sel",
+    "en": "salt",
+    "reason": "identical_to_en"
+  },
+  "guidesData.tag_electrolyseur": {
+    "fr": "électrolyseur",
+    "en": "electrolyzer",
+    "reason": "identical_to_en"
+  },
+  "guidesData.tag_debutant": {
+    "fr": "débutant",
+    "en": "beginner",
+    "reason": "identical_to_en"
+  },
+  "guidesData.tag_filtre": {
+    "fr": "filtre",
+    "en": "filter",
+    "reason": "identical_to_en"
+  },
+  "guidesData.tag_backwash": {
+    "fr": "backwash",
+    "en": "backwash",
+    "reason": "identical_to_en"
+  },
+  "guidesData.tag_cartouche": {
+    "fr": "cartouche",
+    "en": "cartridge",
+    "reason": "identical_to_en"
+  },
+  "guidesData.tag_chloramines": {
+    "fr": "chloramines",
+    "en": "chloramines",
+    "reason": "identical_to_en"
+  },
+  "guidesData.tag_odeur": {
+    "fr": "odeur",
+    "en": "odor",
+    "reason": "identical_to_en"
+  },
+  "guidesData.tag_yeux": {
+    "fr": "yeux",
+    "en": "eyes",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_gs1_title": {
+    "fr": "Débuter avec sa piscine",
+    "en": "Getting started with your pool",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_gs1_summary": {
+    "fr": "Les 10 premières choses à savoir quand on devient propriétaire d'une piscine.",
+    "en": "The first 10 things to know when you become a pool owner.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_tr1_title": {
+    "fr": "Comprendre son électrolyseur au sel",
+    "en": "Understanding your salt electrolyzer",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_tr1_summary": {
+    "fr": "Principe, taux de sel, production, entretien courant.",
+    "en": "Principle, salt level, production, routine maintenance.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_pb1_title": {
+    "fr": "Eau verte : diagnostic et plan d'action",
+    "en": "Green water: diagnosis and action plan",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_pb1_summary": {
+    "fr": "Identifier la cause d'une eau verte et la traiter étape par étape sans surdoser.",
+    "en": "Identify the cause of green water and treat it step by step without overdosing.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_pb2_title": {
+    "fr": "Eau trouble ou laiteuse",
+    "en": "Cloudy or milky water",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_pb2_summary": {
+    "fr": "Distinguer les causes d'une eau trouble et appliquer le bon traitement.",
+    "en": "Distinguish the causes of cloudy water and apply the right treatment.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_pr1_title": {
+    "fr": "Quand et comment faire un chlore choc",
+    "en": "When and how to shock chlorinate",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_pr1_summary": {
+    "fr": "Le traitement choc : indications, dosage, sécurité, délais baignade.",
+    "en": "Shock treatment: indications, dosage, safety, swimming delays.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_pb3_title": {
+    "fr": "Odeur forte de chlore et yeux qui piquent",
+    "en": "Strong chlorine odor and burning eyes",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_pb3_summary": {
+    "fr": "Comprendre les chloramines et comment s'en débarrasser.",
+    "en": "Understand chloramines and how to get rid of them.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_eq1_title": {
+    "fr": "Backwash (contre-lavage) du filtre à sable",
+    "en": "Backwashing a sand filter",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_eq1_summary": {
+    "fr": "Quand et comment faire un backwash efficace.",
+    "en": "When and how to do an effective backwash.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_eq2_title": {
+    "fr": "Nettoyer un filtre à cartouche",
+    "en": "Cleaning a cartridge filter",
+    "reason": "identical_to_en"
+  },
+  "guidesData.guide_eq2_summary": {
+    "fr": "Démontage et rinçage d'une cartouche de filtration.",
+    "en": "Disassembly and rinsing of a filter cartridge.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_filter_clean": {
+    "fr": "Nettoyage du filtre",
+    "en": "Filter cleaning",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_filter_clean_desc": {
+    "fr": "Backwash du filtre à sable recommandé.",
+    "en": "Sand filter backwash recommended.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_filter_clean_action": {
+    "fr": "Faites un backwash (contre-lavage).",
+    "en": "Do a backwash (counter-wash).",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_skimmer": {
+    "fr": "Vérifier skimmer et panier",
+    "en": "Check skimmer and basket",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_skimmer_desc": {
+    "fr": "Débris, feuilles, insectes à retirer régulièrement.",
+    "en": "Debris, leaves, insects to remove regularly.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_skimmer_action": {
+    "fr": "Videz le panier du skimmer et celui de la pompe.",
+    "en": "Empty the skimmer basket and the pump basket.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_test_water_title": {
+    "fr": "Test d'eau",
+    "en": "Water test",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_test_water_detail": {
+    "fr": "Il est temps de tester votre eau.",
+    "en": "It's time to test your water.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_test_water_action": {
+    "fr": "Faites un test complet (pH, chlore, TAC).",
+    "en": "Do a full test (pH, chlorine, TA).",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_retest_after_product_title": {
+    "fr": "Retest After Product",
+    "en": "Retest After Product",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_retest_after_product_detail": {
+    "fr": "Détail pour retest_after_product",
+    "en": "Detail for retest_after_product",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_retest_after_product_action": {
+    "fr": "Action pour retest_after_product",
+    "en": "Action for retest_after_product",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_after_storm_title": {
+    "fr": "Après l'orage",
+    "en": "After the storm",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_after_storm_detail": {
+    "fr": "L'orage a pu déséquilibrer votre eau.",
+    "en": "The storm may have unbalanced your water.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_after_storm_action": {
+    "fr": "Testez le chlore et le pH.",
+    "en": "Test chlorine and pH.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_filter_clean_title": {
+    "fr": "Nettoyage du filtre",
+    "en": "Filter cleaning",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_filter_clean_detail": {
+    "fr": "Backwash du filtre à sable recommandé.",
+    "en": "Sand filter backwash recommended.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_cell_clean_title": {
+    "fr": "Cell Clean",
+    "en": "Cell Clean",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_cell_clean_detail": {
+    "fr": "Détail pour cell_clean",
+    "en": "Detail for cell_clean",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_cell_clean_action": {
+    "fr": "Action pour cell_clean",
+    "en": "Action for cell_clean",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_ph_check_title": {
+    "fr": "Ph Check",
+    "en": "Ph Check",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_ph_check_detail": {
+    "fr": "Détail pour ph_check",
+    "en": "Detail for ph_check",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_ph_check_action": {
+    "fr": "Action pour ph_check",
+    "en": "Action for ph_check",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_chlorine_check_title": {
+    "fr": "Chlorine Check",
+    "en": "Chlorine Check",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_chlorine_check_detail": {
+    "fr": "Détail pour chlorine_check",
+    "en": "Detail for chlorine_check",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_chlorine_check_action": {
+    "fr": "Action pour chlorine_check",
+    "en": "Action for chlorine_check",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_skimmer_check_title": {
+    "fr": "Vérifier skimmer et panier",
+    "en": "Check skimmer and basket",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_skimmer_check_detail": {
+    "fr": "Débris, feuilles, insectes à retirer régulièrement.",
+    "en": "Debris, leaves, insects to remove regularly.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_skimmer_check_action": {
+    "fr": "Videz le panier du skimmer et celui de la pompe.",
+    "en": "Empty the skimmer basket and the pump basket.",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_shock_treatment_title": {
+    "fr": "Shock Treatment",
+    "en": "Shock Treatment",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_shock_treatment_detail": {
+    "fr": "Détail pour shock_treatment",
+    "en": "Detail for shock_treatment",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_shock_treatment_action": {
+    "fr": "Action pour shock_treatment",
+    "en": "Action for shock_treatment",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_winterize_title": {
+    "fr": "Winterize",
+    "en": "Winterize",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_winterize_detail": {
+    "fr": "Détail pour winterize",
+    "en": "Detail for winterize",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_winterize_action": {
+    "fr": "Action pour winterize",
+    "en": "Action for winterize",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_open_pool_title": {
+    "fr": "Open Pool",
+    "en": "Open Pool",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_open_pool_detail": {
+    "fr": "Détail pour open_pool",
+    "en": "Detail for open_pool",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_open_pool_action": {
+    "fr": "Action pour open_pool",
+    "en": "Action for open_pool",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_algae_prevent_title": {
+    "fr": "Algae Prevent",
+    "en": "Algae Prevent",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_algae_prevent_detail": {
+    "fr": "Détail pour algae_prevent",
+    "en": "Detail for algae_prevent",
+    "reason": "identical_to_en"
+  },
+  "guidesData.reminder_algae_prevent_action": {
+    "fr": "Action pour algae_prevent",
+    "en": "Action for algae_prevent",
+    "reason": "identical_to_en"
+  },
+  "guidesData.green-water.title": {
+    "fr": "Eau verte : diagnostic et plan d'action",
+    "en": "Green water: diagnosis and action plan",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.summary": {
+    "fr": "Identify the cause of green water and treat it step by step without overdosing.",
+    "en": "Identify the cause of green water and treat it step by step without overdosing.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.1.title": {
+    "fr": "Mesurer pH et chlore libre",
+    "en": "Measure pH and free chlorine",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.1.detail": {
+    "fr": "Une eau verte est presque toujours due à un manque de désinfectant ou un pH déséquilibré.",
+    "en": "Green water is almost always due to a lack of disinfectant or unbalanced pH.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.1.warning": {
+    "fr": "Ne jamais ajouter d'anti-algues avant d'avoir équilibré le pH.",
+    "en": "Never add anti-algae before balancing the pH.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.2.title": {
+    "fr": "Équilibrer le pH (7.0-7.4)",
+    "en": "Balance the pH (7.0-7.4)",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.2.detail": {
+    "fr": "Si le pH est > 7.4, ajoutez du pH- dilué. Attendez 2-3h de filtration.",
+    "en": "If pH > 7.4, add diluted pH-. Wait 2-3h of filtration.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.2.tip": {
+    "fr": "Le chlore est 10x plus efficace à pH 7.2 qu'à pH 8.0.",
+    "en": "Chlorine is 10x more effective at pH 7.2 than at pH 8.0.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.3.title": {
+    "fr": "Brosser les parois et le fond",
+    "en": "Brush the walls and floor",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.3.detail": {
+    "fr": "Décrocher les algues aide le traitement à pénétrer.",
+    "en": "Dislodging algae helps the treatment penetrate.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.4.title": {
+    "fr": "Faire un traitement choc",
+    "en": "Do a shock treatment",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.4.detail": {
+    "fr": "Chlore choc (après pH équilibré). Filtration continue 24h.",
+    "en": "Shock chlorine (after pH balanced). Continuous filtration 24h.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.4.warning": {
+    "fr": "Baignade interdite 8h minimum après le choc.",
+    "en": "No swimming for at least 8h after the shock.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.5.title": {
+    "fr": "Ajouter un anti-algues curatif",
+    "en": "Add a curative anti-algae",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.5.detail": {
+    "fr": "Après le choc, l'anti-algues prévient la repousse.",
+    "en": "After the shock, anti-algae prevents regrowth.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.6.title": {
+    "fr": "Filtrer en continu 24-48h",
+    "en": "Filter continuously 24-48h",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.6.detail": {
+    "fr": "La filtration est aussi importante que les produits.",
+    "en": "Filtration is as important as chemicals.",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.7.title": {
+    "fr": "Re-tester après 24h",
+    "en": "Re-test after 24h",
+    "reason": "placeholder"
+  },
+  "guidesData.green-water.steps.7.detail": {
+    "fr": "Vérifiez pH et chlore. Si l'eau reste verte, le filtre est peut-être à nettoyer.",
+    "en": "Check pH and chlorine. If the water is still green, the filter may need cleaning.",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.title": {
+    "fr": "Eau trouble ou laiteuse",
+    "en": "Cloudy or milky water",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.summary": {
+    "fr": "Distinguer les causes d'une eau trouble et appliquer le bon traitement.",
+    "en": "Distinguish the causes of cloudy water and apply the right treatment.",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.1.title": {
+    "fr": "Vérifier la filtration",
+    "en": "Check the filtration",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.1.detail": {
+    "fr": "80% des eaux troubles viennent d'un problème de filtration. Vérifiez pression, durée, propreté du filtre.",
+    "en": "80% of cloudy water comes from a filtration problem. Check pressure, duration, filter cleanliness.",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.2.title": {
+    "fr": "Tester pH et chlore",
+    "en": "Test pH and chlorine",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.2.detail": {
+    "fr": "pH hors plage ou chlore bas = eau trouble.",
+    "en": "Out-of-range pH or low chlorine = cloudy water.",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.3.title": {
+    "fr": "Nettoyer ou backwash le filtre",
+    "en": "Clean or backwash the filter",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.3.detail": {
+    "fr": "Filtre encrassé = eau trouble.",
+    "en": "Clogged filter = cloudy water.",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.4.title": {
+    "fr": "Utiliser un floculant (si filtre à sable)",
+    "en": "Use a flocculant (if sand filter)",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.4.detail": {
+    "fr": "Le floculant agglomère les particules fines pour que le filtre les retienne.",
+    "en": "Flocculant clumps fine particles so the filter can catch them.",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.4.warning": {
+    "fr": "Floculant uniquement avec filtre à sable. Pas avec cartouche.",
+    "en": "Flocculant only with sand filter. Not with cartridge.",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.5.title": {
+    "fr": "Filtrer 24h puis aspirer les dépôts",
+    "en": "Filter 24h then vacuum deposits",
+    "reason": "placeholder"
+  },
+  "guidesData.cloudy-water.steps.5.detail": {
+    "fr": "Après floculation, des dépôts se forment au fond : aspirez-les.",
+    "en": "After flocculation, deposits form at the bottom: vacuum them up.",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.title": {
+    "fr": "Quand et comment faire un chlore choc",
+    "en": "When and how to do a chlorine shock",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.summary": {
+    "fr": "Le traitement choc : indications, dosage, sécurité, délais baignade.",
+    "en": "Shock treatment: indications, dosage, safety, swim delays.",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.1.title": {
+    "fr": "Vérifier le pH AVANT",
+    "en": "Check pH BEFORE",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.1.detail": {
+    "fr": "Un choc est inefficace si le pH > 7.6. Équilibrez d'abord.",
+    "en": "A shock is ineffective if pH > 7.6. Balance first.",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.1.warning": {
+    "fr": "Ne JAMAIS faire un choc sans avoir vérifié le pH.",
+    "en": "NEVER shock without checking pH first.",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.2.title": {
+    "fr": "Choisir le bon moment",
+    "en": "Choose the right time",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.2.detail": {
+    "fr": "Le soir, sans baigneurs, filtration en marche.",
+    "en": "In the evening, no swimmers, filtration running.",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.3.title": {
+    "fr": "Doser selon le volume",
+    "en": "Dose according to volume",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.3.detail": {
+    "fr": "AQWELIA calcule la quantité selon votre volume de bassin.",
+    "en": "AQWELIA calculates the amount based on your basin volume.",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.4.title": {
+    "fr": "Dissoudre dans un seau",
+    "en": "Dissolve in a bucket",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.4.detail": {
+    "fr": "Ne jamais verser le choc en poudre directement au bord.",
+    "en": "Never pour powder shock directly at the edge.",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.5.title": {
+    "fr": "Filtrer 4h minimum",
+    "en": "Filter at least 4h",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.5.detail": {
+    "fr": "Le chlore doit être bien réparti.",
+    "en": "Chlorine must be well distributed.",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.6.title": {
+    "fr": "Attendre 8h avant baignade",
+    "en": "Wait 8h before swimming",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.6.detail": {
+    "fr": "Vérifiez le chlore libre avant de se baigner (doit être < 3 mg/L).",
+    "en": "Check free chlorine before swimming (must be < 3 mg/L).",
+    "reason": "placeholder"
+  },
+  "guidesData.chlorine-shock.steps.6.warning": {
+    "fr": "Baignade interdite pendant 8h minimum.",
+    "en": "No swimming for at least 8h.",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.title": {
+    "fr": "Odeur forte de chlore et yeux qui piquent",
+    "en": "Strong chlorine smell and stinging eyes",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.summary": {
+    "fr": "Comprendre les chloramines et comment s'en débarrasser.",
+    "en": "Understand chloramines and how to get rid of them.",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.steps.1.title": {
+    "fr": "Comprendre la cause",
+    "en": "Understand the cause",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.steps.1.detail": {
+    "fr": "L'odeur forte de chlore n'est PAS un excès de chlore : ce sont les chloramines (chlore combiné), sous-produits de la désinfection.",
+    "en": "Strong chlorine smell is NOT excess chlorine: it is chloramines (combined chlorine), disinfection by-products.",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.steps.2.title": {
+    "fr": "Mesurer chlore libre ET total",
+    "en": "Measure BOTH free and total chlorine",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.steps.2.detail": {
+    "fr": "Chlore combiné = chlore total - chlore libre. Si > 0.4 mg/L, traitement nécessaire.",
+    "en": "Combined chlorine = total chlorine - free chlorine. If > 0.4 mg/L, treatment needed.",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.steps.3.title": {
+    "fr": "Faire un traitement choc",
+    "en": "Do a shock treatment",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.steps.3.detail": {
+    "fr": "Le choc casse les chloramines et libère du chlore libre actif.",
+    "en": "Shock breaks down chloramines and releases active free chlorine.",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.steps.4.title": {
+    "fr": "Vérifier le pH",
+    "en": "Check the pH",
+    "reason": "placeholder"
+  },
+  "guidesData.combined-chlorine.steps.4.detail": {
+    "fr": "Un pH haut aggrave les chloramines.",
+    "en": "High pH worsens chloramines.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.title": {
+    "fr": "Backwash (contre-lavage) du filtre à sable",
+    "en": "Sand filter backwash (counter-rinse)",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.summary": {
+    "fr": "Quand et comment faire un backwash efficacement.",
+    "en": "When and how to do an effective backwash.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.1.title": {
+    "fr": "Quand backwash ?",
+    "en": "When to backwash?",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.1.detail": {
+    "fr": "Quand la pression monte de 0.3-0.5 bar au-dessus de la pression de service, ou toutes les 2-4 semaines.",
+    "en": "When pressure rises 0.3-0.5 bar above service pressure, or every 2-4 weeks.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.2.title": {
+    "fr": "Éteindre la pompe",
+    "en": "Turn off the pump",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.2.detail": {
+    "fr": "TOUJOURS éteindre la pompe avant de manipuler la vanne.",
+    "en": "ALWAYS turn off the pump before handling the valve.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.2.warning": {
+    "fr": "Risque électrique et matériel.",
+    "en": "Electrical and material risk.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.3.title": {
+    "fr": "Placer la vanne sur BACKWASH",
+    "en": "Set valve to BACKWASH",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.3.detail": {
+    "fr": "Tourner fermement la vanne multivoies.",
+    "en": "Turn the multi-port valve firmly.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.4.title": {
+    "fr": "Rallumer la pompe 2-3 min",
+    "en": "Turn the pump back on 2-3 min",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.4.detail": {
+    "fr": "L'eau s'écoule à l'égout jusqu'à ce qu'elle redevienne claire.",
+    "en": "Water flows to the drain until it becomes clear again.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.5.title": {
+    "fr": "Éteindre, vanne sur RINSE 30s",
+    "en": "Turn off, valve to RINSE 30s",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.5.detail": {
+    "fr": "Le rinçage re-tasse le sable et évite le retour de saletés.",
+    "en": "Rinsing repacks the sand and prevents dirt return.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.6.title": {
+    "fr": "Revenir en position FILTER",
+    "en": "Return to FILTER position",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.6.detail": {
+    "fr": "Remettre la vanne en filtration normale.",
+    "en": "Set the valve back to normal filtration.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.title": {
+    "fr": "Nettoyer un filtre à cartouche",
+    "en": "Clean a cartridge filter",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.summary": {
+    "fr": "Démontage et rinçage d'une cartouche de filtration.",
+    "en": "Disassembly and rinsing of a filter cartridge.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.1.title": {
+    "fr": "Éteindre la pompe",
+    "en": "Turn off the pump",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.1.detail": {
+    "fr": "Couper l'alimentation électrique.",
+    "en": "Cut the power supply.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.1.warning": {
+    "fr": "Sécurité électrique obligatoire.",
+    "en": "Electrical safety mandatory.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.2.title": {
+    "fr": "Démonter la cartouche",
+    "en": "Remove the cartridge",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.2.detail": {
+    "fr": "Ouvrir le corps du filtre selon le modèle.",
+    "en": "Open the filter body according to the model.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.3.title": {
+    "fr": "Rincer au jet",
+    "en": "Rinse with a jet",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.3.detail": {
+    "fr": "Jet d'eau doux, des haut vers le bas, entre les plis.",
+    "en": "Gentle water jet, top to bottom, between the folds.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.4.title": {
+    "fr": "Tremper dans un nettoyant filtre (optionnel)",
+    "en": "Soak in a filter cleaner (optional)",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.4.detail": {
+    "fr": "Tous les 2-3 nettoyages, dégraissage et détartrage.",
+    "en": "Every 2-3 cleanings, degreasing and descaling.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.5.title": {
+    "fr": "Remonter et redémarrer",
+    "en": "Reassemble and restart",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.5.detail": {
+    "fr": "Bien repositionner les joints.",
+    "en": "Reposition the seals properly.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.title": {
+    "fr": "Nettoyer la cellule de l'électrolyseur",
+    "en": "Clean the electrolyzer cell",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.summary": {
+    "fr": "Détartrer la cellule d'électrolyseur au sel pour maintenir la production de chlore.",
+    "en": "Descale the salt electrolyzer cell to maintain chlorine production.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.1.title": {
+    "fr": "Couper l'alimentation",
+    "en": "Cut the power",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.1.detail": {
+    "fr": "Éteindre l'électrolyseur et la pompe.",
+    "en": "Turn off the electrolyzer and the pump.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.1.warning": {
+    "fr": "Sécurité électrique. Ne jamais manipuler la cellule sous tension.",
+    "en": "Electrical safety. Never handle the cell under power.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.2.title": {
+    "fr": "Démonter la cellule",
+    "en": "Remove the cell",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.2.detail": {
+    "fr": "Dévisser selon le modèle. Vérifier l'état des électrodes.",
+    "en": "Unscrew according to the model. Check the electrodes.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.3.title": {
+    "fr": "Préparer une solution acide diluée",
+    "en": "Prepare a diluted acid solution",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.3.detail": {
+    "fr": "1/3 acide chlorhydrique + 2/3 eau dans un récipient plastique.",
+    "en": "1/3 hydrochloric acid + 2/3 water in a plastic container.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.3.warning": {
+    "fr": "TOUJOURS verser l'acide dans l'eau, jamais l'inverse. Gants et lunettes obligatoires. Aération.",
+    "en": "ALWAYS pour acid into water, never the reverse. Gloves and goggles mandatory. Ventilation.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.4.title": {
+    "fr": "Tremper 10-15 min",
+    "en": "Soak 10-15 min",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.4.detail": {
+    "fr": "Le tartre se dissout. Ne pas laisser trop longtemps.",
+    "en": "Scale dissolves. Do not leave too long.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.5.title": {
+    "fr": "Rincer abondamment",
+    "en": "Rinse thoroughly",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.5.detail": {
+    "fr": "À l'eau claire jusqu'à disparition de l'odeur.",
+    "en": "With clean water until the smell disappears.",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.6.title": {
+    "fr": "Remonter et redémarrer",
+    "en": "Reassemble and restart",
+    "reason": "placeholder"
+  },
+  "guidesData.cell-clean.steps.6.detail": {
+    "fr": "Vérifier la production sur l'afficheur.",
+    "en": "Check production on the display.",
+    "reason": "placeholder"
+  },
+  "guidesData.salt-system-basics.title": {
+    "fr": "Comprendre son électrolyseur au sel",
+    "en": "Understand your salt electrolyzer",
+    "reason": "placeholder"
+  },
+  "guidesData.salt-system-basics.summary": {
+    "fr": "Principe, taux de sel, production, entretien courant.",
+    "en": "Principle, salt level, production, routine maintenance.",
+    "reason": "placeholder"
+  },
+  "guidesData.salt-system-basics.steps.1.title": {
+    "fr": "Le principe",
+    "en": "The principle",
+    "reason": "placeholder"
+  },
+  "guidesData.salt-system-basics.steps.1.detail": {
+    "fr": "Le sel (NaCl) est électrolysé en chlore actif in-situ. Pas de stockage de chlore, eau plus douce.",
+    "en": "Salt (NaCl) is electrolyzed into active chlorine in-situ. No chlorine storage, softer water.",
+    "reason": "placeholder"
+  },
+  "guidesData.salt-system-basics.steps.2.title": {
+    "fr": "Taux de sel requis",
+    "en": "Required salt level",
+    "reason": "placeholder"
+  },
+  "guidesData.salt-system-basics.steps.2.detail": {
+    "fr": "Selon le modèle : généralement 3-7 g/L. Vérifiez la notice. Trop bas = pas de production ; trop haut = surconsommation.",
+    "en": "Depending on the model: generally 3-7 g/L. Check the manual. Too low = no production; too high = overconsumption.",
+    "reason": "placeholder"
+  },
+  "guidesData.salt-system-basics.steps.3.title": {
+    "fr": "Stabilisant (CYA) indispensable",
+    "en": "Stabilizer (CYA) essential",
+    "reason": "placeholder"
+  },
+  "guidesData.salt-system-basics.steps.3.detail": {
+    "fr": "Sans stabilisant, le chlore produit est détruit par le soleil en 2h.",
+    "en": "Without stabilizer, the produced chlorine is destroyed by the sun in 2h.",
+    "reason": "placeholder"
+  },
+  "guidesData.salt-system-basics.steps.4.title": {
+    "fr": "Surveiller le pH",
+    "en": "Monitor the pH",
+    "reason": "placeholder"
+  },
+  "guidesData.salt-system-basics.steps.4.detail": {
+    "fr": "L'électrolyseur fait monter le pH. Régulation fréquente nécessaire.",
+    "en": "The electrolyzer raises the pH. Frequent regulation needed.",
+    "reason": "placeholder"
+  },
+  "guidesData.salt-system-basics.steps.5.title": {
+    "fr": "Production selon température",
+    "en": "Production by temperature",
+    "reason": "placeholder"
+  },
+  "guidesData.salt-system-basics.steps.5.detail": {
+    "fr": "En eau froide (< 15°C), la production chute. Ne pas s'inquiéter en hiver.",
+    "en": "In cold water (< 15°C), production drops. Do not worry in winter.",
+    "reason": "placeholder"
+  },
+  "guidesData.salt-system-basics.steps.6.title": {
+    "fr": "Entretien cellule",
+    "en": "Cell maintenance",
+    "reason": "placeholder"
+  },
+  "guidesData.salt-system-basics.steps.6.detail": {
+    "fr": "Nettoyage acide tous les 3-6 mois selon dureté de l'eau.",
+    "en": "Acid cleaning every 3-6 months depending on water hardness.",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.title": {
+    "fr": "Maîtriser son pH",
+    "en": "Master your pH",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.summary": {
+    "fr": "Pourquoi le pH est le paramètre n°1, comment l'ajuster.",
+    "en": "Why pH is the #1 parameter, how to adjust it.",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.1.title": {
+    "fr": "Le pH est prioritaire",
+    "en": "pH is the priority",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.1.detail": {
+    "fr": "Tout part du pH : efficacité du chlore, confort baignade, protection équipements.",
+    "en": "Everything starts with pH: chlorine effectiveness, swim comfort, equipment protection.",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.2.title": {
+    "fr": "Plage idéale 7.0-7.4",
+    "en": "Ideal range 7.0-7.4",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.2.detail": {
+    "fr": "Plus près de 7.2 = chlore optimal.",
+    "en": "Closer to 7.2 = optimal chlorine.",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.3.title": {
+    "fr": "Ajuster le TAC avant le pH si instable",
+    "en": "Adjust TAC before pH if unstable",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.3.detail": {
+    "fr": "Un TAC bas rend le pH instable.",
+    "en": "A low TAC makes pH unstable.",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.4.title": {
+    "fr": "Doser par petite quantité",
+    "en": "Dose in small amounts",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.4.detail": {
+    "fr": "Ne jamais modifier le pH de plus de 0.3 d'un coup.",
+    "en": "Never change pH by more than 0.3 at once.",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.5.title": {
+    "fr": "Filtrer 2-3h puis re-tester",
+    "en": "Filter 2-3h then re-test",
+    "reason": "placeholder"
+  },
+  "guidesData.ph-control.steps.5.detail": {
+    "fr": "Le mélange doit être homogène.",
+    "en": "The mixture must be homogeneous.",
+    "reason": "placeholder"
+  },
+  "guidesData.tac-control.title": {
+    "fr": "Comprendre l'alcalinité (TAC)",
+    "en": "Understand alkalinity (TAC)",
+    "reason": "placeholder"
+  },
+  "guidesData.tac-control.summary": {
+    "fr": "Le TAC est le tampon du pH. Sans bon TAC, le pH devient instable.",
+    "en": "TAC is the pH buffer. Without good TAC, pH becomes unstable.",
+    "reason": "placeholder"
+  },
+  "guidesData.tac-control.steps.1.title": {
+    "fr": "Rôle du TAC",
+    "en": "Role of TAC",
+    "reason": "placeholder"
+  },
+  "guidesData.tac-control.steps.1.detail": {
+    "fr": "Le TAC (alcalinité totale) stabilise le pH. Sans lui, le pH saute à chaque ajout de produit.",
+    "en": "TAC (total alkalinity) stabilizes pH. Without it, pH jumps with every chemical addition.",
+    "reason": "placeholder"
+  },
+  "guidesData.tac-control.steps.2.title": {
+    "fr": "Plage idéale 80-120 mg/L",
+    "en": "Ideal range 80-120 mg/L",
+    "reason": "placeholder"
+  },
+  "guidesData.tac-control.steps.2.detail": {
+    "fr": "Cible 100 mg/L.",
+    "en": "Target 100 mg/L.",
+    "reason": "placeholder"
+  },
+  "guidesData.tac-control.steps.3.title": {
+    "fr": "Ajuster AVANT le pH",
+    "en": "Adjust BEFORE pH",
+    "reason": "placeholder"
+  },
+  "guidesData.tac-control.steps.3.detail": {
+    "fr": "Toujours équilibrer le TAC d'abord, sinon le pH ne tiendra pas.",
+    "en": "Always balance TAC first, otherwise pH will not hold.",
+    "reason": "placeholder"
+  },
+  "guidesData.tac-control.steps.4.title": {
+    "fr": "Pour remonter : bicarbonate de sodium",
+    "en": "To raise: sodium bicarbonate",
+    "reason": "placeholder"
+  },
+  "guidesData.tac-control.steps.4.detail": {
+    "fr": "Diluer, répartir, filtration 3h.",
+    "en": "Dilute, distribute, filtration 3h.",
+    "reason": "placeholder"
+  },
+  "guidesData.tac-control.steps.5.title": {
+    "fr": "Pour baisser : acide",
+    "en": "To lower: acid",
+    "reason": "placeholder"
+  },
+  "guidesData.tac-control.steps.5.detail": {
+    "fr": "Plus complexe, se fait lentement avec un pH-.",
+    "en": "More complex, done slowly with a pH-.",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.title": {
+    "fr": "Que faire après un orage ?",
+    "en": "What to do after a storm?",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.summary": {
+    "fr": "L'orage dilue le chlore et modifie le pH. Routine post-orage.",
+    "en": "Lightning dilutes chlorine and changes pH. Post-storm routine.",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.1.title": {
+    "fr": "Tester pH et chlore",
+    "en": "Test pH and chlorine",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.1.detail": {
+    "fr": "L'orage acidifie souvent l'eau et dilue le chlore.",
+    "en": "Storms often acidify water and dilute chlorine.",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.2.title": {
+    "fr": "Nettoyer skimmer et panier",
+    "en": "Clean skimmer and basket",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.2.detail": {
+    "fr": "Débris apportés par la pluie et le vent.",
+    "en": "Debris brought by rain and wind.",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.3.title": {
+    "fr": "Ajuster le pH si nécessaire",
+    "en": "Adjust pH if necessary",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.3.detail": {
+    "fr": "Priorité au pH avant tout ajout de chlore.",
+    "en": "Priority to pH before any chlorine addition.",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.4.title": {
+    "fr": "Compléter le chlore si bas",
+    "en": "Top up chlorine if low",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.4.detail": {
+    "fr": "Chlore lent ou choc selon l'écart.",
+    "en": "Slow or shock chlorine depending on the gap.",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.5.title": {
+    "fr": "Filtrer 4-6h",
+    "en": "Filter 4-6h",
+    "reason": "placeholder"
+  },
+  "guidesData.after-storm.steps.5.detail": {
+    "fr": "Bien répartir les corrections.",
+    "en": "Distribute corrections well.",
+    "reason": "placeholder"
+  },
+  "guidesData.vacation-mode.title": {
+    "fr": "Avant de partir en vacances",
+    "en": "Before going on vacation",
+    "reason": "placeholder"
+  },
+  "guidesData.vacation-mode.summary": {
+    "fr": "Préparer sa piscine pour une absence de plusieurs jours/semaines.",
+    "en": "Prepare your pool for an absence of several days/weeks.",
+    "reason": "placeholder"
+  },
+  "guidesData.vacation-mode.steps.1.title": {
+    "fr": "Faire un test complet",
+    "en": "Do a full test",
+    "reason": "placeholder"
+  },
+  "guidesData.vacation-mode.steps.1.detail": {
+    "fr": "Tout équilibrer avant le départ : pH, chlore, TAC.",
+    "en": "Balance everything before leaving: pH, chlorine, TAC.",
+    "reason": "placeholder"
+  },
+  "guidesData.vacation-mode.steps.2.title": {
+    "fr": "Chlore choc la veille",
+    "en": "Shock chlorine the day before",
+    "reason": "placeholder"
+  },
+  "guidesData.vacation-mode.steps.2.detail": {
+    "fr": "Désinfecter en profondeur.",
+    "en": "Disinfect deeply.",
+    "reason": "placeholder"
+  },
+  "guidesData.vacation-mode.steps.3.title": {
+    "fr": "Remplir le distributeur de chlore lent",
+    "en": "Fill the slow chlorine dispenser",
+    "reason": "placeholder"
+  },
+  "guidesData.vacation-mode.steps.3.detail": {
+    "fr": "Pour une absence < 1 semaine.",
+    "en": "For an absence < 1 week.",
+    "reason": "placeholder"
+  },
+  "guidesData.vacation-mode.steps.4.title": {
+    "fr": "Régler la minuterie filtration",
+    "en": "Set the filtration timer",
+    "reason": "placeholder"
+  },
+  "guidesData.vacation-mode.steps.4.detail": {
+    "fr": "Au moins 4-6h/jour, de préférence la nuit.",
+    "en": "At least 4-6h/day, preferably at night.",
+    "reason": "placeholder"
+  },
+  "guidesData.vacation-mode.steps.5.title": {
+    "fr": "Couvrir la piscine",
+    "en": "Cover the pool",
+    "reason": "placeholder"
+  },
+  "guidesData.vacation-mode.steps.5.detail": {
+    "fr": "Bâche ou volet : limite débris et évaporation.",
+    "en": "Tarp or cover: limits debris and evaporation.",
+    "reason": "placeholder"
+  },
+  "guidesData.vacation-mode.steps.6.title": {
+    "fr": "Pour une longue absence : voisin ou robot",
+    "en": "For a long absence: neighbor or robot",
+    "reason": "placeholder"
+  },
+  "guidesData.vacation-mode.steps.6.detail": {
+    "fr": "Faites vérifier ou installez un robot.",
+    "en": "Have someone check or install a robot.",
+    "reason": "placeholder"
+  },
+  "guidesData.vacation-mode.steps.7.title": {
+    "fr": "Selon saison : hivernage actif ou passif",
+    "en": "Depending on season: active or passive winterization",
+    "reason": "placeholder"
+  },
+  "guidesData.vacation-mode.steps.7.detail": {
+    "fr": "En été, filtration réduite suffit. En hiver, hivernage complet.",
+    "en": "In summer, reduced filtration is enough. In winter, full winterization.",
+    "reason": "placeholder"
+  },
+  "guidesData.winterization.title": {
+    "fr": "Hiverner sa piscine",
+    "en": "Winterize your pool",
+    "reason": "placeholder"
+  },
+  "guidesData.winterization.summary": {
+    "fr": "Mettre la piscine en hivernage pour l'hiver sans abîmer les équipements.",
+    "en": "Put the pool into winterization without damaging equipment.",
+    "reason": "placeholder"
+  },
+  "guidesData.winterization.steps.1.title": {
+    "fr": "Choisir hivernage actif ou passif",
+    "en": "Choose active or passive winterization",
+    "reason": "placeholder"
+  },
+  "guidesData.winterization.steps.1.detail": {
+    "fr": "Actif : filtration réduite. Passif : arrêt total. Dépend du climat.",
+    "en": "Active: reduced filtration. Passive: full stop. Depends on climate.",
+    "reason": "placeholder"
+  },
+  "guidesData.winterization.steps.2.title": {
+    "fr": "Nettoyer en profondeur",
+    "en": "Deep clean",
+    "reason": "placeholder"
+  },
+  "guidesData.winterization.steps.2.detail": {
+    "fr": "Eau, parois, fond, filtre, ligne d'eau.",
+    "en": "Water, walls, floor, filter, water line.",
+    "reason": "placeholder"
+  },
+  "guidesData.winterization.steps.3.title": {
+    "fr": "Faire un traitement d'hiver",
+    "en": "Do a winter treatment",
+    "reason": "placeholder"
+  },
+  "guidesData.winterization.steps.3.detail": {
+    "fr": "Produit d'hivernage anti-algues et anticalcaire.",
+    "en": "Winterizing product, anti-algae and anti-scale.",
+    "reason": "placeholder"
+  },
+  "guidesData.winterization.steps.4.title": {
+    "fr": "Baisser le niveau d'eau",
+    "en": "Lower the water level",
+    "reason": "placeholder"
+  },
+  "guidesData.winterization.steps.4.detail": {
+    "fr": "10-15 cm sous les buses pour passif.",
+    "en": "10-15 cm below the jets for passive.",
+    "reason": "placeholder"
+  },
+  "guidesData.winterization.steps.5.title": {
+    "fr": "Vider les canalisations sensibles",
+    "en": "Drain sensitive pipes",
+    "reason": "placeholder"
+  },
+  "guidesData.winterization.steps.5.detail": {
+    "fr": "Protéger du gel.",
+    "en": "Protect from freezing.",
+    "reason": "placeholder"
+  },
+  "guidesData.winterization.steps.6.title": {
+    "fr": "Couvrir la piscine",
+    "en": "Cover the pool",
+    "reason": "placeholder"
+  },
+  "guidesData.winterization.steps.6.detail": {
+    "fr": "Bâche d'hiver ou volet.",
+    "en": "Winter tarp or cover.",
+    "reason": "placeholder"
+  },
+  "guidesData.winterization.steps.7.title": {
+    "fr": "Hivernage actif : filtration 2-3h/jour",
+    "en": "Active winterization: filtration 2-3h/day",
+    "reason": "placeholder"
+  },
+  "guidesData.winterization.steps.7.detail": {
+    "fr": "Surtout pendant les périodes de gel.",
+    "en": "Especially during freezing periods.",
+    "reason": "placeholder"
+  },
+  "guidesData.startup.title": {
+    "fr": "Remise en route au printemps",
+    "en": "Spring start-up",
+    "reason": "placeholder"
+  },
+  "guidesData.startup.summary": {
+    "fr": "Réveiller sa piscine après l'hiver en douceur.",
+    "en": "Wake up your pool after winter gently.",
+    "reason": "placeholder"
+  },
+  "guidesData.startup.steps.1.title": {
+    "fr": "Retirer la couverture et nettoyer",
+    "en": "Remove the cover and clean",
+    "reason": "placeholder"
+  },
+  "guidesData.startup.steps.1.detail": {
+    "fr": "Enlever feuilles et débris accumulés.",
+    "en": "Remove accumulated leaves and debris.",
+    "reason": "placeholder"
+  },
+  "guidesData.startup.steps.2.title": {
+    "fr": "Remettre en eau si niveau bas",
+    "en": "Refill if water level is low",
+    "reason": "placeholder"
+  },
+  "guidesData.startup.steps.2.detail": {
+    "fr": "Refaire le niveau.",
+    "en": "Restore the level.",
+    "reason": "placeholder"
+  },
+  "guidesData.startup.steps.3.title": {
+    "fr": "Démarrer la filtration",
+    "en": "Start the filtration",
+    "reason": "placeholder"
+  },
+  "guidesData.startup.steps.3.detail": {
+    "fr": "Vérifier le filtre (backwash si nécessaire).",
+    "en": "Check the filter (backwash if needed).",
+    "reason": "placeholder"
+  },
+  "guidesData.startup.steps.4.title": {
+    "fr": "Tester l'eau",
+    "en": "Test the water",
+    "reason": "placeholder"
+  },
+  "guidesData.startup.steps.4.detail": {
+    "fr": "pH, chlore, TAC, stabilisant.",
+    "en": "pH, chlorine, TAC, stabilizer.",
+    "reason": "placeholder"
+  },
+  "guidesData.startup.steps.5.title": {
+    "fr": "Équilibrer progressivement",
+    "en": "Balance gradually",
+    "reason": "placeholder"
+  },
+  "guidesData.startup.steps.5.detail": {
+    "fr": "TAC → pH → chlore. Pas de précipitation.",
+    "en": "TAC → pH → chlorine. No rush.",
+    "reason": "placeholder"
+  },
+  "guidesData.startup.steps.6.title": {
+    "fr": "Faire un traitement choc",
+    "en": "Do a shock treatment",
+    "reason": "placeholder"
+  },
+  "guidesData.startup.steps.6.detail": {
+    "fr": "Pour repartir sur une base saine.",
+    "en": "To start on a healthy base.",
+    "reason": "placeholder"
+  },
+  "guidesData.startup.steps.7.title": {
+    "fr": "Vérifier les équipements",
+    "en": "Check the equipment",
+    "reason": "placeholder"
+  },
+  "guidesData.startup.steps.7.detail": {
+    "fr": "Pompe, électrolyseur, joints, manomètre.",
+    "en": "Pump, electrolyzer, seals, pressure gauge.",
+    "reason": "placeholder"
+  },
+  "guidesData.swim-safety.title": {
+    "fr": "Sécurité baignade : quand peut-on se baigner ?",
+    "en": "Swim safety: when can you swim?",
+    "reason": "placeholder"
+  },
+  "guidesData.swim-safety.summary": {
+    "fr": "Critères de sécurité pour une baignade sans risque.",
+    "en": "Safety criteria for risk-free swimming.",
+    "reason": "placeholder"
+  },
+  "guidesData.swim-safety.steps.1.title": {
+    "fr": "pH entre 7.0 et 7.6",
+    "en": "pH between 7.0 and 7.6",
+    "reason": "placeholder"
+  },
+  "guidesData.swim-safety.steps.1.detail": {
+    "fr": "Hors de cette plage : irritation possible.",
+    "en": "Outside this range: possible irritation.",
+    "reason": "placeholder"
+  },
+  "guidesData.swim-safety.steps.2.title": {
+    "fr": "Chlore libre entre 1 et 3 mg/L",
+    "en": "Free chlorine between 1 and 3 mg/L",
+    "reason": "placeholder"
+  },
+  "guidesData.swim-safety.steps.2.detail": {
+    "fr": "Moins = désinfection insuffisante. Plus = irritation.",
+    "en": "Less = insufficient disinfection. More = irritation.",
+    "reason": "placeholder"
+  },
+  "guidesData.swim-safety.steps.3.title": {
+    "fr": "Chlore combiné < 0.4 mg/L",
+    "en": "Combined chlorine < 0.4 mg/L",
+    "reason": "placeholder"
+  },
+  "guidesData.swim-safety.steps.3.detail": {
+    "fr": "Au-dessus : odeur forte, yeux qui piquent.",
+    "en": "Above: strong smell, stinging eyes.",
+    "reason": "placeholder"
+  },
+  "guidesData.swim-safety.steps.4.title": {
+    "fr": "Respecter les délais après traitement",
+    "en": "Respect delays after treatment",
+    "reason": "placeholder"
+  },
+  "guidesData.swim-safety.steps.4.detail": {
+    "fr": "2h après pH, 8h après chlore choc.",
+    "en": "2h after pH, 8h after chlorine shock.",
+    "reason": "placeholder"
+  },
+  "guidesData.swim-safety.steps.5.title": {
+    "fr": "En cas de doute : ne pas se baigner",
+    "en": "If in doubt: do not swim",
+    "reason": "placeholder"
+  },
+  "guidesData.swim-safety.steps.5.detail": {
+    "fr": "Mieux vaut attendre un test qu'aller dans une eau douteuse.",
+    "en": "Better to wait for a test than to go into questionable water.",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.title": {
+    "fr": "Sécurité produits chimiques",
+    "en": "Chemical product safety",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.summary": {
+    "fr": "Les règles d'or pour manipuler et stocker les produits piscine.",
+    "en": "Golden rules for handling and storing pool products.",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.1.title": {
+    "fr": "Ne JAMAIS mélanger les produits",
+    "en": "NEVER mix products",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.1.detail": {
+    "fr": "Chlore + acide = gaz toxique mortel. Toujours diluer séparément.",
+    "en": "Chlorine + acid = deadly toxic gas. Always dilute separately.",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.1.warning": {
+    "fr": "Règle absolue de survie.",
+    "en": "Absolute survival rule.",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.2.title": {
+    "fr": "Toujours ajouter le produit dans l'eau",
+    "en": "Always add product to water",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.2.detail": {
+    "fr": "Jamais l'eau dans le produit acide (projection).",
+    "en": "Never water into acid product (splashing).",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.3.title": {
+    "fr": "Porter gants et lunettes",
+    "en": "Wear gloves and goggles",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.3.detail": {
+    "fr": "Surtout pour les acides et le chlore concentré.",
+    "en": "Especially for acids and concentrated chlorine.",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.4.title": {
+    "fr": "Stocker au sec, frais, ventilé",
+    "en": "Store dry, cool, ventilated",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.4.detail": {
+    "fr": "Séparer acides et chlores. Hors portée des enfants.",
+    "en": "Separate acids and chlorine. Out of reach of children.",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.5.title": {
+    "fr": "Respecter les notices",
+    "en": "Follow the instructions",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.5.detail": {
+    "fr": "Chaque produit a ses règles de dosage et d'application.",
+    "en": "Each product has its dosage and application rules.",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.6.title": {
+    "fr": "En cas d'incident : appeler le 15 ou le centre antipoison",
+    "en": "In case of incident: call emergency services or poison control",
+    "reason": "placeholder"
+  },
+  "guidesData.product-safety.steps.6.detail": {
+    "fr": "Ne pas faire vomir, consulter immédiatement.",
+    "en": "Do not induce vomiting, consult immediately.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.title": {
+    "fr": "Débuter avec sa piscine",
+    "en": "Getting started with your pool",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.summary": {
+    "fr": "Les 10 premières choses à savoir quand on devient propriétaire d'une piscine.",
+    "en": "The first 10 things to know when you become a pool owner.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.1.title": {
+    "fr": "Connaître le volume de sa piscine",
+    "en": "Know your pool volume",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.1.detail": {
+    "fr": "Indispensable pour tout dosage. AQWELIA le calcule à partir des dimensions.",
+    "en": "Essential for any dosage. AQWELIA calculates it from dimensions.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.2.title": {
+    "fr": "Comprendre le pH",
+    "en": "Understand pH",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.2.detail": {
+    "fr": "Le paramètre n°1. Tout part de là.",
+    "en": "The #1 parameter. Everything starts here.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.3.title": {
+    "fr": "Comprendre le chlore",
+    "en": "Understand chlorine",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.3.detail": {
+    "fr": "Libre, total, combiné. AQWELIA vous guide.",
+    "en": "Free, total, combined. AQWELIA guides you.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.4.title": {
+    "fr": "Filtrer suffisamment",
+    "en": "Filter enough",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.4.detail": {
+    "fr": "Moitié de la température de l'eau en heures.",
+    "en": "Half the water temperature in hours.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.5.title": {
+    "fr": "Tester 1-2x par semaine",
+    "en": "Test 1-2x per week",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.5.detail": {
+    "fr": "Plus souvent par forte chaleur.",
+    "en": "More often in hot weather.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.6.title": {
+    "fr": "Entretenir le filtre",
+    "en": "Maintain the filter",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.6.detail": {
+    "fr": "Backwash ou rinçage régulier.",
+    "en": "Regular backwash or rinse.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.7.title": {
+    "fr": "Surveiller le niveau d'eau",
+    "en": "Monitor the water level",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.7.detail": {
+    "fr": "Trop bas = pompe en danger ; trop haut = skimmer inefficace.",
+    "en": "Too low = pump at risk; too high = inefficient skimmer.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.8.title": {
+    "fr": "Brosser et nettoyer la ligne d'eau",
+    "en": "Brush and clean the water line",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.8.detail": {
+    "fr": "Évite algues et dépôts.",
+    "en": "Prevents algae and deposits.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.9.title": {
+    "fr": "Anticiper la météo",
+    "en": "Anticipate the weather",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.9.detail": {
+    "fr": "Orage, canicule, vacances : prévenir plutôt que guérir.",
+    "en": "Storm, heatwave, vacation: prevent rather than cure.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.10.title": {
+    "fr": "Garder un carnet",
+    "en": "Keep a log",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.10.detail": {
+    "fr": "AQWELIA garde l'historique pour vous.",
+    "en": "AQWELIA keeps the history for you.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.title": {
+    "fr": "Spécificités du spa",
+    "en": "Spa specifics",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.summary": {
+    "fr": "Le spa a ses règles : eau chaude, volume réduit, brome plutôt que chlore.",
+    "en": "The spa has its own rules: hot water, reduced volume, bromine over chlorine.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.1.title": {
+    "fr": "Volume réduit = réactions rapides",
+    "en": "Reduced volume = fast reactions",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.1.detail": {
+    "fr": "L'eau tourne vite. Tests plus fréquents.",
+    "en": "Water turns quickly. More frequent tests.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.2.title": {
+    "fr": "Préférer le brome au chlore",
+    "en": "Prefer bromine over chlorine",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.2.detail": {
+    "fr": "Le brome est plus stable à chaud et moins odorant.",
+    "en": "Bromine is more stable when hot and less odorous.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.3.title": {
+    "fr": "Température et pH",
+    "en": "Temperature and pH",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.3.detail": {
+    "fr": "Le pH bouge avec la température. Tester à température de bain.",
+    "en": "pH changes with temperature. Test at bathing temperature.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.4.title": {
+    "fr": "Choc hebdomadaire",
+    "en": "Weekly shock",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.4.detail": {
+    "fr": "Plus nécessaire qu'en piscine.",
+    "en": "More necessary than in a pool.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.5.title": {
+    "fr": "Vidange périodique",
+    "en": "Periodic draining",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.5.detail": {
+    "fr": "Tous les 3-4 mois selon usage.",
+    "en": "Every 3-4 months depending on usage.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.title": {
+    "fr": "À quelle fréquence tester son eau ?",
+    "en": "How often should you test your water?",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.summary": {
+    "fr": "Rythme recommandé selon saison et usage.",
+    "en": "Recommended frequency by season and usage.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.1.title": {
+    "fr": "En saison chaide",
+    "en": "In warm season",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.1.detail": {
+    "fr": "2 fois par semaine minimum, plus si forte chaleur.",
+    "en": "At least twice a week, more in hot weather.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.2.title": {
+    "fr": "En saison froide (hivernage actif)",
+    "en": "In cold season (active winterization)",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.2.detail": {
+    "fr": "1 fois tous les 15 jours.",
+    "en": "Once every 2 weeks.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.3.title": {
+    "fr": "Après tout traitement",
+    "en": "After any treatment",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.3.detail": {
+    "fr": "Re-test dans les 3-24h selon produit.",
+    "en": "Re-test within 3-24h depending on product.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.4.title": {
+    "fr": "Après orage",
+    "en": "After a storm",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.4.detail": {
+    "fr": "Test systématique.",
+    "en": "Systematic test.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.5.title": {
+    "fr": "Avant baignade si doute",
+    "en": "Before swimming if in doubt",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-test-frequency.steps.5.detail": {
+    "fr": "Toujours.",
+    "en": "Always.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.title": {
+    "fr": "Mon stabilisant (CYA) est trop haut",
+    "en": "My stabilizer (CYA) is too high",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.summary": {
+    "fr": "Que faire quand le CYA dépasse 50-60 mg/L ?",
+    "en": "What to do when CYA exceeds 50-60 mg/L?",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.1.title": {
+    "fr": "Pourquoi c'est un problème",
+    "en": "Why it's a problem",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.1.detail": {
+    "fr": "Un CYA trop haut \"bloque\" le chlore : il est présent mais inactif. Risque algues malgré un chlore normal.",
+    "en": "Too-high CYA \"locks\" chlorine: it is present but inactive. Algae risk despite normal chlorine.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.2.title": {
+    "fr": "Il n'existe pas de produit pour baisser le CYA",
+    "en": "There is no product to lower CYA",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.2.detail": {
+    "fr": "Seule solution : diluer l'eau.",
+    "en": "Only solution: dilute the water.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.3.title": {
+    "fr": "Renouveler 20-30% de l'eau",
+    "en": "Renew 20-30% of the water",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.3.detail": {
+    "fr": "Vidange partielle puis complément.",
+    "en": "Partial drain then top up.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.4.title": {
+    "fr": "Re-tester après renouvellement",
+    "en": "Re-test after renewal",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.4.detail": {
+    "fr": "Vérifier la nouvelle valeur.",
+    "en": "Check the new value.",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.5.title": {
+    "fr": "À l'avenir : utiliser moins de chlore stabilisé",
+    "en": "In future: use less stabilized chlorine",
+    "reason": "placeholder"
+  },
+  "guidesData.faq-cya-high.steps.5.detail": {
+    "fr": "Préférer chlore non stabilisé ou électrolyseur.",
+    "en": "Prefer non-stabilized chlorine or electrolyzer.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.urgencyCritical": {
+    "fr": "Urgent",
+    "en": "Urgent",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.urgencyImportant": {
+    "fr": "Important",
+    "en": "Important",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.urgencyModerate": {
+    "fr": "À surveiller",
+    "en": "Watch",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.urgencyLow": {
+    "fr": "OK",
+    "en": "OK",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.fieldPhLabel": {
+    "fr": "Entrez votre pH mesuré",
+    "en": "Enter your measured pH",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.fieldChlorineLabel": {
+    "fr": "Chlore libre mesuré",
+    "en": "Measured free chlorine",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.fieldTacLabel": {
+    "fr": "TAC mesuré",
+    "en": "Measured TA",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.title": {
+    "fr": "Plan d'action guidé",
+    "en": "Guided action plan",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.poolDetected": {
+    "fr": "Piscine détectée :",
+    "en": "Pool detected:",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.poolDetectedSuffix": {
+    "fr": "— dosages calculés automatiquement.",
+    "en": "— dosages calculated automatically.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.progress": {
+    "fr": "Progression",
+    "en": "Progress",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.stepsCount": {
+    "fr": "{done}/{total} étapes",
+    "en": "{done}/{total} steps",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.poolState": {
+    "fr": "État de votre piscine",
+    "en": "Pool condition",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.initialState": {
+    "fr": "État initial",
+    "en": "Initial state",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.afterTreatment": {
+    "fr": "Après traitement",
+    "en": "After treatment",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.instructionsTitle": {
+    "fr": "Instructions détaillées",
+    "en": "Detailed instructions",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.product": {
+    "fr": "Produit",
+    "en": "Product",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.dosage": {
+    "fr": "Dosage",
+    "en": "Dosage",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.waitTime": {
+    "fr": "Temps d'attente",
+    "en": "Wait time",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.immediate": {
+    "fr": "Immédiat",
+    "en": "Immediate",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recommendation": {
+    "fr": "Recommandation pour votre mesure",
+    "en": "Recommendation for your measurement",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recordMeasures": {
+    "fr": "Enregistrer vos mesures",
+    "en": "Record your measurements",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.waterTestNote": {
+    "fr": "Les mesures sont enregistrées dans votre carnet (",
+    "en": "Measurements are saved in your logbook (",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.waterTestNoteSuffix": {
+    "fr": ") via l'API.",
+    "en": ") via API.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.validating": {
+    "fr": "Enregistrement…",
+    "en": "Saving…",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.validateAndSave": {
+    "fr": "Valider et enregistrer",
+    "en": "Validate & save",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.markAsDone": {
+    "fr": "Marquer comme fait",
+    "en": "Mark as done",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.skipStep": {
+    "fr": "Ignorer cette étape",
+    "en": "Skip this step",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cancelValidation": {
+    "fr": "Annuler la validation",
+    "en": "Cancel validation",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.reminderTitle": {
+    "fr": "Rappel",
+    "en": "Reminder",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.reminderDesc": {
+    "fr": "Il vous reste {count} étape(s) à compléter. Suivez le plan jusqu'au bout pour résoudre durablement le problème.",
+    "en": "{count} step(s) remaining. Follow the plan to the end to permanently solve the problem.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.lastMeasureTitle": {
+    "fr": "Dernière mesure enregistrée",
+    "en": "Last saved measurement",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.lastMeasureDesc": {
+    "fr": "Sera utilisée comme valeur « avant » pour comparer vos nouvelles mesures.",
+    "en": "Will be used as the 'before' value to compare your new measurements.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.lastMeasureChlorine": {
+    "fr": "chlore",
+    "en": "chlorine",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.lastMeasureTac": {
+    "fr": "TAC",
+    "en": "TA",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckButton": {
+    "fr": "Vérifier le résultat (nouvelle photo)",
+    "en": "Verify result (new photo)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckTakeNewPhoto": {
+    "fr": "Prenez une nouvelle photo pour vérifier",
+    "en": "Take a new photo to verify",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckNewPhotoAlt": {
+    "fr": "Nouvelle photo",
+    "en": "New photo",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckClickToUpload": {
+    "fr": "Cliquez pour charger une photo",
+    "en": "Click to upload a photo",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckAnalyzing": {
+    "fr": "Analyse en cours...",
+    "en": "Analyzing...",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckAnalyze": {
+    "fr": "Analyser et vérifier",
+    "en": "Analyze & verify",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckBefore": {
+    "fr": "Avant",
+    "en": "Before",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckAfter": {
+    "fr": "Après",
+    "en": "After",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckImprovement": {
+    "fr": "Amélioration de +{n}% ! Continuez sur cette voie.",
+    "en": "Improvement of +{n}%! Keep it up.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckLittleImprovement": {
+    "fr": "Peu d'amélioration. Ajustez votre approche avec le nouveau plan ci-dessous.",
+    "en": "Little improvement. Adjust your approach with the new plan below.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckAnalyzeNewPhoto": {
+    "fr": "Analyse de votre nouvelle photo",
+    "en": "Analysis of your new photo",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckPersistentIssues": {
+    "fr": "Problèmes toujours présents :",
+    "en": "Issues still present:",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckNewPlan": {
+    "fr": "Nouveau plan complémentaire",
+    "en": "New complementary plan",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckNewPlanDesc": {
+    "fr": "Basé sur l'analyse de votre nouvelle photo, voici les étapes complémentaires recommandées :",
+    "en": "Based on the analysis of your new photo, here are the recommended complementary steps:",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.recheckAgain": {
+    "fr": "Refaire une vérification",
+    "en": "Re-check",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.resolvedTitle": {
+    "fr": "✅ Résolu avec AQWELIA",
+    "en": "✅ Solved with AQWELIA",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.resolvedDesc": {
+    "fr": "Votre piscine est maintenant saine. L'analyse de contrôle confirme que le problème est résolu.",
+    "en": "Your pool is now healthy. The control analysis confirms the problem is resolved.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastStepValidated": {
+    "fr": "Étape validée",
+    "en": "Step validated",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastStepValidatedNoMeasure": {
+    "fr": "Étape validée (sans mesure)",
+    "en": "Step validated (no measurement)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastMeasureSaved": {
+    "fr": "Mesure enregistrée ✓",
+    "en": "Measurement saved ✓",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastMeasureSavedDesc": {
+    "fr": "{measures} → carnet mis à jour.",
+    "en": "{measures} → logbook updated.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastMissingRequired": {
+    "fr": "Champs requis manquants",
+    "en": "Missing required fields",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastMissingRequiredDesc": {
+    "fr": "Remplissez tous les champs obligatoires (*) avant de valider.",
+    "en": "Fill in all required fields (*) before validating.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastSaveFailedTitle": {
+    "fr": "Erreur enregistrement",
+    "en": "Save error",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastSaveFailed": {
+    "fr": "Enregistrement impossible",
+    "en": "Could not save",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastRecheckResolvedTitle": {
+    "fr": "Problème résolu !",
+    "en": "Problem solved!",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastRecheckResolvedDesc": {
+    "fr": "✅ Votre piscine est maintenant saine.",
+    "en": "✅ Your pool is now healthy.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastRecheckNotResolvedTitle": {
+    "fr": "Pas encore résolu",
+    "en": "Not yet resolved",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastRecheckNotResolvedDesc": {
+    "fr": "Continuez le traitement et re-vérifiez plus tard.",
+    "en": "Continue treatment and re-check later.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastRecheckErrorTitle": {
+    "fr": "Erreur",
+    "en": "Error",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.toastRecheckErrorDesc": {
+    "fr": "Analyse impossible",
+    "en": "Could not analyze",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.noteActionPlan": {
+    "fr": "Étape plan d'action: {title}",
+    "en": "Action plan step: {title}",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.phIdeal": {
+    "fr": "✅ pH dans la plage idéale (7.0 - 7.4). Aucun ajustement nécessaire.",
+    "en": "✅ pH in the ideal range (7.0 - 7.4). No adjustment needed.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.phHigh": {
+    "fr": "Votre pH {ph} est trop haut. Ajoutez {qty} de pH- pour revenir vers 7.4 (baisse de ~{delta} unité).",
+    "en": "Your pH {ph} is too high. Add {qty} of pH- to get back to 7.4 (drop of ~{delta} unit).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.phHighWarning": {
+    "fr": "Verser devant les buses de refoulement, filtration en marche. Ne jamais verser pH- pur directement.",
+    "en": "Pour in front of return jets, pump running. Never pour pure pH- directly.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.phLow": {
+    "fr": "Votre pH {ph} est trop bas. Ajoutez {qty} de pH+ pour remonter vers 7.0 (hausse de ~{delta} unité).",
+    "en": "Your pH {ph} is too low. Add {qty} of pH+ to bring it back to 7.0 (rise of ~{delta} unit).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.phLowWarning": {
+    "fr": "Diluer dans un seau d'eau de piscine avant de verser devant les refoulements.",
+    "en": "Dilute in a bucket of pool water before pouring in front of returns.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.productPhMinus": {
+    "fr": "pH- (poudre, bisulfate de sodium)",
+    "en": "pH- (powder, sodium bisulfate)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.productPhPlus": {
+    "fr": "pH+ (carbonate de sodium)",
+    "en": "pH+ (sodium carbonate)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericTitle1": {
+    "fr": "1. Suivre la recommandation",
+    "en": "1. Follow the recommendation",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericIntro1": {
+    "fr": "L'IA a identifié un problème mais sans motif typique (eau verte / trouble). Suivez la recommandation ci-dessous.",
+    "en": "The AI identified a problem but no typical pattern (green / cloudy water). Follow the recommendation below.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericInstruction1Default": {
+    "fr": "Suivez les recommandations de l'IA affichées ci-dessus.",
+    "en": "Follow the AI recommendations displayed above.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericInstruction2": {
+    "fr": "Mesurez votre pH avant tout traitement (cible : 7.0 - 7.4).",
+    "en": "Measure your pH before any treatment (target: 7.0 - 7.4).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericInstruction3": {
+    "fr": "Ajustez si nécessaire avec du pH- ou pH+.",
+    "en": "Adjust if necessary with pH- or pH+.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericInstruction4": {
+    "fr": "Enregistrez votre mesure ci-dessous pour l'historique.",
+    "en": "Record your measurement below for history.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericInstruction5": {
+    "fr": "Vérifiez que la filtration fonctionne au moins 8h/jour.",
+    "en": "Check that filtration runs at least 8h/day.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericProduct": {
+    "fr": "Selon recommandation",
+    "en": "Per recommendation",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericTitle2": {
+    "fr": "2. Vérifier le résultat (24h)",
+    "en": "2. Verify result (24h)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericIntro2": {
+    "fr": "Après avoir appliqué les recommandations, prenez une nouvelle photo pour confirmer la résolution.",
+    "en": "After applying the recommendations, take a new photo to confirm resolution.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericInstruction2_1": {
+    "fr": "Attendez au moins 24h de filtration continue.",
+    "en": "Wait at least 24h of continuous filtration.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericInstruction2_2": {
+    "fr": "Reprenez une photo dans les mêmes conditions (même endroit, même éclairage).",
+    "en": "Take a new photo in the same conditions (same spot, same lighting).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericInstruction2_3": {
+    "fr": "Cliquez sur Vérifier le résultat en bas du plan.",
+    "en": "Click Verify result at the bottom of the plan.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.genericInstruction2_4": {
+    "fr": "L'IA comparera et dira si le problème est résolu.",
+    "en": "The AI will compare and tell if the problem is resolved.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1Title": {
+    "fr": "1. Mesurer et ajuster le pH",
+    "en": "1. Measure and adjust pH",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1Intro": {
+    "fr": "Le pH doit être entre 7.0 et 7.4 AVANT tout traitement. Un pH incorrect rend le chlore inefficace (jusqu'à -90 %).",
+    "en": "pH must be between 7.0 and 7.4 BEFORE any treatment. An incorrect pH makes chlorine ineffective (up to -90%).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1I1": {
+    "fr": "Prenez votre kit de test (gouttes ou bandelette) ou un testeur électronique.",
+    "en": "Take your test kit (drops or strip) or an electronic tester.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1I2": {
+    "fr": "Récupérez un échantillon d'eau à 30 cm de profondeur, loin des refoulements.",
+    "en": "Collect a water sample at 30 cm depth, away from return jets.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1I3": {
+    "fr": "Mesurez le pH actuel et notez-le ci-dessous.",
+    "en": "Measure current pH and note it below.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1I4": {
+    "fr": "Si pH > 7.4 → ajoutez du pH- (acide). Si pH < 7.0 → ajoutez du pH+ (base).",
+    "en": "If pH > 7.4 → add pH- (acid). If pH < 7.0 → add pH+ (base).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1I5": {
+    "fr": "Dosage de référence : ~{qty} g de pH- pour abaisser de 0.1 unité sur {volume} m³.",
+    "en": "Reference dosage: ~{qty} g of pH- to lower by 0.1 unit on {volume} m³.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1I6": {
+    "fr": "Diluez le produit dans un seau d'eau de la piscine, jamais pur directement.",
+    "en": "Dilute the product in a bucket of pool water, never pure.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1I7": {
+    "fr": "Versez lentement devant les buses de refoulement, filtration en marche.",
+    "en": "Pour slowly in front of return jets, pump running.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1I8": {
+    "fr": "Patientez 2 heures avec la filtration en route avant de re-tester.",
+    "en": "Wait 2 hours with filtration running before re-testing.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1Product": {
+    "fr": "pH- ou pH+ (selon votre mesure)",
+    "en": "pH- or pH+ (per your measurement)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS1Dosage": {
+    "fr": "~{qty} g de pH- / 0.1 unité à abaisser (piscine de {volume} m³)",
+    "en": "~{qty} g of pH- / 0.1 unit to lower (pool of {volume} m³)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2Title": {
+    "fr": "2. Re-tester le pH (après 2h)",
+    "en": "2. Re-test pH (after 2h)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2Intro": {
+    "fr": "Après 2h de filtration, le pH a eu le temps de se stabiliser. Vérifiez qu'il est maintenant dans la plage cible.",
+    "en": "After 2h of filtration, the pH has had time to stabilize. Check that it is now in the target range.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2I1": {
+    "fr": "Reprenez un échantillon d'eau à 30 cm de profondeur.",
+    "en": "Take a new water sample at 30 cm depth.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2I2": {
+    "fr": "Mesurez à nouveau le pH.",
+    "en": "Measure pH again.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2I3": {
+    "fr": "Si pH entre 7.0 et 7.4 → ✅ passez à l'étape suivante (traitement choc).",
+    "en": "If pH between 7.0 and 7.4 → ✅ proceed to next step (shock treatment).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2I4": {
+    "fr": "Si pH encore trop haut/bas → ajustez à nouveau avec la MOITIÉ de la dose précédente.",
+    "en": "If pH still too high/low → adjust again with HALF the previous dose.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2I5": {
+    "fr": "Re-testez 1h après ce second ajustement.",
+    "en": "Re-test 1h after this second adjustment.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2Product": {
+    "fr": "pH- ou pH+ (dose réduite si réajustement)",
+    "en": "pH- or pH+ (reduced dose if re-adjusting)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS2Dosage": {
+    "fr": "Réajustement : moitié de la dose initiale (~{qty} g max pour {volume} m³)",
+    "en": "Re-adjustment: half the initial dose (~{qty} g max for {volume} m³)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3Title": {
+    "fr": "3. Traitement choc au chlore",
+    "en": "3. Chlorine shock treatment",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3Intro": {
+    "fr": "Le chlore choc détruit les algues, bactéries et virus. C'est l'étape la plus importante contre l'eau verte.",
+    "en": "Shock chlorine destroys algae, bacteria and viruses. This is the most important step against green water.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3I1": {
+    "fr": "⚠ Vérifiez que le pH est correct (étapes 1-2). Sinon le choc sera inefficace.",
+    "en": "⚠ Check that pH is correct (steps 1-2). Otherwise the shock will be ineffective.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3I2": {
+    "fr": "Calculez la dose curative : environ 10 g de chlore choc par m³.",
+    "en": "Calculate curative dose: about 10 g of shock chlorine per m³.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3I3": {
+    "fr": "Pour votre piscine de {volume} m³ : {qty} g de chlore choc (soit ~{tablets} pastilles de 20 g).",
+    "en": "For your {volume} m³ pool: {qty} g of shock chlorine (about {tablets} 20g tablets).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3I4": {
+    "fr": "Préférez le soir, sans baigneurs, filtration en marche.",
+    "en": "Prefer evening, no swimmers, pump running.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3I5": {
+    "fr": "Diluez le chlore en poudre/granulés dans un seau d'eau de piscine.",
+    "en": "Dilute powder/granular chlorine in a bucket of pool water.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3I6": {
+    "fr": "Versez devant les buses de refoulement, jamais dans le skimmer.",
+    "en": "Pour in front of return jets, never in the skimmer.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3I7": {
+    "fr": "🚫 INTERDICTION DE BAIGNADE pendant 8 heures minimum.",
+    "en": "🚫 NO SWIMMING for at least 8 hours.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3Product": {
+    "fr": "Chlore choc (65 % actif, granulés ou pastilles)",
+    "en": "Shock chlorine (65% active, granules or tablets)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS3Dosage": {
+    "fr": "{qty} g de chlore choc (pour {volume} m³)",
+    "en": "{qty} g of shock chlorine (for {volume} m³)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS4Title": {
+    "fr": "4. Anti-algues (préventif curatif)",
+    "en": "4. Anti-algae (preventive curative)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS4Intro": {
+    "fr": "L'anti-algues complète le chlore en détruisant les algues résistantes et en empêchant la repousse.",
+    "en": "Anti-algae complements chlorine by destroying resistant algae and preventing regrowth.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS4I1": {
+    "fr": "Attendez au moins 2h après le traitement choc (ne jamais mélanger directement).",
+    "en": "Wait at least 2h after shock treatment (never mix directly).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS4I2": {
+    "fr": "Dosage curatif : ~20 mL d'anti-algues par m³.",
+    "en": "Curative dose: ~20 mL of anti-algae per m³.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS4I3": {
+    "fr": "Pour {volume} m³ : {qty} mL d'anti-algues (soit {liters} L).",
+    "en": "For {volume} m³: {qty} mL of anti-algae (i.e. {liters} L).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS4I4": {
+    "fr": "Versez directement devant les refoulements, filtration en marche.",
+    "en": "Pour directly in front of return jets, pump running.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS4I5": {
+    "fr": "Brossez les parois juste après (voir étape suivante) pour décoller les algues.",
+    "en": "Brush walls right after (see next step) to dislodge algae.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS4Product": {
+    "fr": "Anti-algues curatif",
+    "en": "Curative anti-algae",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS4Dosage": {
+    "fr": "{qty} mL d'anti-algues (pour {volume} m³)",
+    "en": "{qty} mL of anti-algae (for {volume} m³)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS5Title": {
+    "fr": "5. Brosser les parois et le fond",
+    "en": "5. Brush walls and floor",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS5Intro": {
+    "fr": "Le brossage décolle les algues incrustées. Sans cette étape, le traitement chimique ne suffit pas.",
+    "en": "Brushing dislodges embedded algae. Without this step, chemical treatment is not enough.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS5I1": {
+    "fr": "Utilisez une brosse adaptée à votre revêtement : brosse nylon pour liner/coque, brosse acier pour béton.",
+    "en": "Use a brush suited to your surface: nylon brush for liner/shell, steel brush for concrete.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS5I2": {
+    "fr": "🚫 Jamais de brosse métallique sur liner ou membrane armée — vous la perceriez.",
+    "en": "🚫 Never use a metal brush on liner or reinforced membrane — you would puncture it.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS5I3": {
+    "fr": "Brossez du haut vers le bas, par sections de 1 m².",
+    "en": "Brush top to bottom, in 1 m² sections.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS5I4": {
+    "fr": "Insistez sur les coins, marches, buses, échelles et la ligne d'eau.",
+    "en": "Focus on corners, steps, jets, ladders and the water line.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS5I5": {
+    "fr": "Brossez aussi le fond si accessible (perche télescopique).",
+    "en": "Also brush the floor if accessible (telescopic pole).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS5I6": {
+    "fr": "C'est physique (15-30 min) mais INDISPENSABLE — sans ça les algues reviennent en 48h.",
+    "en": "It's physical (15-30 min) but ESSENTIAL — without it algae return in 48h.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS6Title": {
+    "fr": "6. Filtration continue 24h",
+    "en": "6. Continuous filtration 24h",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS6Intro": {
+    "fr": "La filtration doit tourner 24h sans interruption pour évacuer les algues mortes et les particules.",
+    "en": "Filtration must run 24h without interruption to remove dead algae and particles.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS6I1": {
+    "fr": "Réglez la pompe en marche forcée (24h/24) — pas de programme horaire.",
+    "en": "Set the pump to forced mode (24/7) — no timer program.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS6I2": {
+    "fr": "Vérifiez la pression du manomètre du filtre.",
+    "en": "Check the filter pressure gauge.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS6I3": {
+    "fr": "Si la pression monte > 0.3 bar au-dessus de la normale → faites un backwash (contre-lavage).",
+    "en": "If pressure rises > 0.3 bar above normal → do a backwash.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS6I4": {
+    "fr": "Nettoyez le pré-filtre de la pompe (panier) s'il est plein de débris.",
+    "en": "Clean the pump pre-filter (basket) if full of debris.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS6I5": {
+    "fr": "Videz les skimmers régulièrement pendant ces 24h.",
+    "en": "Empty skimmers regularly during these 24h.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS6I6": {
+    "fr": "Pour un filtre à cartouche : rincez-la à mi-parcours si le débit baisse.",
+    "en": "For a cartridge filter: rinse it midway if flow drops.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS7Title": {
+    "fr": "7. Re-test complet de l'eau",
+    "en": "7. Full water re-test",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS7Intro": {
+    "fr": "Après 24h de filtration, faites un test complet pour vérifier que l'eau est saine et équilibrée.",
+    "en": "After 24h of filtration, do a full test to verify water is safe and balanced.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS7I1": {
+    "fr": "Reprenez un échantillon à 30 cm de profondeur.",
+    "en": "Take a sample at 30 cm depth.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS7I2": {
+    "fr": "Mesurez le pH (cible : 7.0 - 7.4).",
+    "en": "Measure pH (target: 7.0 - 7.4).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS7I3": {
+    "fr": "Mesurez le chlore libre (cible : 1 - 3 mg/L).",
+    "en": "Measure free chlorine (target: 1 - 3 mg/L).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS7I4": {
+    "fr": "Mesurez le TAC / alcalinité (cible : 80 - 120 mg/L).",
+    "en": "Measure TA / alkalinity (target: 80 - 120 mg/L).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS7I5": {
+    "fr": "Entrez vos 3 valeurs ci-dessous — elles seront enregistrées dans votre carnet.",
+    "en": "Enter your 3 values below — they will be saved in your logbook.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.greenS7I6": {
+    "fr": "Si tout est dans les plages → vous pouvez re-baigner. Sinon, ajustez.",
+    "en": "If everything is in range → you can swim again. Otherwise, adjust.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS1Title": {
+    "fr": "1. Vérifier et nettoyer la filtration",
+    "en": "1. Check and clean filtration",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS1Intro": {
+    "fr": "Une eau trouble vient le plus souvent d'une filtration inefficace. On commence toujours par là.",
+    "en": "Cloudy water usually comes from ineffective filtration. Always start here.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS1I1": {
+    "fr": "Coupez la pompe avant toute intervention de sécurité.",
+    "en": "Turn off the pump before any safety intervention.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS1I2": {
+    "fr": "Vérifiez la pression au manomètre : si > 0.3 bar au-dessus de la valeur initiale → nettoyer.",
+    "en": "Check pressure gauge: if > 0.3 bar above initial value → clean.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS1I3": {
+    "fr": "Filtre à sable : faites un backwash (contre-lavage) 2-3 min puis rinçage 30 s.",
+    "en": "Sand filter: backwash 2-3 min then rinse 30 s.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS1I4": {
+    "fr": "Filtre à cartouche : démontez, rincez au jet, remplacez si > 2 ans.",
+    "en": "Cartridge filter: disassemble, hose off, replace if > 2 years old.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS1I5": {
+    "fr": "Videz et nettoyez les paniers de skimmer et de pré-filtre de pompe.",
+    "en": "Empty and clean skimmer and pump pre-filter baskets.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS1I6": {
+    "fr": "Remettez en route et vérifiez que le débit est bon (buses de refoulement).",
+    "en": "Restart and check that flow is good (return jets).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2Title": {
+    "fr": "2. Mesurer et ajuster le pH",
+    "en": "2. Measure and adjust pH",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2Intro": {
+    "fr": "Un pH déséquilibré favorise la turbidité et diminue l'efficacité du chlore.",
+    "en": "An unbalanced pH promotes turbidity and reduces chlorine effectiveness.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2I1": {
+    "fr": "Mesurez le pH à 30 cm de profondeur.",
+    "en": "Measure pH at 30 cm depth.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2I2": {
+    "fr": "Si pH > 7.4 → ajoutez du pH- ; si pH < 7.0 → ajoutez du pH+.",
+    "en": "If pH > 7.4 → add pH-; if pH < 7.0 → add pH+.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2I3": {
+    "fr": "Référence : ~{qty} g de pH- pour abaisser de 0.1 unité sur {volume} m³.",
+    "en": "Reference: ~{qty} g of pH- to lower by 0.1 unit on {volume} m³.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2I4": {
+    "fr": "Diluez dans un seau d'eau de piscine, versez devant les refoulements.",
+    "en": "Dilute in a bucket of pool water, pour in front of return jets.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2I5": {
+    "fr": "Filtration en marche pendant 2h avant de re-tester.",
+    "en": "Filtration running for 2h before re-testing.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2Product": {
+    "fr": "pH- ou pH+ (selon votre mesure)",
+    "en": "pH- or pH+ (per your measurement)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS2Dosage": {
+    "fr": "~{qty} g de pH- / 0.1 unité (pour {volume} m³)",
+    "en": "~{qty} g of pH- / 0.1 unit (for {volume} m³)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3Title": {
+    "fr": "3. Ajouter un floculant (si filtre à sable)",
+    "en": "3. Add flocculant (if sand filter)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3Intro": {
+    "fr": "Le floculant agglomère les particules fines en flocons que le filtre peut retenir. ⚠ Uniquement pour filtre à sable.",
+    "en": "Flocculant aggregates fine particles into flocs the filter can catch. ⚠ Sand filter only.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3I1": {
+    "fr": "⚠ Ne JAMAIS utiliser de floculant avec un filtre à cartouche (colmatage).",
+    "en": "⚠ NEVER use flocculant with a cartridge filter (clogging).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3I2": {
+    "fr": "Dosage : ~5 mL de floculant liquide par m³.",
+    "en": "Dose: ~5 mL of liquid flocculant per m³.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3I3": {
+    "fr": "Pour {volume} m³ : {qty} mL de floculant.",
+    "en": "For {volume} m³: {qty} mL of flocculant.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3I4": {
+    "fr": "Versez devant les refoulements, filtration en marche 1h.",
+    "en": "Pour in front of return jets, pump running 1h.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3I5": {
+    "fr": "Coupez ensuite la filtration 12h pour laisser décanter.",
+    "en": "Then turn off filtration 12h to let it settle.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3I6": {
+    "fr": "Les flocons tombent au fond — aspirez-les au robot ou à l'aspirateur manuel.",
+    "en": "Flocs fall to the bottom — vacuum them with robot or manual vacuum.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3Product": {
+    "fr": "Floculant liquide (filtre à sable uniquement)",
+    "en": "Liquid flocculant (sand filter only)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS3Dosage": {
+    "fr": "{qty} mL de floculant (pour {volume} m³)",
+    "en": "{qty} mL of flocculant (for {volume} m³)",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS4Title": {
+    "fr": "4. Filtration continue 12h",
+    "en": "4. Continuous filtration 12h",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS4Intro": {
+    "fr": "Laissez la filtration tourner 12h pour clarifier l'eau après floculation/aspiration.",
+    "en": "Let filtration run 12h to clarify water after flocculation/vacuuming.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS4I1": {
+    "fr": "Remettez la pompe en marche forcée après aspiration des flocons.",
+    "en": "Restart pump in forced mode after vacuuming flocs.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS4I2": {
+    "fr": "Surveillez la pression du filtre — backwash si elle monte.",
+    "en": "Monitor filter pressure — backwash if it rises.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS4I3": {
+    "fr": "Vérifiez le panier de skimmer toutes les 4h.",
+    "en": "Check skimmer basket every 4h.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS4I4": {
+    "fr": "Au bout de 12h, l'eau doit redevenir transparente.",
+    "en": "After 12h, water should be clear again.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS5Title": {
+    "fr": "5. Re-tester l'eau",
+    "en": "5. Re-test water",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS5Intro": {
+    "fr": "Vérifiez que l'eau est équilibrée et que le chlore est actif.",
+    "en": "Verify water is balanced and chlorine is active.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS5I1": {
+    "fr": "Mesurez le pH (cible : 7.0 - 7.4).",
+    "en": "Measure pH (target: 7.0 - 7.4).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS5I2": {
+    "fr": "Mesurez le chlore libre (cible : 1 - 3 mg/L).",
+    "en": "Measure free chlorine (target: 1 - 3 mg/L).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS5I3": {
+    "fr": "Entrez vos valeurs ci-dessous — elles seront enregistrées dans votre carnet.",
+    "en": "Enter your values below — they will be saved in your logbook.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.cloudyS5I4": {
+    "fr": "Si les valeurs sont OK et l'eau claire → problème résolu.",
+    "en": "If values are OK and water clear → problem solved.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae1Title": {
+    "fr": "{n}. Doubler la dose de traitement choc",
+    "en": "{n}. Double the shock treatment dose",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae1Desc": {
+    "fr": "Les algues sont toujours présentes malgré le premier traitement. Refaites un traitement choc avec 1.5x la dose précédente. Vérifiez que le pH est bien entre 7.0-7.4 AVANT. Privilégiez un chlore choc de marque différente (les algues peuvent développer une résistance).",
+    "en": "Algae are still present despite the first treatment. Repeat shock treatment with 1.5x the previous dose. Verify pH is between 7.0-7.4 BEFORE. Prefer a different shock chlorine brand (algae can develop resistance).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae1Reason": {
+    "fr": "Les algues peuvent être résistantes. Une dose plus forte et un produit différent sont nécessaires.",
+    "en": "Algae can be resistant. A stronger dose and a different product are needed.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae2Title": {
+    "fr": "{n}. Vérifier la durée de filtration",
+    "en": "{n}. Check filtration duration",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae2Desc": {
+    "fr": "Comptez le nombre d'heures de filtration par jour. Pour une eau verte, il faut filtrer au minimum 12h/24. Idéalement 24h/24 pendant 3 jours consécutifs.",
+    "en": "Count the number of filtration hours per day. For green water, filter at least 12h/24. Ideally 24h/24 for 3 consecutive days.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae2Reason": {
+    "fr": "Une filtration insuffisante empêche d'éliminer les algues mortes et de clarifier l'eau.",
+    "en": "Insufficient filtration prevents removing dead algae and clarifying water.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae3Title": {
+    "fr": "{n}. Nettoyer le filtre à fond",
+    "en": "{n}. Clean the filter thoroughly",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae3Desc": {
+    "fr": "Si vous avez un filtre à sable, faites un backwash (contre-lavage) de 3 minutes suivi d'un rinçage de 30s. Si c'est une cartouche, sortez-la et nettoyez-la au jet. Un filtre encrassé ne retient pas les algues et les renvoie dans le bassin.",
+    "en": "If you have a sand filter, backwash for 3 minutes followed by 30s rinse. If it's a cartridge, remove and hose it off. A clogged filter doesn't catch algae and returns them to the pool.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compAlgae3Reason": {
+    "fr": "Le filtre peut être saturé d'algues après le premier traitement.",
+    "en": "The filter may be saturated with algae after the first treatment.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy1Title": {
+    "fr": "{n}. Ajouter un floculant liquide",
+    "en": "{n}. Add liquid flocculant",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy1Desc": {
+    "fr": "L'eau est encore trouble. Versez un floculant LIQUIDE (pas en chaussette) directement devant les buses de refoulement, filtration en marche. Laissez filtrer 1h, puis coupez 12h pour laisser décanter. Les particules vont agglomérer et tomber au fond.",
+    "en": "Water is still cloudy. Pour LIQUID flocculant (not sock) directly in front of return jets, pump running. Filter 1h, then turn off 12h to let settle. Particles will aggregate and fall to the bottom.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy1Reason": {
+    "fr": "Le floculant agglomère les particules fines que le filtre ne retient pas.",
+    "en": "Flocculant aggregates fine particles the filter doesn't catch.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy2Title": {
+    "fr": "{n}. Aspirer le fond après floculation",
+    "en": "{n}. Vacuum the floor after flocculation",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy2Desc": {
+    "fr": "Après 12h de décantation, les débris seront au fond. Aspirez lentement en position 'égout' (waste) pour ne pas les renvoyer dans le filtre. Ne remettez la vanne en filtration qu'après avoir fini l'aspiration.",
+    "en": "After 12h of settling, debris will be at the bottom. Vacuum slowly in 'waste' position to avoid sending them back to the filter. Only switch the valve back to filtration after vacuuming is done.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy2Reason": {
+    "fr": "Les floculés sont trop lourds pour le filtre normal.",
+    "en": "Flocs are too heavy for the normal filter.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy3Title": {
+    "fr": "{n}. Vérifier le média filtrant",
+    "en": "{n}. Check filter media",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy3Desc": {
+    "fr": "Si l'eau reste trouble malgré floculation + filtration : votre sable/cartouche est peut-être à remplacer. Le sable se change tous les 5-7 ans, la cartouche tous les 2 ans. Un média usé ne retient plus les particules fines.",
+    "en": "If water stays cloudy despite flocculation + filtration: your sand/cartridge may need replacement. Sand is changed every 5-7 years, cartridge every 2 years. Worn media no longer catches fine particles.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compCloudy3Reason": {
+    "fr": "Un filtre en fin de vie est une cause fréquente d'eau trouble persistante.",
+    "en": "An end-of-life filter is a common cause of persistent cloudy water.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compNewIssuesTitle": {
+    "fr": "{n}. Traiter les nouveaux problèmes détectés",
+    "en": "{n}. Treat newly detected problems",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compNewIssuesDesc": {
+    "fr": "Nouveau(x) problème(s) apparu(s) : {issues}. Analysez la cause probable (surchloration, surdosage de floculant, précipitation de calcaire, etc.) avant d'agir. En cas de doute, refaites un test complet pH/chlore/TAC/th.",
+    "en": "New problem(s) appeared: {issues}. Analyze the probable cause (over-chlorination, flocculant overdose, limescale precipitation, etc.) before acting. If in doubt, redo a full pH/chlorine/TA/CH test.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compNewIssuesReason": {
+    "fr": "Certains traitements peuvent créer de nouveaux déséquilibres. Il faut les corriger avant qu'ils n'aggravent la situation.",
+    "en": "Some treatments can create new imbalances. They must be corrected before they worsen the situation.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compFallback1Title": {
+    "fr": "1. Continuer la filtration 24h de plus",
+    "en": "1. Continue filtration 24h more",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compFallback1Desc": {
+    "fr": "L'eau s'améliore mais n'est pas encore parfaite. Laissez tourner la filtration 24h supplémentaires en continu. Surveillez la pression du filtre (backwash si elle monte de +0.3 bar).",
+    "en": "Water is improving but not perfect yet. Let filtration run 24h more continuously. Monitor filter pressure (backwash if it rises by +0.3 bar).",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compFallback1Reason": {
+    "fr": "Le traitement est en cours, il faut lui laisser le temps d'agir.",
+    "en": "Treatment is in progress, give it time to work.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compFallback2Title": {
+    "fr": "2. Re-tester dans 24h",
+    "en": "2. Re-test in 24h",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compFallback2Desc": {
+    "fr": "Refaites un test complet (pH, chlore, TAC) dans 24h et prenez une nouvelle photo pour vérifier. Si le score de satisfaction stagne, envisagez de vider 20-30% de l'eau pour repartir sur une base saine.",
+    "en": "Redo a full test (pH, chlorine, TA) in 24h and take a new photo to verify. If satisfaction score stagnates, consider draining 20-30% of water to restart on a healthy base.",
+    "reason": "placeholder"
+  },
+  "diagnosticActionPlan.compFallback2Reason": {
+    "fr": "Il faut donner le temps au traitement de faire effet avant de conclure à un échec.",
+    "en": "Treatment needs time to take effect before concluding failure.",
+    "reason": "placeholder"
+  },
+  "mobile.screens.analysesAriaSubtabs": {
+    "fr": "Sous-onglets Analyses",
+    "en": "Analyses sub-tabs",
+    "reason": "placeholder"
+  },
+  "mobile.screens.analysesSubtabMesures": {
+    "fr": "Mesures",
+    "en": "Measurements",
+    "reason": "placeholder"
+  },
+  "mobile.screens.analysesSubtabPhoto": {
+    "fr": "Photo",
+    "en": "Photo",
+    "reason": "placeholder"
+  },
+  "mobile.screens.analysesSubtabLogbook": {
+    "fr": "Carnet",
+    "en": "Logbook",
+    "reason": "placeholder"
+  },
+  "mobile.screens.maintenanceAriaSubtabs": {
+    "fr": "Sous-onglets Entretien",
+    "en": "Maintenance sub-tabs",
+    "reason": "placeholder"
+  },
+  "mobile.screens.maintenanceSubtabActions": {
+    "fr": "Actions",
+    "en": "Actions",
+    "reason": "placeholder"
+  },
+  "mobile.screens.profileAriaPoolProfile": {
+    "fr": "Profil piscine",
+    "en": "Pool profile",
+    "reason": "placeholder"
+  },
+  "mobile.screens.profilePoolNotConfigured": {
+    "fr": "Piscine non configurée",
+    "en": "Pool not configured",
+    "reason": "placeholder"
+  },
+  "mobile.screens.profileConfigureToStart": {
+    "fr": "Configurez votre piscine pour commencer",
+    "en": "Configure your pool to get started",
+    "reason": "placeholder"
+  },
+  "mobile.screens.profileElectrolysisSalt": {
+    "fr": "Électrolyse sel",
+    "en": "Salt electrolysis",
+    "reason": "placeholder"
+  },
+  "mobile.screens.profileAriaSubscription": {
+    "fr": "Abonnement",
+    "en": "Subscription",
+    "reason": "placeholder"
+  },
+  "mobile.screens.profileSubscriptionTitle": {
+    "fr": "Abonnement",
+    "en": "Subscription",
+    "reason": "placeholder"
+  },
+  "mobile.screens.profileAriaSettings": {
+    "fr": "Paramètres",
+    "en": "Settings",
+    "reason": "placeholder"
+  },
+  "mobile.screens.profileNotifReminders": {
+    "fr": "Notifications & rappels",
+    "en": "Notifications & reminders",
+    "reason": "placeholder"
+  },
+  "mobile.screens.profilePrivacyData": {
+    "fr": "Confidentialité & données",
+    "en": "Privacy & data",
+    "reason": "placeholder"
+  },
+  "mobile.screens.profileHelpSupport": {
+    "fr": "Aide & support",
+    "en": "Help & support",
+    "reason": "placeholder"
+  },
+  "mobile.screens.profileFaqContact": {
+    "fr": "FAQ + contact",
+    "en": "FAQ + contact",
+    "reason": "placeholder"
+  },
+  "mobile.screens.profileVersionLine": {
+    "fr": "AQWELIA Pro · v1.0.0-mobile",
+    "en": "AQWELIA Pro · v1.0.0-mobile",
+    "reason": "placeholder"
+  },
+  "metadata.layoutTitle": {
+    "fr": "AQWELIA — Copilote Intelligent pour Piscine",
+    "en": "AQWELIA — Intelligent Copilot for Pool",
+    "reason": "placeholder"
+  },
+  "metadata.layoutDescription": {
+    "fr": "AQWELIA — l'application révolutionnaire de gestion de piscine propulsée par l'IA : assistant expert, analyse visuelle de l'eau, plan d'action déterministe et plus encore.",
+    "en": "AQWELIA — the revolutionary AI-powered pool management app: expert assistant, visual water analysis, deterministic action plan and more.",
+    "reason": "placeholder"
+  },
+  "metadata.layoutKeywordPool": {
+    "fr": "piscine",
+    "en": "pool",
+    "reason": "placeholder"
+  },
+  "metadata.layoutKeywordAI": {
+    "fr": "IA",
+    "en": "AI",
+    "reason": "placeholder"
+  },
+  "metadata.layoutKeywordMaintenance": {
+    "fr": "entretien",
+    "en": "maintenance",
+    "reason": "placeholder"
+  },
+  "metadata.layoutKeywordWaterQuality": {
+    "fr": "qualité eau",
+    "en": "water quality",
+    "reason": "placeholder"
+  },
+  "metadata.layoutKeywordSmartAssistant": {
+    "fr": "assistant intelligent",
+    "en": "smart assistant",
+    "reason": "placeholder"
+  },
+  "legal.backHome": {
+    "fr": "Retour à l'accueil",
+    "en": "Back to home",
+    "reason": "placeholder"
+  },
+  "legal.lastUpdatedLabel": {
+    "fr": "Dernière mise à jour :",
+    "en": "Last updated:",
+    "reason": "placeholder"
+  },
+  "legal.cgu.metaTitle": {
+    "fr": "CGU — AQWELIA",
+    "en": "Terms of Use — AQWELIA",
+    "reason": "placeholder"
+  },
+  "legal.cgu.metaDescription": {
+    "fr": "Conditions générales d'utilisation du service AQWELIA.",
+    "en": "Terms of use of the AQWELIA service.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.eyebrow": {
+    "fr": "Mentions légales",
+    "en": "Legal notice",
+    "reason": "placeholder"
+  },
+  "legal.cgu.title": {
+    "fr": "Conditions Générales d'Utilisation",
+    "en": "Terms of Use",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article1Title": {
+    "fr": "Article 1 — Objet",
+    "en": "Article 1 — Purpose",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article1Body1": {
+    "fr": "Les présentes Conditions Générales d'Utilisation (« <bold>CGU</bold> ») définissent les modalités et conditions d'accès et d'utilisation de l'application AQWELIA (« <bold>le Service</bold> »), éditée par la société AQWELIA, ainsi que les droits et obligations des parties dans ce cadre.",
+    "en": "These Terms of Use (\"<bold>TOU</bold>\") define the terms and conditions of access to and use of the AQWELIA application (\"<bold>the Service</bold>\"), published by the company AQWELIA, as well as the rights and obligations of the parties in this context.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article1Body2": {
+    "fr": "L'utilisation du Service implique l'acceptation pleine et entière des présentes CGU. Si vous n'êtes pas d'accord avec l'une quelconque de ces conditions, vous ne devez pas utiliser le Service.",
+    "en": "Use of the Service implies full and complete acceptance of these TOU. If you do not agree with any of these conditions, you must not use the Service.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article2Title": {
+    "fr": "Article 2 — Définitions",
+    "en": "Article 2 — Definitions",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article2Item1": {
+    "fr": "« <bold>Utilisateur</bold> » : toute personne physique qui utilise le Service.",
+    "en": "\"<bold>User</bold>\": any natural person who uses the Service.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article2Item2": {
+    "fr": "« <bold>Compte</bold> » : espace personnel créé par l'Utilisateur pour accéder au Service.",
+    "en": "\"<bold>Account</bold>\": personal space created by the User to access the Service.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article2Item3": {
+    "fr": "« <bold>Données</bold> » : informations saisies par l'Utilisateur (mesures, photos, profil de piscine, etc.).",
+    "en": "\"<bold>Data</bold>\": information entered by the User (measurements, photos, pool profile, etc.).",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article2Item4": {
+    "fr": "« <bold>Plan</bold> » : formule d'abonnement (Free, Premium ou Expert) à laquelle l'Utilisateur souscrit.",
+    "en": "\"<bold>Plan</bold>\": subscription formula (Free, Premium or Expert) to which the User subscribes.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article2Item5": {
+    "fr": "« <bold>Contenu</bold> » : recommandations, plans d'action, analyses, guides et textes générés par le Service.",
+    "en": "\"<bold>Content</bold>\": recommendations, action plans, analyses, guides and texts generated by the Service.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article3Title": {
+    "fr": "Article 3 — Description du service",
+    "en": "Article 3 — Description of the service",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article3Body1": {
+    "fr": "AQWELIA est un copilote intelligent d'entretien de piscine. Le Service permet à l'Utilisateur de :",
+    "en": "AQWELIA is an intelligent pool maintenance copilot. The Service allows the User to:",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article3Item1": {
+    "fr": "suivre et analyser la qualité de l'eau de sa piscine (pH, chlore, TAC, TH, etc.) ;",
+    "en": "monitor and analyze the quality of their pool water (pH, chlorine, TAC, TH, etc.);",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article3Item2": {
+    "fr": "obtenir des plans d'action personnalisés (dosages, filtration, baignabilité) ;",
+    "en": "obtain personalized action plans (dosages, filtration, swimability);",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article3Item3": {
+    "fr": "diagnostiquer visuellement l'eau et les équipements via photo ;",
+    "en": "visually diagnose water and equipment via photo;",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article3Item4": {
+    "fr": "consulter un assistant IA pour toute question d'entretien ;",
+    "en": "consult an AI assistant for any maintenance question;",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article3Item5": {
+    "fr": "recevoir des rappels intelligents (météo, équipements, stocks produits) ;",
+    "en": "receive smart reminders (weather, equipment, product stocks);",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article3Item6": {
+    "fr": "consulter des guides et ressources pédagogiques.",
+    "en": "consult educational guides and resources.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article3Body2": {
+    "fr": "Le Service est fourni à titre indicatif et ne remplace pas l'intervention d'un professionnel qualifié (pisciniste, revendeur, sauveteur).",
+    "en": "The Service is provided for informational purposes and does not replace the intervention of a qualified professional (pool specialist, retailer, lifeguard).",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article4Title": {
+    "fr": "Article 4 — Inscription et compte",
+    "en": "Article 4 — Registration and account",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article4Body1": {
+    "fr": "L'inscription au Service nécessite la création d'un Compte via une adresse e-mail valide et un mot de passe. L'Utilisateur s'engage à fournir des informations exactes et à les maintenir à jour.",
+    "en": "Registration for the Service requires creating an Account via a valid email address and a password. The User agrees to provide accurate information and to keep it up to date.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article4Body2": {
+    "fr": "L'Utilisateur est seul responsable de la confidentialité de ses identifiants et de toute utilisation de son Compte. Toute activité réalisée depuis son Compte est réputée effectuée par l'Utilisateur.",
+    "en": "The User is solely responsible for the confidentiality of their credentials and any use of their Account. Any activity performed from their Account is deemed to be performed by the User.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article4Body3": {
+    "fr": "AQWELIA se réserve le droit de refuser ou de clôturer un Compte en cas de non-respect des présentes CGU ou de comportement frauduleux.",
+    "en": "AQWELIA reserves the right to refuse or close an Account in the event of non-compliance with these TOU or fraudulent behavior.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article5Title": {
+    "fr": "Article 5 — Utilisation du service",
+    "en": "Article 5 — Use of the service",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article5Body1": {
+    "fr": "L'Utilisateur s'engage à :",
+    "en": "The User agrees to:",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article5Item1": {
+    "fr": "utiliser le Service conformément à sa destination et au droit applicable ;",
+    "en": "use the Service in accordance with its intended purpose and applicable law;",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article5Item2": {
+    "fr": "ne pas tenter de détourner, désactiver ou compromettre la sécurité du Service ;",
+    "en": "not attempt to divert, disable or compromise the security of the Service;",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article5Item3": {
+    "fr": "ne pas importer de Contenu illicite, diffamatoire ou portant atteinte aux droits des tiers ;",
+    "en": "not upload Content that is unlawful, defamatory or infringes the rights of third parties;",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article5Item4": {
+    "fr": "respecter les notices des produits chimiques utilisés pour l'entretien de sa piscine.",
+    "en": "comply with the instructions of the chemical products used for maintaining their pool.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article5Body2": {
+    "fr": "L'Utilisateur reconnaît que les recommandations fournies par le Service sont indicatives et qu'il reste seul responsable des actes qu'il pose sur sa piscine.",
+    "en": "The User acknowledges that the recommendations provided by the Service are indicative and that they remain solely responsible for the actions they take on their pool.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article6Title": {
+    "fr": "Article 6 — Abonnements",
+    "en": "Article 6 — Subscriptions",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article6Body1": {
+    "fr": "Le Service propose trois Plans :",
+    "en": "The Service offers three Plans:",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article6Item1": {
+    "fr": "<bold>Free</bold> : gratuit, inclut 1 piscine, mesures manuelles de base, assistant limité.",
+    "en": "<bold>Free</bold>: free, includes 1 pool, basic manual measurements, limited assistant.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article6Item2": {
+    "fr": "<bold>Premium</bold> : jusqu'à 3 piscines, diagnostic photo illimité, assistant IA complet, rappels météo, guides avancés.",
+    "en": "<bold>Premium</bold>: up to 3 pools, unlimited photo diagnostic, full AI assistant, weather reminders, advanced guides.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article6Item3": {
+    "fr": "<bold>Expert</bold> : illimité (piscinistes professionnels), multi-clients, exports, support prioritaire.",
+    "en": "<bold>Expert</bold>: unlimited (professional pool specialists), multi-client, exports, priority support.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article6Body2": {
+    "fr": "Les fonctionnalités et tarifs de chaque Plan sont détaillés sur la page <link>Tarifs</link>. AQWELIA se réserve le droit de modifier ces offres à tout moment, sous réserve d'en informer les Utilisateurs abonnés au moins 30 jours avant l'entrée en vigueur.",
+    "en": "The features and pricing of each Plan are detailed on the <link>Pricing</link> page. AQWELIA reserves the right to modify these offers at any time, subject to informing subscribed Users at least 30 days before entry into force.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article7Title": {
+    "fr": "Article 7 — Paiement",
+    "en": "Article 7 — Payment",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article7Body1": {
+    "fr": "Le paiement des abonnements Premium et Expert s'effectue selon la plateforme utilisée :",
+    "en": "Payment for Premium and Expert subscriptions is made according to the platform used:",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article7Item1": {
+    "fr": "<bold>Web</bold> : via Stripe (carte bancaire, paiement sécurisé).",
+    "en": "<bold>Web</bold>: via Stripe (bank card, secure payment).",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article7Item2": {
+    "fr": "<bold>iOS</bold> : via Apple In-App Purchase (géré par Apple).",
+    "en": "<bold>iOS</bold>: via Apple In-App Purchase (managed by Apple).",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article7Item3": {
+    "fr": "<bold>Android</bold> : via Google Play Billing (géré par Google).",
+    "en": "<bold>Android</bold>: via Google Play Billing (managed by Google).",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article7Body2": {
+    "fr": "Le renouvellement est automatique à la fin de la période souscrite, sauf désactivation par l'Utilisateur dans les paramètres de son compte Apple/Google ou via le portail client Stripe.",
+    "en": "Renewal is automatic at the end of the subscribed period, unless deactivated by the User in their Apple/Google account settings or via the Stripe customer portal.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article8Title": {
+    "fr": "Article 8 — Résiliation",
+    "en": "Article 8 — Termination",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article8Body1": {
+    "fr": "L'Utilisateur peut résilier son abonnement à tout moment depuis l'application (page <link>Paramètres</link>) ou depuis les réglages de l'App Store / Google Play. La résiliation prend effet à la fin de la période de facturation en cours.",
+    "en": "The User can cancel their subscription at any time from the application (<link>Settings</link> page) or from the App Store / Google Play settings. Cancellation takes effect at the end of the current billing period.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article8Body2": {
+    "fr": "AQWELIA se réserve le droit de résilier ou suspendre l'accès au Service en cas de manquement aux CGU, après notification préalable sauf urgence.",
+    "en": "AQWELIA reserves the right to terminate or suspend access to the Service in the event of a breach of the TOU, after prior notification except in an emergency.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article9Title": {
+    "fr": "Article 9 — Données personnelles (RGPD)",
+    "en": "Article 9 — Personal data (GDPR)",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article9Body1": {
+    "fr": "Le traitement des données personnelles de l'Utilisateur est régi par notre <link>Politique de confidentialité</link>, conformément au Règlement Général sur la Protection des Données (RGPD, UE 2016/679).",
+    "en": "The processing of the User's personal data is governed by our <link>Privacy Policy</link>, in accordance with the General Data Protection Regulation (GDPR, EU 2016/679).",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article9Body2": {
+    "fr": "L'Utilisateur dispose d'un droit d'accès, de rectification, d'effacement, de portabilité et d'opposition. Ces droits peuvent être exercés depuis la page <link>Paramètres</link> ou par e-mail à <alink>privacy@aqwelia.app</alink>.",
+    "en": "The User has the right of access, rectification, erasure, portability and objection. These rights can be exercised from the <link>Settings</link> page or by email at <alink>privacy@aqwelia.app</alink>.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article10Title": {
+    "fr": "Article 10 — Responsabilité",
+    "en": "Article 10 — Liability",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article10Body1": {
+    "fr": "AQWELIA met tout en œuvre pour assurer la disponibilité et la fiabilité du Service, mais ne peut garantir une absence totale d'erreurs ou d'interruptions.",
+    "en": "AQWELIA makes every effort to ensure the availability and reliability of the Service, but cannot guarantee a total absence of errors or interruptions.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article10Body2": {
+    "fr": "Le Service étant fourni à titre indicatif, AQWELIA ne saurait être tenu responsable des dommages directs ou indirects résultant de l'application des recommandations (notamment : dommages matériels, pertes de baignade, détérioration d'équipement, réactions chimiques). En cas de doute, l'Utilisateur doit consulter un professionnel.",
+    "en": "As the Service is provided for informational purposes, AQWELIA cannot be held liable for direct or indirect damages resulting from the application of the recommendations (including: material damage, loss of swimming, equipment deterioration, chemical reactions). In case of doubt, the User should consult a professional.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article11Title": {
+    "fr": "Article 11 — Propriété intellectuelle",
+    "en": "Article 11 — Intellectual property",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article11Body1": {
+    "fr": "L'ensemble des éléments du Service (marque, logo, textes, algorithmes, design, guides) est la propriété exclusive d'AQWELIA ou de ses partenaires. Toute reproduction, représentation ou diffusion, totale ou partielle, sans autorisation écrite préalable est interdite.",
+    "en": "All elements of the Service (brand, logo, texts, algorithms, design, guides) are the exclusive property of AQWELIA or its partners. Any reproduction, representation or distribution, in whole or in part, without prior written authorization is prohibited.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article11Body2": {
+    "fr": "Les Données saisies par l'Utilisateur restent sa propriété. L'Utilisateur accorde à AQWELIA une licence non exclusive d'utilisation de ces Données dans la mesure nécessaire à la fourniture et à l'amélioration du Service.",
+    "en": "The Data entered by the User remains their property. The User grants AQWELIA a non-exclusive license to use this Data to the extent necessary for the provision and improvement of the Service.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article12Title": {
+    "fr": "Article 12 — Modifications des CGU",
+    "en": "Article 12 — Modifications of the TOU",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article12Body1": {
+    "fr": "AQWELIA peut modifier les présentes CGU à tout moment. Les CGU applicables sont celles en vigueur au moment de l'utilisation du Service. Les modifications substantielles seront notifiées par e-mail ou via l'application au moins 30 jours avant leur entrée en vigueur.",
+    "en": "AQWELIA may modify these TOU at any time. The applicable TOU are those in force at the time of use of the Service. Substantial modifications will be notified by email or via the application at least 30 days before their entry into force.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article13Title": {
+    "fr": "Article 13 — Droit applicable",
+    "en": "Article 13 — Applicable law",
+    "reason": "placeholder"
+  },
+  "legal.cgu.article13Body1": {
+    "fr": "Les présentes CGU sont régies par le droit français. En cas de litige, les parties s'engagent à rechercher une solution amiable avant toute action judiciaire. À défaut d'accord, les tribunaux français seront seuls compétents.",
+    "en": "These TOU are governed by French law. In the event of a dispute, the parties agree to seek an amicable solution before any legal action. Failing agreement, the French courts shall have sole jurisdiction.",
+    "reason": "placeholder"
+  },
+  "legal.cgu.contactTitle": {
+    "fr": "Contact",
+    "en": "Contact",
+    "reason": "placeholder"
+  },
+  "legal.cgu.contactBody1": {
+    "fr": "Pour toute question relative aux présentes CGU : <alink>legal@aqwelia.app</alink>",
+    "en": "For any question regarding these TOU: <alink>legal@aqwelia.app</alink>",
+    "reason": "placeholder"
+  },
+  "legal.cgu.contactBody2": {
+    "fr": "Pour toute question relative à vos données : <alink>privacy@aqwelia.app</alink>",
+    "en": "For any question regarding your data: <alink>privacy@aqwelia.app</alink>",
+    "reason": "placeholder"
+  },
+  "legal.cgu.contactBody3": {
+    "fr": "Pour toute demande de support : <link>page Support</link>.",
+    "en": "For any support request: <link>Support page</link>.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.metaTitle": {
+    "fr": "Politique de confidentialité — AQWELIA",
+    "en": "Privacy Policy — AQWELIA",
+    "reason": "placeholder"
+  },
+  "legal.privacy.metaDescription": {
+    "fr": "Politique de protection des données personnelles AQWELIA (RGPD).",
+    "en": "AQWELIA personal data protection policy (GDPR).",
+    "reason": "placeholder"
+  },
+  "legal.privacy.eyebrow": {
+    "fr": "RGPD",
+    "en": "GDPR",
+    "reason": "placeholder"
+  },
+  "legal.privacy.title": {
+    "fr": "Politique de confidentialité",
+    "en": "Privacy Policy",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section1Title": {
+    "fr": "1. Responsable du traitement",
+    "en": "1. Data controller",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section1Body1": {
+    "fr": "Le responsable du traitement des données personnelles collectées via l'application AQWELIA est la société <bold>AQWELIA</bold>, éditrice du Service.",
+    "en": "The controller of the personal data collected via the AQWELIA application is the company <bold>AQWELIA</bold>, publisher of the Service.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section1Body2": {
+    "fr": "Contact DPO : <alink>privacy@aqwelia.app</alink>",
+    "en": "DPO contact: <alink>privacy@aqwelia.app</alink>",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section2Title": {
+    "fr": "2. Données collectées",
+    "en": "2. Data collected",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section2Body1": {
+    "fr": "Le Service collecte les catégories de données suivantes :",
+    "en": "The Service collects the following categories of data:",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section2Item1": {
+    "fr": "<bold>Identifiants de compte</bold> : adresse e-mail, nom (facultatif), mot de passe (haché).",
+    "en": "<bold>Account identifiers</bold>: email address, name (optional), password (hashed).",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section2Item2": {
+    "fr": "<bold>Profil de piscine</bold> : volume, forme, revêtement, traitement, filtre, exposition, région.",
+    "en": "<bold>Pool profile</bold>: volume, shape, surface, treatment, filter, exposure, region.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section2Item3": {
+    "fr": "<bold>Données d'eau</bold> : mesures (pH, chlore, TAC, TH, CYA, sel, température, etc.) saisies ou importées.",
+    "en": "<bold>Water data</bold>: measurements (pH, chlorine, TAC, TH, CYA, salt, temperature, etc.) entered or imported.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section2Item4": {
+    "fr": "<bold>Photos</bold> : images de l'eau, des parois, du filtre, des électrolyseurs et produits, utilisées pour le diagnostic visuel IA.",
+    "en": "<bold>Photos</bold>: images of water, walls, filter, electrolyzers and products, used for AI visual diagnostic.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section2Item5": {
+    "fr": "<bold>Équipements & inventaire</bold> : marque, modèle, dates de maintenance, produits chimiques en stock.",
+    "en": "<bold>Equipment & inventory</bold>: brand, model, maintenance dates, chemicals in stock.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section2Item6": {
+    "fr": "<bold>Historique</bold> : conversations avec l'assistant IA, plans d'action générés, diagnostics photo.",
+    "en": "<bold>History</bold>: conversations with the AI assistant, generated action plans, photo diagnostics.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section2Item7": {
+    "fr": "<bold>Données de facturation</bold> : plan souscrit, période, statut (les informations de paiement sont traitées par Stripe, Apple ou Google — AQWELIA ne stocke pas les numéros de carte).",
+    "en": "<bold>Billing data</bold>: subscribed plan, period, status (payment information is processed by Stripe, Apple or Google — AQWELIA does not store card numbers).",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section2Item8": {
+    "fr": "<bold>Données d'usage</bold> : événements analytics (consultation de guides, ouverture de paywall, fréquence d'utilisation).",
+    "en": "<bold>Usage data</bold>: analytics events (guide views, paywall opens, frequency of use).",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section3Title": {
+    "fr": "3. Finalités",
+    "en": "3. Purposes",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section3Body1": {
+    "fr": "Les données sont traitées pour les finalités suivantes :",
+    "en": "The data is processed for the following purposes:",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section3Item1": {
+    "fr": "fonctionnement du Service (génération de plans d'action, calculs de dosage, suivi de l'eau) ;",
+    "en": "operation of the Service (generation of action plans, dosage calculations, water monitoring);",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section3Item2": {
+    "fr": "amélioration des modèles d'IA (diagnostic photo, recommandations) — sur la base d'une anonymisation préalable lorsque c'est possible ;",
+    "en": "improvement of AI models (photo diagnostic, recommendations) — based on prior anonymization when possible;",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section3Item3": {
+    "fr": "facturation et gestion des abonnements ;",
+    "en": "billing and subscription management;",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section3Item4": {
+    "fr": "support utilisateur ;",
+    "en": "user support;",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section3Item5": {
+    "fr": "analyse d'usage et amélioration de l'expérience ;",
+    "en": "usage analysis and experience improvement;",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section3Item6": {
+    "fr": "respect des obligations légales et comptables.",
+    "en": "compliance with legal and accounting obligations.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section4Title": {
+    "fr": "4. Base légale",
+    "en": "4. Legal basis",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section4Body1": {
+    "fr": "Conformément à l'article 6 du RGPD, les traitements reposent sur les bases légales suivantes :",
+    "en": "In accordance with Article 6 of the GDPR, the processing is based on the following legal bases:",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section4Item1": {
+    "fr": "<bold>Exécution du contrat</bold> (art. 6.1.b) : fourniture du Service souscrit.",
+    "en": "<bold>Contract performance</bold> (art. 6.1.b): provision of the subscribed Service.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section4Item2": {
+    "fr": "<bold>Consentement</bold> (art. 6.1.a) : photos envoyées pour diagnostic, notifications, communications marketing éventuelles.",
+    "en": "<bold>Consent</bold> (art. 6.1.a): photos sent for diagnostic, notifications, possible marketing communications.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section4Item3": {
+    "fr": "<bold>Intérêt légitime</bold> (art. 6.1.f) : amélioration du Service, sécurité, prévention de la fraude.",
+    "en": "<bold>Legitimate interest</bold> (art. 6.1.f): Service improvement, security, fraud prevention.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section4Item4": {
+    "fr": "<bold>Obligation légale</bold> (art. 6.1.c) : conservation des factures et traces comptables.",
+    "en": "<bold>Legal obligation</bold> (art. 6.1.c): retention of invoices and accounting records.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section4Body2": {
+    "fr": "L'Utilisateur peut retirer son consentement à tout moment depuis la page <link>Paramètres</link>, sans porter atteinte à la licéité du traitement antérieur.",
+    "en": "The User can withdraw their consent at any time from the <link>Settings</link> page, without affecting the lawfulness of the prior processing.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section5Title": {
+    "fr": "5. Durée de conservation",
+    "en": "5. Retention period",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section5Item1": {
+    "fr": "<bold>Compte actif</bold> : durée d'utilisation du Service.",
+    "en": "<bold>Active account</bold>: duration of use of the Service.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section5Item2": {
+    "fr": "<bold>Données de piscine, mesures, photos</bold> : conservées tant que le Compte est actif, plus 90 jours après suppression (pour restauration éventuelle), puis effacées définitivement.",
+    "en": "<bold>Pool data, measurements, photos</bold>: retained as long as the Account is active, plus 90 days after deletion (for possible restoration), then permanently erased.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section5Item3": {
+    "fr": "<bold>Factures</bold> : 10 ans (obligation comptable légale en France).",
+    "en": "<bold>Invoices</bold>: 10 years (legal accounting obligation in France).",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section5Item4": {
+    "fr": "<bold>Logs de sécurité</bold> : 12 mois.",
+    "en": "<bold>Security logs</bold>: 12 months.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section5Item5": {
+    "fr": "<bold>Compte inactif</bold> : après 24 mois sans connexion, notification par e-mail puis suppression du Compte et de ses données.",
+    "en": "<bold>Inactive account</bold>: after 24 months without login, notification by email then deletion of the Account and its data.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section6Title": {
+    "fr": "6. Destinataires",
+    "en": "6. Recipients",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section6Body1": {
+    "fr": "Les données sont accessibles aux destinataires suivants :",
+    "en": "The data is accessible to the following recipients:",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section6Item1": {
+    "fr": "<bold>AQWELIA</bold> : personnel autorisé (ingénieurs, support) sous accord de confidentialité.",
+    "en": "<bold>AQWELIA</bold>: authorized personnel (engineers, support) under confidentiality agreement.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section6Item2": {
+    "fr": "<bold>Hébergeur cloud</bold> : stockage et calcul (localisé UE).",
+    "en": "<bold>Cloud host</bold>: storage and computing (EU located).",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section6Item3": {
+    "fr": "<bold>Stripe</bold> : traitement des paiements web (soumis à son propre RGPD).",
+    "en": "<bold>Stripe</bold>: web payment processing (subject to its own GDPR).",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section6Item4": {
+    "fr": "<bold>RevenueCat</bold> : gestion unifiée des abonnements iOS/Android.",
+    "en": "<bold>RevenueCat</bold>: unified iOS/Android subscription management.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section6Item5": {
+    "fr": "<bold>Apple / Google</bold> : paiements In-App (soumis à leurs propres conditions).",
+    "en": "<bold>Apple / Google</bold>: In-App payments (subject to their own terms).",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section6Item6": {
+    "fr": "<bold>Prestataires IA</bold> : pour le diagnostic photo et l'assistant — uniquement les données strictement nécessaires, sans stockage au-delà de la session.",
+    "en": "<bold>AI providers</bold>: for photo diagnostic and the assistant — only strictly necessary data, with no storage beyond the session.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section6Body2": {
+    "fr": "AQWELIA ne vend jamais vos données à des tiers à des fins marketing.",
+    "en": "AQWELIA never sells your data to third parties for marketing purposes.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section7Title": {
+    "fr": "7. Transferts hors UE",
+    "en": "7. Transfers outside the EU",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section7Body1": {
+    "fr": "L'hébergement principal est localisé dans l'Union Européenne. Tout transfert hors UE éventuel (par exemple vers un prestataire IA basé aux États-Unis) est encadré par les clauses contractuelles types de la Commission Européenne (décision 2021/914) et accompagné de garanties appropriées (chiffrement, minimisation, pseudonymisation).",
+    "en": "The main hosting is located in the European Union. Any possible transfer outside the EU (for example to an AI provider based in the United States) is framed by the standard contractual clauses of the European Commission (decision 2021/914) and accompanied by appropriate safeguards (encryption, minimization, pseudonymization).",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section8Title": {
+    "fr": "8. Vos droits",
+    "en": "8. Your rights",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section8Body1": {
+    "fr": "Conformément aux articles 15 à 22 du RGPD, vous disposez des droits suivants :",
+    "en": "In accordance with Articles 15 to 22 of the GDPR, you have the following rights:",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section8Item1": {
+    "fr": "<bold>Droit d'accès</bold> : obtenir une copie de vos données.",
+    "en": "<bold>Right of access</bold>: obtain a copy of your data.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section8Item2": {
+    "fr": "<bold>Droit de rectification</bold> : corriger des données inexactes.",
+    "en": "<bold>Right to rectification</bold>: correct inaccurate data.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section8Item3": {
+    "fr": "<bold>Droit à l'effacement</bold> (« droit à l'oubli ») : supprimer votre Compte et vos données.",
+    "en": "<bold>Right to erasure</bold> (\"right to be forgotten\"): delete your Account and your data.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section8Item4": {
+    "fr": "<bold>Droit à la portabilité</bold> : recevoir vos données dans un format structuré et réutilisable.",
+    "en": "<bold>Right to portability</bold>: receive your data in a structured and reusable format.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section8Item5": {
+    "fr": "<bold>Droit d'opposition</bold> : refuser un traitement fondé sur l'intérêt légitime.",
+    "en": "<bold>Right to object</bold>: refuse processing based on legitimate interest.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section8Item6": {
+    "fr": "<bold>Droit à la limitation</bold> : geler temporairement un traitement.",
+    "en": "<bold>Right to restriction</bold>: temporarily freeze processing.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section8Item7": {
+    "fr": "<bold>Droit de retirer votre consentement</bold> à tout moment.",
+    "en": "<bold>Right to withdraw your consent</bold> at any time.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section8Body2": {
+    "fr": "Ces droits sont exerçables directement depuis la page <link>Paramètres</link> (export JSON, suppression du compte), ou par e-mail à <alink>privacy@aqwelia.app</alink>.",
+    "en": "These rights can be exercised directly from the <link>Settings</link> page (JSON export, account deletion), or by email at <alink>privacy@aqwelia.app</alink>.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section8Body3": {
+    "fr": "Vous pouvez également introduire une réclamation auprès de la CNIL (www.cnil.fr) ou de l'autorité de contrôle de votre pays.",
+    "en": "You can also file a complaint with the CNIL (www.cnil.fr) or the supervisory authority of your country.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section9Title": {
+    "fr": "9. Cookies et traceurs",
+    "en": "9. Cookies and trackers",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section9Body1": {
+    "fr": "AQWELIA utilise un minimum de traceurs strictement nécessaires au fonctionnement du Service (session d'authentification, préférences de langue et de thème). Aucun cookie publicitaire ou de tracking tiers n'est déposé sans consentement.",
+    "en": "AQWELIA uses a minimum of trackers strictly necessary for the operation of the Service (authentication session, language and theme preferences). No advertising or third-party tracking cookies are deposited without consent.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section9Body2": {
+    "fr": "Les préférences peuvent être gérées depuis la page <link>Paramètres</link>.",
+    "en": "Preferences can be managed from the <link>Settings</link> page.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section10Title": {
+    "fr": "10. Sécurité",
+    "en": "10. Security",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section10Body1": {
+    "fr": "AQWELIA met en œuvre les mesures techniques et organisationnelles appropriées pour protéger vos données :",
+    "en": "AQWELIA implements appropriate technical and organizational measures to protect your data:",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section10Item1": {
+    "fr": "chiffrement des mots de passe (scrypt, algorithme résistant au brute-force) ;",
+    "en": "password encryption (scrypt, brute-force resistant algorithm);",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section10Item2": {
+    "fr": "chiffrement des données en transit (TLS 1.2+) et au repos (chiffrement base de données) ;",
+    "en": "encryption of data in transit (TLS 1.2+) and at rest (database encryption);",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section10Item3": {
+    "fr": "authentification par JWT signé, durée de vie limitée (30 jours) ;",
+    "en": "authentication via signed JWT, limited lifetime (30 days);",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section10Item4": {
+    "fr": "accès restreint aux données personnelles (principe du moindre privilège) ;",
+    "en": "restricted access to personal data (principle of least privilege);",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section10Item5": {
+    "fr": "sauvegardes chiffrées et tests d'intrusion réguliers.",
+    "en": "encrypted backups and regular penetration tests.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section10Body2": {
+    "fr": "En cas de violation de données susceptible d'engendrer un risque pour vos droits et libertés, AQWELIA vous notifiera dans les meilleurs délais conformément à l'article 34 du RGPD.",
+    "en": "In the event of a data breach likely to result in a risk to your rights and freedoms, AQWELIA will notify you without undue delay in accordance with Article 34 of the GDPR.",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section11Title": {
+    "fr": "11. Contact DPO",
+    "en": "11. DPO Contact",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section11Body1": {
+    "fr": "Pour toute question relative à la protection de vos données, contactez notre DPO :",
+    "en": "For any question regarding the protection of your data, contact our DPO:",
+    "reason": "placeholder"
+  },
+  "legal.privacy.section11Body2": {
+    "fr": "Voir aussi nos <link>CGU</link> et notre <link2>page Support</link2>.",
+    "en": "See also our <link>TOU</link> and our <link2>Support page</link2>.",
+    "reason": "placeholder"
+  },
+  "legal.support.metaTitle": {
+    "fr": "Support — AQWELIA",
+    "en": "Support — AQWELIA",
+    "reason": "placeholder"
+  },
+  "legal.support.metaDescription": {
+    "fr": "Contacter le support AQWELIA, FAQ, signaler un bug, demander une fonctionnalité.",
+    "en": "Contact AQWELIA support, FAQ, report a bug, request a feature.",
+    "reason": "placeholder"
+  },
+  "legal.support.eyebrow": {
+    "fr": "Aide & support",
+    "en": "Help & support",
+    "reason": "placeholder"
+  },
+  "legal.support.title": {
+    "fr": "Contacter le support",
+    "en": "Contact support",
+    "reason": "placeholder"
+  },
+  "legal.support.subtitle": {
+    "fr": "Notre équipe est disponible pour vous aider à tirer le meilleur d'AQWELIA.",
+    "en": "Our team is available to help you get the most out of AQWELIA.",
+    "reason": "placeholder"
+  },
+  "legal.support.emailTitle": {
+    "fr": "Email",
+    "en": "Email",
+    "reason": "placeholder"
+  },
+  "legal.support.emailDesc": {
+    "fr": "La meilleure façon de nous joindre. Réponse sous 48h ouvrées.",
+    "en": "The best way to reach us. Response within 48 business hours.",
+    "reason": "placeholder"
+  },
+  "legal.support.responseTimeTitle": {
+    "fr": "Temps de réponse",
+    "en": "Response time",
+    "reason": "placeholder"
+  },
+  "legal.support.responseTimeFree": {
+    "fr": "<bold>Plan Free</bold> : réponse sous 72h ouvrées.",
+    "en": "<bold>Free plan</bold>: response within 72 business hours.",
+    "reason": "placeholder"
+  },
+  "legal.support.responseTimePremium": {
+    "fr": "<bold>Plan Premium</bold> : réponse sous 48h ouvrées.",
+    "en": "<bold>Premium plan</bold>: response within 48 business hours.",
+    "reason": "placeholder"
+  },
+  "legal.support.responseTimeExpert": {
+    "fr": "<bold>Plan Expert</bold> : réponse sous 24h, support prioritaire.",
+    "en": "<bold>Expert plan</bold>: response within 24h, priority support.",
+    "reason": "placeholder"
+  },
+  "legal.support.cardFaqTitle": {
+    "fr": "FAQ",
+    "en": "FAQ",
+    "reason": "placeholder"
+  },
+  "legal.support.cardFaqDesc": {
+    "fr": "Réponses aux questions les plus fréquentes : abonnements, données, piscine, compatibilité.",
+    "en": "Answers to the most frequent questions: subscriptions, data, pool, compatibility.",
+    "reason": "placeholder"
+  },
+  "legal.support.cardFaqLink": {
+    "fr": "Voir la FAQ",
+    "en": "View FAQ",
+    "reason": "placeholder"
+  },
+  "legal.support.cardKbTitle": {
+    "fr": "Base de connaissances",
+    "en": "Knowledge base",
+    "reason": "placeholder"
+  },
+  "legal.support.cardKbDesc": {
+    "fr": "Guides détaillés, tutoriels vidéo et articles d'aide. À venir.",
+    "en": "Detailed guides, video tutorials and help articles. Coming soon.",
+    "reason": "placeholder"
+  },
+  "legal.support.cardKbLink": {
+    "fr": "Bientôt disponible",
+    "en": "Coming soon",
+    "reason": "placeholder"
+  },
+  "legal.support.cardBugTitle": {
+    "fr": "Signaler un bug",
+    "en": "Report a bug",
+    "reason": "placeholder"
+  },
+  "legal.support.cardBugDesc": {
+    "fr": "Vous avez repéré un comportement inattendu ? Décrivez-le nous avec une capture si possible.",
+    "en": "Have you noticed unexpected behavior? Describe it to us with a screenshot if possible.",
+    "reason": "placeholder"
+  },
+  "legal.support.cardBugLink": {
+    "fr": "Signaler par email",
+    "en": "Report by email",
+    "reason": "placeholder"
+  },
+  "legal.support.cardFeatureTitle": {
+    "fr": "Demander une fonctionnalité",
+    "en": "Request a feature",
+    "reason": "placeholder"
+  },
+  "legal.support.cardFeatureSubject": {
+    "fr": "Idée fonctionnalité AQWELIA",
+    "en": "Feature idea AQWELIA",
+    "reason": "placeholder"
+  },
+  "legal.support.cardFeatureDesc": {
+    "fr": "Une idée pour améliorer AQWELIA ? Nous lisons toutes les suggestions.",
+    "en": "An idea to improve AQWELIA? We read all suggestions.",
+    "reason": "placeholder"
+  },
+  "legal.support.cardFeatureLink": {
+    "fr": "Partager mon idée",
+    "en": "Share my idea",
+    "reason": "placeholder"
+  },
+  "legal.support.cardAssistantTitle": {
+    "fr": "Assistant IA intégré",
+    "en": "Built-in AI assistant",
+    "reason": "placeholder"
+  },
+  "legal.support.cardAssistantDesc": {
+    "fr": "Pour une question rapide sur votre piscine, interrogez l'assistant directement dans l'app.",
+    "en": "For a quick question about your pool, ask the assistant directly in the app.",
+    "reason": "placeholder"
+  },
+  "legal.support.cardAssistantLink": {
+    "fr": "Ouvrir l'app",
+    "en": "Open the app",
+    "reason": "placeholder"
+  },
+  "legal.support.cardLegalTitle": {
+    "fr": "Questions légales",
+    "en": "Legal questions",
+    "reason": "placeholder"
+  },
+  "legal.support.cardLegalDesc": {
+    "fr": "Pour les sujets RGPD, confidentialité ou CGU, écrivez à privacy@aqwelia.app.",
+    "en": "For GDPR, privacy or TOU topics, write to privacy@aqwelia.app.",
+    "reason": "placeholder"
+  },
+  "legal.support.cardLegalLink": {
+    "fr": "Contacter le DPO",
+    "en": "Contact the DPO",
+    "reason": "placeholder"
+  },
+  "legal.support.resourcesTitle": {
+    "fr": "Ressources associées",
+    "en": "Related resources",
+    "reason": "placeholder"
+  },
+  "legal.support.resourcesCguLink": {
+    "fr": "Conditions générales",
+    "en": "Terms of use",
+    "reason": "placeholder"
+  },
+  "legal.support.resourcesPrivacyLink": {
+    "fr": "Politique de confidentialité",
+    "en": "Privacy policy",
+    "reason": "placeholder"
+  },
+  "legal.support.resourcesSettingsLink": {
+    "fr": "Paramètres du compte",
+    "en": "Account settings",
+    "reason": "placeholder"
+  },
+  "reminders.test_overdue.title": {
+    "fr": "Test d'eau à refaire",
+    "en": "Water test to redo",
+    "reason": "placeholder"
+  },
+  "reminders.test_overdue.detail": {
+    "fr": "Dernier test il y a {days} jours. La qualité de l'eau change vite.",
+    "en": "Last test {days} days ago. Water quality changes fast.",
+    "reason": "placeholder"
+  },
+  "reminders.test_overdue.action": {
+    "fr": "Faites un test complet pH + chlore + TAC.",
+    "en": "Do a full test: pH + chlorine + TAC.",
+    "reason": "placeholder"
+  },
+  "reminders.test_soon.title": {
+    "fr": "Test de routine",
+    "en": "Routine test",
+    "reason": "placeholder"
+  },
+  "reminders.test_soon.detail": {
+    "fr": "Dernier test il y a {days} jours.",
+    "en": "Last test {days} days ago.",
+    "reason": "placeholder"
+  },
+  "reminders.test_soon.action": {
+    "fr": "Vérifiez pH et chlore libre.",
+    "en": "Check pH and free chlorine.",
+    "reason": "placeholder"
+  },
+  "reminders.test_first.title": {
+    "fr": "Premier test d'eau",
+    "en": "First water test",
+    "reason": "placeholder"
+  },
+  "reminders.test_first.detail": {
+    "fr": "Aucun test enregistré. Activez le suivi.",
+    "en": "No test recorded. Activate tracking.",
+    "reason": "placeholder"
+  },
+  "reminders.test_first.action": {
+    "fr": "Entrez votre premier test (pH minimum).",
+    "en": "Enter your first test (pH minimum).",
+    "reason": "placeholder"
+  },
+  "reminders.retest_product.title": {
+    "fr": "Re-test après traitement",
+    "en": "Re-test after treatment",
+    "reason": "placeholder"
+  },
+  "reminders.retest_product.detail": {
+    "fr": "Vous avez ajouté un produit récemment. Vérifiez l'effet.",
+    "en": "You recently added a product. Check the effect.",
+    "reason": "placeholder"
+  },
+  "reminders.retest_product.action": {
+    "fr": "Refaire un test pH + chlore dans les heures qui suivent.",
+    "en": "Do another pH + chlorine test within the next few hours.",
+    "reason": "placeholder"
+  },
+  "reminders.wx_test.title": {
+    "fr": "Test recommandé (météo)",
+    "en": "Test recommended (weather)",
+    "reason": "placeholder"
+  },
+  "reminders.wx_test.action": {
+    "fr": "Testez pH et chlore.",
+    "en": "Test pH and chlorine.",
+    "reason": "placeholder"
+  },
+  "reminders.filter_clean.title": {
+    "fr": "Nettoyage du filtre",
+    "en": "Filter cleaning",
+    "reason": "placeholder"
+  },
+  "reminders.filter_clean.detailSand": {
+    "fr": "Backwash du filtre à sable recommandé.",
+    "en": "Sand filter backwash recommended.",
+    "reason": "placeholder"
+  },
+  "reminders.filter_clean.detailCartridge": {
+    "fr": "Rinçage de la cartouche recommandé.",
+    "en": "Cartridge rinse recommended.",
+    "reason": "placeholder"
+  },
+  "reminders.filter_clean.detailGeneric": {
+    "fr": "Vérification du filtre recommandée.",
+    "en": "Filter check recommended.",
+    "reason": "placeholder"
+  },
+  "reminders.filter_clean.actionSand": {
+    "fr": "Faites un backwash (contre-lavage).",
+    "en": "Do a backwash (counter-rinse).",
+    "reason": "placeholder"
+  },
+  "reminders.filter_clean.actionCartridge": {
+    "fr": "Démontez et rincez la cartouche.",
+    "en": "Remove and rinse the cartridge.",
+    "reason": "placeholder"
+  },
+  "reminders.cell_clean.title": {
+    "fr": "Nettoyage cellule électrolyseur",
+    "en": "Electrolyzer cell cleaning",
+    "reason": "placeholder"
+  },
+  "reminders.cell_clean.detail": {
+    "fr": "La cellule s'entartre avec le temps. Nettoyage acide tous les 3-6 mois.",
+    "en": "The cell scales up over time. Acid cleaning every 3-6 months.",
+    "reason": "placeholder"
+  },
+  "reminders.cell_clean.action": {
+    "fr": "Démontez la cellule, trempez dans solution acide diluée 10-15 min, rincez.",
+    "en": "Remove the cell, soak in diluted acid solution 10-15 min, rinse.",
+    "reason": "placeholder"
+  },
+  "reminders.skimmer_clean.title": {
+    "fr": "Vérifier skimmer et panier",
+    "en": "Check skimmer and basket",
+    "reason": "placeholder"
+  },
+  "reminders.skimmer_clean.detail": {
+    "fr": "Débris, feuilles, insectes à retirer régulièrement.",
+    "en": "Debris, leaves, insects to remove regularly.",
+    "reason": "placeholder"
+  },
+  "reminders.skimmer_clean.action": {
+    "fr": "Videz le panier du skimmer et celui de la pompe.",
+    "en": "Empty the skimmer basket and the pump basket.",
+    "reason": "placeholder"
+  },
+  "reminders.low_product.title": {
+    "fr": "Stock bas : {name}",
+    "en": "Low stock: {name}",
+    "reason": "placeholder"
+  },
+  "reminders.low_product.detail": {
+    "fr": "Il reste peu de ce produit.",
+    "en": "Little of this product left.",
+    "reason": "placeholder"
+  },
+  "reminders.low_product.action": {
+    "fr": "Pensez à racheter avant de manquer.",
+    "en": "Consider repurchasing before running out.",
+    "reason": "placeholder"
+  },
+  "reminders.equipment_overdue.title": {
+    "fr": "Maintenance {type}",
+    "en": "Maintenance {type}",
+    "reason": "placeholder"
+  },
+  "reminders.equipment_overdue.detail": {
+    "fr": "Maintenance en retard de {days} jours.",
+    "en": "Maintenance overdue by {days} days.",
+    "reason": "placeholder"
+  },
+  "reminders.equipment_overdue.action": {
+    "fr": "Planifiez une maintenance de cet équipement.",
+    "en": "Schedule maintenance for this equipment.",
+    "reason": "placeholder"
+  },
+  "reminders.startup.title": {
+    "fr": "Remise en route de saison",
+    "en": "Season start-up",
+    "reason": "placeholder"
+  },
+  "reminders.startup.detail": {
+    "fr": "Le printemps arrive : préparez la piscine pour la saison.",
+    "en": "Spring is coming: prepare the pool for the season.",
+    "reason": "placeholder"
+  },
+  "reminders.startup.action": {
+    "fr": "Suivez le guide remise en route : nettoyage, traitement, filtration.",
+    "en": "Follow the start-up guide: cleaning, treatment, filtration.",
+    "reason": "placeholder"
+  },
+  "reminders.winterize.title": {
+    "fr": "Préparer l'hivernage",
+    "en": "Prepare winterization",
+    "reason": "placeholder"
+  },
+  "reminders.winterize.detail": {
+    "fr": "L'automne est là : anticipez l'hivernage.",
+    "en": "Fall is here: anticipate winterization.",
+    "reason": "placeholder"
+  },
+  "reminders.winterize.action": {
+    "fr": "Suivez le guide hivernage : eau froide, produits d'hiver, couverture.",
+    "en": "Follow the winterization guide: cold water, winter products, cover.",
+    "reason": "placeholder"
+  }
+}

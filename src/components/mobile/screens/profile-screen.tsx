@@ -32,19 +32,23 @@ interface ProfileScreenProps {
  * in a later lot.
  */
 export function ProfileScreen({ profile, onBackToLanding }: ProfileScreenProps) {
+  const tNav = useTranslations('nav')
+  const tScr = useTranslations('mobile.screens')
+  const tHl = useTranslations('modules.healthLog')
+
   return (
     <div className="mobile-scroll px-4 pb-24 pt-4">
       <div className="mb-3 flex items-center gap-2">
         <User className="h-5 w-5 text-primary" aria-hidden />
         <h1 className="font-display text-2xl font-bold tracking-tight">
-          Profil
+          {tNav('profile')}
         </h1>
       </div>
 
       {/* Profile summary card */}
       <section
         className="glass-card mb-5 rounded-2xl p-4"
-        aria-label="Profil piscine"
+        aria-label={tScr('profileAriaPoolProfile')}
       >
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-ocean-light text-primary-foreground shadow-md shadow-primary/30">
@@ -52,57 +56,57 @@ export function ProfileScreen({ profile, onBackToLanding }: ProfileScreenProps) 
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-base font-semibold">
-              {profile?.name ?? 'Piscine non configurée'}
+              {profile?.name ?? tScr('profilePoolNotConfigured')}
             </p>
             <p className="text-xs text-muted-foreground">
               {profile
-                ? `${profile.volume} ${profile.unit === 'm3' ? 'm³' : 'gal'} · ${profile.treatmentType}${profile.saltSystem ? ' · Électrolyse sel' : ''}`
-                : 'Configurez votre piscine pour commencer'}
+                ? `${profile.volume} ${profile.unit === 'm3' ? 'm³' : 'gal'} · ${profile.treatmentType}${profile.saltSystem ? ` · ${tScr('profileElectrolysisSalt')}` : ''}`
+                : tScr('profileConfigureToStart')}
             </p>
           </div>
         </div>
       </section>
 
       {/* Subscription management */}
-      <section className="mb-5" aria-label="Abonnement">
+      <section className="mb-5" aria-label={tScr('profileAriaSubscription')}>
         <div className="mb-2 flex items-center gap-2">
           <Crown className="h-4 w-4 text-gold" aria-hidden />
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Abonnement
+            {tScr('profileSubscriptionTitle')}
           </h2>
         </div>
         <ModulePaywall />
       </section>
 
       {/* Settings — placeholder list */}
-      <section aria-label="Paramètres">
+      <section aria-label={tScr('profileAriaSettings')}>
         <div className="mb-2 flex items-center gap-2">
           <Settings className="h-4 w-4 text-muted-foreground" aria-hidden />
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Paramètres
+            {tNav('settings')}
           </h2>
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-border/50 bg-card/40">
           <SettingsRow
             icon={<Bell className="h-4 w-4 text-primary" />}
-            label="Notifications & rappels"
-            hint="Bientôt disponible"
+            label={tScr('profileNotifReminders')}
+            hint={tHl('comingSoon')}
           />
           <SettingsRow
             icon={<Shield className="h-4 w-4 text-primary" />}
-            label="Confidentialité & données"
-            hint="Bientôt disponible"
+            label={tScr('profilePrivacyData')}
+            hint={tHl('comingSoon')}
           />
           <SettingsRow
             icon={<HelpCircle className="h-4 w-4 text-primary" />}
-            label="Aide & support"
-            hint="FAQ + contact"
+            label={tScr('profileHelpSupport')}
+            hint={tScr('profileFaqContact')}
           />
           {onBackToLanding && (
             <SettingsRow
               icon={<ChevronRight className="h-4 w-4 text-muted-foreground" />}
-              label="Retour à la landing page"
+              label={tNav('backToLanding')}
               onClick={onBackToLanding}
             />
           )}
@@ -110,7 +114,7 @@ export function ProfileScreen({ profile, onBackToLanding }: ProfileScreenProps) 
       </section>
 
       <p className="mt-6 text-center text-[11px] text-muted-foreground">
-        AQWELIA Pro · v1.0.0-mobile
+        {tScr('profileVersionLine')}
       </p>
     </div>
   )

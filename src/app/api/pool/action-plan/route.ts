@@ -10,6 +10,7 @@ export const runtime = 'nodejs'
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
+    // TODO: i18n — return a translation key for the client to localise.
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
   const userId = session.user.id
@@ -24,10 +25,17 @@ export async function POST(req: NextRequest) {
     if (!test && body.values) {
       test = body.values
     }
-    if (!test) return NextResponse.json({ error: 'testId ou values requis' }, { status: 400 })
+    if (!test) {
+      // TODO: i18n — return a translation key for the client to localise.
+      return NextResponse.json({ error: 'testId ou values requis' }, { status: 400 })
+    }
 
     const profile = await db.poolProfile.findFirst({ where: { userId } })
-    if (!profile) return NextResponse.json({ error: 'Profil piscine requis' }, { status: 400 })
+    if (!profile) {
+      // TODO: i18n — return a translation key (common.errors.poolProfileRequired)
+      // for the client to localise. French fallback kept for now.
+      return NextResponse.json({ error: 'Profil piscine requis' }, { status: 400 })
+    }
 
     const plan = generateActionPlan(test as any, {
       volume: profile.volume,
@@ -59,6 +67,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ plan, saved })
   } catch (e) {
+    // TODO: i18n — return a translation key for the client to localise.
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Erreur' }, { status: 500 })
   }
 }

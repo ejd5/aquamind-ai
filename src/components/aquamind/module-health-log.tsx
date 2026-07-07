@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/hooks/use-toast'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { offlineApi, apiGetCached } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
@@ -56,6 +56,15 @@ const SWIM_BADGE: Record<string, string> = {
   unknown: 'border-border bg-muted text-muted-foreground',
 }
 
+// Maps swimSafety DB enum value → translation key under `modules.waterTest`.
+// Existing keys: swimAllowed / swimAvoid / swimForbidden / swimUnknown.
+const SWIM_LABEL_KEY: Record<string, string> = {
+  allowed: 'waterTest.swimAllowed',
+  avoid: 'waterTest.swimAvoid',
+  forbidden: 'waterTest.swimForbidden',
+  unknown: 'waterTest.swimUnknown',
+}
+
 function clarityColorClass(score: number) {
   if (score >= 85) return 'text-[oklch(0.45_0.13_155)]'
   if (score >= 65) return 'text-yellow-700 dark:text-yellow-300'
@@ -74,6 +83,7 @@ function safeParse<T>(s: string | null, fallback: T): T {
 
 export function ModuleHealthLog() {
   const t = useTranslations('modules')
+  const locale = useLocale()
   const [tests, setTests] = useState<WaterTestRow[]>([])
   const [diags, setDiags] = useState<DiagnosticRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -279,7 +289,7 @@ export function ModuleHealthLog() {
                         <div
                           key={i}
                           className="flex flex-1 flex-col items-center gap-1"
-                          title={`${t('healthLog.clearWaterIndex')} ${t2.clearWaterIndex} — ${new Date(t2.createdAt).toLocaleDateString('fr-FR')}`}
+                          title={`${t('healthLog.clearWaterIndex')} ${t2.clearWaterIndex} — ${new Date(t2.createdAt).toLocaleDateString(locale)}`}
                         >
                           <span className={`text-[9px] font-bold ${clarityColorClass(t2.clearWaterIndex)}`}>
                             {t2.clearWaterIndex}
@@ -289,7 +299,7 @@ export function ModuleHealthLog() {
                             style={{ height: `${h}%` }}
                           />
                           <span className="text-[8px] text-muted-foreground">
-                            {new Date(t2.createdAt).toLocaleDateString('fr-FR', {
+                            {new Date(t2.createdAt).toLocaleDateString(locale, {
                               day: '2-digit',
                               month: '2-digit',
                             })}
@@ -333,7 +343,7 @@ export function ModuleHealthLog() {
                         <div className="flex-1 rounded-xl border border-border/50 bg-background/60 p-3">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <span className="text-xs font-semibold text-foreground">
-                              {new Date(t2.createdAt).toLocaleDateString('fr-FR', {
+                              {new Date(t2.createdAt).toLocaleDateString(locale, {
                                 weekday: 'short',
                                 day: '2-digit',
                                 month: 'short',
@@ -348,7 +358,7 @@ export function ModuleHealthLog() {
                               <span
                                 className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${SWIM_BADGE[t2.swimSafety] || SWIM_BADGE.unknown}`}
                               >
-                                {t2.swimSafety}
+                                {t((SWIM_LABEL_KEY[t2.swimSafety] || 'waterTest.swimUnknown') as any)}
                               </span>
                               <span className={`rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold`}>
                                 {t2.clearWaterIndex}/100
@@ -430,7 +440,7 @@ export function ModuleHealthLog() {
                               {d.type}
                             </span>
                             <span className="text-[9px] text-muted-foreground">
-                              {new Date(d.createdAt).toLocaleDateString('fr-FR', {
+                              {new Date(d.createdAt).toLocaleDateString(locale, {
                                 day: '2-digit',
                                 month: '2-digit',
                               })}

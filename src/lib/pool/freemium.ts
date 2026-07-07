@@ -1,15 +1,23 @@
 // Freemium logic — plans, limites, gating
 // 3 plans RevenueCat-ready : free / premium / expert
 // (anciennement surface / limpide / cristal / gardien — voir worklog L1-C)
+//
+// i18n strategy: the French literals stay as legacy fallback, but each Plan
+// also exposes `nameKey`, `taglineKey`, and `featureKeys` (array of translation
+// keys) so consumers can use `t(plan.nameKey)` and `plan.featureKeys.map(k => t(k))`.
+// `canAccess()` exposes `reasonKey` (translation key) in addition to `reason`.
 
 export type PlanId = 'free' | 'premium' | 'expert'
 
 export interface Plan {
   id: PlanId
-  name: string
-  tagline: string
+  name: string          // French fallback (legacy)
+  nameKey: string       // translation key, e.g. 'free.name'
+  tagline: string       // French fallback (legacy)
+  taglineKey: string    // translation key, e.g. 'free.tagline'
   price: { week: number; month: number; quarter: number; halfyear: number }
-  features: string[]
+  features: string[]        // French fallback (legacy)
+  featureKeys: string[]     // translation keys (one per feature), e.g. 'free.features.1pool'
   limits: {
     maxPools: number
     maxPhotoScansPerMonth: number
@@ -32,7 +40,9 @@ export const PLANS: Plan[] = [
   {
     id: 'free',
     name: 'Free',
+    nameKey: 'free.name',
     tagline: 'Gratuit — pour découvrir',
+    taglineKey: 'free.tagline',
     price: { week: 0, month: 0, quarter: 0, halfyear: 0 },
     features: [
       '1 piscine',
@@ -42,6 +52,15 @@ export const PLANS: Plan[] = [
       'Météo simple',
       '5 guides de base',
       'Historique 14 jours',
+    ],
+    featureKeys: [
+      'free.features.1pool',
+      'free.features.unlimitedManualTests',
+      'free.features.clearWaterIndex',
+      'free.features.2scans',
+      'free.features.simpleWeather',
+      'free.features.5guides',
+      'free.features.history14',
     ],
     limits: {
       maxPools: 1,
@@ -62,7 +81,9 @@ export const PLANS: Plan[] = [
   {
     id: 'premium',
     name: 'Premium',
+    nameKey: 'premium.name',
     tagline: 'Le copilote complet',
+    taglineKey: 'premium.tagline',
     price: { week: 4.99, month: 12.99, quarter: 32.99, halfyear: 57.99 },
     features: [
       '3 piscines',
@@ -75,6 +96,18 @@ export const PLANS: Plan[] = [
       'Spa et eau chaude (brome, oxygène actif)',
       'Historique illimité',
       'Support prioritaire',
+    ],
+    featureKeys: [
+      'premium.features.3pools',
+      'premium.features.unlimitedScans',
+      'premium.features.advancedWeather',
+      'premium.features.allGuidesVideos',
+      'premium.features.smartReminders',
+      'premium.features.pdfReport',
+      'premium.features.proMode',
+      'premium.features.spaSupport',
+      'premium.features.unlimitedHistory',
+      'premium.features.prioritySupport',
     ],
     limits: {
       maxPools: 3,
@@ -96,7 +129,9 @@ export const PLANS: Plan[] = [
   {
     id: 'expert',
     name: 'Expert',
+    nameKey: 'expert.name',
     tagline: 'Pour piscinistes et techniciens',
+    taglineKey: 'expert.tagline',
     price: { week: 9.99, month: 24.99, quarter: 59.99, halfyear: 109.99 },
     features: [
       'Tout Premium',
@@ -106,6 +141,15 @@ export const PLANS: Plan[] = [
       'Notes techniques avancées',
       'Export comptable',
       'API + intégrations',
+    ],
+    featureKeys: [
+      'expert.features.allPremium',
+      'expert.features.multiClients',
+      'expert.features.quotesVisits',
+      'expert.features.photosBeforeAfter',
+      'expert.features.advancedTechNotes',
+      'expert.features.accountingExport',
+      'expert.features.apiIntegrations',
     ],
     limits: {
       maxPools: 999,
@@ -126,10 +170,10 @@ export const PLANS: Plan[] = [
 ]
 
 export const DURATIONS = [
-  { id: 'week', label: '7 jours', suffix: '/semaine' },
-  { id: 'month', label: '1 mois', suffix: '/mois' },
-  { id: 'quarter', label: '3 mois', suffix: '/3 mois', save: '10%' },
-  { id: 'halfyear', label: '6 mois', suffix: '/6 mois', save: '20%' },
+  { id: 'week', label: '7 jours', suffix: '/semaine', labelKey: 'week', suffixKey: 'perWeek' },
+  { id: 'month', label: '1 mois', suffix: '/mois', labelKey: 'month', suffixKey: 'perMonth' },
+  { id: 'quarter', label: '3 mois', suffix: '/3 mois', save: '10%', labelKey: 'quarter', suffixKey: 'perQuarter' },
+  { id: 'halfyear', label: '6 mois', suffix: '/6 mois', save: '20%', labelKey: 'halfyear', suffixKey: 'perHalfyear' },
 ] as const
 
 export type FeatureGate =
@@ -143,35 +187,65 @@ export type FeatureGate =
   | 'history_extended'
   | 'spa_support'
 
+export interface CanAccessResult {
+  allowed: boolean
+  reason?: string         // French fallback (legacy)
+  reasonKey?: string      // translation key (ICU params via reasonParams)
+  reasonParams?: Record<string, string | number>
+  ctaPlan?: PlanId
+}
+
 // Vérifie si une feature est accessible selon le plan.
 // ctaPlan pointe vers le plan minimum pour débloquer la feature :
 //   - PLANS[1] = premium : la plupart des features payantes (multi-piscines, PDF, mode pro, météo avancée…)
 //   - PLANS[2] = expert  : réservé aux gates futures (multi-client illimité, API) — non listées ici
-export function canAccess(plan: PlanId, feature: FeatureGate, usage?: { photoScansThisMonth?: number }): { allowed: boolean; reason?: string; ctaPlan?: PlanId } {
+export function canAccess(plan: PlanId, feature: FeatureGate, usage?: { photoScansThisMonth?: number }): CanAccessResult {
   const p = PLANS.find((x) => x.id === plan) || PLANS[0]
 
   switch (feature) {
     case 'photo_scan':
       if (usage?.photoScansThisMonth != null && usage.photoScansThisMonth >= p.limits.maxPhotoScansPerMonth) {
-        return { allowed: false, reason: `Limite de ${p.limits.maxPhotoScansPerMonth} scans/mois atteinte.`, ctaPlan: PLANS[1].id }
+        return {
+          allowed: false,
+          reason: `Limite de ${p.limits.maxPhotoScansPerMonth} scans/mois atteinte.`,
+          reasonKey: 'gates.photo_scan_limit',
+          reasonParams: { n: p.limits.maxPhotoScansPerMonth },
+          ctaPlan: PLANS[1].id,
+        }
       }
       return { allowed: true }
     case 'weather_advanced':
-      return p.limits.weatherEnabled ? { allowed: true } : { allowed: false, reason: 'Météo avancée réservée aux plans payants.', ctaPlan: PLANS[1].id }
+      return p.limits.weatherEnabled
+        ? { allowed: true }
+        : { allowed: false, reason: 'Météo avancée réservée aux plans payants.', reasonKey: 'gates.weather_advanced', ctaPlan: PLANS[1].id }
     case 'smart_reminders':
-      return p.limits.smartReminders ? { allowed: true } : { allowed: false, reason: 'Rappels intelligents réservés aux plans payants.', ctaPlan: PLANS[1].id }
+      return p.limits.smartReminders
+        ? { allowed: true }
+        : { allowed: false, reason: 'Rappels intelligents réservés aux plans payants.', reasonKey: 'gates.smart_reminders', ctaPlan: PLANS[1].id }
     case 'guides_premium':
-      return p.limits.guidesAccess !== 'basic' ? { allowed: true } : { allowed: false, reason: 'Guides premium réservés aux plans payants.', ctaPlan: PLANS[1].id }
+      return p.limits.guidesAccess !== 'basic'
+        ? { allowed: true }
+        : { allowed: false, reason: 'Guides premium réservés aux plans payants.', reasonKey: 'gates.guides_premium', ctaPlan: PLANS[1].id }
     case 'multi_pool':
-      return p.limits.multiPool ? { allowed: true } : { allowed: false, reason: 'Multi-piscines réservé à Premium et Expert.', ctaPlan: PLANS[1].id }
+      return p.limits.multiPool
+        ? { allowed: true }
+        : { allowed: false, reason: 'Multi-piscines réservé à Premium et Expert.', reasonKey: 'gates.multi_pool', ctaPlan: PLANS[1].id }
     case 'pdf_report':
-      return p.limits.pdfReport ? { allowed: true } : { allowed: false, reason: 'Rapport PDF réservé à Premium et Expert.', ctaPlan: PLANS[1].id }
+      return p.limits.pdfReport
+        ? { allowed: true }
+        : { allowed: false, reason: 'Rapport PDF réservé à Premium et Expert.', reasonKey: 'gates.pdf_report', ctaPlan: PLANS[1].id }
     case 'pro_mode':
-      return p.limits.proMode ? { allowed: true } : { allowed: false, reason: 'Mode pro réservé à Premium et Expert.', ctaPlan: PLANS[1].id }
+      return p.limits.proMode
+        ? { allowed: true }
+        : { allowed: false, reason: 'Mode pro réservé à Premium et Expert.', reasonKey: 'gates.pro_mode', ctaPlan: PLANS[1].id }
     case 'history_extended':
-      return p.limits.historyDays >= 90 ? { allowed: true } : { allowed: false, reason: 'Historique étendu réservé aux plans payants.', ctaPlan: PLANS[1].id }
+      return p.limits.historyDays >= 90
+        ? { allowed: true }
+        : { allowed: false, reason: 'Historique étendu réservé aux plans payants.', reasonKey: 'gates.history_extended', ctaPlan: PLANS[1].id }
     case 'spa_support':
-      return p.limits.spaSupport ? { allowed: true } : { allowed: false, reason: 'Le support des spas est réservé au plan Premium.', ctaPlan: PLANS[1].id }
+      return p.limits.spaSupport
+        ? { allowed: true }
+        : { allowed: false, reason: 'Le support des spas est réservé au plan Premium.', reasonKey: 'gates.spa_support', ctaPlan: PLANS[1].id }
     default:
       return { allowed: true }
   }

@@ -1,0 +1,252 @@
+{
+  "guidesData.filter-backwash.steps.4.title": {
+    "fr": "Rallumer la pompe 2-3 min",
+    "en": "Turn the pump back on 2-3 min",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.5.detail": {
+    "fr": "Le rinçage re-tasse le sable et évite le retour de saletés.",
+    "en": "Rinsing repacks the sand and prevents dirt return.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.5.title": {
+    "fr": "Éteindre, vanne sur RINSE 30s",
+    "en": "Turn off, valve to RINSE 30s",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.6.detail": {
+    "fr": "Remettre la vanne en filtration normale.",
+    "en": "Set the valve back to normal filtration.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.steps.6.title": {
+    "fr": "Revenir en position FILTER",
+    "en": "Return to FILTER position",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.summary": {
+    "fr": "Quand et comment faire un backwash efficacement.",
+    "en": "When and how to do an effective backwash.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-backwash.title": {
+    "fr": "Backwash (contre-lavage) du filtre à sable",
+    "en": "Sand filter backwash (counter-rinse)",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.1.detail": {
+    "fr": "Couper l'alimentation électrique.",
+    "en": "Cut the power supply.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.1.title": {
+    "fr": "Éteindre la pompe",
+    "en": "Turn off the pump",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.1.warning": {
+    "fr": "Sécurité électrique obligatoire.",
+    "en": "Electrical safety mandatory.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.2.detail": {
+    "fr": "Ouvrir le corps du filtre selon le modèle.",
+    "en": "Open the filter body according to the model.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.2.title": {
+    "fr": "Démonter la cartouche",
+    "en": "Remove the cartridge",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.3.detail": {
+    "fr": "Jet d'eau doux, des haut vers le bas, entre les plis.",
+    "en": "Gentle water jet, top to bottom, between the folds.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.3.title": {
+    "fr": "Rincer au jet",
+    "en": "Rinse with a jet",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.4.detail": {
+    "fr": "Tous les 2-3 nettoyages, dégraissage et détartrage.",
+    "en": "Every 2-3 cleanings, degreasing and descaling.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.4.title": {
+    "fr": "Tremper dans un nettoyant filtre (optionnel)",
+    "en": "Soak in a filter cleaner (optional)",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.5.detail": {
+    "fr": "Bien repositionner les joints.",
+    "en": "Reposition the seals properly.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.steps.5.title": {
+    "fr": "Remonter et redémarrer",
+    "en": "Reassemble and restart",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.summary": {
+    "fr": "Démontage et rinçage d'une cartouche de filtration.",
+    "en": "Disassembly and rinsing of a filter cartridge.",
+    "reason": "placeholder"
+  },
+  "guidesData.filter-cartridge-clean.title": {
+    "fr": "Nettoyer un filtre à cartouche",
+    "en": "Clean a cartridge filter",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.1.detail": {
+    "fr": "L'eau tourne vite. Tests plus fréquents.",
+    "en": "Water turns quickly. More frequent tests.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.1.title": {
+    "fr": "Volume réduit = réactions rapides",
+    "en": "Reduced volume = fast reactions",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.2.detail": {
+    "fr": "Le brome est plus stable à chaud et moins odorant.",
+    "en": "Bromine is more stable when hot and less odorous.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.2.title": {
+    "fr": "Préférer le brome au chlore",
+    "en": "Prefer bromine over chlorine",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.3.detail": {
+    "fr": "Le pH bouge avec la température. Tester à température de bain.",
+    "en": "pH changes with temperature. Test at bathing temperature.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.3.title": {
+    "fr": "Température et pH",
+    "en": "Temperature and pH",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.4.detail": {
+    "fr": "Plus nécessaire qu'en piscine.",
+    "en": "More necessary than in a pool.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.4.title": {
+    "fr": "Choc hebdomadaire",
+    "en": "Weekly shock",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.5.detail": {
+    "fr": "Tous les 3-4 mois selon usage.",
+    "en": "Every 3-4 months depending on usage.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.steps.5.title": {
+    "fr": "Vidange périodique",
+    "en": "Periodic draining",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.summary": {
+    "fr": "Le spa a ses règles : eau chaude, volume réduit, brome plutôt que chlore.",
+    "en": "The spa has its own rules: hot water, reduced volume, bromine over chlorine.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started-spa.title": {
+    "fr": "Spécificités du spa",
+    "en": "Spa specifics",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.1.detail": {
+    "fr": "Indispensable pour tout dosage. AQWELIA le calcule à partir des dimensions.",
+    "en": "Essential for any dosage. AQWELIA calculates it from dimensions.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.1.title": {
+    "fr": "Connaître le volume de sa piscine",
+    "en": "Know your pool volume",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.10.detail": {
+    "fr": "AQWELIA garde l'historique pour vous.",
+    "en": "AQWELIA keeps the history for you.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.10.title": {
+    "fr": "Garder un carnet",
+    "en": "Keep a log",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.2.detail": {
+    "fr": "Le paramètre n°1. Tout part de là.",
+    "en": "The #1 parameter. Everything starts here.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.2.title": {
+    "fr": "Comprendre le pH",
+    "en": "Understand pH",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.3.detail": {
+    "fr": "Libre, total, combiné. AQWELIA vous guide.",
+    "en": "Free, total, combined. AQWELIA guides you.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.3.title": {
+    "fr": "Comprendre le chlore",
+    "en": "Understand chlorine",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.4.detail": {
+    "fr": "Moitié de la température de l'eau en heures.",
+    "en": "Half the water temperature in hours.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.4.title": {
+    "fr": "Filtrer suffisamment",
+    "en": "Filter enough",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.5.detail": {
+    "fr": "Plus souvent par forte chaleur.",
+    "en": "More often in hot weather.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.5.title": {
+    "fr": "Tester 1-2x par semaine",
+    "en": "Test 1-2x per week",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.6.detail": {
+    "fr": "Backwash ou rinçage régulier.",
+    "en": "Regular backwash or rinse.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.6.title": {
+    "fr": "Entretenir le filtre",
+    "en": "Maintain the filter",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.7.detail": {
+    "fr": "Trop bas = pompe en danger ; trop haut = skimmer inefficace.",
+    "en": "Too low = pump at risk; too high = inefficient skimmer.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.7.title": {
+    "fr": "Surveiller le niveau d'eau",
+    "en": "Monitor the water level",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.8.detail": {
+    "fr": "Évite algues et dépôts.",
+    "en": "Prevents algae and deposits.",
+    "reason": "placeholder"
+  },
+  "guidesData.getting-started.steps.8.title": {
+    "fr": "Brosser et nettoyer la ligne d'eau",
+    "en": "Brush and clean the water line",
+    "reason": "placeholder"
+  }
+}
