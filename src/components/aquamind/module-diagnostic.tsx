@@ -603,7 +603,9 @@ export function ModuleDiagnostic() {
                           )}
                         </div>
                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                          {d.aiSummary}
+                          {d.aiSummary && !d.aiSummary.toLowerCase().includes('je ne peux pas')
+                            ? d.aiSummary
+                            : 'Diagnostic sans analyse IA'}
                         </p>
                         {!isResolved && detected.length > 0 && (
                           <p className="mt-1 text-[11px] text-destructive">
@@ -642,15 +644,28 @@ export function ModuleDiagnostic() {
                         </div>
                         <div className="px-6 py-4">
                           <AlertDialogDescription className="text-center text-sm text-muted-foreground">
-                            Cette action est définitive. Le diagnostic et sa photo seront supprimés définitivement de votre historique.
+                            Cette action est définitive. Le diagnostic et sa photo seront supprimés de votre historique.
                           </AlertDialogDescription>
-                          {d.aiSummary && (
-                            <div className="mt-3 rounded-lg border border-border/40 bg-secondary/30 p-2.5">
-                              <p className="line-clamp-2 text-xs text-muted-foreground">
-                                📸 {d.aiSummary}
+                          {/* Visual preview: show the actual photo thumbnail */}
+                          <div className="mt-3 flex items-center gap-3 rounded-lg border border-border/40 bg-secondary/30 p-2.5">
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary">
+                              {d.imageUrl && d.imageUrl.startsWith('data:') ? (
+                                <img src={d.imageUrl} alt="Aperçu" className="h-full w-full object-cover" />
+                              ) : (
+                                <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                {d.type} · {new Date(d.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                              <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                                {d.aiSummary && !d.aiSummary.toLowerCase().includes('je ne peux pas')
+                                  ? d.aiSummary
+                                  : 'Diagnostic sans analyse IA'}
                               </p>
                             </div>
-                          )}
+                          </div>
                         </div>
                         <AlertDialogFooter className="gap-2 px-6 pb-6">
                           <AlertDialogCancel className="rounded-full border-border/60 px-6">
