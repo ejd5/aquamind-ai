@@ -152,7 +152,7 @@ export function SpaSection() {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className={`font-display text-sm font-bold ${isRecommended ? 'text-gold' : 'text-red-500'}`}>
-                        {treatment.name}
+                        {td(treatment.name)}
                       </span>
                       <span
                         className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
@@ -161,7 +161,7 @@ export function SpaSection() {
                             : 'bg-red-500/15 text-red-500'
                         }`}
                       >
-                        {isRecommended ? t('spaRecommended') : t('spaNotRecommended')}
+                        {isRecommended ? td('recommended') : td('notRecommended')}
                       </span>
                     </div>
                     <p className="mt-1 text-[10px] text-muted-foreground">
