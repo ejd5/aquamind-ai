@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
+import { useTranslations } from 'next-intl'
 import type { TabId } from './app-shell'
 import { offlineApi } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
@@ -80,11 +81,17 @@ interface Props {
   onNavigate?: (tab: TabId) => void
 }
 
-const PRIORITY_CFG: Record<ReminderPriority, { label: string; stripe: string; badge: string }> = {
-  urgent: { label: 'Urgent', stripe: 'bg-destructive', badge: 'border-destructive/40 bg-destructive/10 text-destructive' },
-  high: { label: 'Aujourd\u2019hui', stripe: 'bg-orange-500', badge: 'border-orange-400/40 bg-orange-400/10 text-orange-700 dark:text-orange-300' },
-  medium: { label: 'Cette semaine', stripe: 'bg-primary', badge: 'border-primary/40 bg-primary/10 text-primary' },
-  low: { label: 'Plus tard', stripe: 'bg-muted-foreground', badge: 'border-border bg-secondary/60 text-muted-foreground' },
+const PRIORITY_STRIPE: Record<ReminderPriority, string> = {
+  urgent: 'bg-destructive',
+  high: 'bg-orange-500',
+  medium: 'bg-primary',
+  low: 'bg-muted-foreground',
+}
+const PRIORITY_BADGE: Record<ReminderPriority, string> = {
+  urgent: 'border-destructive/40 bg-destructive/10 text-destructive',
+  high: 'border-orange-400/40 bg-orange-400/10 text-orange-700 dark:text-orange-300',
+  medium: 'border-primary/40 bg-primary/10 text-primary',
+  low: 'border-border bg-secondary/60 text-muted-foreground',
 }
 
 const TYPE_ICON: Record<ReminderType, typeof Bell> = {
@@ -101,16 +108,18 @@ const TYPE_ICON: Record<ReminderType, typeof Bell> = {
   uv_check: Sparkles,
 }
 
-const SOURCE_LABEL: Record<string, string> = {
-  weather: 'Météo',
-  test_history: 'Historique',
-  inventory: 'Inventaire',
-  equipment: 'Équipement',
-  schedule: 'Calendrier',
-  manual: 'Manuel',
+// Source labels are translated at runtime via t('source.<key>')
+const SOURCE_KEY: Record<string, string> = {
+  weather: 'weather',
+  test_history: 'testHistory',
+  inventory: 'inventory',
+  equipment: 'equipment',
+  schedule: 'schedule',
+  manual: 'manual',
 }
 
 export function ModuleReminders({ onNavigate }: Props) {
+  const t = useTranslations('modules.reminders')
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [manualReminders, setManualReminders] = useState<Reminder[]>([])
   const [context, setContext] = useState<ReminderContext | null>(null)
@@ -158,12 +167,12 @@ export function ModuleReminders({ onNavigate }: Props) {
       if (subData?.plan?.id) setPlanId(subData.plan.id)
       setStale(remRes.stale || subRes.stale)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur')
+      setError(e instanceof Error ? e.message : t('error'))
       setStale(false)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     load()
@@ -174,11 +183,11 @@ export function ModuleReminders({ onNavigate }: Props) {
   const highCount = allReminders.filter((r) => r.priority === 'high').length
 
   // Group reminders by priority bucket
-  const groups: { key: ReminderPriority; label: string; items: Reminder[] }[] = [
-    { key: 'urgent', label: 'Urgent', items: allReminders.filter((r) => r.priority === 'urgent') },
-    { key: 'high', label: "Aujourd'hui", items: allReminders.filter((r) => r.priority === 'high') },
-    { key: 'medium', label: 'Cette semaine', items: allReminders.filter((r) => r.priority === 'medium') },
-    { key: 'low', label: 'Plus tard', items: allReminders.filter((r) => r.priority === 'low') },
+  const groups: { key: ReminderPriority; items: Reminder[] }[] = [
+    { key: 'urgent', items: allReminders.filter((r) => r.priority === 'urgent') },
+    { key: 'high', items: allReminders.filter((r) => r.priority === 'high') },
+    { key: 'medium', items: allReminders.filter((r) => r.priority === 'medium') },
+    { key: 'low', items: allReminders.filter((r) => r.priority === 'low') },
   ]
 
   async function patchReminder(id: string, patch: { done?: boolean; snoozed?: boolean }) {
@@ -190,8 +199,8 @@ export function ModuleReminders({ onNavigate }: Props) {
         setReminders((r) => r.filter((x) => x.id !== id))
         setManualReminders((r) => r.filter((x) => x.id !== id))
         toast({
-          title: patch.done ? 'Rappel terminé' : 'Rappel reporté',
-          description: 'Sera synchronisé quand vous serez en ligne.',
+          title: patch.done ? t('doneToast') : t('snoozedToast'),
+          description: t('syncLater'),
         })
         return
       }
@@ -200,11 +209,11 @@ export function ModuleReminders({ onNavigate }: Props) {
       setReminders((r) => r.filter((x) => x.id !== id))
       setManualReminders((r) => r.filter((x) => x.id !== id))
       toast({
-        title: patch.done ? 'Rappel terminé' : 'Rappel reporté',
-        description: patch.done ? 'Bien joué !' : 'Vous le reverrez plus tard.',
+        title: patch.done ? t('doneToast') : t('snoozedToast'),
+        description: patch.done ? t('doneDesc') : t('snoozedDesc'),
       })
     } catch {
-      toast({ title: 'Erreur', description: 'Impossible de mettre à jour', variant: 'destructive' })
+      toast({ title: t('error'), description: t('updateError'), variant: 'destructive' })
     }
   }
 
@@ -214,22 +223,22 @@ export function ModuleReminders({ onNavigate }: Props) {
         queueAction({ method: 'DELETE', path: `/api/pool/reminders?id=${id}` })
         setManualReminders((r) => r.filter((x) => x.id !== id))
         toast({
-          title: 'Suppression enregistrée',
-          description: 'Sera synchronisée quand vous serez en ligne.',
+          title: t('deleteQueued'),
+          description: t('syncLater'),
         })
         return
       }
       await api.delete(`/api/pool/reminders?id=${id}`)
       setManualReminders((r) => r.filter((x) => x.id !== id))
-      toast({ title: 'Rappel supprimé' })
+      toast({ title: t('deletedToast') })
     } catch {
-      toast({ title: 'Erreur', description: 'Suppression impossible', variant: 'destructive' })
+      toast({ title: t('error'), description: t('deleteError'), variant: 'destructive' })
     }
   }
 
   async function addManual() {
     if (!form.title.trim()) {
-      toast({ title: 'Titre requis', variant: 'destructive' })
+      toast({ title: t('titleRequired'), variant: 'destructive' })
       return
     }
     setSaving(true)
@@ -260,8 +269,8 @@ export function ModuleReminders({ onNavigate }: Props) {
         setForm({ title: '', detail: '', action: '', type: 'test_water', priority: 'medium', dueAt: '' })
         setAddOpen(false)
         toast({
-          title: 'Rappel ajouté',
-          description: 'Sera synchronisé quand vous serez en ligne.',
+          title: t('addedToast'),
+          description: t('syncLater'),
         })
         return
       }
@@ -281,11 +290,11 @@ export function ModuleReminders({ onNavigate }: Props) {
       ])
       setForm({ title: '', detail: '', action: '', type: 'test_water', priority: 'medium', dueAt: '' })
       setAddOpen(false)
-      toast({ title: 'Rappel ajouté', description: 'Votre rappel manuel est enregistré.' })
+      toast({ title: t('addedToast'), description: t('addedDesc') })
     } catch (e) {
       toast({
-        title: 'Erreur',
-        description: e instanceof Error ? e.message : 'Échec',
+        title: t('error'),
+        description: e instanceof Error ? e.message : t('failed'),
         variant: 'destructive',
       })
     } finally {
@@ -307,13 +316,13 @@ export function ModuleReminders({ onNavigate }: Props) {
   if (error) {
     return (
       <div className="space-y-5">
-        <Header urgentCount={0} highCount={0} onRefresh={load} stale={stale} />
+        <Header t={t} urgentCount={0} highCount={0} onRefresh={load} stale={stale} />
         <Card className="glass-card">
           <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
             <AlertTriangle className="h-8 w-8 text-destructive" />
             <p className="text-sm text-muted-foreground">{error}</p>
             <Button onClick={load} variant="outline" size="sm">
-              Réessayer
+              {t('retry')}
             </Button>
           </CardContent>
         </Card>
@@ -323,19 +332,19 @@ export function ModuleReminders({ onNavigate }: Props) {
 
   return (
     <div className="space-y-5">
-      <Header urgentCount={urgentCount} highCount={highCount} onRefresh={load} stale={stale} />
+      <Header t={t} urgentCount={urgentCount} highCount={highCount} onRefresh={load} stale={stale} />
 
       {/* Info banner */}
       <div className="flex items-start gap-2 rounded-xl border border-border/60 bg-secondary/30 p-3 text-xs text-foreground/80">
         <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold" />
         <p>
-          Rappels intelligents générés à partir de votre historique, météo et équipements.{' '}
+          {t('infoBanner')}{' '}
           {planId === 'free' && (
             <span className="font-semibold text-gold">
-              Plan gratuit : rappels de base seulement.{' '}
+              {t('freePlanInfo')}{' '}
               {onNavigate && (
                 <button onClick={() => onNavigate('paywall')} className="underline underline-offset-2">
-                  Débloquer les rappels intelligents
+                  {t('unlockLink')}
                 </button>
               )}
             </span>
@@ -348,19 +357,19 @@ export function ModuleReminders({ onNavigate }: Props) {
         <div className="flex flex-wrap gap-2 text-[11px]">
           {context.lastTestDaysAgo != null && (
             <span className="rounded-full bg-secondary/60 px-2 py-1 text-muted-foreground">
-              Dernier test : {context.lastTestDaysAgo >= 999 ? 'jamais' : `il y a ${context.lastTestDaysAgo}j`}
+              {t('lastTest')} {context.lastTestDaysAgo >= 999 ? t('never') : t('daysAgo', { n: context.lastTestDaysAgo })}
             </span>
           )}
           <span className="rounded-full bg-secondary/60 px-2 py-1 text-muted-foreground">
-            Filtre : {context.filterType}
+            {t('filterLabel')} {context.filterType}
           </span>
           {context.hasSaltSystem && (
             <span className="rounded-full bg-gold/15 px-2 py-1 text-gold">
-              Électrolyseur au sel
+              {t('saltSystem')}
             </span>
           )}
           <span className="rounded-full bg-secondary/60 px-2 py-1 capitalize text-muted-foreground">
-            Saison : {context.season === 'spring' ? 'printemps' : context.season === 'summer' ? 'été' : context.season === 'autumn' ? 'automne' : 'hiver'}
+            {t('seasonLabel')} {t(`season.${context.season}`)}
           </span>
         </div>
       )}
@@ -377,9 +386,9 @@ export function ModuleReminders({ onNavigate }: Props) {
                 <Plus className="h-4 w-4" />
               </span>
               <div className="flex-1">
-                <p className="font-display text-sm font-semibold">Ajouter un rappel manuel</p>
+                <p className="font-display text-sm font-semibold">{t('addManual')}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  Pour une tâche personnalisée non couverte par les rappels intelligents.
+                  {t('addManualDesc')}
                 </p>
               </div>
               <ChevronDown
@@ -391,16 +400,16 @@ export function ModuleReminders({ onNavigate }: Props) {
             <CardContent className="space-y-3 border-t border-border/40 pt-3">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <Label htmlFor="r-title" className="text-xs">Titre *</Label>
+                  <Label htmlFor="r-title" className="text-xs">{t('titleLabel')}</Label>
                   <Input
                     id="r-title"
                     value={form.title}
                     onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                    placeholder="Ex : Acheter du pH-"
+                    placeholder={t('titlePlaceholder')}
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="r-due" className="text-xs">Échéance (optionnel)</Label>
+                  <Label htmlFor="r-due" className="text-xs">{t('dueAtLabel')}</Label>
                   <Input
                     id="r-due"
                     type="datetime-local"
@@ -411,47 +420,47 @@ export function ModuleReminders({ onNavigate }: Props) {
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <Label className="text-xs">Type</Label>
+                  <Label className="text-xs">{t('typeLabel')}</Label>
                   <Select
                     value={form.type}
                     onValueChange={(v) => setForm((f) => ({ ...f, type: v as ReminderType }))}
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="test_water">Test d'eau</SelectItem>
-                      <SelectItem value="filter_clean">Nettoyage filtre</SelectItem>
-                      <SelectItem value="cell_clean">Cellule électrolyseur</SelectItem>
-                      <SelectItem value="skimmer_clean">Skimmer / panier</SelectItem>
-                      <SelectItem value="low_product">Stock produit</SelectItem>
-                      <SelectItem value="before_vacation">Avant vacances</SelectItem>
-                      <SelectItem value="startup">Remise en route</SelectItem>
-                      <SelectItem value="winterize">Hivernage</SelectItem>
+                      <SelectItem value="test_water">{t('type.testWater')}</SelectItem>
+                      <SelectItem value="filter_clean">{t('type.filterClean')}</SelectItem>
+                      <SelectItem value="cell_clean">{t('type.cellClean')}</SelectItem>
+                      <SelectItem value="skimmer_clean">{t('type.skimmerClean')}</SelectItem>
+                      <SelectItem value="low_product">{t('type.lowProduct')}</SelectItem>
+                      <SelectItem value="before_vacation">{t('type.beforeVacation')}</SelectItem>
+                      <SelectItem value="startup">{t('type.startup')}</SelectItem>
+                      <SelectItem value="winterize">{t('type.winterize')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Priorité</Label>
+                  <Label className="text-xs">{t('priorityLabel')}</Label>
                   <Select
                     value={form.priority}
                     onValueChange={(v) => setForm((f) => ({ ...f, priority: v as ReminderPriority }))}
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">Plus tard</SelectItem>
-                      <SelectItem value="medium">Cette semaine</SelectItem>
-                      <SelectItem value="high">Aujourd'hui</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
+                      <SelectItem value="low">{t('priority.low')}</SelectItem>
+                      <SelectItem value="medium">{t('priority.medium')}</SelectItem>
+                      <SelectItem value="high">{t('priority.high')}</SelectItem>
+                      <SelectItem value="urgent">{t('priority.urgent')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="space-y-1">
-                <Label htmlFor="r-detail" className="text-xs">Détail (optionnel)</Label>
+                <Label htmlFor="r-detail" className="text-xs">{t('detailLabel')}</Label>
                 <Textarea
                   id="r-detail"
                   value={form.detail}
                   onChange={(e) => setForm((f) => ({ ...f, detail: e.target.value }))}
-                  placeholder="Ex : Le flacon est presque vide…"
+                  placeholder={t('detailPlaceholder')}
                   className="min-h-[50px] resize-none"
                 />
               </div>
@@ -462,10 +471,10 @@ export function ModuleReminders({ onNavigate }: Props) {
                   className="bg-gradient-to-r from-primary to-gold text-primary-foreground"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  Enregistrer
+                  {t('save')}
                 </Button>
                 <Button variant="outline" onClick={() => setAddOpen(false)}>
-                  Annuler
+                  {t('cancel')}
                 </Button>
               </div>
             </CardContent>
@@ -478,9 +487,9 @@ export function ModuleReminders({ onNavigate }: Props) {
         <Card className="glass-card">
           <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
             <Check className="h-8 w-8 text-[oklch(0.7_0.15_155)]" />
-            <p className="font-display text-base">Aucun rappel en attente</p>
+            <p className="font-display text-base">{t('nonePending')}</p>
             <p className="text-sm text-muted-foreground">
-              Vous êtes à jour ! Les rappels intelligents apparaîtront ici selon votre activité.
+              {t('nonePendingDesc')}
             </p>
           </CardContent>
         </Card>
@@ -490,7 +499,7 @@ export function ModuleReminders({ onNavigate }: Props) {
             group.items.length === 0 ? null : (
               <div key={group.key}>
                 <div className="mb-2 flex items-center gap-2">
-                  <h3 className="font-display text-sm font-semibold">{group.label}</h3>
+                  <h3 className="font-display text-sm font-semibold">{t(`priority.${group.key}`)}</h3>
                   <Badge variant="outline" className="text-[10px]">
                     {group.items.length}
                   </Badge>
@@ -498,14 +507,15 @@ export function ModuleReminders({ onNavigate }: Props) {
                 </div>
                 <div className="space-y-2">
                   {group.items.map((r) => {
-                    const cfg = PRIORITY_CFG[r.priority]
+                    const stripe = PRIORITY_STRIPE[r.priority]
+                    const badgeCls = PRIORITY_BADGE[r.priority]
                     const Icon = TYPE_ICON[r.type] || Bell
                     return (
                       <div
                         key={r.id}
                         className={`relative overflow-hidden rounded-xl border border-border/50 bg-card/60 p-3 pl-4 backdrop-blur-sm`}
                       >
-                        <span className={`absolute left-0 top-0 h-full w-1 ${cfg.stripe}`} />
+                        <span className={`absolute left-0 top-0 h-full w-1 ${stripe}`} />
                         <div className="flex items-start gap-3 pl-1">
                           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary/70">
                             <Icon className="h-4 w-4 text-primary" />
@@ -513,22 +523,22 @@ export function ModuleReminders({ onNavigate }: Props) {
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="font-display text-sm font-bold">{r.title}</p>
-                              <Badge variant="outline" className={`text-[9px] ${cfg.badge}`}>
-                                {cfg.label}
+                              <Badge variant="outline" className={`text-[9px] ${badgeCls}`}>
+                                {t(`priority.${r.priority}`)}
                               </Badge>
                               <span className="rounded-full bg-secondary/60 px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
-                                {SOURCE_LABEL[r.source] || r.source}
+                                {SOURCE_KEY[r.source] ? t(`source.${SOURCE_KEY[r.source]}`) : r.source}
                               </span>
                             </div>
                             <p className="mt-0.5 text-xs text-muted-foreground">{r.detail}</p>
                             <div className="mt-2 flex items-start gap-1.5 rounded-md bg-gold/5 p-2 text-xs text-foreground/90">
                               <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-gold" />
-                              <span><strong className="text-gold">Action :</strong> {r.action}</span>
+                              <span><strong className="text-gold">{t('actionLabel')} :</strong> {r.action}</span>
                             </div>
                             <div className="mt-2 flex flex-wrap items-center gap-2">
                               <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
                                 <Clock className="h-3 w-3" />
-                                {r.dueInHours <= 0 ? 'Maintenant' : r.dueInHours < 24 ? `dans ${r.dueInHours}h` : `dans ${Math.round(r.dueInHours / 24)}j`}
+                                {r.dueInHours <= 0 ? t('now') : r.dueInHours < 24 ? t('inHours', { n: r.dueInHours }) : t('inDays', { n: Math.round(r.dueInHours / 24) })}
                               </span>
                               <div className="ml-auto flex flex-wrap gap-1.5">
                                 <Button
@@ -538,7 +548,7 @@ export function ModuleReminders({ onNavigate }: Props) {
                                   className="h-7 border-[oklch(0.7_0.15_155)]/40 text-[oklch(0.45_0.13_155)] hover:bg-[oklch(0.7_0.15_155)]/10"
                                 >
                                   <Check className="h-3 w-3" />
-                                  Terminé
+                                  {t('done')}
                                 </Button>
                                 <Button
                                   size="sm"
@@ -546,7 +556,7 @@ export function ModuleReminders({ onNavigate }: Props) {
                                   onClick={() => patchReminder(r.id, { snoozed: true })}
                                   className="h-7"
                                 >
-                                  Plus tard
+                                  {t('snooze')}
                                 </Button>
                                 {r.source === 'manual' && (
                                   <Button
@@ -580,9 +590,9 @@ export function ModuleReminders({ onNavigate }: Props) {
               <ShieldCheck className="h-5 w-5 text-gold" />
             </div>
             <div className="flex-1">
-              <p className="font-display text-sm font-bold text-gold">Débloquez les rappels intelligents</p>
+              <p className="font-display text-sm font-bold text-gold">{t('unlockTitle')}</p>
               <p className="text-xs text-foreground/80">
-                Rappels météo, ré-ajustement après traitement, stock bas… Passez à Premium.
+                {t('unlockDesc')}
               </p>
             </div>
             {onNavigate && (
@@ -592,7 +602,7 @@ export function ModuleReminders({ onNavigate }: Props) {
                 className="border-gold/40 bg-gold/10 text-gold hover:bg-gold/20"
                 variant="outline"
               >
-                Voir les offres
+                {t('seePlans')}
                 <Sparkles className="h-3.5 w-3.5" />
               </Button>
             )}
@@ -604,11 +614,13 @@ export function ModuleReminders({ onNavigate }: Props) {
 }
 
 function Header({
+  t,
   urgentCount,
   highCount,
   onRefresh,
   stale,
 }: {
+  t: ReturnType<typeof useTranslations>
   urgentCount: number
   highCount: number
   onRefresh: () => void
@@ -618,36 +630,36 @@ function Header({
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div>
         <div className="flex items-center gap-2">
-          <span className="section-label">Rappels intelligents</span>
+          <span className="section-label">{t('title')}</span>
           <span className="h-px w-8 bg-gold/40" />
         </div>
         <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Vos rappels piscine
+          {t('headline')}
         </h1>
         <div className="mt-1.5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           {urgentCount > 0 ? (
             <span className="flex items-center gap-1.5 font-semibold text-destructive">
               <AlertTriangle className="h-4 w-4" />
-              {urgentCount} urgent{urgentCount > 1 ? 's' : ''}
+              {t('urgentCount', { count: urgentCount })}
             </span>
           ) : (
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-[oklch(0.7_0.15_155)]" />
-              Aucun rappel urgent
+              {t('noUrgent')}
             </span>
           )}
           {highCount > 0 && (
             <span className="flex items-center gap-1.5 text-orange-600 dark:text-orange-300">
-              · {highCount} aujourd'hui
+              · {t('todayCount', { count: highCount })}
             </span>
           )}
           {stale && (
-            <span className="text-[10px] italic text-muted-foreground">· données en cache</span>
+            <span className="text-[10px] italic text-muted-foreground">· {t('cached')}</span>
           )}
         </div>
       </div>
       <Button variant="outline" size="sm" onClick={onRefresh} className="border-border/60">
-        Actualiser
+        {t('refresh')}
       </Button>
     </div>
   )

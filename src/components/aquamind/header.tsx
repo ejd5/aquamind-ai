@@ -2,6 +2,7 @@ import { Sparkles, Droplets, ArrowLeft, Settings, LogOut, ChevronDown } from 'lu
 import { useSession, signOut } from 'next-auth/react'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import type { TabId, PoolProfileLite } from './app-shell'
 
 interface HeaderProps {
@@ -15,6 +16,8 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
   const { data: session } = useSession()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const t = useTranslations('nav')
+  const tl = useTranslations('landing')
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -53,23 +56,23 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
                 <span className="aqua-text-gradient">AQWELIA</span>
               </button>
               <span className="ml-0.5 rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-gold">
-                Pro
+                {t('pro')}
               </span>
             </div>
             <div className="hidden text-[10px] uppercase tracking-[0.22em] text-muted-foreground sm:block">
-              Copilote piscine
+              {tl('headerCopilote')}
             </div>
           </div>
         </div>
 
         <nav className="hidden items-center gap-0.5 lg:flex">
           {[
-            { id: 'today' as const, label: "Aujourd'hui" },
-            { id: 'diagnostic' as const, label: 'Diagnostic' },
-            { id: 'water' as const, label: 'Analyse eau' },
-            { id: 'plan' as const, label: "Plan d'action" },
-            { id: 'log' as const, label: 'Carnet' },
-            { id: 'maintenance' as const, label: 'Matériel' },
+            { id: 'today' as const, label: t('today') },
+            { id: 'diagnostic' as const, label: t('diagnosticShort') },
+            { id: 'water' as const, label: t('water') },
+            { id: 'plan' as const, label: t('plan') },
+            { id: 'log' as const, label: t('shortLog') },
+            { id: 'maintenance' as const, label: t('equipment') },
           ].map((item) => (
             <button
               key={item.id}
@@ -90,17 +93,17 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
             <button
               onClick={onBackToLanding}
               className="glass-pill flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-foreground/90 transition-colors hover:border-gold/40 hover:text-gold"
-              title="Retour à la landing page"
+              title={t('backToLandingTitle')}
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Landing</span>
+              <span className="hidden sm:inline">{t('landing')}</span>
             </button>
           )}
           {profile && (
             <button
               onClick={() => onNavigate('maintenance')}
               className="glass-pill flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-foreground/90 transition-colors hover:border-gold/40"
-              title="Profil piscine — cliquez pour gérer le matériel"
+              title={t('poolProfileTitle')}
             >
               <Droplets className="h-3.5 w-3.5 text-primary" />
               <span className="hidden sm:inline">{profile.name}</span>
@@ -115,7 +118,7 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-gold shadow-[0_0_8px_oklch(0.65_0.11_195)]" />
             </span>
-            IA en ligne
+            {t('online')}
           </span>
 
           {/* User menu */}
@@ -124,7 +127,7 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
               <button
                 onClick={() => setMenuOpen((v) => !v)}
                 className="glass-pill flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-foreground/90 transition-colors hover:border-gold/40"
-                aria-label="Menu utilisateur"
+                aria-label={t('userMenuAria')}
               >
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-primary to-gold text-[10px] font-bold text-white">
                   {(session.user.name || session.user.email || 'U').charAt(0).toUpperCase()}
@@ -138,7 +141,7 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
               {menuOpen && (
                 <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-border/60 bg-background/95 shadow-xl backdrop-blur-xl">
                   <div className="border-b border-border/40 px-4 py-3">
-                    <p className="text-sm font-semibold text-foreground">{session.user.name || 'Utilisateur'}</p>
+                    <p className="text-sm font-semibold text-foreground">{session.user.name || t('user')}</p>
                     <p className="truncate text-[11px] text-muted-foreground">{session.user.email}</p>
                   </div>
                   <Link
@@ -147,14 +150,14 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
                     className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-secondary/60"
                   >
                     <Settings className="h-4 w-4 text-muted-foreground" />
-                    Paramètres
+                    {t('settings')}
                   </Link>
                   <button
                     onClick={() => signOut({ callbackUrl: '/' })}
                     className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-destructive transition-colors hover:bg-destructive/5"
                   >
                     <LogOut className="h-4 w-4" />
-                    Déconnexion
+                    {t('signOut')}
                   </button>
                 </div>
               )}

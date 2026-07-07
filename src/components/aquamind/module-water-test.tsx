@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useTranslations } from 'next-intl'
 import { toast } from '@/hooks/use-toast'
 import { TARGETS, evaluateParam, type ParamStatus } from '@/lib/pool/targets'
 import type { TabId } from './app-shell'
@@ -77,17 +78,17 @@ interface ActionPlanResult {
   whenToCallProfessional: string | null
 }
 
-const FIELDS: { key: string; label: string; placeholder: string; required?: boolean }[] = [
-  { key: 'ph', label: 'pH', placeholder: '7.2', required: true },
-  { key: 'freeChlorine', label: 'Chlore libre', placeholder: '2.0' },
-  { key: 'totalChlorine', label: 'Chlore total', placeholder: '2.5' },
-  { key: 'combinedChlorine', label: 'Chlore combiné', placeholder: '0.2' },
-  { key: 'alkalinity', label: 'Alcalinité (TAC)', placeholder: '100' },
-  { key: 'calciumHardness', label: 'Dureté (TH)', placeholder: '300' },
-  { key: 'cyanuricAcid', label: 'Stabilisant (CYA)', placeholder: '40' },
-  { key: 'salt', label: 'Sel (g/L)', placeholder: '5' },
-  { key: 'phosphates', label: 'Phosphates', placeholder: '0.05' },
-  { key: 'temperature', label: 'Température (°C)', placeholder: '26' },
+const FIELDS: { key: string; labelKey: string; placeholder: string; required?: boolean }[] = [
+  { key: 'ph', labelKey: 'ph', placeholder: '7.2', required: true },
+  { key: 'freeChlorine', labelKey: 'freeChlorine', placeholder: '2.0' },
+  { key: 'totalChlorine', labelKey: 'totalChlorine', placeholder: '2.5' },
+  { key: 'combinedChlorine', labelKey: 'combinedChlorine', placeholder: '0.2' },
+  { key: 'alkalinity', labelKey: 'alkalinity', placeholder: '100' },
+  { key: 'calciumHardness', labelKey: 'calciumHardness', placeholder: '300' },
+  { key: 'cyanuricAcid', labelKey: 'cyanuricAcid', placeholder: '40' },
+  { key: 'salt', labelKey: 'saltLabel', placeholder: '5' },
+  { key: 'phosphates', labelKey: 'phosphates', placeholder: '0.05' },
+  { key: 'temperature', labelKey: 'temperatureLabel', placeholder: '26' },
 ]
 
 function statusDot(s: ParamStatus | 'unknown') {
@@ -105,27 +106,28 @@ function statusDot(s: ParamStatus | 'unknown') {
   }
 }
 
-const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  ok: { label: 'Équilibrée', cls: 'border-[oklch(0.7_0.15_155)]/30 bg-[oklch(0.7_0.15_155)]/10 text-[oklch(0.45_0.13_155)]' },
-  warning: { label: 'Attention', cls: 'border-yellow-400/30 bg-yellow-400/10 text-yellow-700 dark:text-yellow-300' },
-  critical: { label: 'Critique', cls: 'border-destructive/30 bg-destructive/10 text-destructive' },
+const STATUS_BADGE: Record<string, { labelKey: string; cls: string }> = {
+  ok: { labelKey: 'balanced', cls: 'border-[oklch(0.7_0.15_155)]/30 bg-[oklch(0.7_0.15_155)]/10 text-[oklch(0.45_0.13_155)]' },
+  warning: { labelKey: 'statusWarning', cls: 'border-yellow-400/30 bg-yellow-400/10 text-yellow-700 dark:text-yellow-300' },
+  critical: { labelKey: 'statusCritical', cls: 'border-destructive/30 bg-destructive/10 text-destructive' },
 }
 
-const SEVERITY_CONFIG: Record<string, { label: string; cls: string }> = {
-  low: { label: 'Tout va bien', cls: 'border-[oklch(0.7_0.15_155)]/30 bg-[oklch(0.7_0.15_155)]/10 text-[oklch(0.45_0.13_155)]' },
-  medium: { label: 'À surveiller', cls: 'border-yellow-400/30 bg-yellow-400/10 text-yellow-700 dark:text-yellow-300' },
-  high: { label: 'Action recommandée', cls: 'border-orange-400/30 bg-orange-400/10 text-orange-700 dark:text-orange-300' },
-  urgent: { label: 'Urgent', cls: 'border-destructive/30 bg-destructive/10 text-destructive' },
+const SEVERITY_CONFIG: Record<string, { labelKey: string; cls: string }> = {
+  low: { labelKey: 'balanced', cls: 'border-[oklch(0.7_0.15_155)]/30 bg-[oklch(0.7_0.15_155)]/10 text-[oklch(0.45_0.13_155)]' },
+  medium: { labelKey: 'watch', cls: 'border-yellow-400/30 bg-yellow-400/10 text-yellow-700 dark:text-yellow-300' },
+  high: { labelKey: 'actionRecommended', cls: 'border-orange-400/30 bg-orange-400/10 text-orange-700 dark:text-orange-300' },
+  urgent: { labelKey: 'urgent', cls: 'border-destructive/30 bg-destructive/10 text-destructive' },
 }
 
-const SWIM_LABEL: Record<string, string> = {
-  allowed: 'Baignade autorisée',
-  avoid: 'Baignade déconseillée',
-  forbidden: 'Baignade interdite',
-  unknown: 'Baignade à confirmer',
+const SWIM_LABEL_KEY: Record<string, string> = {
+  allowed: 'swimAllowed',
+  avoid: 'swimAvoid',
+  forbidden: 'swimForbidden',
+  unknown: 'swimUnknown',
 }
 
 export function ModuleWaterTest({ onNavigate }: Props) {
+  const t = useTranslations('modules.waterTest')
   const [values, setValues] = useState<Record<string, string>>({
     ph: '',
     freeChlorine: '',
@@ -175,7 +177,7 @@ export function ModuleWaterTest({ onNavigate }: Props) {
   async function submit() {
     const ph = Number(values.ph)
     if (isNaN(ph)) {
-      toast({ title: 'pH requis', description: 'Entrez au moins la valeur du pH.', variant: 'destructive' })
+      toast({ title: t('phRequired'), description: t('phRequiredDesc'), variant: 'destructive' })
       return
     }
     setSaving(true)
@@ -189,8 +191,8 @@ export function ModuleWaterTest({ onNavigate }: Props) {
       if (!isOnline) {
         queueAction({ method: 'POST', path: '/api/pool/water-test', body })
         toast({
-          title: 'Mesure enregistrée',
-          description: 'Sera synchronisée quand vous serez en ligne.',
+          title: t('measureRecorded'),
+          description: t('measureRecordedOffline'),
         })
         // reset required fields, keep optionals
         setValues((v) => ({ ...v, ph: '' }))
@@ -203,10 +205,10 @@ export function ModuleWaterTest({ onNavigate }: Props) {
       )
       setPlan(data.actionPlan || null)
       toast({
-        title: 'Mesure enregistrée',
+        title: t('measureRecorded'),
         description: data.actionPlan
-          ? "Plan d'action généré ci-dessous."
-          : 'Aucun profil : configurez la piscine pour un plan.',
+          ? t('planGenerated')
+          : t('noProfile'),
       })
       // reset required fields, keep optionals
       setValues((v) => ({ ...v, ph: '' }))
@@ -214,8 +216,8 @@ export function ModuleWaterTest({ onNavigate }: Props) {
       loadHistory()
     } catch (e) {
       toast({
-        title: 'Erreur',
-        description: e instanceof Error ? e.message : 'Échec de la sauvegarde',
+        title: t('errorTitle'),
+        description: e instanceof Error ? e.message : t('saveFailed'),
         variant: 'destructive',
       })
     } finally {
@@ -229,16 +231,16 @@ export function ModuleWaterTest({ onNavigate }: Props) {
         queueAction({ method: 'DELETE', path: `/api/pool/water-test?id=${id}` })
         setTests((t) => t.filter((x) => x.id !== id))
         toast({
-          title: 'Suppression enregistrée',
-          description: 'Sera synchronisée quand vous serez en ligne.',
+          title: t('actionRecorded') !== 'Action enregistrée' ? t('measureDeleted') : t('measureDeleted'),
+          description: t('measureRecordedOffline'),
         })
         return
       }
       await api.delete(`/api/pool/water-test?id=${id}`)
       setTests((t) => t.filter((x) => x.id !== id))
-      toast({ title: 'Mesure supprimée' })
+      toast({ title: t('measureDeleted') })
     } catch {
-      toast({ title: 'Erreur', description: 'Suppression impossible', variant: 'destructive' })
+      toast({ title: t('errorTitle'), description: t('deleteFailed'), variant: 'destructive' })
     }
   }
 
@@ -246,15 +248,14 @@ export function ModuleWaterTest({ onNavigate }: Props) {
     <div className="space-y-5">
       <div>
         <div className="flex items-center gap-2">
-          <span className="section-label">Analyse d'eau</span>
+          <span className="section-label">{t('sectionLabel')}</span>
           <span className="h-px w-8 bg-gold/40" />
         </div>
         <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Entrer une mesure d'eau
+          {t('enterMeasureTitle')}
         </h1>
         <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
-          Saisissez les valeurs de votre test (pH obligatoire). Le plan d'action est généré
-          automatiquement à l'enregistrement.
+          {t('enterMeasureDesc')}
         </p>
       </div>
 
@@ -264,18 +265,18 @@ export function ModuleWaterTest({ onNavigate }: Props) {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 font-display text-base">
               <FlaskConical className="h-4 w-4 text-primary" />
-              Mesure
+              {t('formCardTitle')}
             </CardTitle>
             <CardDescription className="text-xs">
-              pH requis. Les autres paramètres sont optionnels mais améliorent la précision.
+              {t('formCardDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Source toggle */}
             <div className="flex gap-2">
               {[
-                { v: 'manual' as const, label: 'Saisie manuelle' },
-                { v: 'strip_photo' as const, label: 'Bandelette photo' },
+                { v: 'manual' as const, label: t('sourceManual') },
+                { v: 'strip_photo' as const, label: t('sourceStrip') },
               ].map((s) => (
                 <button
                   key={s.v}
@@ -301,7 +302,7 @@ export function ModuleWaterTest({ onNavigate }: Props) {
                   <div key={f.key} className="space-y-1">
                     <Label htmlFor={f.key} className="flex items-center justify-between text-xs">
                       <span className="font-medium">
-                        {f.label}
+                        {t(f.labelKey as any)}
                         {f.required && <span className="ml-0.5 text-destructive">*</span>}
                       </span>
                       {target && (
@@ -335,12 +336,12 @@ export function ModuleWaterTest({ onNavigate }: Props) {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="note" className="text-xs">Note (optionnel)</Label>
+              <Label htmlFor="note" className="text-xs">{t('noteLabel')}</Label>
               <Textarea
                 id="note"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Ex : test après orage, eau un peu trouble…"
+                placeholder={t('notePlaceholder')}
                 className="min-h-[60px] resize-none"
               />
             </div>
@@ -353,12 +354,12 @@ export function ModuleWaterTest({ onNavigate }: Props) {
               {saving ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Enregistrement & génération du plan…
+                  {t('savingWithPlan')}
                 </>
               ) : (
                 <>
                   <Droplets className="h-4 w-4" />
-                  Enregistrer & générer le plan
+                  {t('saveWithPlan')}
                 </>
               )}
             </Button>
@@ -368,9 +369,9 @@ export function ModuleWaterTest({ onNavigate }: Props) {
         {/* Side: ideal ranges */}
         <Card className="glass-card lg:col-span-2">
           <CardHeader className="pb-3">
-            <CardTitle className="font-display text-base">Plages idéales</CardTitle>
+            <CardTitle className="font-display text-base">{t('idealRanges')}</CardTitle>
             <CardDescription className="text-xs">
-              Référence pour vos mesures (mode propriétaire AQWELIA).
+              {t('idealRangesDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-1.5">
@@ -397,14 +398,14 @@ export function ModuleWaterTest({ onNavigate }: Props) {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <CardTitle className="flex items-center gap-2 font-display text-lg">
                 <Sparkles className="h-5 w-5 text-gold" />
-                Plan d'action généré
+                {t('generatedPlan')}
               </CardTitle>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" className={SEVERITY_CONFIG[plan.severity]?.cls || ''}>
-                  {SEVERITY_CONFIG[plan.severity]?.label || plan.severity}
+                  {SEVERITY_CONFIG[plan.severity] ? t(SEVERITY_CONFIG[plan.severity].labelKey as any) : plan.severity}
                 </Badge>
                 <Badge variant="outline" className="border-primary/30 bg-primary/5 text-primary">
-                  {SWIM_LABEL[plan.swimSafety] || plan.swimSafety}
+                  {SWIM_LABEL_KEY[plan.swimSafety] ? t(SWIM_LABEL_KEY[plan.swimSafety] as any) : plan.swimSafety}
                 </Badge>
               </div>
             </div>
@@ -418,7 +419,7 @@ export function ModuleWaterTest({ onNavigate }: Props) {
               <div>
                 <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gold">
                   <ListChecks className="h-3.5 w-3.5" />
-                  À faire — dans cet ordre
+                  {t('immediateActions')}
                 </p>
                 <ol className="space-y-2">
                   {plan.immediateActions.map((a, i) => (
@@ -449,7 +450,7 @@ export function ModuleWaterTest({ onNavigate }: Props) {
               <div>
                 <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
                   <Droplets className="h-3.5 w-3.5" />
-                  Dosages recommandés
+                  {t('dosages')}
                 </p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {plan.chemicalDosages.map((d, i) => (
@@ -468,11 +469,11 @@ export function ModuleWaterTest({ onNavigate }: Props) {
                       <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          Filtr. {d.filtrationHours}h
+                          {t('filtration')} {d.filtrationHours}h
                         </span>
                         <span className="flex items-center gap-1">
                           <ArrowRight className="h-3 w-3" />
-                          Re-test {d.retestInHours}h
+                          {t('retest')} {d.retestInHours}h
                         </span>
                         {d.estimatedCost && d.estimatedCost !== '—' && (
                           <span className="flex items-center gap-1">
@@ -499,7 +500,7 @@ export function ModuleWaterTest({ onNavigate }: Props) {
               <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
                 <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-destructive">
                   <ShieldX className="h-3.5 w-3.5" />
-                  À ne pas faire
+                  {t('doNotDo')}
                 </p>
                 <ul className="space-y-1 text-xs text-destructive/90">
                   {plan.doNotDo.slice(0, 6).map((d, i) => (
@@ -513,14 +514,14 @@ export function ModuleWaterTest({ onNavigate }: Props) {
             <div className="flex flex-wrap items-center gap-3 border-t border-border/40 pt-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                Re-test dans {Math.round(plan.retestInHours)}h
+                {t('retestInHours', { hours: Math.round(plan.retestInHours) })}
               </span>
               <span className="flex items-center gap-1">
                 <Euro className="h-3 w-3" />
-                Coût total : {plan.estimatedCost}
+                {t('totalCost', { cost: plan.estimatedCost })}
               </span>
               <Button size="sm" variant="outline" onClick={() => onNavigate('plan')}>
-                Voir le plan complet
+                {t('seeFullPlan')}
                 <ArrowRight className="h-3 w-3" />
               </Button>
             </div>
@@ -529,7 +530,7 @@ export function ModuleWaterTest({ onNavigate }: Props) {
               <div className="flex items-start gap-2 rounded-lg border border-gold/30 bg-gold/5 p-3 text-xs">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold" />
                 <p className="text-foreground/80">
-                  <strong className="text-gold">Conseil pro :</strong> {plan.whenToCallProfessional}
+                  <strong className="text-gold">{t('proAdvice')}</strong> {plan.whenToCallProfessional}
                 </p>
               </div>
             )}
@@ -542,10 +543,10 @@ export function ModuleWaterTest({ onNavigate }: Props) {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 font-display text-base">
             <Clock className="h-4 w-4 text-primary" />
-            Mesures récentes
+            {t('recentMeasures')}
             {stale && (
               <span className="text-[10px] font-normal italic text-muted-foreground">
-                données en cache
+                {t('cachedData')}
               </span>
             )}
           </CardTitle>
@@ -560,7 +561,7 @@ export function ModuleWaterTest({ onNavigate }: Props) {
           ) : tests.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
               <FlaskConical className="h-8 w-8 text-muted-foreground/40" />
-              Aucune mesure. Saisissez votre premier test ci-dessus.
+              {t('noMeasures')}
             </div>
           ) : (
             <div className="custom-scroll max-h-96 space-y-2 overflow-y-auto pr-1">
@@ -589,7 +590,7 @@ export function ModuleWaterTest({ onNavigate }: Props) {
                         { l: 'TAC', v: t.alkalinity },
                         { l: 'TH', v: t.calciumHardness },
                         { l: 'CYA', v: t.cyanuricAcid },
-                        { l: 'Sel', v: t.salt },
+                        { l: t2('labelChlorine'), v: t.salt },
                       ].map(
                         (m) =>
                           m.v != null && (
@@ -601,7 +602,7 @@ export function ModuleWaterTest({ onNavigate }: Props) {
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className={st.cls}>
-                        {st.label}
+                        {this.t(st.labelKey as any)}
                       </Badge>
                       <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold">
                         {t.clearWaterIndex}/100
@@ -609,7 +610,7 @@ export function ModuleWaterTest({ onNavigate }: Props) {
                       <button
                         onClick={() => removeTest(t.id)}
                         className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                        aria-label="Supprimer"
+                        aria-label={this.t('delete')}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -625,8 +626,7 @@ export function ModuleWaterTest({ onNavigate }: Props) {
       {/* Floating helper */}
       <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
         <CheckCircle2 className="h-3 w-3 text-[oklch(0.7_0.15_155)]" />
-        Astuce : mesurez le pH en premier, puis chlore, TAC et CYA. Le plan d'action s'adapte
-        automatiquement.
+        {t('tip')}
       </div>
     </div>
   )

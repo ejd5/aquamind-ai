@@ -25,6 +25,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { toast } from '@/hooks/use-toast'
+import { useTranslations } from 'next-intl'
 import type { PlanId } from '@/lib/pool/freemium'
 import { billing } from '@/lib/billing'
 import { isNative } from '@/lib/platform'
@@ -56,48 +57,32 @@ interface Plan {
   icon: string
 }
 
-const DURATIONS: { id: Duration; label: string; suffix: string; save?: string }[] = [
-  { id: 'week', label: '7 jours', suffix: '/semaine' },
-  { id: 'month', label: '1 mois', suffix: '/mois' },
-  { id: 'quarter', label: '3 mois', suffix: '/3 mois', save: '10%' },
-  { id: 'halfyear', label: '6 mois', suffix: '/6 mois', save: '20%' },
+const DURATIONS: { id: Duration; suffixKey: 'perWeek' | 'perMonth' | 'perQuarter' | 'perHalfyear'; labelKey: 'week' | 'month' | 'quarter' | 'halfyear'; save?: string }[] = [
+  { id: 'week', labelKey: 'week', suffixKey: 'perWeek' },
+  { id: 'month', labelKey: 'month', suffixKey: 'perMonth' },
+  { id: 'quarter', labelKey: 'quarter', suffixKey: 'perQuarter', save: '10%' },
+  { id: 'halfyear', labelKey: 'halfyear', suffixKey: 'perHalfyear', save: '20%' },
 ]
 
-// Feature comparison table rows: { label, key, accessor }
+// Feature comparison table rows: { labelKey, key, accessor }
 const COMPARISON: {
-  label: string
+  labelKey: 'photoScans' | 'weather' | 'reminders' | 'guides' | 'multiPool' | 'pdfReport' | 'proMode' | 'history'
   values: (p: Plan) => { ok: boolean; text?: string }
 }[] = [
-  { label: 'Scans photo / mois', values: (p) => ({ ok: p.limits.maxPhotoScansPerMonth >= 999, text: p.limits.maxPhotoScansPerMonth >= 999 ? 'Illimité' : `${p.limits.maxPhotoScansPerMonth}` }) },
-  { label: 'Météo avancée + alertes', values: (p) => ({ ok: p.limits.weatherEnabled && p.id !== 'free' }) },
-  { label: 'Rappels intelligents', values: (p) => ({ ok: p.limits.smartReminders }) },
-  { label: 'Guides premium', values: (p) => ({ ok: p.limits.guidesAccess !== 'basic' }) },
-  { label: 'Multi-piscines', values: (p) => ({ ok: p.limits.multiPool, text: p.limits.maxPools >= 999 ? 'Illimité' : `${p.limits.maxPools}` }) },
-  { label: 'Rapport PDF', values: (p) => ({ ok: p.limits.pdfReport }) },
-  { label: 'Mode pro (LSI avancé)', values: (p) => ({ ok: p.limits.proMode }) },
-  { label: 'Historique', values: (p) => ({ ok: p.limits.historyDays >= 90, text: p.limits.historyDays >= 9999 ? 'Illimité' : `${p.limits.historyDays} j` }) },
+  { labelKey: 'photoScans', values: (p) => ({ ok: p.limits.maxPhotoScansPerMonth >= 999, text: p.limits.maxPhotoScansPerMonth >= 999 ? 'unlimited' : `${p.limits.maxPhotoScansPerMonth}` }) },
+  { labelKey: 'weather', values: (p) => ({ ok: p.limits.weatherEnabled && p.id !== 'free' }) },
+  { labelKey: 'reminders', values: (p) => ({ ok: p.limits.smartReminders }) },
+  { labelKey: 'guides', values: (p) => ({ ok: p.limits.guidesAccess !== 'basic' }) },
+  { labelKey: 'multiPool', values: (p) => ({ ok: p.limits.multiPool, text: p.limits.maxPools >= 999 ? 'unlimited' : `${p.limits.maxPools}` }) },
+  { labelKey: 'pdfReport', values: (p) => ({ ok: p.limits.pdfReport }) },
+  { labelKey: 'proMode', values: (p) => ({ ok: p.limits.proMode }) },
+  { labelKey: 'history', values: (p) => ({ ok: p.limits.historyDays >= 90, text: p.limits.historyDays >= 9999 ? 'unlimited' : 'days' }) },
 ]
 
-const FAQ_ITEMS = [
-  {
-    q: 'Puis-je changer de plan à tout moment ?',
-    a: "Oui. Vous pouvez monter ou descendre de plan quand vous le souhaitez. Le changement s'applique immédiatement et le prorata est calculé automatiquement.",
-  },
-  {
-    q: "Que se passe-t-il à la fin de l'abonnement ?",
-    a: "À la fin de la période payée, vous repassez automatiquement sur le plan Free (gratuit). Vos données sont conservées ; seules les fonctionnalités premium sont suspendues.",
-  },
-  {
-    q: 'Une formule annuelle est-elle disponible ?',
-    a: "Pour l'instant nous proposons 7 jours, 1 mois, 3 mois (-10%) et 6 mois (-20%). Une formule annuelle est en préparation — contactez-nous pour en bénéficier en avant-première.",
-  },
-  {
-    q: 'Quelle est la politique de remboursement ?',
-    a: "Vous pouvez demander un remboursement intégral sous 14 jours après le premier paiement, sans justification. Au-delà, contactez le support pour les cas particuliers.",
-  },
-]
+const FAQ_KEYS = ['changePlan', 'endSubscription', 'annual', 'refund'] as const
 
 export function ModulePaywall() {
+  const t = useTranslations('plans')
   const [plans, setPlans] = useState<Plan[]>([])
   const [currentPlanId, setCurrentPlanId] = useState<PlanId>('free')
   const [subscription, setSubscription] = useState<{ expiresAt?: string | null } | null>(null)
@@ -142,7 +127,7 @@ export function ModulePaywall() {
         await api.post('/api/subscription', { plan: planId, duration })
         setCurrentPlanId(planId)
         setSubscription(null)
-        toast({ title: 'Plan Gratuit activé', description: 'Vous êtes sur le plan Free.' })
+        toast({ title: t('freeActivated'), description: t('freeActivatedDesc') })
         return
       }
 
@@ -151,19 +136,19 @@ export function ModulePaywall() {
         const productId = `aqwelia_${planId}_${duration === 'halfyear' ? 'yearly' : 'monthly'}`
         const result = await billing.purchase(productId)
         if (result.userCancelled) {
-          toast({ title: 'Achat annulé', description: 'Vous avez annulé l\'achat.' })
+          toast({ title: t('purchaseCancelled'), description: t('purchaseCancelledDesc') })
           return
         }
         if (!result.success) {
-          throw new Error(result.error || 'Échec de l\'achat')
+          throw new Error(result.error || t('failed'))
         }
         setCurrentPlanId(planId)
         setSubscription({ expiresAt: result.entitlement?.expiresAt?.toISOString() })
-        toast({ title: 'Abonnement activé !', description: `Plan ${planId} activé.` })
+        toast({ title: t('subscriptionActivated'), description: t('subscriptionActivatedDesc', { plan: planId }) })
       } else {
         // Web: redirect to Stripe Checkout
         if (!isOnline) {
-          toast({ title: 'Hors connexion', description: 'Connectez-vous pour souscrire.', variant: 'destructive' })
+          toast({ title: t('offline'), description: t('offlineDesc'), variant: 'destructive' })
           return
         }
         const productId = `stripe_${planId}_${duration === 'halfyear' ? 'yearly' : 'monthly'}`
@@ -174,8 +159,8 @@ export function ModulePaywall() {
       }
     } catch (e) {
       toast({
-        title: 'Erreur',
-        description: e instanceof Error ? e.message : 'Échec',
+        title: t('error'),
+        description: e instanceof Error ? e.message : t('failed'),
         variant: 'destructive',
       })
     } finally {
@@ -191,12 +176,12 @@ export function ModulePaywall() {
       if (active) {
         setCurrentPlanId(active.plan)
         setSubscription({ expiresAt: active.expiresAt?.toISOString() })
-        toast({ title: 'Achats restaurés', description: `Plan ${active.plan} actif.` })
+        toast({ title: t('restored'), description: t('restoredDesc', { plan: active.plan }) })
       } else {
-        toast({ title: 'Aucun achat trouvé', description: 'Aucun abonnement actif trouvé.' })
+        toast({ title: t('noPurchase'), description: t('noPurchaseDesc') })
       }
-    } catch (e) {
-      toast({ title: 'Erreur', description: 'Restauration impossible.', variant: 'destructive' })
+    } catch {
+      toast({ title: t('error'), description: t('restoreError'), variant: 'destructive' })
     } finally {
       setRestoring(false)
     }
@@ -206,7 +191,7 @@ export function ModulePaywall() {
     try {
       await billing.manageSubscription()
     } catch {
-      toast({ title: 'Erreur', description: 'Impossible d\'ouvrir la gestion.', variant: 'destructive' })
+      toast({ title: t('error'), description: t('manageError'), variant: 'destructive' })
     }
   }
 
@@ -245,20 +230,20 @@ export function ModulePaywall() {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <span className="section-label">AQWELIA Premium</span>
+                <span className="section-label">{t('premiumLabel')}</span>
                 <span className="h-px w-8 bg-gold/40" />
               </div>
               <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-                Passez à <span className="gradient-text-premium italic">AQWELIA Premium</span>
+                {t('passTo', { plan: 'AQWELIA Premium' })}
               </h1>
               <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
-                Des conseils illimités, des rappels intelligents, des rapports PDF et bien plus.
+                {t('heroSubtitle')}
               </p>
             </div>
             {currentPlanId !== 'free' && (
               <Badge variant="outline" className="border-gold/40 bg-gold/10 px-3 py-1 text-xs font-bold text-gold">
                 <Crown className="mr-1 h-3 w-3" />
-                Plan actuel : {plans.find((p) => p.id === currentPlanId)?.name}
+                {t('currentPlan', { name: plans.find((p) => p.id === currentPlanId)?.name || '' })}
               </Badge>
             )}
           </div>
@@ -269,7 +254,7 @@ export function ModulePaywall() {
       <div>
         <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           <CreditCard className="h-3 w-3" />
-          Choisissez la durée
+          {t('chooseDuration')}
         </p>
         <div className="custom-scroll flex gap-2 overflow-x-auto pb-1">
           {DURATIONS.map((d) => (
@@ -282,7 +267,7 @@ export function ModulePaywall() {
                   : 'border-border bg-background hover:border-gold/30'
               }`}
             >
-              {d.label}
+              {t(d.labelKey)}
               {d.save && (
                 <Badge variant="outline" className="border-gold/40 bg-gold/10 px-1.5 text-[9px] font-bold text-gold">
                   -{d.save}
@@ -309,7 +294,7 @@ export function ModulePaywall() {
             >
               {highlighted && (
                 <div className="absolute right-0 top-0 rounded-bl-xl bg-gradient-to-r from-gold to-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
-                  Populaire
+                  {t('popular')}
                 </div>
               )}
               <CardContent className="flex flex-1 flex-col gap-3 p-5">
@@ -323,7 +308,7 @@ export function ModulePaywall() {
                 <div className="flex items-end gap-1.5">
                   <span className="font-display text-3xl font-bold text-primary">{formatPrice(plan)}</span>
                   <span className="mb-1 text-xs text-muted-foreground">
-                    {DURATIONS.find((d) => d.id === duration)?.suffix}
+                    {t(DURATIONS.find((d) => d.id === duration)?.suffixKey || 'perMonth')}
                   </span>
                 </div>
                 <ul className="flex-1 space-y-1.5 text-xs">
@@ -348,12 +333,12 @@ export function ModulePaywall() {
                   ) : isCurrent ? (
                     <>
                       <Check className="h-4 w-4" />
-                      Plan actuel
+                      {t('current')}
                     </>
                   ) : (
                     <>
                       <Crown className="h-4 w-4" />
-                      Choisir {plan.name}
+                      {t('choosePlan', { name: plan.name })}
                     </>
                   )}
                 </Button>
@@ -373,10 +358,10 @@ export function ModulePaywall() {
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <p className="font-display text-sm font-bold">{freePlan.name}</p>
-                <span className="text-xs text-muted-foreground">— Gratuit, pour découvrir</span>
+                <span className="text-xs text-muted-foreground">— {t('freeTagline')}</span>
                 {currentPlanId === 'free' && (
                   <Badge variant="outline" className="border-border bg-secondary/60 text-[9px] text-muted-foreground">
-                    Votre plan
+                    {t('yourPlan')}
                   </Badge>
                 )}
               </div>
@@ -392,7 +377,7 @@ export function ModulePaywall() {
                 disabled={activating === 'free'}
                 className="border-border/60"
               >
-                {activating === 'free' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Revenir à Gratuit'}
+                {activating === 'free' ? <Loader2 className="h-4 w-4 animate-spin" /> : t('backToFree')}
               </Button>
             )}
           </CardContent>
@@ -402,17 +387,17 @@ export function ModulePaywall() {
       {/* Trust badges */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { icon: RefreshCw, label: 'Sans engagement', sub: 'Annulez quand vous voulez' },
-          { icon: ShieldCheck, label: 'Paiement sécurisé', sub: 'Connexion chiffrée' },
-          { icon: CreditCard, label: 'Résiliable anytime', sub: 'En 1 clic' },
-        ].map((t) => (
+          { icon: RefreshCw, label: t('noCommitment'), sub: t('trustSub.noCommitment') },
+          { icon: ShieldCheck, label: t('securePayment'), sub: t('trustSub.securePayment') },
+          { icon: CreditCard, label: t('cancelAnytime'), sub: t('trustSub.cancelAnytime') },
+        ].map((tr) => (
           <div
-            key={t.label}
+            key={tr.label}
             className="flex flex-col items-center gap-1 rounded-xl border border-border/50 bg-card/40 p-3 text-center"
           >
-            <t.icon className="h-5 w-5 text-gold" />
-            <p className="text-xs font-semibold">{t.label}</p>
-            <p className="text-[10px] text-muted-foreground">{t.sub}</p>
+            <tr.icon className="h-5 w-5 text-gold" />
+            <p className="text-xs font-semibold">{tr.label}</p>
+            <p className="text-[10px] text-muted-foreground">{tr.sub}</p>
           </div>
         ))}
       </div>
@@ -427,7 +412,7 @@ export function ModulePaywall() {
           className="border-border/60 text-xs"
         >
           {restoring ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-          Restaurer mes achats
+          {t('restore')}
         </Button>
         {currentPlanId !== 'free' && (
           <Button
@@ -437,7 +422,7 @@ export function ModulePaywall() {
             className="border-border/60 text-xs"
           >
             <CreditCard className="h-3.5 w-3.5" />
-            Gérer mon abonnement
+            {t('manage')}
           </Button>
         )}
       </div>
@@ -447,10 +432,10 @@ export function ModulePaywall() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 font-display text-base">
             <Sparkles className="h-4 w-4 text-gold" />
-            Comparatif détaillé
+            {t('comparisonTitle')}
           </CardTitle>
           <CardDescription className="text-xs">
-            Tout ce que vous obtenez avec chaque plan.
+            {t('comparisonDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
@@ -458,7 +443,7 @@ export function ModulePaywall() {
             <thead>
               <tr className="border-b border-border/40">
                 <th className="py-2 pr-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Fonctionnalité
+                  {t('featureCol')}
                 </th>
                 {plans.map((p) => (
                   <th key={p.id} className="px-2 py-2 text-center text-xs font-semibold">
@@ -473,7 +458,7 @@ export function ModulePaywall() {
             <tbody>
               {COMPARISON.map((row, i) => (
                 <tr key={i} className="border-b border-border/30 last:border-b-0">
-                  <td className="py-2.5 pr-3 text-xs font-medium">{row.label}</td>
+                  <td className="py-2.5 pr-3 text-xs font-medium">{t(`comparison.${row.labelKey}`)}</td>
                   {plans.map((p) => {
                     const v = row.values(p)
                     return (
@@ -481,12 +466,12 @@ export function ModulePaywall() {
                         {v.ok ? (
                           <span className="inline-flex items-center gap-1">
                             <Check className="h-3.5 w-3.5 text-[oklch(0.7_0.15_155)]" />
-                            {v.text && <span className="text-[11px] text-muted-foreground">{v.text}</span>}
+                            {v.text && <span className="text-[11px] text-muted-foreground">{v.text === 'unlimited' ? t('unlimited') : v.text === 'days' ? t('daysShort', { n: p.limits.historyDays }) : v.text}</span>}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-muted-foreground">
                             {v.text ? (
-                              <span className="text-[11px]">{v.text}</span>
+                              <span className="text-[11px]">{v.text === 'unlimited' ? t('unlimited') : v.text === 'days' ? t('daysShort', { n: p.limits.historyDays }) : v.text}</span>
                             ) : (
                               <X className="h-3.5 w-3.5" />
                             )}
@@ -507,21 +492,21 @@ export function ModulePaywall() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 font-display text-base">
             <HelpCircle className="h-4 w-4 text-gold" />
-            Questions fréquentes
+            {t('faqTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Accordion type="single" collapsible className="w-full">
-            {FAQ_ITEMS.map((item, i) => (
-              <AccordionItem key={i} value={`faq-${i}`}>
+            {FAQ_KEYS.map((key, i) => (
+              <AccordionItem key={key} value={`faq-${i}`}>
                 <AccordionTrigger className="text-sm font-medium hover:no-underline">
                   <span className="flex items-center gap-2 text-left">
                     <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-                    {item.q}
+                    {t(`faq.${key}.q`)}
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="text-xs leading-relaxed text-muted-foreground">
-                  {item.a}
+                  {t(`faq.${key}.a`)}
                 </AccordionContent>
               </AccordionItem>
             ))}
@@ -531,13 +516,11 @@ export function ModulePaywall() {
 
       {subscription?.expiresAt && currentPlanId !== 'free' && (
         <p className="text-center text-[11px] text-muted-foreground">
-          Votre abonnement est actif jusqu'au{' '}
-          {new Date(subscription.expiresAt).toLocaleDateString('fr-FR', {
+          {t('subscriptionActive', { date: new Date(subscription.expiresAt).toLocaleDateString('fr-FR', {
             day: '2-digit',
             month: 'long',
             year: 'numeric',
-          })}
-          .
+          }) })}
         </p>
       )}
     </div>

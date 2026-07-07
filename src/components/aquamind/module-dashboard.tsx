@@ -29,6 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useTranslations } from 'next-intl'
 import type { TabId } from './app-shell'
 import { evaluateParam } from '@/lib/pool/targets'
 import { offlineApi } from '@/lib/offline/api-cache'
@@ -65,24 +66,24 @@ const CLARITY_COLORS: Record<string, string> = {
   destructive: 'from-destructive to-[oklch(0.4_0.18_25)]',
 }
 
-const SWIM_CONFIG: Record<string, { label: string; cls: string; dot: string }> = {
+const SWIM_CONFIG: Record<string, { labelKey: string; cls: string; dot: string }> = {
   allowed: {
-    label: 'Baignade autorisée',
+    labelKey: 'swimAllowed',
     cls: 'border-[oklch(0.7_0.15_155)]/30 bg-[oklch(0.7_0.15_155)]/10 text-[oklch(0.4_0.13_155)]',
     dot: 'bg-[oklch(0.7_0.15_155)]',
   },
   avoid: {
-    label: 'Baignade déconseillée',
+    labelKey: 'swimAvoid',
     cls: 'border-yellow-400/30 bg-yellow-400/10 text-yellow-700 dark:text-yellow-300',
     dot: 'bg-yellow-500',
   },
   forbidden: {
-    label: 'Baignade interdite',
+    labelKey: 'swimForbidden',
     cls: 'border-destructive/30 bg-destructive/10 text-destructive',
     dot: 'bg-destructive',
   },
   unknown: {
-    label: 'Baignade à confirmer',
+    labelKey: 'swimUnknown',
     cls: 'border-border bg-muted text-muted-foreground',
     dot: 'bg-muted-foreground',
   },
@@ -197,11 +198,11 @@ const WEATHER_ALERT_CFG: Record<string, { cls: string; dot: string; icon: typeof
   extreme: { cls: 'border-destructive/40 bg-destructive/10 text-destructive', dot: 'bg-destructive', icon: AlertTriangle },
 }
 
-const REMINDER_PRIO: Record<string, { cls: string; stripe: string; label: string }> = {
-  urgent: { cls: 'text-destructive', stripe: 'bg-destructive', label: 'Urgent' },
-  high: { cls: 'text-orange-600 dark:text-orange-300', stripe: 'bg-orange-500', label: "Aujourd'hui" },
-  medium: { cls: 'text-primary', stripe: 'bg-primary', label: 'Cette semaine' },
-  low: { cls: 'text-muted-foreground', stripe: 'bg-muted-foreground', label: 'Plus tard' },
+const REMINDER_PRIO: Record<string, { cls: string; stripe: string; labelKey: string }> = {
+  urgent: { cls: 'text-destructive', stripe: 'bg-destructive', labelKey: 'urgent' },
+  high: { cls: 'text-orange-600 dark:text-orange-300', stripe: 'bg-orange-500', labelKey: 'todayLabel' },
+  medium: { cls: 'text-primary', stripe: 'bg-primary', labelKey: 'thisWeek' },
+  low: { cls: 'text-muted-foreground', stripe: 'bg-muted-foreground', labelKey: 'later' },
 }
 
 function weatherAlertIcon(type: string) {
@@ -217,6 +218,7 @@ function weatherAlertIcon(type: string) {
 }
 
 export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }: Props) {
+  const t = useTranslations('modules.dashboard')
   const [data, setData] = useState<DashboardData | null>(null)
   const [weather, setWeather] = useState<WeatherLite | null>(null)
   const [reminders, setReminders] = useState<ReminderLite[]>([])
@@ -279,10 +281,10 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
         <AlertTriangle className="h-8 w-8 text-destructive" />
-        <p className="text-sm text-muted-foreground">Impossible de charger le tableau de bord.</p>
+        <p className="text-sm text-muted-foreground">{t('errorLoading')}</p>
         <Button onClick={load} variant="outline" size="sm">
           <RefreshCw className="h-4 w-4" />
-          Réessayer
+          {t('retry')}
         </Button>
       </div>
     )
@@ -299,23 +301,23 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
   if (latestTest) {
     const phS = evaluateParam('ph', latestTest.ph)
     if (phS.includes('critical'))
-      alerts.push({ level: 'critical', text: `pH ${latestTest.ph} hors plage de sécurité.` })
+      alerts.push({ level: 'critical', text: t('alertPhCritical', { value: latestTest.ph }) })
     else if (phS.includes('warning'))
-      alerts.push({ level: 'warning', text: `pH ${latestTest.ph} légèrement hors idéal.` })
+      alerts.push({ level: 'warning', text: t('alertPhWarning', { value: latestTest.ph }) })
     if (latestTest.combinedChlorine != null && latestTest.combinedChlorine > 0.4)
       alerts.push({
         level: 'critical',
-        text: `Chlore combiné ${latestTest.combinedChlorine} mg/L : chloramines irritantes.`,
+        text: t('alertCombinedChlorine', { value: latestTest.combinedChlorine }),
       })
     if (latestTest.freeChlorine != null && latestTest.freeChlorine < 0.5)
       alerts.push({
         level: 'critical',
-        text: 'Chlore libre insuffisant : désinfection non assurée.',
+        text: t('alertFreeChlorineLow'),
       })
     if (latestTest.phosphates != null && latestTest.phosphates > 0.2)
       alerts.push({
         level: 'warning',
-        text: `Phosphates ${latestTest.phosphates} mg/L : risque algues.`,
+        text: t('alertPhosphates', { value: latestTest.phosphates }),
       })
   }
 
@@ -325,20 +327,20 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="section-label">Aujourd'hui</span>
+            <span className="section-label">{t('today')}</span>
             <span className="h-px w-8 bg-gold/40" />
           </div>
           <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            Votre piscine aujourd'hui
+            {t('title')}
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={load} className="border-border/60">
             <RefreshCw className="h-3.5 w-3.5" />
-            Actualiser
+            {t('refresh')}
           </Button>
           {stale && (
-            <span className="text-[10px] italic text-muted-foreground">données en cache</span>
+            <span className="text-[10px] italic text-muted-foreground">{t('cachedData')}</span>
           )}
         </div>
       </div>
@@ -350,10 +352,9 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
               <FlaskConical className="h-7 w-7 text-primary-foreground" />
             </div>
             <div>
-              <p className="font-display text-lg font-semibold">Aucune mesure d'eau pour le moment</p>
+              <p className="font-display text-lg font-semibold">{t('noMeasureTitle')}</p>
               <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-                Entrez votre premier test (pH au minimum) pour activer l'indice eau claire, le plan
-                d'action et la sécurité baignade.
+                {t('noMeasureDesc')}
               </p>
             </div>
             <Button
@@ -361,7 +362,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
               className="bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-lg shadow-primary/20"
             >
               <FlaskConical className="h-4 w-4" />
-              Entrer ma première mesure
+              {t('firstMeasure')}
             </Button>
           </CardContent>
         </Card>
@@ -370,8 +371,8 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
           {/* Clear-water gauge */}
           <Card className="glass-card lg:col-span-1">
             <CardHeader className="pb-2">
-              <CardDescription>Indice eau claire</CardDescription>
-              <CardTitle className="font-display text-lg">Qualité globale</CardTitle>
+              <CardDescription>{t('clearWaterIndex')}</CardDescription>
+              <CardTitle className="font-display text-lg">{t('globalQuality')}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-3 pt-2">
               <Gauge value={cwi} label={clarity?.label || ''} color={clarityColor} />
@@ -382,12 +383,14 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
               </div>
               <p className="text-center text-[11px] text-muted-foreground">
                 {latestTest
-                  ? `Mesuré le ${new Date(latestTest.createdAt).toLocaleDateString('fr-FR', {
-                      day: '2-digit',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}`
+                  ? t('measuredAt', {
+                      date: new Date(latestTest.createdAt).toLocaleDateString('fr-FR', {
+                        day: '2-digit',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      }),
+                    })
                   : ''}
               </p>
             </CardContent>
@@ -399,7 +402,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
             <div className={`flex items-start gap-3 rounded-2xl border p-4 ${swimCfg.cls}`}>
               <div className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${swimCfg.dot} shadow-[0_0_8px_currentColor]`} />
               <div className="flex-1">
-                <p className="font-display text-base font-bold">{swimCfg.label}</p>
+                <p className="font-display text-base font-bold">{t(swimCfg.labelKey as any)}</p>
                 {swim && swim.reasons.length > 0 && (
                   <ul className="mt-1.5 space-y-1 text-xs opacity-90">
                     {swim.reasons.slice(0, 3).map((r, i) => (
@@ -419,9 +422,9 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                 <CardHeader className="pb-2">
                   <CardDescription className="flex items-center gap-1.5">
                     <Sparkles className="h-3.5 w-3.5 text-gold" />
-                    À faire maintenant
+                    {t('doNow')}
                   </CardDescription>
-                  <CardTitle className="font-display text-base">Priorité n°1</CardTitle>
+                  <CardTitle className="font-display text-base">{t('priority1')}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1">
                   {latestPlan && latestPlan.immediateActions?.length > 0 ? (
@@ -438,14 +441,14 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                         className="mt-3 border-gold/40 text-gold hover:bg-gold/10"
                         onClick={() => onNavigate('plan')}
                       >
-                        Voir le plan complet
+                        {t('seeFullPlan')}
                         <ArrowRight className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <CheckCircle2 className="h-4 w-4 text-[oklch(0.7_0.15_155)]" />
-                      Aucune action urgente.
+                      {t('noUrgentAction')}
                     </div>
                   )}
                 </CardContent>
@@ -456,9 +459,9 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                 <CardHeader className="pb-2">
                   <CardDescription className="flex items-center gap-1.5">
                     <Clock className="h-3.5 w-3.5 text-primary" />
-                    Prochain re-test
+                    {t('nextRetest')}
                   </CardDescription>
-                  <CardTitle className="font-display text-base">Dans combien de temps ?</CardTitle>
+                  <CardTitle className="font-display text-base">{t('howSoon')}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1">
                   {latestPlan ? (
@@ -467,7 +470,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                         {Math.round(latestPlan.retestInHours)}h
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Pour vérifier l'effet du traitement en cours.
+                        {t('retestDesc')}
                       </p>
                       <Button
                         size="sm"
@@ -476,7 +479,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                         onClick={() => onNavigate('water')}
                       >
                         <FlaskConical className="h-3.5 w-3.5" />
-                        Saisir un test
+                        {t('enterTest')}
                       </Button>
                     </div>
                   ) : (
@@ -492,10 +495,10 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
       {/* Quick actions */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { icon: Camera, label: 'Diagnostiquer avec photo', tab: 'diagnostic' as TabId, accent: 'from-primary/15 to-primary/5 text-primary' },
-          { icon: FlaskConical, label: 'Entrer mes mesures', tab: 'water' as TabId, accent: 'from-gold/15 to-gold/5 text-gold' },
-          { icon: Siren, label: "J'ai un problème", action: 'emergency', accent: 'from-destructive/15 to-destructive/5 text-destructive' },
-          { icon: MessageSquare, label: "Demander à l'assistant", tab: 'assistant' as TabId, accent: 'from-[oklch(0.7_0.15_155)]/15 to-[oklch(0.7_0.15_155)]/5 text-[oklch(0.45_0.13_155)]' },
+          { icon: Camera, label: t('diagnose'), tab: 'diagnostic' as TabId, accent: 'from-primary/15 to-primary/5 text-primary' },
+          { icon: FlaskConical, label: t('enterMeasures'), tab: 'water' as TabId, accent: 'from-gold/15 to-gold/5 text-gold' },
+          { icon: Siren, label: t('emergency'), action: 'emergency', accent: 'from-destructive/15 to-destructive/5 text-destructive' },
+          { icon: MessageSquare, label: t('askAssistant'), tab: 'assistant' as TabId, accent: 'from-[oklch(0.7_0.15_155)]/15 to-[oklch(0.7_0.15_155)]/5 text-[oklch(0.45_0.13_155)]' },
         ].map((a) => (
           <button
             key={a.label}
@@ -522,7 +525,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 font-display text-base">
                   <Activity className="h-4 w-4 text-primary" />
-                  Dernière analyse
+                  {t('latestAnalysis')}
                 </CardTitle>
                 <Button
                   size="sm"
@@ -530,18 +533,18 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                   className="h-7 text-xs"
                   onClick={() => onNavigate('log')}
                 >
-                  Carnet
+                  {t('logbook')}
                   <ArrowRight className="h-3 w-3" />
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="grid grid-cols-3 gap-3 pt-0 sm:grid-cols-5">
               {[
-                { key: 'ph', label: 'pH', value: latestTest.ph, unit: '' },
-                { key: 'freeChlorine', label: 'Chlore', value: latestTest.freeChlorine, unit: 'mg/L' },
-                { key: 'alkalinity', label: 'TAC', value: latestTest.alkalinity, unit: '' },
-                { key: 'cyanuricAcid', label: 'CYA', value: latestTest.cyanuricAcid, unit: '' },
-                { key: 'temperature', label: 'Temp.', value: latestTest.temperature, unit: '°C' },
+                { key: 'ph', label: t('labelPh'), value: latestTest.ph, unit: '' },
+                { key: 'freeChlorine', label: t('labelChlorine'), value: latestTest.freeChlorine, unit: 'mg/L' },
+                { key: 'alkalinity', label: t('labelTac'), value: latestTest.alkalinity, unit: '' },
+                { key: 'cyanuricAcid', label: t('labelCya'), value: latestTest.cyanuricAcid, unit: '' },
+                { key: 'temperature', label: t('labelTemp'), value: latestTest.temperature, unit: '°C' },
               ].map((m) => {
                 const has = m.value != null
                 const status = has ? evaluateParam(m.key, m.value) : 'unknown'
@@ -571,10 +574,10 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 font-display text-base">
                 <TrendingUp className="h-4 w-4 text-gold" />
-                Tendance pH
+                {t('phTrend')}
               </CardTitle>
               <CardDescription className="text-xs">
-                {trend.length} mesure(s) récente(s)
+                {t('recentMeasures', { count: trend.length })}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -612,7 +615,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                 </div>
               ) : (
                 <div className="flex h-32 items-center justify-center text-xs text-muted-foreground">
-                  Pas assez de données
+                  {t('noTrendData')}
                 </div>
               )}
             </CardContent>
@@ -626,7 +629,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 font-display text-base text-destructive">
               <AlertTriangle className="h-4 w-4" />
-              Alertes sur votre eau
+              {t('waterAlerts')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 pt-0">
@@ -650,15 +653,15 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
             <div className="flex flex-wrap gap-2 pt-1">
               <Button size="sm" onClick={() => onNavigate('plan')} className="bg-gradient-to-r from-primary to-gold text-primary-foreground">
                 <ListChecksIcon />
-                Voir le plan d'action
+                {t('seeActionPlan')}
               </Button>
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onAskAssistant("J'ai des alertes sur mon eau, aide-moi à prioriser.")}
+                onClick={() => onAskAssistant(t('alertsAssistantQuery'))}
               >
                 <MessageSquare className="h-3.5 w-3.5" />
-                Demander à l'assistant
+                {t('askAssistant')}
               </Button>
             </div>
           </CardContent>
@@ -672,10 +675,10 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <CloudSun className="h-3.5 w-3.5 text-gold" />
-              Risque météo
+              {t('weatherRisk')}
             </CardDescription>
             <CardTitle className="font-display text-base">
-              {weather?.weather?.location ? `À ${weather.weather.location}` : 'Météo en direct'}
+              {weather?.weather?.location ? t('weatherIn', { location: weather.weather.location }) : t('liveWeather')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -701,7 +704,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                       onClick={() => onNavigate('weather')}
                       className="mt-2 h-7"
                     >
-                      Voir la météo
+                      {t('seeWeather')}
                       <ArrowRight className="h-3 w-3" />
                     </Button>
                   </div>
@@ -711,12 +714,12 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2 rounded-xl border border-[oklch(0.7_0.15_155)]/30 bg-[oklch(0.7_0.15_155)]/10 p-3 text-[oklch(0.45_0.13_155)]">
                   <CheckCircle2 className="h-4 w-4" />
-                  <p className="text-sm font-semibold">Météo clémente</p>
+                  <p className="text-sm font-semibold">{t('clearWeather')}</p>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
                   {weather?.weather?.currentTempC != null
                     ? `${weather.weather.currentTempC}°C · ${weather.weather.weatherDesc || ''}`
-                    : 'Aucune alerte météo pour le moment.'}
+                    : t('noWeatherAlert')}
                 </p>
                 <Button
                   size="sm"
@@ -724,7 +727,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                   onClick={() => onNavigate('weather')}
                   className="h-7"
                 >
-                  Voir la météo
+                  {t('seeWeather')}
                   <ArrowRight className="h-3 w-3" />
                 </Button>
               </div>
@@ -737,10 +740,10 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <Bell className="h-3.5 w-3.5 text-gold" />
-              Prochain rappel
+              {t('nextReminder')}
             </CardDescription>
             <CardTitle className="font-display text-base">
-              {reminders.length > 0 ? `${reminders.length} rappel(s) en attente` : 'Aucun rappel'}
+              {reminders.length > 0 ? t('pendingReminders', { count: reminders.length }) : t('noReminders')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -754,13 +757,13 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                     <Bell className={`h-4 w-4 ${cfg.cls}`} />
                     <p className="font-display text-sm font-bold">{r.title}</p>
                     <Badge variant="outline" className={`ml-auto text-[9px] ${cfg.cls}`}>
-                      {cfg.label}
+                      {t(cfg.labelKey as any)}
                     </Badge>
                   </div>
                   <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{r.detail}</p>
                   <div className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground">
                     <Clock className="h-3 w-3" />
-                    {r.dueInHours <= 0 ? 'Maintenant' : r.dueInHours < 24 ? `dans ${r.dueInHours}h` : `dans ${Math.round(r.dueInHours / 24)}j`}
+                    {r.dueInHours <= 0 ? t('now') : r.dueInHours < 24 ? t('inHours', { hours: r.dueInHours }) : t('inDays', { days: Math.round(r.dueInHours / 24) })}
                     <span className="ml-1 rounded-full bg-secondary/60 px-1.5 py-0.5 capitalize">{r.source}</span>
                   </div>
                   <Button
@@ -769,7 +772,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                     onClick={() => onNavigate('reminders')}
                     className="mt-2 h-7"
                   >
-                    Voir tous
+                    {t('seeAll')}
                     <ArrowRight className="h-3 w-3" />
                   </Button>
                 </div>
@@ -778,10 +781,10 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2 rounded-xl border border-[oklch(0.7_0.15_155)]/30 bg-[oklch(0.7_0.15_155)]/10 p-3 text-[oklch(0.45_0.13_155)]">
                   <CheckCircle2 className="h-4 w-4" />
-                  <p className="text-sm font-semibold">Aucun rappel en attente</p>
+                  <p className="text-sm font-semibold">{t('noPendingReminders')}</p>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Vous êtes à jour. Les rappels intelligents apparaîtront ici.
+                  {t('upToDateReminders')}
                 </p>
                 <Button
                   size="sm"
@@ -789,7 +792,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                   onClick={() => onNavigate('reminders')}
                   className="h-7"
                 >
-                  Voir tous
+                  {t('seeAll')}
                   <ArrowRight className="h-3 w-3" />
                 </Button>
               </div>
@@ -801,10 +804,10 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
       {/* Secondary stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: 'Mesures', value: data.testsCount, icon: FlaskConical, action: () => onNavigate('log') },
-          { label: 'Diagnostics photo', value: data.diagnosticsCount, icon: Camera, action: () => onNavigate('diagnostic') },
-          { label: 'Équipements', value: data.equipmentCount, icon: Activity, action: () => onNavigate('maintenance') },
-          { label: 'Produits', value: data.productsCount, icon: Droplets, action: () => onNavigate('maintenance') },
+          { label: t('measuresStat'), value: data.testsCount, icon: FlaskConical, action: () => onNavigate('log') },
+          { label: t('diagnosticsStat'), value: data.diagnosticsCount, icon: Camera, action: () => onNavigate('diagnostic') },
+          { label: t('equipmentStat'), value: data.equipmentCount, icon: Activity, action: () => onNavigate('maintenance') },
+          { label: t('productsStat'), value: data.productsCount, icon: Droplets, action: () => onNavigate('maintenance') },
         ].map((s) => (
           <button
             key={s.label}

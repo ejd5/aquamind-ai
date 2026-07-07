@@ -1,6 +1,7 @@
 'use client'
 
 import { Home, Droplets, MessageCircle, Wrench, User } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import type { MobileScreen } from './types'
 
 interface TabDef {
@@ -8,14 +9,6 @@ interface TabDef {
   label: string
   icon: typeof Home
 }
-
-const TABS: readonly TabDef[] = [
-  { id: 'home', label: 'Accueil', icon: Home },
-  { id: 'analyses', label: 'Analyses', icon: Droplets },
-  { id: 'assistant', label: 'Assistant', icon: MessageCircle },
-  { id: 'maintenance', label: 'Entretien', icon: Wrench },
-  { id: 'profile', label: 'Profil', icon: User },
-] as const
 
 interface BottomTabsProps {
   activeTab: MobileScreen
@@ -32,11 +25,21 @@ interface BottomTabsProps {
  * `text-muted-foreground`. Touch target ≥ 56px. No hover effects.
  */
 export function BottomTabs({ activeTab, onNavigate }: BottomTabsProps) {
+  const t = useTranslations('nav')
+
+  const TABS: readonly TabDef[] = [
+    { id: 'home', label: t('home'), icon: Home },
+    { id: 'analyses', label: t('analyses'), icon: Droplets },
+    { id: 'assistant', label: t('assistant'), icon: MessageCircle },
+    { id: 'maintenance', label: t('maintenance'), icon: Wrench },
+    { id: 'profile', label: t('profile'), icon: User },
+  ] as const
+
   return (
     <nav
       className="mobile-bottom-tabs border-t border-border/40 bg-background/95 backdrop-blur-lg"
       role="tablist"
-      aria-label="Navigation principale"
+      aria-label={t('ariaMainNav')}
     >
       <div className="flex items-stretch">
         {TABS.map((tab) => {

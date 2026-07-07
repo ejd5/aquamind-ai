@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/sheet'
 import { useNetworkStatus } from '@/hooks/use-network-status'
 import { OfflineBanner } from '@/components/offline-banner'
+import { useTranslations } from 'next-intl'
 
 export type TabId =
   | 'today'
@@ -62,23 +63,6 @@ interface NavItem {
   primary?: boolean
 }
 
-const NAV: NavItem[] = [
-  { id: 'today', label: "Aujourd'hui", short: 'Accueil', icon: Home, primary: true },
-  { id: 'diagnostic', label: 'Diagnostic photo', short: 'Photo', icon: Camera, primary: true },
-  { id: 'water', label: 'Analyse eau', short: 'Eau', icon: Droplets, primary: true },
-  { id: 'assistant', label: 'Assistant IA', short: 'IA', icon: MessageSquare, primary: true },
-  { id: 'plan', label: "Plan d'action", short: 'Plan', icon: ListChecks, primary: true },
-  { id: 'log', label: 'Carnet de santé', short: 'Carnet', icon: BookOpen, primary: true },
-  { id: 'maintenance', label: 'Maintenance', short: 'Matériel', icon: Wrench },
-  { id: 'weather', label: 'Météo intelligente', short: 'Météo', icon: CloudSun },
-  { id: 'guides', label: 'Ressources & guides', short: 'Guides', icon: BookOpen },
-  { id: 'reminders', label: 'Rappels', short: 'Rappels', icon: Bell },
-  { id: 'paywall', label: 'AQWELIA Premium', short: 'Premium', icon: Crown },
-]
-
-const PRIMARY_NAV = NAV.filter((n) => n.primary)
-const SECONDARY_NAV = NAV.filter((n) => !n.primary)
-
 export interface PoolProfileLite {
   id: string
   name: string
@@ -94,6 +78,8 @@ export interface AppShellProps {
 }
 
 export function AppShell({ onBackToLanding }: AppShellProps) {
+  const t = useTranslations('nav')
+  const tc = useTranslations('common')
   const [profile, setProfile] = useState<PoolProfileLite | null | undefined>(undefined)
   const [activeTab, setActiveTab] = useState<TabId>('today')
   const [emergencyOpen, setEmergencyOpen] = useState(false)
@@ -101,6 +87,22 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
   useNetworkStatus()
   const [presetQuestion, setPresetQuestion] = useState<string | undefined>(undefined)
   const [moreOpen, setMoreOpen] = useState(false)
+
+  const NAV: NavItem[] = [
+    { id: 'today', label: t('today'), short: t('home'), icon: Home, primary: true },
+    { id: 'diagnostic', label: t('diagnostic'), short: t('shortPhoto'), icon: Camera, primary: true },
+    { id: 'water', label: t('water'), short: t('shortWater'), icon: Droplets, primary: true },
+    { id: 'assistant', label: t('assistantIA'), short: t('shortIA'), icon: MessageSquare, primary: true },
+    { id: 'plan', label: t('plan'), short: t('shortPlan'), icon: ListChecks, primary: true },
+    { id: 'log', label: t('log'), short: t('shortLog'), icon: BookOpen, primary: true },
+    { id: 'maintenance', label: t('maintenanceLabel'), short: t('equipment'), icon: Wrench },
+    { id: 'weather', label: t('weather'), short: t('shortWeather'), icon: CloudSun },
+    { id: 'guides', label: t('guides'), short: t('shortGuides'), icon: BookOpen },
+    { id: 'reminders', label: t('reminders'), short: t('shortReminders'), icon: Bell },
+    { id: 'paywall', label: t('premium'), short: t('shortPremium'), icon: Crown },
+  ]
+  const PRIMARY_NAV = NAV.filter((n) => n.primary)
+  const SECONDARY_NAV = NAV.filter((n) => !n.primary)
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -151,7 +153,7 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
             <Waves className="h-6 w-6 animate-pulse text-primary-foreground" />
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">Chargement d'AQWELIA…</p>
+        <p className="text-sm text-muted-foreground">{tc('loading')}</p>
       </div>
     )
   }
@@ -214,16 +216,16 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
 
           <div className="mt-6 rounded-xl border border-destructive/30 bg-destructive/5 p-3">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-destructive">
-              Urgence ?
+              {t('emergency')}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Eau verte, orage, odeur forte…
+              {t('emergencyHint')}
             </p>
             <button
               onClick={openEmergency}
               className="mt-2 w-full rounded-lg bg-destructive/90 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-destructive"
             >
-              Mode assistance
+              {t('assistanceMode')}
             </button>
           </div>
         </aside>
@@ -291,7 +293,7 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
             className={`flex min-w-[60px] flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 text-[10px] font-medium transition-colors ${
               SECONDARY_NAV.some((n) => n.id === activeTab) ? 'text-gold' : 'text-muted-foreground'
             }`}
-            aria-label="Plus de modules"
+            aria-label={t('moreAria')}
           >
             <span
               className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all ${
@@ -302,7 +304,7 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
             >
               <MoreHorizontal className="h-4 w-4" />
             </span>
-            Plus
+            {t('more')}
           </button>
         </div>
       </nav>
@@ -311,9 +313,9 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
         <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle className="font-display text-lg">Plus de modules</SheetTitle>
+            <SheetTitle className="font-display text-lg">{t('moreAria')}</SheetTitle>
             <SheetDescription>
-              Météo, guides, rappels et offres premium.
+              {t('moreDesc')}
             </SheetDescription>
           </SheetHeader>
           <div className="grid grid-cols-2 gap-3 p-4 pt-2">
@@ -348,7 +350,7 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
                   </div>
                   {isPremium && (
                     <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[9px] font-bold text-gold">
-                      PREMIUM
+                      {t('shortPremiumBadge')}
                     </span>
                   )}
                 </button>

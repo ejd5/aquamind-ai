@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
+
 import { Wrench, Bell, CloudSun } from 'lucide-react'
 import { ModuleMaintenance } from '../../aquamind/module-maintenance'
 import { ModuleReminders } from '../../aquamind/module-reminders'

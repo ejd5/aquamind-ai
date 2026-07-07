@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
+
 import { Sun } from 'lucide-react'
 import { ModuleDashboard } from '../../aquamind/module-dashboard'
 import type { TabId } from '../../aquamind/app-shell'

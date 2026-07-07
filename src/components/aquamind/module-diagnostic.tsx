@@ -30,6 +30,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useTranslations } from 'next-intl'
 import { toast } from '@/hooks/use-toast'
 import { takePhoto, pickFromGallery, requestCameraPermission } from '@/lib/native/camera'
 import { isNative } from '@/lib/platform'
@@ -64,15 +65,15 @@ interface SavedDiagnostic {
   createdAt: string
 }
 
-const TYPE_HINTS = [
-  { value: 'water', label: 'Eau (surface)', desc: 'Couleur, transparence' },
-  { value: 'wall', label: 'Paroi / fond', desc: 'Algues, dépôts' },
-  { value: 'filter', label: 'Filtre', desc: 'Pression, état' },
-  { value: 'electrolyzer', label: 'Électrolyseur', desc: 'Cellule, voyants' },
-  { value: 'pump', label: 'Pompe', desc: 'Fuites, bruit' },
-  { value: 'strip', label: 'Bandelette test', desc: 'Couleurs' },
-  { value: 'product', label: 'Produit / étiquette', desc: 'Dosage, notice' },
-  { value: 'equipment', label: 'Autre équipement', desc: 'Skimmer, robot…' },
+const TYPE_HINTS: { value: string; labelKey: string; descKey: string }[] = [
+  { value: 'water', labelKey: 'typeWater', descKey: 'typeWaterDesc' },
+  { value: 'wall', labelKey: 'typeWall', descKey: 'typeWallDesc' },
+  { value: 'filter', labelKey: 'typeFilter', descKey: 'typeFilterDesc' },
+  { value: 'electrolyzer', labelKey: 'typeElectrolyzer', descKey: 'typeElectrolyzerDesc' },
+  { value: 'pump', labelKey: 'typePump', descKey: 'typePumpDesc' },
+  { value: 'strip', labelKey: 'typeStrip', descKey: 'typeStripDesc' },
+  { value: 'product', labelKey: 'typeProduct', descKey: 'typeProductDesc' },
+  { value: 'equipment', labelKey: 'typeOther', descKey: 'typeOtherDesc' },
 ]
 
 function safeParse<T>(s: string | null | undefined, fallback: T): T {
@@ -85,6 +86,7 @@ function safeParse<T>(s: string | null | undefined, fallback: T): T {
 }
 
 export function ModuleDiagnostic() {
+  const t = useTranslations('diagnostic')
   const [typeHint, setTypeHint] = useState<string>('water')
   const [image, setImage] = useState<string | null>(null)
   const [result, setResult] = useState<DiagnosticResult | null>(null)
@@ -113,13 +115,13 @@ export function ModuleDiagnostic() {
 
   function handleFile(file: File) {
     if (!file.type.startsWith('image/')) {
-      toast({ title: 'Fichier invalide', description: 'Choisissez une image.', variant: 'destructive' })
+      toast({ title: t('invalidFile'), description: t('invalidFileDesc'), variant: 'destructive' })
       return
     }
     if (file.size > 6 * 1024 * 1024) {
       toast({
-        title: 'Image trop lourde',
-        description: 'Maximum 6 Mo.',
+        title: t('fileTooBig'),
+        description: t('fileTooBigDesc'),
         variant: 'destructive',
       })
       return
@@ -136,7 +138,7 @@ export function ModuleDiagnostic() {
   async function handleTakePhoto() {
     const granted = await requestCameraPermission()
     if (!granted) {
-      toast({ title: 'Permission refusée', description: 'Autorisez la caméra dans les réglages.', variant: 'destructive' })
+      toast({ title: t('permissionDenied'), description: t('permissionDeniedDesc'), variant: 'destructive' })
       hapticError()
       return
     }
@@ -163,7 +165,7 @@ export function ModuleDiagnostic() {
     setResult(null)
     try {
       if (!isOnline) {
-        toast({ title: 'Hors connexion', description: 'L\'analyse IA nécessite Internet.', variant: 'destructive' })
+        toast({ title: t('offlineTitle'), description: t('offlineError'), variant: 'destructive' })
         hapticError()
         return
       }
@@ -171,15 +173,15 @@ export function ModuleDiagnostic() {
       setResult(data.diagnostic || null)
       hapticSuccess()
       toast({
-        title: 'Analyse terminée',
-        description: 'Diagnostic IA disponible ci-dessous.',
+        title: t('analysisComplete'),
+        description: t('analysisCompleteDesc'),
       })
       loadHistory()
     } catch (e) {
       hapticError()
       toast({
-        title: 'Erreur',
-        description: e instanceof Error ? e.message : 'Analyse impossible',
+        title: t('errorTitle'),
+        description: e instanceof Error ? e.message : t('analysisFailed'),
         variant: 'destructive',
       })
     } finally {
@@ -198,15 +200,14 @@ export function ModuleDiagnostic() {
       <div className="flex items-end justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="section-label">Diagnostic visuel</span>
+            <span className="section-label">{t('eyebrowLabel')}</span>
             <span className="h-px w-8 bg-gold/40" />
           </div>
           <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            Diagnostic par photo
+            {t('title')}
           </h1>
           <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
-            Photographiez l'eau, une paroi, le filtre ou une bandelette. AQWELIA identifie les
-            problèmes probables et propose la prochaine étape.
+            {t('subtitle')}
           </p>
         </div>
       </div>
@@ -217,26 +218,26 @@ export function ModuleDiagnostic() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 font-display text-base">
               <Camera className="h-4 w-4 text-primary" />
-              1. Photo à analyser
+              {t('uploadTitle')}
             </CardTitle>
             <CardDescription className="text-xs">
-              Type de photo pour guider l'IA (vous pouvez changer).
+              {t('typeHint')}.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-1.5">
-              {TYPE_HINTS.map((t) => (
+              {TYPE_HINTS.map((tp) => (
                 <button
-                  key={t.value}
-                  onClick={() => setTypeHint(t.value)}
+                  key={tp.value}
+                  onClick={() => setTypeHint(tp.value)}
                   className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
-                    typeHint === t.value
+                    typeHint === tp.value
                       ? 'border-gold/60 bg-gold/10 text-gold shadow-sm'
                       : 'border-border bg-background hover:border-gold/30'
                   }`}
-                  title={t.desc}
+                  title={t(tp.descKey as any)}
                 >
-                  {t.label}
+                  {t(tp.labelKey as any)}
                 </button>
               ))}
             </div>
@@ -251,7 +252,7 @@ export function ModuleDiagnostic() {
                       className="gap-2 bg-gradient-to-r from-primary to-ocean-light text-primary-foreground"
                     >
                       <Camera className="h-4 w-4" />
-                      Prendre une photo
+                      {t('takePhoto')}
                     </Button>
                     <Button
                       onClick={handlePickFromGallery}
@@ -259,7 +260,7 @@ export function ModuleDiagnostic() {
                       className="gap-2 border-border/60"
                     >
                       <ImageIcon className="h-4 w-4" />
-                      Galerie
+                      {t('gallery')}
                     </Button>
                   </div>
                 )}
@@ -272,10 +273,10 @@ export function ModuleDiagnostic() {
                   </div>
                   <div>
                     <p className="font-display text-sm font-semibold">
-                      {isNative() ? 'Ou importez un fichier' : 'Cliquez ou déposez une photo'}
+                      {isNative() ? t('uploadLabelMobile') : t('uploadLabel')}
                     </p>
                     <p className="mt-0.5 text-[11px] text-muted-foreground">
-                      JPG / PNG / WEBP — max 6 Mo
+                      {t('uploadHint')}
                     </p>
                   </div>
                   <input
@@ -294,12 +295,12 @@ export function ModuleDiagnostic() {
               </div>
             ) : (
               <div className="relative overflow-hidden rounded-2xl border border-border/60">
-                <img src={image} alt="À analyser" className="max-h-72 w-full object-cover" />
+                <img src={image} alt={t('imageToAnalyzeAlt')} className="max-h-72 w-full object-cover" />
                 <button
                   onClick={reset}
                   className="absolute right-2 top-2 rounded-full bg-background/90 px-2.5 py-1 text-xs font-medium shadow-md backdrop-blur-md hover:bg-background"
                 >
-                  Changer
+                  {t('change')}
                 </button>
               </div>
             )}
@@ -313,26 +314,25 @@ export function ModuleDiagnostic() {
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Analyse IA en cours…
+                    {t('analyzing')}
                   </>
                 ) : (
                   <>
                     <Sparkles className="h-4 w-4" />
-                    Analyser avec l'IA
+                    {t('analyze')}
                   </>
                 )}
               </Button>
               {image && !loading && (
                 <Button variant="outline" onClick={reset}>
-                  Annuler
+                  {t('cancel')}
                 </Button>
               )}
             </div>
 
             <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
               <ShieldAlert className="mt-0.5 h-3 w-3 shrink-0 text-gold" />
-              Valeurs probables, pas exactes. L'IA peut se tromper — confirmez avec un test d'eau
-              avant tout traitement.
+              {t('disclaimer')}
             </p>
           </CardContent>
         </Card>
@@ -342,10 +342,10 @@ export function ModuleDiagnostic() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 font-display text-base">
               <Sparkles className="h-4 w-4 text-gold" />
-              2. Résultat du diagnostic
+              {t('resultTitle')}
             </CardTitle>
             <CardDescription className="text-xs">
-              L'IA identifie les problèmes visibles et suggère des actions.
+              {t('resultSubtitle')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -359,7 +359,7 @@ export function ModuleDiagnostic() {
               <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
                 <ImageIcon className="h-10 w-10 text-muted-foreground/40" />
                 <p className="text-sm text-muted-foreground">
-                  Importez une photo et cliquez sur « Analyser ».
+                  {t('noResultHint')}
                 </p>
               </div>
             ) : (
@@ -368,7 +368,7 @@ export function ModuleDiagnostic() {
                 {typeof result.confidence === 'number' && (
                   <div>
                     <div className="mb-1 flex items-center justify-between text-xs">
-                      <span className="font-medium">Confiance de l'analyse</span>
+                      <span className="font-medium">{t('confidence')}</span>
                       <span className="font-bold text-gold">
                         {Math.round(result.confidence * 100)}%
                       </span>
@@ -386,7 +386,7 @@ export function ModuleDiagnostic() {
                 {result.userFriendlySummary && (
                   <div className="rounded-xl border border-gold/30 bg-gold/5 p-3">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-gold">
-                      Résumé
+                      {t('summary')}
                     </p>
                     <p className="mt-1 text-sm leading-relaxed">{result.userFriendlySummary}</p>
                   </div>
@@ -397,7 +397,7 @@ export function ModuleDiagnostic() {
                   <div>
                     <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-destructive">
                       <AlertTriangle className="h-3 w-3" />
-                      Problèmes détectés
+                      {t('detectedIssues')}
                     </p>
                     <ul className="space-y-1">
                       {result.detectedIssues.map((d, i) => (
@@ -418,7 +418,7 @@ export function ModuleDiagnostic() {
                   <div>
                     <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-yellow-700 dark:text-yellow-300">
                       <Lightbulb className="h-3 w-3" />
-                      Causes probables
+                      {t('probableIssues')}
                     </p>
                     <ul className="space-y-1">
                       {result.probableIssues.map((d, i) => (
@@ -438,7 +438,7 @@ export function ModuleDiagnostic() {
                 {result.recommendedNextStep && (
                   <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
-                      Prochaine étape
+                      {t('nextStep')}
                     </p>
                     <p className="mt-1 text-sm">{result.recommendedNextStep}</p>
                   </div>
@@ -449,7 +449,7 @@ export function ModuleDiagnostic() {
                   <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3">
                     <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-destructive">
                       <ShieldAlert className="h-3 w-3" />
-                      Avertissements sécurité
+                      {t('safetyWarnings')}
                     </p>
                     <ul className="mt-1.5 space-y-1 text-xs text-destructive">
                       {result.safetyWarnings.map((w, i) => (
@@ -462,14 +462,14 @@ export function ModuleDiagnostic() {
                 {/* Missing data */}
                 {result.missingData && result.missingData.length > 0 && (
                   <div className="text-xs text-muted-foreground">
-                    <p className="font-medium">Données manquantes pour confirmer :</p>
+                    <p className="font-medium">{t('missingData')} :</p>
                     <p className="mt-0.5">{result.missingData.join(', ')}.</p>
                   </div>
                 )}
 
                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <CheckCircle2 className="h-3 w-3 text-[oklch(0.7_0.15_155)]" />
-                  Diagnostic enregistré dans le carnet.
+                  {t('savedInLogbook')}
                 </div>
               </div>
             )}
@@ -485,8 +485,8 @@ export function ModuleDiagnostic() {
             try {
               if (!isOnline) {
                 toast({
-                  title: 'Hors connexion',
-                  description: "L'analyse IA nécessite Internet.",
+                  title: t('offlineTitle'),
+                  description: t('offlineError'),
                   variant: 'destructive',
                 })
                 return null
@@ -502,9 +502,9 @@ export function ModuleDiagnostic() {
             } catch (e) {
               hapticError()
               toast({
-                title: 'Erreur',
+                title: t('errorTitle'),
                 description:
-                  e instanceof Error ? e.message : 'Analyse impossible',
+                  e instanceof Error ? e.message : t('analysisFailed'),
                 variant: 'destructive',
               })
               return null
@@ -519,11 +519,11 @@ export function ModuleDiagnostic() {
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 font-display text-base">
               <History className="h-4 w-4 text-primary" />
-              Diagnostics récents
+              {t('history')}
             </CardTitle>
             <Button variant="ghost" size="sm" onClick={loadHistory} className="h-7 text-xs">
               <RefreshCw className="h-3 w-3" />
-              Rafraîchir
+              {t('historyRefresh')}
             </Button>
           </div>
         </CardHeader>
@@ -537,7 +537,7 @@ export function ModuleDiagnostic() {
           ) : history.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-sm text-muted-foreground">
               <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
-              Aucun diagnostic pour le moment.
+              {t('noDiagnostic')}
             </div>
           ) : (
             <div className="custom-scroll max-h-96 space-y-2 overflow-y-auto pr-1">
@@ -571,7 +571,7 @@ export function ModuleDiagnostic() {
                         })
                         setTypeHint(d.type)
                         window.scrollTo({ top: 0, behavior: 'smooth' })
-                        toast({ title: 'Diagnostic rouvert', description: 'Vous pouvez compléter les étapes ci-dessous.' })
+                        toast({ title: t('reopenToast'), description: t('reopenToastDesc') })
                       }}
                       className="flex min-w-0 flex-1 items-start gap-3 text-left"
                     >
@@ -598,14 +598,14 @@ export function ModuleDiagnostic() {
                           {isResolved && (
                             <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-300">
                               <CheckCircle2 className="h-3 w-3" />
-                              Résolu
+                              {t('resolved')}
                             </span>
                           )}
                         </div>
                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                           {d.aiSummary && !d.aiSummary.toLowerCase().includes('je ne peux pas')
                             ? d.aiSummary
-                            : 'Diagnostic sans analyse IA'}
+                            : t('noAnalysis')}
                         </p>
                         {!isResolved && detected.length > 0 && (
                           <p className="mt-1 text-[11px] text-destructive">
@@ -614,7 +614,7 @@ export function ModuleDiagnostic() {
                         )}
                         <span className="mt-1 flex items-center gap-1 text-[10px] text-primary opacity-0 transition-opacity group-hover:opacity-100">
                           <Pencil className="h-3 w-3" />
-                          Cliquer pour rouvrir & compléter
+                          {t('reopen')}
                         </span>
                       </div>
                     </button>
@@ -623,8 +623,8 @@ export function ModuleDiagnostic() {
                       <AlertDialogTrigger asChild>
                         <button
                           className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                          title="Supprimer"
-                          aria-label="Supprimer ce diagnostic"
+                          title={t('delete')}
+                          aria-label={t('deleteConfirm')}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -639,18 +639,18 @@ export function ModuleDiagnostic() {
                             </div>
                           </div>
                           <AlertDialogTitle className="text-center font-display text-lg font-bold">
-                            <span className="aqua-text-gradient">Supprimer ce diagnostic ?</span>
+                            <span className="aqua-text-gradient">{t('deleteConfirm')}</span>
                           </AlertDialogTitle>
                         </div>
                         <div className="px-6 py-4">
                           <AlertDialogDescription className="text-center text-sm text-muted-foreground">
-                            Cette action est définitive. Le diagnostic et sa photo seront supprimés de votre historique.
+                            {t('deleteWarning')}
                           </AlertDialogDescription>
                           {/* Visual preview: show the actual photo thumbnail */}
                           <div className="mt-3 flex items-center gap-3 rounded-lg border border-border/40 bg-secondary/30 p-2.5">
                             <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary">
                               {d.imageUrl && d.imageUrl.startsWith('data:') ? (
-                                <img src={d.imageUrl} alt="Aperçu" className="h-full w-full object-cover" />
+                                <img src={d.imageUrl} alt={t('previewAlt')} className="h-full w-full object-cover" />
                               ) : (
                                 <ImageIcon className="h-5 w-5 text-muted-foreground" />
                               )}
@@ -662,29 +662,29 @@ export function ModuleDiagnostic() {
                               <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
                                 {d.aiSummary && !d.aiSummary.toLowerCase().includes('je ne peux pas')
                                   ? d.aiSummary
-                                  : 'Diagnostic sans analyse IA'}
+                                  : t('noAnalysis')}
                               </p>
                             </div>
                           </div>
                         </div>
                         <AlertDialogFooter className="gap-2 px-6 pb-6">
                           <AlertDialogCancel className="rounded-full border-border/60 px-6">
-                            Annuler
+                            {t('cancel')}
                           </AlertDialogCancel>
                           <AlertDialogAction
                             onClick={async () => {
                               try {
                                 await api.delete(`/api/pool/photo-diagnostic?id=${d.id}`)
-                                toast({ title: 'Diagnostic supprimé', description: 'Le diagnostic a été retiré de votre historique.' })
+                                toast({ title: t('deletedToast'), description: t('deletedToastDesc') })
                                 loadHistory()
                               } catch {
-                                toast({ title: 'Erreur', description: 'Suppression impossible', variant: 'destructive' })
+                                toast({ title: t('errorTitle'), description: t('deleteFailed'), variant: 'destructive' })
                               }
                             }}
                             className="rounded-full bg-destructive px-6 text-destructive-foreground hover:bg-destructive/90"
                           >
                             <Trash2 className="mr-1.5 h-4 w-4" />
-                            Supprimer
+                            {t('delete')}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>

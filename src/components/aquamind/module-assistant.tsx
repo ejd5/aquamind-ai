@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   Brain,
   Send,
@@ -29,14 +30,8 @@ interface Props {
   onConsumePreset?: () => void
 }
 
-const SUGGESTIONS = [
-  'Puis-je me baigner aujourd\'hui ?',
-  'Combien de pH- ajouter pour mon volume ?',
-  'Mon eau est verte, que faire ?',
-  'Comment bien hiverner ma piscine ?',
-  'Faut-il faire un traitement choc chlore ?',
-  'Mon électrolyseur affiche une erreur, aide-moi.',
-]
+// SUGGESTIONS is built inside the component from t() calls so that preset questions
+// are localized. See ModuleAssistant below.
 
 function renderMarkdown(text: string) {
   const lines = text.split('\n')
@@ -95,6 +90,7 @@ function renderMarkdown(text: string) {
 }
 
 export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
+  const t = useTranslations('modules.assistant')
   const [messages, setMessages] = useState<Msg[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -103,6 +99,15 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
 
   const isOnline = useOfflineStore((s) => s.isOnline)
   const queueAction = useOfflineStore((s) => s.queueAction)
+
+  const SUGGESTIONS = [
+    t('presetQ1'),
+    t('presetQ2'),
+    t('presetQ3'),
+    t('presetQ4'),
+    t('presetQ5'),
+    t('presetQ6'),
+  ]
 
   // Check that a profile/test exists for context
   useEffect(() => {
@@ -149,13 +154,12 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
           ...m,
           {
             role: 'assistant',
-            content:
-              'Vous êtes hors ligne. Votre question a été enregistrée et sera traitée à la reconnexion.',
+            content: t('offlineReply'),
           },
         ])
         toast({
-          title: 'Action enregistrée',
-          description: 'Sera synchronisée quand vous serez en ligne.',
+          title: t('actionRecorded'),
+          description: t('willSync'),
         })
         return
       }
@@ -165,13 +169,13 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
       setMessages((m) => [...m, { role: 'assistant', content: data.reply || '' }])
     } catch (e) {
       toast({
-        title: 'Erreur',
-        description: e instanceof Error ? e.message : 'Erreur lors de la communication',
+        title: t('errorTitle'),
+        description: e instanceof Error ? e.message : t('communicationError'),
         variant: 'destructive',
       })
       setMessages((m) => [
         ...m,
-        { role: 'assistant', content: 'Désolé, une erreur est survenue. Réessayez.' },
+        { role: 'assistant', content: t('errorReply') },
       ])
     } finally {
       setLoading(false)
@@ -184,16 +188,16 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
         queueAction({ method: 'DELETE', path: '/api/chat' })
         setMessages([])
         toast({
-          title: 'Historique effacé',
-          description: 'Sera synchronisé quand vous serez en ligne.',
+          title: t('historyCleared'),
+          description: t('willSync'),
         })
         return
       }
       await api.delete('/api/chat')
       setMessages([])
-      toast({ title: 'Historique effacé', description: 'Nouvelle conversation.' })
+      toast({ title: t('historyCleared'), description: t('newConversation') })
     } catch {
-      toast({ title: 'Erreur', description: 'Impossible d\'effacer', variant: 'destructive' })
+      toast({ title: t('errorTitle'), description: t('clearFailed'), variant: 'destructive' })
     }
   }
 
@@ -202,21 +206,20 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="section-label">Assistant IA</span>
+            <span className="section-label">{t('title')}</span>
             <span className="h-px w-8 bg-gold/40" />
           </div>
           <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            Votre expert piscine
+            {t('expertTitle')}
           </h1>
           <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
-            Posez vos questions : dosages, entretien, sécurité, équipements. L'assistant connaît
-            votre piscine et vos dernières mesures.
+            {t('expertSubtitle')}
           </p>
         </div>
         {messages.length > 0 && (
           <Button variant="outline" size="sm" onClick={clearHistory}>
             <Trash2 className="h-3.5 w-3.5" />
-            Effacer
+            {t('clear')}
           </Button>
         )}
       </div>
@@ -225,15 +228,15 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <span className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/5 px-3 py-1 font-medium text-gold">
           <Sparkles className="h-3 w-3" />
-          Contexte utilisé :
+          {t('contextUsed')}
         </span>
         <span className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-muted-foreground">
           <Droplets className="h-3 w-3 text-primary" />
-          {contextReady ? 'Profil piscine injecté' : 'Profil non configuré'}
+          {contextReady ? t('profileInjected') : t('profileNotConfigured')}
         </span>
         <span className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-muted-foreground">
           <FlaskConical className="h-3 w-3 text-primary" />
-          Dernier test d'eau injecté
+          {t('lastTestInjected')}
         </span>
       </div>
 
@@ -244,11 +247,11 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-gold shadow-md shadow-primary/30">
                 <Sparkles className="h-4 w-4 text-primary-foreground" />
               </span>
-              AQWELIA Assistant
+              {t('aqweliaAssistant')}
             </CardTitle>
           </div>
           <CardDescription className="text-xs">
-            Réponses indicatives. Vérifiez toujours avec un test d'eau avant traitement.
+            {t('disclaimer')}
           </CardDescription>
         </CardHeader>
 
@@ -263,9 +266,9 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
                   <Sparkles className="absolute -right-1 -top-1 h-5 w-5 text-accent" />
                 </div>
                 <div>
-                  <p className="font-semibold">Bonjour ! Je suis votre expert piscine 👋</p>
+                  <p className="font-semibold">{t('welcomeTitle')}</p>
                   <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                    Demandez-moi tout sur le pH, le chlore, les algues, la filtration, l'hivernage…
+                    {t('welcomeDesc')}
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-2">
@@ -316,7 +319,7 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
                 </div>
                 <div className="flex items-center gap-2 rounded-2xl bg-secondary px-4 py-3">
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span className="text-sm text-muted-foreground">L'expert réfléchit...</span>
+                  <span className="text-sm text-muted-foreground">{t('thinkingFallback')}</span>
                   <span className="flex gap-1">
                     <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]" />
                     <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]" />
@@ -338,7 +341,7 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
                     send(input)
                   }
                 }}
-                placeholder="Écrivez votre question... (Entrée pour envoyer)"
+                placeholder={t('inputPlaceholder')}
                 className="min-h-[44px] max-h-32 resize-none bg-background"
                 rows={1}
               />

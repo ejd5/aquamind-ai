@@ -33,6 +33,7 @@ interface PopupConfig {
 }
 
 export default function AdminPage() {
+  const t = useTranslations('admin')
   const { toast } = useToast()
   const [authed, setAuthed] = useState(false)
   const [password, setPassword] = useState('')

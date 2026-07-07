@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { SPA_SPECIFICS } from '@/lib/pool/spa-data'
+import { useTranslations } from 'next-intl'
 
 interface OnboardingProps {
   onDone: () => void
@@ -22,87 +23,23 @@ interface OnboardingProps {
 
 type WaterBodyType = 'pool' | 'spa' | 'both'
 
-const WATER_BODY_OPTIONS: { value: WaterBodyType; label: string; emoji: string }[] = [
-  { value: 'pool', label: 'Piscine', emoji: '🏊' },
-  { value: 'spa', label: 'Spa', emoji: '♨️' },
-  { value: 'both', label: 'Les deux', emoji: '🌊' },
-]
-
-const SPA_TREATMENT_OPTIONS = [
-  { value: 'bromine', label: 'Brome', desc: 'Recommandé pour spa. Stable en eau chaude, sans odeur.' },
-  { value: 'active_oxygen', label: 'Oxygène actif', desc: 'Écologique, sans chlore. Idéal sous 35°C.' },
-  { value: 'chlorine', label: 'Chlore (déconseillé)', desc: 'S\'évapore vite en eau chaude, irritant.' },
-]
-
-const SPA_USAGE_LEVELS = [
-  { value: 'low', label: 'Occasionnel', desc: '1-2x/semaine' },
-  { value: 'medium', label: 'Régulier', desc: '3-4x/semaine' },
-  { value: 'high', label: 'Intensif', desc: '5+/semaine' },
-]
-
-const STEPS = [
-  { id: 1, label: 'Bassin', subtitle: 'Type et dimensions' },
-  { id: 2, label: 'Traitement', subtitle: 'Méthode de désinfection' },
-  { id: 3, label: 'Équipements', subtitle: 'Filtration & pompe' },
-  { id: 4, label: 'Environnement', subtitle: 'Climat & usage' },
-]
-
 // Helper : le type de bassin sélectionné est-il un spa (ou les deux) ?
 function isSpaFlow(type: WaterBodyType): boolean {
   return type === 'spa' || type === 'both'
 }
 
-const SHAPES = [
-  { value: 'rectangular', label: 'Rectangulaire' },
-  { value: 'round', label: 'Ronde' },
-  { value: 'oval', label: 'Ovale' },
-  { value: 'free', label: 'Forme libre' },
-]
-
-const SURFACES = [
-  { value: 'liner', label: 'Liner' },
-  { value: 'shell', label: 'Coque polyester' },
-  { value: 'concrete', label: 'Béton peint' },
-  { value: 'tile', label: 'Carrelée' },
-]
-
-const TREATMENTS = [
-  { value: 'chlorine', label: 'Chlore', desc: 'Le plus répandu, simple et économique.' },
-  { value: 'salt', label: 'Électrolyse au sel', desc: 'Eau douce, moins d\'entretien chlore.' },
-  { value: 'bromine', label: 'Brome', desc: 'Idéal eau chaude et spas.' },
-  { value: 'active_oxygen', label: 'Oxygène actif', desc: 'Sans chlore, écologique.' },
-  { value: 'uv', label: 'UV', desc: 'Désinfection complémentaire.' },
-  { value: 'other', label: 'Autre', desc: 'Spécifique.' },
-]
-
-const FILTERS = [
-  { value: 'sand', label: 'Sable' },
-  { value: 'cartridge', label: 'Cartouche' },
-  { value: 'glass', label: 'Verre' },
-  { value: 'diatom', label: 'Diatomée' },
-]
-
-const SUN_EXPOSURES = [
-  { value: 'low', label: 'Ombragée' },
-  { value: 'medium', label: 'Ensoleillée' },
-  { value: 'high', label: 'Très ensoleillée' },
-]
-
-const USAGE_LEVELS = [
-  { value: 'low', label: 'Faible (1-2 pers.)' },
-  { value: 'medium', label: 'Moyenne (famille)' },
-  { value: 'high', label: 'Intensive (voisinage)' },
-]
-
 // Régions climatiques supprimées : on utilise désormais la géolocalisation GPS
 // ou la saisie manuelle d'une ville (stockée dans profile.region).
 
 export function Onboarding({ onDone }: OnboardingProps) {
+  const t = useTranslations('onboarding')
+  const tc = useTranslations('common')
+  const tspa = useTranslations('spa')
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
   const [locating, setLocating] = useState(false)
   const [form, setForm] = useState({
-    name: 'Ma piscine',
+    name: t('defaultPoolName'),
     waterBodyType: 'pool' as WaterBodyType,
     volume: '40',
     unit: 'm3',
@@ -123,6 +60,74 @@ export function Onboarding({ onDone }: OnboardingProps) {
     spaBrand: '',
   })
 
+  // Listes d'options localisées (dépendent de t() donc déclarées dans le composant)
+  const WATER_BODY_OPTIONS: { value: WaterBodyType; label: string; emoji: string }[] = [
+    { value: 'pool', label: t('pool'), emoji: '🏊' },
+    { value: 'spa', label: t('spa'), emoji: '♨️' },
+    { value: 'both', label: t('both'), emoji: '🌊' },
+  ]
+
+  const SPA_TREATMENT_OPTIONS = [
+    { value: 'bromine', label: t('spaTreatmentBromine'), desc: t('spaTreatmentBromineDesc') },
+    { value: 'active_oxygen', label: t('spaTreatmentOxygen'), desc: t('spaTreatmentOxygenDesc') },
+    { value: 'chlorine', label: t('spaTreatmentChlorine'), desc: t('spaTreatmentChlorineDesc') },
+  ]
+
+  const SPA_USAGE_LEVELS = [
+    { value: 'low', label: t('spaUsageLow'), desc: t('spaUsageLowDesc') },
+    { value: 'medium', label: t('spaUsageMedium'), desc: t('spaUsageMediumDesc') },
+    { value: 'high', label: t('spaUsageHigh'), desc: t('spaUsageHighDesc') },
+  ]
+
+  const STEPS = [
+    { id: 1, label: t('step1Label'), subtitle: t('step1Subtitle') },
+    { id: 2, label: t('step2Label'), subtitle: t('step2Subtitle') },
+    { id: 3, label: t('step3Label'), subtitle: t('step3Subtitle') },
+    { id: 4, label: t('step4Label'), subtitle: t('step4Subtitle') },
+  ]
+
+  const SHAPES = [
+    { value: 'rectangular', label: t('shapeRectangular') },
+    { value: 'round', label: t('shapeRound') },
+    { value: 'oval', label: t('shapeOval') },
+    { value: 'free', label: t('shapeFree') },
+  ]
+
+  const SURFACES = [
+    { value: 'liner', label: t('surfaceLiner') },
+    { value: 'shell', label: t('surfaceShell') },
+    { value: 'concrete', label: t('surfaceConcrete') },
+    { value: 'tile', label: t('surfaceTile') },
+  ]
+
+  const TREATMENTS = [
+    { value: 'chlorine', label: t('treatmentChlorine'), desc: t('treatmentChlorineDesc') },
+    { value: 'salt', label: t('treatmentSalt'), desc: t('treatmentSaltDesc') },
+    { value: 'bromine', label: t('treatmentBromine'), desc: t('treatmentBromineDesc') },
+    { value: 'active_oxygen', label: t('treatmentOxygen'), desc: t('treatmentOxygenDesc') },
+    { value: 'uv', label: t('treatmentUV'), desc: t('treatmentUVDesc') },
+    { value: 'other', label: t('treatmentOther'), desc: t('treatmentOtherDesc') },
+  ]
+
+  const FILTERS = [
+    { value: 'sand', label: t('filterSand') },
+    { value: 'cartridge', label: t('filterCartridge') },
+    { value: 'glass', label: t('filterGlass') },
+    { value: 'diatom', label: t('filterDiatom') },
+  ]
+
+  const SUN_EXPOSURES = [
+    { value: 'low', label: t('sunLow') },
+    { value: 'medium', label: t('sunMedium') },
+    { value: 'high', label: t('sunHigh') },
+  ]
+
+  const USAGE_LEVELS = [
+    { value: 'low', label: t('usageLow') },
+    { value: 'medium', label: t('usageMedium') },
+    { value: 'high', label: t('usageHigh') },
+  ]
+
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }))
   }
@@ -130,12 +135,14 @@ export function Onboarding({ onDone }: OnboardingProps) {
   // Bascule Piscine ↔ Spa : adapte le volume par défaut, le traitement par défaut,
   // et le nom proposé.
   function selectWaterBodyType(type: WaterBodyType) {
+    const defaultPoolName = t('defaultPoolName')
+    const defaultSpaName = t('defaultSpaName')
     if (type === 'spa' || type === 'both') {
       setForm((f) => ({
         ...f,
         waterBodyType: type,
         volume: f.volume === '40' || Number(f.volume) > 10 ? '1.5' : f.volume,
-        name: f.name === 'Ma piscine' ? 'Mon spa' : f.name,
+        name: f.name === defaultPoolName ? defaultSpaName : f.name,
         treatmentType: f.treatmentType === 'chlorine' ? 'bromine' : f.treatmentType,
       }))
     } else {
@@ -143,7 +150,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
         ...f,
         waterBodyType: type,
         volume: Number(f.volume) < 5 ? '40' : f.volume,
-        name: f.name === 'Mon spa' ? 'Ma piscine' : f.name,
+        name: f.name === defaultSpaName ? defaultPoolName : f.name,
       }))
     }
   }
@@ -152,8 +159,8 @@ export function Onboarding({ onDone }: OnboardingProps) {
   function handleGeolocate() {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       toast({
-        title: 'Géolocalisation non supportée',
-        description: 'Saisissez votre ville manuellement.',
+        title: t('geolocUnsupportedTitle'),
+        description: t('geolocUnsupportedDesc'),
         variant: 'destructive',
       })
       return
@@ -165,17 +172,17 @@ export function Onboarding({ onDone }: OnboardingProps) {
         update('region', `${latitude.toFixed(4)},${longitude.toFixed(4)}`)
         setLocating(false)
         toast({
-          title: 'Position détectée',
-          description: 'Votre ville sera utilisée pour la météo.',
+          title: t('locationDetectedTitle'),
+          description: t('locationDetectedDesc'),
         })
       },
       (err) => {
         setLocating(false)
         const msg = err.code === err.PERMISSION_DENIED
-          ? 'Autorisez la géolocalisation ou saisissez votre ville manuellement.'
-          : 'Impossible de récupérer votre position. Saisissez votre ville.'
+          ? t('locationDeniedDesc1')
+          : t('locationDeniedDesc2')
         toast({
-          title: 'Localisation refusée',
+          title: t('locationDeniedTitle'),
           description: msg,
           variant: 'destructive',
         })
@@ -188,15 +195,15 @@ export function Onboarding({ onDone }: OnboardingProps) {
     if (step === 1) {
       const v = Number(form.volume)
       if (!form.name.trim()) {
-        toast({ title: 'Nom requis', description: 'Donnez un nom à votre bassin.', variant: 'destructive' })
+        toast({ title: t('nameRequiredTitle'), description: t('nameRequiredDesc'), variant: 'destructive' })
         return
       }
       if (!v || v <= 0) {
-        toast({ title: 'Volume invalide', description: 'Entrez un volume positif.', variant: 'destructive' })
+        toast({ title: t('volumeInvalidTitle'), description: t('volumeInvalidDesc'), variant: 'destructive' })
         return
       }
       if (isSpaFlow(form.waterBodyType) && v > 10) {
-        toast({ title: 'Volume spa ?', description: 'Volume élevé pour un spa (généralement 0,8 à 3 m³). Vérifiez l\'unité.', variant: 'destructive' })
+        toast({ title: t('volumeSpaTitle'), description: t('volumeSpaDesc'), variant: 'destructive' })
         return
       }
     }
@@ -221,13 +228,13 @@ export function Onboarding({ onDone }: OnboardingProps) {
         body: JSON.stringify(body),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
-      toast({ title: 'Profil créé !', description: 'Bienvenue dans AQWELIA. 🌊' })
+      if (!res.ok) throw new Error(data.error || t('errorTitle'))
+      toast({ title: t('profileCreatedTitle'), description: t('profileCreatedDesc') })
       onDone()
     } catch (e) {
       toast({
-        title: 'Erreur',
-        description: e instanceof Error ? e.message : 'Impossible de sauvegarder',
+        title: t('errorTitle'),
+        description: e instanceof Error ? e.message : t('cannotSave'),
         variant: 'destructive',
       })
     } finally {
@@ -242,7 +249,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: 'Ma piscine',
+          name: t('defaultPoolName'),
           volume: 40,
           unit: 'm3',
           shape: 'rectangular',
@@ -255,11 +262,11 @@ export function Onboarding({ onDone }: OnboardingProps) {
           covered: false,
         }),
       })
-      if (!res.ok) throw new Error('Erreur')
-      toast({ title: 'Profil par défaut créé', description: 'Vous pourrez le modifier plus tard.' })
+      if (!res.ok) throw new Error(t('errorTitle'))
+      toast({ title: t('defaultProfileCreatedTitle'), description: t('defaultProfileCreatedDesc') })
       onDone()
     } catch {
-      toast({ title: 'Erreur', description: 'Impossible de créer le profil par défaut', variant: 'destructive' })
+      toast({ title: t('errorTitle'), description: t('cannotCreateDefault'), variant: 'destructive' })
     } finally {
       setSaving(false)
     }
@@ -285,14 +292,13 @@ export function Onboarding({ onDone }: OnboardingProps) {
         <div className="mb-8 text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-gold">
             <Clock className="h-3 w-3" />
-            Configuration en 2 minutes
+            {t('configurationTime')}
           </div>
           <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">
-            Bienvenue sur <span className="gradient-text-premium">AQWELIA</span>
+            {t('welcomePrefix')} <span className="gradient-text-premium">AQWELIA</span>
           </h1>
           <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
-            Décrivez votre piscine ou spa pour activer le copilote : conseils personnalisés, dosages
-            exacts, plans d&apos;action ordonnés et alertes sécurité.
+            {t('subtitle')}
           </p>
         </div>
 
@@ -302,7 +308,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
           <div className="mb-6">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Étape {step} / 4
+                {t('stepOf', { step })}
               </span>
               <span className="font-display text-sm font-bold text-gold">{STEPS[step - 1].label}</span>
             </div>
@@ -315,7 +321,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
             <div className="space-y-4">
               {/* Toggle Piscine / Spa / Les deux — tout en haut de l'étape 1 */}
               <div className="space-y-1.5">
-                <Label>Je gère une :</Label>
+                <Label>{t('poolType')}</Label>
                 <div className="grid grid-cols-3 gap-2">
                   {WATER_BODY_OPTIONS.map((opt) => {
                     const active = form.waterBodyType === opt.value
@@ -342,9 +348,8 @@ export function Onboarding({ onDone }: OnboardingProps) {
                   <div className="mt-1 flex items-start gap-2 rounded-lg border border-gold/30 bg-gold/5 p-2.5 text-[11px] text-gold-foreground">
                     <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold" />
                     <span>
-                      <strong className="text-gold">Support Spa Premium.</strong> La configuration
-                      du spa est enregistrée mais les recommandations spa avancées (brome, vidange,
-                      programmes pompe) nécessitent le plan <span className="text-gold">Premium</span>.
+                      <strong className="text-gold">{t('spaPremiumLead')}</strong>{' '}
+                      {t('spaPremiumBody')} <span className="text-gold">Premium</span>.
                     </span>
                   </div>
                 )}
@@ -352,20 +357,20 @@ export function Onboarding({ onDone }: OnboardingProps) {
 
               <div className="space-y-1.5">
                 <Label htmlFor="name">
-                  {isSpaFlow(form.waterBodyType) ? 'Nom du spa' : 'Nom de la piscine'}
+                  {isSpaFlow(form.waterBodyType) ? t('spaName') : t('poolName')}
                 </Label>
                 <Input
                   id="name"
                   value={form.name}
                   onChange={(e) => update('name', e.target.value)}
-                  placeholder={isSpaFlow(form.waterBodyType) ? 'Ex : Spa de la terrasse' : 'Ex : Piscine du jardin'}
+                  placeholder={isSpaFlow(form.waterBodyType) ? t('spaNamePlaceholder') : t('poolNamePlaceholder')}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="volume">
-                    Volume {isSpaFlow(form.waterBodyType) && (
+                    {t('volume')} {isSpaFlow(form.waterBodyType) && (
                       <span className="text-[10px] font-normal text-muted-foreground">
                         ({SPA_SPECIFICS.volumeRange.min}-{SPA_SPECIFICS.volumeRange.max} {SPA_SPECIFICS.volumeRange.unit})
                       </span>
@@ -381,14 +386,14 @@ export function Onboarding({ onDone }: OnboardingProps) {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Unité</Label>
+                  <Label>{t('unit')}</Label>
                   <Select value={form.unit} onValueChange={(v) => update('unit', v)}>
                     <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="m3">m³ (litres ÷ 1000)</SelectItem>
-                      <SelectItem value="gal">gallons</SelectItem>
+                      <SelectItem value="m3">{t('unitM3')}</SelectItem>
+                      <SelectItem value="gal">{t('unitGal')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -398,7 +403,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
               {isSpaFlow(form.waterBodyType) && (
                 <div className="space-y-3 rounded-xl border border-gold/20 bg-gold/[0.04] p-3">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-gold">
-                    ♨️ Détails du spa
+                    {t('spaDetailsTitle')}
                   </p>
 
                   <div className="space-y-1.5">
@@ -416,15 +421,15 @@ export function Onboarding({ onDone }: OnboardingProps) {
                       className="w-full accent-[oklch(0.45_0.12_195)]"
                     />
                     <div className="flex justify-between text-[10px] text-muted-foreground">
-                      <span>{SPA_SPECIFICS.seatsRange.min} places</span>
-                      <span>{SPA_SPECIFICS.seatsRange.max} places</span>
+                      <span>{SPA_SPECIFICS.seatsRange.min} {t('placesSuffix')}</span>
+                      <span>{SPA_SPECIFICS.seatsRange.max} {t('placesSuffix')}</span>
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
                     <Label className="flex items-center gap-1.5 text-xs">
                       <Thermometer className="h-3.5 w-3.5 text-gold" />
-                      Température cible : <strong className="text-gold">{form.spaTemperature}°C</strong>
+                      {tspa('temperature')} : <strong className="text-gold">{form.spaTemperature}°C</strong>
                     </Label>
                     <input
                       type="range"
@@ -437,12 +442,12 @@ export function Onboarding({ onDone }: OnboardingProps) {
                     />
                     <div className="flex justify-between text-[10px] text-muted-foreground">
                       <span>{SPA_SPECIFICS.temperatureRange.min}°C</span>
-                      <span>Idéal : {SPA_SPECIFICS.temperatureRange.ideal}°C</span>
+                      <span>{t('idealTemp')} {SPA_SPECIFICS.temperatureRange.ideal}°C</span>
                       <span>{SPA_SPECIFICS.temperatureRange.max}°C</span>
                     </div>
                     {form.spaTemperature > 38 && (
                       <p className="text-[11px] text-red-500">
-                        ⚠️ Au-delà de 38°C, limitez les sessions à 15-20 min (risque cardiovasculaire).
+                        {t('spaTempWarning')}
                       </p>
                     )}
                   </div>
@@ -450,7 +455,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
                   <div className="space-y-1.5">
                     <Label className="flex items-center gap-1.5 text-xs">
                       <Droplets className="h-3.5 w-3.5 text-gold" />
-                      Fréquence d&apos;usage
+                      {tspa('usageFreq')}
                     </Label>
                     <div className="grid grid-cols-3 gap-2">
                       {SPA_USAGE_LEVELS.map((u) => (
@@ -478,7 +483,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
               {!isSpaFlow(form.waterBodyType) && (
                 <>
                   <div className="space-y-1.5">
-                    <Label>Forme</Label>
+                    <Label>{t('shape')}</Label>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                       {SHAPES.map((s) => (
                         <button
@@ -497,7 +502,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label>Revêtement</Label>
+                    <Label>{t('surface')}</Label>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                       {SURFACES.map((s) => (
                         <button
@@ -522,9 +527,9 @@ export function Onboarding({ onDone }: OnboardingProps) {
           {step === 2 && (
             <div className="space-y-3">
               <Label>
-                Méthode de traitement
+                {t('methodTreatment')}
                 {isSpaFlow(form.waterBodyType) && (
-                  <span className="ml-2 text-[10px] font-normal text-gold">♨️ Mode spa</span>
+                  <span className="ml-2 text-[10px] font-normal text-gold">{t('spaMode')}</span>
                 )}
               </Label>
 
@@ -562,25 +567,21 @@ export function Onboarding({ onDone }: OnboardingProps) {
 
                   {form.treatmentType === 'chlorine' && (
                     <div className="rounded-lg border border-red-400/40 bg-red-500/5 p-3 text-xs text-red-700 dark:text-red-300">
-                      <strong className="text-red-600 dark:text-red-400">⚠️ Chlore déconseillé en spa.</strong>{' '}
-                      À haute température, le chlore s'évapore rapidement, forme des chloramines
-                      irritantes et sent fort. AQWELIA recommande vivement le brome pour les spas.
+                      {t('chlorineSpaWarning')}
                     </div>
                   )}
 
                   {form.treatmentType === 'bromine' && (
                     <div className="rounded-lg border border-gold/30 bg-gold/5 p-3 text-xs text-gold-foreground">
                       <Sparkles className="mb-1 inline h-3.5 w-3.5 text-gold" />{' '}
-                      <strong className="text-gold">Brome activé.</strong> AQWELIA adaptera ses
-                      recommandations pour l'eau chaude et surveillera le taux de brome (3-5 mg/L).
+                      <strong className="text-gold">{t('bromineSpaActivated')}</strong> {t('bromineSpaActivatedDesc')}
                     </div>
                   )}
 
                   {form.treatmentType === 'active_oxygen' && (
                     <div className="rounded-lg border border-gold/30 bg-gold/5 p-3 text-xs text-gold-foreground">
                       <Sparkles className="mb-1 inline h-3.5 w-3.5 text-gold" />{' '}
-                      <strong className="text-gold">Oxygène actif activé.</strong> Écologique et
-                      sans odeur. Surveillez la température : moins efficace au-delà de 35°C.
+                      <strong className="text-gold">{t('oxygenSpaActivated')}</strong> {t('oxygenSpaActivatedDesc')}
                     </div>
                   )}
                 </>
@@ -611,8 +612,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
                   {form.treatmentType === 'salt' && (
                     <div className="rounded-lg border border-gold/30 bg-gold/5 p-3 text-xs text-gold-foreground">
                       <Sparkles className="mb-1 inline h-3.5 w-3.5 text-gold" />{' '}
-                      <strong className="text-gold">Électrolyse au sel activée.</strong> AQWELIA
-                      surveillera le niveau de sel pour votre électrolyseur.
+                      <strong className="text-gold">{t('saltActivated')}</strong> {t('saltActivatedDesc')}
                     </div>
                   )}
                 </>
@@ -623,7 +623,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
           {step === 3 && (
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label>Type de filtre</Label>
+                <Label>{t('filterType')}</Label>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {FILTERS.map((f) => (
                     <button
@@ -642,18 +642,17 @@ export function Onboarding({ onDone }: OnboardingProps) {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="pump">Pompe (marque / modèle — optionnel)</Label>
+                <Label htmlFor="pump">{t('pumpLabel')}</Label>
                 <Input
                   id="pump"
                   value={form.pumpType}
                   onChange={(e) => update('pumpType', e.target.value)}
-                  placeholder="Ex : Pentair Superflo 0.75 CV"
+                  placeholder={t('pumpPlaceholder')}
                 />
               </div>
 
               <div className="rounded-lg border border-border/60 bg-secondary/40 p-3 text-xs text-muted-foreground">
-                Ces informations permettent à AQWELIA de calculer la durée de filtration recommandée
-                et de programmer les rappels d'entretien (lavage de filtre, etc.).
+                {t('filterNote')}
               </div>
             </div>
           )}
@@ -662,7 +661,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
             <div className="space-y-4">
               {/* Localisation pour la météo : GPS + saisie manuelle */}
               <div className="space-y-1.5">
-                <Label>Votre ville (pour la météo)</Label>
+                <Label>{t('cityLabel')}</Label>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <Button
                     type="button"
@@ -677,11 +676,11 @@ export function Onboarding({ onDone }: OnboardingProps) {
                     ) : (
                       <Crosshair className="h-4 w-4" />
                     )}
-                    {locating ? 'Localisation…' : 'Me localiser'}
+                    {locating ? t('locating') : t('locateMeBtn')}
                   </Button>
                   <div className="flex flex-1 items-center gap-2">
                     <Input
-                      placeholder="Ex : Marseille, Lyon…"
+                      placeholder={t('cityPlaceholder')}
                       value={form.region}
                       onChange={(e) => update('region', e.target.value)}
                       className="h-9"
@@ -693,12 +692,12 @@ export function Onboarding({ onDone }: OnboardingProps) {
                   </div>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Optionnel : si vous laissez vide, AQWELIA utilisera la géolocalisation par IP ou vous demandera plus tard.
+                  {t('cityNote')}
                 </p>
               </div>
 
               <div className="space-y-1.5">
-                <Label>Ensoleillement</Label>
+                <Label>{t('sunExposure')}</Label>
                 <div className="grid grid-cols-3 gap-2">
                   {SUN_EXPOSURES.map((s) => (
                     <button
@@ -717,7 +716,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
               </div>
 
               <div className="space-y-1.5">
-                <Label>Usage</Label>
+                <Label>{t('usageLabel')}</Label>
                 <div className="grid grid-cols-3 gap-2">
                   {USAGE_LEVELS.map((u) => (
                     <button
@@ -743,8 +742,8 @@ export function Onboarding({ onDone }: OnboardingProps) {
                   className="h-4 w-4 accent-[oklch(0.45_0.12_195)]"
                 />
                 <div className="flex-1">
-                  <p className="text-sm font-medium">Piscine couverte / abritée</p>
-                  <p className="text-[11px] text-muted-foreground">Moins de débris, moins d'évaporation.</p>
+                  <p className="text-sm font-medium">{t('covered')}</p>
+                  <p className="text-[11px] text-muted-foreground">{t('coveredDesc')}</p>
                 </div>
               </label>
             </div>
@@ -760,7 +759,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
               className="text-muted-foreground"
             >
               <ChevronLeft className="h-4 w-4" />
-              Retour
+              {tc('back')}
             </Button>
 
             <div className="flex items-center gap-2">
@@ -769,7 +768,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
                 disabled={saving}
                 className="text-xs font-medium text-muted-foreground underline-offset-2 hover:underline disabled:opacity-50"
               >
-                Passer
+                {tc('skip')}
               </button>
 
               {step < 4 ? (
@@ -777,7 +776,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
                   onClick={next}
                   className="bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30"
                 >
-                  Continuer
+                  {tc('next')}
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               ) : (
@@ -789,12 +788,12 @@ export function Onboarding({ onDone }: OnboardingProps) {
                   {saving ? (
                     <>
                       <Waves className="h-4 w-4 animate-pulse" />
-                      Sauvegarde…
+                      {t('saving')}
                     </>
                   ) : (
                     <>
                       <Check className="h-4 w-4" />
-                      Activer AQWELIA
+                      {t('activate')}
                     </>
                   )}
                 </Button>
@@ -804,7 +803,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
         </div>
 
         <p className="mt-4 text-center text-[11px] text-muted-foreground">
-          Vos données restent sur votre appareil. Vous pourrez tout modifier plus tard.
+          {t('bottomNote')}
         </p>
       </div>
     </div>
