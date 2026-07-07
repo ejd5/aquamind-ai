@@ -29,9 +29,10 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   const current = LANGUAGES.find(l => l.code === locale) || LANGUAGES[0]
 
   function changeLanguage(code: string) {
+    // eslint-disable-next-line react-hooks/immutability
     document.cookie = `NEXT_LOCALE=${code};path=/;max-age=31536000`
     setOpen(false)
-    window.location.reload()
+    setTimeout(() => window.location.reload(), 100)
   }
 
   return (
