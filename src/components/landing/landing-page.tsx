@@ -290,8 +290,8 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-white/50">{t('footerInfo')}</p>
               <ul className="mt-3 space-y-2 text-sm">
-                <li><span className="text-white/70">{t('nav.guides')}</span></li>
-                <li><span className="text-white/70">{t('footerBlog')} <span className="text-white/35">({t('comingSoon')})</span></span></li>
+                <li><span className="text-white/70">{t('footerGuides')}</span></li>
+                <li><span className="text-white/70">{t('footerBlog')} <span className="text-white/35">({t('footerComingSoon')})</span></span></li>
                 <li>
                   <Link href="/legal/support" className="text-white/70 transition-colors hover:text-gold">
                     Contact

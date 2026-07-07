@@ -405,7 +405,8 @@
     "footerVersion": "v2.0 Copilot",
     "footerMadeInFrance": "Made in France 🇫🇷",
     "footerTagline2": "Pool copilot",
-    "signIn": "Sign in"
+    "signIn": "Sign in",
+    "footerComingSoon": "coming soon"
   },
   "plans": {
     "free": {
