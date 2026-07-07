@@ -34,13 +34,30 @@ export async function POST(req: NextRequest) {
       : VISION_DIAGNOSTIC_PROMPT
 
     const zai = await nvidiaVision(prompt, image)
-    const content = zai.content
+    const content = zai.content || ''
     let parsed: any = null
     try {
+      // Try to extract JSON from the response
       const m = content.match(/\{[\s\S]*\}/)
       parsed = m ? JSON.parse(m[0]) : null
     } catch {
       parsed = null
+    }
+
+    // If parsing failed, build a fallback diagnostic from the raw text
+    // so the user always sees something useful
+    if (!parsed && content.trim()) {
+      parsed = {
+        imageType: typeHint || 'unknown',
+        detectedIssues: [],
+        probableIssues: [],
+        confidence: 0.5,
+        userFriendlySummary: content.substring(0, 500),
+        missingData: [],
+        recommendedNextStep: null,
+        safetyWarnings: [],
+        _raw: true,
+      }
     }
 
     const saved = await db.photoDiagnostic.create({
