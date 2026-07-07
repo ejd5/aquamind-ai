@@ -88,15 +88,6 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   { title: 'Réglages', items: [NAV[6], NAV[10]] },
 ]
 
-// Sidebar groups for structured navigation
-const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
-  { title: 'Accueil', items: [NAV[0]] },
-  { title: 'Analyses', items: [NAV[1], NAV[2], NAV[5]] }, // diagnostic, water, log
-  { title: 'Actions', items: [NAV[3], NAV[4], NAV[9]] }, // assistant, plan, reminders
-  { title: 'Ressources', items: [NAV[7], NAV[8]] }, // weather, guides
-  { title: 'Réglages', items: [NAV[6], NAV[10]] }, // maintenance, paywall
-]
-
 export interface PoolProfileLite {
   id: string
   name: string
