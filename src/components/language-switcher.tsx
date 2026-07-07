@@ -31,7 +31,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   function changeLanguage(code: string) {
     document.cookie = `NEXT_LOCALE=${code};path=/;max-age=31536000`
     setOpen(false)
-    window.location.reload()
+    setTimeout(() => window.location.reload(), 100)
   }
 
   return (
