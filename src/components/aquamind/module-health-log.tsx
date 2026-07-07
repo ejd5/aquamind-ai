@@ -385,7 +385,7 @@ export function ModuleHealthLog() {
                           )}
                           <div className="mt-2 flex items-center justify-between">
                             <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                              {t('healthLog.source')} {t2.source === 'strip_photo' ? t('healthLog.stripPhoto') : t2.source}
+                              {t('healthLog.source')} {t2.source === 'strip_photo' ? t('healthLog.stripPhoto') : t2.source === 'manual' ? t('healthLog.manualSource') : t2.source}
                             </span>
                             <button
                               onClick={() => removeTest(t2.id)}

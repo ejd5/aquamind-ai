@@ -2992,3 +2992,39 @@ Stage Summary:
 - Extended namespaces: diagnostic (+18 keys), spaData (+6 keys), common (+9 keys).
 - API routes use locale-aware default values via Accept-Language header.
 - Browser-verified: English and French both render correctly with no missing keys.
+
+---
+Task ID: 8-healthlog
+Agent: sub-agent (general-purpose)
+Task: Fix the `t2.source === 'manual'` bug in `src/components/aquamind/module-health-log.tsx` — raw English "manual" string was being displayed in ALL languages for manual water tests.
+
+Work Log:
+- Read worklog.md (last 5 sections) for context — confirmed the project is an i18n-complete AquaMind app with 7 locale files (fr, en, es, de, it, pt, nl) at 2704 keys each.
+- Read `src/components/aquamind/module-health-log.tsx` around line 388 to locate the bug. Found:
+  ```tsx
+  {t('healthLog.source')} {t2.source === 'strip_photo' ? t('healthLog.stripPhoto') : t2.source}
+  ```
+  The `strip_photo` branch was already translated (good), but for `t2.source === 'manual'` (and any other value), the raw `t2.source` string (e.g., `'manual'`) was rendered directly in English.
+- Verified `stripPhoto` key exists in `modules.healthLog` namespace across all 7 locale files (FR: "Bandelette photo", EN: "Photo strip", ES: "Tira reactiva", DE: "Teststreifen", IT: "Striscia foto", PT: "Tira fotográfica", NL: "Fotostrip") — already correct, no change needed.
+- Confirmed no `manualSource` key existed in any locale file.
+- Added new `manualSource` key under `modules.healthLog` namespace in all 7 locale files:
+  * fr.json (line 2142): "Manuel"
+  * en.json (line 2142): "Manual"
+  * es.json (line 2050): "Manual"
+  * de.json (line 2050): "Manuell"
+  * it.json (line 2050): "Manuale"
+  * pt.json (line 2050): "Manual"
+  * nl.json (line 2050): "Handmatig"
+- Updated line 388 of `module-health-log.tsx` to handle the `'manual'` case via nested ternary:
+  ```tsx
+  {t('healthLog.source')} {t2.source === 'strip_photo' ? t('healthLog.stripPhoto') : t2.source === 'manual' ? t('healthLog.manualSource') : t2.source}
+  ```
+  Fallback to `t2.source` is preserved for any future source values not yet mapped.
+- Verified no other raw `t2.source` displays exist in the file (grep confirmed only line 388 references `t2.source`).
+- Ran `bun run lint` → PASS, no errors or warnings.
+
+Stage Summary:
+- Bug fixed: manual water tests now display localized "Manuel"/"Manual"/"Manuell"/"Manuale"/"Manual"/"Handmatig" instead of the raw English "manual" string in all 7 locales.
+- All 7 locale files now have the new `modules.healthLog.manualSource` key.
+- `strip_photo` translation verified as already correct (no change needed).
+- Lint passes. No other files touched.
