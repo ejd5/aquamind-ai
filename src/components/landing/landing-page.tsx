@@ -227,8 +227,8 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
             <p className="text-[11px] leading-relaxed text-white/70">
               <strong className="text-white/90">Avis de prudence.</strong> AQWELIA aide au
               diagnostic et à l&apos;entretien mais ne remplace pas un professionnel. Les dosages
-              doivent respecter les notices produits. En cas de doute, danger électrique, fuite ou
-              irritation, contactez un professionnel.
+              {t('disclaimer')}
+              
             </p>
           </div>
 
@@ -291,7 +291,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
               <p className="text-xs font-semibold uppercase tracking-wider text-white/50">{t('footerInfo')}</p>
               <ul className="mt-3 space-y-2 text-sm">
                 <li><span className="text-white/70">{t('nav.guides')}</span></li>
-                <li><span className="text-white/70">Blog <span className="text-white/35">({t('comingSoon')})</span></span></li>
+                <li><span className="text-white/70">{t('footerBlog')} <span className="text-white/35">({t('comingSoon')})</span></span></li>
                 <li>
                   <Link href="/legal/support" className="text-white/70 transition-colors hover:text-gold">
                     Contact
