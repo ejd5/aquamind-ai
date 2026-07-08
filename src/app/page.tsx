@@ -24,6 +24,17 @@ export default function Home() {
     const mobileVal = isMobile()
     const nativeVal = isNative()
 
+    // Clear old IndexedDB cache entries (pre-i18n-fix data without translation keys)
+    // This runs once per session to ensure fresh API data with titleKey/messageKey fields.
+    if (typeof window !== 'undefined' && !sessionStorage.getItem('aqwelia_cache_v3')) {
+      sessionStorage.setItem('aqwelia_cache_v3', '1')
+      import('@/lib/offline/cache').then(({ clearAllCache }) => {
+        clearAllCache().then(() => {
+          console.log('[AQWELIA] Cache cleared (v3 i18n fix)')
+        })
+      }).catch(() => {})
+    }
+
     fetch('/api/pool/profile')
       .then((r) => r.json())
       .then((d) => {
