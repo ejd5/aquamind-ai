@@ -74,28 +74,8 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
           </div>
         </div>
 
-        <nav className="hidden items-center gap-0.5 lg:flex">
-          {[
-            { id: 'today' as const, label: t('today') },
-            { id: 'diagnostic' as const, label: t('diagnosticShort') },
-            { id: 'water' as const, label: t('water') },
-            { id: 'plan' as const, label: t('plan') },
-            { id: 'log' as const, label: t('shortLog') },
-            { id: 'maintenance' as const, label: t('equipment') },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                activeTab === item.id
-                  ? 'bg-secondary/70 text-foreground'
-                  : 'text-muted-foreground hover:bg-secondary/40 hover:text-foreground'
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </nav>
+        {/* Top nav removed — sidebar (desktop) and bottom nav (mobile) handle navigation.
+            This avoids duplication between top nav and sidebar. */}
 
         <div className="flex items-center gap-2">
           {onBackToLanding && (
