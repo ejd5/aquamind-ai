@@ -28,14 +28,14 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
   ]
 
   return (
-    <section id="top" className="relative isolate overflow-hidden pt-28 pb-24 sm:pt-32 sm:pb-48">
-      {/* AQWELIA hero background image — complete, not truncated */}
+    <section id="top" className="relative isolate overflow-hidden pb-24 sm:pb-48">
+      {/* AQWELIA hero background image — complete, not truncated, glued to top */}
       <div
         className="pointer-events-none absolute inset-0 -z-10 bg-no-repeat"
         style={{
           backgroundImage: 'url(/aqwelia-hero-bg.png)',
           backgroundSize: 'contain',
-          backgroundPosition: 'center',
+          backgroundPosition: 'top center',
         }}
         aria-hidden="true"
       />
@@ -45,7 +45,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
         aria-hidden="true"
       />
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-20 sm:pt-24">
         <div className="max-w-xl text-left">
           {/* Eyebrow badge — signature AQWELIA */}
           <motion.div
@@ -121,98 +121,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
           </motion.div>
         </div>
 
-        {/* Hero visual: floating phone mockup showing dashboard */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.35 }}
-          className="relative mx-auto mt-16 max-w-3xl"
-        >
-          <div className="relative mx-auto w-full max-w-sm">
-            {/* Glow behind */}
-            <div className="absolute -inset-6 -z-10 rounded-[2.5rem] bg-gradient-to-br from-primary/30 via-gold/30 to-primary/20 blur-3xl" />
-            {/* Phone frame */}
-            <div className="overflow-hidden rounded-[2.25rem] border border-white/50 bg-white/80 p-2 shadow-2xl backdrop-blur-xl dark:bg-white/5">
-              <div className="rounded-[1.9rem] bg-gradient-to-br from-[oklch(0.96_0.012_195)] to-[oklch(0.99_0.005_195)] p-4 dark:from-[oklch(0.2_0.025_200)] dark:to-[oklch(0.18_0.02_200)]">
-                {/* Mock dashboard */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-gold">
-                      <Droplets className="h-3.5 w-3.5 text-white" />
-                    </div>
-                    <span className="text-xs font-bold">AQWELIA</span>
-                  </div>
-                  <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[9px] font-bold text-gold">
-                    {t('heroPhoneBadge')}
-                  </span>
-                </div>
-
-                <div className="mt-4 rounded-xl bg-white/80 p-3 dark:bg-white/5">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    {t('heroPhoneClearIndex')}
-                  </p>
-                  <div className="mt-1 flex items-end gap-2">
-                    <span className="font-display text-3xl font-bold gradient-text-premium">
-                      92
-                    </span>
-                    <span className="pb-1 text-[10px] text-emerald-600">▲ +8</span>
-                  </div>
-                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
-                    <div className="h-full w-[92%] rounded-full bg-gradient-to-r from-primary to-gold" />
-                  </div>
-                </div>
-
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  {[
-                    { k: 'pH', v: '7.4', c: 'emerald' },
-                    { k: t('heroPhoneChlorine'), v: '1.6', c: 'emerald' },
-                    { k: 'TAC', v: '90', c: 'amber' },
-                    { k: 'CYA', v: '45', c: 'emerald' },
-                  ].map((m) => (
-                    <div key={m.k} className="rounded-lg bg-white/70 p-2 dark:bg-white/5">
-                      <p className="text-[9px] uppercase text-muted-foreground">{m.k}</p>
-                      <p className="font-display text-sm font-bold">{m.v}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-3 rounded-xl border border-gold/30 bg-gold/5 p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-gold">
-                    {t('heroPhoneActionPlan')}
-                  </p>
-                  <ol className="mt-1.5 space-y-1 text-[10px] text-foreground/80">
-                    <li>{t('heroPhoneStep1')}</li>
-                    <li>{t('heroPhoneStep2')}</li>
-                    <li>{t('heroPhoneStep3')}</li>
-                  </ol>
-                </div>
-              </div>
-            </div>
-
-            {/* Floating mini badge */}
-            <motion.div
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute -right-6 top-20 hidden rounded-2xl border border-white/50 bg-white/85 px-3 py-2 shadow-lg backdrop-blur-xl sm:block dark:bg-white/10"
-            >
-              <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
-                {t('heroPhoneBaignadeLabel')}
-              </p>
-              <p className="text-sm font-bold text-emerald-600">{t('heroPhoneBaignadeValue')}</p>
-            </motion.div>
-
-            <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute -left-8 bottom-16 hidden rounded-2xl border border-white/50 bg-white/85 px-3 py-2 shadow-lg backdrop-blur-xl sm:block dark:bg-white/10"
-            >
-              <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
-                {t('heroPhoneMeteoLabel')}
-              </p>
-              <p className="text-sm font-bold text-amber-600">{t('heroPhoneMeteoValue')}</p>
-            </motion.div>
-          </div>
-        </motion.div>
+        {/* Phone mockup removed — the hero background image is the visual */}
 
         {/* Stats strip — pushed further down */}
         <motion.div
