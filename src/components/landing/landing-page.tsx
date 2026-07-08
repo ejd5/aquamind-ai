@@ -71,9 +71,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
           >
             <div className="relative">
               <div className="absolute -inset-[3px] rounded-[14px] bg-gradient-to-br from-gold via-ocean-light to-primary opacity-80 blur-[2px]" />
-              <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl shadow-lg shadow-primary/30">
-                <img src="/icon-aqwelia-48.png" alt="AQWELIA" className="h-10 w-10 object-cover" />
-              </div>
+              <img src="/icon-aqwelia-48.png" alt="AQWELIA" className="h-12 w-12 object-contain" />
               <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-gold to-[oklch(0.55_0.10_195)] shadow-md shadow-gold/40">
                 <Sparkles className="h-2.5 w-2.5 text-white" />
               </div>
@@ -235,7 +233,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
             <div className="md:col-span-2">
               <div className="flex items-center gap-2.5">
                 <div className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-md shadow-primary/30">
-                  <img src="/icon-aqwelia-48.png" alt="AQWELIA" className="h-9 w-9 object-cover" />
+                  <img src="/icon-aqwelia-48.png" alt="AQWELIA" className="h-10 w-10 object-contain" />
                   <Sparkles className="absolute -right-1 -top-1 h-3 w-3 text-gold" />
                 </div>
                 <div>

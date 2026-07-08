@@ -676,7 +676,7 @@ export function ModuleDiagnostic() {
                           <div className="relative mb-3">
                             <div className="absolute -inset-[3px] rounded-[14px] bg-gradient-to-br from-gold via-ocean-light to-primary opacity-70 blur-[2px]" />
                             <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl shadow-md">
-                              <img src="/icon-aqwelia-48.png" alt="AQWELIA" className="h-12 w-12 object-cover" />
+                              <img src="/icon-aqwelia-48.png" alt="AQWELIA" className="h-12 w-12 object-contain" />
                             </div>
                           </div>
                           <AlertDialogTitle className="text-center font-display text-lg font-bold">
