@@ -58,7 +58,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
             <span className="tracking-[0.18em]">{t('heroBadge')}</span>
           </motion.div>
 
-          {/* Headline — line 1 */}
+          {/* Headline */}
           <motion.h1
             initial={{ opacity: 0, y: 22 }}
             animate={{ opacity: 1, y: 0 }}
@@ -67,16 +67,6 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
           >
             {t('heroTitle')}
           </motion.h1>
-          {/* Headline — line 2 */}
-          <motion.h2
-            initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.1 }}
-            className="font-display text-4xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl"
-          >
-            <span className="gradient-text-premium italic">{t('heroTitleLine2')}</span>{' '}
-            <span className="gradient-text-premium italic">{t('heroTitleSuffix')}</span>
-          </motion.h2>
 
           {/* Subtitle — promise AQWELIA (Option B) */}
           <motion.p

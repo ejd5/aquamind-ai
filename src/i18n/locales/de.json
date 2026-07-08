@@ -347,9 +347,9 @@
     "headerMenuClose": "Menü schließen",
     "headerAriaLogo": "AQWELIA — zurück zum Anfang",
     "heroBadge": "AQUA · WELL · KI",
-    "heroTitle": "Klares Wasser,",
-    "heroTitleSuffix": "keine Verschwendung.",
-    "heroSubtitle": "Drei Wurzeln, ein Versprechen: Wasser richtig im Griff, mit KI. AQWELIA ist der intelligente Copilot, der 24/7 über Ihren Pool wacht – sorgfältige Diagnose, präziser Aktionsplan, immer kristallklares Wasser.",
+    "heroTitle": "Die Poolpflege war noch nie so einfach",
+    "heroTitleSuffix": "",
+    "heroSubtitle": "Analysieren, Verstehen, Handeln. AQWELIA kümmert sich um Ihren Pool.",
     "heroCtaStart": "Kostenlos starten",
     "heroCtaHowItWorks": "So funktioniert's",
     "heroScroll": "Entdecken",
@@ -687,7 +687,7 @@
     "footerComingSoon": "bald verfügbar",
     "disclaimerLabel": "Haftungsausschluss.",
     "heroPhoneChlorine": "Chlor",
-    "heroTitleLine2": "kein Stress,"
+    "heroTitleLine2": ""
   },
   "plans": {
     "free": {

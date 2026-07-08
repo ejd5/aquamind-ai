@@ -347,9 +347,9 @@
     "headerMenuClose": "Menu sluiten",
     "headerAriaLogo": "AQWELIA — terug naar boven",
     "heroBadge": "AQUA · WELL · AI",
-    "heroTitle": "Helder water,",
-    "heroTitleSuffix": "geen verspilling.",
-    "heroSubtitle": "Drie wortels, één belofte: water zoals het hoort, gedreven door AI. AQWELIA is de intelligente copiloot die 24/7 over uw zwembad waakt — voorzichtige diagnose, exact actieplan, altijd kristalhelder water.",
+    "heroTitle": "Het onderhoud van uw zwembad was nog nooit zo eenvoudig",
+    "heroTitleSuffix": "",
+    "heroSubtitle": "Analyseer, Begrijp, Handel. AQWELIA zorgt voor uw zwembad.",
     "heroCtaStart": "Gratis beginnen",
     "heroCtaHowItWorks": "Zo werkt het",
     "heroScroll": "Ontdekken",
@@ -687,7 +687,7 @@
     "footerComingSoon": "binnenkort",
     "disclaimerLabel": "Disclaimer.",
     "heroPhoneChlorine": "Chloor",
-    "heroTitleLine2": "geen stress,"
+    "heroTitleLine2": ""
   },
   "plans": {
     "free": {
