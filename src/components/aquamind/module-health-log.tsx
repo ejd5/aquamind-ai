@@ -380,9 +380,17 @@ export function ModuleHealthLog() {
                               </span>
                             )}
                           </div>
-                          {t2.note && (
-                            <p className="mt-1.5 text-xs italic text-muted-foreground">« {t2.note} »</p>
-                          )}
+                          {t2.note && (() => {
+                            // Try to parse note as JSON { key, params } for translation
+                            // If it fails, display the raw note (legacy French text)
+                            try {
+                              const parsed = JSON.parse(t2.note)
+                              if (parsed.key) {
+                                return <p className="mt-1.5 text-xs italic text-muted-foreground">« {t(parsed.key as any, parsed.params || {})} »</p>
+                              }
+                            } catch { /* not JSON, display raw */ }
+                            return <p className="mt-1.5 text-xs italic text-muted-foreground">« {t2.note} »</p>
+                          })()}
                           <div className="mt-2 flex items-center justify-between">
                             <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
                               {t('healthLog.source')} {t2.source === 'strip_photo' ? t('healthLog.stripPhoto') : t2.source === 'manual' ? t('healthLog.manualSource') : t2.source}

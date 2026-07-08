@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { nvidiaVision } from '@/lib/ai/nvidia'
 import { db } from '@/lib/db'
-import { VISION_DIAGNOSTIC_PROMPT } from '@/lib/pool/ai-context'
+import { VISION_DIAGNOSTIC_PROMPT, getVisionLanguageInstruction } from '@/lib/pool/ai-context'
 import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
@@ -34,9 +34,10 @@ export async function POST(req: NextRequest) {
     const { image, typeHint } = await req.json()
     if (!image) return NextResponse.json({ error: 'Image base64 requise' }, { status: 400 })
 
+    const langInstr = getVisionLanguageInstruction(locale)
     const prompt = typeHint
-      ? `${VISION_DIAGNOSTIC_PROMPT}\n\nIndice utilisateur: cette photo montre probablement "${typeHint}".`
-      : VISION_DIAGNOSTIC_PROMPT
+      ? `${VISION_DIAGNOSTIC_PROMPT}\n\n${langInstr}\n\nUser hint: this photo probably shows "${typeHint}".`
+      : `${VISION_DIAGNOSTIC_PROMPT}\n\n${langInstr}`
 
     const zai = await nvidiaVision(prompt, image)
     const content = zai.content || ''

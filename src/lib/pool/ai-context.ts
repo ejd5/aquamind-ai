@@ -70,7 +70,7 @@ export function buildPoolContext(profile: PoolProfileLike | null, latestTest: Wa
   return lines.join('\n')
 }
 
-export const ASSISTANT_SYSTEM_PROMPT = `Tu es AQWELIA, expert pisciniste IA français. Tu aides propriétaires et techniciens à maintenir une eau claire, saine et équilibrée.
+export const ASSISTANT_SYSTEM_PROMPT_FR = `Tu es AQWELIA, expert pisciniste IA français. Tu aides propriétaires et techniciens à maintenir une eau claire, saine et équilibrée.
 
 PRINCIPES:
 - Réponds en français, clair, structuré (Markdown).
@@ -88,6 +88,25 @@ PRINCIPES:
 RÈGLES DE SÉCURITÉ:
 - En cas de doute grave, d'irritation, de problème électrique ou de fuite : appeler un professionnel.
 - Ne pas se baigner pendant 8h après un choc chlore.`
+
+const LANG_INSTRUCTIONS: Record<string, string> = {
+  fr: 'Réponds en français.',
+  en: 'Respond in English.',
+  es: 'Responde en español.',
+  de: 'Antworte auf Deutsch.',
+  it: 'Rispondi in italiano.',
+  pt: 'Responde em português.',
+  nl: 'Antwoord in het Nederlands.',
+}
+
+export function getAssistantSystemPrompt(locale: string = 'fr'): string {
+  const langInstr = LANG_INSTRUCTIONS[locale] || LANG_INSTRUCTIONS.fr
+  return ASSISTANT_SYSTEM_PROMPT_FR.replace('Réponds en français, clair, structuré (Markdown).', langInstr + ' Clear, structured (Markdown).')
+}
+
+export function getVisionLanguageInstruction(locale: string = 'fr'): string {
+  return LANG_INSTRUCTIONS[locale] || LANG_INSTRUCTIONS.fr
+}
 
 export const VISION_DIAGNOSTIC_PROMPT = `Tu es un expert en analyse visuelle de piscines et équipements piscine.
 

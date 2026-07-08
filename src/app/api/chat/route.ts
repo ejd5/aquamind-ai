@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { nvidiaChat, type ChatMessage } from '@/lib/ai/nvidia'
 import { db } from '@/lib/db'
-import { buildPoolContext, ASSISTANT_SYSTEM_PROMPT } from '@/lib/pool/ai-context'
+import { buildPoolContext, getAssistantSystemPrompt } from '@/lib/pool/ai-context'
 import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     history.reverse()
 
     const context = buildPoolContext(profile as any, latestTest as any)
-    const systemPrompt = `${ASSISTANT_SYSTEM_PROMPT}\n\n${context}`
+    const systemPrompt = `${getAssistantSystemPrompt(locale)}\n\n${context}`
 
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },

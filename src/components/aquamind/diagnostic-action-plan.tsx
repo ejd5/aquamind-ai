@@ -1000,7 +1000,7 @@ export function DiagnosticActionPlan({
         await api.post('/api/pool/water-test', {
           ...payload,
           source: 'action_plan',
-          note: t('noteActionPlan', { title: step.title }),
+          note: JSON.stringify({ key: 'noteActionPlan', params: { title: step.title } }),
         })
 
         // Update local "latest" so subsequent steps show the new "before"
