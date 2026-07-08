@@ -28,21 +28,25 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
   ]
 
   return (
-    <section id="top" className="relative isolate overflow-hidden pt-28 pb-24 sm:pt-32 sm:pb-32">
-      {/* AQWELIA hero background image — full bleed, not truncated */}
+    <section id="top" className="relative isolate overflow-hidden pt-28 pb-24 sm:pt-32 sm:pb-48">
+      {/* AQWELIA hero background image — complete, not truncated */}
       <div
-        className="pointer-events-none absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url(/aqwelia-hero-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center' }}
+        className="pointer-events-none absolute inset-0 -z-10 bg-no-repeat"
+        style={{
+          backgroundImage: 'url(/aqwelia-hero-bg.png)',
+          backgroundSize: 'contain',
+          backgroundPosition: 'center',
+        }}
         aria-hidden="true"
       />
       {/* Light overlay — only on left side for text readability */}
       <div
-        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-background/90 via-background/30 to-transparent"
+        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-background/95 via-background/50 to-transparent"
         aria-hidden="true"
       />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="max-w-2xl text-left">
+        <div className="max-w-xl text-left">
           {/* Eyebrow badge — signature AQWELIA */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -71,7 +75,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15 }}
-            className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg"
+            className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg"
           >
             {t('heroSubtitle')}
           </motion.p>
@@ -210,13 +214,13 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
           </div>
         </motion.div>
 
-        {/* Stats strip */}
+        {/* Stats strip — pushed further down */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.6 }}
-          className="mx-auto mt-16 grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4"
+          className="mx-auto mt-32 grid max-w-4xl grid-cols-2 gap-3 sm:mt-40 sm:grid-cols-4 sm:gap-4"
         >
           {STATS.map((s) => (
             <div
