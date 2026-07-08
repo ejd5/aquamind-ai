@@ -3,7 +3,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { getDefaultPoolNameKey } from '@/lib/pool/default-names'
+import { getDefaultPoolNameKey, getDefaultAccountNameKey } from '@/lib/pool/default-names'
 import type { TabId, PoolProfileLite } from './app-shell'
 
 interface HeaderProps {
@@ -20,6 +20,13 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
   const t = useTranslations('nav')
   const tl = useTranslations('landing')
   const tc = useTranslations('common')
+
+  // Helper: translate account name if it's a French default, else show as-is
+  const displayName = (name?: string | null) => {
+    if (!name) return ''
+    const key = getDefaultAccountNameKey(name)
+    return key ? tc(key as any) : name
+  }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -132,10 +139,10 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
                 aria-label={t('userMenuAria')}
               >
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-primary to-gold text-[10px] font-bold text-white">
-                  {(session.user.name || session.user.email || 'U').charAt(0).toUpperCase()}
+                  {(displayName(session.user.name) || session.user.email || 'U').charAt(0).toUpperCase()}
                 </div>
                 <span className="hidden max-w-[120px] truncate sm:inline">
-                  {session.user.name || session.user.email?.split('@')[0]}
+                  {displayName(session.user.name) || session.user.email?.split('@')[0]}
                 </span>
                 <ChevronDown className="h-3 w-3 text-muted-foreground" />
               </button>
@@ -143,7 +150,7 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
               {menuOpen && (
                 <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-border/60 bg-background/95 shadow-xl backdrop-blur-xl">
                   <div className="border-b border-border/40 px-4 py-3">
-                    <p className="text-sm font-semibold text-foreground">{session.user.name || t('user')}</p>
+                    <p className="text-sm font-semibold text-foreground">{displayName(session.user.name) || t('user')}</p>
                     <p className="truncate text-[11px] text-muted-foreground">{session.user.email}</p>
                   </div>
                   <Link

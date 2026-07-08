@@ -17,3 +17,16 @@ export function getDefaultPoolNameKey(name: string): string | null {
   if (name === 'Piscine démo') return 'common.demoPoolName'
   return null
 }
+
+/**
+ * French default account names stored in the DB before i18n refactor.
+ * Used to detect if a user name is a default (translatable) or custom.
+ */
+export const FRENCH_DEFAULT_ACCOUNT_NAMES = [
+  'Compte Démonstration',
+] as const
+
+export function getDefaultAccountNameKey(name: string): string | null {
+  if (name === 'Compte Démonstration') return 'common.demoAccountName'
+  return null
+}

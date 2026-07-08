@@ -250,7 +250,16 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
   const tWeather = useTranslations('weather')
   const tReminders = useTranslations('reminders')
   const tReminderMod = useTranslations('modules.reminders')
+  const tAct = useTranslations('actionPlan')
   const locale = useLocale()
+
+  // Helper: translate via key with French fallback (for DB-stored plans without keys)
+  const trAct = useCallback((fr: string, key?: string | null, params?: Record<string, string | number> | null): string => {
+    if (key) {
+      try { return tAct(key as any, params || {}) } catch { return fr }
+    }
+    return fr
+  }, [tAct])
   const [data, setData] = useState<DashboardData | null>(null)
   const [weather, setWeather] = useState<WeatherLite | null>(null)
   const [reminders, setReminders] = useState<ReminderLite[]>([])
@@ -459,13 +468,15 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                   <CardTitle className="font-display text-base">{t('priority1')}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1">
-                  {latestPlan && latestPlan.immediateActions?.length > 0 ? (
+                  {latestPlan && latestPlan.immediateActions?.length > 0 ? (() => {
+                    const ai = latestPlan.immediateActions[0] as any
+                    return (
                     <div>
                       <p className="font-display text-lg font-semibold text-gold">
-                        {latestPlan.immediateActions[0].action}
+                        {trAct(ai.action, ai.actionKey)}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {latestPlan.immediateActions[0].detail}
+                        {trAct(ai.detail, ai.detailKey, ai.detailParams)}
                       </p>
                       <Button
                         size="sm"
@@ -477,7 +488,8 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                         <ArrowRight className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                  ) : (
+                    )
+                  })() : (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <CheckCircle2 className="h-4 w-4 text-[oklch(0.7_0.15_155)]" />
                       {t('noUrgentAction')}
