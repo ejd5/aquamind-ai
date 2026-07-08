@@ -3,6 +3,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
+import { getDefaultPoolNameKey } from '@/lib/pool/default-names'
 import type { TabId, PoolProfileLite } from './app-shell'
 
 interface HeaderProps {
@@ -18,6 +19,7 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
   const menuRef = useRef<HTMLDivElement>(null)
   const t = useTranslations('nav')
   const tl = useTranslations('landing')
+  const tc = useTranslations('common')
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -106,7 +108,7 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
               title={t('poolProfileTitle')}
             >
               <Droplets className="h-3.5 w-3.5 text-primary" />
-              <span className="hidden sm:inline">{profile.name}</span>
+              <span className="hidden sm:inline">{(() => { const k = getDefaultPoolNameKey(profile.name); return k ? tc(k as any) : profile.name })()}</span>
               <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold text-gold">
                 {profile.volume}
                 {profile.unit === 'm3' ? ' m³' : ' gal'}
