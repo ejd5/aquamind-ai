@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
 
     const langInstr = getVisionLanguageInstruction(locale)
     const prompt = typeHint
-      ? `${VISION_DIAGNOSTIC_PROMPT}\n\n${langInstr}\n\nUser hint: this photo probably shows "${typeHint}".`
-      : `${VISION_DIAGNOSTIC_PROMPT}\n\n${langInstr}`
+      ? `${langInstr}\n\n${VISION_DIAGNOSTIC_PROMPT}\n\nUser hint: this photo probably shows "${typeHint}".`
+      : `${langInstr}\n\n${VISION_DIAGNOSTIC_PROMPT}`
 
     const zai = await nvidiaVision(prompt, image)
     const content = zai.content || ''
