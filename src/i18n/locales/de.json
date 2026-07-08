@@ -1465,7 +1465,11 @@
     "filtration": {
       "reason": "Regel: Die Hälfte der Wassertemperatur ({temp} °C) in Filtrationsstunden.",
       "scheduleNocturnal": "Bevorzugen Sie nächtliche Filtration (weniger Verdunstung, bessere Chlor-Effizienz).",
-      "scheduleDiurnal": "Tägliche Filtration empfohlen."
+      "scheduleDiurnal": "Tägliche Filtration empfohlen.",
+      "schedule": {
+        "nocturnal": "Nacht (nächtliche Filtration zum Kühlen)",
+        "diurnal": "Tag (tagsüber Filtration zum Erwärmen)"
+      }
     },
     "codes": {
       "113": "Sonnig",

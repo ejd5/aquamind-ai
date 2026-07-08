@@ -1465,7 +1465,11 @@
     "filtration": {
       "reason": "Regel: de helft van de watertemperatuur ({temp} °C) aan filtratie-uren.",
       "scheduleNocturnal": "Geef de voorkeur aan nachtfiltratie (minder verdamping, betere chloorefficiëntie).",
-      "scheduleDiurnal": "Dagfiltratie aanbevolen."
+      "scheduleDiurnal": "Dagfiltratie aanbevolen.",
+      "schedule": {
+        "nocturnal": "Nacht (nachtelijke filtratie om te koelen)",
+        "diurnal": "Dag (dagelijkse filtratie om te verwarmen)"
+      }
     },
     "codes": {
       "113": "Zonnig",

@@ -1557,7 +1557,11 @@
     "filtration": {
       "reason": "Rule: half the water temperature ({temp}°C) in filtration hours.",
       "scheduleNocturnal": "Prefer nighttime filtration (less evaporation, better chlorine efficiency).",
-      "scheduleDiurnal": "Daytime filtration recommended."
+      "scheduleDiurnal": "Daytime filtration recommended.",
+      "schedule": {
+        "nocturnal": "Night (filtration at night to cool the water)",
+        "diurnal": "Day (filtration during the day to warm the water)"
+      }
     },
     "codes": {
       "113": "Sunny",

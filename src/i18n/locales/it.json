@@ -1465,7 +1465,11 @@
     "filtration": {
       "reason": "Regola: metà della temperatura dell'acqua ({temp} °C) in ore di filtrazione.",
       "scheduleNocturnal": "Preferisci la filtrazione notturna (meno evaporazione, migliore efficacia del cloro).",
-      "scheduleDiurnal": "Filtrazione diurna consigliata."
+      "scheduleDiurnal": "Filtrazione diurna consigliata.",
+      "schedule": {
+        "nocturnal": "Notte (filtrazione notturna per raffreddare)",
+        "diurnal": "Giorno (filtrazione diurna per riscaldare)"
+      }
     },
     "codes": {
       "113": "Soleggiato",
