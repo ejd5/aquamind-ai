@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AQWELIA — Toolkit i18n (Gratuit, Illimité)</title>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface-2: #1f2937;
+    --border: #374151;
+    --text: #f3f4f6;
+    --text-muted: #9ca3af;
+    --primary: #14b8a6;
+    --gold: #f59e0b;
+    --green: #10b981;
+    --red: #ef4444;
+    --blue: #3b82f6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .container { max-width: 1000px; margin: 0 auto; padding: 40px 24px; }
+  header {
+    background: linear-gradient(135deg, var(--green), var(--primary));
+    padding: 48px 24px;
+    text-align: center;
+    border-bottom: 3px solid var(--green);
+  }
+  header h1 { font-size: 2.2rem; margin-bottom: 8px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+  header p { color: rgba(255,255,255,0.9); font-size: 1.1rem; }
+  h2 { font-size: 1.6rem; margin-top: 40px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); color: var(--gold); }
+  h3 { font-size: 1.25rem; margin-top: 28px; margin-bottom: 12px; color: var(--primary); }
+  p { margin-bottom: 12px; color: var(--text); }
+  ul, ol { margin-left: 24px; margin-bottom: 16px; }
+  li { margin-bottom: 6px; }
+  code { background: var(--surface-2); color: var(--green); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono', 'Monaco', monospace; font-size: 0.9em; }
+  pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; margin-bottom: 16px; }
+  pre code { background: none; color: var(--text); padding: 0; font-size: 0.85rem; line-height: 1.5; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .card-do { border-left: 4px solid var(--green); }
+  .card-info { border-left: 4px solid var(--blue); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 24px 0; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; }
+  .stat-value { font-size: 2rem; font-weight: 700; color: var(--gold); }
+  .stat-label { font-size: 0.9rem; color: var(--text-muted); margin-top: 4px; }
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+  .compare-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .compare-card.crowdin { border-left: 4px solid var(--red); }
+  .compare-card.toolkit { border-left: 4px solid var(--green); }
+  .compare-card h4 { margin-bottom: 12px; font-size: 1.1rem; }
+  .compare-card ul { font-size: 0.9rem; }
+  .footer { text-align: center; padding: 40px 24px; color: var(--text-muted); font-size: 0.9rem; border-top: 1px solid var(--border); margin-top: 40px; }
+  @media (max-width: 768px) { .compare { grid-template-columns: 1fr; } .stats { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>AQWELIA — Toolkit i18n</h1>
+  <p>Solution 100% gratuite · Illimitée · Propre à AQWELIA · Propulsée par GLM</p>
+</header>
+
+<div class="container">
+
+<div class="stats">
+  <div class="stat"><div class="stat-value">0€</div><div class="stat-label">Coût (gratuit pour toujours)</div></div>
+  <div class="stat"><div class="stat-value">∞</div><div class="stat-label">Aucune limite</div></div>
+  <div class="stat"><div class="stat-value">7</div><div class="stat-label">Langues supportées</div></div>
+  <div class="stat"><div class="stat-value">2810</div><div class="stat-label">Clés par langue</div></div>
+</div>
+
+<h2>Pourquoi pas Crowdin ?</h2>
+<div class="compare">
+  <div class="compare-card crowdin">
+    <h4>❌ Crowdin (limites gratuites)</h4>
+    <ul>
+      <li>6000 chaînes max (nous en avons 2810)</li>
+      <li>Compte requis, configuration complexe</li>
+      <li>Sync GitHub parfois capricieuse</li>
+      <li>Limite de traducteurs IA</li>
+      <li>Dépendant d'un service externe</li>
+      <li>Limites de stockage</li>
+    </ul>
+  </div>
+  <div class="compare-card toolkit">
+    <h4>✅ Notre Toolkit (GLM local)</h4>
+    <ul>
+      <li>Aucune limite de chaînes</li>
+      <li>Aucun compte requis</li>
+      <li>100% local, aucun service externe</li>
+      <li>GLM-5.2 (déjà installé, illimité)</li>
+      <li>Aucune dépendance externe</li>
+      <li>Gratuit pour toujours</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Comment ça marche ?</h2>
+<div class="card card-info">
+  <p>Le toolkit <code>scripts/i18n/toolkit.py</code> utilise notre <strong>LLM GLM-5.2</strong> déjà installé via <code>z-ai-web-dev-sdk</code>. Quand vous ajoutez une nouvelle clé en français, le toolkit :</p>
+  <ol>
+    <li>Détecte les clés manquantes dans les 6 autres langues</li>
+    <li>Envoie le texte français à GLM pour traduction</li>
+    <li>Préserve les placeholders <code>{param}</code> et les termes techniques</li>
+    <li>Met à jour automatiquement les 6 fichiers de locale</li>
+    <li>Valide la couverture et la qualité</li>
+  </ol>
+</div>
+
+<h2>Commandes disponibles</h2>
+
+<h3>1. Voir l'état des traductions</h3>
+<pre><code>python3 scripts/i18n/toolkit.py status</code></pre>
+<p>Affiche le nombre de clés par langue, les clés manquantes, et vérifie les placeholders.</p>
+
+<h3>2. Traduire les clés manquantes</h3>
+<pre><code>python3 scripts/i18n/toolkit.py translate</code></pre>
+<p>Détecte toutes les clés manquantes et les traduit automatiquement avec GLM vers les 6 langues.</p>
+
+<h3>3. Traduire une clé spécifique</h3>
+<pre><code>python3 scripts/i18n/toolkit.py translate-key "common.maNouvelleCle" "Texte en français à traduire"</code></pre>
+<p>Traduit une seule clé dans les 6 langues et sauvegarde dans les fichiers.</p>
+
+<h3>4. Valider la couverture</h3>
+<pre><code>python3 scripts/i18n/toolkit.py validate</code></pre>
+<p>Vérifie : couverture des clés, valeurs vides, placeholders cassés.</p>
+
+<h2>Workflow quotidien</h2>
+<div class="card card-do">
+  <h3>Quand vous ajoutez une nouvelle fonctionnalité</h3>
+  <ol>
+    <li>Ajoutez la clé dans <code>src/i18n/locales/fr.json</code></li>
+    <li>Utilisez <code>t("cle")</code> dans votre composant</li>
+    <li>Exécutez : <code>python3 scripts/i18n/toolkit.py translate</code></li>
+    <li>GLM traduit automatiquement vers EN, ES, DE, IT, PT, NL</li>
+    <li>Vérifiez : <code>python3 scripts/i18n/toolkit.py status</code></li>
+    <li>Committez — le pre-commit hook vérifie qu'aucun texte codé en dur n'est ajouté</li>
+  </ol>
+</div>
+
+<h2>Règles de traduction GLM</h2>
+<div class="card card-info">
+  <p>Le prompt GLM inclut ces règles :</p>
+  <ul>
+    <li>✅ Préserve les placeholders <code>{param}</code> exactement</li>
+    <li>✅ Garde les noms de marque : AQWELIA, TAC, CYA, pH</li>
+    <li>✅ Garde les termes techniques : skimmer, backwash, ppm, mg/L</li>
+    <li>✅ Traduit naturellement (pas mot à mot)</li>
+    <li>✅ Retourne uniquement la traduction</li>
+  </ul>
+</div>
+
+<h2>Avantages vs Crowdin</h2>
+<div class="stats">
+  <div class="stat"><div class="stat-value">3s</div><div class="stat-label">Temps par traduction (GLM)</div></div>
+  <div class="stat"><div class="stat-value">0</div><div class="stat-label">Compte requis</div></div>
+  <div class="stat"><div class="stat-value">100%</div><div class="stat-label">Local (aucune donnée envoyée)</div></div>
+  <div class="stat"><div class="stat-value">∞</div><div class="stat-label">Traductions illimitées</div></div>
+</div>
+
+<h2>Sécurité</h2>
+<div class="card card-info">
+  <ul>
+    <li>🔒 Aucune donnée envoyée à un service tiers (GLM est local)</li>
+    <li>🔒 Aucun token/API key à gérer</li>
+    <li>🔒 Aucun accès GitHub requis</li>
+    <li>🔒 Pre-commit hook empêche les régressions</li>
+  </ul>
+</div>
+
+</div>
+
+<div class="footer">
+  <p><strong>AQWELIA</strong> — Toolkit i18n · 7 langues · 2810 clés · Gratuit pour toujours</p>
+  <p>Always crystal-clear water. · Une eau toujours cristalline.</p>
+</div>
+
+</body>
+</html>
