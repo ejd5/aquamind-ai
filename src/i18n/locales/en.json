@@ -439,7 +439,7 @@
     "headerMenuClose": "Close menu",
     "headerAriaLogo": "AQWELIA — back to top",
     "heroBadge": "AQUA · WELL · AI",
-    "heroTitle": "Clear water, no stress,",
+    "heroTitle": "Clear water,",
     "heroTitleSuffix": "no waste.",
     "heroSubtitle": "Three roots, one promise: water done right, powered by AI. AQWELIA is the intelligent copilot that watches over your pool 24/7 — prudent diagnosis, exact action plan, always crystal-clear water.",
     "heroCtaStart": "Start for free",
@@ -778,7 +778,8 @@
     "signIn": "Sign in",
     "footerComingSoon": "coming soon",
     "disclaimerLabel": "Disclaimer.",
-    "heroPhoneChlorine": "Chlorine"
+    "heroPhoneChlorine": "Chlorine",
+    "heroTitleLine2": "no stress,"
   },
   "plans": {
     "free": {

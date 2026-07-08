@@ -29,23 +29,23 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
 
   return (
     <section id="top" className="relative isolate overflow-hidden pb-24 sm:pb-48">
-      {/* AQWELIA hero background image — complete, not truncated, glued to top */}
+      {/* AQWELIA hero background image — full bleed, no white bands */}
       <div
-        className="pointer-events-none absolute inset-0 -z-10 bg-no-repeat"
+        className="pointer-events-none absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: 'url(/aqwelia-hero-bg.png)',
-          backgroundSize: 'contain',
+          backgroundSize: 'cover',
           backgroundPosition: 'top center',
         }}
         aria-hidden="true"
       />
       {/* Light overlay — only on left side for text readability */}
       <div
-        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-background/95 via-background/50 to-transparent"
+        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-background/95 via-background/60 to-background/20"
         aria-hidden="true"
       />
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-20 sm:pt-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-32 sm:pt-40">
         <div className="max-w-xl text-left">
           {/* Eyebrow badge — signature AQWELIA */}
           <motion.div
@@ -58,17 +58,25 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
             <span className="tracking-[0.18em]">{t('heroBadge')}</span>
           </motion.div>
 
-          {/* Headline */}
+          {/* Headline — line 1 */}
           <motion.h1
             initial={{ opacity: 0, y: 22 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.05 }}
-            className="mt-6 font-display text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl md:text-6xl"
+            className="mt-6 font-display text-4xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl"
           >
             {t('heroTitle')}
-            <br className="hidden sm:block" />{' '}
-            <span className="gradient-text-premium italic">{t('heroTitleSuffix')}</span>
           </motion.h1>
+          {/* Headline — line 2 */}
+          <motion.h2
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.1 }}
+            className="font-display text-4xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl"
+          >
+            <span className="gradient-text-premium italic">{t('heroTitleLine2')}</span>{' '}
+            <span className="gradient-text-premium italic">{t('heroTitleSuffix')}</span>
+          </motion.h2>
 
           {/* Subtitle — promise AQWELIA (Option B) */}
           <motion.p

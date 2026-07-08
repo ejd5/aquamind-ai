@@ -347,7 +347,7 @@
     "headerMenuClose": "Cerrar menú",
     "headerAriaLogo": "AQWELIA — volver arriba",
     "heroBadge": "AQUA · WELL · IA",
-    "heroTitle": "Agua cristalina, sin estrés,",
+    "heroTitle": "Agua cristalina,",
     "heroTitleSuffix": "sin desperdicio.",
     "heroSubtitle": "Tres raíces, una promesa: agua en su justo punto, impulsada por IA. AQWELIA es el copiloto inteligente que vigila tu piscina 24/7 — diagnóstico prudente, plan de acción exacto, siempre agua cristalina.",
     "heroCtaStart": "Empezar gratis",
@@ -686,7 +686,8 @@
     "signIn": "Iniciar sesión",
     "footerComingSoon": "próximamente",
     "disclaimerLabel": "Aviso.",
-    "heroPhoneChlorine": "Cloro"
+    "heroPhoneChlorine": "Cloro",
+    "heroTitleLine2": "sin estrés,"
   },
   "plans": {
     "free": {
