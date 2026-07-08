@@ -29,21 +29,15 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
 
   return (
     <section id="top" className="relative isolate overflow-hidden pt-28 pb-24 sm:pt-32 sm:pb-32">
-      {/* Aurora mesh background */}
-      <div className="aurora-bg pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
-      {/* Floating glass orbs */}
+      {/* AQWELIA hero background image */}
       <div
-        className="aurora-orb -left-20 top-10 h-72 w-72 bg-[oklch(0.6_0.13_195/0.55)]"
+        className="pointer-events-none absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url(/aqwelia-hero-bg.png)' }}
         aria-hidden="true"
       />
+      {/* Dark overlay for text readability */}
       <div
-        className="aurora-orb right-0 top-32 h-80 w-80 bg-[oklch(0.65_0.11_195/0.45)]"
-        style={{ animationDelay: '-6s' }}
-        aria-hidden="true"
-      />
-      <div
-        className="aurora-orb bottom-0 left-1/3 h-72 w-72 bg-[oklch(0.5_0.1_170/0.4)]"
-        style={{ animationDelay: '-12s' }}
+        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-background/80 via-background/60 to-background/90"
         aria-hidden="true"
       />
 

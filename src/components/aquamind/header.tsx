@@ -39,6 +39,12 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
   }, [])
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/70 backdrop-blur-2xl">
+      {/* AQWELIA background image (subtle) */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-10"
+        style={{ backgroundImage: 'url(/aqwelia-hero-bg.png)' }}
+        aria-hidden="true"
+      />
       {/* Subtle gold line at the bottom */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
 
