@@ -175,9 +175,9 @@ export function generateReminders(ctx: ReminderContext): Reminder[] {
       : ctx.filterType === 'cartridge'
       ? 'Rinçage de la cartouche recommandé.'
       : 'Vérification du filtre recommandée.',
-    detailKey: `reminders.filter_clean.detail.${filterVariant}`,
+    detailKey: `filter_clean.detail${filterVariant.charAt(0).toUpperCase() + filterVariant.slice(1)}`,
     action: ctx.filterType === 'sand' ? 'Faites un backwash (contre-lavage).' : 'Démontez et rincez la cartouche.',
-    actionKey: `reminders.filter_clean.action.${filterVariant}`,
+    actionKey: `filter_clean.action${filterVariant.charAt(0).toUpperCase() + filterVariant.slice(1)}`,
     priority: 'medium',
     dueInHours: filterCleanDays * 24,
     source: 'equipment',

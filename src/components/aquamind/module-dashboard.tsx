@@ -825,17 +825,24 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
               // Build keys directly from reminder ID — infaillible
               const titleKey = r.titleKey || `${r.id}.title`
               const detailKey = r.detailKey || `${r.id}.detail`
+              // Weather-based reminders use weather namespace keys (alerts.*, testReason.*)
+              // Regular reminders use reminders namespace keys (filter_clean.*, test_overdue.*, etc.)
+              const isWeatherKey = (k: string) => k.startsWith('alerts.') || k.startsWith('testReason.')
+              const trReminder = (fr: string, key: string, params?: any) => {
+                if (isWeatherKey(key)) return trW(fr, key, params)
+                return trR(fr, key, params)
+              }
               return (
                 <div className="relative overflow-hidden rounded-xl border border-border/50 bg-background/60 p-3 pl-4">
                   <span className={`absolute left-0 top-0 h-full w-1 ${cfg.stripe}`} />
                   <div className="flex items-center gap-2">
                     <Bell className={`h-4 w-4 ${cfg.cls}`} />
-                    <p className="font-display text-sm font-bold">{trR(r.title, titleKey, r.params)}</p>
+                    <p className="font-display text-sm font-bold">{trReminder(r.title, titleKey, r.params)}</p>
                     <Badge variant="outline" className={`ml-auto text-[9px] ${cfg.cls}`}>
                       {t(cfg.labelKey as any)}
                     </Badge>
                   </div>
-                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{trR(r.detail, detailKey, r.params)}</p>
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{trReminder(r.detail, detailKey, r.params)}</p>
                   <div className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground">
                     <Clock className="h-3 w-3" />
                     {r.dueInHours <= 0 ? t('now') : r.dueInHours < 24 ? t('inHours', { hours: r.dueInHours }) : t('inDays', { days: Math.round(r.dueInHours / 24) })}
