@@ -260,6 +260,22 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
     }
     return fr
   }, [tAct])
+
+  // Helper: translate weather alert field with French fallback
+  const trW = useCallback((fr: string, key?: string | null, params?: Record<string, string | number> | null): string => {
+    if (key) {
+      try { return tWeather(key as any, params || {}) } catch { return fr }
+    }
+    return fr
+  }, [tWeather])
+
+  // Helper: translate reminder field with French fallback
+  const trR = useCallback((fr: string, key?: string | null, params?: Record<string, string | number> | null): string => {
+    if (key) {
+      try { return tReminders(key as any, params || {}) } catch { return fr }
+    }
+    return fr
+  }, [tReminders])
   const [data, setData] = useState<DashboardData | null>(null)
   const [weather, setWeather] = useState<WeatherLite | null>(null)
   const [reminders, setReminders] = useState<ReminderLite[]>([])
@@ -736,12 +752,12 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                     <span className={`absolute left-0 top-0 h-full w-1 ${cfg.dot}`} />
                     <div className="flex items-center gap-2">
                       <Icon className="h-4 w-4" />
-                      <p className="font-display text-sm font-bold">{tWeather(a.titleKey as any)}</p>
+                      <p className="font-display text-sm font-bold">{trW(a.title, a.titleKey)}</p>
                       <Badge variant="outline" className={`ml-auto text-[9px] uppercase tracking-wide ${cfg.cls}`}>
                         {a.severity}
                       </Badge>
                     </div>
-                    <p className="mt-1 line-clamp-2 text-xs opacity-90">{tWeather(a.messageKey as any, a.messageParams || {})}</p>
+                    <p className="mt-1 line-clamp-2 text-xs opacity-90">{trW(a.message, a.messageKey, a.messageParams)}</p>
                     <Button
                       size="sm"
                       variant="outline"
@@ -799,12 +815,12 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
                   <span className={`absolute left-0 top-0 h-full w-1 ${cfg.stripe}`} />
                   <div className="flex items-center gap-2">
                     <Bell className={`h-4 w-4 ${cfg.cls}`} />
-                    <p className="font-display text-sm font-bold">{tReminders(r.titleKey as any, r.params || {})}</p>
+                    <p className="font-display text-sm font-bold">{trR(r.title, r.titleKey, r.params)}</p>
                     <Badge variant="outline" className={`ml-auto text-[9px] ${cfg.cls}`}>
                       {t(cfg.labelKey as any)}
                     </Badge>
                   </div>
-                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{tReminders(r.detailKey as any, r.params || {})}</p>
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{trR(r.detail, r.detailKey, r.params)}</p>
                   <div className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground">
                     <Clock className="h-3 w-3" />
                     {r.dueInHours <= 0 ? t('now') : r.dueInHours < 24 ? t('inHours', { hours: r.dueInHours }) : t('inDays', { days: Math.round(r.dueInHours / 24) })}

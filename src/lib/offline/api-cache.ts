@@ -78,14 +78,14 @@ export async function apiGetCached<T>(
  * Each returns a `CachedResult<T>` — never throws.
  */
 export const offlineApi = {
-  dashboard: () => apiGetCached('/api/dashboard', 'dashboard'),
-  profile: () => apiGetCached('/api/pool/profile', 'profile'),
-  waterTests: () => apiGetCached('/api/pool/water-test', 'waterTests'),
-  photoDiagnostic: () => apiGetCached('/api/pool/photo-diagnostic', 'waterTests'),
-  weather: () => apiGetCached('/api/pool/weather', 'weather'),
-  reminders: () => apiGetCached('/api/pool/reminders', 'reminders'),
-  guides: () => apiGetCached('/api/guides', 'guides'),
-  equipment: () => apiGetCached('/api/pool/equipment', 'equipment'),
-  inventory: () => apiGetCached('/api/pool/inventory', 'inventory'),
-  subscription: () => apiGetCached('/api/subscription', 'subscription'),
+  dashboard: () => apiGetCached('/api/dashboard?v2', 'dashboard'),
+  profile: () => apiGetCached('/api/pool/profile?v2', 'profile'),
+  waterTests: () => apiGetCached('/api/pool/water-test?v2', 'waterTests'),
+  photoDiagnostic: () => apiGetCached('/api/pool/photo-diagnostic?v2', 'waterTests'),
+  weather: () => apiGetCached('/api/pool/weather?v2', 'weather'),
+  reminders: () => apiGetCached('/api/pool/reminders?v2', 'reminders'),
+  guides: () => apiGetCached('/api/guides?v2', 'guides'),
+  equipment: () => apiGetCached('/api/pool/equipment?v2', 'equipment'),
+  inventory: () => apiGetCached('/api/pool/inventory?v2', 'inventory'),
+  subscription: () => apiGetCached('/api/subscription?v2', 'subscription'),
 }
