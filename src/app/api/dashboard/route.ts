@@ -57,12 +57,18 @@ export async function GET(req: Request) {
       chemicalDosages: safeParse(latestPlan.chemicalDosages),
       doNotDo: safeParse(latestPlan.doNotDo),
     }
-    // Re-generate keys on the fly from the latest test (DB doesn't store keys
-    // for diagnosis, doNotDo, whenToCallProfessional). This ensures the UI
-    // can translate these fields instead of showing French fallbacks.
+    // Re-generate the FULL plan from the latest test to get fresh translation
+    // keys. The DB stores French literals without keys for old plans. By
+    // regenerating, we get immediateActions/chemicalDosages WITH actionKey,
+    // detailKey, productKey, methodKey, warningKeys etc. — so the UI can
+    // translate everything instead of showing French fallbacks.
     if (latestTest && profile) {
       try {
         const freshPlan = generateActionPlan(latestTest as any, profile as any)
+        // Use fresh immediateActions and chemicalDosages (they have *Key fields)
+        latestPlanParsed.immediateActions = freshPlan.immediateActions as any
+        latestPlanParsed.chemicalDosages = freshPlan.chemicalDosages as any
+        // Merge scalar key fields
         latestPlanParsed.diagnosisKey = freshPlan.diagnosisKey
         latestPlanParsed.diagnosisParams = freshPlan.diagnosisParams
         latestPlanParsed.doNotDoKeys = freshPlan.doNotDoKeys
