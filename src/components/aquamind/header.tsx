@@ -39,28 +39,17 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
   }, [])
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/70 backdrop-blur-2xl">
-      {/* AQWELIA background image (subtle) */}
-      <div
-        className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-10"
-        style={{ backgroundImage: 'url(/aqwelia-hero-bg.png)' }}
-        aria-hidden="true"
-      />
       {/* Subtle gold line at the bottom */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
 
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-2.5">
-          {/* AQWELIA logo — standalone, no frame */}
-          <div className="relative">
-            <img
-              src="/icon-aqwelia-48.png"
-              alt="AQWELIA"
-              className="h-12 w-12 object-contain"
-            />
-            <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-gold to-[oklch(0.55_0.10_195)] shadow-md shadow-gold/40">
-              <Sparkles className="h-2.5 w-2.5 text-white" />
-            </div>
-          </div>
+          {/* AQWELIA logo — standalone, no frame, no background */}
+          <img
+            src="/icon-aqwelia-48.png"
+            alt="AQWELIA"
+            className="h-12 w-12 object-contain"
+          />
 
           <div className="leading-tight">
             <div className="flex items-center gap-1.5 text-base font-bold tracking-tight">

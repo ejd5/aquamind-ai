@@ -41,7 +41,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
       />
       {/* Light overlay — minimal, only left side for text readability */}
       <div
-        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-background/80 via-background/20 to-transparent"
+        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-background/60 via-background/10 to-transparent"
         aria-hidden="true"
       />
 
@@ -124,13 +124,13 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
           </motion.div>
         </div>
 
-        {/* Stats strip — inside the image, pushed down */}
+        {/* Stats strip — inside the image, pushed down further */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.6 }}
-          className="mx-auto mt-48 grid max-w-4xl grid-cols-2 gap-3 sm:mt-64 sm:grid-cols-4 sm:gap-4"
+          className="mx-auto mt-64 grid max-w-4xl grid-cols-2 gap-3 sm:mt-80 sm:grid-cols-4 sm:gap-4"
         >
           {STATS.map((s) => (
             <div
