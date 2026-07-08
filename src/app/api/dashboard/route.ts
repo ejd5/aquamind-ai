@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { clarityLabel, calculateClearWaterIndex } from '@/lib/pool/water-balance'
 import { assessSwimSafety } from '@/lib/pool/safety-rules'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { generateActionPlan } from '@/lib/pool/action-plan'
 
 export const runtime = 'nodejs'
 
@@ -55,6 +56,22 @@ export async function GET(req: Request) {
       immediateActions: safeParse(latestPlan.immediateActions),
       chemicalDosages: safeParse(latestPlan.chemicalDosages),
       doNotDo: safeParse(latestPlan.doNotDo),
+    }
+    // Re-generate keys on the fly from the latest test (DB doesn't store keys
+    // for diagnosis, doNotDo, whenToCallProfessional). This ensures the UI
+    // can translate these fields instead of showing French fallbacks.
+    if (latestTest && profile) {
+      try {
+        const freshPlan = generateActionPlan(latestTest as any, profile as any)
+        latestPlanParsed.diagnosisKey = freshPlan.diagnosisKey
+        latestPlanParsed.diagnosisParams = freshPlan.diagnosisParams
+        latestPlanParsed.doNotDoKeys = freshPlan.doNotDoKeys
+        latestPlanParsed.whenToCallProfessionalKey = freshPlan.whenToCallProfessionalKey
+        latestPlanParsed.whenToCallProfessionalParams = freshPlan.whenToCallProfessionalParams
+        latestPlanParsed.lsiLabelKey = freshPlan.lsiLabelKey
+        latestPlanParsed.swimReasonKeys = freshPlan.swimReasonKeys
+        latestPlanParsed.swimReasonParams = freshPlan.swimReasonParams
+      } catch { /* keep DB-stored plan as fallback */ }
     }
   }
 
