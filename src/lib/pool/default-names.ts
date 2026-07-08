@@ -13,8 +13,8 @@ export function isDefaultPoolName(name: string): boolean {
 }
 
 export function getDefaultPoolNameKey(name: string): string | null {
-  if (name === 'Ma piscine') return 'common.defaultPoolName'
-  if (name === 'Piscine démo') return 'common.demoPoolName'
+  if (name === 'Ma piscine') return 'defaultPoolName'
+  if (name === 'Piscine démo') return 'demoPoolName'
   return null
 }
 
@@ -27,6 +27,6 @@ export const FRENCH_DEFAULT_ACCOUNT_NAMES = [
 ] as const
 
 export function getDefaultAccountNameKey(name: string): string | null {
-  if (name === 'Compte Démonstration') return 'common.demoAccountName'
+  if (name === 'Compte Démonstration') return 'demoAccountName'
   return null
 }
