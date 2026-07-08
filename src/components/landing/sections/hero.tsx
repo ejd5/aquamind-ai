@@ -28,24 +28,24 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
   ]
 
   return (
-    <section id="top" className="relative isolate overflow-hidden pb-24 sm:pb-48">
-      {/* AQWELIA hero background image — full bleed, no white bands */}
+    <section id="top" className="relative isolate overflow-hidden pb-16 sm:pb-24">
+      {/* AQWELIA hero background image — complete, fills entire section, no truncation */}
       <div
-        className="pointer-events-none absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat"
+        className="pointer-events-none absolute inset-0 -z-10 bg-no-repeat"
         style={{
           backgroundImage: 'url(/aqwelia-hero-bg.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'top center',
+          backgroundSize: '100% 100%',
+          backgroundPosition: 'center',
         }}
         aria-hidden="true"
       />
-      {/* Light overlay — only on left side for text readability */}
+      {/* Light overlay — minimal, only left side for text readability */}
       <div
-        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-background/95 via-background/60 to-background/20"
+        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-background/80 via-background/20 to-transparent"
         aria-hidden="true"
       />
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-32 sm:pt-40">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-28 sm:pt-32">
         <div className="max-w-xl text-left">
           {/* Eyebrow badge — signature AQWELIA */}
           <motion.div
@@ -58,7 +58,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
             <span className="tracking-[0.18em]">{t('heroBadge')}</span>
           </motion.div>
 
-          {/* Headline */}
+          {/* Headline — professional, sales-oriented */}
           <motion.h1
             initial={{ opacity: 0, y: 22 }}
             animate={{ opacity: 1, y: 0 }}
@@ -68,15 +68,20 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
             {t('heroTitle')}
           </motion.h1>
 
-          {/* Subtitle — promise AQWELIA (Option B) */}
-          <motion.p
+          {/* Subtitle — punchy, professional */}
+          <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15 }}
-            className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg"
+            className="mt-5"
           >
-            {t('heroSubtitle')}
-          </motion.p>
+            <p className="max-w-lg text-lg font-semibold leading-relaxed text-foreground/90 sm:text-xl">
+              {t('heroSubtitle').split('.')[0]}.
+            </p>
+            <p className="mt-1 max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
+              {t('heroSubtitle').split('.').slice(1).join('.').trim()}
+            </p>
+          </motion.div>
 
           {/* Dual CTA */}
           <motion.div
@@ -100,7 +105,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
             </button>
           </motion.div>
 
-          {/* Trust row */}
+          {/* Trust row — new arguments */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -119,15 +124,13 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
           </motion.div>
         </div>
 
-        {/* Phone mockup removed — the hero background image is the visual */}
-
-        {/* Stats strip — pushed further down */}
+        {/* Stats strip — inside the image, pushed down */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.6 }}
-          className="mx-auto mt-32 grid max-w-4xl grid-cols-2 gap-3 sm:mt-40 sm:grid-cols-4 sm:gap-4"
+          className="mx-auto mt-48 grid max-w-4xl grid-cols-2 gap-3 sm:mt-64 sm:grid-cols-4 sm:gap-4"
         >
           {STATS.map((s) => (
             <div
