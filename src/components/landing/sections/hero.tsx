@@ -29,20 +29,20 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
 
   return (
     <section id="top" className="relative isolate overflow-hidden pt-28 pb-24 sm:pt-32 sm:pb-32">
-      {/* AQWELIA hero background image */}
+      {/* AQWELIA hero background image — full bleed, not truncated */}
       <div
         className="pointer-events-none absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url(/aqwelia-hero-bg.png)' }}
+        style={{ backgroundImage: 'url(/aqwelia-hero-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center' }}
         aria-hidden="true"
       />
-      {/* Dark overlay for text readability */}
+      {/* Light overlay — only on left side for text readability */}
       <div
-        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-background/80 via-background/60 to-background/90"
+        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-background/90 via-background/30 to-transparent"
         aria-hidden="true"
       />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="mx-auto max-w-4xl text-center">
+        <div className="max-w-2xl text-left">
           {/* Eyebrow badge — signature AQWELIA */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -59,7 +59,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
             initial={{ opacity: 0, y: 22 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.05 }}
-            className="mt-6 font-display text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-6xl md:text-7xl"
+            className="mt-6 font-display text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl md:text-6xl"
           >
             {t('heroTitle')}
             <br className="hidden sm:block" />{' '}
@@ -71,7 +71,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15 }}
-            className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg"
+            className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg"
           >
             {t('heroSubtitle')}
           </motion.p>
@@ -81,7 +81,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.25 }}
-            className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
+            className="mt-9 flex flex-col items-start gap-3 sm:flex-row"
           >
             <button
               onClick={onEnterApp}
@@ -103,7 +103,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.7, delay: 0.4 }}
-            className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground"
+            className="mt-8 flex flex-wrap items-start gap-x-5 gap-y-2 text-xs text-muted-foreground"
           >
             {TRUST.map((trust) => {
               const Icon = trust.icon
