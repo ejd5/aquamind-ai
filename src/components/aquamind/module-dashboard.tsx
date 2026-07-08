@@ -292,10 +292,18 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
       ])
       const dashData = dashRes.data as DashboardData | null
       setData(dashData)
-      setWeather((wxRes.data as WeatherLite | null) ?? null)
+      const wxData = (wxRes.data as WeatherLite | null) ?? null
+      setWeather(wxData)
       const remData = remRes.data as
         | { reminders?: ReminderLite[]; manualReminders?: ReminderLite[] }
         | null
+
+      // DEBUG: Log API response structure to verify titleKey/messageKey presence
+      if (typeof window !== 'undefined') {
+        console.log('[DEBUG] Weather API response:', JSON.stringify(wxData?.assessment?.alerts?.[0] || null, null, 2))
+        console.log('[DEBUG] Reminders API response:', JSON.stringify(remData?.reminders?.[0] || null, null, 2))
+      }
+
       const all = [...(remData?.reminders || []), ...(remData?.manualReminders || [])]
       // Sort by priority then dueInHours
       const prio: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 }
@@ -744,20 +752,24 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
           <CardContent>
             {weather?.assessment?.alerts?.length ? (
               (() => {
-                const a = weather.assessment!.alerts[0]
+                const a = weather.assessment!.alerts[0] as any
                 const cfg = WEATHER_ALERT_CFG[a.severity] || WEATHER_ALERT_CFG.medium
                 const Icon = weatherAlertIcon(a.type)
+                // Build keys directly from alert ID — infaillible, doesn't depend on API returning titleKey
+                const titleKey = a.titleKey || `alerts.${a.id}.title`
+                const messageKey = a.messageKey || `alerts.${a.id}.message`
+                const whenKey = a.whenKey || `alerts.${a.id}.when`
                 return (
                   <div className={`relative overflow-hidden rounded-xl border p-3 pl-4 ${cfg.cls}`}>
                     <span className={`absolute left-0 top-0 h-full w-1 ${cfg.dot}`} />
                     <div className="flex items-center gap-2">
                       <Icon className="h-4 w-4" />
-                      <p className="font-display text-sm font-bold">{trW(a.title, a.titleKey)}</p>
+                      <p className="font-display text-sm font-bold">{trW(a.title, titleKey)}</p>
                       <Badge variant="outline" className={`ml-auto text-[9px] uppercase tracking-wide ${cfg.cls}`}>
                         {a.severity}
                       </Badge>
                     </div>
-                    <p className="mt-1 line-clamp-2 text-xs opacity-90">{trW(a.message, a.messageKey, a.messageParams)}</p>
+                    <p className="mt-1 line-clamp-2 text-xs opacity-90">{trW(a.message, messageKey, a.messageParams)}</p>
                     <Button
                       size="sm"
                       variant="outline"
@@ -808,19 +820,22 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
           </CardHeader>
           <CardContent>
             {reminders.length > 0 ? (() => {
-              const r = reminders[0]
+              const r = reminders[0] as any
               const cfg = REMINDER_PRIO[r.priority] || REMINDER_PRIO.medium
+              // Build keys directly from reminder ID — infaillible
+              const titleKey = r.titleKey || `${r.id}.title`
+              const detailKey = r.detailKey || `${r.id}.detail`
               return (
                 <div className="relative overflow-hidden rounded-xl border border-border/50 bg-background/60 p-3 pl-4">
                   <span className={`absolute left-0 top-0 h-full w-1 ${cfg.stripe}`} />
                   <div className="flex items-center gap-2">
                     <Bell className={`h-4 w-4 ${cfg.cls}`} />
-                    <p className="font-display text-sm font-bold">{trR(r.title, r.titleKey, r.params)}</p>
+                    <p className="font-display text-sm font-bold">{trR(r.title, titleKey, r.params)}</p>
                     <Badge variant="outline" className={`ml-auto text-[9px] ${cfg.cls}`}>
                       {t(cfg.labelKey as any)}
                     </Badge>
                   </div>
-                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{trR(r.detail, r.detailKey, r.params)}</p>
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{trR(r.detail, detailKey, r.params)}</p>
                   <div className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground">
                     <Clock className="h-3 w-3" />
                     {r.dueInHours <= 0 ? t('now') : r.dueInHours < 24 ? t('inHours', { hours: r.dueInHours }) : t('inDays', { days: Math.round(r.dueInHours / 24) })}
