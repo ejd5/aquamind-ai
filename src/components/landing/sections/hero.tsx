@@ -135,7 +135,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
           {STATS.map((s) => (
             <div
               key={s.label}
-              className="rounded-2xl border border-gold/20 bg-white/5 p-4 text-center backdrop-blur-sm"
+              className="rounded-2xl border border-gold/30 bg-white/80 p-4 text-center backdrop-blur-md shadow-lg"
             >
               <p className="font-display text-2xl font-bold gradient-text-premium sm:text-3xl">
                 <AnimatedCounter
