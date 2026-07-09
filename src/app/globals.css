@@ -50,6 +50,24 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 10px);
+  /* AQWELIA — Centralized brand tokens (P6-DESIGN) — see docs/DESIGN_SYSTEM.md */
+  --color-lagoon: var(--aqwelia-lagoon);
+  --color-aqua: var(--aqwelia-aqua);
+  --color-deep-teal: var(--aqwelia-deep-teal);
+  --color-night: var(--aqwelia-night);
+  --color-mist: var(--aqwelia-mist);
+  --color-silver: var(--aqwelia-silver);
+  --color-ivory: var(--aqwelia-ivory);
+  --color-champagne: var(--aqwelia-champagne);
+  --radius-aq-sm: var(--aqwelia-radius-sm);
+  --radius-aq-md: var(--aqwelia-radius-md);
+  --radius-aq-lg: var(--aqwelia-radius-lg);
+  --radius-aq-xl: var(--aqwelia-radius-xl);
+  --shadow-aq-sm: var(--aqwelia-shadow-sm);
+  --shadow-aq-md: var(--aqwelia-shadow-md);
+  --shadow-aq-lg: var(--aqwelia-shadow-lg);
+  --font-display-aq: var(--aqwelia-font-display);
+  --font-body-aq: var(--aqwelia-font-body);
 }
 
 :root {
@@ -96,6 +114,41 @@
   --sidebar-accent-foreground: oklch(0.28 0.05 200);
   --sidebar-border: oklch(0.90 0.025 195);
   --sidebar-ring: oklch(0.39 0.08 200);
+
+  /* ===========================================================
+     AQWELIA — Centralized design tokens (P6-DESIGN)
+     Brand color palette, spacing radii, shadows, typography.
+     These complement the legacy ocean/gold/pearl tokens above
+     and never replace them. Source of truth for new components.
+     Documentation: docs/DESIGN_SYSTEM.md
+     =========================================================== */
+
+  /* Brand colors — hex literal values (resolved by the browser
+     when referenced via var(--aqwelia-*). The legacy ocean/gold
+     tokens above are oklch-based; both systems coexist. */
+  --aqwelia-lagoon: #18CFC3;       /* primary brand cyan-teal */
+  --aqwelia-aqua: #72E8DF;         /* light aqua accent */
+  --aqwelia-deep-teal: #073C45;    /* dark text on light backgrounds */
+  --aqwelia-night: #061F2B;        /* darkest navy (hero sections, dark UI) */
+  --aqwelia-mist: #EAFBF8;         /* near-white aqua tint (page backgrounds) */
+  --aqwelia-silver: #A8BDC1;       /* muted neutral (borders, dividers) */
+  --aqwelia-ivory: #FAFCFB;        /* warm off-white (cards, surfaces) */
+  --aqwelia-champagne: #C6A56B;    /* premium gold accent (CTA, badges) */
+
+  /* Spacing — border radii (separate from --radius shadcn/ui scale) */
+  --aqwelia-radius-sm: 0.5rem;
+  --aqwelia-radius-md: 1rem;
+  --aqwelia-radius-lg: 1.5rem;
+  --aqwelia-radius-xl: 2rem;
+
+  /* Shadows — soft premium elevation (glassmorphism-friendly) */
+  --aqwelia-shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.1);
+  --aqwelia-shadow-md: 0 8px 24px -4px rgba(0, 0, 0, 0.15);
+  --aqwelia-shadow-lg: 0 18px 40px -22px rgba(0, 0, 0, 0.2);
+
+  /* Typography — display serif for hero headlines, body sans for UI */
+  --aqwelia-font-display: 'Cormorant Garamond', serif;
+  --aqwelia-font-body: -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .dark {
@@ -138,6 +191,19 @@
   --sidebar-accent-foreground: oklch(0.96 0.01 195);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.76 0.11 195);
+
+  /* AQWELIA — Centralized brand tokens (dark overrides, P6-DESIGN)
+     Surface tones (mist/ivory) invert to deep navy for dark mode.
+     Brand chroma (lagoon/aqua/champagne) brightens slightly to
+     preserve contrast against the dark background. */
+  --aqwelia-lagoon: #2EE0D6;
+  --aqwelia-aqua: #8FEEDE;
+  --aqwelia-deep-teal: #0A5663;
+  --aqwelia-night: #03131A;
+  --aqwelia-mist: #0A1F2B;
+  --aqwelia-silver: #6E8085;
+  --aqwelia-ivory: #0F2A36;
+  --aqwelia-champagne: #D8B97A;
 }
 
 @layer base {

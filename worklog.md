@@ -4694,3 +4694,112 @@ Stage Summary:
   * Ajouter les i18n keys `pro.errors.*` dans les 7 locales (`fr/en/es/de/it/pt/nl`) — actuellement les fallbacks français fonctionnent mais ne sont pas traduits.
   * Endpoint `/api/pro/pools` GET (flat list de tous les bassins du pro) si besoin — pour l'instant on passe par `/api/pro/clients/[id]`.
   * Tests d'intégration authentifiés (créer un ProClient via POST puis vérifier le GET) — nécessite un helper de session de test.
+---
+Task ID: P6-DESIGN
+Agent: sub-agent (general-purpose) — Design tokens centralisés + i18n routing prep
+Task: 2 améliorations. (1) Centraliser les design tokens AQWELIA dans `src/app/globals.css` (variables `--aqwelia-*` pour 8 brand colors, 4 radii, 3 shadows, 2 fonts) + étendre `tailwind.config.ts` (colors lagoon/aqua/deep-teal/night/mist/silver/ivory/champagne + borderRadius aq-sm/md/lg/xl + boxShadow aq-sm/md/lg + fontFamily aq-display/aq-body) SANS supprimer l'existant + créer `docs/DESIGN_SYSTEM.md` documentant tous les tokens, couleurs, typographies, composants, patterns. (2) Préparer le routing i18n (`/fr/`, `/en/`, `/es/`...) avec next-intl — vérifier la config existante, créer `src/i18n/routing.ts` (defineRouting, NON activé pour ne pas casser l'existant), documenter la migration dans `docs/I18N_ROUTING.md`. IMPORTANT: ne pas casser globals.css/tailwind.config.ts/middleware — ajouter sans supprimer. Après: lint, push GitHub.
+
+Work Log:
+- Lu `worklog.md` (3 dernières sections: P5-GROWTH OAuth+PostHog+Partenaires, P5-STORE App Store+Stripe trial+emails, P5-PAGES-RETRY 9 pages publiques+légales, P6-PRO-API 4 modèles Prisma + 8 routes API). Stack: Next.js 16 + React 19 + Prisma SQLite + next-intl v4.7.0 (7 locales fr/en/es/de/it/pt/nl) + NextAuth JWT + Capacitor 8 + Tailwind v4 + shadcn/ui.
+- Lu `src/app/globals.css` (434 lignes) — système "Oceanic Luxury" complet déjà en place: tokens oklch (--background, --primary, --accent, --gold, --ocean, --ocean-deep, --ocean-light, --pearl + 5 chart-* + 7 sidebar-*), classes utilitaires premium (aurora-bg, aurora-orb, glass-card, glass-pill, gradient-text-premium, aqua-text-gradient, gold-divider, section-label, glow-primary/gold/pulse-anim, input-glass, rise-in, custom-scroll, nav-link, safe-area-*, mobile-bottom-tabs/header/scroll), animations (aurora-float, aqua-shimmer, aqua-float, glow-pulse, premium-rise), dark mode complet. Voulu: AJOUTER une 2e couche de tokens `--aqwelia-*` (hex-based, naming brand lagoon/aqua/champagne...) SANS toucher au legacy.
+- Lu `tailwind.config.ts` (65 lignes) — config legacy Tailwind v3 (project uses Tailwind v4 via `@import "tailwindcss"` + `@theme inline` dans globals.css, mais le config.ts coexiste pour editor IntelliSense). Extend: colors shadcn (background/foreground/card/popover/primary/secondary/muted/accent/destructive/border/input/ring/chart-1..5), borderRadius (lg/md/sm). Voulu: étendre colors + borderRadius + ajouter boxShadow + fontFamily avec les nouveaux tokens.
+- Lu `src/i18n/config.ts` (9 lignes) — `locales = ['fr','en','es','de','it','pt','nl']`, `defaultLocale = 'fr'`, `normalizeLocale()`. Source of truth pour la liste des locales.
+- Lu `src/middleware.ts` (121 lignes) — middleware custom 2-en-1: (1) `detectLocale()` cookie `NEXT_LOCALE` → `Accept-Language` → default `fr`, set cookie + header `x-next-intl-locale` + `accept-language`; (2) NextAuth `withAuth` sur 8 patterns d'API protégées. PATTERN NON-ROUTÉ (pas de `/fr/`, `/en/` URL prefix) — locale détectée via cookie/header uniquement. Voulu: NE PAS casser ce middleware, juste préparer la config future.
+- Lu `src/i18n/request.ts` (11 lignes) — `getRequestConfig` qui lit `requestLocale` (header mis par middleware) + normalize via `normalizeLocale()`. Pattern non-routé.
+- Lu `src/app/layout.tsx` (75 lignes) — root layout avec fonts Geist/Geist_Mono/Playfair_Display + `<NextIntlClientProvider>` + PostHogProvider + Providers. Pas de `[locale]` segment.
+
+### 1. Design tokens centralisés
+
+#### `src/app/globals.css` (modifié, +66 lignes net)
+- Ajouté dans `@theme inline` (après les mappings legacy gold/ocean/pearl/radius): 8 mappings `--color-{lagoon,aqua,deep-teal,night,mist,silver,ivory,champagne}: var(--aqwelia-*)` → rend les utilities Tailwind v4 `text-lagoon`, `bg-night`, `border-silver` disponibles. + 4 mappings `--radius-aq-{sm,md,lg,xl}` → `rounded-aq-*`. + 3 mappings `--shadow-aq-{sm,md,lg}` → `shadow-aq-*`. + 2 mappings `--font-{display,body}-aq` → `font-aq-{display,body}`.
+- Ajouté dans `:root` (après les tokens legacy): 8 brand colors `--aqwelia-{lagoon,aqua,deep-teal,night,mist,silver,ivory,champagne}` en hex literals (#18CFC3, #72E8DF, #073C45, #061F2B, #EAFBF8, #A8BDC1, #FAFCFB, #C6A56B) avec commentaires d'usage. + 4 radii `--aqwelia-radius-{sm,md,lg,xl}` (0.5/1/1.5/2rem). + 3 shadows `--aqwelia-shadow-{sm,md,lg}` (soft glassmorphism-friendly rgba). + 2 fonts `--aqwelia-font-{display,body}` (Cormorant Garamond + system stack).
+- Ajouté dans `.dark` (après les overrides legacy): 8 overrides dark mode pour les brand tokens — chroma brightened (lagoon #18CFC3 → #2EE0D6, aqua #72E8DF → #8FEEDE, champagne #C6A56B → #D8B97A) + surfaces inverted (mist #EAFBF8 → #0A1F2B, ivory #FAFCFB → #0F2A36, deep-teal #073C45 → #0A5663, night #061F2B → #03131A, silver #A8BDC1 → #6E8085).
+- AUCUN token legacy supprimé ou modifié. Les 2 systèmes (legacy oklch + nouveau hex) coexistent par design.
+
+#### `tailwind.config.ts` (modifié, +56 lignes net)
+- Étendu `theme.extend.colors` (sans toucher aux colors shadcn existantes): +8 entries `lagoon/aqua/deep-teal/night/mist/silver/ivory/champagne` qui référencent `var(--aqwelia-*)`. Permet `text-lagoon`, `bg-night`, `border-silver` via le config legacy (utile pour IntelliSense IDE + Tailwind v3 compat).
+- Étendu `theme.extend.borderRadius` (sans toucher aux sm/md/lg existants): +4 entries `'aq-sm'/'aq-md'/'aq-lg'/'aq-xl'` → `var(--aqwelia-radius-*)`. Permet `rounded-aq-md` etc. sans clasher avec `rounded-md` (shadcn scale).
+- Ajouté `theme.extend.boxShadow` (nouveau bloc): +3 entries `'aq-sm'/'aq-md'/'aq-lg'` → `var(--aqwelia-shadow-*)`. Permet `shadow-aq-lg`.
+- Ajouté `theme.extend.fontFamily` (nouveau bloc): +2 entries `'aq-display'` (Cormorant Garamond) + `'aq-body'` (system stack). Permet `font-aq-display`, `font-aq-body`.
+
+#### `docs/DESIGN_SYSTEM.md` (nouveau, ~330 lignes)
+Document complet en 13 sections:
+1. **Architecture** — dual-token system (legacy oklch + nouveau hex), rule of thumb pour choisir
+2. **Brand Color Palette (P6-DESIGN)** — table 8 colors (token, var, light, dark, usage) + exemples Tailwind utilities + raw CSS
+3. **Legacy "Oceanic Luxury" Tokens** — table 16 tokens oklch (background, foreground, primary, accent, gold, ocean*, pearl, card, muted, border, ring, destructive, radius) + chart palette
+4. **Spacing — Border Radii** — 2 échelles coexistantes (shadcn calc-derived + AQWELIA fixed) avec table Tailwind utility mapping
+5. **Shadows** — 3 aq-* tokens + 3 legacy glow utilities (.glow-primary, .glow-gold, .glow-pulse-anim)
+6. **Typography** — 5 font tokens (Geist Sans, Geist Mono, Playfair Display, Cormorant Garamond, system stack) + type scale table + eyebrow/section-label pattern. Note: `--aqwelia-font-display` est déclarée mais pas encore chargée par `next/font/google` — opt-in documented.
+7. **Reusable Component Patterns** — table de toutes les classes utilitaires CSS (glassmorphism, backgrounds, glows, animations, mobile/safe-area, navigation) avec effet + cas d'usage
+8. **Component Library (shadcn/ui)** — table 18 composants (Button, Card, Input, Dialog, Sheet, Drawer, Form, Toast, Sonner, Accordion, Tabs, Tooltip, Popover, HoverCard, Select, Command, Calendar, Chart, Sidebar, Carousel) avec fichier + notes
+9. **Layout Patterns** — snippets prêts à copier (page container, section spacing, grid responsive, hero with aurora)
+10. **Dark Mode** — toggle via `dark` class, opt-in pour nouveaux composants
+11. **Accessibility** — reduced motion, color contrast WCAG AA/AAA, focus rings, tap targets 44px, safe areas
+12. **Token Map (Quick Reference)** — arbre ASCII de tous les tokens par catégorie
+13. **File References** — table des fichiers source
+
+### 2. Routing i18n prep (NON activé)
+
+#### `src/i18n/routing.ts` (nouveau, 75 lignes)
+- Importe `defineRouting` from `next-intl/routing` (PAS `next-intl` root — vérifié: next-intl v4.7.0 exporte `defineRouting` depuis le submodule `next-intl/routing`, pas du root. Erreur TS TS2305 si import depuis root).
+- Réutilise `locales` + `defaultLocale` + `type Locale` depuis `src/i18n/config.ts` (single source of truth — pas de duplication).
+- `defineRouting({ locales, defaultLocale, localePrefix: 'as-needed', localeDetection: true })`:
+  - `localePrefix: 'as-needed'` → default locale (`fr`) unprefixed (URL `/` stays French, pas de `/fr/`), tous les autres locales ont prefix (`/en/`, `/es/`, `/de/`, `/it/`, `/pt/`, `/nl/`). Préserve le contrat URL existant: zéro redirect sur migration day pour le default locale.
+  - `localeDetection: true` → detection URL prefix → cookie → Accept-Language → default (même ordre que le middleware custom actuel).
+- Commentaires détaillés (75 lignes dont ~50 de doc): pourquoi `as-needed` vs `always` vs `never`, où le fichier sera importé quand activé (middleware, navigation, [locale]/layout), référence à docs/I18N_ROUTING.md.
+- ⚠️ NON ACTIVÉ: aucun fichier (middleware, request, layout) n'importe encore `routing`. Le middleware custom actuel continue à fonctionner comme avant.
+
+#### `docs/I18N_ROUTING.md` (nouveau, ~270 lignes)
+Guide de migration complet en 8 sections:
+1. **Current State (Non-routed)** — table aspect/implémentation. Pourquoi ça marche aujourd'hui (single URL per page, Capacitor compatible) + pourquoi migrer (SEO Googlebot, shareable links, analytics per-locale, hreflang correctness)
+2. **Target State (Locale-prefixed)** — table aspect/implémentation. Pourquoi `as-needed` et pas `always` (zero redirects pour default locale)
+3. **Files Already Prepared (P6-DESIGN)** — doc de `src/i18n/routing.ts` (commité mais inactif)
+4. **Migration Plan (Step-by-Step)** — 9 steps détaillés avec code samples:
+   - Step 0: backup & branch
+   - Step 1: update `src/i18n/request.ts` (avant/après)
+   - Step 2: swap middleware `src/middleware.ts` (custom detectLocale → createMiddleware(routing) composé avec withAuth — pattern officiel next-intl)
+   - Step 3: move app routes under `src/app/[locale]/` (arbre Before/After, layout.tsx avec generateStaticParams + setRequestLocale)
+   - Step 4: add `src/i18n/navigation.ts` (createNavigation → Link, redirect, usePathname, useRouter) + codemod sed pour refactor tous les `<Link>` (~50-100 instances)
+   - Step 5: API routes (no change — stays at `/api/*`, locale lue via cookie/header)
+   - Step 6: SEO (redirects + sitemap per-locale + hreflang dans generateMetadata)
+   - Step 7: test matrix (8 scénarios: FR user, EN first visit, ES cookie override, Googlebot, API call, OAuth callback, Capacitor, switch language)
+   - Step 8: Capacitor considerations (origin `capacitor://localhost/` — no locale prefix)
+   - Step 9: roll out (merge, monitor 404s + 301/302 + conversion per locale, submit sitemap)
+5. **Risk Assessment** — table 6 risques (OAuth callback break, indexed URLs 404, Capacitor break, Stripe webhook, Crowdin sync, Link codemod miss) avec likelihood/impact/mitigation
+6. **Rollback Plan** — revert merge commit, NEXT_LOCALE cookie (1y expiry) preserves user locale, Google `/en/*` URLs 404 → submit removal request
+7. **Why We Did NOT Activate Routing in P6-DESIGN** — référence au warning du task brief, liste des 5 étapes requises pour activation (middleware swap, withAuth composition, move 50+ pages, refactor 50-100 Links, test 7 locales + OAuth + Capacitor). Conclusion: dedicated PR, pas sub-task.
+8. **File References** — table 8 fichiers avec status (unchanged / new / will-change-on-migration)
+
+### Vérifications
+
+- **Lint** (`bun run lint`): PASS, exit 0, 0 erreur, 0 warning. ✓
+- **TypeScript** (`bunx tsc --noEmit`): 0 erreur dans `src/`. 2 erreurs pré-existantes dans `skills/image-edit/scripts/image-edit.ts` (TS2561) et `skills/stock-analysis-skill/src/analyzer.ts` (TS2322) — third-party hors scope, signalées par P5-STORE et P5-MULTIPOOL-PDF. Aucune erreur dans `src/i18n/routing.ts`, `src/app/globals.css`, `tailwind.config.ts`. ✓
+- **Pre-commit hook i18n** (`python3 scripts/i18n/check-hardcoded-strings.py`): PASS — "Aucune chaîne française codée en dur détectée." (les nouveaux fichiers `routing.ts` + 2 docs .md ne contiennent que des commentaires/code en anglais + français dans la doc markdown qui est exemptée). ✓
+- **defineRouting import path** vérifié: `node -e "require('next-intl/routing').defineRouting"` → `function`. Import depuis `next-intl` root → `undefined` (erreur TS). Fix appliqué: import depuis `next-intl/routing`.
+
+### Non-casse de l'existant (vérifié)
+
+- `src/app/globals.css`: 434 → 500 lignes (+66). AUCUNE ligne legacy supprimée. Nouveaux blocs ajoutés en fin de `@theme inline`, fin de `:root`, fin de `.dark`.
+- `tailwind.config.ts`: 65 → 97 lignes (+32 net, +56 ajoutés). AUCUNE entry legacy supprimée. Extend colors + borderRadius enrichis, boxShadow + fontFamily ajoutés comme nouveaux blocs dans `extend`.
+- `src/middleware.ts`: NON TOUCHÉ (121 lignes, inchangé).
+- `src/i18n/request.ts`: NON TOUCHÉ (11 lignes, inchangé).
+- `src/i18n/config.ts`: NON TOUCHÉ (9 lignes, inchangé — `routing.ts` importe de lui).
+- `src/app/layout.tsx`: NON TOUCHÉ (75 lignes, inchangé).
+
+### Git
+
+- `git reset HEAD` au début pour unstage des fichiers d'autres agents parallèles (pro/app/*, components/pro/*, locales/en+fr.json — travail P6-PRO-UI en cours non commité). Mes 5 fichiers (globals.css, tailwind.config.ts, docs/DESIGN_SYSTEM.md, docs/I18N_ROUTING.md, src/i18n/routing.ts) staged isolément.
+- Commit (à venir) "feat(P6-DESIGN): centralize design tokens + prep i18n routing" — 6 fichiers (5 source + 1 worklog).
+- Push (à venir) vers `origin/main`.
+
+Stage Summary:
+- **Design tokens centralisés**: 8 brand colors (`--aqwelia-lagoon/aqua/deep-teal/night/mist/silver/ivory/champagne`), 4 radii (`--aqwelia-radius-sm/md/lg/xl`), 3 shadows (`--aqwelia-shadow-sm/md/lg`), 2 fonts (`--aqwelia-font-display/body`) ajoutés à `src/app/globals.css` (`:root` + `@theme inline` + `.dark` overrides) + étendus dans `tailwind.config.ts` (colors + borderRadius + boxShadow + fontFamily). AUCUN token legacy supprimé — les 2 systèmes (legacy oklch + nouveau hex) coexistent par design. Dark mode overrides inclus pour les 8 brand colors.
+- **Tailwind utilities disponibles**: `text-lagoon`, `bg-night`, `border-silver`, `text-champagne`, `bg-aqua`, `text-deep-teal`, `bg-mist`, `bg-ivory` + `rounded-aq-{sm,md,lg,xl}` + `shadow-aq-{sm,md,lg}` + `font-aq-{display,body}`.
+- **Documentation**: `docs/DESIGN_SYSTEM.md` (~330 lignes, 13 sections: architecture, 2 palettes couleurs, radii, shadows, typography, composants CSS utility, shadcn/ui, layout patterns, dark mode, accessibility, token map, file refs). `docs/I18N_ROUTING.md` (~270 lignes, 8 sections: current state, target state, files prepared, 9-step migration plan with code, risk assessment, rollback plan, why-not-activated, file refs).
+- **i18n routing prep**: `src/i18n/routing.ts` (75 lignes) avec `defineRouting` (next-intl/routing submodule) — `locales` + `defaultLocale` from `src/i18n/config.ts` (single source of truth), `localePrefix: 'as-needed'` (fr unprefixed, autres prefixed), `localeDetection: true`. NON ACTIVÉ — middleware custom actuel (cookie + Accept-Language + withAuth) inchangé. Migration complète documentée step-by-step.
+- **Lint**: PASS (0/0). **TypeScript**: 0 erreur dans `src/` (2 pré-existantes dans `skills/`). **Pre-commit i18n**: PASS. **Non-casse**: globals.css/tailwind.config.ts/middleware/request.ts/config.ts/layout.ts — aucun fichier legacy cassé, seulement étendu.
+- **Reste à faire (hors ce task)**:
+  * Activer `--aqwelia-font-display` (Cormorant Garamond) via `next/font/google` dans `src/app/layout.tsx` quand première utilisation — actuellement déclaré mais pas chargé (system serif fallback).
+  * Migrer progressivement les composants marketing vers les nouveaux tokens (`text-lagoon` au lieu de `text-ocean-light`, `bg-night` au lieu de `bg-ocean-deep`, `rounded-aq-xl` au lieu de `rounded-2xl`) — pas d'urgence, legacy reste valide.
+  * Activer le routing i18n `/fr/`, `/en/` en suivant `docs/I18N_ROUTING.md` (9 steps, ~3h de travail, dedicated PR).
+  * Ajouter `src/i18n/navigation.ts` (`createNavigation(routing)` → Link/useRouter/usePathname) au moment de l'activation routing.
