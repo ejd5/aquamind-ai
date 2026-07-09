@@ -44,6 +44,9 @@ model User {
   subscriptions    Subscription[]
   analyticsEvents  AnalyticsEvent[]
 
+  // AQWELIA Pro — clients gérés par ce pro (Pro MVP)
+  proClients       ProClient[]
+
   // OAuth / comptes liés (NextAuth future-proof)
   accounts Account[]
 }
@@ -383,4 +386,118 @@ model ContactMessage {
 
   @@index([status])
   @@index([createdAt])
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// AQWELIA PRO — APP métier piscinistes (MVP)
+// ───────────────────────────────────────────────────────────────────────────
+// Un "pro" est un User AQWELIA Pro authentifié. Chaque pro gère ses propres
+// ProClient (des clients IRL — particuliers ou entreprises), chacun pouvant
+// avoir plusieurs ProPool (piscine, spa, both). Sur chaque bassin le pro
+// enregistre des ProWaterTest (analyses d'eau) et des ProIntervention
+// (visites de maintenance, réparations, ouvertures, fermetures, urgences).
+//
+// Toutes les requêtes API filtrent par `proUserId = session.user.id` afin
+// qu'un pro ne puisse jamais accéder aux données d'un autre pro.
+
+// Un client du pisciniste (pas un utilisateur AQWELIA — un client IRL)
+model ProClient {
+  id          String   @id @default(cuid())
+  proUserId   String   // l'utilisateur AQWELIA Pro qui gère ce client
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  address     String?
+  city        String?
+  zipCode     String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  pools         ProPool[]
+  interventions ProIntervention[]
+
+  user User @relation(fields: [proUserId], references: [id], onDelete: Cascade)
+
+  @@index([proUserId])
+  @@index([lastName])
+  @@index([firstName])
+}
+
+// Un bassin géré par le pro pour un client
+model ProPool {
+  id          String   @id @default(cuid())
+  proClientId String
+  name        String   // "Piscine principale", "Spa"
+  type        String   @default("pool") // pool | spa | both
+  volume      Float?
+  unit        String   @default("m3")
+  shape       String?
+  surface     String?  // liner, tile, concrete, etc.
+  treatmentType String? // chlorine, salt, bromine, etc.
+  saltSystem  Boolean  @default(false)
+  filterType  String?  // sand, cartridge, etc.
+  address     String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  client        ProClient       @relation(fields: [proClientId], references: [id], onDelete: Cascade)
+  interventions ProIntervention[]
+  waterTests    ProWaterTest[]
+
+  @@index([proClientId])
+}
+
+// Un test d'eau effectué par le pro sur un bassin
+model ProWaterTest {
+  id          String   @id @default(cuid())
+  proPoolId   String
+  ph          Float?
+  freeChlorine Float?
+  totalChlorine Float?
+  combinedChlorine Float?
+  alkalinity  Float?
+  calciumHardness Float?
+  cyanuricAcid Float?
+  salt        Float?
+  phosphates  Float?
+  temperature Float?
+  clearWaterIndex Int?
+  notes       String?
+  testedAt    DateTime @default(now())
+
+  pool        ProPool @relation(fields: [proPoolId], references: [id], onDelete: Cascade)
+
+  @@index([proPoolId])
+  @@index([testedAt])
+}
+
+// Une intervention du pro sur un bassin
+model ProIntervention {
+  id          String   @id @default(cuid())
+  proClientId String
+  proPoolId   String?
+  technicianId String?  // User id du technicien
+  type        String   @default("maintenance") // maintenance | repair | opening | closing | emergency
+  status      String   @default("scheduled") // scheduled | in_progress | completed | cancelled
+  scheduledAt DateTime
+  completedAt DateTime?
+  duration    Int?     // minutes
+  notes       String?
+  photos      String?  // JSON array of URLs (before/after)
+  actions     String?  // JSON array of actions performed
+  productsUsed String? // JSON array of products used
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  client      ProClient @relation(fields: [proClientId], references: [id], onDelete: Cascade)
+  pool        ProPool?  @relation(fields: [proPoolId], references: [id], onDelete: SetNull)
+
+  @@index([proClientId])
+  @@index([proPoolId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([technicianId])
 }
