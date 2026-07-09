@@ -318,3 +318,19 @@ model AnalyticsEvent {
 
   @@index([userId])
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// AQWELIA PRO — Early Access leads (marketing funnel)
+// ───────────────────────────────────────────────────────────────────────────
+
+// Soumissions du formulaire /pro/early-access (piscinistes pro intéressés)
+model EarlyAccessLead {
+  id          String   @id @default(cuid())
+  companyName String
+  email       String   @unique
+  phone       String?
+  poolCount   Int      @default(0)
+  techCount   Int      @default(1)
+  message     String?
+  createdAt   DateTime @default(now())
+}

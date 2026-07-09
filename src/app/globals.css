@@ -300,6 +300,32 @@
 .glow-gold { box-shadow: 0 0 40px -10px oklch(0.65 0.11 195 / 0.5); }
 .glow-pulse-anim { animation: glow-pulse 4s ease-in-out infinite; }
 
+/* Glassmorphism form input — used by /pro/early-access form */
+.input-glass {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid oklch(1 0 0 / 0.4);
+  background: oklch(1 0.004 195 / 0.7);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  color: var(--foreground);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input-glass::placeholder { color: oklch(0.45 0.02 195 / 0.6); }
+.input-glass:focus {
+  border-color: oklch(0.65 0.11 195 / 0.65);
+  box-shadow: 0 0 0 3px oklch(0.65 0.11 195 / 0.15);
+}
+.dark .input-glass {
+  background: oklch(0.2 0.025 200 / 0.55);
+  border: 1px solid oklch(1 0 0 / 0.12);
+}
+.dark .input-glass::placeholder { color: oklch(0.7 0.02 195 / 0.5); }
+.input-glass option { color: #0a1f24; }
+
 /* Premium rise-in animation */
 .rise-in { animation: premium-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
