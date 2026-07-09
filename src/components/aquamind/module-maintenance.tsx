@@ -797,7 +797,12 @@ function RemindersPanel() {
   }
 
   // Derive simple reminders from equipment types
-  const reminders: { titleKey: 'filterWash' | 'cellClean' | 'pumpPrefilter' | 'phCalibration' | 'robotClean'; titleParams?: Record<string, unknown>; detailKey: string; urgency: 'soon' | 'normal' }[] = []
+  // P0-FIX Bug 1: TS2345 — next-intl's `t()` expects params shaped as
+  // `Record<string, string | number | Date>`, not the loose
+  // `Record<string, unknown>`. Tightening the type here aligns the local
+  // reminder shape with the i18n helper signature (the only value we ever
+  // store is the string returned by `equipmentLabel`).
+  const reminders: { titleKey: 'filterWash' | 'cellClean' | 'pumpPrefilter' | 'phCalibration' | 'robotClean'; titleParams?: Record<string, string | number>; detailKey: string; urgency: 'soon' | 'normal' }[] = []
   for (const eq of equipment) {
     if (eq.type === 'filter') {
       reminders.push({

@@ -100,8 +100,14 @@ export default async function middleware(req: NextRequest) {
   // --- Auth protection (runs only on protected API routes) ---
   const isProtected = PROTECTED_PATTERNS.some((p) => p.test(pathname))
   if (isProtected) {
-    // Delegate to withAuth for session check
-    return authMiddleware(req as any)
+    // P0-FIX Bug 3: TS2554 — `withAuth(...)` returns a Next.js middleware
+    // function whose signature is `(req, ctx)` (the `ctx` carries the
+    // matched route `params`). Calling it with only `req` was a type error
+    // AND silently dropped the context. We forward an empty params object
+    // (the matcher above has no `:params` so this is correct) and let
+    // next-auth introspect the session cookie / `next-auth.session-token`
+    // header that the request already carries.
+    return authMiddleware(req as any, { params: {} } as any)
   }
 
   return res

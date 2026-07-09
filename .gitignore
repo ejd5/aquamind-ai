@@ -41,6 +41,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 local-*
+# P0-FIX Bug 2: `local-*` rule above was meant for `next.config.local.ts`
+# style overrides, but it also excluded the Capacitor wrapper
+# `src/lib/native/local-notifications.ts` (the file the audit flagged as
+# missing). Un-ignore that one specifically so it gets committed.
+!src/lib/native/local-notifications.ts
 .claude
 .z-ai-config
 *.log

@@ -1,5 +1,7 @@
 // AQWELIA — Schéma de données complet pour copilote piscine
-// Provider: PostgreSQL (production + mobile backend)
+// Provider: SQLite for local/dev (file: URL in `.env` DATABASE_URL).
+// For production, switch back to PostgreSQL by editing this file (or use
+// the `prismaSchemaFolder` + multi-schema feature) and update DATABASE_URL.
 // Auth: NextAuth.js (JWT strategy) — User + Account models, pas de Session
 
 generator client {
@@ -7,7 +9,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  // P0-FIX Bug 6: was `postgresql`, but `.env` DATABASE_URL points to a
+  // SQLite `file:` URL — mismatch caused Prisma to refuse any DB call at
+  // runtime. Switched to sqlite for dev; flip back to `postgresql` for
+  // production deployments (with a matching `DATABASE_URL=postgresql://...`).
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 

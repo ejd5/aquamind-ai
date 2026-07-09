@@ -39,6 +39,22 @@ export async function POST(req: NextRequest) {
       'common.defaultPoolName',
       'Ma piscine'
     )
+    // P0-FIX Bug 4: previously the POST handler rebuilt `data` from a strict
+    // whitelist that silently dropped the 5 spa fields sent by the onboarding
+    // form (`onboarding.tsx` line 221 sends `...form`, which includes
+    // waterBodyType, spaSeats, spaTemperature, spaUsageFrequency, spaBrand).
+    // The Prisma schema has `spaTempTarget` / `spaUsageFreq` — the onboarding
+    // form uses the longer `spaTemperature` / `spaUsageFrequency` names, so
+    // we accept both and normalise into the schema column names.
+    const spaTempTarget =
+      body.spaTempTarget != null
+        ? Number(body.spaTempTarget)
+        : body.spaTemperature != null
+          ? Number(body.spaTemperature)
+          : null
+    const spaUsageFreq =
+      body.spaUsageFreq ?? body.spaUsageFrequency ?? null
+
     const data = {
       userId,
       name: body.name || defaultPoolName,
@@ -54,6 +70,18 @@ export async function POST(req: NextRequest) {
       sunExposure: body.sunExposure || 'medium',
       covered: !!body.covered,
       usageLevel: body.usageLevel || 'medium',
+      // ── Spa-specific fields (Premium+). Persisted even when the user
+      //    selected `waterBodyType: 'pool'` — they simply stay null/empty
+      //    until the user later switches to spa/both in onboarding or
+      //    settings. Schema defaults: waterBodyType='pool', others nullable.
+      waterBodyType: body.waterBodyType || 'pool',
+      spaSeats:
+        body.spaSeats != null && body.spaSeats !== ''
+          ? Number(body.spaSeats)
+          : null,
+      spaTempTarget: Number.isFinite(spaTempTarget) ? spaTempTarget : null,
+      spaUsageFreq: spaUsageFreq || null,
+      spaBrand: body.spaBrand || null,
     }
     let profile
     if (existing) {

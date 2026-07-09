@@ -82,5 +82,38 @@ export {
   hideStatusBar,
 } from './status-bar'
 
+// Splash screen
+export {
+  hideSplash,
+  showSplash,
+  onSplashDismissed,
+} from './splash-screen'
+
+// Geolocation (GPS — used by Weather module + Onboarding)
+export {
+  getCurrentPosition,
+  requestGeoPermission,
+  type GeoPosition,
+} from './geolocation'
+
+// Share sheet (PDF reports, promo codes)
+export {
+  shareText,
+  shareReport,
+  type SharePayload,
+} from './share'
+
+// Filesystem (export PDF/CSV/HTML to device Documents)
+export {
+  writeFile,
+  readFile,
+  deleteFile,
+  getExportUri,
+  listFiles,
+  type WriteOptions,
+  type WrittenFile,
+  type FileEncoding,
+} from './filesystem'
+
 // App exit (Android)
 export { exitApp } from './app-exit'
