@@ -34,18 +34,17 @@ export function FinalCta({ hasProfile, onEnterApp }: FinalCtaProps) {
             aria-hidden="true"
           />
 
-          {/* Glass card for text readability over bright image — AQWELIA DA */}
-          <div className="relative mx-auto max-w-2xl rounded-2xl border border-white/20 bg-[oklch(0.15_0.02_195)]/60 px-6 py-8 backdrop-blur-md sm:px-10 sm:py-10">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-white/10 px-3 py-1 text-xs font-semibold text-white">
+          <div className="relative">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-black/20 px-3 py-1 text-xs font-bold text-white">
               <Sparkles className="h-3 w-3 text-gold" />
               {t('finalCtaEyebrow')}
             </span>
 
-            <h2 className="mx-auto mt-5 max-w-2xl font-display text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl">
+            <h2 className="mx-auto mt-5 max-w-2xl font-display text-3xl font-extrabold leading-tight tracking-tight text-white drop-shadow-lg sm:text-4xl md:text-5xl">
               {t('finalCtaTitle')}
             </h2>
 
-            <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/90 sm:text-base">
+            <p className="mx-auto mt-4 max-w-xl text-sm font-bold leading-relaxed text-white drop-shadow-md sm:text-base">
               {t('finalCtaSubtitle')}
             </p>
 
@@ -59,13 +58,13 @@ export function FinalCta({ hasProfile, onEnterApp }: FinalCtaProps) {
               </button>
               <button
                 onClick={() => scrollToId('tarifs')}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/50 px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10 sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-white bg-black/30 px-7 py-3.5 text-sm font-bold text-white transition-colors hover:bg-black/50 sm:w-auto"
               >
                 {t('finalCtaSeePricing')}
               </button>
             </div>
 
-            <p className="mt-6 text-[11px] uppercase tracking-widest text-white/80">
+            <p className="mt-6 text-[11px] font-bold uppercase tracking-widest text-white drop-shadow-md">
               {t('finalCtaDisclaimer')}
             </p>
           </div>

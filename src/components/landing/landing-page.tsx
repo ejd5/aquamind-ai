@@ -215,12 +215,12 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
           aria-hidden="true"
         />
 
-        <div className="relative mx-auto max-w-7xl rounded-2xl border border-white/15 bg-[oklch(0.15_0.02_195)]/70 px-4 py-10 backdrop-blur-md sm:px-6">
+        <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6">
           {/* Safety disclaimer */}
           <div className="mb-8 flex items-start gap-3 rounded-xl border border-gold/20 bg-white/5 p-4">
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
-            <p className="text-[11px] leading-relaxed text-white/70">
-              <strong className="text-white/90">{t('disclaimerLabel')}</strong> {t('disclaimer')}
+            <p className="text-[11px] leading-relaxed text-white font-bold drop-shadow-md">
+              <strong className="text-white font-bold drop-shadow-md">{t('disclaimerLabel')}</strong> {t('disclaimer')}
               
             </p>
           </div>
@@ -234,12 +234,12 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
                   <div className="font-display text-base font-bold tracking-tight text-white">
                     <span className="aqua-text-gradient">AQWELIA</span>
                   </div>
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-white/45">
+                  <div className="text-[10px] uppercase tracking-[0.22em] text-white font-bold drop-shadow-md">
                     {t('footerTagline2')}
                   </div>
                 </div>
               </div>
-              <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/65">
+              <p className="mt-4 max-w-sm text-sm leading-relaxed text-white font-bold drop-shadow-md">
                 {t('footerTagline')}
               </p>
               {hasProfile && (
@@ -255,49 +255,49 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
 
             {/* Produit */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-white/50">{t('footerProduct')}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-white font-bold drop-shadow-md">{t('footerProduct')}</p>
               <ul className="mt-3 space-y-2 text-sm">
                 <li>
-                  <button onClick={() => scrollToId('solution')} className="text-white/70 transition-colors hover:text-gold">{t('navSolution')}</button>
+                  <button onClick={() => scrollToId('solution')} className="text-white font-bold drop-shadow-md transition-colors hover:text-gold">{t('navSolution')}</button>
                 </li>
                 <li>
-                  <button onClick={() => scrollToId('comparatif')} className="text-white/70 transition-colors hover:text-gold">{t('navComparatif')}</button>
+                  <button onClick={() => scrollToId('comparatif')} className="text-white font-bold drop-shadow-md transition-colors hover:text-gold">{t('navComparatif')}</button>
                 </li>
                 <li>
-                  <button onClick={() => scrollToId('fonctionnalites')} className="text-white/70 transition-colors hover:text-gold">{t('featuresTitle')}</button>
+                  <button onClick={() => scrollToId('fonctionnalites')} className="text-white font-bold drop-shadow-md transition-colors hover:text-gold">{t('featuresTitle')}</button>
                 </li>
                 <li>
-                  <button onClick={() => scrollToId('tarifs')} className="text-white/70 transition-colors hover:text-gold">{t('navTarifs')}</button>
+                  <button onClick={() => scrollToId('tarifs')} className="text-white font-bold drop-shadow-md transition-colors hover:text-gold">{t('navTarifs')}</button>
                 </li>
                 <li>
-                  <button onClick={() => scrollToId('faq')} className="text-white/70 transition-colors hover:text-gold">{t('navFaq')}</button>
+                  <button onClick={() => scrollToId('faq')} className="text-white font-bold drop-shadow-md transition-colors hover:text-gold">{t('navFaq')}</button>
                 </li>
               </ul>
             </div>
 
             {/* Liens */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-white/50">{t('footerInfo')}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-white font-bold drop-shadow-md">{t('footerInfo')}</p>
               <ul className="mt-3 space-y-2 text-sm">
-                <li><span className="text-white/70">{t('footerGuides')}</span></li>
-                <li><span className="text-white/70">{t('footerBlog')} <span className="text-white/35">({t('footerComingSoon')})</span></span></li>
+                <li><span className="text-white font-bold drop-shadow-md">{t('footerGuides')}</span></li>
+                <li><span className="text-white font-bold drop-shadow-md">{t('footerBlog')} <span className="text-white font-bold drop-shadow-md">({t('footerComingSoon')})</span></span></li>
                 <li>
-                  <Link href="/legal/support" className="text-white/70 transition-colors hover:text-gold">
+                  <Link href="/legal/support" className="text-white font-bold drop-shadow-md transition-colors hover:text-gold">
                     {t('footerContact')}
                   </Link>
                 </li>
                 <li>
-                  <Link href="/legal/cgu" className="text-white/70 transition-colors hover:text-gold">
+                  <Link href="/legal/cgu" className="text-white font-bold drop-shadow-md transition-colors hover:text-gold">
                     {t('footerCGU')}
                   </Link>
                 </li>
                 <li>
-                  <Link href="/legal/privacy" className="text-white/70 transition-colors hover:text-gold">
+                  <Link href="/legal/privacy" className="text-white font-bold drop-shadow-md transition-colors hover:text-gold">
                     {t('footerPrivacy')}
                   </Link>
                 </li>
                 <li>
-                  <Link href="/settings" className="text-white/70 transition-colors hover:text-gold">
+                  <Link href="/settings" className="text-white font-bold drop-shadow-md transition-colors hover:text-gold">
                     {t('footerSettings')}
                   </Link>
                 </li>
@@ -306,10 +306,10 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
           </div>
 
           <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 sm:flex-row">
-            <p className="text-xs text-white/50">
+            <p className="text-xs text-white font-bold drop-shadow-md">
               © {new Date().getFullYear()} AQWELIA. {t('footerCopyright')}
             </p>
-            <div className="flex items-center gap-3 text-xs text-white/50">
+            <div className="flex items-center gap-3 text-xs text-white font-bold drop-shadow-md">
               <span className="rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 font-semibold text-gold">
                 {t('footerVersion')}
               </span>
