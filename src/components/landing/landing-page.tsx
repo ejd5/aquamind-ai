@@ -202,15 +202,21 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
       </main>
 
       {/* ===== Footer ===== */}
-      <footer className="relative mt-auto overflow-hidden border-t border-gold/20 bg-gradient-to-br from-[oklch(0.18_0.025_200)] via-[oklch(0.15_0.02_195)] to-[oklch(0.12_0.015_200)] text-white/80">
+      <footer className="relative mt-auto overflow-hidden border-t border-gold/20 bg-[oklch(0.15_0.02_195)] text-white/80">
         <div className="gold-divider" />
+        {/* AQWELIA footer background image — complete, not cut */}
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.06]"
+          className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg width='80' height='20' viewBox='0 0 80 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 Q 20 0 40 10 T 80 10' stroke='%23ffffff' fill='none' stroke-width='1'/%3E%3C/svg%3E\")",
-            backgroundRepeat: 'repeat',
+            backgroundImage: 'url(/footer-bg.png)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
           }}
+          aria-hidden="true"
+        />
+        {/* Dark overlay for text readability */}
+        <div
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[oklch(0.15_0.02_195)]/90 via-[oklch(0.15_0.02_195)]/70 to-[oklch(0.15_0.02_195)]/90"
           aria-hidden="true"
         />
 
