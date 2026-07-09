@@ -49,8 +49,7 @@ export function MobileHeader({ profile, onBackToLanding }: MobileHeaderProps) {
         >
           {/* Logo icon with gold gradient ring (32x32) */}
           <div className="relative">
-            <div className="absolute -inset-[2px] rounded-[10px] bg-gradient-to-br from-gold via-ocean-light to-primary opacity-80 blur-[1.5px]" />
-            <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg shadow-md shadow-primary/25">
+          <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg shadow-md shadow-primary/25">
               <img
                 src="/icon-aqwelia-48.png"
                 alt="AQWELIA"

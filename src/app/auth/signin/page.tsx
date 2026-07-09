@@ -88,8 +88,7 @@ export default function AuthPage() {
         <div className="mb-8 text-center">
           <div className="mb-4 inline-flex items-center justify-center">
             <div className="relative">
-              <div className="absolute -inset-[3px] rounded-[14px] bg-gradient-to-br from-gold via-ocean-light to-primary opacity-80 blur-[2px]" />
-              <img src="/icon-aqwelia-48.png" alt="AQWELIA" className="h-12 w-12 object-contain" />
+          <img src="/icon-aqwelia-48.png" alt="AQWELIA" className="h-12 w-12 object-contain" />
               <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-gold to-[oklch(0.55_0.10_195)] shadow-md shadow-gold/40">
                 <Sparkles className="h-2.5 w-2.5 text-white" />
               </div>

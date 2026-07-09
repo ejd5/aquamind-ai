@@ -674,8 +674,7 @@ export function ModuleDiagnostic() {
                         {/* Branded header with logo */}
                         <div className="flex flex-col items-center border-b border-border/40 bg-gradient-to-br from-primary/5 to-gold/5 px-6 pb-4 pt-6">
                           <div className="relative mb-3">
-                            <div className="absolute -inset-[3px] rounded-[14px] bg-gradient-to-br from-gold via-ocean-light to-primary opacity-70 blur-[2px]" />
-                            <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl shadow-md">
+          <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl shadow-md">
                               <img src="/icon-aqwelia-48.png" alt="AQWELIA" className="h-12 w-12 object-contain" />
                             </div>
                           </div>
