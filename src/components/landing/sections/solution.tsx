@@ -93,25 +93,23 @@ export function Solution() {
           })}
         </motion.div>
 
-        {/* Differentiator card */}
+        {/* Differentiator card — centered, narrower, glassmorphism */}
         <Reveal delay={0.15} className="mt-8">
-          <div className="relative mx-auto max-w-3xl overflow-hidden rounded-2xl border-2 border-gold/50 bg-gradient-to-br from-gold/[0.08] via-white/40 to-white/30 p-6 backdrop-blur-xl dark:via-white/[0.03] dark:to-white/[0.02]">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-gold to-primary text-white shadow-lg shadow-gold/30">
+          <div className="relative mx-auto max-w-2xl overflow-hidden rounded-2xl border border-gold/40 bg-white/20 p-6 text-center backdrop-blur-2xl sm:p-8">
+            <div className="flex justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-gold to-primary text-white shadow-lg shadow-gold/30">
                 <Calculator className="h-5 w-5" />
               </div>
-              <div>
-                <h3 className="font-display text-lg font-bold sm:text-xl">
-                  {t('solutionDeterminist1')}{' '}
-                  <span className="gradient-text-premium">{t('solutionDeterminist2')}</span>{' '}
-                  {t('solutionDeterminist3')}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-foreground/85 sm:text-base">
-                  {t('solutionDeterministText1')}{' '}
-                  <strong className="text-foreground">{t('solutionDeterministText2')}</strong>
-                </p>
-              </div>
             </div>
+            <h3 className="mt-4 font-display text-lg font-bold sm:text-xl">
+              {t('solutionDeterminist1')}{' '}
+              <span className="gradient-text-premium">{t('solutionDeterminist2')}</span>{' '}
+              {t('solutionDeterminist3')}
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-foreground/90 sm:text-base">
+              {t('solutionDeterministText1')}{' '}
+              <strong className="text-foreground">{t('solutionDeterministText2')}</strong>
+            </p>
           </div>
         </Reveal>
       </div>

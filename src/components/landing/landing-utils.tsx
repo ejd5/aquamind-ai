@@ -151,7 +151,7 @@ export function GlassCard({
 }) {
   return (
     <div
-      className={`group relative overflow-hidden rounded-2xl bg-white/60 backdrop-blur-xl border border-white/40 shadow-[0_18px_40px_-22px_oklch(0.45_0.12_195/0.25)] transition-all duration-300 dark:bg-white/[0.04] dark:border-white/10 ${
+      className={`group relative overflow-hidden rounded-2xl bg-white/25 backdrop-blur-2xl border border-white/50 shadow-[0_18px_40px_-22px_oklch(0.45_0.12_195/0.25)] transition-all duration-300 dark:bg-white/[0.06] dark:border-white/15 ${
         hover ? 'hover:-translate-y-1 hover:shadow-[0_28px_55px_-22px_oklch(0.45_0.12_195/0.4)]' : ''
       } ${className ?? ''}`}
     >
