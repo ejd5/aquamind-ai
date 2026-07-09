@@ -62,7 +62,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
         }`}
       >
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-32 max-w-7xl items-center justify-between px-4 sm:px-6">
           {/* Logo */}
           <button
             onClick={() => scrollToId('top')}
@@ -70,13 +70,13 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
             aria-label={t('headerAriaLogo')}
           >
             <div className="relative">
-          <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-16 w-auto object-contain" />
+          <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-24 w-auto object-contain" />
             </div>
             <div className="leading-tight">
-              <div className="flex items-center gap-1.5 text-base font-bold tracking-tight">
+              <div className="flex items-center gap-1.5 text-lg font-bold tracking-tight">
                 <span className="aqua-text-gradient">AQWELIA</span>
               </div>
-              <div className="hidden text-[10px] uppercase tracking-[0.22em] text-muted-foreground sm:block">
+              <div className="hidden text-[11px] uppercase tracking-[0.22em] text-muted-foreground sm:block">
                 {t('headerCopilote')}
               </div>
             </div>
@@ -228,10 +228,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
             {/* Brand */}
             <div className="md:col-span-2">
               <div className="flex items-center gap-2.5">
-                <div className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-md shadow-primary/30">
-                  <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-16 w-auto object-contain" />
-                  <Sparkles className="absolute -right-1 -top-1 h-3 w-3 text-gold" />
-                </div>
+                  <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-20 w-auto object-contain" />
                 <div>
                   <div className="font-display text-base font-bold tracking-tight text-white">
                     <span className="aqua-text-gradient">AQWELIA</span>
