@@ -5,6 +5,7 @@ import { nvidiaChat, type ChatMessage } from '@/lib/ai/nvidia'
 import { db } from '@/lib/db'
 import { buildPoolContext, getAssistantSystemPrompt } from '@/lib/pool/ai-context'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { trackEventServer } from '@/lib/analytics-server'
 
 export const runtime = 'nodejs'
 
@@ -54,6 +55,17 @@ export async function POST(req: NextRequest) {
         { userId, role: 'assistant', content: reply },
       ],
     })
+
+    // Analytics — fire-and-forget.
+    void trackEventServer(
+      'chat_message_sent',
+      {
+        messageLength: message.length,
+        hadProfile: Boolean(profile),
+        hadLatestTest: Boolean(latestTest),
+      },
+      userId
+    )
 
     return NextResponse.json({ reply })
   } catch (e) {

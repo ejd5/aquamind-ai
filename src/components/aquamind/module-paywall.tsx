@@ -32,6 +32,7 @@ import { isNative } from '@/lib/platform'
 import { offlineApi } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
+import { trackEvent } from '@/lib/analytics-client'
 
 type Duration = 'week' | 'month' | 'halfyear' | 'year'
 
@@ -123,6 +124,15 @@ export function ModulePaywall() {
   useEffect(() => {
     load()
   }, [load])
+
+  // Analytics — paywall shown. Fire once on mount with the current plan
+  // (if any) so we can compute upgrade conversion rates in PostHog.
+  useEffect(() => {
+    trackEvent('paywall_shown', {
+      currentPlan: currentPlanId,
+      platform: isNative() ? 'native' : 'web',
+    })
+  }, [])
 
   const paidPlans = useMemo(() => plans.filter((p) => p.id !== 'decouverte'), [plans])
   const freePlan = plans.find((p) => p.id === 'decouverte')

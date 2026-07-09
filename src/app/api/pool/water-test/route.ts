@@ -6,6 +6,7 @@ import { generateActionPlan } from '@/lib/pool/action-plan'
 import { calculateClearWaterIndex, calculateLSI, lsiInterpretation } from '@/lib/pool/water-balance'
 import { assessSwimSafety } from '@/lib/pool/safety-rules'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { trackEventServer } from '@/lib/analytics-server'
 
 export const runtime = 'nodejs'
 
@@ -110,6 +111,19 @@ export async function POST(req: NextRequest) {
         },
       })
     }
+
+    // Analytics — fire-and-forget, never blocks the response.
+    void trackEventServer(
+      'water_test_submitted',
+      {
+        ph,
+        hasChlorine: test.freeChlorine != null,
+        source: test.source,
+        clearWaterIndex: cwi,
+        status,
+      },
+      userId
+    )
 
     return NextResponse.json({ test: created, actionPlan, lsiInfo: lsiInterpretation(lsi) })
   } catch (e) {

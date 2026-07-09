@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Providers } from "@/components/providers";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
+import { PostHogProvider } from "@/app/posthog-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -61,10 +62,12 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} antialiased bg-background text-foreground`}
       >
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <Providers>
-            {children}
-            <Toaster />
-          </Providers>
+          <PostHogProvider>
+            <Providers>
+              {children}
+              <Toaster />
+            </Providers>
+          </PostHogProvider>
         </NextIntlClientProvider>
       </body>
     </html>

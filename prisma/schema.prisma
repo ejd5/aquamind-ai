@@ -345,3 +345,42 @@ model CareNotification {
   email     String   @unique
   createdAt DateTime @default(now())
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// AQWELIA PARTNERS — Candidatures partenaires (marketing funnel)
+// ───────────────────────────────────────────────────────────────────────────
+
+// Candidatures soumises via /partenaires/fournisseurs ou /partenaires/piscinistes
+// (2 types: "fournisseur" pour AQWELIA Care, "pisciniste" pour affiliation Pro)
+model PartnerApplication {
+  id          String   @id @default(cuid())
+  companyName String
+  email       String
+  type        String // fournisseur | pisciniste
+  products    String? // description des produits / services (fournisseurs)
+  message     String?
+  createdAt   DateTime @default(now())
+
+  @@index([type])
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// AQWELIA — Messages de contact (page /contact, public)
+// ───────────────────────────────────────────────────────────────────────────
+
+// Soumissions du formulaire /contact (questions, demandes support, partenariats)
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String   // general | support | partnership | press | other
+  message   String
+  // Statut de traitement interne (back-office)
+  status    String   @default("new") // new | read | replied | archived
+  // Optionnel : userId si l'utilisateur était connecté lors de l'envoi
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+}
