@@ -9,7 +9,27 @@ export function Story() {
 
   return (
     <section id="histoire" className="relative py-20 sm:py-28">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6">
+      {/* BLOC08 background image — complete, no filter, no opacity */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-no-repeat"
+        style={{
+          backgroundImage: 'url(/bloc08-bg.png)',
+          backgroundSize: '100% 100%',
+          backgroundPosition: 'center',
+        }}
+        aria-hidden="true"
+      />
+      {/* Gradient fades top + bottom for smooth transition with white background */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white to-transparent"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white to-transparent"
+        aria-hidden="true"
+      />
+
+      <div className="relative mx-auto max-w-4xl px-4 sm:px-6">
         <SectionHeading
           eyebrow={t('storyEyebrow')}
           title={<>{t('storyTitle')}</>}
