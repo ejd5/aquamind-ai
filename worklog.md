@@ -3379,3 +3379,104 @@ Stage Summary:
 - 41 new i18n keys added per locale × 7 locales = 287 new translation keys. Plus 3 new settings keys per locale × 7 = 21 keys. Total: 308 new translation keys. Plus 4 gates messages updated per locale × 7 = 28 message updates.
 - Product id conventions documented in `src/lib/billing/stripe-web.ts` and `src/lib/stripe.ts` for the next agent who configures Stripe/RevenueCat dashboards.
 - Batch-update Python script (`scripts/i18n/add-new-plans.py`) is reusable: re-running it is idempotent (overwrites the new keys with the same values).
+
+---
+Task ID: P1-FIX
+Agent: sub-agent (general-purpose)
+Task: Fix the 5 TypeScript errors in pricing.tsx left over by P1-TARIFS (Duration type change + PlanId change), refresh the pricing-display UX (3 main durations + Pass urgence secondary zone), audit module-paywall.tsx for stray legacy plan references, and translate the 41 new landing keys (P1-LANDING) into ES/DE/IT/PT/NL.
+
+Work Log:
+- Read worklog tail (tasks 4-final, 8-healthlog, 11-api, P1-LANDING, P1-TARIFS) for context. Confirmed that P1-TARIFS left 5 TS errors in `src/components/landing/sections/pricing.tsx` (off-limits at the time) and that P1-LANDING added 41 new keys to FR/EN only.
+- Verified current TS error baseline: `bunx tsc --noEmit` reported 11 errors total — 5 in pricing.tsx (lines 20, 27, 38, 39, 91) + 6 pre-existing in unrelated files (skills/*, module-maintenance, native/index, safety-rules, middleware).
+
+### 1. pricing.tsx fixes (5 TS errors → 0)
+
+Changes to `src/components/landing/sections/pricing.tsx`:
+- `DURATION_LABEL_KEY` and `DURATION_SUFFIX_KEY` records: removed `quarter`/`perQuarter` entries, added `year`/`perYear`. Both records are now `Record<'week' | 'month' | 'halfyear' | 'year', string>` and align with the new `DURATIONS` array exported from freemium.ts.
+- `paidPlans = PLANS.filter((p) => p.id !== 'free')` → `p.id !== 'decouverte'`.
+- `freePlan = PLANS.find((p) => p.id === 'free')!` → `p.id === 'decouverte'`.
+- `isPremium = plan.id === 'premium'` (TS2367: 'premium' not in PlanId) → `isHighlighted = !!plan.highlighted || plan.id === 'oasis'`. The renamed variable is more semantic (uses the plan's `highlighted` flag, falling back to the oasis ID) and avoids the literal-string comparison entirely.
+- All references to the renamed variable inside JSX (card className, top-ribbon, popular badge, CTA button className, Check icon color) were updated from `isPremium` to `isHighlighted`.
+- Découverte plan card text: `tPlans('free.name')` → `tPlans('decouverte.name')`, `tPlans('free.tagline')` → `tPlans('decouverte.tagline')`.
+
+### 2. Pricing display UX refresh
+
+Per task spec ("3 durations: Mensuel / Saison (6 mois) / Annuel" + "Pass urgence in a secondary zone"):
+- Added `MAIN_DURATIONS = DURATIONS.filter((d) => d.id !== 'week')` so the main pill toggle now only renders `month` / `halfyear` / `year` (Mensuel / Saison 6 mois / Annuel).
+- Added a dedicated "Pass urgence" secondary zone (full-width button below the main toggle). The zone:
+  * Uses a `Zap` icon (imported from `lucide-react`).
+  * Shows the `plans.emergencyPass` label + week-suffix + the weekly price for both Oasis (3,99€) and Wellness (5,99€) plans (computed live from `PLANS.find(...).price.week` and `toLocaleString(locale)`).
+  * Clicking it sets `duration = 'week'`, which makes the 3 paid-plan cards re-crossfade to weekly pricing.
+  * When `duration === 'week'`, the secondary zone gets an active visual state (border-primary/60 bg-primary/10 shadow-lg) and shows a small `tPlans('week')` badge so the user knows which duration is currently driving the prices.
+- Imported `Zap` from `lucide-react` (added to the existing icon import line).
+- The 3 paid-plan cards' "popular" ribbon (top-right corner, gold gradient) is now driven by `isHighlighted` instead of the legacy `isPremium` boolean — semantics preserved.
+- The Découverte free plan card below still shows the same content but now reads `tPlans('decouverte.name')` / `tPlans('decouverte.tagline')` instead of the legacy `'free.*'` keys.
+
+### 3. module-paywall.tsx audit
+
+- Grepped `src/components/aquamind/module-paywall.tsx` for `'free' | 'premium' | 'expert'` literals — 0 matches. P1-TARIFS already migrated this file in full (initial state `'decouverte'`, all filter/find logic, all entitlement mappings, etc.).
+- `bunx tsc --noEmit` reports 0 errors for this file. No changes needed.
+
+### 4. i18n translations (41 new + 2 updates × 5 locales = 215 operations)
+
+Created `scripts/i18n/add-landing-keys-p1.py` — a batch updater with per-language translation tables. The script:
+- Defines all 43 keys per locale (41 new + 2 updates for `finalCtaTitle` / `finalCtaStart`).
+- Walks the 5 target locales (es, de, it, pt, nl), opens each JSON file, adds new keys to the `landing` namespace, and overwrites the 2 existing `finalCta*` values to match the new FR source intent ("Prenez enfin le contrôle de l'entretien de votre piscine." → "Commencer gratuitement").
+- Writes JSON with `ensure_ascii=False, indent=2` + trailing newline to match the existing locale file format.
+- Includes a post-write validity check (re-opens all 5 files to confirm they parse as valid JSON).
+- Is idempotent: re-running it produces the same values (no duplicates, no orphans).
+- Has a sanity assert that all 5 languages have the same number of keys (43) before writing.
+
+Translation domains:
+- **FAQ (14 keys)** — 7 question/answer pairs covering: AQWELIA vs. pool pro, AI analysis mechanism, spa management, product sales, green-water remediation, year-round operation, professional (AQWELIA Pro) version. All translated naturally — preserved brand terms ("AQWELIA", "AQWELIA Pro", "AQWELIA Care", "Lagoon" plan name, "Early Access" badge), translated domain terms ("pisciniste" → "piscinista"/"Poolfachmann"/"piscinaiolo"/"piscinastra"/"poolprofessional", "hivernage" → "hibernación"/"Überwinterung"/"svernamento"/"invernagem"/"overwintering", "bromu/oxygène actif" → "bromo/oxígeno activo", "Brom/Aktivsauerstoff", "bromo/ossigeno attivo", "bromo/oxigénio ativo", "broom/actieve zuurstof").
+- **ProPreview (14 keys)** — AQWELIA Pro early-access section: eyebrow ("13 — AQWELIA Pro", kept identical), title, subtitle, badge ("Early Access", kept identical in all 5 locales since it's a brand/marketing tag), badge-text, 4×(card title + card text), CTA. Translated "gestion clients", "planning & interventions", "rapports & comptes rendus", "recommandations Care" naturally per language.
+- **CarePreview (13 keys)** — AQWELIA Care coming-soon section: eyebrow ("14 — AQWELIA Care"), title, subtitle, badge ("Bientôt disponible" → "Disponible pronto"/"Bald verfügbar"/"In arrivo"/"Em breve"/"Binnenkort beschikbaar"), 4×(step title + step text), CTA. The 4-step flow ("détecte le besoin" → "calcule la quantité" → "vérifie la compatibilité" → "ajoute au panier") was translated as a coherent narrative in each language.
+- **FinalCta (2 updates)** — `finalCtaTitle` and `finalCtaStart` were already present in all 5 locales (legacy "votre piscine mérite un copilote" copy). Overwritten with the new copy aligned to the new FR intent:
+  * finalCtaTitle: "Prenez enfin le contrôle de l'entretien de votre piscine."
+    - ES: "Tome por fin el control del mantenimiento de su piscina."
+    - DE: "Übernehmen Sie endlich die Kontrolle über Ihre Poolpflege."
+    - IT: "Prendi finalmente il controllo della manutenzione della tua piscina."
+    - PT: "Tome finalmente o controlo da manutenção da sua piscina."
+    - NL: "Krijg eindelijk de controle over het onderhoud van uw zwembad."
+  * finalCtaStart: "Commencer gratuitement"
+    - ES: "Empezar gratis"
+    - DE: "Kostenlos starten"
+    - IT: "Inizia gratis"
+    - PT: "Começar grátis"
+    - NL: "Gratis starten"
+
+Verification (Python script output):
+- es: +41 new, ~2 updated
+- de: +41 new, ~2 updated
+- it: +41 new, ~2 updated
+- pt: +41 new, ~2 updated
+- nl: +41 new, ~2 updated
+- Total: +205 new keys, ~10 updated keys, 215 operations across 5 locales.
+- All 5 target locale files pass JSON validity re-parse check. ✓
+- Re-verified all 43 keys present in each of es/de/it/pt/nl + fr (0 missing per locale).
+
+### Verification — full build pipeline
+
+- `bun run lint` → exit 0, no errors, no warnings. ✓
+- `bunx tsc --noEmit | grep -c "error TS"` → 6 (was 11 before this task). The 5 pricing.tsx errors are resolved; the 6 remaining are all pre-existing and out of scope:
+  * `skills/image-edit/scripts/image-edit.ts(10,4)` — z-ai SDK type mismatch (skill, not project source).
+  * `skills/stock-analysis-skill/src/analyzer.ts(253,11)` — z-ai SDK type mismatch (skill, not project source).
+  * `src/components/aquamind/module-maintenance.tsx(890,57)` — pre-existing Record<string, unknown> type widening bug.
+  * `src/lib/native/index.ts(72,8)` — pre-existing missing local-notifications module (Capacitor).
+  * `src/lib/pool/safety-rules.ts(47,9)` — pre-existing "allowed"/"forbidden" comparison bug.
+  * `src/middleware.ts(104,12)` — pre-existing withAuth signature mismatch.
+- `bunx eslint src/components/landing/sections/pricing.tsx` → exit 0, no errors. ✓
+
+### Git
+
+- `git add -A && git commit -m "fix: pricing.tsx + translate 41 keys to 5 languages"` → committed 3ed857c (30 files changed, 3276 insertions, 250 deletions). Note: the commit also bundled the prior P1-TARIFS and P1-LANDING work that had been left uncommitted by previous agents (freemium.ts, billing/*, locale files, FAQ section, pro-preview/care-preview sections, etc.) — `git add -A` per the task's explicit commit instructions captured all of it.
+- `git push origin main` → 35124ef..3ed857c pushed successfully. ✓
+- Temp credentials file at `/tmp/.git-credentials` removed. ✓
+
+Stage Summary:
+- pricing.tsx is now type-clean (0 TS errors, was 5) and the pricing display shows the new 3-tier plan structure (Découverte free + Oasis/Wellness paid) with 3 main durations (Mensuel / Saison 6 mois / Annuel) and a dedicated "Pass urgence" weekly zone.
+- module-paywall.tsx required no changes (already migrated by P1-TARIFS).
+- 41 new i18n keys + 2 updated keys added to all 5 non-FR/EN locales (215 total operations). All translations provided natively per language; brand terms ("AQWELIA", "AQWELIA Pro", "AQWELIA Care", "Lagoon", "Early Access") preserved consistently.
+- Lint: PASS. TypeScript: 6 errors total (5 fixed; all 6 remaining are pre-existing and out of scope).
+- Commit 3ed857c pushed to `origin/main` on GitHub.
+- Reusable batch-updater script `scripts/i18n/add-landing-keys-p1.py` saved (idempotent — re-running it is safe).
