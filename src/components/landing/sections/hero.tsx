@@ -28,7 +28,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
   ]
 
   return (
-    <section id="top" className="relative isolate overflow-hidden pb-16 sm:pb-24">
+    <section id="top" className="relative isolate overflow-hidden pb-12 sm:pb-16">
       {/* AQWELIA hero background image — complete, fills entire section, no truncation */}
       <div
         className="pointer-events-none absolute inset-0 -z-10 bg-no-repeat"
@@ -45,7 +45,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
         aria-hidden="true"
       />
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-28 sm:pt-32">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-24 sm:pt-28">
         <div className="max-w-xl text-left">
           {/* Eyebrow badge — signature AQWELIA */}
           <motion.div
@@ -130,7 +130,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.6 }}
-          className="mx-auto mt-80 grid max-w-4xl grid-cols-2 gap-3 sm:mt-96 sm:grid-cols-4 sm:gap-4"
+          className="mx-auto mt-64 grid max-w-4xl grid-cols-2 gap-3 sm:mt-72 sm:grid-cols-4 sm:gap-4"
         >
           {STATS.map((s) => (
             <div
