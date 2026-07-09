@@ -62,7 +62,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
         }`}
       >
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
-        <div className="mx-auto flex h-32 max-w-7xl items-center justify-between px-2 sm:px-4">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-2 sm:px-4">
           {/* Logo */}
           <button
             onClick={() => scrollToId('top')}
@@ -70,7 +70,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
             aria-label={t('headerAriaLogo')}
           >
             <div className="relative">
-          <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-24 w-auto object-contain" />
+          <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-16 w-auto object-contain" />
             </div>
             <div className="leading-tight">
               <div className="flex items-center gap-1.5 text-lg font-bold tracking-tight">
@@ -202,9 +202,9 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
       </main>
 
       {/* ===== Footer ===== */}
-      <footer className="relative mt-auto overflow-hidden border-t border-gold/20 bg-[oklch(0.15_0.02_195)] text-white/80">
+      <footer className="relative mt-auto overflow-hidden border-t border-gold/20 bg-transparent text-white">
         <div className="gold-divider" />
-        {/* AQWELIA footer background image — complete, not cut */}
+        {/* AQWELIA footer background image — complete, not cut, no overlay */}
         <div
           className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
@@ -212,11 +212,6 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
-          aria-hidden="true"
-        />
-        {/* Dark overlay for text readability */}
-        <div
-          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[oklch(0.15_0.02_195)]/90 via-[oklch(0.15_0.02_195)]/70 to-[oklch(0.15_0.02_195)]/90"
           aria-hidden="true"
         />
 
