@@ -65,8 +65,10 @@ export function Solution() {
               </span>
             </Reveal>
             <Reveal delay={0.05}>
-              <h2 className="mt-3 font-display text-2xl font-bold leading-tight tracking-tight text-foreground [text-shadow:_0_1px_3px_rgb(255_255_255),_0_-1px_3px_rgb(255_255_255),_1px_0_3px_rgb(255_255_255),_-1px_0_3px_rgb(255_255_255)] sm:text-3xl">
-                {t('solutionTitle')}
+              <h2 className="mt-3 font-display text-4xl font-bold leading-tight tracking-tight text-foreground [text-shadow:_0_1px_3px_rgb(255_255_255),_0_-1px_3px_rgb(255_255_255),_1px_0_3px_rgb(255_255_255),_-1px_0_3px_rgb(255_255_255)] sm:text-5xl md:text-6xl">
+                <span className="block">AQWELIA :</span>
+                <span className="block">votre pisciniste intelligent,</span>
+                <span className="block">24/7.</span>
               </h2>
             </Reveal>
           </div>
