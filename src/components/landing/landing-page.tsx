@@ -62,7 +62,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
         }`}
       >
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
-        <div className="mx-auto flex h-32 max-w-7xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-32 max-w-7xl items-center justify-between px-2 sm:px-4">
           {/* Logo */}
           <button
             onClick={() => scrollToId('top')}
