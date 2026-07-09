@@ -18,8 +18,15 @@ export async function GET(req: Request) {
   }
   const userId = session.user.id
 
+  // Multi-pool: scope the profile to the requested poolId if provided.
+  // (WaterTest/PhotoDiagnostic/etc. remain user-scoped until a schema
+  // migration adds poolId — the active pool drives the profile block.)
+  const url = new URL(req.url)
+  const poolId = url.searchParams.get('poolId')
+  const profileWhere = poolId ? { id: poolId, userId } : { userId }
+
   const [profile, latestTest, latestPlan, tests, diagnostics, equipment, products, chatCount] = await Promise.all([
-    db.poolProfile.findFirst({ where: { userId } }),
+    db.poolProfile.findFirst({ where: profileWhere }),
     db.waterTest.findFirst({ where: { userId }, orderBy: { createdAt: 'desc' }, include: { actionPlans: true } }),
     db.actionPlan.findFirst({
       where: { waterTest: { userId } },

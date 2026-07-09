@@ -1,4 +1,4 @@
-import { Sparkles, Droplets, ArrowLeft, Settings, LogOut, ChevronDown } from 'lucide-react'
+import { Droplets, ArrowLeft, Settings, LogOut, ChevronDown, Plus, Check, Trash2 } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
@@ -8,18 +8,41 @@ import type { TabId, PoolProfileLite } from './app-shell'
 
 interface HeaderProps {
   profile: PoolProfileLite | null
+  /** All user pools (for the switcher). If undefined → still loading; if [] → no pool yet. */
+  pools?: PoolProfileLite[]
+  /** Can the user add another pool? (plan gate) */
+  canAddPool?: boolean
+  /** Called when the user selects a different pool in the switcher. */
+  onSwitchPool?: (id: string) => void
+  /** Called when the user clicks "Add pool". */
+  onAddPool?: () => void
+  /** Called when the user clicks the trash icon next to a pool in the switcher. */
+  onDeletePool?: (id: string) => void
   activeTab: TabId
   onNavigate: (tab: TabId) => void
   onBackToLanding?: () => void
 }
 
-export function Header({ profile, activeTab, onNavigate, onBackToLanding }: HeaderProps) {
+export function Header({
+  profile,
+  pools,
+  canAddPool,
+  onSwitchPool,
+  onAddPool,
+  onDeletePool,
+  activeTab,
+  onNavigate,
+  onBackToLanding,
+}: HeaderProps) {
   const { data: session } = useSession()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [poolOpen, setPoolOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const poolRef = useRef<HTMLDivElement>(null)
   const t = useTranslations('nav')
   const tl = useTranslations('landing')
   const tc = useTranslations('common')
+  const tp = useTranslations('pool')
 
   // Helper: translate account name if it's a French default, else show as-is
   const displayName = (name?: string | null) => {
@@ -28,15 +51,26 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
     return key ? tc(key as any) : name
   }
 
+  const displayPoolName = (name?: string | null) => {
+    if (!name) return ''
+    const key = getDefaultPoolNameKey(name)
+    return key ? tc(key as any) : name
+  }
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false)
       }
+      if (poolRef.current && !poolRef.current.contains(e.target as Node)) {
+        setPoolOpen(false)
+      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  const hasMultiplePools = (pools?.length || 0) > 1
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gold/20 bg-background/40 backdrop-blur-xl">
       {/* Subtle gold line at the bottom */}
@@ -80,19 +114,99 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
               <span className="hidden sm:inline">{t('landing')}</span>
             </button>
           )}
+
           {profile && (
-            <button
-              onClick={() => onNavigate('maintenance')}
-              className="glass-pill flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-foreground/90 transition-colors hover:border-gold/40"
-              title={t('poolProfileTitle')}
-            >
-              <Droplets className="h-3.5 w-3.5 text-primary" />
-              <span className="hidden sm:inline">{(() => { const k = getDefaultPoolNameKey(profile.name); return k ? tc(k as any) : profile.name })()}</span>
-              <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold text-gold">
-                {profile.volume}
-                {profile.unit === 'm3' ? ' m³' : ' gal'}
-              </span>
-            </button>
+            <div className="relative" ref={poolRef}>
+              <button
+                onClick={() => {
+                  // Only open the switcher if there's actually a choice, or if add is allowed.
+                  if (hasMultiplePools || canAddPool) {
+                    setPoolOpen((v) => !v)
+                  } else {
+                    onNavigate('maintenance')
+                  }
+                }}
+                className="glass-pill flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-foreground/90 transition-colors hover:border-gold/40"
+                title={t('poolProfileTitle')}
+              >
+                <Droplets className="h-3.5 w-3.5 text-primary" />
+                <span className="hidden sm:inline">{displayPoolName(profile.name)}</span>
+                <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold text-gold">
+                  {profile.volume}
+                  {profile.unit === 'm3' ? ' m³' : ' gal'}
+                </span>
+                {(hasMultiplePools || canAddPool) && (
+                  <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${poolOpen ? 'rotate-180' : ''}`} />
+                )}
+              </button>
+
+              {poolOpen && (hasMultiplePools || canAddPool) && (
+                <div className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-xl border border-border/60 bg-background/95 shadow-xl backdrop-blur-xl">
+                  <div className="border-b border-border/40 px-4 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {tp('myPools')}
+                    </p>
+                  </div>
+                  <ul className="max-h-64 overflow-y-auto py-1">
+                    {pools?.map((p) => {
+                      const isActive = p.id === profile.id
+                      return (
+                        <li key={p.id}>
+                          <div className="flex items-center gap-1 pr-2">
+                            <button
+                              onClick={() => {
+                                onSwitchPool?.(p.id)
+                                setPoolOpen(false)
+                              }}
+                              className={`flex flex-1 items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-secondary/60 ${
+                                isActive ? 'bg-gold/10 text-foreground' : 'text-foreground/90'
+                              }`}
+                            >
+                              <Droplets className={`h-3.5 w-3.5 ${isActive ? 'text-gold' : 'text-muted-foreground'}`} />
+                              <span className="flex-1 truncate">{displayPoolName(p.name)}</span>
+                              <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
+                                {p.volume}{p.unit === 'm3' ? ' m³' : ' gal'}
+                              </span>
+                              {isActive && <Check className="h-3.5 w-3.5 text-gold" />}
+                            </button>
+                            {hasMultiplePools && onDeletePool && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onDeletePool(p.id)
+                                }}
+                                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                                title={tp('deletePool')}
+                                aria-label={tp('deletePool')}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                  {canAddPool && (
+                    <button
+                      onClick={() => {
+                        onAddPool?.()
+                        setPoolOpen(false)
+                      }}
+                      className="flex w-full items-center gap-2 border-t border-border/40 px-3 py-2.5 text-sm font-medium text-gold transition-colors hover:bg-gold/10"
+                    >
+                      <Plus className="h-4 w-4" />
+                      {tp('addPool')}
+                    </button>
+                  )}
+                  {!canAddPool && (
+                    <div className="border-t border-border/40 px-3 py-2 text-[10px] text-muted-foreground">
+                      {tp('upgradeForMorePools')}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
           <span className="glass-pill hidden items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-foreground/80 sm:flex">
             <span className="relative flex h-2 w-2">

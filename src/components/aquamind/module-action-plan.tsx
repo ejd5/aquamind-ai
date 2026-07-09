@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Sparkles,
   ShieldAlert,
+  FileDown,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -20,13 +21,16 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/hooks/use-toast'
 import { useTranslations, useLocale } from 'next-intl'
-import { offlineApi } from '@/lib/offline/api-cache'
+import { offlineApi, apiGetCached } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
+import { usePdfReport } from '@/hooks/use-pdf-report'
 import type { TabId } from './app-shell'
 
 interface Props {
   onNavigate: (tab: TabId) => void
+  /** Active pool id (multi-pool). When provided, dashboard data is scoped. */
+  activePoolId?: string | null
 }
 
 interface LatestPlan {
@@ -70,9 +74,11 @@ const SWIM_CLS: Record<string, { cls: string; icon: string }> = {
   unknown: { cls: 'border-border bg-muted text-muted-foreground', icon: 'bg-muted-foreground' },
 }
 
-export function ModuleActionPlan({ onNavigate }: Props) {
+export function ModuleActionPlan({ onNavigate, activePoolId }: Props) {
   const t = useTranslations('diagnostic')
   const tAct = useTranslations('actionPlan')
+  const tPdf = useTranslations('pdfReport')
+  const pdf = usePdfReport()
 
   // Helper: translate via key with French fallback (for DB-stored plans without keys)
   const tr = useCallback((fr: string, key?: string | null, params?: Record<string, string | number> | null): string => {
@@ -120,8 +126,14 @@ export function ModuleActionPlan({ onNavigate }: Props) {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const { data, stale } = await offlineApi.dashboard()
-      setPlan((data as { latestPlan?: LatestPlan } | null)?.latestPlan || null)
+      const dashPath = activePoolId
+        ? `/api/dashboard?v2&poolId=${encodeURIComponent(activePoolId)}`
+        : '/api/dashboard?v2'
+      const { data, stale } = await apiGetCached<{ latestPlan?: LatestPlan }>(
+        dashPath,
+        'dashboard'
+      )
+      setPlan(data?.latestPlan || null)
       setStale(stale)
     } catch {
       setPlan(null)
@@ -129,7 +141,7 @@ export function ModuleActionPlan({ onNavigate }: Props) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [activePoolId])
 
   useEffect(() => {
     load()
@@ -217,6 +229,33 @@ export function ModuleActionPlan({ onNavigate }: Props) {
             <RefreshCw className={`h-3.5 w-3.5 ${regenerating ? 'animate-spin' : ''}`} />
             {t('regenerate')}
           </Button>
+          {plan && pdf.canDownload && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => pdf.download(activePoolId)}
+              disabled={pdf.preparing}
+              title={tPdf('downloadPdf')}
+            >
+              <FileDown className={`h-3.5 w-3.5 ${pdf.preparing ? 'animate-pulse' : ''}`} />
+              {pdf.preparing ? tPdf('preparing') : tPdf('downloadPdfShort')}
+            </Button>
+          )}
+          {plan && !pdf.canDownload && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onNavigate('paywall')}
+              title={tPdf('upgradeForPdf')}
+              className="border-gold/40 text-gold hover:border-gold/60"
+            >
+              <FileDown className="h-3.5 w-3.5" />
+              {tPdf('downloadPdfShort')}
+            </Button>
+          )}
+          {pdf.error && (
+            <span className="text-[10px] italic text-destructive">{pdf.error}</span>
+          )}
           {stale && (
             <span className="text-[10px] italic text-muted-foreground">{t('cached')}</span>
           )}

@@ -32,7 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useTranslations, useLocale } from 'next-intl'
 import type { TabId } from './app-shell'
 import { evaluateParam } from '@/lib/pool/targets'
-import { offlineApi } from '@/lib/offline/api-cache'
+import { offlineApi, apiGetCached } from '@/lib/offline/api-cache'
 
 interface DashboardData {
   profile: any
@@ -54,6 +54,8 @@ interface Props {
   onNavigate: (tab: TabId) => void
   onOpenEmergency: () => void
   onAskAssistant: (q: string) => void
+  /** Active pool id (multi-pool). When provided, dashboard data is scoped. */
+  activePoolId?: string | null
 }
 
 const CLARITY_COLORS: Record<string, string> = {
@@ -245,7 +247,7 @@ function weatherAlertIcon(type: string) {
   }
 }
 
-export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }: Props) {
+export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, activePoolId }: Props) {
   const t = useTranslations('modules.dashboard')
   const tWeather = useTranslations('weather')
   const tReminders = useTranslations('reminders')
@@ -285,8 +287,11 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
   const load = useCallback(async () => {
     setLoading(true)
     try {
+      const dashPath = activePoolId
+        ? `/api/dashboard?v2&poolId=${encodeURIComponent(activePoolId)}`
+        : '/api/dashboard?v2'
       const [dashRes, wxRes, remRes] = await Promise.all([
-        offlineApi.dashboard(),
+        apiGetCached<DashboardData>(dashPath, 'dashboard'),
         offlineApi.weather(),
         offlineApi.reminders(),
       ])
@@ -319,7 +324,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant }:
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [activePoolId])
 
   useEffect(() => {
     load()

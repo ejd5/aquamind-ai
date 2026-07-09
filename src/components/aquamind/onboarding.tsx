@@ -19,6 +19,11 @@ import { useTranslations } from 'next-intl'
 
 interface OnboardingProps {
   onDone: () => void
+  /** When true, the onboarding is used to ADD a new pool (not the first one).
+   *  Copy adapts: header reads "Ajouter une piscine", cancel button visible. */
+  addMode?: boolean
+  /** Shown only in addMode — aborts the flow. */
+  onCancel?: () => void
 }
 
 type WaterBodyType = 'pool' | 'spa' | 'both'
@@ -31,9 +36,10 @@ function isSpaFlow(type: WaterBodyType): boolean {
 // Régions climatiques supprimées : on utilise désormais la géolocalisation GPS
 // ou la saisie manuelle d'une ville (stockée dans profile.region).
 
-export function Onboarding({ onDone }: OnboardingProps) {
+export function Onboarding({ onDone, addMode, onCancel }: OnboardingProps) {
   const t = useTranslations('onboarding')
   const tc = useTranslations('common')
+  const tp = useTranslations('pool')
   const tspa = useTranslations('spa')
   const tspaData = useTranslations('spaData')
   const [step, setStep] = useState(1)
@@ -752,25 +758,40 @@ export function Onboarding({ onDone }: OnboardingProps) {
 
           {/* Actions */}
           <div className="mt-6 flex items-center justify-between gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={back}
-              disabled={step === 1 || saving}
-              className="text-muted-foreground"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              {tc('back')}
-            </Button>
+            {addMode && step === 1 ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onCancel}
+                disabled={saving}
+                className="text-muted-foreground"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                {tc('cancel')}
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={back}
+                disabled={step === 1 || saving}
+                className="text-muted-foreground"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                {tc('back')}
+              </Button>
+            )}
 
             <div className="flex items-center gap-2">
-              <button
-                onClick={skip}
-                disabled={saving}
-                className="text-xs font-medium text-muted-foreground underline-offset-2 hover:underline disabled:opacity-50"
-              >
-                {tc('skip')}
-              </button>
+              {!addMode && (
+                <button
+                  onClick={skip}
+                  disabled={saving}
+                  className="text-xs font-medium text-muted-foreground underline-offset-2 hover:underline disabled:opacity-50"
+                >
+                  {tc('skip')}
+                </button>
+              )}
 
               {step < 4 ? (
                 <Button
@@ -794,7 +815,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
                   ) : (
                     <>
                       <Check className="h-4 w-4" />
-                      {t('activate')}
+                      {addMode ? tp('addPoolActivate') : t('activate')}
                     </>
                   )}
                 </Button>
