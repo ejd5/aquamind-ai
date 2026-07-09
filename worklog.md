@@ -3877,3 +3877,145 @@ Stage Summary:
 - **Landing page non modifiée**: `landing-page.tsx`, `pricing.tsx`, `freemium.ts` intouchés — le CTA "Découvrir AQWELIA Pro" existant pointait déjà vers `/pro` et fonctionne maintenant. ✓
 - **Git**: commit `4cf6974` pushé sur `origin/main`. ✓
 - **Reste à faire (hors ce task)**: traduire le namespace `pro` dans les 5 autres locales (es/de/it/pt/nl), ajouter des vraies captures d'écran à /pro/demo quand l'UI Pro sera buildée, configurer `ADMIN_EMAILS` en production pour restreindre le GET, ajouter un envoi email de notification à l'équipe produit quand un lead est créé (Stripe webhook-style).
+
+---
+Task ID: P3-CARE
+Agent: sub-agent (general-purpose) — AQWELIA Care marketplace pages + Pro namespace translations
+Task: Créer les pages AQWELIA Care (/care, /care/catalogue) + API /api/care/notify + modèle Prisma CareNotification + i18n. En parallèle, traduire le namespace `pro` (créé par P2-PRO en FR+EN seulement) vers ES/DE/IT/PT/NL. La landing a un CTA "Découvrir AQWELIA Care" pointant vers /care (404 jusqu'à présent).
+
+Work Log:
+- Lu `worklog.md` (dernières sections: P1-LANDING, P1-TARIFS, P1-FIX, P4-MOBILE, P2-PRO) — projet Next.js 16 + React 19 + Prisma SQLite + next-intl 7 langues + NextAuth JWT. Pages /pro/* créées par P2-PRO, namespace `pro` présent seulement en FR + EN. Landing section `CarePreview` déjà en place avec CTA `/care`.
+- Inspecté `src/app/pro/layout.tsx`, `src/app/pro/page.tsx`, `src/app/pro/early-access/early-access-form.tsx`, `src/app/api/pro/early-access/route.ts`, `src/components/landing/sections/care-preview.tsx`, `src/lib/i18n-api.ts`, `src/i18n/config.ts`, `src/i18n/request.ts`, `src/middleware.ts`, `src/app/globals.css` (classe `.input-glass` déjà ajoutée par P2-PRO) — patterns à réutiliser pour Care.
+- Vérifié la liste exhaustive des clés `landing.carePreview*` existantes (eyebrow/title/subtitle/badge/4 steps/CTA) pour aligner le wording de la page /care avec la preview de la landing.
+
+### 1. Modèle Prisma CareNotification
+- Ajouté dans `prisma/schema.prisma` (lignes 338-347), section dédiée "AQWELIA CARE — Notifications de lancement":
+```prisma
+model CareNotification {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+```
+- Exécuté `bunx prisma db push` → SQLite DB synchronisée (16ms), Prisma Client v6.19.2 régénéré.
+- Vérifié l'accès au modèle via script Python (sqlite3 direct): table `CareNotification` bien créée avec les 3 colonnes attendues.
+
+### 2. Layout Care partagé (`src/app/care/layout.tsx`, 110 lignes)
+- Server component async (`getTranslations('care')`). Sticky header h-16 avec:
+  * Lien retour Accueil (icône ArrowLeft, label `ctaBackHome`)
+  * Brand block: logo `/logo-aqwelia-web.png` + wordmark "AQWELIA **Care**" (text-gold) + badge Coming soon (`badgeComingSoon`)
+  * Desktop nav (md:flex) 4 liens: #comment / #categories / /care/catalogue / #faq
+  * CTA Notify (gradient gold → primary) toujours visible à droite
+  * Mobile nav row (md:hidden) horizontalement scrollable
+- Footer: réutilise le composant `@/components/aquamind/footer` (déjà shared avec l'app et /pro/*).
+- Respecte `safe-area-top`. Même DA que la landing et /pro: bg-background, border-gold/20, backdrop-blur-2xl.
+- Patrone parfaitement le layout `/pro/layout.tsx` de P2-PRO.
+
+### 3. Page principale `/care` (`src/app/care/page.tsx`, 282 lignes)
+- Server component async avec `generateMetadata()` (SEO-friendly, title `care.metaTitle`).
+- **Hero**: badge Coming soon (`section-label`) + H1 `care.pageTitle` + sous-titre `care.pageSubtitle` + 2 CTAs (Notify gradient gold + Catalogue outline gold).
+- **Section How it works** (`id="comment"`): 4 cards glassmorphism (`bg-white/10 backdrop-blur-md border border-white/40`) avec:
+  * Big number en filigrane (text-gold/15) en haut à droite
+  * Icône gradient primary→gold (Search / Calculator / CheckCircle2 / ShoppingCart)
+  * Emoji + titre Playfair + texte descriptif
+  * Hairline gold au hover
+- **Section Categories** (`id="categories"`): grid 1/2/4 colonnes de 8 cards (mêmes classes glass que les steps), chaque card avec icône lucide (Beaker/Filter/Disc3/Wrench/Gauge/Snowflake/Droplets/Cpu) + emoji + titre + texte. Les 8 catégories du brief sont toutes présentes: bandelettes, cartouches, paniers/chaussettes skimmer, joints/raccords, doseurs/accessoires filtration, hivernage, correcteurs/consommables, petits capteurs.
+- **Section Not selling**: 3 cards (border-white/30 plus discret pour signaler l'exclusion) avec icône XCircle (muted) au lieu de gradient gold. Robots / Équipements lourds / Produits chimiques hors UE.
+- **Section FAQ preview** (`id="faq"`): 3 Q/A (Q1 dispo, Q3 robots, Q4 recommandation) en `<details>` natifs (accessible, pas de JS). Ligne contact mailto.
+- **Section Notify form** (`id="notifier"`): layout 2 colonnes (lg:grid-cols-2) — gauche = arguments + CTA secondaire catalogue, droite = `<NotifyForm />`. Background gradient via-background.
+
+### 4. Formulaire client Notify (`src/app/care/notify-form.tsx`, 142 lignes)
+- `'use client'`, hook `useTranslations('care')`. 1 champ email (input-glass) avec validation client (regex email).
+- États: `idle` → `submitting` (spinner Loader2) → `success` (carte succès avec Check gradient, `notifySuccess` + `notifySuccessDetail`) OU `error` (bandeau rouge avec AlertCircle).
+- Fetch POST `/api/care/notify` avec body JSON `{ email }`. Parse `data.error` côté serveur (déjà traduite par l'API via `translate()` + `pickLocale()`).
+- Patrone `early-access-form.tsx` de P2-PRO mais simplifié (1 champ au lieu de 6).
+
+### 5. API `/api/care/notify` (`src/app/api/care/notify/route.ts`, 175 lignes)
+- **POST** (public): valide JSON body, extrait + normalise `email` (lowercased + trim). Validations: email required (400), email regex (400). Vérifie l'unicité via `findUnique` → 409 si existe (`care.notifyErrorEmailExists`). Crée le record via `(db as any).careNotification.create` → 201 avec `{ id, email, createdAt }`. Catch P2002 (race condition) → 409. Catch générique → 500. Runtime nodejs.
+- **GET** (admin-only): `getServerSession(authOptions)` → 401 si pas de session. Si env var `ADMIN_EMAILS` (CSV) est définie, vérifie que `session.user.email` est dans la liste (sinon 403). Retourne `{ notifications, count }` triés par `createdAt desc`.
+- Toutes les erreurs traduites via `translate(locale, 'care.notifyError*', fallback)` côté serveur, en lisant la locale du header `accept-language` réécrit par le middleware (`pickLocale`).
+- Pattern `(db as any).careNotification` cohérent avec le reste du codebase (`(db as any).user`, `(db as any).earlyAccessLead`) pour résilience aux bundles client Prisma stale.
+
+### 6. Page `/care/catalogue` (`src/app/care/catalogue/page.tsx`, 130 lignes)
+- Server component async avec `generateMetadata`. Hero (eyebrow + H1 `catalogueTitle` + message `catalogueMessage` + CTA Notify gradient gold).
+- Grid 1/2/4 colonnes de 8 cards placeholder (mêmes 8 catégories que la page /care), chaque card avec:
+  * Icône lucide gradient primary→gold + emoji + titre
+  * Badge "Coming soon" en haut à droite (border-gold/40, bg-gold/10, Sparkles icône, `catalogueBadge`)
+  * Ligne placeholder (point gold/50 + "—") à la place du nombre de produits
+- CTA final "Retour à la page Care" (outline gold + ArrowLeft).
+
+### 7. Clés i18n (namespace `care`)
+- Ajouté un nouveau namespace top-level `care` dans `src/i18n/locales/fr.json` et `en.json` (87 clés chacun), puis étendu aux 5 autres locales (voir §9).
+- Couvre: metaTitle/Description, badgeComingSoon, nav* (6), cta* (5), pageTitle/Subtitle, howItWorks* (eyebrow/title/subtitle/4×step), categories* (eyebrow/title/subtitle/8×category), notSelling* (eyebrow/title/subtitle/3×notSelling), notify* (eyebrow/title/subtitle/formTitle/formSubtitle/email/placeholder/submit/submitting/success/successDetail/4 error), catalogue* (eyebrow/title/message/badge/ctaBack), faq* (eyebrow/title/contact/5 Q/A).
+- JSON validé via `JSON.parse` pour chaque locale.
+
+### 8. Tâche 2 — Traduction du namespace `pro` (P2-PRO avait laissé FR + EN seulement)
+- Écrit le script Python `scripts/i18n/translate-pro-namespace.py` (836 lignes) avec les 5 dictionnaires complets (ES/DE/IT/PT/NL), chacun avec 114 clés dict (137 valeurs string incluant les tableaux `soloFeatures`/`teamFeatures`/`fleetFeatures`/`enterpriseFeatures`).
+- Le script:
+  1. Définit les 5 dictionnaires inline (ES/DE/IT/PT/NL).
+  2. Vérifie que les flat keys (avec notation `[i]` pour les listes) matchent entre toutes les locales ET avec le namespace `pro` de `fr.json` (137 clés attendues).
+  3. Pour chaque locale, charge le JSON existant, écrase la clé `pro` avec le dictionnaire traduit, réécrit le fichier (indent=2, ensure_ascii=False, trailing newline).
+  4. Idempotent: re-run ne change rien (mêmes valeurs écrasées).
+- **Traductions clés** (comme demandé dans le brief):
+  * "Early Access" → "Acceso anticipado" (ES) / "Early Access" (DE, conservé) / "Accesso anticipato" (IT) / "Acesso antecipado" (PT) / "Vroege toegang" (NL)
+  * "Founders" → "Founders" (conservé dans tous, marque déposée)
+  * "Bassins" → "Piscinas" (ES/PT) / "Becken" (DE) / "Vasche" (IT) / "Zwembaden" (NL)
+  * "Techniciens" → "Técnicos" (ES/PT) / "Techniker" (DE) / "Tecnici" (IT) / "Technici" (NL)
+  * "Pisciniste" → "Instalador de piscinas" (ES) / "Poolprofi" (DE) / "Pistinista" (IT) / "Profissional de piscina" (PT) / "Zwembadspecialist" (NL)
+- Run du script: `python3 scripts/i18n/translate-pro-namespace.py` → 5 fichiers mis à jour, tous validés JSON.
+
+### 9. Bonus — Traduction du namespace `care` (ES/DE/IT/PT/NL)
+- Pendant les tests, j'ai remarqué qu'un user ES/DE/IT/PT/NL visitant `/care` voyait les clés brutes (`care.pageTitle` au lieu du titre traduit) car le namespace `care` n'existait que dans `fr.json` et `en.json`.
+- Même bug que P2-PRO avait laissé avec `pro` avant ma Tâche 2.
+- J'ai donc étendu le même pattern à `care`: écrit `scripts/i18n/translate-care-namespace.py` (535 lignes) avec les 5 dictionnaires (87 clés chacun) et exécuté. Les 5 locales ont maintenant `care` traduit.
+- Vérifié: `/care` H1 s'affiche correctement dans les 7 locales (FR "Le bon produit, au bon moment, dans la bonne quantité." / EN "The right product, at the right time, in the right amount." / ES "El producto adecuado, en el momento adecuado, en la cantidad adecuada." / DE "Das richtige Produkt, zur richtigen Zeit, in der richtigen Menge." / IT "Il prodotto giusto, al momento giusto, nella giusta quantità." / PT "O produto certo, no momento certo, na quantidade certa." / NL "Het juiste product, op het juiste moment, in de juiste hoeveelheid.").
+- Vérifié API: `POST /api/care/notify` avec email invalide retourne le message traduit dans la locale (ex: `[es] "Email inválido"`, `[de] "Ungültige E-Mail"`, `[it] "Email non valida"`, `[pt] "Email inválido"`, `[nl] "Ongeldig e-mailadres"`).
+
+### 10. Vérifications
+- **Lint** (`bun run lint`): PASS, exit 0, 0 erreur, 0 warning. ✓
+- **TypeScript** (`bunx tsc --noEmit`): 2 erreurs seulement, **les deux dans `skills/`** (third-party skill packages `image-edit/scripts/image-edit.ts` et `stock-analysis-skill/src/analyzer.ts`), aucune dans `src/`. Cohérent avec l'état antérieur (P2-PRO, P4-MOBILE). ✓
+- **Pré-commit hook** (i18n French hardcoded check): PASS — `"Aucune chaîne française codée en dur détectée."`. Toutes les strings UI passent par `useTranslations`/`getTranslations`/`translate`. ✓
+- **Dev server** (start + curl):
+  * `GET /care` → HTTP 200 (toutes les 7 locales testées, H1 traduit)
+  * `GET /care/catalogue` → HTTP 200 (toutes les 7 locales testées, H1 traduit)
+  * `POST /api/care/notify` (FR locale, body valide) → HTTP 201, record créé avec id/email/createdAt
+  * `POST` email dupliqué → HTTP 409 `"Cet email est déjà inscrit. On vous préviendra au lancement."`
+  * `POST` email invalide → HTTP 400 `"Email invalide"` (FR) / `"Invalid email"` (EN) / `"Email inválido"` (ES) / `"Ungültige E-Mail"` (DE) / `"Email non valida"` (IT) / `"Email inválido"` (PT) / `"Ongeldig e-mailadres"` (NL) — i18n serveur fonctionne pour les 7 locales
+  * `POST` email manquant → HTTP 400 `"Email requis"`
+  * `GET /api/care/notify` sans session → HTTP 401 (admin gate OK)
+- **Clean-up DB**: supprimé tous les records de test (`DELETE FROM CareNotification`).
+
+### 11. Git
+- Commit `f947875` "feat: AQWELIA Care pages + translate pro namespace to 5 languages" — 15 fichiers, 3601 insertions:
+  * `prisma/schema.prisma` (modifié: +11 lignes CareNotification)
+  * `src/i18n/locales/fr.json` (modifié: +89 lignes namespace care)
+  * `src/i18n/locales/en.json` (modifié: +89 lignes namespace care)
+  * `src/i18n/locales/es.json` (modifié: +236 lignes = 147 pro + 89 care)
+  * `src/i18n/locales/de.json` (modifié: +236 lignes = 147 pro + 89 care)
+  * `src/i18n/locales/it.json` (modifié: +236 lignes = 147 pro + 89 care)
+  * `src/i18n/locales/pt.json` (modifié: +236 lignes = 147 pro + 89 care)
+  * `src/i18n/locales/nl.json` (modifié: +236 lignes = 147 pro + 89 care)
+  * `src/app/care/layout.tsx` (nouveau, 110 lignes)
+  * `src/app/care/page.tsx` (nouveau, 282 lignes)
+  * `src/app/care/notify-form.tsx` (nouveau, 142 lignes)
+  * `src/app/care/catalogue/page.tsx` (nouveau, 130 lignes)
+  * `src/app/api/care/notify/route.ts` (nouveau, 175 lignes)
+  * `scripts/i18n/translate-pro-namespace.py` (nouveau, 836 lignes — réutilisable et idempotent)
+  * `scripts/i18n/translate-care-namespace.py` (nouveau, 535 lignes — réutilisable et idempotent)
+- Push `origin/main` (f3013a5 → f947875): ✓ succès.
+
+Stage Summary:
+- **2 pages Care créées** (/care, /care/catalogue) + layout partagé, toutes server components async avec `generateMetadata` SEO-friendly et traductions next-intl via `getTranslations('care')`. Même DA que la landing et /pro/* (glassmorphism `bg-white/10 backdrop-blur-md border border-white/40`, gold accents, font-display Playfair, gradients gold→primary, safe-area-top).
+- **API `/api/care/notify`** créé: POST public (validations email+regex, unicité email, P2002 race-safe), GET admin-only (`getServerSession` + `ADMIN_EMAILS` env var optionnelle). Toutes les erreurs traduites côté serveur via `translate(locale, 'care.notifyError*', fallback)` + `pickLocale(req)`.
+- **Form client Notify** (`notify-form.tsx`): 1 champ email, validation miroir API, 4 états (idle/submitting/success/error), spinner Loader2, carte succès avec Check gradient, bandeau erreur rouge avec AlertCircle.
+- **Modèle Prisma `CareNotification`** ajouté (3 champs: id/email unique/createdAt) et DB SQLite synchronisée via `bunx prisma db push`. Client Prisma régénéré.
+- **Page /care** avec 4 sections principales: Hero (badge + titre + 2 CTAs), How it works (4 étapes glass cards avec big number + emoji + icône gradient), Categories (8 cards glass avec icône lucide + emoji + texte), Not selling (3 cards plus discrètes avec XCircle muted), FAQ preview (3 Q/A en `<details>` natifs), Notify form (layout 2 colonnes, arguments + form).
+- **Page /care/catalogue** avec hero + 8 cards placeholder (badge "Coming soon" sur chaque) + CTA back. Aucun produit réel, juste les catégories en attente.
+- **Clés i18n `care`** (87 clés): nouveau namespace top-level ajouté dans les 7 locales (FR + EN authored, puis traduit vers ES/DE/IT/PT/NL via `scripts/i18n/translate-care-namespace.py`).
+- **Clés i18n `pro` traduites** (114 clés dict, 137 valeurs string): 5 nouvelles locales (ES/DE/IT/PT/NL) complétées via `scripts/i18n/translate-pro-namespace.py`. Le script valide la structure (flat keys avec notation `[i]` pour les listes) contre le namespace FR avant d'écrire.
+- **2 scripts Python réutilisables et idempotents** dans `scripts/i18n/`: `translate-pro-namespace.py` (836 lignes) et `translate-care-namespace.py` (535 lignes). Re-run ne change rien (mêmes valeurs écrasées).
+- **Lint**: PASS. **TypeScript**: 2 erreurs pré-existantes dans `skills/` (hors scope). **Pré-commit hook i18n**: PASS. ✓
+- **Tests end-to-end** dev server: 2 pages 200 (FR + EN + ES + DE + IT + PT + NL), API POST 201/409/400, GET 401 (admin gate). i18n serveur validé pour les 7 locales (API errors traduites). ✓
+- **Landing page non modifiée**: `landing-page.tsx`, `pricing.tsx`, `freemium.ts`, `pro/page.tsx` intouchés — le CTA "Découvrir AQWELIA Care" existant pointait déjà vers `/care` et fonctionne maintenant. ✓
+- **Git**: commit `f947875` pushé sur `origin/main`. ✓
+- **Reste à faire (hors ce task)**: ajouter de vrais produits au catalogue quand la marketplace ouvrira, configurer `ADMIN_EMAILS` en production pour restreindre le GET, ajouter envoi email de notification à l'équipe produit quand une CareNotification est créée, intégrer une marketplace payment provider (Stripe) pour le panier.
