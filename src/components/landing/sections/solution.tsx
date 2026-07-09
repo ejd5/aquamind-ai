@@ -54,20 +54,25 @@ export function Solution() {
         aria-hidden="true"
       />
 
-      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
-        <SectionHeading
-          eyebrow={t('solutionEyebrow')}
-          title={<>{t('solutionTitle')}</>}
-        />
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+        {/* Heading on left, steps on right — so image shows the woman on left */}
+        <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-end">
+          {/* Heading — left on desktop */}
+          <div className="lg:w-2/5 lg:pt-8">
+            <SectionHeading
+              eyebrow={t('solutionEyebrow')}
+              title={<>{t('solutionTitle')}</>}
+            />
+          </div>
 
-        {/* Steps */}
-        <motion.div
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-80px' }}
-          className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-3"
-        >
+          {/* Steps — aligned right */}
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-80px' }}
+            className="grid grid-cols-1 gap-5 md:grid-cols-3 lg:w-3/5"
+          >
           {STEPS.map((step) => {
             const Icon = step.icon
             return (
@@ -91,7 +96,8 @@ export function Solution() {
               </motion.div>
             )
           })}
-        </motion.div>
+          </motion.div>
+        </div>
 
         {/* Differentiator card — centered, narrower, glassmorphism */}
         <Reveal delay={0.15} className="mt-8">
