@@ -57,12 +57,18 @@ export function Solution() {
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
         {/* Heading on left, steps on right — so image shows the woman on left */}
         <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-end">
-          {/* Heading — left on desktop */}
-          <div className="lg:w-2/5 lg:pt-8">
-            <SectionHeading
-              eyebrow={t('solutionEyebrow')}
-              title={<>{t('solutionTitle')}</>}
-            />
+          {/* Heading — left on desktop, moved up, white shadow for readability */}
+          <div className="lg:w-2/5 lg:-mt-4">
+            <Reveal>
+              <span className="section-label inline-block [text-shadow:_0_1px_2px_rgb(255_255_255),_0_-1px_2px_rgb(255_255_255),_1px_0_2px_rgb(255_255_255),_-1px_0_2px_rgb(255_255_255)]">
+                {t('solutionEyebrow')}
+              </span>
+            </Reveal>
+            <Reveal delay={0.05}>
+              <h2 className="mt-3 font-display text-2xl font-bold leading-tight tracking-tight text-foreground [text-shadow:_0_1px_3px_rgb(255_255_255),_0_-1px_3px_rgb(255_255_255),_1px_0_3px_rgb(255_255_255),_-1px_0_3px_rgb(255_255_255)] sm:text-3xl">
+                {t('solutionTitle')}
+              </h2>
+            </Reveal>
           </div>
 
           {/* Steps — aligned right */}
