@@ -4633,3 +4633,64 @@ Stage Summary:
   * Tester le formulaire /contact end-to-end en dev (POST + vérifier ContactMessage.create).
   * Créer un back-office admin minimal pour lister les ContactMessage (route GET déjà prête — `/api/contact` avec ADMIN_EMAILS gate). Page à créer dans `/admin/`.
   * Configurer `ADMIN_EMAILS` env var en prod (comma-separated list of admin emails).
+
+---
+Task ID: P6-PRO-API
+Agent: sub-agent (general-purpose) — AQWELIA Pro MVP DB models + API
+Date: 2025-07-09
+
+Work Log:
+- Lu `/home/z/my-project/worklog.md` (dernières sections P5-PAGES-RETRY) + `prisma/schema.prisma` (387 lignes, 17 modèles existants).
+- Identifié les conventions: `runtime = 'nodejs'`, `getServerSession(authOptions)` + `pickLocale/translate` pour i18n erreurs, `db` singleton depuis `@/lib/db`, `Request` pour GET / `NextRequest` pour body methods, défensive `(db as any)` non requis quand `prisma generate` est à jour.
+
+1) Modèles Prisma (4 nouveaux + 1 back-relation):
+- `ProClient` — client IRL du pisciniste (proUserId FK → User, firstName/lastName/email/phone/address/city/zipCode/notes). Indexes: proUserId, lastName, firstName.
+- `ProPool` — bassin (name, type=pool|spa|both, volume, unit, shape, surface, treatmentType, saltSystem, filterType, address, notes). Indexes: proClientId. Relations: client (Cascade), interventions (SetNull), waterTests (Cascade).
+- `ProWaterTest` — analyse d'eau (ph, freeChlorine, totalChlorine, combinedChlorine, alkalinity, calciumHardness, cyanuricAcid, salt, phosphates, temperature, clearWaterIndex, notes, testedAt). Indexes: proPoolId, testedAt.
+- `ProIntervention` — visite pro (type=maintenance|repair|opening|closing|emergency, status=scheduled|in_progress|completed|cancelled, scheduledAt, completedAt, duration, notes, photos/actions/productsUsed=JSON string, technicianId). Indexes: proClientId, proPoolId, status, scheduledAt, technicianId.
+- `User.proClients ProClient[]` back-relation ajoutée.
+- Tous les `onDelete: Cascade` pour préserver l'isolation des données d'un pro (supprimer un pro → supprime ses clients en cascade).
+
+2) `bunx prisma db push`: DB SQLite synchronisée en 71ms, Prisma Client v6.19.2 régénéré (4 nouveaux delegates: `proClient`, `proPool`, `proWaterTest`, `proIntervention` confirmés dans `node_modules/.prisma/client/index.d.ts`).
+
+3) API Routes (8 fichiers, ~1498 lignes):
+- `/api/pro/clients/route.ts` — GET (search `q` sur firstName/lastName/email/phone/city + pagination page/pageSize) + POST (create avec validation email regex, firstName/lastName required).
+- `/api/pro/clients/[id]/route.ts` — GET (avec pools + interventions récentes + _count) + PATCH + DELETE (cascade pools/waterTests, interventions cascade-deleted from client).
+- `/api/pro/pools/route.ts` — POST (vérifie proClientId appartient au pro, type whitelist pool|spa|both).
+- `/api/pro/pools/[id]/route.ts` — GET (avec 20 derniers waterTests + 20 dernières interventions + client summary) + PATCH + DELETE (ProWaterTest cascade, ProIntervention.proPoolId SetNull pour préserver l'historique).
+- `/api/pro/water-tests/route.ts` — POST (tous les champs chimiques optionnels via helper toFloat, testedAt default now + ISO override).
+- `/api/pro/interventions/route.ts` — GET (filtres: clientId, poolId, status, type, technicianId, from, to + pagination) + POST (scheduledAt required, completedAt auto-set si status=completed, JSON arrays stringifiés serveur-side via toJsonArray helper).
+- `/api/pro/interventions/[id]/route.ts` — GET (avec client + pool) + PATCH (status transition auto-completedAt, photos/actions/productsUsed acceptent array ou pre-stringified, move-to-pool vérifie appartenance client) + DELETE.
+- `/api/pro/dashboard/route.ts` — GET agrégats: clientsCount, poolsCount, interventionsCount, waterTestsCount, interventionsThisWeek (count + completedCount + totalDurationMinutes via getWeekBounds ISO Monday→Sunday), interventionsUpcoming (5 scheduled futurs avec client+pool), interventionsOverdueCount (scheduled passés), recentInterventions (10), recentWaterTests (10 avec pool+client), poolsWithoutRecentTest (pools sans test dans les 14 derniers jours, calcul two-step pour contourner l'absence de "not exists" relationnel), weekStart/weekEnd ISO, generatedAt.
+
+4) Sécurité (toutes routes):
+- `getServerSession(authOptions)` au début de chaque handler.
+- 401 si `!session?.user?.id` avec message i18n.
+- Ownership check systématique: `findFirst({ where: { id, proUserId: session.user.id } })` ou `findFirst({ where: { id, client: { proUserId: session.user.id } } })` (filtre relationnel Prisma).
+- 404 (jamais 403) sur ressource étrangère — ne leak pas l'existence d'IDs d'autres pros.
+- `runtime = 'nodejs'` sur toutes les routes (requis pour Prisma + crypto).
+
+5) Tests smoke (dev server):
+- Démarré `bun run dev` (Next.js 16.1.3 Turbopack, Ready in 3.2s).
+- 11 requêtes curl sur les 8 endpoints (GET/POST/PATCH/DELETE) → tous HTTP 401 sans session ✅ (auth check fonctionnel, routes compilées sans erreur).
+- Log dev propre, aucun warning/erreur sur les nouvelles routes.
+
+6) Qualité:
+- `bun run lint` → PASS (0 erreur, 0 warning).
+- `bunx tsc --noEmit` → 0 nouvelle erreur dans `src/` (1 pré-existante dans `src/i18n/routing.ts` sur `defineRouting` de next-intl, 2 pré-existantes dans `skills/` third-party — aucune liée à P6-PRO-API).
+
+7) Push GitHub:
+- Commit `fff09a5` sur `origin/main` (HEAD: 302542e → fff09a5).
+- 9 fichiers: 1 schema.prisma modifié + 8 nouveaux route.ts.
+
+Stage Summary:
+- **4 modèles Prisma ajoutés** (ProClient, ProPool, ProWaterTest, ProIntervention) + User.proClients back-relation, DB synchronisée, Prisma Client régénéré.
+- **8 routes API** créées (15 verb handlers au total) couvrant tout le CRUD Pro MVP + dashboard statistiques. Toutes session-guardées et scoped à `proUserId = session.user.id`.
+- **Lint PASS** (0/0). **tsc**: 0 nouvelle erreur. **Smoke test**: 11/11 endpoints répondent 401 sans session ✅.
+- **Push**: ✓ `302542e..fff09a5` sur `origin/main`.
+- **Reste à faire (hors ce task)**:
+  * Créer les pages UI Pro (`/pro/app`, `/pro/app/clients/[id]`, etc.) qui consomment ces APIs.
+  * Brancher le calcul automatique du `clearWaterIndex` (lib `@/lib/pool/water-balance` existe déjà pour PoolProfile/WaterTest — adapter pour ProWaterTest) au POST `/api/pro/water-tests`.
+  * Ajouter les i18n keys `pro.errors.*` dans les 7 locales (`fr/en/es/de/it/pt/nl`) — actuellement les fallbacks français fonctionnent mais ne sont pas traduits.
+  * Endpoint `/api/pro/pools` GET (flat list de tous les bassins du pro) si besoin — pour l'instant on passe par `/api/pro/clients/[id]`.
+  * Tests d'intégration authentifiés (créer un ProClient via POST puis vérifier le GET) — nécessite un helper de session de test.
