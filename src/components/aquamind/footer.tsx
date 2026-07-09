@@ -32,7 +32,7 @@ export function Footer() {
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center gap-2.5">
             <div className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-md shadow-primary/30">
-              <img src="/icon-aqwelia-48.png" alt="AQWELIA" className="h-10 w-10 object-contain" />
+              <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-12 w-auto object-contain" />
               <Sparkles className="absolute -right-1 -top-1 h-3 w-3 text-gold" />
             </div>
             <div className="text-sm">

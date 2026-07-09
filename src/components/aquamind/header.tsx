@@ -46,9 +46,9 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
         <div className="flex items-center gap-2.5">
           {/* AQWELIA logo — standalone, no frame, no background */}
           <img
-            src="/icon-aqwelia-48.png"
+            src="/logo-aqwelia-web.png"
             alt="AQWELIA"
-            className="h-12 w-12 object-contain"
+            className="h-12 w-auto object-contain"
           />
 
           <div className="leading-tight">

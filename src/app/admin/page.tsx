@@ -67,7 +67,7 @@ export default function AdminPage() {
           <div className="mb-6 text-center">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl">
               <img
-                src="/icon-aqwelia-48.png"
+                src="/logo-aqwelia-web.png"
                 alt="AQWELIA"
                 className="h-12 w-12 object-cover"
               />
@@ -121,7 +121,7 @@ export default function AdminPage() {
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <img
-              src="/icon-aqwelia-48.png"
+              src="/logo-aqwelia-web.png"
               alt=""
               className="h-8 w-8 rounded-lg"
             />
