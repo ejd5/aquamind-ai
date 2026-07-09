@@ -38,11 +38,11 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/70 backdrop-blur-2xl">
+    <header className="sticky top-0 z-50 w-full border-b border-gold/20 bg-background/40 backdrop-blur-xl">
       {/* Subtle gold line at the bottom */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
 
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-24 max-w-7xl items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-2.5">
           {/* AQWELIA logo — standalone, no frame, no background */}
           <img

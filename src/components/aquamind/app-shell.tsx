@@ -175,7 +175,7 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
 
       <div className="mx-auto flex w-full max-w-7xl flex-1 gap-0 px-0 sm:px-6">
         {/* Desktop sidebar */}
-        <aside className="custom-scroll sticky top-16 hidden h-[calc(100vh-4rem)] w-56 shrink-0 overflow-y-auto border-r border-border/40 py-6 pr-4 md:block">
+        <aside className="custom-scroll sticky top-24 hidden h-[calc(100vh-6rem)] w-56 shrink-0 overflow-y-auto border-r border-border/40 py-6 pr-4 md:block">
           <nav className="space-y-1">
             {NAV.map((item) => {
               const active = activeTab === item.id
