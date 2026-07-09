@@ -69,6 +69,36 @@ export async function POST(req: NextRequest) {
               active: true,
             },
           })
+
+          // Best-effort: send the subscription-confirmation email.
+          // Fire-and-forget so a slow SMTP server never blocks the webhook
+          // (Stripe would retry on 500, which would re-create the subscription
+          // record — so we MUST return 200 even if the email fails).
+          void (async () => {
+            try {
+              const { sendSubscriptionConfirmationEmail } = await import('@/lib/email')
+              const user = await (db as any).user.findUnique({
+                where: { id: userId },
+                select: { email: true, name: true },
+              })
+              if (user?.email) {
+                const duration = productId?.includes('yearly')
+                  ? 'year'
+                  : productId?.includes('seasonal')
+                  ? 'halfyear'
+                  : productId?.includes('weekly')
+                  ? 'week'
+                  : 'month'
+                await sendSubscriptionConfirmationEmail(user.email, {
+                  userName: user.name || undefined,
+                  plan,
+                  duration,
+                })
+              }
+            } catch (err) {
+              console.error('[stripe.webhook] subscription confirmation email failed:', err)
+            }
+          })()
         }
         break
       }
@@ -116,8 +146,62 @@ export async function POST(req: NextRequest) {
         break
       }
 
+      case 'customer.subscription.trial_will_end': {
+        // Stripe fires this event 3 days before the trial ends (default).
+        // Use it to:
+        //   1. Refresh the subscription's expiry date from the trial_end timestamp.
+        //   2. Trigger a "trial ending soon" notification email to the user
+        //      (best-effort — if email is not configured, the event is silently
+        //      ignored so the webhook still returns 200).
+        const sub = event.data.object
+        const userId = sub.metadata?.userId
+        if (userId) {
+          try {
+            // Refresh expiry (defensive — the subscription may already be set,
+            // but the trial_end → period_end transition is the right moment to
+            // re-sync).
+            await db.subscription.updateMany({
+              where: { userId, active: true },
+              data: {
+                expiresAt: sub.current_period_end
+                  ? new Date(sub.current_period_end * 1000)
+                  : null,
+              },
+            })
+          } catch (err) {
+            // Don't fail the webhook over a DB write error — log + continue.
+            console.error('[stripe.webhook] trial_will_end DB update failed:', err)
+          }
+
+          // Best-effort trial-ending notification email.
+          // Imported lazily so the webhook does not pay the email-module import
+          // cost when SMTP is not configured (dev / CI).
+          try {
+            const { sendTrialEndingEmail } = await import('@/lib/email')
+            // Fetch the user's email from the DB.
+            const user = await (db as any).user.findUnique({
+              where: { id: userId },
+              select: { email: true, name: true },
+            })
+            if (user?.email) {
+              const trialEnd = sub.trial_end ? new Date(sub.trial_end * 1000) : null
+              await sendTrialEndingEmail(user.email, {
+                userName: user.name || undefined,
+                plan: (sub.metadata?.plan as 'oasis' | 'wellness') || 'oasis',
+                trialEnd,
+              })
+            }
+          } catch (err) {
+            // Email failures must NOT fail the webhook — Stripe would retry
+            // the event indefinitely and re-send the email on every retry.
+            console.error('[stripe.webhook] trial_will_end email send failed:', err)
+          }
+        }
+        break
+      }
+
       default:
-        // Ignore other event types — only the 4 above are subscription-relevant.
+        // Ignore other event types — only the 5 above are subscription-relevant.
         break
     }
 

@@ -169,6 +169,15 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">{planTagline}</p>
 
+                    {/* 7-day free trial badge — hidden on the weekly "Pass urgence"
+                        duration (which has no trial). */}
+                    {duration !== 'week' && (
+                      <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-gold">
+                        <Sparkles className="h-3 w-3" aria-hidden="true" />
+                        {tPlans('trialBadge')}
+                      </div>
+                    )}
+
                     {/* Price — crossfade */}
                     <div className="mt-5 flex items-baseline gap-1">
                       <AnimatePresence mode="wait">

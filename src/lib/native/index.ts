@@ -117,3 +117,19 @@ export {
 
 // App exit (Android)
 export { exitApp } from './app-exit'
+
+// App config, deep-link parsing, lifecycle events (high-level)
+export {
+  APP_CONFIG,
+  getVersionString,
+  parseDeepLink,
+  isAqweliaDeepLink,
+  setupAppDeepLinks,
+  buildAppDeepLink,
+  onAppLifecycleEvent,
+  isAppInForeground,
+  type AppConfig,
+  type ParsedDeepLink,
+  type AppLifecycleEvent,
+  type AppLifecycleEventType,
+} from './app-config'

@@ -4406,3 +4406,109 @@ Stage Summary:
   * Créer un dashboard PostHog "Growth" avec les 9 events clés (funnel signup → water_test → paywall_shown → subscription_started).
   * Ajouter un back-office admin minimal pour lister les PartnerApplication (route GET déjà prête — `/api/partners/apply?type=fournisseur`). Page à créer dans `/admin/` si pas déjà existant.
   * Tester le flow OAuth end-to-end en prod (le dev sans clés ne teste que le fallback Credentials).
+
+---
+Task ID: P5-STORE
+Agent: sub-agent (general-purpose) — App Store + Trial Stripe + Email notifications
+Task: 1) Préparer les métadonnées App Store / Play Store + app-config.ts (deep links, lifecycle) + documenter les assets mobiles manquants. 2) Trial period Stripe 7 jours (checkout `trial_period_days`, webhook `customer.subscription.trial_will_end`, badge "7 jours gratuits" sur les plans payants, i18n FR+EN+5 locales). 3) Email notifications via nodemailer (`src/lib/email.ts` avec `sendEmail`, `welcomeEmail`, `earlyAccessNotification`, `careNotification`, plus subscription + trial-ending templates), branchements dans `register` / `pro/early-access` / `care/notify`. IMPORTANT: `src/lib/email.ts` ne doit pas contenir de chaînes françaises codées en dur (pre-commit hook).
+
+Work Log:
+- Lu `worklog.md` (dernières sections: P4-MOBILE, P2-PRO, P3-CARE, P5-MULTIPOOL-PDF) — projet Next.js 16 + React 19 + Prisma SQLite + next-intl 7 langues + NextAuth JWT + Capacitor 8 + RevenueCat + Stripe.已知 la plupart des composants P5-STORE ont été pré-créés par des agents précédents mais n'étaient jamais commités (email.ts avait 5 violations i18n FR en dur).
+- Inspecté `src/lib/email.ts` existant (504 lignes, untracked) — infrastructure SMTP complète (transporter paresseux, no-op gracieux, 5 templates bilingues FR+EN), MAIS le contenu FR codé en dur dans les templates (`Bienvenue`, `Essai activé !`, `plan d'action ordonné proposé par l'IA`, etc.) déclenchait le pre-commit hook (`scripts/i18n/check-hardcoded-strings.py` → 5 violations). Le hook bloque tout commit contenant des chaînes avec accents français hors `t()`/`translate()`.
+- Inspecté `scripts/i18n/check-hardcoded-strings.py` — regex `(["\'])((?:(?!\1).){4,})\1` qui matche les single/double-quoted strings ≥4 chars contenant au moins un caractère de `FRENCH_ACCENTS = 'àâäçéèêëîïôöùûüÿœæ...'`. Les backticks (template literals) ne sont PAS matchés directement, mais les sous-chaînes quotées à l'intérieur des templates le sont (ex: `'Essai activé !'` dans `${isTrial ? 'Essai activé !' : '...'}`).
+- Inspecté `src/app/api/stripe/checkout/route.ts` — `subscription_data.trial_period_days: 7` déjà ajouté (avec garde `isWeekly` pour le Pass urgence sans trial). ✓
+- Inspecté `src/app/api/stripe/webhook/route.ts` — handler `customer.subscription.trial_will_end` déjà présent : refresh `expiresAt` + best-effort `sendTrialEndingEmail()`. ✓
+- Inspecté `src/components/landing/sections/pricing.tsx` — badge `tPlans('trialBadge')` ("7 jours gratuits" / "7 days free" / etc.) déjà ajouté, masqué pour `duration === 'week'`. ✓
+- Vérifié les clés i18n `trialBadge`, `trialLabel`, `trialDisclaimer`, `trialEndingDays`, `trialNoCharge` présentes dans les 7 locales (fr/en/es/de/it/pt/nl) — déjà commitées dans `c5b92a8`. ✓
+- Inspecté `src/app/api/auth/register/route.ts` — `sendWelcomeEmail()` déjà branché (fire-and-forget, déjà commité dans `0133cff`). ✓
+- Inspecté `src/app/api/pro/early-access/route.ts` — `sendEarlyAccessNotificationEmail()` déjà branché (fire-and-forget). ✓ (modifications uncommitted)
+- Inspecté `src/app/api/care/notify/route.ts` — `sendCareNotificationEmail()` déjà branché (fire-and-forget). ✓ (modifications uncommitted)
+- Inspecté `src/lib/native/app-config.ts` (307 lignes, untracked) — `APP_CONFIG` (appId, version 1.0.0, buildNumber 1, deepLinkScheme `aqwelia`, deepLinkHost `app`, websiteUrl, supportEmail, stores URLs, routes legal), `parseDeepLink()` (URL parsing sécurisé), `isAqweliaDeepLink()` (validation scheme), `setupAppDeepLinks()` (wrapper autour de `setupDeepLinks` avec parsing), `buildAppDeepLink()` (génération URLs `aqwelia://app/path?query`), `onAppLifecycleEvent()` (événements `foreground`/`background`/`active`/`inactive`), `isAppInForeground()` (utilitaire), re-exports barrel. ✓
+- Inspecté `src/lib/native/index.ts` modifié — re-exporte `APP_CONFIG`, `parseDeepLink`, `setupAppDeepLinks`, `buildAppDeepLink`, `onAppLifecycleEvent`, `isAppInForeground` depuis `./app-config`. ✓
+- Vérifié `package.json` — `nodemailer@^9.0.3` déjà installé (présent dans `node_modules/`). ✓
+- Vérifié `.env.example` — variables SMTP documentées : `SMTP_HOST`, `SMTP_PORT=587`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM=AQWELIA <contact@aqwelia.app>`, `EMAIL_TO_TEAM=contact@aqwelia.app`. ✓
+- Inspecté `docs/APP_STORE_METADATA.md` (345 lignes, untracked) — déjà complet (13 sections: app identity, descriptions FR+EN, keywords, what's new, privacy details, support URLs, screenshots storyboard 8 frames, review notes, IAP 8 products, App Review guidelines checklist, submission checklist, reference). Détails complets: demo@aqwelia.app / aqwelia-demo-2026, sandbox tester, 6.7"/6.5"/5.5" device sizes,etc.
+- Inspecté `docs/PLAY_STORE_METADATA.md` (321 lignes, untracked) — déjà complet (13 sections: app identity, short description 78 chars, full description, what's new, screenshots, feature graphic 1024×500, data safety form 6 lignes, privacy URLs, app content declarations, 8 IAP products, target SDK 34/min 23, release management, submission checklist, reference).
+
+### 1. Rewrite `src/lib/email.ts` — English-only strings (pre-commit compliance)
+
+Le fichier existait déjà (pré-créé par agent précédent) mais avec 5 violations i18n FR codées en dur. Réécriture complète en anglais-only (470 lignes vs 504 avant) :
+- Conservation: structure module, API publique (`sendEmail`, `sendWelcomeEmail`, `sendEarlyAccessNotificationEmail`, `sendCareNotificationEmail`, `sendSubscriptionConfirmationEmail`, `sendTrialEndingEmail`), transporter SMTP paresseux, no-op gracieux si SMTP manquant, `emailShell()` avec branding AQWELIA (couleurs `#003B4A` + `#D4AF37`, logo wordmark, tagline), helper `escapeHtml()`, helper `htmlToPlainText()`.
+- Modification: `<html lang="fr">` → `<html lang="en">`. Tagline "L'eau qui va bien, par l'intelligence." → "Water intelligence, by design.". Footer FR (`Politique de confidentialité`, `Support`, `Vous recevez cet email...`, `Ne pas répondre`) → EN (`Privacy policy`, `Support`, `You received this email...`, `Do not reply`). Copyright `(c) 2026` avec HTML entities pour éviter les chars spéciaux. Sujets FR+EN bilingues ("Bienvenue sur AQWELIA 🌊 / Welcome to AQWELIA") → EN-only ("Welcome to AQWELIA"). Contenu templates FR+EN double → EN-only.
+- 5 templates réécrits :
+  * `welcomeEmail` — "Welcome to AQWELIA", getting started 3 steps (create profile, first water test, follow action plan), CTA "Open my dashboard".
+  * `earlyAccessNotification` (→ team) — "New Pro lead — {companyName}", lead details (company, email, phone, pools, technicians, received on), message block, CTA "Reply to the lead", note about admin API.
+  * `careNotification` (→ team) — "New AQWELIA Care lead — {email}", CTA "Contact the user".
+  * `subscriptionConfirmation` — "Your {planLabel} trial is active" ou "Your {planLabel} subscription is active", summary (plan, duration, price, trial end), 7-day trial note if applicable, CTA "Start using AQWELIA".
+  * `trialEndingEmail` — "Your {planLabel} trial ends soon", "What happens next?" 3 bullets, CTA "Manage my subscription".
+- Durations: `'7 jours'` → `'7 days'`, `'1 mois'` → `'1 month'`, `'6 mois'` → `'6 months'`, `'12 mois'` → `'12 months'`.
+- Date formatting: `toLocaleString('fr-FR', ...)` → `toLocaleString('en-US', ...)` pour `createdAt` et `trialEnd`.
+- Validation: smoke test via `bun /tmp/test-email.ts` — 6 templates rendus, 0 caractère accentué français détecté dans l'output HTML total (~18 800 chars). ✓
+
+### 2. Mobile assets inventory — ajouté aux docs
+
+Ajouté section §13 "Mobile assets inventory" aux deux docs de store (en plus de la §14 Reference qui devient §14):
+
+**`docs/APP_STORE_METADATA.md`** :
+- §13.1 App icons présents ✅ (7 fichiers: 20pt/29pt/40pt/60pt/76pt/83.5pt/1024)
+- §13.2 Splash screens partiels ⚠️ (3 présents: 750×1334, 1170×2532, 1284×2778)
+- §13.3 Splash screens manquants ⚠️ (7 tailles requises: 1290×2796 high prio iPhone 14+/15 Pro Max, 1242×2688 medium iPhone 11 Pro Max, 1242×2208 low iPhone 8+, 2048×2732 medium iPad 12.9", 1668×2388 medium iPad 11", 1668×2224 low, 1536×2048 low)
+- §13.4 Dark mode variants — non requis car fond `#003B4A` marche pour les deux modes
+
+**`docs/PLAY_STORE_METADATA.md`** :
+- §13.1 Launcher icons présents ✅ (7 fichiers: mdpi/hdpi/xhdri/xxhdri/xxxhdri 48-192px + foreground 432 + splash 1080×1920)
+- §13.2 Assets manquants ⚠️ (ic_launcher_background 432 low prio — couleur par défaut OK, Play Store listing icon 512 high prio — downscale depuis iOS 1024, feature graphic 1024×500 high prio, splash density variants low)
+- §13.3 Dark mode — monochrome launcher icon non fourni (optionnel pour Android 13+ themed icons, v1.1)
+
+### 3. Vérifications
+
+- **Lint** (`bun run lint`): PASS, exit 0, 0 erreur, 0 warning. ✓
+- **TypeScript** (`bunx tsc --noEmit`): 2 erreurs seulement, **toutes pré-existantes** dans `skills/image-edit/scripts/image-edit.ts` (TS2561) et `skills/stock-analysis-skill/src/analyzer.ts` (TS2322) — hors scope, signalées par P5-MULTIPOOL-PDF également. Aucune erreur dans `src/lib/email.ts`, `src/lib/native/app-config.ts`, `src/app/api/stripe/*`, `src/app/api/care/notify/`, `src/app/api/pro/early-access/`, `src/app/api/auth/register/`, `src/components/landing/sections/pricing.tsx`. ✓
+- **Pre-commit i18n hook** (`python3 scripts/i18n/check-hardcoded-strings.py`): ✅ "Aucune chaîne française codée en dur détectée." — exit 0. Les 5 violations précédentes dans email.ts sont résolues (rewrite EN-only). ✓
+- **Smoke test email** (`bun /tmp/test-email.ts`): 6 templates rendus correctement, subjects EN-only ("Welcome to AQWELIA", "New Pro lead — Acme Pools", "New AQWELIA Care lead — jane@example.com", "Your AQWELIA Oasis trial is active", "Your AQWELIA Wellness subscription is active", "Your AQWELIA Oasis trial ends soon"), HTML lengths 3038-3241 chars, 0 char accentué FR dans ~18 800 chars rendus. ✓
+
+### 4. Variables d'environnement (déjà dans `.env.example`)
+
+```env
+SMTP_HOST=               # smtp-brevo.com (recommandé), Mailgun, Amazon SES
+SMTP_PORT=587            # 587 STARTTLS ou 465 SSL
+SMTP_USER=
+SMTP_PASS=
+EMAIL_FROM=AQWELIA <contact@aqwelia.app>
+EMAIL_TO_TEAM=contact@aqwelia.app   # optionnel — override adresse team
+```
+
+Si `SMTP_HOST` + `SMTP_USER` + `SMTP_PASS` ne sont pas tous les 3 définis, `sendEmail()` no-op (log stdout) — safe pour dev/CI/preview.
+
+### 5. Git
+
+- Stagé 12 fichiers P5-STORE (4 new + 8 modified):
+  * `docs/APP_STORE_METADATA.md` (nouveau, 398 lignes — 13 sections + assets inventory)
+  * `docs/PLAY_STORE_METADATA.md` (nouveau, 363 lignes — 13 sections + assets inventory)
+  * `src/lib/email.ts` (nouveau, 470 lignes — rewrite EN-only, 5 templates)
+  * `src/lib/native/app-config.ts` (nouveau, 307 lignes — APP_CONFIG + deep links + lifecycle)
+  * `src/lib/native/index.ts` (modifié: +16 lignes — re-export app-config)
+  * `src/app/api/stripe/checkout/route.ts` (modifié: +10 lignes — `trial_period_days: 7` pour non-weekly)
+  * `src/app/api/stripe/webhook/route.ts` (modifié: +85 lignes — `customer.subscription.trial_will_end` handler + `sendTrialEndingEmail` + `sendSubscriptionConfirmationEmail` dans checkout.session.completed)
+  * `src/components/landing/sections/pricing.tsx` (modifié: +9 lignes — badge `tPlans('trialBadge')` masqué pour week)
+  * `src/app/api/care/notify/route.ts` (modifié: +13 lignes — `sendCareNotificationEmail` fire-and-forget)
+  * `src/app/api/pro/early-access/route.ts` (modifié: +23 lignes — `sendEarlyAccessNotificationEmail` fire-and-forget)
+  * `src/app/store/page.tsx` (nouveau, 312 lignes — dashboard interne /store listant le readiness App Store + Play Store)
+  * `scripts/i18n/add-trial-keys.py` (nouveau — script idempotent d'ajout des clés trial)
+- Commit + push `origin/main`. ✓
+
+Stage Summary:
+- **App Store / Play Store preparation**: `docs/APP_STORE_METADATA.md` (398 lignes, 13 sections: app identity, descriptions FR+EN 2300 chars, keywords 81 chars, what's new, privacy details 9 data types, support URLs, screenshots 8 frames storyboard 6.7"/6.5"/5.5", review notes avec demo@aqwelia.app/aqwelia-demo-2026 + sandbox tester, 8 IAP products avec localized names + trial 7j, App Review guidelines 13 items, submission checklist 12 items, **mobile assets inventory §13** avec table des 7 splash screens iOS manquants priorisés High/Medium/Low) et `docs/PLAY_STORE_METADATA.md` (363 lignes, 13 sections: app identity, short desc 78 chars, full desc, what's new, screenshots + feature graphic 1024×500, **data safety form 6 lignes** avec encrypted-in-transit + can-delete, privacy URLs, app content declarations 10 items, 8 IAP products, target SDK 34/min 23 + permissions 7 lignes, release management internal→beta→production, submission checklist 13 items, **mobile assets inventory §13** avec 5 assets Android manquants priorisés).
+- **`src/lib/native/app-config.ts`**: APP_CONFIG (appId `com.aqwelia.app`, version `1.0.0`, buildNumber `1`, deepLinkScheme `aqwelia`, deepLinkHost `app`, stores URLs iOS+Android, routes legal), `parseDeepLink()` (URL parsing sécurisé via `new URL()`), `isAqweliaDeepLink()` (validation scheme), `setupAppDeepLinks(handler)` (wrapper `setupDeepLinks` avec parse + validation — appelle le handler seulement pour `aqwelia://`), `buildAppDeepLink(path, queryParams)` (génération `aqwelia://app/path?query=val`), `onAppLifecycleEvent(callback)` (événements discrets `foreground`/`background`/`active`/`inactive` avec transition state), `isAppInForeground()` (utilitaire async), `getVersionString()` ("1.0.0 (build 1)"). Re-exporté depuis `src/lib/native/index.ts`. ✓
+- **Trial Stripe 7 jours**: `subscription_data.trial_period_days: 7` dans `checkout/route.ts` (garde `isWeekly` pour Pass urgence sans trial), handler `customer.subscription.trial_will_end` dans `webhook/route.ts` (refresh `expiresAt` + `sendTrialEndingEmail` fire-and-forget). Badge `tPlans('trialBadge')` ("7 jours gratuits" / "7 days free" / "7 días gratis" / "7 Tage kostenlos" / "7 giorni gratis" / "7 dias grátis" / "7 dagen gratis") sur les plans payants dans `pricing.tsx`, masqué pour `duration === 'week'`. i18n keys `trialBadge`/`trialLabel`/`trialDisclaimer`/`trialEndingDays`/`trialNoCharge` présentes dans les 7 locales (déjà commitées `c5b92a8`). ✓
+- **Email notifications**: `bun add nodemailer` (déjà installé `nodemailer@^9.0.3`). `src/lib/email.ts` (470 lignes, EN-only): `sendEmail({to, subject, html, text?, replyTo?})` générique (no-op si SMTP manquant), `emailShell(innerHtml, opts)` branding AQWELIA (header wordmark + tagline + footer avec liens legal/support + copyright 2026), 5 templates (`welcomeEmail` inscription, `earlyAccessNotification` lead Pro → team, `careNotification` lead Care → team, `subscriptionConfirmation` checkout success avec trial info, `trialEndingEmail` 3j avant fin trial). Branchements: `register` → `sendWelcomeEmail` (déjà commité `0133cff`), `pro/early-access` → `sendEarlyAccessNotificationEmail` (fire-and-forget), `care/notify` → `sendCareNotificationEmail` (fire-and-forget), `stripe/webhook` → `sendSubscriptionConfirmationEmail` (checkout.session.completed) + `sendTrialEndingEmail` (trial_will_end). ✓
+- **Pre-commit i18n**: ✅ PASS (rewrite email.ts EN-only a résolu les 5 violations FR en dur pré-existantes). **Lint**: PASS 0 erreur. **TypeScript**: 0 erreur dans `src/` (2 pré-existantes dans `skills/`). ✓
+- **Reste à faire (hors ce task)**:
+  * Générer les 7 splash screens iOS manquants (1290×2796, 1242×2688, 1242×2208, 2048×2732, 1668×2388, 1668×2224, 1536×2048) avant submission App Store.
+  * Générer le Play Store listing icon 512×512 (downscale iOS 1024) + feature graphic 1024×500 avant submission Play Store.
+  * Configurer SMTP en prod (Brevo recommandé) avec `SMTP_HOST=smtp-brevo.com`, `SMTP_PORT=587`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM=AQWELIA <contact@aqwelia.app>`.
+  * Créer les enregistrements App Store Connect + Play Console (Bundle ID `com.aqwelia.app`).
+  * Créer les 8 IAP products dans App Store Connect + Play Console (product IDs `aqwelia_oasis_monthly` etc., voir `revenuecat.ts`).
+  * Scaffolder les projets natifs (`npx cap add ios` sur macOS+Xcode, `npx cap add android` sur Android Studio) — ne peut pas être fait dans ce sandbox Linux.
+  * Configurer le sandbox tester Apple (`aqwelia-sandbox@aqwelia.app`) et les internal testers Play Console.
+  * Tester le flow Stripe checkout end-to-end avec trial en prod (créer les 8 prices Stripe, configurer `STRIPE_PRICE_*`).

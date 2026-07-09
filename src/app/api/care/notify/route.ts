@@ -99,6 +99,19 @@ export async function POST(req: Request) {
       },
     })
 
+    // Best-effort: notify the product team of the new Care lead.
+    // Fire-and-forget so a slow SMTP server never blocks the 201 response.
+    void import('@/lib/email')
+      .then(({ sendCareNotificationEmail }) =>
+        sendCareNotificationEmail({
+          email: record.email,
+          createdAt: record.createdAt,
+        }),
+      )
+      .catch((err) => {
+        console.error('[care/notify] team notification email failed:', err)
+      })
+
     return NextResponse.json({ notification: record }, { status: 201 })
   } catch (err) {
     console.error('[care/notify] POST error:', err)

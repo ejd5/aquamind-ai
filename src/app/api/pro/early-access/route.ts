@@ -125,11 +125,34 @@ export async function POST(req: Request) {
         id: true,
         companyName: true,
         email: true,
+        phone: true,
         poolCount: true,
         techCount: true,
+        message: true,
         createdAt: true,
       },
     })
+
+    // Best-effort: notify the product team of the new Pro lead.
+    // Wrapped in try/catch + fire-and-forget (no await) so a slow SMTP server
+    // never blocks the 201 response. The sendEmail() function itself never
+    // throws — it returns a structured result — but we keep the catch for
+    // resilience against the dynamic import failing (rare: module resolution).
+    void import('@/lib/email')
+      .then(({ sendEarlyAccessNotificationEmail }) =>
+        sendEarlyAccessNotificationEmail({
+          companyName: lead.companyName,
+          email: lead.email,
+          phone: lead.phone,
+          poolCount: lead.poolCount,
+          techCount: lead.techCount,
+          message: lead.message,
+          createdAt: lead.createdAt,
+        }),
+      )
+      .catch((err) => {
+        console.error('[early-access] team notification email failed:', err)
+      })
 
     return NextResponse.json({ lead }, { status: 201 })
   } catch (err) {
