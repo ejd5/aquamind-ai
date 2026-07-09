@@ -74,7 +74,7 @@ export function FeaturesGrid() {
 
           {/* 12th cell — branding accent */}
           <motion.div variants={fadeUpVariants}>
-            <div className="relative flex h-full flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-gold/40 bg-gradient-to-br from-primary/10 via-gold/10 to-primary/5 p-5 text-center backdrop-blur-xl">
+            <div className="relative flex h-full flex-col items-center justify-center overflow-hidden rounded-2xl border border-gold/30 bg-white/10 p-5 text-center backdrop-blur-md">
               <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
               <p className="font-display text-3xl font-bold gradient-text-premium">+1</p>
               <p className="mt-1 text-xs text-muted-foreground">{t('featuresMore')}</p>
