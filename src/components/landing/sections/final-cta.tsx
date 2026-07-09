@@ -21,15 +21,16 @@ export function FinalCta({ hasProfile, onEnterApp }: FinalCtaProps) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.7 }}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[oklch(0.45_0.12_195)] via-[oklch(0.5_0.1_170)] to-[oklch(0.65_0.11_195)] p-8 text-center shadow-2xl shadow-primary/30 sm:p-14"
+          className="relative overflow-hidden rounded-3xl p-8 text-center shadow-2xl shadow-primary/30 sm:p-14"
         >
-          {/* Decorative orbs */}
+          {/* BLOCBASDEPAGE background image — no crop, no effect */}
           <div
-            className="pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-white/10 blur-3xl"
-            aria-hidden="true"
-          />
-          <div
-            className="pointer-events-none absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-gold/20 blur-3xl"
+            className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: 'url(/bloc-bas.png)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
             aria-hidden="true"
           />
 
