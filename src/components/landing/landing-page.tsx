@@ -216,29 +216,35 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
         />
 
         <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6">
-          {/* Safety disclaimer — centered, 3 lines, light amber background (same as app footer) */}
-          <div className="mb-8 mx-auto max-w-xl flex items-start gap-3 rounded-xl border border-amber-400/30 bg-amber-500/10 p-3.5 backdrop-blur-sm">
-            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-            <p className="text-[11px] leading-relaxed text-white font-bold text-center [text-shadow:_0_1px_2px_rgb(0_0_0),_0_-1px_2px_rgb(0_0_0),_1px_0_2px_rgb(0_0_0),_-1px_0_2px_rgb(0_0_0)]">
-              <strong className="text-white">{t('disclaimerLabel')}</strong> {t('disclaimer')}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
-            {/* Brand */}
-            <div className="md:col-span-2">
-              <div className="flex items-center gap-2.5">
-                  <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-20 w-auto object-contain" />
-                <div>
-                  <div className="font-display text-base font-bold tracking-tight text-white">
-                    <span className="aqua-text-gradient">AQWELIA</span>
-                  </div>
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-white font-bold [text-shadow:_0_1px_2px_rgb(0_0_0),_0_-1px_2px_rgb(0_0_0),_1px_0_2px_rgb(0_0_0),_-1px_0_2px_rgb(0_0_0)]">
-                    {t('footerTagline2')}
-                  </div>
+          {/* Top row: Brand (left) + Disclaimer (centered) */}
+          <div className="mb-8 flex flex-col items-start gap-6 md:flex-row md:items-start md:justify-between">
+            {/* Brand — left */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-16 w-auto object-contain" />
+              <div>
+                <div className="font-display text-base font-bold tracking-tight text-white [text-shadow:_0_1px_2px_rgb(0_0_0),_0_-1px_2px_rgb(0_0_0),_1px_0_2px_rgb(0_0_0),_-1px_0_2px_rgb(0_0_0)]">
+                  <span className="aqua-text-gradient">AQWELIA</span>
+                </div>
+                <div className="text-[10px] uppercase tracking-[0.22em] text-white font-bold [text-shadow:_0_1px_2px_rgb(0_0_0),_0_-1px_2px_rgb(0_0_0),_1px_0_2px_rgb(0_0_0),_-1px_0_2px_rgb(0_0_0)]">
+                  {t('footerTagline2')}
                 </div>
               </div>
-              <p className="mt-4 max-w-sm text-sm leading-relaxed text-white font-bold [text-shadow:_0_1px_2px_rgb(0_0_0),_0_-1px_2px_rgb(0_0_0),_1px_0_2px_rgb(0_0_0),_-1px_0_2px_rgb(0_0_0)]">
+            </div>
+
+            {/* Disclaimer — centered */}
+            <div className="mx-auto max-w-xl flex items-start gap-3 rounded-xl border border-amber-400/30 bg-amber-500/10 p-3.5 backdrop-blur-sm">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+              <p className="text-[11px] leading-relaxed text-white font-bold text-center [text-shadow:_0_1px_2px_rgb(0_0_0),_0_-1px_2px_rgb(0_0_0),_1px_0_2px_rgb(0_0_0),_-1px_0_2px_rgb(0_0_0)]">
+                <strong className="text-white">{t('disclaimerLabel')}</strong> {t('disclaimer')}
+              </p>
+            </div>
+          </div>
+
+          {/* Bottom grid: links */}
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
+            {/* Brand tagline + CTA (left column, below brand) */}
+            <div className="md:col-span-2">
+              <p className="max-w-sm text-sm leading-relaxed text-white font-bold [text-shadow:_0_1px_2px_rgb(0_0_0),_0_-1px_2px_rgb(0_0_0),_1px_0_2px_rgb(0_0_0),_-1px_0_2px_rgb(0_0_0)]">
                 {t('footerTagline')}
               </p>
               {hasProfile && (
