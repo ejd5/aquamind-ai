@@ -8,12 +8,12 @@ export function Footer() {
   const t = useTranslations('landing')
   return (
     <footer className="relative mt-auto overflow-hidden border-t border-gold/20 bg-transparent text-white">
-      {/* AQWELIA app footer background image — complete, not cut, no effect */}
+      {/* AQWELIA app footer background image — COMPLETE, not cut, no effect */}
       <div
-        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="pointer-events-none absolute inset-0 bg-no-repeat"
         style={{
           backgroundImage: 'url(/footer-app-bg.png)',
-          backgroundSize: 'cover',
+          backgroundSize: '100% 100%',
           backgroundPosition: 'center',
         }}
         aria-hidden="true"
