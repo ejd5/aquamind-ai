@@ -151,7 +151,7 @@ function ScenarioCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.5, delay: (index % 3) * 0.08 }}
-      className="group relative h-full overflow-hidden rounded-2xl border border-white/40 bg-white/60 p-5 backdrop-blur-xl transition-all hover:-translate-y-1 hover:shadow-xl dark:border-white/10 dark:bg-white/[0.03]"
+      className="group relative h-full overflow-hidden rounded-2xl border border-white/40 bg-white/10 p-5 backdrop-blur-md transition-all hover:-translate-y-1 hover:shadow-xl dark:border-white/10 dark:bg-white/[0.03]"
     >
       <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
       <div className="flex items-center gap-3">
