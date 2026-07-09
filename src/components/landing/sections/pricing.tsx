@@ -140,7 +140,7 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
             const suffix = tPlans(DURATION_SUFFIX_KEY[duration])
             const planName = tPlans(`${plan.id}.name`)
             const planTagline = tPlans(`${plan.id}.tagline`)
-            const planFeatures = tPlans.raw(`${plan.id}Features`) as string[]
+            const planFeatures = Object.values(tPlans.raw(`${plan.id}.features`) as Record<string, string>)
             return (
               <Reveal key={plan.id} delay={idx * 0.08}>
                 <div
