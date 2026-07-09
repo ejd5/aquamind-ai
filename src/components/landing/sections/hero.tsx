@@ -41,7 +41,7 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
       />
       {/* Light overlay — minimal, only left side for text readability */}
       <div
-        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-background/60 via-background/10 to-transparent"
+        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-background/40 via-background/5 to-transparent"
         aria-hidden="true"
       />
 
@@ -130,12 +130,12 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.6 }}
-          className="mx-auto mt-64 grid max-w-4xl grid-cols-2 gap-3 sm:mt-80 sm:grid-cols-4 sm:gap-4"
+          className="mx-auto mt-80 grid max-w-4xl grid-cols-2 gap-3 sm:mt-96 sm:grid-cols-4 sm:gap-4"
         >
           {STATS.map((s) => (
             <div
               key={s.label}
-              className="glass-card rounded-2xl p-4 text-center"
+              className="rounded-2xl border border-gold/20 bg-white/5 p-4 text-center backdrop-blur-sm"
             >
               <p className="font-display text-2xl font-bold gradient-text-premium sm:text-3xl">
                 <AnimatedCounter
