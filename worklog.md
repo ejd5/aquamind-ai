@@ -4803,3 +4803,178 @@ Stage Summary:
   * Migrer progressivement les composants marketing vers les nouveaux tokens (`text-lagoon` au lieu de `text-ocean-light`, `bg-night` au lieu de `bg-ocean-deep`, `rounded-aq-xl` au lieu de `rounded-2xl`) — pas d'urgence, legacy reste valide.
   * Activer le routing i18n `/fr/`, `/en/` en suivant `docs/I18N_ROUTING.md` (9 steps, ~3h de travail, dedicated PR).
   * Ajouter `src/i18n/navigation.ts` (`createNavigation(routing)` → Link/useRouter/usePathname) au moment de l'activation routing.
+
+---
+Task ID: P6-PRO-UI-RETRY
+Agent: sub-agent (general-purpose) — AQWELIA Pro app UI (dashboard + clients + planning + interventions)
+Task: Créer l'UI de l'app AQWELIA Pro: layout, dashboard, clients, fiche client, planning, interventions + 2 modals (add-client, add-pool). APIs existent déjà (P6-PRO-API). Style glassmorphism + gold accents. i18n namespace proApp. Pas de chaînes françaises en dur (pre-commit hook). Après: lint, push GitHub.
+
+Work Log:
+- Lu `worklog.md` (dernières sections: P6-DESIGN tokens centralisés + i18n routing prep, P5-PAGES-RETRY 9 pages publiques/légales, P6-PRO-API 4 Prisma models + 8 API routes). Lu `src/app/pro/page.tsx` (page marketing Pro existante). Inspecté `src/app/pro/app/` (layout.tsx + page.tsx déjà créés par précédent agent, never committed) et `src/components/pro/` (add-client-modal.tsx + add-pool-modal.tsx déjà créés, never committed). APIs vérifiées: /api/pro/clients (GET list + POST), /api/pro/clients/[id] (GET detail avec pools + interventions, PATCH, DELETE), /api/pro/pools (POST), /api/pro/interventions (GET list avec filtres status/type/from/to + POST), /api/pro/dashboard (GET stats agrégées).
+
+### 1. Audit de l'existant (RETRY case)
+
+Le précédent agent avait créé 4 fichiers (layout, dashboard, 2 modals) mais jamais commité. Audit révèle 2 bugs:
+
+**Bug 1 — Dashboard response shape mismatch**:
+- `src/app/pro/app/page.tsx` attendait `{ stats: { clients, pools, thisWeek, upcoming }, today: [], byMonth: [], alerts: [] }`
+- L'API `/api/pro/dashboard` retourne `{ clientsCount, poolsCount, interventionsCount, interventionsThisWeek: { count, completedCount, totalDurationMinutes }, interventionsUpcoming: [], interventionsOverdueCount, recentInterventions: [], recentWaterTests: [], poolsWithoutRecentTest: [], weekStart, weekEnd }`
+- → Dashboard rewrit pour consommer la vraie shape API. 4 stats cards mappées sur clientsCount/poolsCount/interventionsThisWeek.count/interventionsUpcoming.length. "Today's interventions" = filtre client-side de recentInterventions par isSameDay(now). "Alerts" = poolsWithoutRecentTest (chaque entrée a {id, name}). Section "byMonth" supprimée (l'API ne retourne pas de données mensuelles).
+
+**Bug 2 — AddPoolModal wrong field name**:
+- `src/components/pro/add-pool-modal.tsx` envoyait `{ clientId, name, ... }` dans le body POST
+- L'API `/api/pro/pools` attend `proClientId` ( vérifie `typeof body?.proClientId === 'string'`)
+- → Fix: body renommé `clientId` → `proClientId`. La prop du composant reste `clientId` (parent passe l'id du client); seul le champ du body JSON change.
+
+### 2. Fichiers créés / modifiés
+
+**Layout** (`src/app/pro/app/layout.tsx`, 194 lignes, déjà existant — préservé):
+- Server component, `getServerSession(authOptions)`, redirect `/auth/signin?callbackUrl=/pro/app` si pas de session
+- Sidebar desktop (w-60): Dashboard / Clients / Planning / Interventions + Pools/Reports/Settings (badges "Soon")
+- Header sticky (h-16): back-to-Pro link, logo AQWELIA + "Pro" gold badge + tagline, company name (session.user.name) + signout, badge "Pro" gradient gold
+- Mobile nav row (overflow-x-auto) en bas du header
+- Footer inclus
+- Traductions: `getTranslations('proApp')` namespace
+
+**Dashboard** (`src/app/pro/app/page.tsx`, 396 lignes, REWRIT):
+- `'use client'`, `useTranslations('proApp')`, `useState` loading/error/data
+- `load()` fetch `/api/pro/dashboard` (cache: 'no-store'), gestion error
+- 4 StatCards: clients (clientsCount), pools (poolsCount), this week (interventionsThisWeek.count), upcoming (interventionsUpcoming.length)
+- Today's interventions: filtre `recentInterventions` par `isSameDay(scheduledAt, now)`, affiche TypeBadge + client name + pool name + time + StatusBadge
+- Alerts panel: `poolsWithoutRecentTest` (chaque entrée = pool name + reason "Aucun test d'eau récent (14 j)")
+- Composants internes: StatCard (gradient gold icon, value, label, hint), LoadingRow, EmptyRow, TypeBadge (5 couleurs par type), StatusBadge (4 couleurs par statut), capitalize (gère `in_progress` → `InProgress`)
+- Section "byMonth" supprimée (API ne retourne pas de données mensuelles)
+
+**Clients list** (`src/app/pro/app/clients/page.tsx`, 246 lignes, NOUVEAU):
+- `'use client'`, fetch `/api/pro/clients?q=...&pageSize=50`
+- Search input avec debounce 300ms (useEffect + setTimeout)
+- Bouton "Ajouter un client" (gradient gold) → ouvre `<AddClientModal />`
+- Tableau glassmorphism: Name (+city subtitle), Email, Phone, # Pools (badge), Actions (link to fiche)
+- Empty state différencié: `clientsEmpty` (aucun client) vs `clientsNoResults` (recherche sans résultat)
+- Loading/error/count hint (`clientsCount` pluralisé)
+- `onCreated` callback → reload la liste après création
+
+**Fiche client** (`src/app/pro/app/clients/[id]/page.tsx`, 458 lignes, NOUVEAU):
+- `'use client'`, `useParams<{ id: string }>()` pour récupérer l'id
+- Fetch `/api/pro/clients/[id]` (404 → `clientNotFound`)
+- Header: bouton back (router.push vers /pro/app/clients), boutons "Nouvelle intervention" (link vers planning) + "Ajouter un bassin" (gradient gold)
+- Identity card: avatar initiales (gradient gold), nom, counts pools/interventions
+- Contact grid 3 cols: email / phone / address (formatée avec zip + city)
+- Notes block (whitespace-pre-wrap)
+- Pools grid (sm:2, lg:3): nom + type label, badge "Sel" si saltSystem, badges Volume/Shape/Surface/Treatment/Filter (traduits via `trOpt()` helper)
+- Interventions history (last 10): TypeBadge + pool name + date formatée + duration · StatusBadge
+- `<AddPoolModal clientId={id} />` avec onCreated → reload
+- Helpers: initials(), formatAddress(), formatDate(), trOpt() (traduit shape/surface/treatment/filter avec fallback)
+
+**Planning** (`src/app/pro/app/planning/page.tsx`, 325 lignes, NOUVEAU):
+- `'use client'`, fetch `/api/pro/interventions?from=&to=&pageSize=100`
+- Navigation semaine: `startOfWeek(new Date())` initial, prev (-7j), today (reset), next (+7j)
+- Label "Semaine du {date}" avec Intl.DateTimeFormat dateStyle:long
+- Grille 7 colonnes (lg) / 2 (sm) / 1 (mobile), chaque cellule:
+  - Header: nom du jour (Intl weekday:short) + numéro du jour + badge "Aujourd'hui" si today
+  - Body: liste d'InterventionChips (border-l-2 colorée par type: primary/amber/emerald/orange/red)
+  - Chip: time + type label (uppercase) + client name + pool name (truncate, title attribute)
+- Empty state: `planningEmpty` + `planningClickHint`
+- Helpers: startOfWeek (Monday-based), addDays, isSameDay, toISODate, formatDayName (Intl)
+
+**Interventions** (`src/app/pro/app/interventions/page.tsx`, 358 lignes, NOUVEAU):
+- `'use client'`, fetch `/api/pro/interventions?status=&type=&pageSize=100`
+- Filtres: 2 `<FilterSelect>` (status: scheduled/in_progress/completed/cancelled, type: maintenance/repair/opening/closing/emergency) + bouton refresh + bouton "Réinitialiser les filtres" (visible si filtres actifs)
+- Tableau: Date (formatée dateStyle:short + timeStyle:short) | Client (link vers fiche, hover gold) | Pool | Type (badge coloré) | Status (badge coloré)
+- Empty state différencié: `interventionsEmpty` (avec CTA) vs `interventionsNoResults` (filtres sans résultat)
+- Count hint (`interventionsCount` pluralisé)
+- Helpers: formatDate(), cap() (gère `in_progress`), FilterSelect composant
+
+**AddClientModal** (`src/components/pro/add-client-modal.tsx`, 326 lignes, déjà existant — préservé):
+- `'use client'`, controlled modal (open/onClose/onCreated)
+- Form: firstName*, lastName*, email, phone, address, city, zipCode, notes (textarea)
+- Validation client: firstName/lastName requis, email regex si fourni
+- POST `/api/pro/clients` → on success: status 'success' (1.2s) → reset + onClose + onCreated(client)
+- DA: bg-background/90 backdrop-blur-2xl, gold top accent, gradient gold submit button, input-glass class
+
+**AddPoolModal** (`src/components/pro/add-pool-modal.tsx`, 357 lignes, BUG FIX):
+- `'use client'`, controlled modal (open/clientId/onClose/onCreated)
+- Form: name*, type (pool/spa/both), volume (number), shape (rectangular/round/oval/free), surface (liner/shell/concrete/tile), treatmentType (chlorine/salt/bromine/active_oxygen/other), filterType (sand/cartridge/glass/diatom), saltSystem (checkbox)
+- **FIX**: body JSON envoyait `clientId` → renommé `proClientId` pour matcher l'API
+- POST `/api/pro/pools` → on success: status 'success' (1.2s) → reset + onClose + onCreated(pool)
+
+### 3. i18n — 15 nouvelles clés dans proApp namespace
+
+Ajouté à `src/i18n/locales/fr.json` + `en.json` (lignes 4191-4204):
+
+| Key | FR | EN |
+|-----|----|----|
+| `clientBackToList` | Retour aux clients | Back to clients |
+| `featureComingSoon` | Bientôt disponible | Coming soon |
+| `noTechnician` | Non assigné | Unassigned |
+| `noPool` | — | — |
+| `clientsNoResults` | Aucun client ne correspond à votre recherche. | No client matches your search. |
+| `interventionsNoResults` | Aucune intervention ne correspond à vos filtres. | No intervention matches your filters. |
+| `clientsCount` | {count, plural, =0 {Aucun client} one {# client} other {# clients}} | {count, plural, =0 {No client} one {# client} other {# clients}} |
+| `interventionsCount` | {count, plural, =0 {Aucune intervention} one {# intervention} other {# interventions}} | {count, plural, =0 {No intervention} one {# intervention} other {# interventions}} |
+| `poolsCount` | {count, plural, =0 {Aucun bassin} one {# bassin} other {# bassins}} | {count, plural, =0 {No pool} one {# pool} other {# pools}} |
+| `planningTodayBadge` | Aujourd'hui | Today |
+| `interventionsClearFilters` | Réinitialiser les filtres | Clear filters |
+| `clientNotesEmpty` | Aucune note pour ce client. | No notes for this client. |
+| `poolVolumeUnit` | m³ | m³ |
+| `alertNoRecentTest` | Aucun test d'eau récent (14 j) | No recent water test (14 d) |
+
+JSON validé (`python3 -c "import json; json.load(...)"` → OK). Tous les namespaces existants (proApp 165 clés pré-existantes + 15 nouvelles = 180 clés) préservés. Clés pré-existantes (navDashboard, dashboardTitle, statClients, clientsTitle, clientsSearchPlaceholder, clientNotFound, addClientTitle, addPoolTitle, typeMaintenance, statusScheduled, planningTitle, interventionsTitle, etc.) réutilisées.
+
+### 4. Vérifications
+
+- **Lint** (`bun run lint`): PASS, exit 0, 0 erreur, 0 warning. ✓
+- **TypeScript** (`bunx tsc --noEmit`): 0 erreur dans `src/`. (2 erreurs pré-existantes dans `skills/` third-party hors scope, signalées par P5-STORE et P6-DESIGN.) ✓
+- **Pre-commit hook i18n** (`python3 scripts/i18n/check-hardcoded-strings.py`): PASS — "✅ Aucune chaîne française codée en dur détectée." Tous les textes visibles passent par `useTranslations('proApp')` ou `getTranslations('proApp')`. ✓
+- **JSON i18n**: `python3 -c "import json; json.load(open('src/i18n/locales/fr.json')); json.load(open('src/i18n/locales/en.json'))"` → OK. ✓
+
+### 5. Style & patterns
+
+- **Glassmorphism**: `bg-white/60 backdrop-blur-xl border border-white/40 dark:bg-white/[0.04] dark:border-white/10` (cards, modals, table container, filter bar)
+- **Gold accents**: `bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] text-[oklch(0.99_0.01_195)]` (CTA buttons, badges), `text-gold` (links, accents), `border-gold/40 bg-gold/5` (secondary buttons), `glow-gold` class (CTA hover)
+- **Top accent line**: `pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent` (cards, modals)
+- **font-display**: titres h1/h2 avec `font-display text-3xl font-bold tracking-tight sm:text-4xl`
+- **section-label**: eyebrow au-dessus des titres (icône + "AQWELIA Pro")
+- **input-glass**: classe utilitaire pour inputs/selects/textarea (définie dans globals.css)
+- **custom-scroll**: scrollbars stylées pour tables et nav mobile
+- **Responsive**: 
+  - Layout: sidebar desktop-only (md:block), mobile nav row (md:hidden), header flex-wrap
+  - Tables: `overflow-x-auto` + `min-w-[680px]` (clients) / `min-w-[760px]` (interventions) sur container
+  - Grids: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3/4/7` selon contexte
+  - Modals: `items-end sm:items-center` (bottom-sheet sur mobile, center sur desktop), `rounded-t-3xl sm:rounded-3xl`
+
+### 6. API contracts consommés
+
+| Endpoint | Méthode | Page | Usage |
+|----------|---------|------|-------|
+| `/api/pro/dashboard` | GET | Dashboard | Stats agrégées (clientsCount, poolsCount, interventionsThisWeek.count, interventionsUpcoming, recentInterventions, poolsWithoutRecentTest) |
+| `/api/pro/clients` | GET | Clients list | Liste paginée avec ?q= search, _count.pools |
+| `/api/pro/clients` | POST | AddClientModal | Création client (firstName, lastName, email, phone, address, city, zipCode, notes) |
+| `/api/pro/clients/[id]` | GET | Fiche client | Détail client + pools (avec _count interventions/waterTests) + 10 dernières interventions |
+| `/api/pro/pools` | POST | AddPoolModal | Création bassin (proClientId, name, type, volume, shape, surface, treatmentType, filterType, saltSystem) |
+| `/api/pro/interventions` | GET | Planning + Interventions | Liste avec filtres ?from=&to=&status=&type=&pageSize=, includes client + pool |
+
+### 7. Git
+
+- Commit `54b110f` "feat(P6-PRO-UI): AQWELIA Pro app UI (layout, dashboard, clients, planning, interventions)"
+- 10 fichiers, 3112 insertions:
+  - 6 nouveaux: `src/app/pro/app/clients/page.tsx`, `src/app/pro/app/clients/[id]/page.tsx`, `src/app/pro/app/planning/page.tsx`, `src/app/pro/app/interventions/page.tsx` (+ layout.tsx et page.tsx qui étaient untracked du précédent agent)
+  - 2 modals (untracked du précédent agent): `src/components/pro/add-client-modal.tsx`, `src/components/pro/add-pool-modal.tsx`
+  - 2 modifiés: `src/i18n/locales/fr.json`, `src/i18n/locales/en.json` (+15 clés proApp)
+- Push vers `origin/main` (82e763f → 54b110f). ✓
+
+### 8. Notes pour suite
+
+- **"Nouvelle intervention" button**: les boutons sur fiche client et page interventions lient vers `/pro/app/planning` (pas de modal d'intervention implémenté — la liste des composants demandés ne l'incluait pas). Si une AddInterventionModal est nécessaire, créer `src/components/pro/add-intervention-modal.tsx` avec champs: client (select required), pool (select filtré par client), type, status, scheduledAt (datetime-local), duration, notes, technician.
+- **Planning drag-and-drop**: la vue semaine actuelle est en lecture seule. Pour permettre de déplacer les interventions par drag, ajouter une lib (ex: @dnd-kit/core) et un PATCH sur `/api/pro/interventions/[id]` (qui existe déjà).
+- **Pagination**: clients list et interventions list chargent pageSize=100 sans pagination UI. Si volume > 100, ajouter un composant Pagination (shadcn/ui pagination.tsx existe déjà).
+- **"Pools" nav item**: pointe vers /pro/app avec badge "Soon". Si une page flat list de tous les bassins est nécessaire, créer `src/app/pro/app/pools/page.tsx` qui fetch /api/pro/clients puis flatten les pools, ou étendre l'API /api/pro/pools avec un GET.
+- **"Reports" et "Paramètres" nav items**: pointent vers /pro/app avec badge "Soon". Pages à créer dans un task ultérieur.
+- **Tests E2E**: pas couverts par ce task. Recommander Playwright pour tester: login → /pro/app → création client → fiche client → ajout bassin → planning semaine → filtre interventions.
+
+Stage Summary:
+- **6 pages Pro UI livrées**: layout (server component, NextAuth gate, sidebar + header + mobile nav), dashboard (4 stats + today + alerts, rewrit pour matcher la vraie shape API), clients list (table + debounced search + AddClientModal), fiche client (identity + contact + pools grid + interventions history + AddPoolModal), planning (week view 7 cols + navigation + color-coded chips), interventions (table + 2 filtres + clear button + empty states différenciés).
+- **2 modals** (add-client, add-pool) intégrées et fonctionnelles. Bug AddPoolModal corrigé (proClientId au lieu de clientId).
+- **i18n**: 15 nouvelles clés proApp (fr + en), plurals ICU pour counts, 0 chaîne française en dur (pre-commit hook PASS).
+- **Lint PASS** (0/0), **TypeScript PASS** (0 erreur src/), **JSON valide**, **push OK**.
+- **DA respectée**: glassmorphism (bg-white/60 backdrop-blur-xl border-white/40), gold accents (gradient + text-gold + border-gold/40), font-display, responsive (mobile nav row, table overflow-x-auto, grid breakpoints).
