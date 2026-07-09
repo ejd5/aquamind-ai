@@ -34,9 +34,10 @@ export function FinalCta({ hasProfile, onEnterApp }: FinalCtaProps) {
             aria-hidden="true"
           />
 
-          <div className="relative">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md">
-              <Sparkles className="h-3 w-3" />
+          {/* Glass card for text readability over bright image — AQWELIA DA */}
+          <div className="relative mx-auto max-w-2xl rounded-2xl border border-white/20 bg-[oklch(0.15_0.02_195)]/60 px-6 py-8 backdrop-blur-md sm:px-10 sm:py-10">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-white/10 px-3 py-1 text-xs font-semibold text-white">
+              <Sparkles className="h-3 w-3 text-gold" />
               {t('finalCtaEyebrow')}
             </span>
 
@@ -44,27 +45,27 @@ export function FinalCta({ hasProfile, onEnterApp }: FinalCtaProps) {
               {t('finalCtaTitle')}
             </h2>
 
-            <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/85 sm:text-base">
+            <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/90 sm:text-base">
               {t('finalCtaSubtitle')}
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <button
                 onClick={onEnterApp}
-                className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-bold text-[oklch(0.45_0.12_195)] shadow-xl shadow-black/20 transition-all hover:scale-[1.02] hover:shadow-2xl sm:w-auto"
+                className="glow-gold group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] px-7 py-3.5 text-sm font-bold text-white shadow-xl shadow-black/20 transition-all hover:scale-[1.02] hover:shadow-2xl sm:w-auto"
               >
                 {hasProfile ? t('finalCtaMySpace') : t('finalCtaStart')}
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </button>
               <button
                 onClick={() => scrollToId('tarifs')}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/40 px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10 sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/50 px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10 sm:w-auto"
               >
                 {t('finalCtaSeePricing')}
               </button>
             </div>
 
-            <p className="mt-6 text-[11px] uppercase tracking-widest text-white/70">
+            <p className="mt-6 text-[11px] uppercase tracking-widest text-white/80">
               {t('finalCtaDisclaimer')}
             </p>
           </div>

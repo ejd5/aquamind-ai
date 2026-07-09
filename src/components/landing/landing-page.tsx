@@ -215,7 +215,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
           aria-hidden="true"
         />
 
-        <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6">
+        <div className="relative mx-auto max-w-7xl rounded-2xl border border-white/15 bg-[oklch(0.15_0.02_195)]/70 px-4 py-10 backdrop-blur-md sm:px-6">
           {/* Safety disclaimer */}
           <div className="mb-8 flex items-start gap-3 rounded-xl border border-gold/20 bg-white/5 p-4">
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
