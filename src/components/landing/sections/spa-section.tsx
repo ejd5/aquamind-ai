@@ -125,7 +125,7 @@ export function SpaSection() {
 
           {/* 6th card — note Premium */}
           <motion.div variants={fadeUpVariants}>
-            <div className="relative h-full overflow-hidden rounded-2xl border-2 border-gold/50 bg-gradient-to-br from-gold/15 via-gold/5 to-transparent p-5">
+            <div className="relative h-full overflow-hidden rounded-2xl border-2 border-gold/50 bg-white/85 p-5">
               <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
               <Lock className="h-5 w-5 text-gold" />
               <h3 className="mt-3 font-display text-base font-bold text-gold">
@@ -147,7 +147,7 @@ export function SpaSection() {
 
         {/* Treatments comparison — recommended vs not */}
         <Reveal delay={0.1} className="mt-12">
-          <div className="rounded-2xl border border-white/40 bg-white/60 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] sm:p-6">
+          <div className="rounded-2xl border border-white/40 bg-white/85 p-5 backdrop-blur-md dark:border-white/10 dark:bg-white/[0.04] sm:p-6">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="font-display text-lg font-bold">
                 {t('spaTreatmentsTitle')}
@@ -209,7 +209,7 @@ export function SpaSection() {
 
         {/* Drainage emphasis — economic argument */}
         <Reveal delay={0.1} className="mt-6">
-          <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-gold/40 bg-gradient-to-r from-gold/15 via-transparent to-[oklch(0.55_0.10_195/0.15)] p-5 sm:p-6">
+          <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-gold/40 bg-white/85 p-5 backdrop-blur-md sm:p-6">
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gold/20 text-gold">
                 <RotateCcw className="h-6 w-6" />
@@ -241,7 +241,7 @@ export function SpaSection() {
 
         {/* Brand wall */}
         <Reveal delay={0.1} className="mt-6">
-          <div className="rounded-2xl border border-white/40 bg-white/60 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] sm:p-6">
+          <div className="rounded-2xl border border-white/40 bg-white/85 p-5 backdrop-blur-md dark:border-white/10 dark:bg-white/[0.04] sm:p-6">
             <h3 className="font-display text-base font-bold sm:text-lg">
               {t('spaBrandsTitle')}
             </h3>
