@@ -30,11 +30,8 @@ export function Footer() {
         </div>
 
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-          <div className="flex items-center gap-2.5">
-            <div className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-md shadow-primary/30">
-              <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-16 w-auto object-contain" />
-              <Sparkles className="absolute -right-1 -top-1 h-3 w-3 text-gold" />
-            </div>
+          <div className="flex items-center gap-3">
+            <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-24 w-auto object-contain" />
             <div className="text-sm">
               <span className="font-display font-bold tracking-tight text-white">AQWELIA</span>
               <span className="ml-2 text-white/45">© {new Date().getFullYear()}</span>
