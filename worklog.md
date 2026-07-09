@@ -3742,3 +3742,138 @@ Stage Summary:
 - **Lint**: PASS. **TypeScript**: 2 erreurs (skills/ uniquement — third-party, hors scope). ✓
 - **Git**: commit `01ee7c6` pushé sur `origin/main`. ✓
 - **Reste à faire (hors ce task)**: `npx cap add ios/android` (nécessite macOS + Xcode / Android Studio, pas possible dans ce sandbox Linux). Documentation des étapes dans `docs/MOBILE_READINESS.md` section 9.
+
+---
+Task ID: P2-PRO
+Agent: sub-agent (general-purpose) — AQWELIA Pro marketing pages
+Task: Créer les pages marketing AQWELIA Pro (/pro, /pro/early-access, /pro/demo, /pro/faq) + API Early Access + modèle Prisma + i18n. La landing page a des CTA "Découvrir AQWELIA Pro" pointant vers /pro (404 jusqu'à présent).
+
+Work Log:
+- Lu `worklog.md` (dernières sections: P1-LANDING, P0-AUDIT, P1-TARIFS, P1-FIX, P0-FIX, P4-MOBILE) — projet AQWELIA Next.js 16 + React 19 + Prisma SQLite + next-intl 7 langues + NextAuth JWT. Landing page avec sections ProPreview (lien `/pro`) et CarePreview déjà en place. Pas de page `/pro` jusqu'à présent.
+- Lu `docs/AQWELIA_AUDIT_AND_ROADMAP.md` pour contexte — confirme l'absence de pages Pro, l'existence du design system "Oceanic Luxury" (glassmorphism, gold accents, font-display Playfair), et le pattern `(db as any).user` pour résilience du client Prisma.
+- Inspecté `src/components/landing/landing-page.tsx` (sticky header + 16 sections + footer), `sections/pro-preview.tsx` (4 cartes Features + CTA `/pro`), `sections/pricing.tsx` (3 plans particuliers Découverte/Oasis/Wellness), `sections/faq.tsx` (15 Q/A particuliers + Accordion shadcn), `landing-utils.tsx` (helpers `Reveal`, `SectionHeading`, `GlassCard`, `staggerContainer`, `fadeUpVariants`, `scrollToId`, `AnimatedCounter`), `app/legal/layout.tsx` (pattern header brand + Footer), `app/api/auth/register/route.ts` (pattern validation + `(db as any)`), `app/api/dashboard/route.ts` (pattern `getServerSession(authOptions)`), `lib/i18n-api.ts` (`pickLocale` + `translate` server-side).
+- Vérifié `src/i18n/locales/fr.json` et `en.json` (3638 lignes chacun, 22 namespaces top-level) — confirmé absence d'un namespace `pro` dédié. Les clés existantes `landing.proPreview*` et `landing.faqProVersion` couvrent les CTAs mais pas le détail des pages Pro.
+
+### 1. Modèle Prisma EarlyAccessLead
+- Ajouté dans `prisma/schema.prisma` (lignes 322-336), section dédiée "AQWELIA PRO — Early Access leads (marketing funnel)":
+```prisma
+model EarlyAccessLead {
+  id          String   @id @default(cuid())
+  companyName String
+  email       String   @unique
+  phone       String?
+  poolCount   Int      @default(0)
+  techCount   Int      @default(1)
+  message     String?
+  createdAt   DateTime @default(now())
+}
+```
+- Exécuté `bunx prisma db push` → SQLite DB synchronisée (28ms), Prisma Client v6.19.2 régénéré (`./node_modules/@prisma/client`).
+- Vérifié l'accès au modèle via script Node: `db.earlyAccessLead.count()` retourne 0 ( modèle bien exposé par le client).
+
+### 2. Clés i18n (namespace `pro`)
+- Ajouté un nouveau namespace top-level `pro` dans `src/i18n/locales/fr.json` (lignes 3638-3784, ~146 clés) et `en.json` (lignes 3638-3785). JSON validé via `JSON.parse`.
+- Couvre: metaTitle/Description, pageTitle/Subtitle, badgeEarlyAccess, nav*, cta* (8), features* (eyebrow/title/subtitle/4×feature), pricing* (eyebrow/title/subtitle/perMonth/perMonthPerTech/custom/cta + 4 plans Solo/Team/Fleet/Enterprise avec name/price/tagline/features[]), faq* (eyebrow/title/contact + 8 Q/A pro-spécifiques), earlyAccess* (eyebrow/title/subtitle/advantagesTitle/7 advantage + formTitle/Subtitle/6 fields/submit/submitting/success/successDetail/5 error), demo* (eyebrow/title/subtitle/5 section + cta).
+- 7 langues: français (FR) et anglais (EN) écrits. Les 5 autres locales (es, de, it, pt, nl) n'ont pas été mises à jour dans ce scope — next-intl tombera sur la clé brute ou le fallback FR pour ces locales (comportement déjà observé ailleurs dans le codebase).
+
+### 3. Layout Pro partagé (`src/app/pro/layout.tsx`)
+- Server component async (getTranslations server-side). Sticky header h-16 avec:
+  * Lien retour Accueil (icône ArrowLeft, label `ctaBackHome`)
+  * Brand block: logo `/logo-aqwelia-web.png` + wordmark "AQWELIA **Pro**" + badge Early Access
+  * Desktop nav (md:flex) 4 liens: #fonctions / #tarifs / /pro/faq / /pro/demo
+  * CTA Early Access (gradient gold → primary) toujours visible à droite
+  * Mobile nav row (md:hidden) horizontalement scrollable
+- Footer: réutilise le composant `@/components/aquamind/footer` (déjà shared avec l'app in-game).
+- Respecte `safe-area-top` (classe CSS existante dans globals.css pour env(safe-area-inset-top)).
+- Même DA que la landing: bg-background, border-gold/20, backdrop-blur-2xl.
+
+### 4. Page principale `/pro` (`src/app/pro/page.tsx`)
+- Server component async avec `generateMetadata()` (SEO-friendly, title `pro.metaTitle`).
+- Hero: badge Early Access (`section-label`) + H1 `pro.pageTitle` + sous-titre `pro.pageSubtitle` + 2 CTAs (Early Access gradient gold + Demo outline gold).
+- Section Features (`id="fonctions"`): 4 cards glassmorphism (`bg-white/10 backdrop-blur-md border border-white/40`) avec icône gradient primary→gold, emoji, titre Playfair, texte. Reprise exacte des 4 modules du brief: CRM Clients 📋, Planning & Interventions 📅, Rapports & Comptes rendus 📊, AQWELIA Care 🛒.
+- Section Pricing (`id="tarifs"`): 4 plans Solo/Team/Fleet/Enterprise en grille responsive (1/2/4 colonnes). Plan Team mis en avant (highlighted=true): border-gold/60, ribbon "Popular" rotaté, gradient gold/12% → white/60, scale 1.03 sur lg, top hairline via-gold. Chaque carte: nom, tagline, prix (gradient ou "Sur devis"), suffixe `/ mois`, CTA Early Access, liste features avec icône Check gold/primary. Plan Enterprise: `custom=true` → bouton "Contacter l'équipe" + pas de suffixe mensuel.
+- Section FAQ preview: 5 Q/A (Q1 différence, Q2 bassins, Q4 données, Q6 engagement, Q7 dispo) en `<details>` natifs (pas de JS, accessible), avec + rotatif gold sur open. Lien vers /pro/faq complet.
+- Section Final CTA: carte glassmorphism border-gold/40 avec icône Sparkles + titre + sous-titre earlyAccessSubtitle + 2 CTAs.
+
+### 5. Page `/pro/early-access` (`src/app/pro/early-access/page.tsx` + `early-access-form.tsx`)
+- **Page** (server component async, `generateMetadata`): Hero (eyebrow + H1 + sous-titre) + section 2 colonnes (lg:grid-cols-2): gauche = 7 avantages Founders (chacun une glass-card avec icône Check gradient primary→gold), droite = `<EarlyAccessForm />`. Sous les avantages, un bandeau gold/5 avec icône Sparkles et sous-titre form (48h ouvrées, pas de CB).
+- **Form** (`'use client'`, 7 avantages exigés du brief):
+  * Champs: companyName (required), email (required, regex), phone (optionnel), poolCount (select 0-20/20-50/50-100/100-200/200+), techCount (select 1/2-4/5-8/9-12/12+), message (textarea, max 5000 chars côté serveur).
+  * Classes CSS `input-glass` (ajoutées au globals.css, voir §7) pour stylisme glassmorphism cohérent.
+  * Validation client miroir API (company + email required, regex email). Affichage erreurs via `status === 'error'` + `errorMsg` state.
+  * États: `idle` → `submitting` (spinner Loader2 animé) → `success` (carte succès avec icône Check gradient, message `earlyAccessSuccess` + détail `earlyAccessSuccessDetail`) OU `error` (bandeau rouge avec icône AlertCircle).
+  * Fetch POST `/api/pro/early-access` avec body JSON. Parse la réponse server-side `data.error` pour l'afficher (déjà traduite par l'API via `translate()` + `pickLocale()`).
+  * Convertit les options select (ex "50-100") en int via `parsePoolCount`/`parseTechCount` (prend la borne inf).
+
+### 6. API `/api/pro/early-access` (`src/app/api/pro/early-access/route.ts`)
+- **POST** (public): valide JSON body, extrait et normalise les 6 champs (email lowercased+trim, companyName trim, phone nullable, poolCount/techCount int bornés 0-1M, message trim+slice 5000). Validations: company required (400), email required (400), email regex (400). Vérifie l'unicité de l'email via `findUnique` → 409 si existe (i18n `pro.earlyAccessErrorEmailExists`). Crée le lead via `(db as any).earlyAccessLead.create` → 201 avec lead (id/companyName/email/poolCount/techCount/createdAt). Catch P2002 (race condition) → 409. Catch générique → 500. Runtime nodejs.
+- **GET** (admin-only): `getServerSession(authOptions)` → 401 si pas de session. Si env var `ADMIN_EMAILS` (CSV) est définie, vérifie que `session.user.email` est dans la liste (sinon 403). Si non définie, n'importe quel user authentifié peut lister (loose admin — à durcir quand le modèle User gagnera un role admin). Retourne `{ leads, count }` triés par `createdAt desc`. Select de tous les champs sauf id interne.
+- Toutes les erreurs traduites via `translate(locale, 'pro.earlyAccessError*', fallback)` côté serveur, en lisant la locale du header `accept-language` réécrit par le middleware (`pickLocale`).
+- Pattern `(db as any).earlyAccessLead` cohérent avec le reste du codebase (`(db as any).user` dans register/dashboard/etc.) pour résilience aux bundles client Prisma stale.
+
+### 7. CSS `input-glass` (ajout globals.css lignes 303-327)
+- Ajouté une classe utilitaire `.input-glass` dans `src/app/globals.css` (entre glow-gold et rise-in):
+  * `width: 100%`, `border-radius: 0.75rem`, `border: 1px solid oklch(1 0 0 / 0.4)`, `background: oklch(1 0.004 195 / 0.7)`, `backdrop-filter: blur(16px) saturate(180%)`, padding `0.625rem 0.875rem`, font-size 0.875rem.
+  * Placeholder color `oklch(0.45 0.02 195 / 0.6)`.
+  * Focus: border gold/65 + box-shadow gold/15 ring 3px.
+  * Dark mode variant: `background: oklch(0.2 0.025 200 / 0.55)`, `border: oklch(1 0 0 / 0.12)`.
+  * `option { color: #0a1f24 }` pour la lisibilité du dropdown sur fond blanc.
+- Utilisée par `early-access-form.tsx` pour les 6 champs (input text/email/tel, select, textarea).
+
+### 8. Page `/pro/demo` (`src/app/pro/demo/page.tsx`)
+- Server component async avec `generateMetadata`. Hero (eyebrow + H1 + sous-titre).
+- 5 sections mockup (Dashboard, Clients, Planning, Intervention, Rapport PDF) en grille lg:grid-cols-2 alternée (texte/mockup à gauche/droite, `lg:grid-flow-dense` pour inverser). Chaque section: icône gradient primary→gold + H2 + texte descriptif + `<BrowserMockup>`.
+- Composant `BrowserMockup` local (titre bar avec 3 pastilles mac + URL `aqwelia.app/pro/<section>`, body avec header row + 3 KPI cards + bar chart OU table rows selon props). Stylisé glass-card + shadow oceanic, ne dépend d'aucune image externe — placeholders CSS-only.
+- Final CTA avec Sparkles + `demoCtaEarlyAccess` + lien gradient gold vers /pro/early-access.
+
+### 9. Page `/pro/faq` (`src/app/pro/faq/page.tsx`)
+- Server component async avec `generateMetadata`. Hero (eyebrow + H1).
+- 8 Q/A Pro-spécifiques (Q1 différence particuliers, Q2 nombre bassins, Q3 techniciens, Q4 données protégées, Q5 import clients, Q6 engagement, Q7 dispo, Q8 offline) en `<details>` natifs (identique à la FAQ preview du `/pro` mais avec les 8 complètes). Hover bg-white/70, open border-gold/40 + bg-white/70. Pastille + rotative gold sur open.
+- Ligne contact (icône Mail + `faqContact` + mailto contact@aqwelia.app).
+- Final CTA vers /pro/early-access.
+
+### 10. Vérifications
+- **Lint** (`bun run lint`): PASS, exit 0, 0 erreur, 0 warning. ✓
+- **TypeScript** (`bunx tsc --noEmit`): 2 erreurs seulement, **les deux dans `skills/`** (third-party skill packages `image-edit/scripts/image-edit.ts` et `stock-analysis-skill/src/analyzer.ts`), aucune dans `src/`. Cohérent avec l'état antérieur (P4-MOBILE). ✓
+- **Dev server** (start + curl):
+  * `/pro` → HTTP 200
+  * `/pro/early-access` → HTTP 200
+  * `/pro/demo` → HTTP 200
+  * `/pro/faq` → HTTP 200
+  * `POST /api/pro/early-access` (FR locale, body valide) → HTTP 201, lead créé avec id/companyName/email/poolCount/techCount/createdAt.
+  * `POST` email dupliqué → HTTP 409 `"Cet email est déjà inscrit. Nous vous contacterons bientôt."`
+  * `POST` email invalide → HTTP 400 `"Email invalide"` (FR) / `"Invalid email"` (EN avec cookie NEXT_LOCALE=en) — i18n serveur fonctionne.
+  * `POST` companyName manquant → HTTP 400 `"Nom de l'entreprise requis"`.
+  * `GET /api/pro/early-access` sans session → HTTP 401 (admin gate OK).
+- **Clean-up DB**: supprimé le lead de test (`deleteMany({})` → 1 supprimé).
+- **Pré-commit hook** (i18n French hardcoded check): PASS — `"Aucune chaîne française codée en dur détectée."`. Toutes les strings UI passent par `useTranslations`/`getTranslations`/`translate`.
+
+### 11. Git
+- Commit `4cf6974` "feat: AQWELIA Pro marketing pages + Early Access + FAQ" — 11 fichiers, 1673 insertions:
+  * `prisma/schema.prisma` (modifié: +15 lignes EarlyAccessLead)
+  * `src/app/globals.css` (modifié: +25 lignes .input-glass)
+  * `src/i18n/locales/fr.json` (modifié: +147 lignes namespace pro)
+  * `src/i18n/locales/en.json` (modifié: +147 lignes namespace pro)
+  * `src/app/pro/layout.tsx` (nouveau, 96 lignes)
+  * `src/app/pro/page.tsx` (nouveau, 297 lignes)
+  * `src/app/pro/early-access/page.tsx` (nouveau, 78 lignes)
+  * `src/app/pro/early-access/early-access-form.tsx` (nouveau, 220 lignes)
+  * `src/app/pro/demo/page.tsx` (nouveau, 200 lignes)
+  * `src/app/pro/faq/page.tsx` (nouveau, 95 lignes)
+  * `src/app/api/pro/early-access/route.ts` (nouveau, 188 lignes)
+- Push `origin/main` (a2aa3af → 4cf6974): ✓ succès.
+
+Stage Summary:
+- **4 pages Pro créées** (/pro, /pro/early-access, /pro/demo, /pro/faq) + layout partagé, toutes server components async avec `generateMetadata` SEO-friendly et traductions next-intl via `getTranslations('pro')`. Même DA que la landing (glassmorphism `bg-white/10 backdrop-blur-md border border-white/40`, gold accents, font-display Playfair, gradients gold→primary, safe-area-top).
+- **Modèle Prisma `EarlyAccessLead`** ajouté (7 champs: id/companyName/email unique/phone?/poolCount/techCount/message?/createdAt) et DB SQLite synchronisée via `bunx prisma db push`. Client Prisma régénéré.
+- **API `/api/pro/early-access`** créé: POST public (validations company+email+regex, unicité email, P2002 race-safe), GET admin-only (`getServerSession` + `ADMIN_EMAILS` env var optionnelle). Toutes les erreurs traduites côté serveur via `translate(locale, 'pro.earlyAccessError*', fallback)` + `pickLocale(req)` (lit le header `accept-language` réécrit par middleware).
+- **Form client Early Access** (`early-access-form.tsx`): 6 champs (company/email/phone/poolCount select/techCount select/message textarea), validation miroir API, 4 états (idle/submitting/success/error), spinner Loader2, carte succès avec Check gradient, bandeau erreur rouge avec AlertCircle.
+- **Classe CSS `.input-glass`** ajoutée au globals.css (glassmorphism inputs + dark mode + focus ring gold + option color pour dropdown).
+- **Clés i18n** (~146 clés): nouveau namespace top-level `pro` dans fr.json + en.json, couvrant meta/page/nav/cta/features/pricing (4 plans Solo/Team/Fleet/Enterprise avec features[])/faq (8 Q/A)/earlyAccess (7 advantages + form + 5 errors)/demo (5 sections). JSON validé via `JSON.parse`. Les 5 autres locales (es/de/it/pt/nl) non mises à jour (tomberont sur fallback FR — cohérent avec l'état du codebase).
+- **Page Demo** avec 5 mockups stylisés (BrowserMockup CSS-only, pas d'images externes): Dashboard (KPI + bar chart), Clients (table rows), Planning (bar chart), Intervention (bar chart), Rapport PDF (bar chart). Layout alterné gauche/droite.
+- **Page FAQ** avec 8 Q/A en `<details>` natifs (accessible, pas de JS) + ligne contact mailto.
+- **Lint**: PASS. **TypeScript**: 2 erreurs pré-existantes dans `skills/` (hors scope). ✓
+- **Tests end-to-end** dev server: 4 pages 200, API POST 201/409/400, GET 401 (admin gate). i18n serveur FR/EN validé. ✓
+- **Landing page non modifiée**: `landing-page.tsx`, `pricing.tsx`, `freemium.ts` intouchés — le CTA "Découvrir AQWELIA Pro" existant pointait déjà vers `/pro` et fonctionne maintenant. ✓
+- **Git**: commit `4cf6974` pushé sur `origin/main`. ✓
+- **Reste à faire (hors ce task)**: traduire le namespace `pro` dans les 5 autres locales (es/de/it/pt/nl), ajouter des vraies captures d'écran à /pro/demo quand l'UI Pro sera buildée, configurer `ADMIN_EMAILS` en production pour restreindre le GET, ajouter un envoi email de notification à l'équipe produit quand un lead est créé (Stripe webhook-style).
