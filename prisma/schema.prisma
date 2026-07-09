@@ -334,3 +334,14 @@ model EarlyAccessLead {
   message     String?
   createdAt   DateTime @default(now())
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// AQWELIA CARE — Notifications de lancement (marketing funnel)
+// ───────────────────────────────────────────────────────────────────────────
+
+// Soumissions du formulaire /care (particuliers / pros intéressés par Care)
+model CareNotification {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
