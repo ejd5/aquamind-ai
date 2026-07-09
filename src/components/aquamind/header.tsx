@@ -48,7 +48,7 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
           <img
             src="/logo-aqwelia-web.png"
             alt="AQWELIA"
-            className="h-12 w-auto object-contain"
+            className="h-16 w-auto object-contain"
           />
 
           <div className="leading-tight">

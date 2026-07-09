@@ -28,7 +28,7 @@ export default async function LegalLayout({ children }: { children: React.ReactN
 
           <Link href="/" className="flex items-center gap-2.5">
             <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg shadow-md shadow-primary/30">
-              <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-12 w-auto object-contain" />
+              <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-16 w-auto object-contain" />
             </div>
             <span className="font-display text-base font-bold tracking-tight">
               <span className="aqua-text-gradient">AQWELIA</span>
