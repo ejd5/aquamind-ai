@@ -21,6 +21,8 @@ import { FeaturesGrid } from './sections/features-grid'
 import { InternationalSection } from './sections/international-section'
 import { Pricing } from './sections/pricing'
 import { Faq } from './sections/faq'
+import { ProPreview } from './sections/pro-preview'
+import { CarePreview } from './sections/care-preview'
 import { FinalCta } from './sections/final-cta'
 import { scrollToId } from './landing-utils'
 
@@ -198,6 +200,8 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
         <InternationalSection />
         <Pricing hasProfile={hasProfile} onEnterApp={onEnterApp} />
         <Faq />
+        <ProPreview />
+        <CarePreview />
         <FinalCta hasProfile={hasProfile} onEnterApp={onEnterApp} />
       </main>
 

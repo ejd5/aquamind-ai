@@ -289,8 +289,8 @@ model GuideView {
 model Subscription {
   id        String    @id @default(cuid())
   userId    String
-  plan      String    @default("free") // free, premium, expert
-  duration  String? // week, month, quarter, halfyear
+  plan      String    @default("decouverte") // decouverte, oasis, wellness
+  duration  String? // week, month, halfyear, year
   startedAt DateTime  @default(now())
   expiresAt DateTime?
   active    Boolean   @default(false)

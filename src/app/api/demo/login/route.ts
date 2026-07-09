@@ -83,11 +83,11 @@ export async function POST(req: Request) {
         },
       })
 
-      // Mark the demo user as Free plan so the paywall is reachable.
+      // Mark the demo user as Découverte plan so the paywall is reachable.
       await db.subscription.create({
         data: {
           userId: user.id,
-          plan: 'free',
+          plan: 'decouverte',
           active: true,
         },
       })

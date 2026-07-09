@@ -1,25 +1,29 @@
 // Freemium logic — plans, limites, gating
-// 3 plans RevenueCat-ready : free / premium / expert
-// (anciennement surface / limpide / cristal / gardien — voir worklog L1-C)
+// 3 plans RevenueCat-ready : decouverte / oasis / wellness
+// (anciennement free / premium / expert — voir worklog P1-TARIFS)
 //
 // i18n strategy: the French literals stay as legacy fallback, but each Plan
 // also exposes `nameKey`, `taglineKey`, and `featureKeys` (array of translation
 // keys) so consumers can use `t(plan.nameKey)` and `plan.featureKeys.map(k => t(k))`.
 // `canAccess()` exposes `reasonKey` (translation key) in addition to `reason`.
+//
+// Legacy i18n keys (free.*, premium.*, expert.*) are kept in locale files for
+// backward compatibility but are no longer referenced by PLANS.
 
-export type PlanId = 'free' | 'premium' | 'expert'
+export type PlanId = 'decouverte' | 'oasis' | 'wellness'
 
 export interface Plan {
   id: PlanId
   name: string          // French fallback (legacy)
-  nameKey: string       // translation key, e.g. 'free.name'
+  nameKey: string       // translation key, e.g. 'decouverte.name'
   tagline: string       // French fallback (legacy)
-  taglineKey: string    // translation key, e.g. 'free.tagline'
-  price: { week: number; month: number; quarter: number; halfyear: number }
+  taglineKey: string    // translation key, e.g. 'decouverte.tagline'
+  price: { week: number; month: number; quarter: number; halfyear: number; year: number }
   features: string[]        // French fallback (legacy)
-  featureKeys: string[]     // translation keys (one per feature), e.g. 'free.features.1pool'
+  featureKeys: string[]     // translation keys (one per feature), e.g. 'decouverte.features.poolProfile'
   limits: {
     maxPools: number
+    maxSpas: number
     maxPhotoScansPerMonth: number
     maxTestsPerMonth: number
     weatherEnabled: boolean
@@ -38,34 +42,35 @@ export interface Plan {
 
 export const PLANS: Plan[] = [
   {
-    id: 'free',
-    name: 'Free',
-    nameKey: 'free.name',
-    tagline: 'Gratuit — pour découvrir',
-    taglineKey: 'free.tagline',
-    price: { week: 0, month: 0, quarter: 0, halfyear: 0 },
+    id: 'decouverte',
+    name: 'Découverte',
+    nameKey: 'decouverte.name',
+    tagline: 'Gratuit — pour tester',
+    taglineKey: 'decouverte.tagline',
+    price: { week: 0, month: 0, quarter: 0, halfyear: 0, year: 0 },
     features: [
-      '1 piscine',
-      "Test d'eau illimité (manuel)",
-      'Indice eau claire + sécurité baignade',
+      "Création d'un profil piscine",
+      'Accès limité aux guides (5 guides de base)',
+      'Une analyse manuelle limitée (2 tests/mois)',
+      'Aperçu des alertes météo (basique)',
+      'Aperçu de l\'historique (14 jours)',
       '2 scans photo / mois',
-      'Météo simple',
-      '5 guides de base',
-      'Historique 14 jours',
+      'Fonctions premium visibles mais verrouillées',
     ],
     featureKeys: [
-      'free.features.1pool',
-      'free.features.unlimitedManualTests',
-      'free.features.clearWaterIndex',
-      'free.features.2scans',
-      'free.features.simpleWeather',
-      'free.features.5guides',
-      'free.features.history14',
+      'decouverte.features.poolProfile',
+      'decouverte.features.5guides',
+      'decouverte.features.2tests',
+      'decouverte.features.basicWeather',
+      'decouverte.features.history14',
+      'decouverte.features.2scans',
+      'decouverte.features.lockedPremium',
     ],
     limits: {
       maxPools: 1,
+      maxSpas: 0,
       maxPhotoScansPerMonth: 2,
-      maxTestsPerMonth: 999,
+      maxTestsPerMonth: 2,
       weatherEnabled: true,
       smartReminders: false,
       guidesAccess: 'basic',
@@ -79,86 +84,102 @@ export const PLANS: Plan[] = [
     icon: '🌊',
   },
   {
-    id: 'premium',
-    name: 'Premium',
-    nameKey: 'premium.name',
-    tagline: 'Le copilote complet',
-    taglineKey: 'premium.tagline',
-    price: { week: 4.99, month: 12.99, quarter: 32.99, halfyear: 57.99 },
+    id: 'oasis',
+    name: 'Oasis',
+    nameKey: 'oasis.name',
+    tagline: 'Le copilote piscine complet',
+    taglineKey: 'oasis.tagline',
+    price: { week: 3.99, month: 9.99, quarter: 24.99, halfyear: 39.99, year: 59.99 },
     features: [
-      '3 piscines',
-      'Scans photo illimités',
-      'Météo avancée + alertes',
-      'Tous les guides + vidéos',
+      '1 piscine',
+      'Analyses illimitées',
+      'Recommandations personnalisées',
+      'Calculs de dosage',
+      'Analyse assistée bandelettes',
+      'Alertes météo avancées',
       'Rappels intelligents',
-      'Rapport PDF partageable',
-      'Mode pro (LSI avancé)',
-      'Spa et eau chaude (brome, oxygène actif)',
       'Historique illimité',
-      'Support prioritaire',
+      'Guides complets + vidéos',
+      'Gestion du stock',
+      'Recommandations AQWELIA Care',
+      'Plan de remise en route',
+      "Plan d'hivernage",
+      'Assistance intelligente (AI chat)',
+      'Rapport PDF',
+      'Mode pro (LSI avancé)',
     ],
     featureKeys: [
-      'premium.features.3pools',
-      'premium.features.unlimitedScans',
-      'premium.features.advancedWeather',
-      'premium.features.allGuidesVideos',
-      'premium.features.smartReminders',
-      'premium.features.pdfReport',
-      'premium.features.proMode',
-      'premium.features.spaSupport',
-      'premium.features.unlimitedHistory',
-      'premium.features.prioritySupport',
+      'oasis.features.1pool',
+      'oasis.features.unlimitedTests',
+      'oasis.features.personalizedRecos',
+      'oasis.features.dosageCalc',
+      'oasis.features.stripAssisted',
+      'oasis.features.advancedWeather',
+      'oasis.features.smartReminders',
+      'oasis.features.unlimitedHistory',
+      'oasis.features.allGuidesVideos',
+      'oasis.features.stockMgmt',
+      'oasis.features.careRecos',
+      'oasis.features.startupPlan',
+      'oasis.features.winteringPlan',
+      'oasis.features.aiChat',
+      'oasis.features.pdfReport',
+      'oasis.features.proMode',
     ],
     limits: {
-      maxPools: 3,
+      maxPools: 1,
+      maxSpas: 0,
       maxPhotoScansPerMonth: 999,
       maxTestsPerMonth: 999,
       weatherEnabled: true,
       smartReminders: true,
       guidesAccess: 'all_plus_video',
-      multiPool: true,
+      multiPool: false,
       pdfReport: true,
       proMode: true,
       historyDays: 9999,
-      spaSupport: true,
+      spaSupport: false,
     },
     highlighted: true,
     color: 'accent',
     icon: '✨',
   },
   {
-    id: 'expert',
-    name: 'Expert',
-    nameKey: 'expert.name',
-    tagline: 'Pour piscinistes et techniciens',
-    taglineKey: 'expert.tagline',
-    price: { week: 9.99, month: 24.99, quarter: 59.99, halfyear: 109.99 },
+    id: 'wellness',
+    name: 'Wellness',
+    nameKey: 'wellness.name',
+    tagline: 'Piscine + Spa, sereinement',
+    taglineKey: 'wellness.tagline',
+    price: { week: 5.99, month: 14.99, quarter: 39.99, halfyear: 54.99, year: 79.99 },
     features: [
-      'Tout Premium',
-      'Multi-clients illimité',
-      'Devis et planning visites',
-      'Photos avant/après',
-      'Notes techniques avancées',
-      'Export comptable',
-      'API + intégrations',
+      '1 piscine + 1 spa',
+      'Tout Oasis',
+      'Traitements spécifiques spa (brome, oxygène actif)',
+      'Eau chaude',
+      'Historiques illimités séparés',
+      'Rapports PDF',
+      "Profils d'eau séparés",
+      'Alertes spécifiques spa',
     ],
     featureKeys: [
-      'expert.features.allPremium',
-      'expert.features.multiClients',
-      'expert.features.quotesVisits',
-      'expert.features.photosBeforeAfter',
-      'expert.features.advancedTechNotes',
-      'expert.features.accountingExport',
-      'expert.features.apiIntegrations',
+      'wellness.features.1pool1spa',
+      'wellness.features.allOasis',
+      'wellness.features.spaTreatments',
+      'wellness.features.warmWater',
+      'wellness.features.separatedHistory',
+      'wellness.features.pdfReports',
+      'wellness.features.separatedProfiles',
+      'wellness.features.spaAlerts',
     ],
     limits: {
-      maxPools: 999,
+      maxPools: 1,
+      maxSpas: 1,
       maxPhotoScansPerMonth: 999,
       maxTestsPerMonth: 999,
       weatherEnabled: true,
       smartReminders: true,
       guidesAccess: 'all_plus_video',
-      multiPool: true,
+      multiPool: false,
       pdfReport: true,
       proMode: true,
       historyDays: 9999,
@@ -172,8 +193,8 @@ export const PLANS: Plan[] = [
 export const DURATIONS = [
   { id: 'week', label: '7 jours', suffix: '/semaine', labelKey: 'week', suffixKey: 'perWeek' },
   { id: 'month', label: '1 mois', suffix: '/mois', labelKey: 'month', suffixKey: 'perMonth' },
-  { id: 'quarter', label: '3 mois', suffix: '/3 mois', save: '10%', labelKey: 'quarter', suffixKey: 'perQuarter' },
   { id: 'halfyear', label: '6 mois', suffix: '/6 mois', save: '20%', labelKey: 'halfyear', suffixKey: 'perHalfyear' },
+  { id: 'year', label: '12 mois', suffix: '/an', save: '30%', labelKey: 'year', suffixKey: 'perYear' },
 ] as const
 
 export type FeatureGate =
@@ -197,8 +218,8 @@ export interface CanAccessResult {
 
 // Vérifie si une feature est accessible selon le plan.
 // ctaPlan pointe vers le plan minimum pour débloquer la feature :
-//   - PLANS[1] = premium : la plupart des features payantes (multi-piscines, PDF, mode pro, météo avancée…)
-//   - PLANS[2] = expert  : réservé aux gates futures (multi-client illimité, API) — non listées ici
+//   - PLANS[1] = oasis    : la plupart des features payantes (PDF, mode pro, météo avancée…)
+//   - PLANS[2] = wellness : spa + traitements spa (brome, oxygène actif, eau chaude)
 export function canAccess(plan: PlanId, feature: FeatureGate, usage?: { photoScansThisMonth?: number }): CanAccessResult {
   const p = PLANS.find((x) => x.id === plan) || PLANS[0]
 
@@ -215,7 +236,7 @@ export function canAccess(plan: PlanId, feature: FeatureGate, usage?: { photoSca
       }
       return { allowed: true }
     case 'weather_advanced':
-      return p.limits.weatherEnabled
+      return p.limits.weatherEnabled && p.id !== 'decouverte'
         ? { allowed: true }
         : { allowed: false, reason: 'Météo avancée réservée aux plans payants.', reasonKey: 'gates.weather_advanced', ctaPlan: PLANS[1].id }
     case 'smart_reminders':
@@ -229,15 +250,15 @@ export function canAccess(plan: PlanId, feature: FeatureGate, usage?: { photoSca
     case 'multi_pool':
       return p.limits.multiPool
         ? { allowed: true }
-        : { allowed: false, reason: 'Multi-piscines réservé à Premium et Expert.', reasonKey: 'gates.multi_pool', ctaPlan: PLANS[1].id }
+        : { allowed: false, reason: 'Multi-piscines réservé à Oasis et Wellness.', reasonKey: 'gates.multi_pool', ctaPlan: PLANS[1].id }
     case 'pdf_report':
       return p.limits.pdfReport
         ? { allowed: true }
-        : { allowed: false, reason: 'Rapport PDF réservé à Premium et Expert.', reasonKey: 'gates.pdf_report', ctaPlan: PLANS[1].id }
+        : { allowed: false, reason: 'Rapport PDF réservé à Oasis et Wellness.', reasonKey: 'gates.pdf_report', ctaPlan: PLANS[1].id }
     case 'pro_mode':
       return p.limits.proMode
         ? { allowed: true }
-        : { allowed: false, reason: 'Mode pro réservé à Premium et Expert.', reasonKey: 'gates.pro_mode', ctaPlan: PLANS[1].id }
+        : { allowed: false, reason: 'Mode pro réservé à Oasis et Wellness.', reasonKey: 'gates.pro_mode', ctaPlan: PLANS[1].id }
     case 'history_extended':
       return p.limits.historyDays >= 90
         ? { allowed: true }
@@ -245,11 +266,11 @@ export function canAccess(plan: PlanId, feature: FeatureGate, usage?: { photoSca
     case 'spa_support':
       return p.limits.spaSupport
         ? { allowed: true }
-        : { allowed: false, reason: 'Le support des spas est réservé au plan Premium.', reasonKey: 'gates.spa_support', ctaPlan: PLANS[1].id }
+        : { allowed: false, reason: 'Le support des spas est réservé au plan Wellness.', reasonKey: 'gates.spa_support', ctaPlan: PLANS[2].id }
     default:
       return { allowed: true }
   }
 }
 
 // Plan par défaut (utilisateur non connecté / gratuit)
-export const DEFAULT_PLAN: PlanId = 'free'
+export const DEFAULT_PLAN: PlanId = 'decouverte'

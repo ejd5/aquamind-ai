@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
         const cs = event.data.object
         const userId = cs.metadata?.userId || cs.client_reference_id
         const productId = cs.metadata?.productId
-        const plan = cs.metadata?.plan as 'premium' | 'expert'
+        const plan = cs.metadata?.plan as 'oasis' | 'wellness'
 
         if (userId && plan) {
           // Deactivate previous subscriptions for this user
@@ -57,7 +57,13 @@ export async function POST(req: NextRequest) {
             data: {
               userId,
               plan,
-              duration: productId?.includes('yearly') ? 'halfyear' : 'month',
+              duration: productId?.includes('yearly')
+                ? 'year'
+                : productId?.includes('seasonal')
+                ? 'halfyear'
+                : productId?.includes('weekly')
+                ? 'week'
+                : 'month',
               startedAt: new Date(),
               expiresAt: null, // Will be updated by subsequent invoice/subscription events
               active: true,

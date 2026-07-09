@@ -1,10 +1,10 @@
-export type PlanId = 'free' | 'premium' | 'expert'
+export type PlanId = 'decouverte' | 'oasis' | 'wellness'
 export type BillingPlatform = 'web' | 'ios' | 'android'
 
 export interface Product {
   id: string
   plan: PlanId
-  duration: 'monthly' | 'yearly'
+  duration: 'weekly' | 'monthly' | 'seasonal' | 'yearly'
   price: number
   priceString: string
   currency: string
@@ -12,7 +12,7 @@ export interface Product {
 }
 
 export interface Entitlement {
-  id: 'premium' | 'expert'
+  id: 'oasis' | 'wellness'
   plan: PlanId
   isActive: boolean
   willRenew: boolean

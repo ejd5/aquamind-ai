@@ -653,9 +653,9 @@
     "faqQ8": "Kan ik op elk moment opzeggen?",
     "faqA8": "Ja, zonder verplichting. Geen verborgen kosten.",
     "finalCtaEyebrow": "Instellen in 2 minuten",
-    "finalCtaTitle": "Uw zwembad verdient een echte copiloot.",
+    "finalCtaTitle": "Krijg eindelijk de controle over het onderhoud van uw zwembad.",
     "finalCtaSubtitle": "Gratis starten. Geen creditcard. In 2 minuten weet u wat u moet doen.",
-    "finalCtaStart": "Nu starten",
+    "finalCtaStart": "Gratis starten",
     "finalCtaMySpace": "Mijn ruimte openen",
     "finalCtaSeePricing": "Prijzen bekijken",
     "finalCtaDisclaimer": "Al 11 modules · 20 handleidingen · deterministische dosis-engine · realtime weer",
@@ -687,7 +687,48 @@
     "footerComingSoon": "binnenkort",
     "disclaimerLabel": "Disclaimer.",
     "heroPhoneChlorine": "Chloor",
-    "heroTitleLine2": ""
+    "heroTitleLine2": "",
+    "faqProReplace": "Vervangt AQWELIA een poolprofessional?",
+    "faqProReplaceA": "Nee — het vult hem aan. De poolprofessional komt 1 keer per week; AQWELIA dekt de andere 6 dagen, handelt noodsituaties af en helpt u uw water te begrijpen. Veel gebruikers houden hun poolprofessional en gebruiken AQWELIA parallel.",
+    "faqHowIA": "Hoe werkt de AI-analyse?",
+    "faqHowIAA": "De AI analyseert uw foto's van teststrips, water en zwembad, combineert deze gegevens met uw chemische geschiedenis en het weer, en geeft vervolgens een diagnose met een betrouwbaarheidsniveau. Kritische doseringsberekeningen worden uitgevoerd door een deterministische engine, niet door de AI.",
+    "faqSpaManage": "Kan ik een spa beheren?",
+    "faqSpaManageA": "Ja. AQWELIA beheert spa's met speciale functies: behandeling met broom of actieve zuurstof, temperatuurbewaking, herinneringen voor waterverversing en aangepaste filtratieprogramma's. Beschikbaar vanaf het Lagoon-abonnement.",
+    "faqSellProducts": "Verkoopt de app producten?",
+    "faqSellProductsA": "AQWELIA verkoopt geen producten direct. Wanneer een behoefte wordt gedetecteerd, beveelt de app het juiste product in de juiste dosering aan en vertelt u waar u het in de buurt kunt kopen. AQWELIA Care, binnenkort beschikbaar, zal deze aanbevelingen automatiseren.",
+    "faqGreenWater": "Wat gebeurt er als mijn water groen wordt?",
+    "faqGreenWaterA": "AQWELIA detecteert algentekens, identificeert de waarschijnlijke oorzaak (onvoldoende chloor, onevenwichtige pH, te korte filtratie) en biedt u een stapsgewijs actieplan: schokbehandeling, reiniging, pH-aanpassing en aangepaste filtratieduur.",
+    "faqAllYear": "Werkt AQWELIA het hele jaar door?",
+    "faqAllYearA": "Ja. In het seizoen verzorgt de app analyses en doseringen. Tijdens overwintering vertelt de app u wanneer en hoe u moet overwinteren, bewaakt de afdekking en bereidt de heropening in de lente voor met een bijvulplan.",
+    "faqProVersion": "Bestaat er een versie voor professionals?",
+    "faqProVersionA": "Ja — AQWELIA Pro, binnenkort beschikbaar, is ontworpen voor poolprofessionals: klant- en zwembadbeheer, geoptimaliseerde planning, bewijzen van bezoek, gepersonaliseerde PDF-rapporten en statistieken. Schrijf u in voor vroege toegang.",
+    "proPreviewEyebrow": "13 — AQWELIA Pro",
+    "proPreviewTitle": "Onderhoudt u de zwembaden van uw klanten?",
+    "proPreviewSubtitle": "AQWELIA Pro: beheer uw klanten, interventies en zwembaden vanuit één intelligent platform.",
+    "proPreviewBadge": "Early Access",
+    "proPreviewBadgeText": "Binnenkort beschikbaar",
+    "proPreviewCard1Title": "Klantenbeheer",
+    "proPreviewCard1Text": "Klantendossiers, zwembaden, chemische geschiedenis",
+    "proPreviewCard2Title": "Planning & interventies",
+    "proPreviewCard2Text": "Geoptimaliseerde routes, bewijzen van bezoek, foto's voor/na",
+    "proPreviewCard3Title": "Rapporten & verslagen",
+    "proPreviewCard3Text": "Gepersonaliseerde PDF-rapporten, statistieken, exports",
+    "proPreviewCard4Title": "Care-aanbevelingen",
+    "proPreviewCard4Text": "Extra inkomsten via AQWELIA Care",
+    "proPreviewCta": "AQWELIA Pro ontdekken",
+    "carePreviewEyebrow": "14 — AQWELIA Care",
+    "carePreviewTitle": "Het juiste product, op het juiste moment, in de juiste hoeveelheid.",
+    "carePreviewSubtitle": "AQWELIA Care beperkt zich niet tot een catalogus: het begeleidt u bij elke stap, van gedetecteerde behoefte tot winkelmandje.",
+    "carePreviewBadge": "Binnenkort beschikbaar",
+    "carePreviewStep1": "AQWELIA detecteert de behoefte",
+    "carePreviewStep1Text": "Op basis van uw laatste analyse, geschiedenis en het weer identificeert de app het benodigde product.",
+    "carePreviewStep2": "AQWELIA berekent de hoeveelheid",
+    "carePreviewStep2Text": "De deterministische engine berekent de exacte dosering op basis van uw watervolume en huidige parameters.",
+    "carePreviewStep3": "AQWELIA controleert de compatibiliteit",
+    "carePreviewStep3Text": "De app verifieert dat het product compatibel is met uw behandeling, uw apparatuur en uw andere producten.",
+    "carePreviewStep4": "Het product kan aan het winkelmandje worden toegevoegd",
+    "carePreviewStep4Text": "Eenmaal gevalideerd, voegt u het product met één klik toe aan het winkelmandje en koopt u het waar u wilt.",
+    "carePreviewCta": "AQWELIA Care ontdekken"
   },
   "plans": {
     "free": {
@@ -806,7 +847,8 @@
       "multiPool": "Multi-zwembaden",
       "pdfReport": "PDF-rapport",
       "proMode": "Pro-modus (geavanceerde LSI)",
-      "history": "Geschiedenis"
+      "history": "Geschiedenis",
+      "spa": "Spa"
     },
     "unlimited": "Onbeperkt",
     "daysShort": "{n} d",
@@ -886,12 +928,64 @@
       "weather_advanced": "Geavanceerd weer is voorbehouden aan betaalde abonnementen.",
       "smart_reminders": "Slimme herinneringen zijn voorbehouden aan betaalde abonnementen.",
       "guides_premium": "Premium-gidsen zijn voorbehouden aan betaalde abonnementen.",
-      "multi_pool": "Multi-zwembad is voorbehouden aan Premium en Expert.",
-      "pdf_report": "PDF-rapport is voorbehouden aan Premium en Expert.",
-      "pro_mode": "Pro-modus is voorbehouden aan Premium en Expert.",
+      "multi_pool": "Multi-zwembad voorbehouden aan Oasis en Wellness.",
+      "pdf_report": "PDF-rapport voorbehouden aan Oasis en Wellness.",
+      "pro_mode": "Pro-modus voorbehouden aan Oasis en Wellness.",
       "history_extended": "Uitgebreide geschiedenis is voorbehouden aan betaalde abonnementen.",
-      "spa_support": "Spa-support is voorbehouden aan het Premium-abonnement."
-    }
+      "spa_support": "Spa-ondersteuning is voorbehouden aan het Wellness-abonnement."
+    },
+    "decouverte": {
+      "name": "Ontdekking",
+      "tagline": "Gratis — om te testen",
+      "features": {
+        "poolProfile": "Aanmaken van een zwembadprofiel",
+        "5guides": "Beperkte toegang tot gidsen (5 basisgidsen)",
+        "2tests": "Beperkte handmatige analyse (2 tests/maand)",
+        "basicWeather": "Voorvertoning van weeralarmen (basis)",
+        "history14": "Voorvertoning van geschiedenis (14 dagen)",
+        "2scans": "2 foto-scans / maand",
+        "lockedPremium": "Premium-functies zichtbaar maar vergrendeld"
+      }
+    },
+    "oasis": {
+      "name": "Oasis",
+      "tagline": "De complete zwembad-copiloot",
+      "features": {
+        "1pool": "1 zwembad",
+        "unlimitedTests": "Onbeperkte analyses",
+        "personalizedRecos": "Gepersonaliseerde aanbevelingen",
+        "dosageCalc": "Doseringen berekenen",
+        "stripAssisted": "Strip-ondersteunde analyse",
+        "advancedWeather": "Geavanceerde weeralarmen",
+        "smartReminders": "Slimme herinneringen",
+        "unlimitedHistory": "Onbeperkte geschiedenis",
+        "allGuidesVideos": "Alle gidsen + video's",
+        "stockMgmt": "Voorraadbeheer",
+        "careRecos": "AQWELIA Care-aanbevelingen",
+        "startupPlan": "Opstartplan",
+        "winteringPlan": "Winterplan",
+        "aiChat": "Slimme assistent (AI-chat)",
+        "pdfReport": "PDF-rapport",
+        "proMode": "Pro-modus (geavanceerde LSI)"
+      }
+    },
+    "wellness": {
+      "name": "Wellness",
+      "tagline": "Zwembad + Spa, zorgeloos",
+      "features": {
+        "1pool1spa": "1 zwembad + 1 spa",
+        "allOasis": "Alles uit Oasis",
+        "spaTreatments": "Spa-specifieke behandelingen (broom, actieve zuurstof)",
+        "warmWater": "Warm water",
+        "separatedHistory": "Gescheiden onbeperkte geschiedenissen",
+        "pdfReports": "PDF-rapporten",
+        "separatedProfiles": "Gescheiden waterprofielen",
+        "spaAlerts": "Spa-specifieke alarmen"
+      }
+    },
+    "year": "12 maanden",
+    "perYear": "/jaar",
+    "emergencyPass": "Spoedpass"
   },
   "onboarding": {
     "welcome": "Welkom bij AQWELIA",
@@ -1145,7 +1239,10 @@
     "unknownError": "Onbekende fout",
     "footerNote": "AQWELIA — Altijd kristalhelder water. © {year}",
     "exportFailedDesc": "Export mislukt",
-    "deleteFailedDesc": "Verwijdering mislukt"
+    "deleteFailedDesc": "Verwijdering mislukt",
+    "planDecouverte": "Ontdekking",
+    "planOasis": "Oasis",
+    "planWellness": "Wellness"
   },
   "auth": {
     "backHome": "Terug naar home",

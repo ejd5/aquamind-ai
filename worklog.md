@@ -3084,3 +3084,298 @@ Stage Summary:
 - 60 hardcoded French API strings → 0 violations: 13 previously-unwrapped strings now wrapped in `translate()`; 5 redundant double-translate call sites cleaned up to single calls; 2 const-fallback strings inlined; 2 `locale` undefined bugs fixed (stripe/portal + subscription GET).
 - The i18n check script's regex was extended to accept French strings used as the 3rd (fallback) argument of `translate(locale, key, fallback)`, both inline and across multi-line calls. This unblocks the `translate(locale, key, 'French fallback')` pattern that the predecessor task 4-final had already started using.
 - Lint: PASS. TypeScript: PASS for all modified files. i18n check: PASS (0 violations, exit 0).
+
+---
+Task ID: P1-LANDING
+Agent: sub-agent (general-purpose)
+Task: Phase 1.2 — Add missing AQWELIA Pro + AQWELIA Care sections to the landing page, extend FAQ with 7 new questions, update FinalCta title/CTA text, integrate in landing-page.tsx, and add all corresponding i18n keys in fr.json + en.json.
+
+Work Log:
+- Read worklog.md (last 5 sections: RESTORE-1, 4-final, 11-api, 8-healthlog, earlier translator tasks) for context: AQWELIA Next.js 16 pool/spa app with 7-language i18n via next-intl, landing page had 14 sections (Hero → FinalCta), 2704 keys per locale, fr/en as primary sources, glassmorphism design system with `bg-white/10 backdrop-blur-md border border-white/40` cards, bloc-bg images with white fade top/bottom for sections 02/04/06/08, `[text-shadow:_0_1px_3px_rgb(255_255_255),...]` for text on light images, gold gradient CTA buttons.
+- Read existing landing components to align with the established style: `landing-utils.tsx` (GlassCard, Reveal, SectionHeading, staggerContainer, fadeUpVariants, scrollToId helpers), `solution.tsx` (4-step row with numbered cards + big bg number), `story.tsx`/`spa-section.tsx` (background image with fade top+bottom pattern), `faq.tsx` (Accordion with glassmorphism items), `final-cta.tsx` (bg image with dark overlay + white text + gold gradient CTA), `variations.tsx` (transparent bg with subtle gradient). Verified existing i18n key numbering: problem=01, costs=02, ... faq=12. Chose 13 (AQWELIA Pro) and 14 (AQWELIA Care) for the new section eyebrows to fit the established pattern.
+- Created `src/components/landing/sections/pro-preview.tsx` (new file, 101 lines):
+  * Section id="pro-preview" with `relative py-20 sm:py-28` layout.
+  * Subtle gradient background (`bg-gradient-to-b from-background via-secondary/30 to-background`) — explicitly no green/turquoise tint per task spec; chose gradient instead of bloc-bg image because the task spec explicitly forbade green/turquoise backgrounds and the available bloc images all skew teal/aqua.
+  * `SectionHeading` with eyebrow="13 — AQWELIA Pro", title="Vous entretenez les piscines de vos clients ?", subtitle="AQWELIA Pro : gérez vos clients, vos interventions et vos bassins depuis une seule plateforme intelligente."
+  * "Early Access · Bientôt disponible" badge in gold/glassmorphism rounded pill.
+  * 4 GlassCards in responsive grid (1 / 2 / 4 cols) with lucide icons (Users, Calendar, FileText, ShoppingBag) + emoji labels (📋 📅 📊 🛒) + titles/text per task spec.
+  * Gold gradient CTA button linking to `/pro` (page to be created later per task note) with ArrowRight hover translate.
+- Created `src/components/landing/sections/care-preview.tsx` (new file, 107 lines):
+  * Section id="care-preview" with same layout pattern as ProPreview.
+  * `SectionHeading` with eyebrow="14 — AQWELIA Care", title="Le bon produit, au bon moment, dans la bonne quantité.", subtitle describing the process-not-catalog approach.
+  * "Bientôt disponible" badge.
+  * 4-step process row (matching Solution section style) with numbered cards (big translucent gold number top-right), lucide icons (Search, Calculator, CheckCircle2, ShoppingCart), emojis (🔍 🧮 ✅ 🛒), and step titles/text per task spec: (1) AQWELIA détecte le besoin, (2) AQWELIA calcule la quantité, (3) AQWELIA vérifie la compatibilité, (4) Le produit peut être ajouté au panier.
+  * Gold gradient CTA linking to `/care`.
+- Updated `src/components/landing/sections/faq.tsx`: extended the `FAQ` array from 8 to 15 entries by appending 7 new `{ q, a }` pairs using the new i18n keys (`faqProReplace`/`faqProReplaceA`, `faqHowIA`/`faqHowIAA`, `faqSpaManage`/`faqSpaManageA`, `faqSellProducts`/`faqSellProductsA`, `faqGreenWater`/`faqGreenWaterA`, `faqAllYear`/`faqAllYearA`, `faqProVersion`/`faqProVersionA`). No other change needed — the existing Accordion maps over the array.
+- Verified `src/components/landing/sections/final-cta.tsx` already uses `t('finalCtaTitle')` and `t('finalCtaStart')` keys — no code change needed; only the i18n VALUES need updating.
+- Updated `src/components/landing/landing-page.tsx`: added 2 imports (`ProPreview` from `./sections/pro-preview`, `CarePreview` from `./sections/care-preview`) and inserted `<ProPreview />` + `<CarePreview />` between `<Faq />` and `<FinalCta ... />` in the main content. New section count: 16 sections.
+- Added 41 new i18n keys to BOTH `src/i18n/locales/fr.json` and `src/i18n/locales/en.json` (lines 747–787 in each), inserted between `faqA8` and `finalCtaEyebrow`:
+  * 14 FAQ keys (7 Q + 7 A): faqProReplace[A], faqHowIA[A], faqSpaManage[A], faqSellProducts[A], faqGreenWater[A], faqAllYear[A], faqProVersion[A]. All answers reference AQWELIA / IA / Lagoon / Care / Pro consistently with existing brand voice.
+  * 14 proPreview keys: eyebrow, title, subtitle, badge, badgeText, 4×(cardNTitle+cardNText), cta.
+  * 13 carePreview keys: eyebrow, title, subtitle, badge, 4×(stepN+stepNText), cta. (No badgeText — single "Bientôt disponible" badge string.)
+- Updated 2 existing FinalCta keys in BOTH locale files (per task spec):
+  * `finalCtaTitle`: "Votre piscine mérite un vrai copilote." → "Prenez enfin le contrôle de l'entretien de votre piscine." (EN: "Your pool deserves a real copilot." → "Finally take control of your pool maintenance.")
+  * `finalCtaStart`: "Démarrer maintenant" → "Commencer gratuitement" (EN: "Start now" → "Start for free")
+- Did NOT modify `src/lib/pool/freemium.ts` or `src/components/landing/sections/pricing.tsx` per task spec (other agents handling those).
+- Other locales (es/de/it/pt/nl) NOT touched per task spec ("les autres langues seront traduites plus tard"). The new keys are FR/EN only for now — these 5 locales will need translation in a follow-up task.
+
+Verification:
+- `bun run lint` → exit 0, no errors, no warnings. ✓
+- `bunx tsc --noEmit` → 0 errors in any of the modified/created files (pro-preview.tsx, care-preview.tsx, faq.tsx, final-cta.tsx, landing-page.tsx). Pre-existing TS errors in unrelated files (skills/, settings/page.tsx, module-paywall.tsx, module-maintenance.tsx, pricing.tsx, lib/native, safety-rules.ts, middleware.ts) untouched.
+- `python3 scripts/i18n/check-hardcoded-strings.py` → "✅ Aucune chaîne française codée en dur détectée." exit 0. The new components use 100% i18n keys, no hardcoded French strings.
+- JSON validity: both fr.json and en.json parse successfully (validated via `node -e "JSON.parse(...)"`).
+- Key parity: FR=2978 keys, EN=2978 keys (perfect parity, +41 new keys each from 2937 baseline).
+- All 82 expected new/updated keys (41 fr + 41 en) verified present in both files via a Node.js check script.
+- Landing page now renders 16 sections in order: Hero, Problem, RealCosts, PiscinisteCost, Solution, Comparator, Simulations, Savings, Story, Variations, SpaSection, FeaturesGrid, InternationalSection, Pricing, Faq, **ProPreview (new)**, **CarePreview (new)**, FinalCta.
+
+Stage Summary:
+- Files created (2): `src/components/landing/sections/pro-preview.tsx`, `src/components/landing/sections/care-preview.tsx`.
+- Files modified (4): `src/components/landing/sections/faq.tsx` (FAQ array extended 8→15), `src/components/landing/landing-page.tsx` (2 imports + 2 JSX tags inserted), `src/i18n/locales/fr.json` (+41 keys, 2 value updates), `src/i18n/locales/en.json` (+41 keys, 2 value updates).
+- Files NOT modified (per task spec): `src/lib/pool/freemium.ts`, `src/components/landing/sections/pricing.tsx`.
+- 41 new i18n keys per locale (fr + en): 14 FAQ Q/A pairs + 14 proPreview + 13 carePreview.
+- 2 FinalCta i18n values updated per locale (title + start CTA).
+- Lint: PASS. TypeScript (modified files): PASS. i18n hardcoded-string check: PASS.
+- Next steps for follow-up tasks: (1) translate the 41 new keys into es/de/it/pt/nl, (2) create the `/pro` and `/care` route pages so the CTA buttons resolve, (3) verify visual rendering on dev server with Agent Browser.
+
+---
+Task ID: P0-AUDIT
+Agent: sub-agent (general-purpose)
+Task: Réaliser un audit complet du projet AQWELIA et créer le document `docs/AQWELIA_AUDIT_AND_ROADMAP.md` (audit-only, aucune modification de code).
+
+Work Log:
+- Lu `/home/z/my-project/worklog.md` (3 086 lignes, ~30 sections) — pris connaissance de l'historique : restauration du zip AquaMind, design system "Oceanic Luxury", i18n 7 langues finalisé à 2 937 clés × 7 = 20 559 traductions, fix bug `t2.source === 'manual'` (task 8-healthlog), wrapping des 60 chaînes FR codées en dur dans les API routes (task 11-api).
+- Inspecté `package.json` (119 lignes) : Next.js 16.1.1, React 19, next-auth v4.24.11, prisma 6.11.1, next-intl 4.3.4, stripe 22.3, @revenuecat/purchases-capacitor 13.2, 10 plugins @capacitor/* 8.x, 26 paquets @radix-ui/* (shadcn/ui), z-ai-web-dev-sdk 0.0.18, NVIDIA NIM via fetch direct. Pas de framework de test (pas de vitest/jest/playwright).
+- Inspecté `prisma/schema.prisma` (315 lignes) : `provider = "postgresql"` mais `.env` contient `DATABASE_URL=file:/home/z/my-project/db/custom.db` (SQLite) — MISMATCH. 15 modèles (et non 13 comme mentionné dans le worklog) : User, Account, PoolProfile, WaterTest, PhotoDiagnostic, ActionPlan, Equipment, ProductInventory, ChatMessage, MaintenanceTask, PoolDesign, Reminder, GuideView, Subscription, AnalyticsEvent. Toutes les relations vers User sont `onDelete: Cascade`.
+- Inspecté `src/lib/auth.ts` (68 lignes) : NextAuth v4, JWT 30 jours, CredentialsProvider (email+password), hashing via `crypto.scryptSync` (pas de bcryptjs). Modèle Account réservé pour OAuth future-proof. Aucun système de rôles.
+- Lister 25 routes API sous `src/app/api/` : auth (3), account (3), pool (8), stripe (3), revenuecat/webhook, chat, dashboard, demo/login, guides, analytics, subscription, root.
+- Lister 7 pages web : `/` (routeur 4-vues), `/admin` (5 onglets dont 3 placeholders), `/auth/signin`, `/settings` (1 091 lignes, 15 sections), `/legal/{cgu,privacy,support}`.
+- Lister 16 sections landing dans `landing-page.tsx` (et non 14 comme indiqué dans le worklog) : Hero, Problem, RealCosts, PiscinisteCost, Solution, Comparator, Simulations, Savings, Story, Variations, SpaSection, FeaturesGrid, InternationalSection, Pricing, Faq, FinalCta.
+- Compté 93 composants dans `src/components/` : 48 shadcn/ui, 17 modules aqualand (desktop), 16 landing sections, 9 mobile (shell+header+tabs+5 screens), 3 providers/switchers.
+- Inspecté `src/lib/billing/` : abstraction `BillingClient` avec 2 implémentations (revenueCatClient natif, stripeWebClient web). 3 plans (free/premium/expert), 4 durées (week/month/quarter/halfyear), 9 FeatureGates. Incohérence : stripe-web.ts utilise `monthly/yearly` alors que freemium.ts utilise `week/month/quarter/halfyear` — webhook Stripe ne mappe pas week/quarter.
+- Inspecté `src/lib/ai/nvidia.ts` (151 lignes) : nvidiaVision (nemotron-nano-12b-v2-vl) + nvidiaChat (z-ai/glm-5.2), timeout 60s/30s, OpenAI-compatible API.
+- Inspecté `src/middleware.ts` (115 lignes) : détection locale (cookie → Accept-Language → default fr) + auth protection 8 patterns API. Bug TS ligne 104 : `authMiddleware(req as any)` attend 2 args.
+- Inspecté `src/components/aquamind/app-shell.tsx` (376 lignes) : shell desktop avec sidebar + bottom nav mobile. 11 modules desktop (dashboard, diagnostic, water-test, assistant, action-plan, health-log, maintenance, weather, guides, reminders, paywall).
+- Inspecté `src/components/mobile/mobile-app-shell.tsx` (250 lignes) : 5 onglets bottom tabs (home, analyses, assistant, maintenance, profile), setup natif (keyboard, back-button, deep-links, network).
+- Inspecté `capacitor.config.ts` : appId `com.aqwelia.app`, webDir `out`, splash/status-bar/keyboard/local-notifications configurés. 10 plugins @capacitor/* installés.
+- Inspecté `src/lib/native/index.ts` : exporte 5 fonctions depuis `./local-notifications` mais **CE FICHIER N'EXISTE PAS** — bug critique TS2307 masqué par `next.config.ts: ignoreBuildErrors: true`.
+- Compté i18n : 7 locales × 2 937 leaf keys = 20 559 traductions (parité parfaite). 22 namespaces.
+- Exécuté `bunx tsc --noEmit` → 7 erreurs TS détectées (1 critique module manquant, 1 critique middleware, 1 logic bug safety-rules, 1 type mismatch module-maintenance, 3 hors app dans skills/*).
+- Vérifié `.env` : `DATABASE_URL=file:/home/z/my-project/db/custom.db` mais le dossier `db/` n'existe pas à ce chemin — le fichier DB réel est à `/tmp/my-project/db/custom.db`. Mismatch chemins.
+- Vérifié l'absence de projets natifs : `ios/` et `android/` absents (besoin `npx cap add ios/android`).
+- Vérifié que `api/pool/profile/route.ts:42-57` ne persiste PAS les champs spa (waterBodyType, spaSeats, spaTempTarget, spaUsageFreq, spaBrand) bien que l'onboarding les envoie via `...form` — feature spa silencieusement cassée côté persistence.
+- Vérifié `api/account/notifications/route.ts:40,59` : stub non persistant (TODO comments).
+- Vérifié `app/admin/page.tsx:10` : `ADMIN_PASSWORD = 'aqwelia-admin-2026'` en clair dans le bundle client, validation uniquement localStorage.
+- Vérifié `api/pool/photo-diagnostic/route.ts:73` : `imageUrl: image` stocke full base64 en DB (dev only).
+- Vérifié `api/pool/weather/route.ts:56` : `Accept-Language: 'fr'` hardcodé (devrait utiliser `locale`).
+
+Livrable créé :
+- `/home/z/my-project/docs/AQWELIA_AUDIT_AND_ROADMAP.md` (821 lignes, ~37 KB)
+  * §0 Résumé exécutif
+  * §1 Framework & versions (tableau complet dépendances)
+  * §2 Structure routes (5 pages, 25 API, 11 modules desktop, 16 sections landing)
+  * §3 Auth (NextAuth v4, scrypt, pas de rôles)
+  * §4 Prisma 15 modèles (liste exhaustive + champs)
+  * §5 Renvoi §2.2
+  * §6 Rôles utilisateurs (aucun — recommandations)
+  * §7 Composants UI (93 composants, design system)
+  * §8 Responsive & mobile (3 breakpoints, stratégie 3-vues)
+  * §9 Fonctionnalités piscine (26 features listées)
+  * §10 Paiement (Stripe + RevenueCat, 3 plans, 4 durées, 9 gates)
+  * §11 Analytics (interne only, pas de PostHog)
+  * §12 Pages légales (CGU/privacy/support multilingues)
+  * §13 Erreurs build potentielles (7 erreurs TS + 10 bugs runtime)
+  * §14 Fonctionnalités partiellement terminées (12 items)
+  * §15 Données fictives (7 emplacements)
+  * §16 Incohérences graphiques (6 items)
+  * §17 Risques sécurité (15 items)
+  * §18 Config Capacitor
+  * §19 Plugins Capacitor (10 installés, 6 nécessaires manquants)
+  * §20 État i18n (2 937 clés × 7 locales = 20 559 traductions)
+  * §21 Plan d'exécution (8 P0 + 10 P1 + 15 P2 = ~123h)
+  * §22 Décisions techniques (12 décidées + 7 à prendre)
+  * §23 État mobile synthèse (Ce qui marche / Ce qui casse)
+  * §24 Fonctionnalités manquantes (selon promesses freemium)
+  * §25 Conclusion
+  * Annexe A — Index des fichiers inspectés
+
+Stage Summary:
+- Document d'audit créé : `docs/AQWELIA_AUDIT_AND_ROADMAP.md` (821 lignes).
+- Aucune modification de code (audit lecture-seule, conformément à la consigne).
+- 8 actions P0 critiques identifiées (bloquants production) : créer local-notifications.ts, retirer ignoreBuildErrors, fixer API pool/profile pour spa fields, aligner provider Prisma, corriger .env DATABASE_URL, sécuriser /admin, configurer les 12 variables d'environnement, initialiser ios/android natifs.
+- 10 actions P1 majeures (multi-piscines, PDF, persistence notifs, Plan Expert features, admin réel, RBAC, sync durées Stripe/freemium, trial period, photos S3, wttr.in i18n).
+- 15 actions P2 (tests E2E, PostHog, cookie consent, headers sécurité, rate limiting, CAPTCHA, OAuth, push notifications, geolocation natif, app review, studio IA, vidéos guides, export compta, refactor CSS).
+- Estimation remise à niveau production-ready : ~123h (3 semaines dev full-time).
+- 3 bugs critiques non masqués par ignoreBuildErrors identifiés : module local-notifications manquant, signature middleware withAuth, champs spa perdus côté API.
+
+---
+Task ID: P1-TARIFS
+Agent: sub-agent (general-purpose — B2C pricing migration)
+Task: Replace the legacy Free/Premium/Expert B2C plans with the new 3-tier Découverte/Oasis/Wellness offering (Phase 1.1 of the strategic plan).
+
+Work Log:
+- Read worklog.md tail (tasks 4-final, 8-healthlog, 11-api) for context: AQWELIA Next.js pool/spa app, 7-language i18n via next-intl, prior tasks migrated all French hardcoded strings to translation keys. This task restructures the B2C pricing layer end-to-end: plan IDs, prices, features, gates, billing adapters (RevenueCat + Stripe web), API routes, settings UI, and locale files.
+
+Scope notes:
+- Per task IMPORTANT note, did NOT modify: `src/components/landing/sections/*.tsx` (pricing.tsx, spa-section.tsx, etc.), `src/components/aquamind/app-shell.tsx`, `header.tsx`, `footer.tsx`. These will be handled by another agent.
+- Per task IMPORTANT note, kept legacy i18n keys (`plans.free.*`, `plans.premium.*`, `plans.expert.*`, `plans.premiumLabel`, `app-shell.premium`, `app-shell.shortPremium`) for backward compatibility — these keys are still referenced by app-shell.tsx (off-limits) and were left untouched.
+
+Changes — `src/lib/pool/freemium.ts` (full rewrite):
+- `PlanId` type: `'free' | 'premium' | 'expert'` → `'decouverte' | 'oasis' | 'wellness'`.
+- `Plan` interface:
+  * Added `year: number` to the `price` shape (now `{ week, month, quarter, halfyear, year }`).
+  * Added `maxSpas: number`, `maxTestsPerMonth: number`, `spaSupport: boolean` to the `limits` shape (the old Plan interface had `spaSupport` but the local Plan interface in module-paywall.tsx didn't — both now match).
+- New PLANS array:
+  * **Découverte** (free, 0€ all durations): 1 piscine / 0 spa / 2 photo scans/mois / 2 manual tests/mois / basic weather / 5 basic guides / 14-day history / premium features visible but locked. icon 🌊.
+  * **Oasis** (3,99€/7j, 9,99€/mois, 39,99€/6 mois, 59,99€/an): 1 piscine / 0 spa / unlimited scans+tests / advanced weather / smart reminders / unlimited history / all guides+videos / stock mgmt / Care recos / startup plan / wintering plan / AI chat / PDF report / pro mode LSI. icon ✨. `highlighted: true`.
+  * **Wellness** (5,99€/7j, 14,99€/mois, 54,99€/6 mois, 79,99€/an): 1 piscine + 1 spa / spa treatments (bromine, active oxygen) / warm water / separated histories / PDF reports / separated water profiles / spa-specific alerts. icon 🛡️.
+  * `quarter` prices set to sensible interpolation values (Découverte 0, Oasis 24,99€, Wellness 39,99€) — unused by the new duration selector but kept in the type for backward compat with module-paywall.tsx and pricing.tsx.
+- `DURATIONS` array: removed `quarter` (3 mois), added `year` (12 mois, save 30%). New order: week (pass urgence) → month → halfyear (-20%) → year (-30%).
+- `canAccess()`:
+  * All gates that referenced `PLANS[1]` (premium) still point to `PLANS[1]` (now oasis).
+  * `spa_support` gate's ctaPlan: changed from `PLANS[1]` (premium, which had spaSupport=true in old code) to `PLANS[2]` (wellness, the only plan with spaSupport=true in the new structure).
+  * `weather_advanced` gate: tightened the allow-condition to `p.limits.weatherEnabled && p.id !== 'decouverte'` (Découverte has weatherEnabled=true but only basic weather, so it should still gate to oasis).
+  * French fallback strings updated to reference new plan names: "Multi-piscines réservé à Oasis et Wellness.", "Rapport PDF réservé à Oasis et Wellness.", "Mode pro réservé à Oasis et Wellness.", "Le support des spas est réservé au plan Wellness."
+- `DEFAULT_PLAN`: `'free'` → `'decouverte'`.
+
+Changes — `src/lib/billing/types.ts`:
+- `PlanId` type: `'free' | 'premium' | 'expert'` → `'decouverte' | 'oasis' | 'wellness'`.
+- `Product.duration`: `'monthly' | 'yearly'` → `'weekly' | 'monthly' | 'seasonal' | 'yearly'` (to support the 7-day emergency pass + 6-month seasonal + 12-month annual).
+- `Entitlement.id`: `'premium' | 'expert'` → `'oasis' | 'wellness'` (Découverte is the free default and is never an "entitlement" — entitlements only exist for paid plans).
+
+Changes — `src/lib/billing/revenuecat.ts`:
+- `mapPackageToProduct()`: productId matching `'wellness'` → wellness plan, `'oasis'` → oasis plan (was `'expert'`/`'premium'`). Duration mapping extended to handle weekly/seasonal/yearly suffixes in the RevenueCat product id.
+- `mapCustomerInfoToEntitlements()`: entitlement id filter `'premium' | 'expert'` → `'oasis' | 'wellness'`.
+- `getActivePlan()`: priority order wellness → oasis → default `'decouverte'` (was `'free'`). Returns `'decouverte'` on web (non-native).
+
+Changes — `src/lib/billing/stripe-web.ts`:
+- `getProducts()`: returns 8 products (was 4):
+  * `stripe_oasis_weekly` (3,99€), `stripe_oasis_monthly` (9,99€), `stripe_oasis_seasonal` (39,99€), `stripe_oasis_yearly` (59,99€, trialAvailable).
+  * `stripe_wellness_weekly` (5,99€), `stripe_wellness_monthly` (14,99€), `stripe_wellness_seasonal` (54,99€), `stripe_wellness_yearly` (79,99€, trialAvailable).
+- `getEntitlements()` + `getActivePlan()`: plan/entitlement mapping `'premium'|'expert'` → `'oasis'|'wellness'`. Default fallback `'decouverte'` (was `'free'`).
+- Added header docstring documenting the 8 product-id conventions.
+
+Changes — `src/lib/stripe.ts`:
+- `STRIPE_PRICES` keys: 4 (premium/expert × monthly/yearly) → 8 (oasis/wellness × weekly/monthly/seasonal/yearly). Env var names follow `STRIPE_PRICE_<PLAN>_<DURATION>` convention.
+- `getPlanFromProductId()`: returns `'oasis' | 'wellness'` (was `'premium' | 'expert'`). Branching: if productId includes `'wellness'` → wellness, else oasis.
+- Updated docstring with the new plan/duration mapping table.
+
+Changes — `src/app/api/subscription/route.ts`:
+- Top-of-file comment: `'free' | 'premium' | 'expert'` → `'decouverte' | 'oasis' | 'wellness'` (with reference to worklog P1-TARIFS).
+- POST handler duration switch: added `case 'year': expires.setFullYear(now.getFullYear() + 1)` (was missing — year duration would have hit the default month branch).
+
+Changes — `src/app/api/revenuecat/webhook/route.ts`:
+- Plan literal type: `'free' | 'premium' | 'expert'` → `'decouverte' | 'oasis' | 'wellness'`.
+- productId matching: `'expert'` → `'wellness'`, `'premium'` → `'oasis'`.
+- `if (isActive && plan !== 'free')` → `if (isActive && plan !== 'decouverte')`.
+- Duration inference from productId: extended to map `'yearly'` → `'year'`, `'seasonal'` → `'halfyear'`, `'weekly'` → `'week'` (was only `'yearly'` → `'halfyear'` which was incorrect).
+
+Changes — `src/app/api/stripe/webhook/route.ts`:
+- `checkout.session.completed` case: `plan` cast `'premium' | 'expert'` → `'oasis' | 'wellness'`.
+- Duration inference from productId: extended to handle weekly/seasonal/yearly suffixes (was only yearly → halfyear).
+
+Changes — `src/app/api/demo/login/route.ts`:
+- Demo user's initial subscription `plan: 'free'` → `plan: 'decouverte'`.
+- Comment "Mark the demo user as Free plan" → "Mark the demo user as Découverte plan".
+
+Changes — `src/app/settings/page.tsx`:
+- `useState<PlanId>('free')` → `useState<PlanId>('decouverte')` for `activePlan` initial value.
+- `planLabel: Record<PlanId, string>`: `{ free: t('planFree'), premium: t('planPremium'), expert: t('planExpert') }` → `{ decouverte: t('planDecouverte'), oasis: t('planOasis'), wellness: t('planWellness') }`. The 3 new settings keys were added to all 7 locale files by the Python script.
+
+Changes — `src/components/aquamind/module-guides.tsx`:
+- `useState<string>('free')` → `useState<string>('decouverte')` for `currentPlanId`.
+- `currentPlanId === 'free'` → `currentPlanId === 'decouverte'` in `openGuide()` (premium guide gate) and `isGuideLocked()`.
+- Comment "Premium gate: if user is on free plan" → "Premium gate: if user is on Découverte plan".
+
+Changes — `src/components/aquamind/module-reminders.tsx`:
+- `useState<string>('free')` → `useState<string>('decouverte')` for `planId`.
+- `planId === 'free'` → `planId === 'decouverte'` in 2 places (info banner upsell + free plan upsell card).
+
+Changes — `src/components/aquamind/module-paywall.tsx` (significant):
+- `Duration` type: `'week' | 'month' | 'quarter' | 'halfyear'` → `'week' | 'month' | 'halfyear' | 'year'` (removed `quarter`, added `year`).
+- Local `Plan` interface: added `maxSpas`, `maxTestsPerMonth`, `spaSupport` to limits (now matches the freemium.ts Plan interface); added `year: number` to price shape.
+- `DURATIONS` array: removed `quarter` (10% save), added `year` (30% save), marked `week` with `emergency: true` flag (rendered as a "Pass urgence" badge in the duration selector).
+- `COMPARISON` table rows: removed `weather` "p.id !== 'free'" → "p.id !== 'decouverte'"; added a new `spa` row (labelKey `'spa'`) showing `p.limits.spaSupport` and `p.limits.maxSpas` count.
+- `useState<PlanId>('free')` → `useState<PlanId>('decouverte')` (initial currentPlanId); `(data as any)?.plan?.id || 'free'` → `|| 'decouverte'`.
+- `paidPlans = plans.filter((p) => p.id !== 'free')` → `p.id !== 'decouverte'`; `freePlan = plans.find((p) => p.id === 'free')` → `p.id === 'decouverte'`.
+- `activate(planId)`:
+  * `if (planId === 'free')` → `if (planId === 'decouverte')`.
+  * Native (RevenueCat) productId mapping: was `aqwelia_${planId}_${duration === 'halfyear' ? 'yearly' : 'monthly'}` — now maps week→weekly, month→monthly, halfyear→seasonal, year→yearly via a `durationSuffix` helper.
+  * Web (Stripe) productId mapping: same durationSuffix logic.
+- Hero title: `t('passTo', { plan: 'AQWELIA Premium' })` → `t('passTo', { plan: 'AQWELIA Oasis' })`.
+- "Current plan" Crown badge condition: `currentPlanId !== 'free'` → `currentPlanId !== 'decouverte'`.
+- Duration selector: added a "Pass urgence" Badge next to the week option when `d.emergency` is true (uses the new `plans.emergencyPass` translation key).
+- Free plan card: `currentPlanId === 'free'` → `'decouverte'`; `activate('free')` → `activate('decouverte')`; `activating === 'free'` → `=== 'decouverte'`.
+- Manage subscription button: `currentPlanId !== 'free'` → `currentPlanId !== 'decouverte'`.
+- Subscription active footer: `currentPlanId !== 'free'` → `currentPlanId !== 'decouverte'`.
+
+Changes — `prisma/schema.prisma`:
+- `Subscription.plan` default: `"free"` → `"decouverte"`. Comment: `// free, premium, expert` → `// decouverte, oasis, wellness`.
+- `Subscription.duration` comment: `// week, month, quarter, halfyear` → `// week, month, halfyear, year`.
+- NOTE: Prisma migration NOT generated (DB schema change requires `bunx prisma migrate dev` — deferred to the migration-runner agent). The `@default("decouverte")` will only apply to NEW rows; existing rows keep their current `plan` value. Existing users on `'free'` will get a runtime fallback via `PLANS.find((p) => p.id === planId) || PLANS[0]` (which now resolves to Découverte) — safe.
+
+Changes — locale files (all 7: fr, en, es, de, it, pt, nl):
+- Created `scripts/i18n/add-new-plans.py` — a batch updater that adds the new plan keys to all 7 locale files in one shot. The script:
+  * Defines per-locale translations for the 3 new plan blocks (name + tagline + N features each).
+  * Adds `plans.year`, `plans.perYear`, `plans.emergencyPass`, `plans.comparison.spa` keys.
+  * Updates (in place) `plans.gates.multi_pool`, `plans.gates.pdf_report`, `plans.gates.pro_mode`, `plans.gates.spa_support` to reference the new plan names (Premium→Oasis, Expert→Wellness).
+  * Adds `settings.planDecouverte`, `settings.planOasis`, `settings.planWellness` (consumed by settings/page.tsx).
+  * PRESERVES all legacy keys (`plans.free.*`, `plans.premium.*`, `plans.expert.*`, `plans.premiumLabel`, `plans.freeFeatures`, `plans.premiumFeatures`, `plans.expertFeatures`, `plans.rippleFeatures`, `plans.lagoonFeatures`, `plans.atlasFeatures`) — these are no longer referenced by PLANS but kept for backward compatibility with app-shell.tsx (`t('premium')`, `t('shortPremium')`) and any future landing-page copy that may still reference them.
+- New keys added per locale: 41 (9 decouverte + 18 oasis + 10 wellness + year + perYear + emergencyPass + comparison.spa + 3 settings.planXxx) — verified by key-count diff against FR as reference (all 7 locales match exactly on the new plan/settings keys).
+- Total keys: fr.json + en.json = 2898 (was 2857); es/de/it/pt/nl = 2857 (was 2816). The 41-key gap FR/EN ↔ other-5 is the SAME gap as before (pre-existing untranslated common.errors.*, targets.*, actionPlan.* keys from prior tasks); this task did not widen it.
+
+Translations provided per task spec:
+- Découverte name/tagline: 7 locales (FR "Découverte"/"Gratuit — pour tester", EN "Discovery"/"Free — to try", ES "Descubrimiento"/"Gratis — para probar", DE "Entdeckung"/"Kostenlos — zum Testen", IT "Scoperta"/"Gratuito — per provare", PT "Descoberta"/"Grátis — para experimentar", NL "Ontdekking"/"Gratis — om te testen").
+- Oasis name/tagline: 7 locales (FR "Oasis"/"Le copilote piscine complet", EN "Oasis"/"The complete pool copilot", ES "Oasis"/"El copiloto de piscina completo", DE "Oasis"/"Der komplette Pool-Copilot", IT "Oasis"/"Il copilota piscina completo", PT "Oasis"/"O copiloto de piscina completo", NL "Oasis"/"De complete zwembad-copiloot").
+- Wellness name/tagline: 7 locales (FR "Wellness"/"Piscine + Spa, sereinement", EN "Wellness"/"Pool + Spa, worry-free", ES "Wellness"/"Piscina + Spa, sin preocupaciones", DE "Wellness"/"Pool + Spa, sorgenfrei", IT "Wellness"/"Piscina + Spa, senza preoccupazioni", PT "Wellness"/"Piscina + Spa, sem preocupações", NL "Wellness"/"Zwembad + Spa, zorgeloos").
+- Feature keys (7 for Découverte, 16 for Oasis, 8 for Wellness = 31 feature strings × 7 locales = 217 feature translations) — translated by this agent, sourced from the FR source strings in the task spec.
+
+Verification:
+- `bun run lint` → exit 0, no errors, no warnings. ✓
+- `bunx tsc --noEmit` → 0 errors in any file I modified. The 5 TS errors that exist are all in `src/components/landing/sections/pricing.tsx` (lines 20, 27, 38, 39, 91) — this file is OUT OF SCOPE per task IMPORTANT note ("Ne touche PAS aux fichiers landing/sections/*.tsx — un autre agent s'en occupe"). The errors are: (1) `quarter` no longer in the Duration record type, (2) `p.id !== 'free'` comparison is now intentionally-false (PlanId has no 'free' member), (3) `plan.id === 'premium'` likewise. The other agent handling landing/sections will fix pricing.tsx.
+- Pre-existing TS errors (skills/image-edit, skills/stock-analysis-skill, module-maintenance, native/index, safety-rules, middleware) — untouched.
+- JSON validity verified for all 7 locale files via `python3 -c "import json; json.load(open(...))"`. ✓
+- New-keys parity verified: all 7 locales have exactly 41 new plan keys + 3 new settings keys (FR as reference, 0 missing, 0 extra in any other locale). ✓
+- Pricing sanity check: Découverte = 0€ all durations ✓, Oasis = 3,99/9,99/39,99/59,99€ ✓, Wellness = 5,99/14,99/54,99/79,99€ ✓ (matches task spec).
+- Product id convention: `aqwelia_<plan>_<duration>` for RevenueCat (native) and `stripe_<plan>_<duration>` for Stripe (web), where `<plan>` ∈ {oasis, wellness} and `<duration>` ∈ {weekly, monthly, seasonal, yearly}. Découverte is the free default and has no product id.
+
+Files modified (16):
+- `src/lib/pool/freemium.ts` (full rewrite)
+- `src/lib/billing/types.ts`
+- `src/lib/billing/revenuecat.ts`
+- `src/lib/billing/stripe-web.ts`
+- `src/lib/stripe.ts`
+- `src/app/api/subscription/route.ts`
+- `src/app/api/revenuecat/webhook/route.ts`
+- `src/app/api/stripe/webhook/route.ts`
+- `src/app/api/demo/login/route.ts`
+- `src/app/settings/page.tsx`
+- `src/components/aquamind/module-guides.tsx`
+- `src/components/aquamind/module-reminders.tsx`
+- `src/components/aquamind/module-paywall.tsx` (significant: +year duration, +emergency pass UI, +spa comparison row)
+- `prisma/schema.prisma`
+- `src/i18n/locales/{fr,en,es,de,it,pt,nl}.json` (7 files — +41 plan keys, +3 settings keys, ~4 gates messages updated each)
+- New: `scripts/i18n/add-new-plans.py` (batch updater; reusable if the marketing team tweaks plan copy later)
+
+Files inspected but NOT modified (out of scope or unrelated):
+- `src/components/landing/sections/pricing.tsx` (off-limits per task; has 5 new TS errors that the landing-sections agent must fix).
+- `src/components/landing/sections/spa-section.tsx` (uses `brand.category === 'premium'` for spa brand tier — unrelated to plan IDs).
+- `src/components/aquamind/app-shell.tsx` (off-limits per task; uses `t('premium')` and `t('shortPremium')` for tab labels — these i18n keys preserved).
+- `src/lib/pool/spa-data.ts` (`category: 'premium'` for spa brand tier — unrelated to plan IDs).
+- `src/lib/pool/guides-data.ts` (`level: 'expert'` for guide difficulty — unrelated to plan IDs).
+- `src/components/aquamind/onboarding.tsx` (`value: 'free'` for pool SHAPE "free form" — unrelated to plan IDs).
+- `src/app/api/stripe/checkout/route.ts` (uses `getPlanFromProductId()` which was already updated — no further changes needed).
+- `src/i18n/locales/{...}.json` legacy keys (`plans.free.*`, `plans.premium.*`, `plans.expert.*`, `plans.freeFeatures`, `plans.premiumFeatures`, `plans.expertFeatures`, `plans.rippleFeatures`, `plans.lagoonFeatures`, `plans.atlasFeatures`, `plans.premiumLabel`, `app-shell.premium`, `app-shell.shortPremium`, `modules.guides.level.expert`, `settings.planFree`, `settings.planPremium`, `settings.planExpert`) — all PRESERVED for backward compatibility per task IMPORTANT note.
+
+Known follow-ups:
+- **pricing.tsx TS errors**: `src/components/landing/sections/pricing.tsx` has 5 new TS errors (lines 20, 27, 38, 39, 91) caused by the PlanId change (`'free'`/`'premium'` no longer exist; `'quarter'` removed from Duration record). The landing-sections agent must update this file to use the new plan IDs (`'decouverte'`/`'oasis'`/`'wellness'`) and the new DURATIONS array (which now includes `'year'` and excludes `'quarter'`).
+- **Prisma migration**: `prisma/schema.prisma` has the new `@default("decouverte")` but `bunx prisma migrate dev` was NOT run (deferred to migration-runner agent). Existing DB rows with `plan='free'` will be handled at runtime by the `PLANS.find(...) || PLANS[0]` fallback in `/api/subscription` GET handler — safe but should be migrated to `'decouverte'` for consistency.
+- **Stripe Dashboard**: the 8 new Stripe Price IDs (`STRIPE_PRICE_OASIS_WEEKLY`, etc.) must be created in the Stripe Dashboard and wired to the corresponding env vars. Until then, `stripe-web.ts.getProducts()` returns hardcoded display prices but `/api/stripe/checkout` will return `priceNotConfigured` (500) for the new products.
+- **RevenueCat Dashboard**: the 8 new RevenueCat product IDs (`aqwelia_oasis_weekly`, etc.) must be configured in the RevenueCat dashboard under the appropriate offerings. Until then, native IAP will fail with `Product not found`.
+- **`plans.premiumLabel` value**: still says "AQWELIA Premium" in all 7 locale files — used as the eyebrow label above the "Pass to AQWELIA Oasis" hero in module-paywall.tsx. Cosmetic inconsistency left as-is to avoid breaking backward-compat; the marketing team can update the value to "Premium" or "Abonnements" or rename to `oasisLabel` in a future task.
+- **`app-shell.premium` / `app-shell.shortPremium`**: tab label keys still say "AQWELIA Premium" / "Premium" — consumed by app-shell.tsx (off-limits per task). The app-shell agent can rename to `app-shell.oasis` / `app-shell.shortOasis` if desired.
+
+Stage Summary:
+- New 3-tier B2C pricing (Découverte/Oasis/Wellness) is live in code: plan IDs, prices, features, gates, billing adapters, API routes, settings UI, locale files. Lint passes, TypeScript passes for all modified files. The only TS errors are in landing/sections/pricing.tsx which is out of scope per task.
+- 41 new i18n keys added per locale × 7 locales = 287 new translation keys. Plus 3 new settings keys per locale × 7 = 21 keys. Total: 308 new translation keys. Plus 4 gates messages updated per locale × 7 = 28 message updates.
+- Product id conventions documented in `src/lib/billing/stripe-web.ts` and `src/lib/stripe.ts` for the next agent who configures Stripe/RevenueCat dashboards.
+- Batch-update Python script (`scripts/i18n/add-new-plans.py`) is reusable: re-running it is idempotent (overwrites the new keys with the same values).

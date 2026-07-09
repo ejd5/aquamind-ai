@@ -653,9 +653,9 @@
     "faqQ8": "Posso cancelar a qualquer momento?",
     "faqA8": "Sim, sem compromisso. Sem taxas ocultas.",
     "finalCtaEyebrow": "Configuração em 2 minutos",
-    "finalCtaTitle": "A sua piscina merece um verdadeiro copiloto.",
+    "finalCtaTitle": "Tome finalmente o controlo da manutenção da sua piscina.",
     "finalCtaSubtitle": "Gratuito para começar. Sem cartão de crédito. Em 2 minutos saberá o que fazer.",
-    "finalCtaStart": "Começar agora",
+    "finalCtaStart": "Começar grátis",
     "finalCtaMySpace": "Abrir o meu espaço",
     "finalCtaSeePricing": "Ver preços",
     "finalCtaDisclaimer": "Já 11 módulos · 20 guias · motor de dosagem determinista · meteorologia em tempo real",
@@ -687,7 +687,48 @@
     "footerComingSoon": "em breve",
     "disclaimerLabel": "Aviso de prudência.",
     "heroPhoneChlorine": "Cloro",
-    "heroTitleLine2": ""
+    "heroTitleLine2": "",
+    "faqProReplace": "A AQWELIA substitui um piscinastra?",
+    "faqProReplaceA": "Não — ela complementa. O piscinastra vem 1 vez por semana; a AQWELIA cobre os outros 6 dias, gere as urgências e ajuda-o a compreender a sua água. Muitos utilizadores mantêm o seu piscinastra e usam a AQWELIA em paralelo.",
+    "faqHowIA": "Como funciona a análise por IA?",
+    "faqHowIAA": "A IA analisa as suas fotos de fitas, água e piscina, combina estes dados com o seu histórico químico e o clima e, em seguida, oferece um diagnóstico com um nível de confiança. Os cálculos críticos de dosagem são efetuados por um motor determinístico, não pela IA.",
+    "faqSpaManage": "Posso gerir um spa?",
+    "faqSpaManageA": "Sim. A AQWELIA gere spas com funcionalidades dedicadas: tratamento com bromo ou oxigénio ativo, monitorização da temperatura, lembretes de drenagem e programas de filtração adaptados. Disponível a partir do plano Lagoon.",
+    "faqSellProducts": "A app vende produtos?",
+    "faqSellProductsA": "A AQWELIA não vende produtos diretamente. Quando é detetada uma necessidade, a app recomenda o produto certo, na dose certa, e indica onde o comprar perto de si. A AQWELIA Care, em breve, automatizará estas recomendações.",
+    "faqGreenWater": "O que acontece se a minha água ficar verde?",
+    "faqGreenWaterA": "A AQWELIA deteta sinais de algas, identifica a causa provável (cloro insuficiente, pH desequilibrado, filtração demasiado curta) e oferece-lhe um plano de ação passo a passo: tratamento de choque, limpeza, ajuste do pH e duração de filtração adaptada.",
+    "faqAllYear": "A AQWELIA funciona o ano todo?",
+    "faqAllYearA": "Sim. Na época, a app gere as análises e dosagens. Durante o invernagem, indica quando e como invernar, vigia a cobertura e prepara a reabertura na primavera com um plano de reabastecimento.",
+    "faqProVersion": "Existe uma versão para profissionais?",
+    "faqProVersionA": "Sim — a AQWELIA Pro, em breve, foi concebida para piscinastras: gestão de clientes e piscinas, planeamento otimizado, comprovativos de passagem, relatórios PDF personalizados e estatísticas. Inscreva-se para um acesso antecipado.",
+    "proPreviewEyebrow": "13 — AQWELIA Pro",
+    "proPreviewTitle": "Faz a manutenção das piscinas dos seus clientes?",
+    "proPreviewSubtitle": "AQWELIA Pro: faça a gestão dos seus clientes, intervenções e piscinas a partir de uma única plataforma inteligente.",
+    "proPreviewBadge": "Early Access",
+    "proPreviewBadgeText": "Em breve",
+    "proPreviewCard1Title": "Gestão de clientes",
+    "proPreviewCard1Text": "Fichas de clientes, piscinas, histórico químico",
+    "proPreviewCard2Title": "Planeamento e intervenções",
+    "proPreviewCard2Text": "Rotas otimizadas, comprovativos de passagem, fotos antes/depois",
+    "proPreviewCard3Title": "Relatórios e atas",
+    "proPreviewCard3Text": "Relatórios PDF personalizados, estatísticas, exportações",
+    "proPreviewCard4Title": "Recomendações Care",
+    "proPreviewCard4Text": "Receitas adicionais através da AQWELIA Care",
+    "proPreviewCta": "Descobrir a AQWELIA Pro",
+    "carePreviewEyebrow": "14 — AQWELIA Care",
+    "carePreviewTitle": "O produto certo, no momento certo, na quantidade certa.",
+    "carePreviewSubtitle": "A AQWELIA Care não se limita a listar um catálogo: guia-o em cada passo, desde a necessidade detetada até ao carrinho.",
+    "carePreviewBadge": "Em breve",
+    "carePreviewStep1": "A AQWELIA deteta a necessidade",
+    "carePreviewStep1Text": "A partir da sua última análise, do histórico e do clima, a app identifica o produto necessário.",
+    "carePreviewStep2": "A AQWELIA calcula a quantidade",
+    "carePreviewStep2Text": "O motor determinístico calcula a dose exata consoante o seu volume de água e os parâmetros atuais.",
+    "carePreviewStep3": "A AQWELIA verifica a compatibilidade",
+    "carePreviewStep3Text": "A app verifica se o produto é compatível com o seu tratamento, o seu equipamento e os seus outros produtos.",
+    "carePreviewStep4": "O produto pode ser adicionado ao carrinho",
+    "carePreviewStep4Text": "Após validação, adicione o produto ao carrinho com um clique e compre-o onde quiser.",
+    "carePreviewCta": "Descobrir a AQWELIA Care"
   },
   "plans": {
     "free": {
@@ -806,7 +847,8 @@
       "multiPool": "Multi-piscinas",
       "pdfReport": "Relatório PDF",
       "proMode": "Modo Pro (LSI avançado)",
-      "history": "Histórico"
+      "history": "Histórico",
+      "spa": "Spa"
     },
     "unlimited": "Ilimitado",
     "daysShort": "{n} d",
@@ -886,12 +928,64 @@
       "weather_advanced": "Meteorologia avançada reservada aos planos pagos.",
       "smart_reminders": "Lembretes inteligentes reservados aos planos pagos.",
       "guides_premium": "Guias premium reservados aos planos pagos.",
-      "multi_pool": "Multi-piscinas reservado a Premium e Expert.",
-      "pdf_report": "Relatório PDF reservado a Premium e Expert.",
-      "pro_mode": "Modo pro reservado a Premium e Expert.",
+      "multi_pool": "Multi-piscinas reservado a Oasis e Wellness.",
+      "pdf_report": "Relatório PDF reservado a Oasis e Wellness.",
+      "pro_mode": "Modo pro reservado a Oasis e Wellness.",
       "history_extended": "Histórico alargado reservado aos planos pagos.",
-      "spa_support": "O suporte de spas está reservado ao plano Premium."
-    }
+      "spa_support": "O suporte de spas está reservado ao plano Wellness."
+    },
+    "decouverte": {
+      "name": "Descoberta",
+      "tagline": "Grátis — para experimentar",
+      "features": {
+        "poolProfile": "Criação de um perfil de piscina",
+        "5guides": "Acesso limitado a guias (5 guias básicos)",
+        "2tests": "Análise manual limitada (2 testes/mês)",
+        "basicWeather": "Pré-visualização de alertas meteorológicos (básico)",
+        "history14": "Pré-visualização do histórico (14 dias)",
+        "2scans": "2 digitalizações com foto / mês",
+        "lockedPremium": "Funções premium visíveis, mas bloqueadas"
+      }
+    },
+    "oasis": {
+      "name": "Oasis",
+      "tagline": "O copiloto de piscina completo",
+      "features": {
+        "1pool": "1 piscina",
+        "unlimitedTests": "Análises ilimitadas",
+        "personalizedRecos": "Recomendações personalizadas",
+        "dosageCalc": "Cálculos de dosagem",
+        "stripAssisted": "Análise assistida por tiras",
+        "advancedWeather": "Alertas meteorológicos avançados",
+        "smartReminders": "Lembretes inteligentes",
+        "unlimitedHistory": "Histórico ilimitado",
+        "allGuidesVideos": "Todos os guias + vídeos",
+        "stockMgmt": "Gestão de stock",
+        "careRecos": "Recomendações AQWELIA Care",
+        "startupPlan": "Plano de arranque",
+        "winteringPlan": "Plano de invernagem",
+        "aiChat": "Assistente inteligente (chat IA)",
+        "pdfReport": "Relatório PDF",
+        "proMode": "Modo pro (LSI avançado)"
+      }
+    },
+    "wellness": {
+      "name": "Wellness",
+      "tagline": "Piscina + Spa, sem preocupações",
+      "features": {
+        "1pool1spa": "1 piscina + 1 spa",
+        "allOasis": "Tudo Oasis",
+        "spaTreatments": "Tratamentos específicos de spa (bromo, oxigénio ativo)",
+        "warmWater": "Água quente",
+        "separatedHistory": "Históricos ilimitados separados",
+        "pdfReports": "Relatórios PDF",
+        "separatedProfiles": "Perfis de água separados",
+        "spaAlerts": "Alertas específicos de spa"
+      }
+    },
+    "year": "12 meses",
+    "perYear": "/ano",
+    "emergencyPass": "Pass emergência"
   },
   "onboarding": {
     "welcome": "Bem-vindo à AQWELIA",
@@ -1145,7 +1239,10 @@
     "unknownError": "Erro desconhecido",
     "footerNote": "AQWELIA — Água sempre cristalina. © {year}",
     "exportFailedDesc": "Exportação falhou",
-    "deleteFailedDesc": "Supressão falhou"
+    "deleteFailedDesc": "Supressão falhou",
+    "planDecouverte": "Descoberta",
+    "planOasis": "Oasis",
+    "planWellness": "Wellness"
   },
   "auth": {
     "backHome": "Voltar ao início",

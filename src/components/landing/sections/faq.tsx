@@ -17,6 +17,13 @@ export function Faq() {
     { q: t('faqQ6'), a: t('faqA6') },
     { q: t('faqQ7'), a: t('faqA7') },
     { q: t('faqQ8'), a: t('faqA8') },
+    { q: t('faqProReplace'), a: t('faqProReplaceA') },
+    { q: t('faqHowIA'), a: t('faqHowIAA') },
+    { q: t('faqSpaManage'), a: t('faqSpaManageA') },
+    { q: t('faqSellProducts'), a: t('faqSellProductsA') },
+    { q: t('faqGreenWater'), a: t('faqGreenWaterA') },
+    { q: t('faqAllYear'), a: t('faqAllYearA') },
+    { q: t('faqProVersion'), a: t('faqProVersionA') },
   ]
 
   return (

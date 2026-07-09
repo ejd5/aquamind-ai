@@ -5,8 +5,8 @@ import { db } from '@/lib/db'
 import { PLANS, DEFAULT_PLAN, type PlanId } from '@/lib/pool/freemium'
 import { pickLocale, translate } from '@/lib/i18n-api'
 
-// Subscription.plan values: 'free' | 'premium' | 'expert'
-// (formerly 'surface' | 'limpide' | 'cristal' | 'gardien' — see worklog L1-C)
+// Subscription.plan values: 'decouverte' | 'oasis' | 'wellness'
+// (formerly 'free' | 'premium' | 'expert' — see worklog P1-TARIFS)
 // userId wiring is enforced via getServerSession + 401 (Task L1-E).
 
 export const runtime = 'nodejs'
@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
       case 'month': expires.setMonth(now.getMonth() + 1); break
       case 'quarter': expires.setMonth(now.getMonth() + 3); break
       case 'halfyear': expires.setMonth(now.getMonth() + 6); break
+      case 'year': expires.setFullYear(now.getFullYear() + 1); break
       default: expires.setMonth(now.getMonth() + 1)
     }
 
