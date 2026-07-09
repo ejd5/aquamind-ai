@@ -216,12 +216,11 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
         />
 
         <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6">
-          {/* Safety disclaimer */}
-          <div className="mb-8 flex items-start gap-3 rounded-xl border border-gold/20 bg-white/5 p-4">
-            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
-            <p className="text-[11px] leading-relaxed text-white font-bold [text-shadow:_0_1px_2px_rgb(0_0_0),_0_-1px_2px_rgb(0_0_0),_1px_0_2px_rgb(0_0_0),_-1px_0_2px_rgb(0_0_0)]">
-              <strong className="text-white font-bold [text-shadow:_0_1px_2px_rgb(0_0_0),_0_-1px_2px_rgb(0_0_0),_1px_0_2px_rgb(0_0_0),_-1px_0_2px_rgb(0_0_0)]">{t('disclaimerLabel')}</strong> {t('disclaimer')}
-              
+          {/* Safety disclaimer — centered, 3 lines, light amber background (same as app footer) */}
+          <div className="mb-8 mx-auto max-w-xl flex items-start gap-3 rounded-xl border border-amber-400/30 bg-amber-500/10 p-3.5 backdrop-blur-sm">
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+            <p className="text-[11px] leading-relaxed text-white font-bold text-center [text-shadow:_0_1px_2px_rgb(0_0_0),_0_-1px_2px_rgb(0_0_0),_1px_0_2px_rgb(0_0_0),_-1px_0_2px_rgb(0_0_0)]">
+              <strong className="text-white">{t('disclaimerLabel')}</strong> {t('disclaimer')}
             </p>
           </div>
 
