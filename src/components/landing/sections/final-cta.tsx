@@ -40,11 +40,11 @@ export function FinalCta({ hasProfile, onEnterApp }: FinalCtaProps) {
               {t('finalCtaEyebrow')}
             </span>
 
-            <h2 className="mx-auto mt-5 max-w-2xl font-display text-3xl font-extrabold leading-tight tracking-tight text-white drop-shadow-lg sm:text-4xl md:text-5xl">
+            <h2 className="mx-auto mt-5 max-w-2xl font-display text-3xl font-extrabold leading-tight tracking-tight text-white [text-shadow:_0_1px_3px_rgb(0_0_0),_0_-1px_3px_rgb(0_0_0),_1px_0_3px_rgb(0_0_0),_-1px_0_3px_rgb(0_0_0)] sm:text-4xl md:text-5xl">
               {t('finalCtaTitle')}
             </h2>
 
-            <p className="mx-auto mt-4 max-w-xl text-sm font-bold leading-relaxed text-white drop-shadow-md sm:text-base">
+            <p className="mx-auto mt-4 max-w-xl text-sm font-bold leading-relaxed text-white [text-shadow:_0_1px_2px_rgb(0_0_0),_0_-1px_2px_rgb(0_0_0),_1px_0_2px_rgb(0_0_0),_-1px_0_2px_rgb(0_0_0)] sm:text-base">
               {t('finalCtaSubtitle')}
             </p>
 
@@ -64,7 +64,7 @@ export function FinalCta({ hasProfile, onEnterApp }: FinalCtaProps) {
               </button>
             </div>
 
-            <p className="mt-6 text-[11px] font-bold uppercase tracking-widest text-white drop-shadow-md">
+            <p className="mt-6 text-[11px] font-bold uppercase tracking-widest text-white [text-shadow:_0_1px_2px_rgb(0_0_0),_0_-1px_2px_rgb(0_0_0),_1px_0_2px_rgb(0_0_0),_-1px_0_2px_rgb(0_0_0)]">
               {t('finalCtaDisclaimer')}
             </p>
           </div>
