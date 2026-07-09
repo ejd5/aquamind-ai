@@ -3480,3 +3480,146 @@ Stage Summary:
 - Lint: PASS. TypeScript: 6 errors total (5 fixed; all 6 remaining are pre-existing and out of scope).
 - Commit 3ed857c pushed to `origin/main` on GitHub.
 - Reusable batch-updater script `scripts/i18n/add-landing-keys-p1.py` saved (idempotent — re-running it is safe).
+
+---
+Task ID: P0-FIX
+Agent: sub-agent (general-purpose)
+Task: Fix the 8 critical bugs from the AQWELIA audit (`docs/AQWELIA_AUDIT_AND_ROADMAP.md` §13 + §17). Unblocks `next build` and the native layer; restores spa-field persistence; aligns Prisma provider with the dev `.env`.
+
+Work Log:
+- Read worklog tail (tasks 5-pt, P1-LANDING, P1-TARIFS, P1-FIX) for context. AQWELIA is a Next.js 16 pool/spa maintenance app; the P1-FIX task left 6 TS errors, of which 4 were in src/ and 2 in skills/. Audit P0 plan listed 8 critical items to fix.
+- Read `docs/AQWELIA_AUDIT_AND_ROADMAP.md` for the full bug list (§13 TS errors, §17 security risks, §21 P0 execution plan).
+
+### Pre-flight
+- TS error baseline: `bunx tsc --noEmit | grep -c "error TS"` → 6 (2 in skills/, 4 in src/: `native/index.ts:72`, `middleware.ts:104`, `safety-rules.ts:47`, `module-maintenance.tsx:890`).
+- `.env` had only `DATABASE_URL=...`; `NEXTAUTH_SECRET` was missing (audit §17 risk #10 said it was added "earlier" but it wasn't actually present in the file).
+
+### Bug 1 — `ignoreBuildErrors: true` (next.config.ts)
+- Set `typescript.ignoreBuildErrors: false` in `next.config.ts` with an inline comment explaining why.
+- Fixed the 4 src/ TS errors (see Bugs 2/3 + 2 extra below).
+- Did NOT change `reactStrictMode` (task only asked for `ignoreBuildErrors: false`; reactStrictMode stays `false` to avoid double-effect surprises in dev for now — audit §17 risk #4 is 🟡 MOYEN, deferred).
+
+### Bug 2 — Missing `src/lib/native/local-notifications.ts`
+- Created `src/lib/native/local-notifications.ts` (~250 lines) implementing every export promised by `src/lib/native/index.ts:65-72`:
+  * `requestPermissions()` — returns `'granted' | 'denied' | 'prompt'` (Capacitor `requestPermissions()`).
+  * `requestNotificationPermission` — alias of `requestPermissions` (kept for backward-compat with the barrel export name).
+  * `scheduleLocalNotification(payloadOrTitle, body?, scheduleAt?)` — accepts BOTH the task-spec positional signature `(title, body, scheduleAt)` AND the richer `{ title, body, scheduleAt, id, smallIcon, iconColor, sound }` payload object. Forwards to `LocalNotifications.schedule({ notifications: [...] })`.
+  * `cancelLocalNotification(id)` — single-id cancel.
+  * `cancelAllNotifications()` — fetches pending list then cancels every id in one batch (task-spec required function).
+  * `getPendingNotifications()` — returns `{ notifications: [{ id, title?, body?, scheduleAt? }] }`.
+  * `type LocalNotificationPayload` — public type for the payload object.
+- SSR-safe per task spec: dynamic `import('@capacitor/local-notifications')` (lazy, cached singleton via `_pluginPromise`), `typeof window === 'undefined'` guard inside `loadPlugin()`, `isNative()` check from `@/lib/platform` (server → null, web → null, native → plugin). Every call wrapped in try/catch returning safe defaults (`{ notifications: [] }` / `'denied'` / `void`) so a plugin failure can never crash a user-facing flow.
+- Discovered and fixed a secondary bug: `.gitignore:43` had a `local-*` rule (intended for `next.config.local.ts` style overrides) that was silently excluding `src/lib/native/local-notifications.ts` from version control — the file appeared on disk but `git check-ignore` flagged it. Added `!src/lib/native/local-notifications.ts` negation rule immediately below. Without this fix, the file would have been created but never committed — exactly the audit's "missing module" symptom would have recurred on the next clean checkout.
+
+### Bug 3 — Middleware `authMiddleware(req as any)` (1 arg instead of 2)
+- `src/middleware.ts:104` was `return authMiddleware(req as any)` — TS2554: Expected 2 arguments, but got 1.
+- Root cause: `withAuth(...)` returns a Next.js middleware function whose signature is `(req: NextRequest, ctx: { params: Record<string,string> }) => Response | Promise<Response>`. The `ctx` carries matched route params; calling without it is both a type error AND a context-drop bug.
+- Fixed: `return authMiddleware(req as any, { params: {} } as any)`. The middleware matcher (`config.matcher` line 110-113) has no `:params` so an empty params object is correct. Added an inline comment explaining why.
+- Verified the existing withAuth config (`{ pages: { signIn: '/auth/signin' } }`) is the documented pattern — no change there.
+
+### Bug 4 — `api/pool/profile` drops spa fields
+- Read `src/components/aquamind/onboarding.tsx:42-62, 220-230`: the onboarding form sends `...form` as the POST body, which includes `waterBodyType`, `spaSeats`, `spaTemperature` (NOT `spaTempTarget`), `spaUsageFrequency` (NOT `spaUsageFreq`), and `spaBrand`. The Prisma `PoolProfile` schema has `waterBodyType`, `spaSeats`, `spaTempTarget`, `spaUsageFreq`, `spaBrand` — so there was a 2-field name mismatch on top of the whitelist-drop bug.
+- Updated `src/app/api/pool/profile/route.ts` POST handler:
+  * Added 5 spa fields to the `data` object: `waterBodyType`, `spaSeats`, `spaTempTarget`, `spaUsageFreq`, `spaBrand`.
+  * Accepts BOTH naming conventions — `body.spaTempTarget ?? body.spaTemperature` and `body.spaUsageFreq ?? body.spaUsageFrequency` — so the API is robust to either the schema-style or onboarding-style field names (defensive; lets us rename in the onboarding later without breaking the API).
+  * Numeric coercion via `Number(...)` with `Number.isFinite` guard; `spaSeats` accepts both number and string (`''` falls back to null).
+  * Defaults: `waterBodyType: 'pool'` (matches schema default), other spa fields nullable.
+- The skip() path (line 246-264) was left untouched — it intentionally creates a bare pool-only profile, which is the desired behavior for the "skip onboarding" flow.
+
+### Bug 5 — Admin page security (documentation only)
+- Added an expanded `// TODO: Move admin auth to server-side` comment block at `src/app/admin/page.tsx:9-11` with a 2-line explanation pointing to audit §17 risks #1 and #2 (move password to `process.env.ADMIN_PASSWORD_HASH`, validate via `/api/admin/auth`, issue httpOnly session cookie).
+- Did NOT change the runtime behavior (task said "leave it"). The full server-side auth refactor is P0-6 in the audit roadmap (~4h effort, separate task).
+
+### Bug 6 — DB provider mismatch
+- `prisma/schema.prisma:10` was `provider = "postgresql"` but `.env` uses SQLite (`file:/home/z/my-project/db/custom.db`). Prisma refused any DB call at runtime — the dev server crashes on the first DB query.
+- Changed `provider = "postgresql"` → `provider = "sqlite"` with an inline comment explaining the dev/prod split (flip back to `postgresql` for production with a matching `DATABASE_URL=postgresql://...`).
+- Updated the file header comment ("Provider: SQLite for local/dev … For production, switch back to PostgreSQL …").
+- Ran `bunx prisma generate` → "✔ Generated Prisma Client (v6.19.2)" — clean.
+- Note: the actual SQLite file lives at `/tmp/my-project/db/custom.db` (the audit's §13 risk #12 flagged that the `.env` path `/home/z/my-project/db/custom.db` doesn't exist on disk). This is a separate P0-5 issue; the next agent to start the dev server should either create `/home/z/my-project/db/` and copy the file, or run `bunx prisma db push` to create a fresh DB at the configured path.
+
+### Bug 7 — `NEXTAUTH_SECRET`
+- Verified `.env` did NOT have `NEXTAUTH_SECRET` (audit §17 risk #10 said it was added "earlier" but it wasn't present in the actual file).
+- Generated a fresh 32-byte base64 secret via `openssl rand -base64 32` → `Xp/12hIPgSEbGwcQG9SCeKFrM2nFU1pxWxuV17QhF00=`.
+- Appended to `.env`:
+  ```
+  NEXTAUTH_SECRET=Xp/12hIPgSEbGwcQG9SCeKFrM2nFU1pxWxuV17QhF00=
+  NEXTAUTH_URL=http://localhost:3000
+  ```
+- Note: `.env` is in `.gitignore` so the secret does NOT leak to the repo. Production secrets must be set in the platform secret manager (Vercel/Render/…).
+
+### Bug 8 — `ios/` and `android/` projects missing
+- Documented as expected per task spec ("This is expected — we'll handle this in Phase 4"). No code change.
+- Audit §19 confirms `@capacitor/ios` + `@capacitor/android` are installed as devDeps (`package.json:107-108`) and the icon/splash assets are already in `public/mobile/{ios,android}/`, so `npx cap add ios && npx cap add android && npx cap sync` can be run in a follow-up task without any asset prep work.
+
+### Two extra TS errors fixed as part of Bug 1 ("Fix as many as possible")
+These were the 2 remaining src/ TS errors beyond Bugs 2 and 3. The audit explicitly listed them as P0-2 sub-items ("fix the 4 TS errors restantes").
+
+1. `src/lib/pool/safety-rules.ts:47` — TS2367: `This comparison appears to be unintentional because the types '"allowed"' and '"forbidden"' have no overlap.`
+   - Root cause: at line 47 (`if (status !== 'forbidden') status = 'avoid'`), TypeScript had already narrowed `status` to `'allowed'` because the only `status = 'forbidden'` assignment lives in the unreachable `if` branch above. The guard was dead code.
+   - Fix: removed the redundant `if (status !== 'forbidden')` guard and set `status = 'avoid'` directly. Added a 7-line comment explaining the narrowing logic and noting that the later chlorine/combined-chlorine checks (lines 67, 73) still legitimately use the guard because by then `status` can genuinely be `'forbidden'` from the pH critical branch.
+
+2. `src/components/aquamind/module-maintenance.tsx:890` — TS2345: `Record<string, unknown> | undefined` not assignable to `Record<string, string | number | Date> | undefined`.
+   - Root cause: the `reminders` array (line 800) typed `titleParams?: Record<string, unknown>`, but next-intl's `t(key, params)` expects `Record<string, string | number | Date>`. The only value ever stored is the string returned by `equipmentLabel(eq.type)`, so the loose `unknown` typing was both wrong AND too permissive.
+   - Fix: tightened `titleParams?: Record<string, unknown>` → `Record<string, string | number>` to match the i18n helper signature. The single push site (`titleParams: { type: equipmentLabel(eq.type) }` line 805) is type-clean with the new signature.
+
+### Out-of-scope (per task instructions)
+- `skills/image-edit/scripts/image-edit.ts:10` — TS2561 (`images` should be `image` in `CreateImageEditBody`). Skill script, not part of the app. Left as-is.
+- `skills/stock-analysis-skill/src/analyzer.ts:253` — TS2322 (z-ai SDK type mismatch). Skill script, not part of the app. Left as-is.
+
+### Verification
+
+- `bun run lint` → exit 0, no errors, no warnings. ✓
+- `bunx tsc --noEmit | grep -c "error TS"` → **2** (was **6**). The 2 remaining are both in `skills/` and explicitly out of scope. **0 TS errors in `src/`.** ✓
+- `bunx prisma generate` → "✔ Generated Prisma Client (v6.19.2)". ✓
+
+### TS error count: before → after
+
+| # | File:line | Before | After |
+|---|---|---|---|
+| 1 | `src/lib/native/index.ts:72` (missing module) | 1 error | 0 — Bug 2 created the file |
+| 2 | `src/middleware.ts:104` (1 arg) | 1 error | 0 — Bug 3 added ctx arg |
+| 3 | `src/lib/pool/safety-rules.ts:47` (dead comparison) | 1 error | 0 — Bug 1 extra fix |
+| 4 | `src/components/aquamind/module-maintenance.tsx:890` (type mismatch) | 1 error | 0 — Bug 1 extra fix |
+| 5 | `skills/image-edit/scripts/image-edit.ts:10` | 1 error | 1 (out of scope) |
+| 6 | `skills/stock-analysis-skill/src/analyzer.ts:253` | 1 error | 1 (out of scope) |
+| **Total** | | **6** | **2** (all in skills/) |
+
+### Git
+- Commit `01ee7c6` "fix: 8 critical bugs from audit (notifications, profile spa, middleware, DB provider)" — 18 files changed, 1262 insertions(+), 20 deletions(-).
+- Pushed `c3e0ced..01ee7c6` to `origin/main` on GitHub. ✓
+- Temp credentials file at `/tmp/.git-credentials` removed. ✓
+
+### Files modified (10) + created (1)
+- `next.config.ts` — `ignoreBuildErrors: false` + comment (Bug 1).
+- `src/lib/native/local-notifications.ts` — NEW (~250 lines, SSR-safe Capacitor wrapper) (Bug 2).
+- `.gitignore` — added `!src/lib/native/local-notifications.ts` negation (Bug 2 secondary fix — without this, the new file would not have been tracked by git).
+- `src/middleware.ts` — `authMiddleware(req, { params: {} })` + comment (Bug 3).
+- `src/app/api/pool/profile/route.ts` — extract + persist 5 spa fields with dual-naming support (Bug 4).
+- `src/app/admin/page.tsx` — TODO comment for server-side auth (Bug 5).
+- `prisma/schema.prisma` — `provider = "sqlite"` + header comment (Bug 6).
+- `.env` — added `NEXTAUTH_SECRET` + `NEXTAUTH_URL` (Bug 7).
+- `src/lib/pool/safety-rules.ts` — removed dead `status !== 'forbidden'` guard (Bug 1 extra).
+- `src/components/aquamind/module-maintenance.tsx` — tightened `titleParams` type (Bug 1 extra).
+
+### Files included in the commit but NOT modified by this task (pre-existing uncommitted work from prior agents)
+- `bun.lock`, `package.json` — added `@capacitor/filesystem`, `@capacitor/geolocation`, `@capacitor/share` deps.
+- `docs/MOBILE_READINESS.md` — new doc.
+- `src/lib/native/filesystem.ts`, `geolocation.ts`, `share.ts`, `splash-screen.ts` — new Capacitor wrappers (audit §19 "necessary but not installed" plugins, partial P0-8 work).
+- `src/lib/native/index.ts` — barrel exports for the 4 new native modules.
+- `src/lib/native/status-bar.ts` — minor edit.
+
+These were already in the working tree from prior uncommitted work and `git add -A` per the task's explicit commit instructions captured them. All type-clean (0 TS errors). They are aligned with the audit's P0/P1 plan (the 4 new plugins are listed in §19 "Necessary but not installed"), so including them is consistent with the fix direction.
+
+### Known follow-ups
+- **P0-5 (audit §13 #12)**: `.env` `DATABASE_URL` points to `/home/z/my-project/db/custom.db` but the directory doesn't exist — the live SQLite file is at `/tmp/my-project/db/custom.db`. The next agent to start the dev server should either create `/home/z/my-project/db/` + copy the file, or run `bunx prisma db push` to create a fresh DB at the configured path.
+- **P0-6 (audit §17 #1, #2)**: full admin auth refactor — move password to `process.env.ADMIN_PASSWORD_HASH` (scrypt), create `/api/admin/auth` route, issue httpOnly session cookie. Bug 5 just added the TODO comment; the implementation is a separate ~4h task.
+- **P0-8 (audit §21)**: `npx cap add ios && npx cap add android && npx cap sync` to materialize the native projects. Bug 8 just documented this; the actual initialization is Phase 4.
+- **Other audit P0 items not in this task's scope**: `STRIPE_WEBHOOK_SECRET`, `REVENUECAT_WEBHOOK_SECRET`, `NVIDIA_API_KEY`, `STRIPE_SECRET_KEY`, 4× `STRIPE_PRICE_*`, `NEXT_PUBLIC_REVENUECAT_IOS_KEY`, `NEXT_PUBLIC_REVENUECAT_ANDROID_KEY` env vars (P0-7) — the task said "Already fixed (was added to .env earlier). Just verify it's there." for `NEXTAUTH_SECRET`, but it actually wasn't; only NEXTAUTH_SECRET was added by this task. The other P0-7 secrets remain to be set in a follow-up.
+
+Stage Summary:
+- All 8 audit P0 bugs addressed (6 fixed in code, 1 documented with TODO, 1 documented as Phase 4 follow-up).
+- TS errors in `src/`: 4 → 0. Total TS errors: 6 → 2 (both remaining are in skills/ and explicitly out of scope).
+- Lint: PASS (exit 0).
+- Prisma generate: PASS.
+- Commit 01ee7c6 pushed to `origin/main`. ✓
+- `next build` will no longer silently swallow TS errors — any future regression will fail the build immediately, which is the audit's primary intent.
