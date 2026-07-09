@@ -42,13 +42,13 @@ export function Header({ profile, activeTab, onNavigate, onBackToLanding }: Head
       {/* Subtle gold line at the bottom */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
 
-      <div className="mx-auto flex h-24 max-w-7xl items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-32 max-w-7xl items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-2.5">
           {/* AQWELIA logo — standalone, no frame, no background */}
           <img
             src="/logo-aqwelia-web.png"
             alt="AQWELIA"
-            className="h-16 w-auto object-contain"
+            className="h-24 w-auto object-contain"
           />
 
           <div className="leading-tight">
