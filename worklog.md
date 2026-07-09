@@ -4512,3 +4512,124 @@ Stage Summary:
   * Scaffolder les projets natifs (`npx cap add ios` sur macOS+Xcode, `npx cap add android` sur Android Studio) — ne peut pas être fait dans ce sandbox Linux.
   * Configurer le sandbox tester Apple (`aqwelia-sandbox@aqwelia.app`) et les internal testers Play Console.
   * Tester le flow Stripe checkout end-to-end avec trial en prod (créer les 8 prices Stripe, configurer `STRIPE_PRICE_*`).
+
+---
+Task ID: P5-PAGES-RETRY
+Agent: sub-agent (general-purpose) — Public + legal pages (9 pages)
+Task: Créer les pages publiques et légales manquantes (fonctionnalites, comment-ca-marche, tarifs, a-propos, contact, legal/cgv, legal/cookies, legal/securite, legal/accessibilite) avec le style AQWELIA (glassmorphism, gold accents, responsive), SEO metadata via generateMetadata, i18n dans fr.json + en.json, footer + header. Pas de chaînes françaises en dur (pre-commit hook). Après: lint, prisma db push, push GitHub.
+
+Work Log:
+- Lu `worklog.md` (dernières sections: P5-STORE, P5-GROWTH, P5-MULTIPOOL-PDF) — projet Next.js 16 + React 19 + Prisma SQLite + next-intl 7 langues + NextAuth JWT + Capacitor 8 + RevenueCat + Stripe + PostHog + AQWELIA Care/Pro/Partenaires pages + email notifications + App Store/Play Store metadata. Task P5-PAGES-RETRY = un précédent agent avait préparé (créé + stagé) les 9 pages demandées mais n'avait jamais commité ni pushé. Ma mission: vérifier que tout est correct, run lint, prisma db push, commit, push.
+
+### 1. Verification inventory (RETRY case)
+
+Inspecté le working tree — tous les fichiers demandés sont déjà présents et staged:
+
+**5 pages publiques** sous `src/app/(public)/` (route group Next.js, n'affecte pas l'URL — `/fonctionnalites` résout vers `src/app/(public)/fonctionnalites/page.tsx`):
+- `src/app/(public)/layout.tsx` (88 lignes) — shared layout server component: sticky brand header (logo + 5 nav links + CTA "Commencer"), mobile nav row (overflow-x-auto), `<Footer />` (composant `@/components/aquamind/footer`). Traductions via `getTranslations('publicNav')`.
+- `src/app/(public)/fonctionnalites/page.tsx` (163 lignes) — Hero + 11 modules grid (Dashboard, Diagnostic photo, Water Test, AI Assistant, Action Plan, Health Log, Maintenance, Weather, Guides, Reminders, Paywall). Chaque module: icône lucide + numéro 01-11 + titre + description + 3 bullets. CTA bottom (Commencer / Nous contacter). `generateMetadata` via `getTranslations('fonctionnalites')`.
+- `src/app/(public)/comment-ca-marche/page.tsx` (207 lignes) — Hero + 5 étapes (Renseigner la piscine → Saisir/photographier → Diagnostic → Plan d'action → Commander) avec icônes + numéros 01-05 + bullets + 6 FAQ Accordion + CTA. `generateMetadata` via `getTranslations('commentCaMarche')`.
+- `src/app/(public)/tarifs/page.tsx` (281 lignes) — Hero + `<PricingExplorer />` (client island interactive) + 17-row comparison table (3 plans D/O/W × 17 features, CellIcon yes/no/partial) + payment methods card + cancellation card + 7 FAQ Accordion + CTA. `generateMetadata` via `getTranslations('tarifs')`.
+- `src/app/(public)/tarifs/pricing-explorer.tsx` (199 lignes, 'use client') — duration selector (Mensuel/Saison/Annuel avec -20%/-30% badges) + 3 plans cards (Découverte/Oasis/Wellness) dérivés de `PLANS` (`src/lib/pool/freemium.ts`) pour sync avec pricing canonique + Pass urgence + formatPrice Intl.NumberFormat par locale.
+- `src/app/(public)/a-propos/page.tsx` (192 lignes) — Hero + Story (2 cards: Histoire + Nom Aqua/Well/IA avec étymologie) + Mission (full-width card) + 6 valeurs grid (Droplets/Heart/Brain/ShieldCheck/Globe2/Sparkles) + Team placeholder (4 membres A/B/C/D avec initials) + CTA. `generateMetadata` via `getTranslations('aPropos')`.
+- `src/app/(public)/contact/page.tsx` (161 lignes) — Hero + grid 2 cols: info column (3 cards: Email avec support/legal/press, Hours, Location) + socials placeholder (5 réseaux) | form column (`<ContactForm />`). `generateMetadata` via `getTranslations('contact')`.
+- `src/app/(public)/contact/contact-form.tsx` (223 lignes, 'use client') — Formulaire (nom/email/sujet select/message textarea) avec validation client (EMAIL_RE, MIN_MESSAGE=10, MAX_MESSAGE=5000), états idle/submitting/success/error, POST `/api/contact` JSON, écran success (icône Check), compteur caractères, icônes Loader2/Send/AlertCircle. DA: `input-glass` class + bouton gradient gold.
+
+**4 pages légales** sous `src/app/legal/` (avec `legal/layout.tsx` existant: header minimal avec back-to-home + logo + Footer):
+- `src/app/legal/cgv/page.tsx` (195 lignes) — 14 articles CGV pour abonnements digitaux + marketplace future AQWELIA Care. Section reusable component (glass-card + h2 + content). Dernière mise à jour formatée via Intl.DateTimeFormat par locale. Liens vers /legal/privacy, /legal/cgu, /legal/support, mailto:legal@aqwelia.app. `generateMetadata` via `getTranslations('legal.cgv')`.
+- `src/app/legal/cookies/page.tsx` (159 lignes) — 6 sections + table 8 cookies (aqwelia_session, aqwelia_locale, aqwelia_theme, aqwelia_consent, _ga/_ga_*, _gid, rc_id/rc_*, stripe_*) avec colonnes name/purpose/duration/category (Essential/Analytics/Functional badges gold). Liens vers /settings, /contact, /legal/privacy, mailto:privacy@aqwelia.app.
+- `src/app/legal/securite/page.tsx` (152 lignes) — 6 sections + 6 piliers sécurité grid (Lock/KeyRound/ServerCog/Eye/RefreshCw/ShieldCheck) avec icônes gold. Conformité RGPD, chiffrement, etc. Liens vers /legal/privacy, mailto:security@aqwelia.app.
+- `src/app/legal/accessibilite/page.tsx` (164 lignes) — 8 sections déclaration accessibilité RGAA: conformité WCAG 2.1, 8 points conformes (Check gold), 4 non-conformes (X red), 2 dérogations (AlertCircle amber), schéma français obligatoire, contact a11y@aqwelia.app, lien Défenseur des droits.
+
+**API**:
+- `src/app/api/contact/route.ts` (194 lignes) — POST public (valide name/email/subject/message, crée ContactMessage, optional userId link si NextAuth session), GET admin-only (gate via ADMIN_EMAILS env var). `runtime = 'nodejs'`. Reuse `pickLocale` + `translate` from `@/lib/i18n-api` pour messages d'erreur i18n. Constantes: EMAIL_RE, VALID_SUBJECTS (general/support/partnership/press/other), MIN_MESSAGE=10, MAX_MESSAGE=5000, MAX_NAME=120, MAX_EMAIL=254. Defensive cast `(db as any).contactMessage` pour résilience vs stale Prisma client bundles.
+
+**Prisma model**:
+- `ContactMessage` présent dans `prisma/schema.prisma`:
+  ```prisma
+  model ContactMessage {
+    id        String   @id @default(cuid())
+    name      String
+    email     String
+    subject   String   // general | support | partnership | press | other
+    message   String
+    status    String   @default("new") // new | read | replied | archived
+    userId    String?
+    createdAt DateTime @default(now())
+    @@index([status])
+    @@index([createdAt])
+  }
+  ```
+
+**i18n** (vérifié dans `src/i18n/locales/fr.json` et `en.json`):
+- Namespace `fonctionnalites` (FR ligne 4169, ~68 clés: metaTitle/Description, heroEyebrow/Title/Subtitle/Cta/CtaSecondary, mod1-11Title/Desc/B1-B3, ctaBottom*)
+- Namespace `commentCaMarche` (FR ligne 4237, ~51 clés: step1-5Title/Desc/B1-B3, faq1-6Q/A, cta*)
+- Namespace `tarifs` (FR ligne 4288, ~85 clés: cmpRow1-17, cmpCol*, faq1-7Q/A, duration_*, suffix*, pay*, cancel*, cta*)
+- Namespace `aPropos` (FR ligne 4373, ~47 clés: story*, nameAqua/Well/Ia, mission*, val1-6, team1-4, cta*)
+- Namespace `contact` (FR ligne 4420, ~42 clés: form*, subject_general/support/partnership/press/other, error*, success*, info*, hours1-3, socialsSoon)
+- Namespace `legal.cgv` (FR ligne 3533, ~70 clés: meta*, article1-14Title/Body1-2/Item1-4)
+- Namespace `legal.cookies` (FR ligne 3605, ~56 clés: meta*, section1-6Title/Body/Item, cookie1-8Purpose/Duration, tableCol*, catEssential/Analytics/Functional)
+- Namespace `legal.securite` (FR ligne 3661, ~52 clés: meta*, section1-6, pillar1-6Title/Desc, section*Item1-5)
+- Namespace `legal.accessibilite` (FR ligne 3713, ~50 clés: meta*, section1-8, conf1-8, nonConf1-4, derog1-2, section*Item1-4)
+- Namespace `publicNav` (5 clés: features/howItWorks/pricing/about/contact + cta)
+- Total: 24 fichiers staged, +5742 lignes / -1328 lignes (i18n IT/PT/NL ont été ré-ordonnés par les scripts de traduction P5, d'où le diff négatif — pas de perte de contenu, juste réorganisation).
+
+**Scripts i18n** (4 nouveaux scripts helper staged):
+- `scripts/i18n/add-pages-p5-keys.py` (1173 lignes) — ajout idempotent des ~70 clés × 7 locales pour les 9 pages.
+- `scripts/i18n/fix-p5-icu-to-xml.py` (548 lignes) — conversion ICU `{bold}`/`{link}` → XML `<strong>`/`<a>` pour Crowdin.
+- `scripts/i18n/prepare-pages-p5-translations.py` (60 lignes) — orchestrateur.
+- `scripts/i18n/translate-pages-p5.py` (255 lignes) — traduction EN/ES/DE/IT/PT/NL depuis le worksheet FR.
+
+### 2. Vérifications
+
+- **Lint** (`bun run lint`): PASS, exit 0, 0 erreur, 0 warning. ✓
+- **TypeScript** (`bunx tsc --noEmit`): 2 erreurs seulement, **toutes pré-existantes** dans `skills/image-edit/scripts/image-edit.ts` (TS2561) et `skills/stock-analysis-skill/src/analyzer.ts` (TS2322) — hors scope, signalées par P5-STORE et P5-MULTIPOOL-PDF. Aucune erreur dans `src/app/(public)/*`, `src/app/legal/*`, `src/app/api/contact/*`. ✓
+- **Pre-commit i18n hook** (`python3 scripts/i18n/check-hardcoded-strings.py`): ✅ "Aucune chaîne française codée en dur détectée." — exit 0. Toutes les chaînes utilisent `getTranslations`/`useTranslations`/`translate`/`t.rich` avec clés i18n. ✓
+- **Prisma db push** (`bunx prisma db push`): "The database is already in sync with the Prisma schema." + "Generated Prisma Client (v6.19.2)". ✓
+- **DB verification**: Connecté via `bun` + `db.$queryRawUnsafe` sur `src/lib/db.ts`. Table `ContactMessage` présente. 19 tables au total (Account, ActionPlan, AnalyticsEvent, CareNotification, ChatMessage, ContactMessage, EarlyAccessLead, Equipment, GuideView, MaintenanceTask, PartnerApplication, PhotoDiagnostic, PoolDesign, PoolProfile, ProductInventory, Reminder, Subscription, User, WaterTest). ✓
+
+### 3. Style AQWELIA appliqué (vérifié sur chaque page)
+
+- **Glassmorphism**: `glass-card` class (définie dans `src/app/globals.css`) = `bg-white/60 backdrop-blur-xl dark:bg-white/[0.04]` + bordure `border-white/40 dark:border-white/10`. Utilisée sur tous les cards/modules/sections.
+- **Gold accents**: `gold-divider`, `glow-gold`, `bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)]`, `text-gold`, `bg-gold/10`, `from-gold/20 to-gold/5`. `section-label` class pour eyebrow labels.
+- **Typography**: `font-display` (définie dans `globals.css`), `aqua-text-gradient` pour le wordmark AQWELIA.
+- **Responsive**: `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3` (modules/features/values), `md:grid-cols-[auto_1fr]` (steps), `lg:grid-cols-[1fr_1.4fr]` (contact form layout), `mx-auto max-w-6xl` containers, mobile nav row dans `(public)/layout.tsx` avec `overflow-x-auto`, `safe-area-top` class pour notch iOS.
+- **Footer + header**: `(public)/layout.tsx` rend le header sticky + le `<Footer />` partagé sur toutes les pages publiques. `legal/layout.tsx` rend un header minimal (back-to-home + logo) + `<Footer />` sur toutes les pages légales.
+- **SEO**: chaque page exporte `generateMetadata()` async qui appelle `getTranslations(namespace)` et retourne `{ title, description, alternates: { canonical }, openGraph: { title, description, type: 'website' } }`. Les pages légales n'ont pas openGraph (canonical seulement).
+
+### 4. Git
+
+- Commit `5aee016` "feat(P5-PAGES): public + legal pages (fonctionnalites, comment-ca-marche, tarifs, a-propos, contact, legal/cgv, legal/cookies, legal/securite, legal/accessibilite)" — 24 files changed, 5742 insertions(+), 1328 deletions(-).
+- Pushed `efef502..5aee016` to `origin/main` on GitHub. ✓
+- Temp credentials file at `/tmp/.git-credentials` removed. ✓
+
+### Files committed (24 = 4 scripts + 12 src/app/* + 7 i18n locales + 1 worklog)
+- `scripts/i18n/add-pages-p5-keys.py` (new, 1173 lignes)
+- `scripts/i18n/fix-p5-icu-to-xml.py` (new, 548 lignes)
+- `scripts/i18n/prepare-pages-p5-translations.py` (new, 60 lignes)
+- `scripts/i18n/translate-pages-p5.py` (new, 255 lignes)
+- `src/app/(public)/layout.tsx` (new, 88 lignes)
+- `src/app/(public)/fonctionnalites/page.tsx` (new, 163 lignes)
+- `src/app/(public)/comment-ca-marche/page.tsx` (new, 207 lignes)
+- `src/app/(public)/tarifs/page.tsx` (new, 281 lignes)
+- `src/app/(public)/tarifs/pricing-explorer.tsx` (new, 199 lignes)
+- `src/app/(public)/a-propos/page.tsx` (new, 192 lignes)
+- `src/app/(public)/contact/page.tsx` (new, 161 lignes)
+- `src/app/(public)/contact/contact-form.tsx` (new, 223 lignes)
+- `src/app/api/contact/route.ts` (new, 194 lignes)
+- `src/app/legal/cgv/page.tsx` (new, 195 lignes)
+- `src/app/legal/cookies/page.tsx` (new, 159 lignes)
+- `src/app/legal/securite/page.tsx` (new, 152 lignes)
+- `src/app/legal/accessibilite/page.tsx` (new, 164 lignes)
+- `src/i18n/locales/{fr,en,es,de,it,pt,nl}.json` (modified, ~70 new keys × 7 locales)
+
+Stage Summary:
+- **9 pages créées et commitées** (5 publiques + 4 légales) — toutes avec glassmorphism, gold accents, responsive mobile, generateMetadata via next-intl/server, header + footer partagés, i18n FR+EN+5 locales (no hardcoded French strings — pre-commit hook PASS).
+- **API `/api/contact`** (POST public + GET admin-only) avec validation complète (email regex, sujet whitelist, longueurs min/max) + optional userId link via NextAuth session.
+- **Prisma model `ContactMessage`** ajouté au schema et synchronisé en DB via `prisma db push` (table présente, 19 tables au total).
+- **Lint PASS** (0 erreur). **TypeScript**: 0 erreur dans `src/` (2 pré-existantes dans `skills/`). **Pre-commit i18n**: PASS.
+- **Push**: ✓ `efef502..5aee016` sur `origin/main`.
+- **Reste à faire (hors ce task)**:
+  * Tester le formulaire /contact end-to-end en dev (POST + vérifier ContactMessage.create).
+  * Créer un back-office admin minimal pour lister les ContactMessage (route GET déjà prête — `/api/contact` avec ADMIN_EMAILS gate). Page à créer dans `/admin/`.
+  * Configurer `ADMIN_EMAILS` env var en prod (comma-separated list of admin emails).
