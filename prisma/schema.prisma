@@ -27,6 +27,14 @@ model User {
   email        String   @unique
   passwordHash String
   name         String?
+  phone        String?
+  role         String   @default("user") // user | pro | business | admin
+  locale       String   @default("fr")
+  country      String   @default("FR")
+  timezone     String   @default("Europe/Paris")
+  consentMarketing Boolean @default(false)
+  consentAnalytics Boolean @default(true)
+  consentEmail     Boolean @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -54,6 +62,11 @@ model User {
 
   // AQWELIA Home (IoT) — sensors owned by this user
   iotSensors       IotSensor[]
+
+  // AQWELIA Growth OS — organizations owned by this user
+  ownedOrganizations  Organization[]   @relation("OwnedOrganizations")
+  // AQWELIA Growth OS — organizations this user is a member of
+  organizationMemberships OrganizationMember[]
 
   // OAuth / comptes liés (NextAuth future-proof)
   accounts Account[]
@@ -538,6 +551,92 @@ model PoolShare {
 }
 
 // ───────────────────────────────────────────────────────────────────────────
+// AQWELIA CARE — Marketplace produits & commandes (P8-BUSINESS-CARE)
+// ───────────────────────────────────────────────────────────────────────────
+// Catalogue de consommables et petits accessoires (bandelettes, cartouches,
+// joints, doseurs, correcteurs chimiques UE…). Catégories codées par couleur
+// (green | orange | red) pour guider la réglementation et l'affichage.
+// Les produits réglementés (red, biocides) sont marqués `regulated=true` et
+// `active=false` — non vendus directement, redirigés vers un partenaire.
+
+model Product {
+  id           String   @id @default(cuid())
+  sku          String   @unique
+  name         String
+  brand        String?
+  category     String   // green | orange | red
+  subcategory  String?
+  description  String?
+  price        Float
+  currency     String   @default("EUR")
+  unit         String   // kg | L | ml | tablet | piece
+  stockQty     Int      @default(0)
+  imageUrl     String?
+  regulated    Boolean  @default(false)
+  hazardLevel  String?  // none | low | medium | high
+  sdsUrl       String?  // Safety Data Sheet
+  instructions String?
+  warnings     String?
+  active       Boolean  @default(true)
+  country      String   @default("FR")
+  supplierId   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ProductCategory {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  nameKey   String
+  icon      String?
+  color     String?  // green | orange | red
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String
+  items     String   // JSON array
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id        String   @id @default(cuid())
+  userId    String
+  items     String   // JSON array
+  subtotal  Float
+  tax       Float
+  shipping  Float
+  total     Float
+  currency  String   @default("EUR")
+  status    String   @default("pending") // pending | paid | shipped | delivered | cancelled
+  tracking  String?
+  address   String?
+  city      String?
+  zipCode   String?
+  country   String   @default("FR")
+  createdAt DateTime @default(now())
+}
+
+model Kit {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  nameKey         String
+  description     String?
+  descriptionKey  String?
+  price           Float
+  currency        String   @default("EUR")
+  imageUrl        String?
+  items           String   // JSON array of {productId, quantity}
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+}
+
+// ───────────────────────────────────────────────────────────────────────────
 // AQWELIA HOME (IoT) — Capteurs connectés (ICO / iopool / ESPHome)
 // ───────────────────────────────────────────────────────────────────────────
 // Configuration of a connected water-quality sensor. Stores provider +
@@ -563,4 +662,311 @@ model IotSensor {
 
   @@index([userId])
   @@index([poolId])
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// P8-INFRA — Consent tracking (RGPD proof-of-consent ledger)
+// ───────────────────────────────────────────────────────────────────────────
+// One row per consent event (grant OR withdrawal). Optional userId for logged-in
+// users, optional leadId for marketing funnel leads (EarlyAccessLead,
+// CareNotification, PartnerApplication, ContactMessage). The `proof` JSON
+// captures the regulatory audit trail (IP, user agent, exact timestamp).
+
+model ConsentRecord {
+  id              String    @id @default(cuid())
+  userId          String?
+  leadId          String?
+  purpose         String   // marketing | analytics | email | sms | phone
+  channel         String   // web | app | form | widget
+  source          String?  // url or form id
+  wordingVersion  String?
+  grantedAt       DateTime?
+  withdrawnAt     DateTime?
+  proof           String?  // JSON proof (IP, user agent, timestamp)
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([leadId])
+  @@index([purpose])
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// P8-INFRA — Suppliers (AQWELIA Care marketplace partners)
+// ───────────────────────────────────────────────────────────────────────────
+// A Supplier is a B2B partner fulfilling AQWELIA Care orders. Dropshipping
+// suppliers ship directly to the end customer; others go through the AQWELIA
+// warehouse. `commissionRate` is the platform take (0-1). `shippingCountries`
+// is a comma-separated ISO-3166-1 alpha-2 list (e.g. "FR,ES,BE").
+
+model Supplier {
+  id                String   @id @default(cuid())
+  name              String
+  legalName         String?
+  siret             String?
+  country           String   @default("FR")
+  commissionRate    Float    @default(0.1)
+  shippingCountries String   @default("FR")
+  dropshipping      Boolean  @default(false)
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// P8-INFRA — AQWELIA Academy (Phase 12)
+// ───────────────────────────────────────────────────────────────────────────
+// Catalogue of e-learning courses for pool owners, pros and business users.
+// `slug` is the public URL (/academy/[slug]). `titleKey` + `descriptionKey`
+// point to i18n keys so the catalogue is fully localised. `content` is
+// markdown rendered server-side. `level` is beginner | intermediate | expert.
+
+model AcademyCourse {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  titleKey        String
+  description     String?
+  descriptionKey  String?
+  level           String   @default("beginner") // beginner | intermediate | expert
+  duration        Int      // minutes
+  videoUrl        String?
+  content         String?  // markdown
+  order           Int      @default(0)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  certifications  Certification[]
+
+  @@index([active])
+  @@index([level])
+}
+
+// A user's progression + certification on a course. `status` transitions:
+// in_progress → completed → expired. Certifications expire after 1 year
+// (set by the API when `completedAt` is recorded).
+
+model Certification {
+  id          String    @id @default(cuid())
+  userId      String
+  courseId    String
+  status      String    @default("in_progress") // in_progress | completed | expired
+  score       Int?
+  completedAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  course AcademyCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// AQWELIA GROWTH OS — 10-agent growth engine for pool pros
+// ───────────────────────────────────────────────────────────────────────────
+// Organizations (pro / business / growth tiers) own Leads captured from
+// multiple sources (website, widget, B2C marketplace, QR, campaigns). Each
+// lead runs through a pipeline of 10 specialized AI agents:
+//   offer_builder → lead_capture → qualification → diagnostic → matching →
+//   appointment → nurturing → quote → attribution → compliance
+// Agent runs + actions are logged for full auditability.
+
+model Organization {
+  id          String   @id @default(cuid())
+  type        String   @default("pro") // pro | business | growth
+  name        String
+  legalName   String?
+  siret       String?
+  vatNumber   String?
+  address     String?
+  city        String?
+  zipCode     String?
+  country     String   @default("FR")
+  phone       String?
+  email       String?
+  website     String?
+  plan        String   @default("growth_starter") // growth_starter | growth_pro | performance
+  status      String   @default("trial") // trial | active | suspended | cancelled
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     OrganizationMember[]
+  leads       Lead[]
+  owner       User @relation("OwnedOrganizations", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([plan])
+}
+
+model OrganizationMember {
+  id              String   @id @default(cuid())
+  organizationId  String
+  userId          String
+  role            String   @default("member") // owner | admin | manager | technician | viewer
+  status          String   @default("active") // active | invited | suspended | removed
+  createdAt       DateTime @default(now())
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
+}
+
+model Lead {
+  id              String   @id @default(cuid())
+  organizationId  String?
+  source          String   @default("website") // website | widget | b2c | qr | campaign | partner | referral
+  firstName       String
+  lastName        String
+  email           String
+  phone           String?
+  address         String?
+  city            String?
+  zipCode         String?
+  country         String   @default("FR")
+  serviceType     String?  // maintenance | repair | opening | closing | emergency | spa | renovation
+  poolType        String?
+  poolVolume      Float?
+  problem         String?
+  urgency         String   @default("normal") // low | normal | high | emergency
+  budget          String?
+  status          String   @default("NEW") // NEW | QUALIFIED | SCORED | ASSIGNED | CONTACTED | APPOINTMENT | QUOTED | WON | LOST
+  score           Int      @default(0)
+  assignedTo      String?
+  consent         Boolean  @default(false)
+  consentSource   String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  events          LeadEvent[]
+  appointments    Appointment[]
+  quotes          Quote[]
+  commissions     Commission[]
+  agentRuns       AgentRun[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([source])
+  @@index([assignedTo])
+  @@index([createdAt])
+}
+
+model LeadEvent {
+  id          String   @id @default(cuid())
+  leadId      String
+  type        String   // created | qualified | scored | assigned | contacted | appointment_scheduled | quote_sent | etc
+  actor       String?  // agent type or user id
+  payload     String?  // JSON
+  createdAt   DateTime @default(now())
+
+  lead        Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([createdAt])
+}
+
+model Appointment {
+  id              String   @id @default(cuid())
+  leadId          String
+  organizationId  String?
+  assignedTo      String?
+  startTime       DateTime
+  endTime         DateTime
+  status          String   @default("proposed") // proposed | confirmed | completed | cancelled | no_show
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  lead            Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([organizationId])
+  @@index([startTime])
+  @@index([status])
+}
+
+model Quote {
+  id              String   @id @default(cuid())
+  leadId          String
+  organizationId  String?
+  items           String   // JSON array
+  total           Float
+  currency        String   @default("EUR")
+  status          String   @default("draft") // draft | sent | accepted | rejected | expired
+  sentAt          DateTime?
+  acceptedAt      DateTime?
+  validUntil      DateTime?
+  createdAt       DateTime @default(now())
+
+  lead            Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([organizationId])
+  @@index([status])
+}
+
+model Commission {
+  id              String   @id @default(cuid())
+  leadId          String
+  organizationId  String?
+  invoiceId       String?
+  rate            Float
+  amount          Float
+  minimum         Float    @default(25)
+  maximum         Float    @default(150)
+  status          String   @default("pending") // pending | due | paid | disputed | refunded
+  disputeWindow   DateTime?
+  paidAt          DateTime?
+  createdAt       DateTime @default(now())
+
+  lead            Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([organizationId])
+  @@index([status])
+}
+
+model AgentRun {
+  id              String   @id @default(cuid())
+  agentType       String   // offer_builder | lead_capture | qualification | diagnostic | matching | appointment | nurturing | quote | attribution | compliance
+  organizationId  String?
+  userId          String?
+  leadId          String?
+  objective       String
+  input           String?  // JSON
+  output          String?  // JSON
+  confidence      Float    @default(0)
+  status          String   @default("running") // running | completed | failed | escalated
+  cost            Float    @default(0)
+  startedAt       DateTime @default(now())
+  completedAt     DateTime?
+
+  lead            Lead? @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  actions         AgentAction[]
+
+  @@index([agentType])
+  @@index([organizationId])
+  @@index([leadId])
+  @@index([status])
+}
+
+model AgentAction {
+  id              String   @id @default(cuid())
+  agentRunId      String
+  tool            String
+  action          String
+  approvalRequired Boolean @default(true)
+  approvedBy      String?
+  result          String?  // JSON
+  createdAt       DateTime @default(now())
+
+  agentRun        AgentRun @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
+
+  @@index([agentRunId])
+  @@index([approvedBy])
 }

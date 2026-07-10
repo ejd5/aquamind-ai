@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from 'next-intl/plugin'
 
+// P8-INFRA: the canonical site URL (env-driven so preview deploys can override
+// it via NEXT_PUBLIC_SITE_URL). Used by the Next.js Metadata API in
+// `src/app/layout.tsx` (`metadataBase`) and by the SEO helpers in
+// `src/lib/seo.ts`.
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aqwelia.app'
+
 const nextConfig: NextConfig = {
   output: "standalone",
   /* config options here */
