@@ -1911,7 +1911,21 @@
       "presetQ3": "A minha água está verde, o que devo fazer?",
       "presetQ4": "Como faço a invernagem da minha piscina?",
       "presetQ5": "Devo fazer um tratamento de choque com cloro?",
-      "presetQ6": "O meu eletrólise mostra um erro, ajude-me."
+      "presetQ6": "O meu eletrólise mostra um erro, ajude-me.",
+      "lagoonName": "Lagoon",
+      "lagoonTagline": "Copiloto AQWELIA",
+      "lagoonWelcome": "Olá! Sou o Lagoon 👋",
+      "lagoonGreeting": "A sua piscina está bem hoje. Como posso ajudar?",
+      "ctxSuggestionsLabel": "Sugestões proativas",
+      "ctxSuggestionPhHigh": "O seu pH está em {value} — quer que eu calcule a dosagem de pH-?",
+      "ctxSuggestionPhLow": "O seu pH está em {value} — quer que eu calcule a dosagem de pH+?",
+      "ctxSuggestionChlorineLow": "O cloro livre está em {value} mg/L — recomendo tratamento de choque?",
+      "ctxSuggestionCyaHigh": "O estabilizador atingiu {value} mg/L — renovar a água?",
+      "ctxSuggestionCombinedChlorine": "Cloro combinado em {value} mg/L — cloro de choque recomendado?",
+      "ctxSuggestionStorm": "Está prevista uma trovoada amanhã — recomendo verificar o cloro esta noite",
+      "ctxSuggestionHeat": "Calor intenso previsto — recomendo aumentar a filtração",
+      "micTitle": "Entrada por voz",
+      "micListening": "A ouvir…"
     },
     "maintenance": {
       "title": "Manutenção e equipamento",
@@ -4655,5 +4669,73 @@
     "affiliationFinalTitle": "Pronto para recomendar a AQWELIA?",
     "affiliationFinalSubtitle": "Inscreva-se em 2 minutos. Link de afiliação enviado em 48 h.",
     "affiliationFinalCta": "Começar agora"
+  },
+  "predict": {
+    "predictTitle": "AQWELIA Predict™",
+    "predictGlobalScore": "Risco global",
+    "predictLowRisk": "Baixo",
+    "predictMediumRisk": "Médio",
+    "predictHighRisk": "Alto",
+    "predictAllClear": "Tudo bem",
+    "predictAllClearDesc": "Nenhum problema previsto nos seus últimos 5 testes. Continue assim!",
+    "predictEtaHours": "em {hours}h",
+    "predictEtaDays": "em {days}d",
+    "predictMoreCount": "{count, plural, one {+# outro risco} other {+# outros riscos}}",
+    "predictDisclaimer": "Previsões indicativas — verifique com um teste.",
+    "predictSamples": "{count, plural, =0 {nenhum teste} one {# teste analisado} other {# testes analisados}}",
+    "predictActionQuery": "Lagoon, ajuda-me com: {title}",
+    "predictCat_algae": "Algas",
+    "predictCat_ph_drift": "Deriva pH",
+    "predictCat_cya_buildup": "Estabilizante",
+    "predictCat_tac_instability": "TAC instável",
+    "predictCat_chlorine_depletion": "Cloro",
+    "predictCat_scaling": "Cal",
+    "predictCat_corrosion": "Corrosão",
+    "predictCat_storm_impact": "Trovoada",
+    "ph_drift": {
+      "title": "O seu pH sobe {rate}/dia há {days} dias",
+      "message": "Tendência de subida detetada nos últimos {count} testes. Sem ação, o pH sairá da faixa ideal (7.0-7.4) e o cloro perderá eficácia.",
+      "action": "Adicione pH- agora para voltar abaixo de 7.4."
+    },
+    "algae": {
+      "title": "Em {days} dias: risco de algas",
+      "message_heat": "Cloro livre a {chlorine} mg/L e onda de calor prevista ({temp}°C). A água quente consome cloro mais rápido e favorece algas.",
+      "message_decline": "Cloro livre a {chlorine} mg/L e a descer. Sem tratamento, as algas podem aparecer em {days} dias.",
+      "action": "Cloro de choque recomendado já + filtração contínua 24h.",
+      "phosphates_title": "Fosfatos altos ({value} mg/L)",
+      "phosphates_message": "Os fosfatos alimentam as algas. Quanto mais calor, maior o risco.",
+      "phosphates_action": "Use um anti-fosfatos e escove as paredes."
+    },
+    "cya_buildup": {
+      "title": "O seu estabilizante atinge {value} mg/L",
+      "message_high": "CYA muito alto: o cloro torna-se ineficaz (chlorine lock). Renove {percent}% da água para diluir.",
+      "message_warn": "CYA a subir. Acima de 70 mg/L, o cloro perde eficácia. Monitore e planeie uma renovação.",
+      "action": "Renove {percent}% da água da piscina."
+    },
+    "tac_instability": {
+      "title": "O seu TAC varia muito",
+      "message": "Desvio-padrão de {stddev} mg/L em {count} medições. Um TAC instável leva a um pH errático e dosagens difíceis.",
+      "action": "Verifique a filtração e estabilize o TAC entre 80 e 120 mg/L."
+    },
+    "storm_impact": {
+      "title": "Trovoada prevista amanhã",
+      "message": "{percent}% de risco de trovoada. A trovoada dilui o cloro e aumenta o pH — verifique a água esta noite.",
+      "action": "Verifique o cloro livre esta noite antes da trovoada. Reforce a filtração amanhã."
+    },
+    "scaling": {
+      "title": "TH alto ({value} mg/L)",
+      "message": "Dureza cálcica alta. Risco de cal em equipamentos e linha de água, sobretudo em períodos quentes.",
+      "action": "Considere um sequestrante anti-cal e verifique o pH (mantenha abaixo de 7.4)."
+    },
+    "corrosion": {
+      "title": "Água agressiva (TH baixo + pH baixo)",
+      "message": "TH {th} mg/L e pH {ph}. Água agressiva: corrosão dos equipamentos, possível espuma.",
+      "action": "Suba o pH acima de 7.0 e adicione TH+ para atingir 200 mg/L."
+    },
+    "chlorine_depletion": {
+      "title": "Procura de cloro elevada",
+      "message": "Forte exposição solar + uso intensivo = consumo acelerado de cloro.",
+      "action": "Monitore o cloro diariamente e ajuste a filtração."
+    }
   }
 }

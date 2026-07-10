@@ -2003,7 +2003,21 @@
       "presetQ3": "Mon eau est verte, que faire ?",
       "presetQ4": "Comment bien hiverner ma piscine ?",
       "presetQ5": "Faut-il faire un traitement choc chlore ?",
-      "presetQ6": "Mon électrolyseur affiche une erreur, aide-moi."
+      "presetQ6": "Mon électrolyseur affiche une erreur, aide-moi.",
+      "lagoonName": "Lagoon",
+      "lagoonTagline": "Copilote AQWELIA",
+      "lagoonWelcome": "Bonjour ! Je suis Lagoon 👋",
+      "lagoonGreeting": "Votre piscine va bien aujourd'hui. Comment puis-je aider ?",
+      "ctxSuggestionsLabel": "Suggestions proactives",
+      "ctxSuggestionPhHigh": "Votre pH est à {value} — voulez-vous que je calcule le dosage de pH- ?",
+      "ctxSuggestionPhLow": "Votre pH est à {value} — voulez-vous que je calcule le dosage de pH+ ?",
+      "ctxSuggestionChlorineLow": "Votre chlore libre est à {value} mg/L — dois-je recommander un traitement choc ?",
+      "ctxSuggestionCyaHigh": "Votre stabilisant atteint {value} mg/L — faut-il renouveler l'eau ?",
+      "ctxSuggestionCombinedChlorine": "Chlore combiné à {value} mg/L — chlore choc recommandé ?",
+      "ctxSuggestionStorm": "Un orage est prévu demain — je recommande de vérifier le chlore ce soir",
+      "ctxSuggestionHeat": "Forte chaleur prévue — je recommande d'augmenter la filtration",
+      "micTitle": "Saisie vocale",
+      "micListening": "À l'écoute…"
     },
     "maintenance": {
       "title": "Maintenance & équipements",
@@ -2017,7 +2031,8 @@
       "tabs": {
         "equipment": "Équipements",
         "inventory": "Inventaire produits",
-        "reminders": "Rappels"
+        "reminders": "Rappels",
+        "iot": "Capteurs connectés"
       },
       "add": "Ajouter",
       "cached": "données en cache",
@@ -4838,5 +4853,73 @@
     "affiliationFinalTitle": "Prêt à recommander AQWELIA ?",
     "affiliationFinalSubtitle": "Inscrivez-vous en 2 minutes. Lien d'affiliation envoyé sous 48 h.",
     "affiliationFinalCta": "Démarrer maintenant"
+  },
+  "predict": {
+    "predictTitle": "AQWELIA Predict™",
+    "predictGlobalScore": "Risque global",
+    "predictLowRisk": "Faible",
+    "predictMediumRisk": "Modéré",
+    "predictHighRisk": "Élevé",
+    "predictAllClear": "Tout va bien",
+    "predictAllClearDesc": "Aucun problème anticipé sur vos 5 derniers tests. Continuez comme ça !",
+    "predictEtaHours": "dans {hours}h",
+    "predictEtaDays": "dans {days}j",
+    "predictMoreCount": "{count, plural, one {+# autre risque} other {+# autres risques}}",
+    "predictDisclaimer": "Prédictions indicatives — vérifiez avec un test.",
+    "predictSamples": "{count, plural, =0 {aucun test} one {# test analysé} other {# tests analysés}}",
+    "predictActionQuery": "Lagoon, aide-moi pour : {title}",
+    "predictCat_algae": "Algues",
+    "predictCat_ph_drift": "Dérive pH",
+    "predictCat_cya_buildup": "Stabilisant",
+    "predictCat_tac_instability": "TAC instable",
+    "predictCat_chlorine_depletion": "Chlore",
+    "predictCat_scaling": "Tartre",
+    "predictCat_corrosion": "Corrosion",
+    "predictCat_storm_impact": "Orage",
+    "ph_drift": {
+      "title": "Votre pH augmente de {rate}/jour depuis {days} jours",
+      "message": "Tendance haussière détectée sur les {count} derniers tests. Sans action, le pH dérivera hors plage idéale (7.0-7.4) et le chlore perdra en efficacité.",
+      "action": "Ajoutez du pH- maintenant pour revenir sous 7.4."
+    },
+    "algae": {
+      "title": "Dans {days} jours : risque d'algues",
+      "message_heat": "Chlore libre à {chlorine} mg/L et canicule prévue ({temp}°C). L'eau chaude consomme le chlore plus vite et favorise la prolifération d'algues.",
+      "message_decline": "Chlore libre à {chlorine} mg/L et en baisse. Sans traitement, les algues pourraient apparaître sous {days} jours.",
+      "action": "Chlore choc recommandé dès maintenant + filtration continue 24h.",
+      "phosphates_title": "Phosphates élevés ({value} mg/L)",
+      "phosphates_message": "Les phosphates nourrissent les algues. Plus il fait chaud, plus le risque est élevé.",
+      "phosphates_action": "Utilisez un anti-phosphates et brossez les parois."
+    },
+    "cya_buildup": {
+      "title": "Votre stabilisant atteint {value} mg/L",
+      "message_high": "CYA très élevé : le chlore devient inefficace (effet « chlorine lock »). Renouvelez {percent}% de l'eau pour diluer.",
+      "message_warn": "CYA en hausse. Au-dessus de 70 mg/L, le chlore perd de son efficacité. Surveillez et prévoyez un renouvellement.",
+      "action": "Renouvelez {percent}% de l'eau de la piscine."
+    },
+    "tac_instability": {
+      "title": "Votre TAC varie beaucoup",
+      "message": "Écart-type de {stddev} mg/L sur {count} mesures. Un TAC instable entraîne un pH erratique et des dosages difficiles.",
+      "action": "Vérifiez la filtration et stabilisez le TAC entre 80 et 120 mg/L."
+    },
+    "storm_impact": {
+      "title": "Orage prévu demain",
+      "message": "{percent}% de risque d'orage. L'orage dilue le chlore et fait monter le pH — vérifiez votre eau ce soir.",
+      "action": "Vérifiez le chlore libre ce soir avant l'orage. Renforcez la filtration demain."
+    },
+    "scaling": {
+      "title": "TH élevé ({value} mg/L)",
+      "message": "Dureté calcium élevée. Risque de tartre sur équipements et ligne d'eau, surtout en période chaude.",
+      "action": "Envisagez un séquestrant anti-tartre et vérifiez le pH (le maintenir sous 7.4)."
+    },
+    "corrosion": {
+      "title": "Eau agressive (TH bas + pH bas)",
+      "message": "TH {th} mg/L et pH {ph}. Eau agressive : corrosion équipements, mousse possible.",
+      "action": "Remontez le pH au-dessus de 7.0 et ajoutez du TH+ pour atteindre 200 mg/L."
+    },
+    "chlorine_depletion": {
+      "title": "Demande en chlore élevée",
+      "message": "Forte exposition soleil + usage intensif = consommation chlore accélérée.",
+      "action": "Surveillez le chlore quotidiennement et ajustez la filtration."
+    }
   }
 }

@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import {
-  Brain,
   Send,
   Trash2,
   Sparkles,
@@ -11,6 +10,7 @@ import {
   Loader2,
   Droplets,
   FlaskConical,
+  Mic,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,8 @@ import { toast } from '@/hooks/use-toast'
 import { offlineApi } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
+import { isMobile } from '@/lib/platform'
+import { evaluateParam } from '@/lib/pool/targets'
 
 interface Msg {
   role: 'user' | 'assistant'
@@ -28,6 +30,42 @@ interface Msg {
 interface Props {
   presetQuestion?: string
   onConsumePreset?: () => void
+}
+
+interface ContextData {
+  profile: { name?: string } | null
+  latestTest: {
+    ph: number
+    freeChlorine?: number | null
+    combinedChlorine?: number | null
+    alkalinity?: number | null
+    cyanuricAcid?: number | null
+    phosphates?: number | null
+    createdAt?: string
+  } | null
+}
+
+interface WeatherLite {
+  weather?: { location?: string; tomorrowMaxC?: number; tomorrowChanceStorm?: number } | null
+  assessment?: { alerts?: { id?: string; type?: string; severity?: string }[] } | null
+}
+
+// Animated golden water-drop avatar for Lagoon.
+function LagoonAvatar({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
+  const dim = size === 'lg' ? 'h-16 w-16' : size === 'sm' ? 'h-8 w-8' : 'h-10 w-10'
+  const icon = size === 'lg' ? 'h-8 w-8' : size === 'sm' ? 'h-4 w-4' : 'h-5 w-5'
+  return (
+    <div className={`relative ${dim}`}>
+      {/* Outer pulsing halo (gold) */}
+      <span className="absolute inset-0 animate-ping rounded-full bg-gold/30" style={{ animationDuration: '2.4s' }} />
+      {/* Drop body */}
+      <div
+        className={`relative flex ${dim} items-center justify-center rounded-full bg-gradient-to-br from-gold via-[oklch(0.72_0.13_95)] to-[oklch(0.55_0.10_75)] shadow-lg shadow-gold/40`}
+      >
+        <Droplets className={`${icon} text-white`} />
+      </div>
+    </div>
+  )
 }
 
 // SUGGESTIONS is built inside the component from t() calls so that preset questions
@@ -95,28 +133,79 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [contextReady, setContextReady] = useState(false)
+  const [contextData, setContextData] = useState<ContextData | null>(null)
+  const [weather, setWeather] = useState<WeatherLite | null>(null)
+  const [listening, setListening] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const recognitionRef = useRef<any>(null)
 
   const isOnline = useOfflineStore((s) => s.isOnline)
   const queueAction = useOfflineStore((s) => s.queueAction)
 
-  const SUGGESTIONS = [
-    t('presetQ1'),
-    t('presetQ2'),
-    t('presetQ3'),
-    t('presetQ4'),
-    t('presetQ5'),
-    t('presetQ6'),
-  ]
+  const showMic = useMemo(() => isMobile(), [])
 
-  // Check that a profile/test exists for context
+  // ── Contextual suggestions based on latest test + weather ───────────────
+  // Build a list of proactive suggestion strings (already-localized via t()).
+  const CONTEXT_SUGGESTIONS = useMemo(() => {
+    const out: string[] = []
+    const lt = contextData?.latestTest
+    if (lt) {
+      const phStatus = evaluateParam('ph', lt.ph)
+      if (lt.ph >= 7.5 || phStatus.includes('high')) {
+        out.push(t('ctxSuggestionPhHigh', { value: lt.ph }))
+      } else if (lt.ph <= 6.9 || phStatus.includes('low')) {
+        out.push(t('ctxSuggestionPhLow', { value: lt.ph }))
+      }
+      if (lt.freeChlorine != null && lt.freeChlorine < 1) {
+        out.push(t('ctxSuggestionChlorineLow', { value: lt.freeChlorine }))
+      }
+      if (lt.cyanuricAcid != null && lt.cyanuricAcid >= 50) {
+        out.push(t('ctxSuggestionCyaHigh', { value: lt.cyanuricAcid }))
+      }
+      if (lt.combinedChlorine != null && lt.combinedChlorine > 0.4) {
+        out.push(t('ctxSuggestionCombinedChlorine', { value: lt.combinedChlorine }))
+      }
+    }
+    // Weather-based suggestions
+    const alerts = weather?.assessment?.alerts || []
+    const storm = alerts.find((a) => a.type === 'storm')
+    if (storm) {
+      out.push(t('ctxSuggestionStorm'))
+    }
+    const heat = alerts.find((a) => a.type === 'heat')
+    if (heat) {
+      out.push(t('ctxSuggestionHeat'))
+    }
+    return out
+  }, [contextData, weather, t])
+
+  // Mix contextual + preset suggestions (contextual first, max 4 visible)
+  const SUGGESTIONS = useMemo(() => {
+    const presets = [
+      t('presetQ1'),
+      t('presetQ2'),
+      t('presetQ3'),
+      t('presetQ4'),
+      t('presetQ5'),
+      t('presetQ6'),
+    ]
+    if (CONTEXT_SUGGESTIONS.length === 0) return presets
+    return [...CONTEXT_SUGGESTIONS, ...presets].slice(0, 4 + CONTEXT_SUGGESTIONS.length)
+  }, [CONTEXT_SUGGESTIONS, t])
+
+  // Check that a profile/test exists for context (+ capture data for suggestions)
   useEffect(() => {
     let cancelled = false
-    offlineApi
-      .dashboard()
-      .then(({ data }) => {
+    Promise.all([
+      offlineApi.dashboard(),
+      offlineApi.weather().catch(() => ({ data: null, stale: false })),
+    ])
+      .then(([dashRes, wxRes]) => {
         if (cancelled) return
-        setContextReady(!!(data as { profile?: unknown } | null)?.profile)
+        const dashData = dashRes.data as ContextData | null
+        setContextData(dashData)
+        setContextReady(!!dashData?.profile)
+        setWeather((wxRes.data as WeatherLite | null) ?? null)
       })
       .catch(() => {
         if (!cancelled) setContextReady(false)
@@ -125,6 +214,40 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
       cancelled = true
     }
   }, [])
+
+  // ── Voice input (mobile only) via Web Speech API ─────────────────────────
+  useEffect(() => {
+    if (!showMic) return
+    if (typeof window === 'undefined') return
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SR) return
+    const rec = new SR()
+    rec.lang = 'fr-FR'
+    rec.continuous = false
+    rec.interimResults = false
+    rec.onresult = (e: any) => {
+      const text = e.results?.[0]?.[0]?.transcript || ''
+      setInput((prev) => (prev ? `${prev} ${text}` : text))
+      setListening(false)
+    }
+    rec.onerror = () => setListening(false)
+    rec.onend = () => setListening(false)
+    recognitionRef.current = rec
+    return () => {
+      try { rec.abort() } catch {}
+    }
+  }, [showMic])
+
+  function toggleMic() {
+    const rec = recognitionRef.current
+    if (!rec) return
+    if (listening) {
+      try { rec.stop() } catch {}
+      setListening(false)
+    } else {
+      try { rec.start(); setListening(true) } catch {}
+    }
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
@@ -241,14 +364,18 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
       </div>
 
       <Card className="glass-card overflow-hidden">
-        <CardHeader className="border-b border-border/40 bg-gradient-to-r from-secondary/40 to-transparent pb-3">
+        <CardHeader className="border-b border-border/40 bg-gradient-to-r from-gold/10 via-secondary/40 to-transparent pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 font-display text-base">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-gold shadow-md shadow-primary/30">
-                <Sparkles className="h-4 w-4 text-primary-foreground" />
+            <CardTitle className="flex items-center gap-2.5 font-display text-base">
+              <LagoonAvatar size="sm" />
+              <span>
+                {t('lagoonName')}
+                <span className="ml-1.5 align-middle text-[10px] font-normal uppercase tracking-wider text-gold">
+                  {t('lagoonTagline')}
+                </span>
               </span>
-              {t('aqweliaAssistant')}
             </CardTitle>
+            <Sparkles className="h-4 w-4 text-gold/60" />
           </div>
           <CardDescription className="text-xs">
             {t('disclaimer')}
@@ -259,24 +386,31 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
           <div ref={scrollRef} className="custom-scroll h-[460px] space-y-4 overflow-y-auto p-4">
             {messages.length === 0 && (
               <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-                <div className="relative">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/30">
-                    <Brain className="h-8 w-8 text-primary-foreground" />
-                  </div>
-                  <Sparkles className="absolute -right-1 -top-1 h-5 w-5 text-accent" />
-                </div>
+                <LagoonAvatar size="lg" />
                 <div>
-                  <p className="font-semibold">{t('welcomeTitle')}</p>
+                  <p className="font-display text-lg font-semibold text-gold">{t('lagoonWelcome')}</p>
                   <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                    {t('welcomeDesc')}
+                    {t('lagoonGreeting')}
                   </p>
                 </div>
+                {CONTEXT_SUGGESTIONS.length > 0 && (
+                  <div className="flex flex-wrap items-center justify-center gap-1.5">
+                    <span className="flex items-center gap-1 rounded-full border border-gold/30 bg-gold/5 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gold">
+                      <Sparkles className="h-3 w-3" />
+                      {t('ctxSuggestionsLabel')}
+                    </span>
+                  </div>
+                )}
                 <div className="flex flex-wrap justify-center gap-2">
-                  {SUGGESTIONS.map((s) => (
+                  {SUGGESTIONS.map((s, i) => (
                     <button
                       key={s}
                       onClick={() => send(s)}
-                      className="glass-pill rounded-full px-3 py-1.5 text-xs font-medium text-foreground/80 transition-colors hover:border-gold/40 hover:text-foreground"
+                      className={`glass-pill rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:border-gold/40 hover:text-foreground ${
+                        i < CONTEXT_SUGGESTIONS.length
+                          ? 'border-gold/40 bg-gold/5 text-gold'
+                          : 'text-foreground/80'
+                      }`}
                     >
                       {s}
                     </button>
@@ -291,13 +425,13 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
                   className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                     m.role === 'user'
                       ? 'bg-secondary'
-                      : 'bg-gradient-to-br from-primary to-accent'
+                      : 'bg-gradient-to-br from-gold via-[oklch(0.72_0.13_95)] to-[oklch(0.55_0.10_75)] shadow-md shadow-gold/30'
                   }`}
                 >
                   {m.role === 'user' ? (
                     <User className="h-4 w-4" />
                   ) : (
-                    <Sparkles className="h-4 w-4 text-primary-foreground" />
+                    <Droplets className="h-4 w-4 text-white" />
                   )}
                 </div>
                 <div
@@ -314,8 +448,8 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
 
             {loading && (
               <div className="flex gap-2.5">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent">
-                  <Sparkles className="h-4 w-4 text-primary-foreground" />
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-gold via-[oklch(0.72_0.13_95)] to-[oklch(0.55_0.10_75)] shadow-md shadow-gold/30">
+                  <Droplets className="h-4 w-4 animate-pulse text-white" />
                 </div>
                 <div className="flex items-center gap-2 rounded-2xl bg-secondary px-4 py-3">
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -330,7 +464,7 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
             )}
           </div>
 
-          <div className="border-t border-border/40 bg-gradient-to-r from-secondary/30 to-transparent p-3">
+          <div className="border-t border-border/40 bg-gradient-to-r from-gold/5 via-secondary/30 to-transparent p-3">
             <div className="flex items-end gap-2">
               <Textarea
                 value={input}
@@ -345,15 +479,35 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
                 className="min-h-[44px] max-h-32 resize-none bg-background"
                 rows={1}
               />
+              {showMic && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={toggleMic}
+                  disabled={loading}
+                  className={`h-11 shrink-0 ${listening ? 'border-destructive/40 bg-destructive/10 text-destructive animate-pulse' : 'border-gold/40 text-gold hover:bg-gold/10'}`}
+                  size="icon"
+                  title={t('micTitle')}
+                  aria-label={t('micTitle')}
+                >
+                  <Mic className="h-4 w-4" />
+                </Button>
+              )}
               <Button
                 onClick={() => send(input)}
                 disabled={!input.trim() || loading}
-                className="h-11 shrink-0 bg-gradient-to-r from-primary to-gold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30"
+                className="h-11 shrink-0 bg-gradient-to-r from-gold via-[oklch(0.72_0.13_95)] to-[oklch(0.55_0.10_75)] shadow-lg shadow-gold/30 hover:shadow-xl hover:shadow-gold/40"
                 size="icon"
               >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
+            {listening && (
+              <p className="mt-1.5 flex items-center gap-1.5 text-[10px] text-gold">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gold" />
+                {t('micListening')}
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

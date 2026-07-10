@@ -1911,7 +1911,21 @@
       "presetQ3": "Mijn water is groen, wat moet ik doen?",
       "presetQ4": "Hoe winterklaar ik mijn zwembad?",
       "presetQ5": "Moet ik een chloorschokbehandeling uitvoeren?",
-      "presetQ6": "Mijn elektrolyse-unit toont een fout, help me."
+      "presetQ6": "Mijn elektrolyse-unit toont een fout, help me.",
+      "lagoonName": "Lagoon",
+      "lagoonTagline": "AQWELIA Copiloot",
+      "lagoonWelcome": "Hallo! Ik ben Lagoon 👋",
+      "lagoonGreeting": "Uw zwembad is vandaag in orde. Hoe kan ik helpen?",
+      "ctxSuggestionsLabel": "Proactieve suggesties",
+      "ctxSuggestionPhHigh": "Uw pH is {value} — zal ik de pH- dosering berekenen?",
+      "ctxSuggestionPhLow": "Uw pH is {value} — zal ik de pH+ dosering berekenen?",
+      "ctxSuggestionChlorineLow": "Vrije chloor op {value} mg/L — schokbehandeling aanbevelen?",
+      "ctxSuggestionCyaHigh": "Stabilisator bereikt {value} mg/L — water deels vernieuwen?",
+      "ctxSuggestionCombinedChlorine": "Gebonden chloor op {value} mg/L — schokchloor aanbevolen?",
+      "ctxSuggestionStorm": "Morgen wordt een onweer verwacht — ik raad aan het chloor vanavond te controleren",
+      "ctxSuggestionHeat": "Grote hitte verwacht — ik raad aan de filtratie te verhogen",
+      "micTitle": "Spraakinvoer",
+      "micListening": "Luisteren…"
     },
     "maintenance": {
       "title": "Onderhoud & apparatuur",
@@ -4655,5 +4669,73 @@
     "affiliationFinalTitle": "Klaar om AQWELIA aan te bevelen?",
     "affiliationFinalSubtitle": "Schrijf je in 2 minuten in. Affiliate-link binnen 48 u.",
     "affiliationFinalCta": "Nu starten"
+  },
+  "predict": {
+    "predictTitle": "AQWELIA Predict™",
+    "predictGlobalScore": "Algemeen risico",
+    "predictLowRisk": "Laag",
+    "predictMediumRisk": "Gemiddeld",
+    "predictHighRisk": "Hoog",
+    "predictAllClear": "Alles in orde",
+    "predictAllClearDesc": "Geen problemen verwacht op basis van uw laatste 5 tests. Zo doorgaan!",
+    "predictEtaHours": "over {hours}u",
+    "predictEtaDays": "over {days}d",
+    "predictMoreCount": "{count, plural, one {+# ander risico} other {+# andere risico's}}",
+    "predictDisclaimer": "Indicatieve voorspellingen — verifieer met een test.",
+    "predictSamples": "{count, plural, =0 {geen test} one {# test geanalyseerd} other {# tests geanalyseerd}}",
+    "predictActionQuery": "Lagoon, help me met: {title}",
+    "predictCat_algae": "Algen",
+    "predictCat_ph_drift": "pH-drift",
+    "predictCat_cya_buildup": "Stabilisator",
+    "predictCat_tac_instability": "Onstabiele TAC",
+    "predictCat_chlorine_depletion": "Chloor",
+    "predictCat_scaling": "Kalk",
+    "predictCat_corrosion": "Corrosie",
+    "predictCat_storm_impact": "Onweer",
+    "ph_drift": {
+      "title": "Uw pH stijgt met {rate}/dag sinds {days} dagen",
+      "message": "Stijgende trend vastgesteld over de laatste {count} tests. Zonder actie zal de pH buiten het ideale bereik (7,0-7,4) drijven en het chloor verliest werking.",
+      "action": "Voeg nu pH- toe om onder 7,4 te komen."
+    },
+    "algae": {
+      "title": "Over {days} dagen: algenrisico",
+      "message_heat": "Vrije chloor op {chlorine} mg/L en hittegolf verwacht ({temp}°C). Warm water verbruikt chloor sneller en bevordert algen.",
+      "message_decline": "Vrije chloor op {chlorine} mg/L en dalend. Zonder behandeling kunnen algen binnen {days} dagen verschijnen.",
+      "action": "Schokchloor nu aanbevolen + continue filtratie 24u.",
+      "phosphates_title": "Hoge fosfaten ({value} mg/L)",
+      "phosphates_message": "Fosfaten voeden algen. Hoe heter, hoe hoger het risico.",
+      "phosphates_action": "Gebruik een anti-fosfaatmiddel en borstel de wanden."
+    },
+    "cya_buildup": {
+      "title": "Uw stabilisator bereikt {value} mg/L",
+      "message_high": "CYA zeer hoog: chloor wordt onwerkzaam (chlorine lock). Vernieuw {percent}% van het water om te verdunnen.",
+      "message_warn": "CYA stijgt. Boven 70 mg/L verliest chloor werking. Monitor en plan een vernieuwing.",
+      "action": "Vernieuw {percent}% van het zwembadwater."
+    },
+    "tac_instability": {
+      "title": "Uw TAC varieert sterk",
+      "message": "Standaardafwijking van {stddev} mg/L over {count} metingen. Een onstabiele TAC leidt tot erratische pH en moeilijke dosering.",
+      "action": "Controleer de filtratie en stabiliseer TAC tussen 80 en 120 mg/L."
+    },
+    "storm_impact": {
+      "title": "Morgen onweer verwacht",
+      "message": "{percent}% kans op onweer. Het onweer verdunt het chloor en verhoogt de pH — controleer vanavond het water.",
+      "action": "Controleer vanavond het vrije chloor vóór het onweer. Versterk morgen de filtratie."
+    },
+    "scaling": {
+      "title": "Hoge TH ({value} mg/L)",
+      "message": "Hoge calciumhardheid. Kalkrisico op apparatuur en waterlijn, vooral in warme periodes.",
+      "action": "Overweeg een anti-kalk-sequestrant en controleer de pH (onder 7,4 houden)."
+    },
+    "corrosion": {
+      "title": "Aggressief water (lage TH + lage pH)",
+      "message": "TH {th} mg/L en pH {ph}. Aggressief water: corrosie van apparatuur, mogelijk schuim.",
+      "action": "Breng de pH boven 7,0 en voeg TH+ toe om 200 mg/L te bereiken."
+    },
+    "chlorine_depletion": {
+      "title": "Hoge chloorbehoefte",
+      "message": "Hoge zonblootstelling + intensief gebruik = versnelde chloorverbruik.",
+      "action": "Monitor chloor dagelijks en pas de filtratie aan."
+    }
   }
 }

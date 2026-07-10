@@ -33,6 +33,11 @@ import { useTranslations, useLocale } from 'next-intl'
 import type { TabId } from './app-shell'
 import { evaluateParam } from '@/lib/pool/targets'
 import { offlineApi, apiGetCached } from '@/lib/offline/api-cache'
+import { RestockWidget } from './restock-widget'
+import { StoriesWidget } from './stories-widget'
+import { SavingsWidget } from './savings-widget'
+import { GamificationWidget } from './gamification-widget'
+import { PredictionsWidget } from './predictions-widget'
 
 interface DashboardData {
   profile: any
@@ -192,7 +197,19 @@ interface WeatherLite {
       whenKey: string
     }[]
     algaeRisk?: 'low' | 'medium' | 'high' | 'extreme'
+    climate?: ClimateBadgeLite | null
   } | null
+}
+
+interface ClimateBadgeLite {
+  mode: string
+  modeLabelKey: string
+  modeDescKey: string
+  modeLabel: string
+  modeDesc: string
+  filtrationBoostHours: number
+  adjustments: string[]
+  badgeHue: number
 }
 
 interface ReminderLite {
@@ -253,6 +270,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
   const tReminders = useTranslations('reminders')
   const tReminderMod = useTranslations('modules.reminders')
   const tAct = useTranslations('actionPlan')
+  const tClimate = useTranslations('climate')
   const locale = useLocale()
 
   // Helper: translate via key with French fallback (for DB-stored plans without keys)
@@ -278,6 +296,14 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
     }
     return fr
   }, [tReminders])
+
+  // Helper: translate climate mode label/desc with French fallback
+  const trC = useCallback((fr: string, key?: string | null): string => {
+    if (key) {
+      try { return tClimate(key as any) } catch { return fr }
+    }
+    return fr
+  }, [tClimate])
   const [data, setData] = useState<DashboardData | null>(null)
   const [weather, setWeather] = useState<WeatherLite | null>(null)
   const [reminders, setReminders] = useState<ReminderLite[]>([])
@@ -405,6 +431,22 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {/* AQWELIA Climate badge */}
+          {weather?.assessment?.climate && weather.assessment.climate.mode !== 'normal' && (
+            <div
+              className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold shadow-sm"
+              style={{
+                borderColor: `oklch(0.6 0.13 ${weather.assessment.climate.badgeHue} / 0.4)`,
+                backgroundColor: `oklch(0.6 0.13 ${weather.assessment.climate.badgeHue} / 0.1)`,
+                color: `oklch(0.45 0.13 ${weather.assessment.climate.badgeHue})`,
+              }}
+              title={trC(weather.assessment.climate.modeDesc, weather.assessment.climate.modeDescKey)}
+              aria-label={tClimate('badgeAria', { mode: trC(weather.assessment.climate.modeLabel, weather.assessment.climate.modeLabelKey) })}
+            >
+              <CloudSun className="h-3.5 w-3.5" />
+              {trC(weather.assessment.climate.modeLabel, weather.assessment.climate.modeLabelKey)}
+            </div>
+          )}
           <Button variant="outline" size="sm" onClick={load} className="border-border/60">
             <RefreshCw className="h-3.5 w-3.5" />
             {t('refresh')}
@@ -414,6 +456,9 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
           )}
         </div>
       </div>
+
+      {/* AQWELIA Predict™ — proactive risk predictions on top */}
+      <PredictionsWidget onAskAssistant={onAskAssistant} />
 
       {!latestTest ? (
         <Card className="glass-card">
@@ -886,6 +931,20 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Engagement: Savings + Gamification */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <SavingsWidget />
+        <GamificationWidget />
+      </div>
+
+      {/* AQWELIA AutoRestock™ + AQWELIA Stories */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <RestockWidget activePoolId={activePoolId} />
+        <div className="flex flex-col gap-3">
+          <StoriesWidget limit={6} />
+        </div>
       </div>
 
       {/* Secondary stats */}

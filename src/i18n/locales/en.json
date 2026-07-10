@@ -2003,7 +2003,21 @@
       "presetQ3": "My water is green, what should I do?",
       "presetQ4": "How do I winterize my pool?",
       "presetQ5": "Should I do a chlorine shock treatment?",
-      "presetQ6": "My electrolyzer shows an error, help me."
+      "presetQ6": "My electrolyzer shows an error, help me.",
+      "lagoonName": "Lagoon",
+      "lagoonTagline": "AQWELIA Copilot",
+      "lagoonWelcome": "Hi! I'm Lagoon 👋",
+      "lagoonGreeting": "Your pool is doing well today. How can I help?",
+      "ctxSuggestionsLabel": "Proactive suggestions",
+      "ctxSuggestionPhHigh": "Your pH is {value} — want me to calculate the pH- dosage?",
+      "ctxSuggestionPhLow": "Your pH is {value} — want me to calculate the pH+ dosage?",
+      "ctxSuggestionChlorineLow": "Your free chlorine is {value} mg/L — should I recommend a shock treatment?",
+      "ctxSuggestionCyaHigh": "Your stabilizer has reached {value} mg/L — should you partially renew the water?",
+      "ctxSuggestionCombinedChlorine": "Combined chlorine at {value} mg/L — shock chlorine recommended?",
+      "ctxSuggestionStorm": "A storm is forecast tomorrow — I recommend checking the chlorine tonight",
+      "ctxSuggestionHeat": "High heat forecast — I recommend increasing filtration",
+      "micTitle": "Voice input",
+      "micListening": "Listening…"
     },
     "maintenance": {
       "title": "Maintenance & equipment",
@@ -2017,7 +2031,8 @@
       "tabs": {
         "equipment": "Equipment",
         "inventory": "Product inventory",
-        "reminders": "Reminders"
+        "reminders": "Reminders",
+        "iot": "Connected sensors"
       },
       "add": "Add",
       "cached": "cached data",
@@ -4838,5 +4853,73 @@
     "affiliationFinalTitle": "Ready to recommend AQWELIA?",
     "affiliationFinalSubtitle": "Sign up in 2 minutes. Affiliate link sent within 48 h.",
     "affiliationFinalCta": "Get started now"
+  },
+  "predict": {
+    "predictTitle": "AQWELIA Predict™",
+    "predictGlobalScore": "Global risk",
+    "predictLowRisk": "Low",
+    "predictMediumRisk": "Medium",
+    "predictHighRisk": "High",
+    "predictAllClear": "All clear",
+    "predictAllClearDesc": "No issues anticipated from your last 5 tests. Keep it up!",
+    "predictEtaHours": "in {hours}h",
+    "predictEtaDays": "in {days}d",
+    "predictMoreCount": "{count, plural, one {+# more risk} other {+# more risks}}",
+    "predictDisclaimer": "Indicative predictions — verify with a test.",
+    "predictSamples": "{count, plural, =0 {no test} one {# test analyzed} other {# tests analyzed}}",
+    "predictActionQuery": "Lagoon, help me with: {title}",
+    "predictCat_algae": "Algae",
+    "predictCat_ph_drift": "pH drift",
+    "predictCat_cya_buildup": "Stabilizer",
+    "predictCat_tac_instability": "Unstable TAC",
+    "predictCat_chlorine_depletion": "Chlorine",
+    "predictCat_scaling": "Scale",
+    "predictCat_corrosion": "Corrosion",
+    "predictCat_storm_impact": "Storm",
+    "ph_drift": {
+      "title": "Your pH rises by {rate}/day for {days} days",
+      "message": "Upward trend detected over the last {count} tests. Without action, the pH will drift out of the ideal range (7.0-7.4) and the chlorine will lose effectiveness.",
+      "action": "Add pH- now to bring it back below 7.4."
+    },
+    "algae": {
+      "title": "In {days} days: algae risk",
+      "message_heat": "Free chlorine at {chlorine} mg/L and heatwave forecast ({temp}°C). Warm water consumes chlorine faster and promotes algae growth.",
+      "message_decline": "Free chlorine at {chlorine} mg/L and declining. Without treatment, algae may appear within {days} days.",
+      "action": "Shock chlorine recommended now + continuous filtration 24h.",
+      "phosphates_title": "High phosphates ({value} mg/L)",
+      "phosphates_message": "Phosphates feed algae. The hotter it gets, the higher the risk.",
+      "phosphates_action": "Use an anti-phosphate treatment and brush the walls."
+    },
+    "cya_buildup": {
+      "title": "Your stabilizer reaches {value} mg/L",
+      "message_high": "CYA very high: chlorine becomes ineffective (chlorine lock). Renew {percent}% of the water to dilute.",
+      "message_warn": "CYA rising. Above 70 mg/L, chlorine loses effectiveness. Monitor and plan a partial renewal.",
+      "action": "Renew {percent}% of the pool water."
+    },
+    "tac_instability": {
+      "title": "Your TAC varies a lot",
+      "message": "Standard deviation of {stddev} mg/L over {count} measurements. An unstable TAC leads to erratic pH and difficult dosing.",
+      "action": "Check the filtration and stabilize TAC between 80 and 120 mg/L."
+    },
+    "storm_impact": {
+      "title": "Storm forecast tomorrow",
+      "message": "{percent}% chance of storm. The storm dilutes chlorine and raises pH — check your water tonight.",
+      "action": "Check free chlorine tonight before the storm. Boost filtration tomorrow."
+    },
+    "scaling": {
+      "title": "High TH ({value} mg/L)",
+      "message": "High calcium hardness. Risk of scale on equipment and waterline, especially in warm periods.",
+      "action": "Consider an anti-scale sequestrant and check the pH (keep below 7.4)."
+    },
+    "corrosion": {
+      "title": "Aggressive water (low TH + low pH)",
+      "message": "TH {th} mg/L and pH {ph}. Aggressive water: equipment corrosion, possible foaming.",
+      "action": "Raise pH above 7.0 and add TH+ to reach 200 mg/L."
+    },
+    "chlorine_depletion": {
+      "title": "High chlorine demand",
+      "message": "High sun exposure + intensive use = accelerated chlorine consumption.",
+      "action": "Monitor chlorine daily and adjust filtration."
+    }
   }
 }

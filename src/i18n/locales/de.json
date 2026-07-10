@@ -1911,7 +1911,21 @@
       "presetQ3": "Mein Wasser ist grün, was soll ich tun?",
       "presetQ4": "Wie überwintere ich meinen Pool?",
       "presetQ5": "Sollte ich eine Stoßchlorung durchführen?",
-      "presetQ6": "Mein Elektrolyseur zeigt einen Fehler, helfen Sie mir."
+      "presetQ6": "Mein Elektrolyseur zeigt einen Fehler, helfen Sie mir.",
+      "lagoonName": "Lagoon",
+      "lagoonTagline": "AQWELIA Kopilot",
+      "lagoonWelcome": "Hallo! Ich bin Lagoon 👋",
+      "lagoonGreeting": "Ihr Pool ist heute in Ordnung. Wie kann ich helfen?",
+      "ctxSuggestionsLabel": "Proaktive Vorschläge",
+      "ctxSuggestionPhHigh": "Ihr pH-Wert liegt bei {value} — soll ich die pH- Dosierung berechnen?",
+      "ctxSuggestionPhLow": "Ihr pH-Wert liegt bei {value} — soll ich die pH+ Dosierung berechnen?",
+      "ctxSuggestionChlorineLow": "Freies Chlor bei {value} mg/L — Soll ich eine Stoßbehandlung empfehlen?",
+      "ctxSuggestionCyaHigh": "Stabilisator erreicht {value} mg/L — Wasser teilweise erneuern?",
+      "ctxSuggestionCombinedChlorine": "Gebundenes Chlor bei {value} mg/L — Stoßchlorung empfohlen?",
+      "ctxSuggestionStorm": "Morgen ist ein Gewitter vorhergesagt — ich empfehle, heute Abend das Chlor zu prüfen",
+      "ctxSuggestionHeat": "Große Hitze vorhergesagt — ich empfehle, die Filtration zu erhöhen",
+      "micTitle": "Spracheingabe",
+      "micListening": "Höre zu…"
     },
     "maintenance": {
       "title": "Wartung & Geräte",
@@ -4655,5 +4669,73 @@
     "affiliationFinalTitle": "Bereit, AQWELIA zu empfehlen?",
     "affiliationFinalSubtitle": "Melden Sie sich in 2 Minuten an. Affiliate-Link innerhalb von 48 h.",
     "affiliationFinalCta": "Jetzt starten"
+  },
+  "predict": {
+    "predictTitle": "AQWELIA Predict™",
+    "predictGlobalScore": "Gesamtrisiko",
+    "predictLowRisk": "Niedrig",
+    "predictMediumRisk": "Mittel",
+    "predictHighRisk": "Hoch",
+    "predictAllClear": "Alles in Ordnung",
+    "predictAllClearDesc": "Keine Probleme aus den letzten 5 Tests vorhergesagt. Weiter so!",
+    "predictEtaHours": "in {hours} Std",
+    "predictEtaDays": "in {days} T",
+    "predictMoreCount": "{count, plural, one {+# weiteres Risiko} other {+# weitere Risiken}}",
+    "predictDisclaimer": "Indikative Vorhersagen — mit einem Test verifizieren.",
+    "predictSamples": "{count, plural, =0 {kein Test} one {# Test analysiert} other {# Tests analysiert}}",
+    "predictActionQuery": "Lagoon, hilf mir bei: {title}",
+    "predictCat_algae": "Algen",
+    "predictCat_ph_drift": "pH-Drift",
+    "predictCat_cya_buildup": "Stabilisator",
+    "predictCat_tac_instability": "Instabiler TAC",
+    "predictCat_chlorine_depletion": "Chlor",
+    "predictCat_scaling": "Kalk",
+    "predictCat_corrosion": "Korrosion",
+    "predictCat_storm_impact": "Gewitter",
+    "ph_drift": {
+      "title": "Ihr pH-Wert steigt um {rate}/Tag seit {days} Tagen",
+      "message": "Aufwärts trend über die letzten {count} Tests erkannt. Ohne Maßnahmen wird der pH-Wert außerhalb des idealen Bereichs (7,0-7,4) driftet und das Chlor verliert an Wirksamkeit.",
+      "action": "Geben Sie jetzt pH- hinzu, um unter 7,4 zu kommen."
+    },
+    "algae": {
+      "title": "In {days} Tagen: Algenrisiko",
+      "message_heat": "Freies Chlor bei {chlorine} mg/L und Hitzewelle vorhergesagt ({temp}°C). Warmes Wasser verbraucht Chlor schneller und fördert Algenwachstum.",
+      "message_decline": "Freies Chlor bei {chlorine} mg/L und fallend. Ohne Behandlung könnten Algen innerhalb von {days} Tagen auftreten.",
+      "action": "Stoßchlorung jetzt empfohlen + kontinuierliche Filtration 24 Std.",
+      "phosphates_title": "Hohe Phosphate ({value} mg/L)",
+      "phosphates_message": "Phosphate nähren Algen. Je heißer es ist, desto höher das Risiko.",
+      "phosphates_action": "Verwenden Sie ein Anti-Phosphat-Mittel und bürsten Sie die Wände."
+    },
+    "cya_buildup": {
+      "title": "Ihr Stabilisator erreicht {value} mg/L",
+      "message_high": "CYA sehr hoch: Chlor wird unwirksam (Chlor-Lock). Erneuern Sie {percent}% des Wassers zum Verdünnen.",
+      "message_warn": "CYA steigt. Über 70 mg/L verliert Chlor an Wirksamkeit. Überwachen und Erneuerung planen.",
+      "action": "Erneuern Sie {percent}% des Poolwassers."
+    },
+    "tac_instability": {
+      "title": "Ihr TAC schwankt stark",
+      "message": "Standardabweichung von {stddev} mg/L über {count} Messungen. Ein instabiler TAC führt zu erratischem pH und schwieriger Dosierung.",
+      "action": "Prüfen Sie die Filtration und stabilisieren Sie den TAC zwischen 80 und 120 mg/L."
+    },
+    "storm_impact": {
+      "title": "Morgen Gewitter vorhergesagt",
+      "message": "{percent}% Gewitterwahrscheinlichkeit. Das Gewitter verdünnt das Chlor und erhöht den pH — prüfen Sie heute Abend das Wasser.",
+      "action": "Prüfen Sie heute Abend das freie Chlor vor dem Gewitter. Verstärken Sie morgen die Filtration."
+    },
+    "scaling": {
+      "title": "Hohe TH ({value} mg/L)",
+      "message": "Hohe Calciumhärte. Kalkrisiko an Geräten und Wasserlinie, besonders in warmen Perioden.",
+      "action": "Erwägen Sie einen Anti-Kalk-Sequestrierer und prüfen Sie den pH (unter 7,4 halten)."
+    },
+    "corrosion": {
+      "title": "Aggressives Wasser (niedriger TH + niedriger pH)",
+      "message": "TH {th} mg/L und pH {ph}. Aggressives Wasser: Korrosion der Geräte, mögliche Schaumbildung.",
+      "action": "Heben Sie den pH-Wert über 7,0 und fügen Sie TH+ hinzu, um 200 mg/L zu erreichen."
+    },
+    "chlorine_depletion": {
+      "title": "Hoher Chlorbedarf",
+      "message": "Hohe Sonneneinstrahlung + intensive Nutzung = beschleunigter Chlorverbrauch.",
+      "action": "Überwachen Sie das Chlor täglich und passen Sie die Filtration an."
+    }
   }
 }
