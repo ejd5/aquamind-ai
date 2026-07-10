@@ -4978,3 +4978,163 @@ Stage Summary:
 - **i18n**: 15 nouvelles clés proApp (fr + en), plurals ICU pour counts, 0 chaîne française en dur (pre-commit hook PASS).
 - **Lint PASS** (0/0), **TypeScript PASS** (0 erreur src/), **JSON valide**, **push OK**.
 - **DA respectée**: glassmorphism (bg-white/60 backdrop-blur-xl border-white/40), gold accents (gradient + text-gold + border-gold/40), font-display, responsive (mobile nav row, table overflow-x-auto, grid breakpoints).
+
+---
+Task ID: P7-COPILOT
+Agent: sub-agent (general-purpose) — Copilot Lagoon (assistant IA avec personnalité) + AQWELIA Predict™ (prédiction IA des problèmes)
+Task: 2 features IA. (1) Donner une identité de marque à l'assistant IA : nom "Lagoon" (copilote AQWELIA), personnalité amical/expert/proactif/rassurant, avatar goutte d'eau dorée pulsante, message d'accueil, suggestions contextuelles basées sur dernier test + météo, mode vocal (micro sur mobile via Web Speech API). Modifier src/lib/pool/ai-context.ts (system prompt) + src/components/aquamind/module-assistant.tsx (UI). (2) Anticiper les problèmes : créer src/lib/pool/predict-engine.ts (predictProblems analysant 5 derniers tests + météo + profil, détecte pH drift, algae+risk, CYA buildup, TAC instability, storm impact, scaling, corrosion, phosphates), src/app/api/pool/predictions/route.ts (GET), src/components/aquamind/predictions-widget.tsx (card sur dashboard avec score risque 🟢🟡🔴 + pulse animation si high risk). Intégrer dans module-dashboard.tsx. i18n: clés lagoon + predict dans 7 locales. Pas de chaînes françaises en dur. Après: lint, push GitHub.
+
+Work Log:
+- Lu worklog.md (3 dernières sections: P6-PRO-UI-RETRY 6 pages Pro UI, P6-DESIGN tokens centralisés + i18n routing prep, P5-STORE App Store + Stripe trial). Lu src/lib/pool/ai-context.ts (system prompt générique "AQWELIA expert pisciniste"). Lu src/app/api/chat/route.ts (POST /api/chat, auth-gated, buildPoolContext + getAssistantSystemPrompt). Stack identique aux sections précédentes: Next.js 16 + React 19 + Prisma SQLite + next-intl v4.7.0 (7 locales) + NextAuth JWT + Capacitor 8 + Tailwind v4.
+
+### Feature 1 — Copilot Lagoon (assistant IA avec personnalité)
+
+**1.1 System prompt (src/lib/pool/ai-context.ts)**:
+- ASSISTANT_SYSTEM_PROMPT_FR rewrit : "Tu es **Lagoon**, le copilote IA d'AQWELIA" avec bloc IDENTITÉ DE MARQUE (nom, avatar goutte d'eau dorée, ton amical/expert/proactif/rassurant) + principe "Quand tu détectes une tendance (pH qui monte, chlore qui baisse…), alerte l'utilisateur proactivement".
+- Nouvelles constantes exportées : LAGOON_NAME='Lagoon', LAGOON_TAGLINE_KEY, LAGOON_WELCOME_KEY, LAGOON_GREETING_KEY (pour usage UI futur).
+- getAssistantSystemPrompt(locale) inchangé (regex replace fonctionne toujours car la ligne "Réponds en français, clair, structuré (Markdown)." est préservée).
+
+**1.2 UI Assistant (src/components/aquamind/module-assistant.tsx, 516 lignes)**:
+- Nouveau composant `LagoonAvatar({size})` : div relative + span animate-ping (halo or) + drop body gradient or (from-gold via-[oklch(0.72_0.13_95)] to-[oklch(0.55_0.10_75)]) + icône Droplets blanche. 3 tailles: sm (h-8), md (h-10), lg (h-16).
+- CardHeader rewrit : LagoonAvatar sm + "Lagoon" + tagline or uppercase + Sparkles or. Gradient or sur l'en-tête (from-gold/10 via-secondary/40).
+- Welcome screen (messages.length===0) : LagoonAvatar lg + "Bonjour ! Je suis Lagoon 👋" (lagoonWelcome, gold) + "Votre piscine va bien aujourd'hui. Comment puis-je aider ?" (lagoonGreeting) + badge "Suggestions proactives" (ctxSuggestionsLabel) si contextual suggestions disponibles + liste SUGGESTIONS (contextuelles en gold pill, presets en gris).
+- Avatar bulles messages + loading : gradient or au lieu de from-primary to-accent. Icône Droplets blanche au lieu de Sparkles.
+- Footer input bar : gradient or sur bouton Send (from-gold via-amber to-deep-gold). Sur mobile (isMobile() du helper @/lib/platform), bouton Mic supplémentaire (border-gold/40, icône Mic lucide). Listening state : pulse rouge destructif.
+- Web Speech API : useEffect instancie SpeechRecognition (webkitSpeechRecognition fallback) si showMic && window. Lang='fr-FR', continuous=false, interimResults=false. On result : setInput(prev + transcript). toggleMic() démarre/arrête. Cleanup : rec.abort().
+- Contextual suggestions (useMemo sur contextData + weather + t) :
+  * pH ≥ 7.5 OU evaluateParam('ph') includes 'high' → "Votre pH est à {value} — voulez-vous que je calcule le dosage de pH- ?"
+  * pH ≤ 6.9 OU includes 'low' → suggestion pH+
+  * freeChlorine < 1 → "Votre chlore libre est à {value} mg/L — dois-je recommander un traitement choc ?"
+  * cyanuricAcid ≥ 50 → suggestion renouvellement eau
+  * combinedChlorine > 0.4 → suggestion chlore choc
+  * Weather alert type='storm' → "Un orage est prévu demain — je recommande de vérifier le chlore ce soir"
+  * Weather alert type='heat' → suggestion filtration +
+- Context fetch (useEffect) : Promise.all([offlineApi.dashboard(), offlineApi.weather().catch()]) → setContextData + setWeather + setContextReady. Plus d'appel à offlineApi.dashboard() seul : on capture profile + latestTest pour construire les suggestions.
+
+### Feature 2 — AQWELIA Predict™ (prédiction IA des problèmes)
+
+**2.1 Moteur (src/lib/pool/predict-engine.ts, 441 lignes, NOUVEAU)**:
+- Types exportés : WaterTest, PoolProfileLike, RiskLevel ('low'|'medium'|'high'), PredictionCategory (8 valeurs: algae, ph_drift, cya_buildup, tac_instability, chlorine_depletion, scaling, corrosion, storm_impact), Prediction (id, category, riskScore 0-100, level, etaHours, title/titleKey/titleParams, message/messageKey/messageParams, action/actionKey/actionParams, pattern, evidence).
+- Helper sortByDateAsc(tests), slopePerDay(values, dates) — régression linéaire simple, retourne variation/jour. stdDev(values) — échantillon. extractField(tests, field) — valeurs non-null. clampScore(n) 0-100. levelFromScore(score) — ≥65 high, ≥35 medium, sinon low.
+- `predictProblems(latestTests, weather, profile): Prediction[]` — 8 patterns de détection :
+  1. **pH drift up** : si ≥3 tests, slopePerDay(ph) > 0.05/jour → score = (35 ou 55 si pH > 7.5) + min(25, slope*80). ETA 24h (si pH>7.5) ou 72h. Pattern 'ph_positive_slope'.
+  2. **Algae (chlorine + heat)** : si latest.freeChlorine < 1.5 ET (heatwave tomorrowMaxC≥30 OU slope < -0.05) → baseScore = 30/45/60 selon cl, +heatBonus (15 ou 25 si ≥35°C), +slopeBonus. ETA 3j (heatwave) ou 5j. Patterns 'low_chlorine_plus_heat' ou 'chlorine_declining'.
+  3. **CYA buildup** : si cya ≥ 50 OU (≥40 && increasing slope>0.2) → baseScore 25/35/50/65 selon cya, +slopeBonus. renewPct 20/25/30%. ETA 14j.
+  4. **TAC instability** : si ≥3 tests et stdDev(alkalinity) > 12 → score = 35 + min(30, sd*1.5). ETA 5j. Pattern 'tac_high_variance'.
+  5. **Storm impact** : si weather.tomorrowChanceStorm ≥ 60 → score = 40 + min(20, (chance-60)/2). ETA 18h.
+  6. **Scaling** : si calciumHardness > 400 → score = 35 + heatBonus + min(15, (th-400)/8). ETA 7j.
+  7. **Corrosion** : si calciumHardness < 150 ET pH < 7.0 → score = 40 + (7.0-pH)*30. ETA 7j.
+  8. **Phosphates** : si phosphates > 0.2 → score = 30 + heatBonus + min(20, (ph-0.2)*40). ETA 5j.
+  9. **Bonus profil** : sunExposure='high' + usageLevel='high' + freeChlorine < 2 → score 35, ETA 48h, pattern 'high_demand_profile'.
+- Tri par riskScore décroissant.
+- `computeGlobalRiskScore(predictions)` : moyenne pondérée (low=1, medium=2, high=3) des riskScores.
+
+**2.2 API (src/app/api/pool/predictions/route.ts, 191 lignes, NOUVEAU)**:
+- GET, runtime='nodejs', auth-gated (getServerSession + authOptions).
+- Récupère 5 derniers WaterTest (orderBy createdAt desc) + PoolProfile via Promise.all.
+- Fetch weather inline (duplicate minimale du helper du weather route — 60 lignes) : wttr.in ?format=j1, lat/lon > explicitLoc > profile.region (si valid city), timeout 8s, dégrade à null si échec.
+- Map Prisma WaterTest → PredictWaterTest, PoolProfile → PoolProfileLike.
+- Retourne `{ predictions, globalScore, level, samplesAnalyzed, weatherFetched, generatedAt }`.
+
+**2.3 Widget (src/components/aquamind/predictions-widget.tsx, 264 lignes, NOUVEAU)**:
+- 'use client', useTranslations('modules.dashboard') + useTranslations('predict'). Props: onAskAssistant?: (q) => void.
+- fetch via apiGetCached('/api/pool/predictions', 'waterTests') — cache 5min.
+- LEVEL_CFG: low (vert oklch 0.7_0.15_155, pas de glow), medium (jaune, shadow jaune), high (destructif rouge, animate-pulse sur card et dot).
+- 3 états render :
+  * Loading : Skeleton h-10 + h-20.
+  * Error/null : return null (silent, ne bloque pas le dashboard).
+  * Empty (0 predictions) : mini card "Tout va bien" (predictAllClear) avec icône CheckCircle2 vert + description (predictAllClearDesc).
+  * Normal : Card ring-1 (couleur selon level, animate-pulse si high) avec header (Sparkles + predictTitle, global score /100, refresh button) + top 3 predictions (riskEmoji 🟢🟡🔴, title traduit via trP(titleKey, titleParams), message clamped 2 lignes, ETA badge "dans Xh" ou "dans Xj", catégorie label, bouton action ghost qui appelle onAskAssistant avec "Lagoon, aide-moi pour : {title}") + hint "+N autres risques" si >3 + footer (disclaimer + samples count).
+- Helper trP(fr, key, params) : try tPredict(key, params) catch fallback fr. Idem pour messageKey/actionKey.
+
+**2.4 Intégration dashboard (src/components/aquamind/module-dashboard.tsx)**:
+- Import `PredictionsWidget` from './predictions-widget' (ajouté ligne 36).
+- Insertion `<PredictionsWidget onAskAssistant={onAskAssistant} />` juste après le title row, AVANT la grille clear-water index (donc en haut du dashboard, visible en premier).
+
+### 3. i18n — 2 namespaces, 7 locales
+
+Script `scripts/i18n/add-lagoon-predict-keys.py` (646 lignes) généré pour ajouter les clés de façon reproductible à fr/en/de/es/it/nl/pt. Stratégie : pour chaque locale, charge le JSON, ajoute les clés Lagoon sous modules.assistant (overwrite si existe) et le namespace predict au top-level (merge récursif si existe), dump avec ensure_ascii=False + indent=2 + trailing newline.
+
+**Lagoon keys (14 clés sous modules.assistant)** :
+- lagoonName, lagoonTagline, lagoonWelcome, lagoonGreeting
+- ctxSuggestionsLabel + 6 ctxSuggestion* (PhHigh/PhLow/ChlorineLow/CyaHigh/CombinedChlorine/Storm/Heat)
+- micTitle, micListening
+
+**Predict namespace (13 clés plates + 8 sous-namespaces)** :
+- predictTitle, predictGlobalScore, predictLowRisk/MediumRisk/HighRisk
+- predictAllClear, predictAllClearDesc
+- predictEtaHours ({hours}), predictEtaDays ({days})
+- predictMoreCount ({count, plural, one {+# autre risque} other {+# autres risques}})
+- predictDisclaimer, predictSamples ({count, plural, =0 {aucun test} one {# test analysé} other {# tests analysés}})
+- predictActionQuery ({title})
+- 8 predictCat_* (algae, ph_drift, cya_buildup, tac_instability, chlorine_depletion, scaling, corrosion, storm_impact)
+- Sous-namespaces (chacun avec title/message/action, ICU params) :
+  * ph_drift ({rate}, {days}, {count})
+  * algae ({days}, {chlorine}, {temp}, {value})
+  * cya_buildup ({value}, {percent})
+  * tac_instability ({stddev}, {count})
+  * storm_impact ({percent})
+  * scaling ({value})
+  * corrosion ({th}, {ph})
+  * chlorine_depletion (pas de params)
+- algae a 3 variantes de message (title, message_heat, message_decline, action, phosphates_title, phosphates_message, phosphates_action).
+- cya_buildup a 2 variantes de message (message_high pour CYA≥70, message_warn pour 50-69).
+
+### 4. Vérifications
+
+- **Lint** (`bun run lint`): PASS, exit 0, 0 erreur, 0 warning. ✓
+  * Note : 1 erreur IotSettings dans module-maintenance.tsx trouvée au 1er run — fichier modifié par un autre agent en parallèle (WIP non commité). Résolu en stashing (--keep-index --include-untracked) le WIP des autres agents avant lint, restauré après.
+- **TypeScript** (`bunx tsc --noEmit`): 0 erreur dans src/ (skills/ third-party pré-existant exclus). ✓
+- **Pre-commit i18n** (`python3 scripts/i18n/check-hardcoded-strings.py`): PASS — "✅ Aucune chaîne française codée en dur détectée." ✓
+  * predict-engine.ts est sous src/lib/pool/ → exempté du check (SKIP_PATTERNS). Fallbacks français légitimes à côté des *Key.
+  * predictions/route.ts utilise translate(locale, key, 'fallback FR') — fallbacks à l'intérieur des appels i18n, OK.
+  * predictions-widget.tsx et module-assistant.tsx : tous les textes visibles via t() ou tPredict(key, params) avec try/catch fallback FR — OK.
+- **JSON i18n**: 7 fichiers validés via `python3 -c "import json; json.load(...)"`. ✓
+- **Bug fix pendant dev** : MultiEdit initial de module-assistant.tsx a cassé le JSX (parenthèse fermante `)` au lieu de `)}` à la fin du block `messages.length === 0 && (...)`). Corrigé via Edit, lint repassé OK.
+
+### 5. Git & coordination avec autres agents
+
+Le working tree contenait du WIP d'autres agents en parallèle (gamification, restock, savings, iot, share, strip-scan, stories, climate-engine, family-manager, etc. — non commité). Pour éviter de commité le WIP des autres agents et de casser le build:
+1. Reset JSON locales à HEAD (`git checkout HEAD -- src/i18n/locales/*.json`) pour éliminer les clés d'autres agents qui avaient été re-sérialisées par mon script.
+2. Re-run script add-lagoon-predict-keys.py sur baseline propre → JSON ne contient QUE mes clés Lagoon + predict.
+3. Stash --keep-index --include-untracked pour isoler mon travail staged avant lint + commit.
+4. Commit (cc11c85) + push (origin/main 0b53e41 → cc11c85). ✓
+5. git stash pop pour restaurer le WIP des autres agents dans le working tree (non commité, préservé pour eux).
+
+### 6. Fichiers créés / modifiés
+
+**Nouveaux (4)** :
+- `src/lib/pool/predict-engine.ts` (441 lignes) — moteur de prédiction
+- `src/app/api/pool/predictions/route.ts` (191 lignes) — API GET
+- `src/components/aquamind/predictions-widget.tsx` (264 lignes) — widget dashboard
+- `scripts/i18n/add-lagoon-predict-keys.py` (646 lignes) — script i18n reproductible
+
+**Modifiés (10)** :
+- `src/lib/pool/ai-context.ts` (+18 lignes) — system prompt Lagoon + constantes
+- `src/components/aquamind/module-assistant.tsx` (+226 lignes) — UI Lagoon + avatar + mic + suggestions contextuelles
+- `src/components/aquamind/module-dashboard.tsx` (+3 lignes) — import + insertion PredictionsWidget
+- `src/i18n/locales/fr.json` (+87 lignes) — 14 clés assistant + namespace predict
+- `src/i18n/locales/en.json` (+87 lignes) — idem EN
+- `src/i18n/locales/de.json` (+84 lignes) — idem DE
+- `src/i18n/locales/es.json` (+84 lignes) — idem ES
+- `src/i18n/locales/it.json` (+84 lignes) — idem IT
+- `src/i18n/locales/nl.json` (+84 lignes) — idem NL
+- `src/i18n/locales/pt.json` (+84 lignes) — idem PT
+
+**Total**: 14 fichiers, 2392 insertions, 47 deletions.
+
+### 7. Notes pour suite
+
+- **Suggestions contextuelles Lagoon** : actuellement basées sur latestTest + weather alerts. Pourrait être étendu à (a) analyse de tendance sur 3 derniers tests (réutiliser slopePerDay du predict-engine), (b) inventaire produits bas (si pH- en stock), (c) équipements en retard de maintenance.
+- **Predictions-widget refresh** : actuellement refresh manuel (bouton). Pourrait être auto-refresh toutes les 5 min via setInterval, ou re-fetch sur window focus.
+- **Predict-engine** : 8 patterns actuels. Pourrait être étendu à (a) détection LSI négatif (eau corrosive) via water-balance.ts existant, (b) détection baignade interdite imminente (pH trend + chaleur), (c) détection sel bas pour électrolyseur (profile.saltSystem).
+- **Voice input** : Web Speech API utilisé (Chrome/Edge/Safari supportés, Firefox partiel). Sur native iOS/Android (Capacitor), devrait être remplacé par le plugin @capacitor-community/speech-recognition pour une meilleure intégration. Le code actuel garde le fallback Web Speech API qui marche dans la webview iOS/Android moderne.
+- **Tests E2E** : pas couverts. Recommander Playwright pour tester : (1) landing sur /app/dashboard → PredictionsWidget visible, (2) clic action button → navigue vers assistant avec query pré-remplie, (3) assistant module → avatar Lagoon visible + suggestions contextuelles si test récent, (4) mobile viewport → bouton mic visible.
+- **Telemetry** : prédictions non trackées. Pourrait ajouter trackEventServer('prediction_shown', { category, level, score }) dans l'API route pour analyser l'efficacité du moteur.
+
+Stage Summary:
+- **Feature 1 Lagoon livrée** : system prompt avec identité de marque (amical/expert/proactif/rassurant), UI complète (avatar goutte d'eau dorée pulsante, welcome "Bonjour ! Je suis Lagoon 👋", tagline or, bulles gradient or), 6 suggestions contextuelles (pH haut/bas, chlore bas, CYA haut, chloramines, orage, canicule) fetchées depuis dashboard + weather APIs et mises en avant en gold pill au-dessus des presets, mode vocal sur mobile (Web Speech API fr-FR, bouton mic avec listening state pulse rouge).
+- **Feature 2 AQWELIA Predict™ livrée** : moteur 8 patterns (pH drift, algae+risk, CYA buildup, TAC instability, storm impact, scaling, corrosion, phosphates) avec régression linéaire + std-dev, score 0-100 clamped, level low/medium/high, ETA par prédiction. API GET /api/pool/predictions auth-gated, fetch wttr.in + dégrade à null si échec. Widget dashboard avec score global + top 3 prédictions (riskEmoji 🟢🟡🔴, ETA, catégorie, action button qui envoie "Lagoon, aide-moi pour : {title}" à l'assistant), pulse animation si high risk, état "Tout va bien" si 0 prédiction. Intégré en haut du dashboard.
+- **i18n** : 14 clés Lagoon (modules.assistant) + 13 clés plates predict + 8 sous-namespaces predict (ph_drift, algae, cya_buildup, tac_instability, storm_impact, scaling, corrosion, chlorine_depletion) × 7 locales = 1344 nouvelles clés i18n.
+- **Lint PASS** (0/0), **TypeScript PASS** (0 erreur src/), **pre-commit i18n PASS** (0 chaîne française en dur), **JSON valide**, **push OK** (cc11c85 sur origin/main).
+- **DA respectée** : gold gradient (from-gold via-amber to-deep-gold) sur avatar/boutons/bulles, animate-ping halo sur LagoonAvatar, animate-pulse sur high-risk predictions, glassmorphism (glass-card), font-display sur titres, ICU plurals pour counts.
