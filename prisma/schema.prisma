@@ -47,6 +47,14 @@ model User {
   // AQWELIA Pro — clients gérés par ce pro (Pro MVP)
   proClients       ProClient[]
 
+  // AQWELIA Family — pools owned by this user
+  ownedPoolShares  PoolShare[]  @relation("PoolSharesOwnedBy")
+  // AQWELIA Family — pools shared WITH this user
+  sharedPoolShares PoolShare[]  @relation("PoolSharesSharedWith")
+
+  // AQWELIA Home (IoT) — sensors owned by this user
+  iotSensors       IotSensor[]
+
   // OAuth / comptes liés (NextAuth future-proof)
   accounts Account[]
 }
@@ -102,6 +110,9 @@ model PoolProfile {
   updatedAt     DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // AQWELIA Family — shares granted on this pool (owner-side)
+  shares PoolShare[]
 
   @@index([userId])
 }
@@ -500,4 +511,56 @@ model ProIntervention {
   @@index([status])
   @@index([scheduledAt])
   @@index([technicianId])
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// AQWELIA FAMILY — Partage de piscine familial (multi-user read/write access)
+// ───────────────────────────────────────────────────────────────────────────
+// A PoolShare grants another AQWELIA user access to a pool owned by someone
+// else. Roles: owner (implicit, never stored), co_manager (can test/add data),
+// viewer (read-only). Cascade-deleted when the pool OR either user is deleted.
+
+model PoolShare {
+  id           String   @id @default(cuid())
+  poolId       String   // PoolProfile id
+  sharedWithId String   // User id of the invited user
+  role         String   @default("viewer") // owner | co_manager | viewer
+  invitedBy    String   // User id of the owner who sent the invite
+  createdAt    DateTime @default(now())
+
+  pool        PoolProfile @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  sharedWith  User        @relation("PoolSharesSharedWith", fields: [sharedWithId], references: [id], onDelete: Cascade)
+  invitedByUser User      @relation("PoolSharesOwnedBy", fields: [invitedBy], references: [id], onDelete: Cascade)
+
+  @@unique([poolId, sharedWithId])
+  @@index([poolId])
+  @@index([sharedWithId])
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// AQWELIA HOME (IoT) — Capteurs connectés (ICO / iopool / ESPHome)
+// ───────────────────────────────────────────────────────────────────────────
+// Configuration of a connected water-quality sensor. Stores provider +
+// credentials so the restock/automation engine can later poll the sensor API
+// and inject a WaterTest. Sensitive fields (apiKey) are kept server-side only.
+
+model IotSensor {
+  id         String   @id @default(cuid())
+  userId     String   // owner of the sensor config
+  poolId     String?  // optional linked pool (null = global)
+  provider   String   // ico | iopool | esphome | homeassistant
+  label      String   // user-facing name
+  deviceId   String?  // external id (ICO serial, iopool EcO id, HA entity id)
+  apiUrl     String?  // base URL (esphome / HA / custom)
+  apiKey     String?  // encrypted/secret token (server-side only)
+  config     String?  // JSON blob with provider-specific options (refresh interval, MQTT topic…)
+  status     String   @default("disconnected") // connected | disconnected | error
+  lastSyncAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([poolId])
 }

@@ -13,6 +13,7 @@ import {
   Package,
   Settings2,
   Calendar,
+  Cpu,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -38,6 +39,7 @@ import { toast } from '@/hooks/use-toast'
 import { offlineApi } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
+import { IotSettings } from './iot-settings'
 
 interface EquipmentRow {
   id: string
@@ -127,6 +129,10 @@ export function ModuleMaintenance() {
             <Settings2 className="h-3.5 w-3.5" />
             {t('tabs.reminders')}
           </TabsTrigger>
+          <TabsTrigger value="iot">
+            <Cpu className="h-3.5 w-3.5" />
+            {t('tabs.iot')}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="equipment">
@@ -137,6 +143,9 @@ export function ModuleMaintenance() {
         </TabsContent>
         <TabsContent value="tasks">
           <RemindersPanel />
+        </TabsContent>
+        <TabsContent value="iot">
+          <IotSettings />
         </TabsContent>
       </Tabs>
     </div>

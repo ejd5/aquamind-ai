@@ -1,10 +1,11 @@
-import { Droplets, ArrowLeft, Settings, LogOut, ChevronDown, Plus, Check, Trash2 } from 'lucide-react'
+import { Droplets, ArrowLeft, Settings, LogOut, ChevronDown, Plus, Check, Trash2, Users } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { getDefaultPoolNameKey, getDefaultAccountNameKey } from '@/lib/pool/default-names'
 import type { TabId, PoolProfileLite } from './app-shell'
+import { FamilyManager } from './family-manager'
 
 interface HeaderProps {
   profile: PoolProfileLite | null
@@ -37,12 +38,14 @@ export function Header({
   const { data: session } = useSession()
   const [menuOpen, setMenuOpen] = useState(false)
   const [poolOpen, setPoolOpen] = useState(false)
+  const [familyOpen, setFamilyOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const poolRef = useRef<HTMLDivElement>(null)
   const t = useTranslations('nav')
   const tl = useTranslations('landing')
   const tc = useTranslations('common')
   const tp = useTranslations('pool')
+  const tfam = useTranslations('family')
 
   // Helper: translate account name if it's a French default, else show as-is
   const displayName = (name?: string | null) => {
@@ -207,6 +210,26 @@ export function Header({
                 </div>
               )}
             </div>
+          )}
+          {/* AQWELIA Family — pool sharing trigger */}
+          {profile && (
+            <>
+              <button
+                onClick={() => setFamilyOpen(true)}
+                className="glass-pill flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-foreground/90 transition-colors hover:border-gold/40 hover:text-gold"
+                aria-label={tfam('triggerAria')}
+                title={tfam('triggerTitle')}
+              >
+                <Users className="h-3.5 w-3.5 text-gold" />
+                <span className="hidden lg:inline">{tfam('sharedBadge')}</span>
+              </button>
+              <FamilyManager
+                open={familyOpen}
+                onClose={() => setFamilyOpen(false)}
+                poolId={profile.id}
+                poolName={displayPoolName(profile.name)}
+              />
+            </>
           )}
           <span className="glass-pill hidden items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-foreground/80 sm:flex">
             <span className="relative flex h-2 w-2">

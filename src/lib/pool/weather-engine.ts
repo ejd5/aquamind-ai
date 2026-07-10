@@ -62,6 +62,26 @@ export interface WeatherAssessment {
   summary: string          // French fallback (legacy)
   summaryKey: string       // translation key (ICU { location, hours } or { count, titles })
   summaryParams?: Record<string, string | number>
+  /** AQWELIA Climate — optional climate mode assessment (set by the API). */
+  climate?: ClimateAssessmentLite
+}
+
+/**
+ * Lightweight climate assessment embedded in WeatherAssessment.
+ * The full assessment lives in `@/lib/pool/climate-engine` (server-side).
+ * We embed only the keys the UI needs (badge + adjustments) to avoid a
+ * circular import: weather-engine.ts is imported by climate-engine.ts via
+ * the WeatherData type, so we keep the types split.
+ */
+export interface ClimateAssessmentLite {
+  mode: string
+  modeLabelKey: string
+  modeDescKey: string
+  modeLabel: string
+  modeDesc: string
+  filtrationBoostHours: number
+  adjustments: string[]
+  badgeHue: number
 }
 
 export function assessWeather(w: WeatherData, lastTestDaysAgo: number): WeatherAssessment {
