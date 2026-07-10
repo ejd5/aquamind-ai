@@ -5678,3 +5678,90 @@ Stage Summary:
 - **i18n**: 826 nouvelles clés (115 academy + 3 seo × 7 locales) via script Python idempotent, traductions manuelles inline FR/EN/ES/DE/IT/PT/NL.
 - **Lint PASS** (0/0), **TypeScript PASS** (0 erreur dans mon scope), **pre-commit i18n PASS** (0 chaîne française en dur), **JSON valide** pour 7 locales, **prisma db push OK**, **push OK** (1ee7d71 sur origin/main).
 - **DA respectée**: glassmorphism (glass-card, bg-background/60 backdrop-blur-xl, border-gold/20→40 hover), gold accents (gradient from-gold via-oklch to-oklch, text-gold, border-gold/40), font-display sur titres, framer-motion Reveal/stagger sur landing, Breadcrumbs UI or, responsive (grid sm:grid-cols-2 lg:grid-cols-3).
+
+---
+Task ID: P8-FINAL
+Agent: sub-agent (general-purpose) — Missing pages + i18n gap-fill
+Date: 2025-07-10
+Task: Créer les 10 pages manquantes (Pro features, Solo, Team, Fleet, Tarifs, Care recommandations, 3 redirects, Gestion données) + combler les gaps i18n (fr/en 5486 leaf keys vs 5171 pour es/de/it/pt/nl → 315 keys manquantes × 5 locales).
+
+Work Log:
+- Lu `worklog.md` (5 dernières sections: P7-STRIPSCAN, P7-ENGAGE-RETRY, P8-B2C, P8-INFRA, P8) pour contexte. Projet: 7 locales (fr/en/es/de/it/pt/nl), 57 top-level namespaces, glassmorphism design system, SEO JSON-LD, sitemap dynamique, pre-commit hook i18n.
+- Audit initial: 5486 leaf keys en fr/en vs 5171 dans les 5 autres locales (315 keys manquantes chacune, 1490 au total). Gap concentré dans 7 namespaces: proApp (181), iot (37), family (29), restock (29), stories (19), climate (19), modules (1).
+
+### 1. i18n gap-fill script (scripts/i18n/fill-locale-gaps.py, 109 lignes)
+
+- Algorithme récursif: walk `fr.json` comme structure de référence, `en.json` comme source de fallback values.
+- Pour chaque leaf missing dans es/de/it/pt/nl, copie la valeur EN.
+- Pour chaque nested dict entièrement missing, copie tout le sous-arbre EN.
+- Idempotent: re-run no-op sur fichiers déjà filled.
+- Output: 298 keys filled par locale (sous-comptage apparent à cause des dicts nested entièrement missing — en réalité 0 key encore manquante après run).
+- Résultat: 7 locales × 5767 leaf keys (parfaitement synchronisé).
+
+### 2. Nouveaux namespaces i18n (8 × 7 locales = 56 namespaces ajoutés)
+
+**Script** `scripts/i18n/add-p8-final-pages-keys.py` (740 lignes):
+- `proFeatures` (47 keys): /pro/fonctionnalites — hero + 6 modules (CRM/Planning/Interventions/Rapports/Photos/Contrats, chacun avec name/desc/3 bullets) + integration section + final CTA.
+- `proSolo` (16 keys): /pro/solo — planName, planTagline, planPrice (49€), idealText, 8 features, 3-4 limits, 4 FAQ.
+- `proTeam` (16 keys): /pro/team — 129€, 5 users, 300 bassins, 8 features, 3-4 limits, 4 FAQ.
+- `proFleet` (16 keys): /pro/fleet — 279€, 15 users, 1000 bassins, 8 features (API/Webhooks/multi-agences/SSO/white-label), 3 limits, 4 FAQ.
+- `proPricing` (47 keys): /pro/tarifs — hero + 3 bullets + 4 plans + Founders offer (50% à vie) + 16-row comparison table + 5 FAQ + final CTA.
+- `careRecos` (37 keys): /care/recommandations — hero + 4-step process (Collect/Profile/Score/Recommend) + 6 critères scoring (compatibility/dosage/brand/budget/availability/reviews) + transparency section (no commission) + final CTA.
+- `redirectPages` (24 keys): 3 redirects + 1 standalone RGPD page (dataCollect/Purpose/Retention/Rights/Consent/Contact + DPO email + DPA complaint).
+- `planDetail` (18 keys): shared plan-detail labels (badgeLabel, priceSuffix, idealEyebrow, featuresEyebrow, limitsEyebrow, faqsEyebrow, ctaTitle/Subtitle/Primary/Secondary/Demo, backToPricing, upgradeTitle/Subtitle, limitUsers/Pools, perUser/Pool).
+
+FR + EN traduits manuellement. es/de/it/pt/nl: EN fallback values (politique de gap-fill appliquée).
+
+### 3. 10 pages créées
+
+**1. `/pro/fonctionnalites/page.tsx`** (220 lignes) — Server component, generateMetadata from `proFeatures`. Layout: Hero (eyebrow + title + subtitle + 2 CTAs Demo/Tarifs) → 6 modules grid 3 cols (icon lucide + emoji + name + desc + 3 bullets avec points dorés) → Integration section (glass card) → Final CTA. Réutilise la DA pro (glassmorphism, gold accents, font-display, hover -translate-y-1).
+
+**2. `/pro/solo/page.tsx`** (21 lignes) — thin wrapper qui rend `<PlanDetailContent planNamespace="proSolo" upgradeHref="/pro/team" />`. generateMetadata from `proSolo`.
+
+**3. `/pro/team/page.tsx`** (21 lignes) — wrapper `<PlanDetailContent planNamespace="proTeam" upgradeHref="/pro/fleet" />`.
+
+**4. `/pro/fleet/page.tsx`** (19 lignes) — wrapper `<PlanDetailContent planNamespace="proFleet" />` (pas d'upgrade hint — Fleet = top of standard ladder).
+
+**5. Shared component `_plan-detail.tsx`** (250 lignes) — `PlanDetailContent({ planNamespace, upgradeHref? })`. Layout: Hero (badge + plan name + plan price in big font + tagline + 2 CTAs trial/demo + back-to-pricing link) → Ideal-for glass card → 8 features grid 2 cols (numérotés 01-08, gold check icon) → Plan limits card (X icon) → 4 FAQ accordion → Upgrade hint (si `upgradeHref` fourni) → Final CTA. Limits construits dynamiquement selon le namespace (Solo: extraPools/noMultiTech/noApi/noSso, Team: extraPools/extraUsers/noApi/noSso, Fleet: extraPools/extraUsers/ssoSoon).
+
+**6. `/pro/tarifs/page.tsx`** (310 lignes) — Server component. Layout: Hero (eyebrow + title + subtitle + 3 bullets avec Check icon) → 4 plans grid (Solo/Team highlighted/Fleet/Enterprise custom) → Founders offer section (Crown icon, gradient gold, 4 benefits avec Star icon, CTA) → Comparison table 16 rows × 5 cols (Feature/Solo/Team gold/Fleet/Enterprise, scrollable sur mobile min-w-640px) → 5 FAQ → Final CTA (Building2 icon). Plans wired via `getTranslations('proSolo')` etc pour récupérer le prix depuis chaque plan-namespace.
+
+**7. `/care/recommandations/page.tsx`** (280 lignes) — Server component. Layout: Hero (2 CTAs diagnostic-ia/catalogue) → 4-step process grid 4 cols (Database/Layers/Gauge/Target icons, numéros 01-04 en gold) → 6 critères grid 3 cols (Shield/Gauge/PackageCheck/Tag/MapPin/Star) → Transparency section (ShieldCheck icon, gradient gold, 3 bullets avec CircleCheck) → Final CTA.
+
+**8-10. 3 redirects via `permanentRedirect()` de next/navigation:**
+- `/mentions-legales/page.tsx` (14 lignes): `permanentRedirect('/legal/cgu')` → 308
+- `/confidentialite/page.tsx` (14 lignes): `permanentRedirect('/legal/privacy')` → 308
+- `/conditions-utilisation/page.tsx` (14 lignes): `permanentRedirect('/legal/cgu')` → 308
+
+**11. `/gestion-donnees/page.tsx`** (200 lignes) — Page RGPD standalone (avec header brand minimal + Footer). Layout: Hero (badge RGPD + title + subtitle + intro card) → 5 sections (Database/Target/Clock/Scale/ToggleLeft icons, chacune avec title + text, glass card avec top-border gold) → Contact section (Mail icon, DPO email + DPA complaint) → Final CTA (ShieldCheck icon, lien vers /legal/privacy).
+
+### 4. Sitemap mis à jour (src/app/sitemap.ts)
+
+- Ajouté 7 entries: /pro/fonctionnalites, /pro/tarifs, /pro/solo, /pro/team, /pro/fleet, /care/recommandations, /gestion-donnees.
+- Commentaire explicatif: legacy redirects (/mentions-legales, /confidentialite, /conditions-utilisation) ne sont PAS dans le sitemap car ils 308-redirect — Google doit indexer les URLs canoniques (/legal/cgu, /legal/privacy).
+- Total: 33 entries (avant: 26).
+
+### 5. Vérifications
+
+- **bun run lint**: PASS, exit 0, 0 erreur, 0 warning. ✓
+- **TypeScript** (`bunx tsc --noEmit`): 0 erreur dans mes fichiers (3 erreurs pré-existantes hors scope: `.next/dev/types/validator.ts` route academy/certification, `skills/image-edit/scripts/image-edit.ts`, `skills/stock-analysis-skill/src/analyzer.ts`). ✓
+- **Pre-commit hook i18n** (`python3 scripts/i18n/check-hardcoded-strings.py`): PASS — "✅ Aucune chaîne française codée en dur détectée." ✓
+- **JSON i18n** (7 locales valides, 8 namespaces × 7 = 56 namespaces présents, 5767 leaf keys synchronisées). ✓
+- **Smoke test dev server** (10 URLs):
+  - 6 pages standalone 200: /pro/fonctionnalites, /pro/solo, /pro/team, /pro/fleet, /pro/tarifs, /care/recommandations
+  - 1 page standalone 200: /gestion-donnees
+  - 3 redirects 308: /mentions-legales → /legal/cgu, /confidentialite → /legal/privacy, /conditions-utilisation → /legal/cgu
+
+### 6. Git
+
+- Commit `d7eb706` "feat(P8-FINAL): 10 missing pages + i18n gap-fill (es/de/it/pt/nl)"
+- 21 fichiers: 11 nouveaux pages/components + 2 scripts i18n + 1 sitemap modifié + 7 locale JSON modifiés.
+- 5994 insertions, 5 deletions.
+- Push vers `origin/main` (8d5f075 → d7eb706). ✓
+
+Stage Summary:
+- **10 pages livrées**: 6 pages Pro (fonctionnalites, solo, team, fleet, tarifs + shared _plan-detail component) + 1 page Care (recommandations) + 3 redirects 308 (mentions-legales, confidentialite, conditions-utilisation) + 1 standalone RGPD (gestion-donnees). Toutes i18n-ready (fr+en traduits, es/de/it/pt/nl en EN fallback), SEO metadata, glassmorphism style, responsive mobile.
+- **i18n gap-fill script livré** (`scripts/i18n/fill-locale-gaps.py`): recursively walks fr reference, copies EN fallback for missing leaves. 1490 keys filled (298 per locale × 5 locales). All 7 locales now have exactly 5767 leaf keys (was 5486 fr/en vs 5171 others, gap closed).
+- **8 nouveaux namespaces i18n** (proFeatures, proSolo, proTeam, proFleet, proPricing, careRecos, redirectPages, planDetail) × 7 locales = 56 namespaces ajoutés via script idempotent `add-p8-final-pages-keys.py` (740 lignes).
+- **Sitemap enrichi**: 7 nouvelles entries (33 total), legacy redirects exclus (canonical URLs only).
+- **Lint PASS** (0/0), **TypeScript PASS** (0 erreur dans mon scope), **pre-commit i18n PASS**, **JSON valide** pour 7 locales, **smoke test 200/308** sur 10 URLs, **push OK** (d7eb706 sur origin/main).
