@@ -64,6 +64,9 @@ const PROTECTED_PATTERNS = [
   /^\/api\/analytics\//,
   /^\/api\/account\//,
   /^\/api\/stripe\//,
+  // AQWELIA Growth OS — dashboard + agents (public lead capture POST is OK)
+  /^\/api\/growth\/dashboard\//,
+  /^\/api\/growth\/agents\//,
 ]
 
 export default async function middleware(req: NextRequest) {
@@ -93,6 +96,13 @@ export default async function middleware(req: NextRequest) {
   res.headers.set('x-next-intl-locale', detected)
   // Also set on the request headers so getRequestConfig can read it
   res.headers.set('accept-language', detected)
+
+  // ── Anti-cache headers (CRITICAL for dev sandbox) ──
+  // Force browser to NEVER cache HTML pages or JS chunks. This prevents
+  // stale code from being served after a server restart.
+  res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+  res.headers.set('Pragma', 'no-cache')
+  res.headers.set('Expires', '0')
 
   // --- Auth protection (runs only on protected API routes) ---
   // For API routes: return 401 JSON (NOT a redirect) so client-side fetch()

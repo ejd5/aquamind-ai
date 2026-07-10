@@ -20,6 +20,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import { offlineApi, apiGetCached } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
+import { usePdfReport } from '@/hooks/use-pdf-report'
 
 interface WaterTestRow {
   id: string
@@ -81,9 +82,11 @@ function safeParse<T>(s: string | null, fallback: T): T {
   }
 }
 
-export function ModuleHealthLog() {
+export function ModuleHealthLog({ activePoolId }: { activePoolId?: string | null }) {
   const t = useTranslations('modules')
+  const tPdf = useTranslations('pdfReport')
   const locale = useLocale()
+  const pdf = usePdfReport()
   const [tests, setTests] = useState<WaterTestRow[]>([])
   const [diags, setDiags] = useState<DiagnosticRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -158,16 +161,32 @@ export function ModuleHealthLog() {
             <RefreshCw className="h-3.5 w-3.5" />
             {t('healthLog.refresh')}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled
-            title={t('healthLog.comingSoon')}
-            className="opacity-60"
-          >
-            <FileDown className="h-3.5 w-3.5" />
-            {t('healthLog.exportPdf')}
-          </Button>
+          {pdf.canDownload ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => pdf.download(activePoolId)}
+              disabled={pdf.preparing || tests.length === 0}
+              title={tests.length === 0 ? t('healthLog.noTests') : tPdf('downloadPdf')}
+            >
+              <FileDown className={`h-3.5 w-3.5 ${pdf.preparing ? 'animate-pulse' : ''}`} />
+              {pdf.preparing ? tPdf('preparing') : tPdf('downloadPdfShort')}
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled
+              title={tPdf('upgradeForPdf')}
+              className="border-gold/40 text-gold opacity-70"
+            >
+              <FileDown className="h-3.5 w-3.5" />
+              {tPdf('downloadPdfShort')}
+            </Button>
+          )}
+          {pdf.error && (
+            <span className="text-[10px] italic text-destructive">{pdf.error}</span>
+          )}
           {stale && (
             <span className="text-[10px] italic text-muted-foreground">{t('healthLog.cached')}</span>
           )}

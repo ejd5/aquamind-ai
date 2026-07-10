@@ -1,13 +1,29 @@
 import { api } from '@/lib/api-client'
 import type { BillingClient, Product, Entitlement, PurchaseResult, PlanId } from './types'
 
+// Web (Stripe) product catalogue.
+// IDs mirror the Stripe Price IDs env-var names from src/lib/stripe.ts.
+//   stripe_oasis_weekly     → Pass urgence 7j (3,99 €)
+//   stripe_oasis_monthly    → Mensuel (9,99 €)
+//   stripe_oasis_seasonal   → Saison 6 mois (39,99 €)
+//   stripe_oasis_yearly     → Annuel (59,99 €)
+//   stripe_wellness_weekly  → Pass urgence 7j (5,99 €)
+//   stripe_wellness_monthly → Mensuel (14,99 €)
+//   stripe_wellness_seasonal→ Saison 6 mois (54,99 €)
+//   stripe_wellness_yearly  → Annuel (79,99 €)
 export const stripeWebClient: BillingClient = {
   async getProducts(): Promise<Product[]> {
     return [
-      { id: 'stripe_premium_monthly', plan: 'premium', duration: 'monthly', price: 12.99, priceString: '12,99 €', currency: 'EUR' },
-      { id: 'stripe_premium_yearly', plan: 'premium', duration: 'yearly', price: 99, priceString: '99,00 €', currency: 'EUR', trialAvailable: true },
-      { id: 'stripe_expert_monthly', plan: 'expert', duration: 'monthly', price: 24.99, priceString: '24,99 €', currency: 'EUR' },
-      { id: 'stripe_expert_yearly', plan: 'expert', duration: 'yearly', price: 199, priceString: '199,00 €', currency: 'EUR', trialAvailable: true },
+      // Oasis
+      { id: 'stripe_oasis_weekly', plan: 'oasis', duration: 'weekly', price: 3.99, priceString: '3,99 €', currency: 'EUR' },
+      { id: 'stripe_oasis_monthly', plan: 'oasis', duration: 'monthly', price: 9.99, priceString: '9,99 €', currency: 'EUR' },
+      { id: 'stripe_oasis_seasonal', plan: 'oasis', duration: 'seasonal', price: 39.99, priceString: '39,99 €', currency: 'EUR' },
+      { id: 'stripe_oasis_yearly', plan: 'oasis', duration: 'yearly', price: 59.99, priceString: '59,99 €', currency: 'EUR', trialAvailable: true },
+      // Wellness
+      { id: 'stripe_wellness_weekly', plan: 'wellness', duration: 'weekly', price: 5.99, priceString: '5,99 €', currency: 'EUR' },
+      { id: 'stripe_wellness_monthly', plan: 'wellness', duration: 'monthly', price: 14.99, priceString: '14,99 €', currency: 'EUR' },
+      { id: 'stripe_wellness_seasonal', plan: 'wellness', duration: 'seasonal', price: 54.99, priceString: '54,99 €', currency: 'EUR' },
+      { id: 'stripe_wellness_yearly', plan: 'wellness', duration: 'yearly', price: 79.99, priceString: '79,99 €', currency: 'EUR', trialAvailable: true },
     ]
   },
 
@@ -17,7 +33,7 @@ export const stripeWebClient: BillingClient = {
       if (!sub?.subscription?.active) return []
       return [
         {
-          id: sub.plan === 'expert' ? 'expert' : 'premium',
+          id: sub.plan === 'wellness' ? 'wellness' : 'oasis',
           plan: sub.plan,
           isActive: true,
           willRenew: true,
@@ -49,11 +65,11 @@ export const stripeWebClient: BillingClient = {
 
   async getActivePlan(): Promise<PlanId> {
     const entitlements = await this.getEntitlements()
-    const expert = entitlements.find((e) => e.plan === 'expert' && e.isActive)
-    if (expert) return 'expert'
-    const premium = entitlements.find((e) => e.plan === 'premium' && e.isActive)
-    if (premium) return 'premium'
-    return 'free'
+    const wellness = entitlements.find((e) => e.plan === 'wellness' && e.isActive)
+    if (wellness) return 'wellness'
+    const oasis = entitlements.find((e) => e.plan === 'oasis' && e.isActive)
+    if (oasis) return 'oasis'
+    return 'decouverte'
   },
 
   async manageSubscription(): Promise<void> {

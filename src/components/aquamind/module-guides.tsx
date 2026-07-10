@@ -123,7 +123,7 @@ export function ModuleGuides({ onNavigate }: Props) {
   const [activeCategory, setActiveCategory] = useState<CategoryId | 'all'>('all')
   const [selectedGuide, setSelectedGuide] = useState<Guide | null>(null)
   const [openingGuide, setOpeningGuide] = useState(false)
-  const [currentPlanId, setCurrentPlanId] = useState<string>('free')
+  const [currentPlanId, setCurrentPlanId] = useState<string>('decouverte')
 
   const loadAll = useCallback(async () => {
     setLoading(true)
@@ -155,9 +155,9 @@ export function ModuleGuides({ onNavigate }: Props) {
   }, [loadAll])
 
   async function openGuide(g: Guide) {
-    // Premium gate: if user is on free plan and guide is in a paid category, show upsell
+    // Premium gate: if user is on Découverte plan and guide is in a paid category, show upsell
     const isPremium = !FREE_CATEGORIES.includes(g.category)
-    if (isPremium && currentPlanId === 'free') {
+    if (isPremium && currentPlanId === 'decouverte') {
       toast({
         title: t('premiumGuide'),
         description: t('premiumGuideDesc'),
@@ -184,7 +184,7 @@ export function ModuleGuides({ onNavigate }: Props) {
   }
 
   function isGuideLocked(g: Guide) {
-    return isGuidePremium(g) && currentPlanId === 'free'
+    return isGuidePremium(g) && currentPlanId === 'decouverte'
   }
 
   // Filtered list (client-side search + category)

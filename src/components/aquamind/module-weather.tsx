@@ -139,6 +139,28 @@ function codeToIcon(code?: number) {
   return <CloudSun className="h-8 w-8 text-muted-foreground" />
 }
 
+/**
+ * Safely translate a weather code. If the code is not in the locale's
+ * `codes` map (e.g. code 152 = smoke/haze), fall back to "undefined"
+ * which is always present in all locales as a generic "—" label.
+ */
+function weatherCodeLabel(
+  t: ReturnType<typeof useTranslations>,
+  code: number | undefined
+): string {
+  if (!code) return t('codes.undefined')
+  // next-intl throws on missing keys; we catch and fall back.
+  try {
+    const label = t(`codes.${code}`)
+    // next-intl returns the key itself if not found (when not in dev mode)
+    // so we also check for that pattern.
+    if (label && label !== `codes.${code}`) return label
+    return t('codes.undefined')
+  } catch {
+    return t('codes.undefined')
+  }
+}
+
 function alertTypeIcon(type: WeatherAlert['type']) {
   switch (type) {
     case 'storm':
@@ -454,7 +476,7 @@ export function ModuleWeather({ onNavigate }: Props) {
               <div>
                 <p className="font-display text-5xl font-bold text-primary">{weather.currentTempC}°C</p>
                 <p className="text-xs text-muted-foreground">
-                  {t('feelsLike')} {weather.feelsLikeC}°C · {t(`codes.${weather.weatherCode}`)}
+                  {t('feelsLike')} {weather.feelsLikeC}°C · {weatherCodeLabel(t, weather.weatherCode)}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
@@ -610,7 +632,7 @@ export function ModuleWeather({ onNavigate }: Props) {
                   {d.chanceRain}%
                 </span>
                 <span className="text-[10px] text-muted-foreground">
-                  {d.code ? t(`codes.${d.code}`) : ''}
+                  {d.code ? weatherCodeLabel(t, d.code) : ''}
                 </span>
               </div>
             ))}

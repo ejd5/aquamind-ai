@@ -4,9 +4,10 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { PLANS, DEFAULT_PLAN, type PlanId } from '@/lib/pool/freemium'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { trackEventServer } from '@/lib/analytics-server'
 
-// Subscription.plan values: 'free' | 'premium' | 'expert'
-// (formerly 'surface' | 'limpide' | 'cristal' | 'gardien' — see worklog L1-C)
+// Subscription.plan values: 'decouverte' | 'oasis' | 'wellness'
+// (formerly 'free' | 'premium' | 'expert' — see worklog P1-TARIFS)
 // userId wiring is enforced via getServerSession + 401 (Task L1-E).
 
 export const runtime = 'nodejs'
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest) {
       case 'month': expires.setMonth(now.getMonth() + 1); break
       case 'quarter': expires.setMonth(now.getMonth() + 3); break
       case 'halfyear': expires.setMonth(now.getMonth() + 6); break
+      case 'year': expires.setFullYear(now.getFullYear() + 1); break
       default: expires.setMonth(now.getMonth() + 1)
     }
 
@@ -61,6 +63,21 @@ export async function POST(req: NextRequest) {
 
     // Analytics event
     await db.analyticsEvent.create({ data: { userId, event: 'subscription_activated', props: JSON.stringify({ plan, duration }) } })
+
+    // PostHog analytics — distinguish paid start vs downgrade to free.
+    if (plan === 'decouverte') {
+      void trackEventServer(
+        'subscription_cancelled',
+        { plan, duration, previousPlan: 'paid' },
+        userId
+      )
+    } else {
+      void trackEventServer(
+        'subscription_started',
+        { plan, duration, expiresAt: expires.toISOString() },
+        userId
+      )
+    }
 
     return NextResponse.json({ subscription: sub, plan: validPlan })
   } catch (e) {

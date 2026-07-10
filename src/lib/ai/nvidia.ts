@@ -1,11 +1,16 @@
 /**
- * AQWELIA — NVIDIA NIM AI client
+ * AQWELIA — Unified AI client
  *
- * Uses NVIDIA NIM API (OpenAI-compatible) for vision (photo diagnostic)
- * and chat (assistant). Requires NVIDIA_API_KEY env var.
+ * Strategy:
+ *   1. If NVIDIA_API_KEY is set → use NVIDIA NIM (GLM-5.2 for chat,
+ *      Nemotron Nano 12B VL for vision). Free 1000 credits at
+ *      https://build.nvidia.com
+ *   2. If NVIDIA_API_KEY is NOT set → fall back to z-ai-web-dev-sdk
+ *      (the built-in sandbox AI, always available, no key needed).
  *
- * Get a free API key at https://build.nvidia.com (1000 free credits).
- * Models: https://build.nvidia.com/explore/vision
+ * This dual-mode approach means the AI features (photo diagnostic, chat
+ * assistant, StripScan) always work — either with the user's NVIDIA key
+ * or with the built-in z-ai SDK.
  */
 
 export interface ChatMessage {
@@ -24,31 +29,23 @@ export interface VisionResult {
 
 const NVIDIA_BASE_URL = process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1'
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY || ''
-// GLM-5.2 = flagship LLM (text only) — perfect for the chat assistant
-// Nemotron Nano 12B VL = NVIDIA's optimized vision model, fast + reliable
 const NVIDIA_VISION_MODEL = process.env.NVIDIA_VISION_MODEL || 'nvidia/nemotron-nano-12b-v2-vl'
 const NVIDIA_CHAT_MODEL = process.env.NVIDIA_CHAT_MODEL || 'z-ai/glm-5.2'
 
-function ensureApiKey(): string {
-  if (!NVIDIA_API_KEY) {
-    throw new Error('NVIDIA_API_KEY not configured. Get a free key at https://build.nvidia.com')
-  }
-  return NVIDIA_API_KEY
+/** True when the user has provided a NVIDIA NIM API key. */
+export function hasNvidiaKey(): boolean {
+  return Boolean(NVIDIA_API_KEY)
 }
 
-/**
- * Vision chat completion — for photo diagnostic.
- * Accepts a prompt + base64 image, returns text response.
- */
-export async function nvidiaVision(
+// ─────────────────────────────────────────────────────────────────────────
+// NVIDIA NIM (OpenAI-compatible)
+// ─────────────────────────────────────────────────────────────────────────
+
+async function nvidiaVisionImpl(
   prompt: string,
   imageDataUrl: string,
   options: { maxTokens?: number; temperature?: number } = {}
 ): Promise<VisionResult> {
-  const apiKey = ensureApiKey()
-
-  // NVIDIA NIM uses OpenAI-compatible format
-  // Convert data URL to base64 if needed (some images come as data:image/jpeg;base64,...)
   let imageUrl = imageDataUrl
   if (!imageDataUrl.startsWith('data:') && !imageDataUrl.startsWith('http')) {
     imageUrl = `data:image/jpeg;base64,${imageDataUrl}`
@@ -74,11 +71,11 @@ export async function nvidiaVision(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${NVIDIA_API_KEY}`,
       Accept: 'application/json',
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(60000), // 60s timeout for vision
+    signal: AbortSignal.timeout(60000),
   })
 
   if (!res.ok) {
@@ -87,21 +84,16 @@ export async function nvidiaVision(
   }
 
   const data = await res.json()
-  const content = data?.choices?.[0]?.message?.content || ''
-  const usage = data?.usage
-
-  return { content, usage }
+  return {
+    content: data?.choices?.[0]?.message?.content || '',
+    usage: data?.usage,
+  }
 }
 
-/**
- * Text chat completion — for the assistant.
- */
-export async function nvidiaChat(
+async function nvidiaChatImpl(
   messages: ChatMessage[],
   options: { maxTokens?: number; temperature?: number } = {}
 ): Promise<VisionResult> {
-  const apiKey = ensureApiKey()
-
   const body = {
     model: NVIDIA_CHAT_MODEL,
     messages,
@@ -114,7 +106,7 @@ export async function nvidiaChat(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${NVIDIA_API_KEY}`,
       Accept: 'application/json',
     },
     body: JSON.stringify(body),
@@ -127,19 +119,100 @@ export async function nvidiaChat(
   }
 
   const data = await res.json()
-  const content = data?.choices?.[0]?.message?.content || ''
-  const usage = data?.usage
+  return {
+    content: data?.choices?.[0]?.message?.content || '',
+    usage: data?.usage,
+  }
+}
 
-  return { content, usage }
+// ─────────────────────────────────────────────────────────────────────────
+// z-ai-web-dev-sdk fallback (always available in the sandbox)
+// ─────────────────────────────────────────────────────────────────────────
+
+async function zaiVision(
+  prompt: string,
+  imageDataUrl: string
+): Promise<VisionResult> {
+  const ZAI = (await import('z-ai-web-dev-sdk')).default
+  const zai = await ZAI.create()
+
+  let imageUrl = imageDataUrl
+  if (!imageDataUrl.startsWith('data:') && !imageDataUrl.startsWith('http')) {
+    imageUrl = `data:image/jpeg;base64,${imageDataUrl}`
+  }
+
+  const response = await zai.chat.completions.createVision({
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: prompt },
+          { type: 'image_url', image_url: { url: imageUrl } },
+        ],
+      },
+    ],
+    thinking: { type: 'disabled' },
+  })
+
+  return {
+    content: response.choices?.[0]?.message?.content || '',
+    usage: response.usage as any,
+  }
+}
+
+async function zaiChat(messages: ChatMessage[]): Promise<VisionResult> {
+  const ZAI = (await import('z-ai-web-dev-sdk')).default
+  const zai = await ZAI.create()
+
+  const response = await zai.chat.completions.create({
+    messages,
+  })
+
+  return {
+    content: response.choices?.[0]?.message?.content || '',
+    usage: response.usage as any,
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Public API — auto-selects NVIDIA or z-ai
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Vision chat completion — for photo diagnostic (bandelettes, photos, etc.).
+ * Uses NVIDIA NIM if configured, otherwise falls back to z-ai-web-dev-sdk.
+ */
+export async function aiVision(
+  prompt: string,
+  imageDataUrl: string,
+  options: { maxTokens?: number; temperature?: number } = {}
+): Promise<VisionResult> {
+  if (hasNvidiaKey()) {
+    return nvidiaVisionImpl(prompt, imageDataUrl, options)
+  }
+  return zaiVision(prompt, imageDataUrl)
 }
 
 /**
- * Test NVIDIA NIM connectivity — returns true if API key works.
+ * Text chat completion — for the AI assistant.
+ * Uses NVIDIA NIM if configured, otherwise falls back to z-ai-web-dev-sdk.
  */
-export async function testNvidiaConnection(): Promise<boolean> {
-  if (!NVIDIA_API_KEY) return false
+export async function aiChat(
+  messages: ChatMessage[],
+  options: { maxTokens?: number; temperature?: number } = {}
+): Promise<VisionResult> {
+  if (hasNvidiaKey()) {
+    return nvidiaChatImpl(messages, options)
+  }
+  return zaiChat(messages)
+}
+
+/**
+ * Test AI connectivity — returns true if the selected provider works.
+ */
+export async function testAiConnection(): Promise<boolean> {
   try {
-    const result = await nvidiaChat(
+    const result = await aiChat(
       [{ role: 'user', content: 'Ping. Reply with "OK" only.' }],
       { maxTokens: 10 }
     )
@@ -148,3 +221,10 @@ export async function testNvidiaConnection(): Promise<boolean> {
     return false
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// Backward-compatible exports (old code imports nvidiaVision / nvidiaChat)
+// ─────────────────────────────────────────────────────────────────────────
+
+export const nvidiaVision = aiVision
+export const nvidiaChat = aiChat

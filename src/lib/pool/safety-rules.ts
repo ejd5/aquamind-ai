@@ -44,7 +44,14 @@ export function assessSwimSafety(test: {
       reasonParams.push({ ph: test.ph })
     }
   } else if (phStatus === 'low_warning' || phStatus === 'high_warning') {
-    if (status !== 'forbidden') status = 'avoid'
+    // P0-FIX Bug 1: TS2367 — at this point `status` is still the initial
+    // `'allowed'` (the only `status = 'forbidden'` assignment lives in the
+    // unreachable `if` branch above), so the previous `status !== 'forbidden'`
+    // guard was a no-op that TypeScript correctly flagged as dead code.
+    // Later checks (chlorine / combined chlorine) still use the guard because
+    // by then `status` can genuinely be `'forbidden'` from the pH critical
+    // branch.
+    status = 'avoid'
     reasons.push(`pH ${test.ph} légèrement hors plage idéale.`)
     reasonKeys.push('swimReasonPhWarning')
     reasonParams.push({ ph: test.ph })

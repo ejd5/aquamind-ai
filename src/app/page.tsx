@@ -33,39 +33,63 @@ export default function Home() {
     const mobileVal = isMobile()
     const nativeVal = isNative()
 
-    // Clear old IndexedDB cache entries (pre-i18n-fix data without translation keys)
-    // This runs once per session to ensure fresh API data with titleKey/messageKey fields.
-    if (typeof window !== 'undefined' && !sessionStorage.getItem('aqwelia_cache_v3')) {
-      sessionStorage.setItem('aqwelia_cache_v3', '1')
+    // Clear ALL caches (IndexedDB + HTTP cache) on version bump.
+    // v4: forces clear after StripScan v2 redesign — old JS chunks were stuck
+    // in the browser HTTP cache, showing the old design even after server restart.
+    if (typeof window !== 'undefined' && !sessionStorage.getItem('aqwelia_cache_v4')) {
+      sessionStorage.setItem('aqwelia_cache_v4', '1')
+      // Clear IndexedDB API cache
       import('@/lib/offline/cache').then(({ clearAllCache }) => {
         clearAllCache().then(() => {
-          console.log('[AQWELIA] Cache cleared (v3 i18n fix)')
+          console.log('[AQWELIA] IndexedDB cache cleared (v4)')
         })
       }).catch(() => {})
+      // Clear ALL HTTP caches (Service Worker Cache API)
+      if (typeof caches !== 'undefined') {
+        caches.keys().then((names) => {
+          names.forEach((name) => caches.delete(name))
+          console.log('[AQWELIA] HTTP cache cleared (v4)')
+        }).catch(() => {})
+      }
     }
 
-    fetch('/api/pool/profile')
-      .then((r) => r.json())
-      .then((d) => {
-        if (cancelled) return
-        const profileExists = !!d?.profile
-        setMobile(mobileVal)
-        setNative(nativeVal)
-        setHasProfile(profileExists)
-        // In native app, skip landing and go directly to app
-        // On web, default to landing unless user previously chose app
-        setView(nativeVal ? 'app' : (saved === 'app' ? 'app' : 'landing'))
-        setLoaded(true)
-      })
-      .catch(() => {
-        if (cancelled) return
-        setMobile(mobileVal)
-        setNative(nativeVal)
-        setHasProfile(false)
-        setView(nativeVal ? 'app' : (saved === 'app' ? 'app' : 'landing'))
-        setLoaded(true)
-      })
-
+    // CRITICAL: Check auth session FIRST. Only show the app if the user is
+    // authenticated AND has a pool profile. Without this check, an
+    // unauthenticated user (or an authenticated user without a profile)
+    // with localStorage.aqwelia_view='app' would land in the AppShell →
+    // Onboarding, which is confusing. Always show the landing page first
+    // unless the user is authenticated AND has a profile.
+    Promise.all([
+      fetch('/api/auth/session').then((r) => r.json()).catch(() => ({})),
+      fetch('/api/pool/profile').then((r) => r.json()).catch(() => ({})),
+    ]).then(([session, profileData]) => {
+      if (cancelled) return
+      const isAuthenticated = !!session?.user
+      const profileExists = !!profileData?.profile
+      setMobile(mobileVal)
+      setNative(nativeVal)
+      // Show "Open app" / "My space" on the landing page when the user is
+      // authenticated (even without a profile yet — clicking "Open app"
+      // will show the onboarding, which now works because save() won't 401).
+      setHasProfile(isAuthenticated || profileExists)
+      // Show app ONLY if ALL conditions are met:
+      //   1. Native Capacitor app (always), OR
+      //   2. Authenticated + has a pool profile + saved='app'
+      // Without a profile, ALWAYS show the landing page so the user can
+      // click "Open app" manually → onboarding (not auto-redirect).
+      if (nativeVal) {
+        setView('app')
+      } else if (isAuthenticated && profileExists && saved === 'app') {
+        setView('app')
+      } else {
+        // Clear stale localStorage so user isn't auto-redirected next time
+        if (typeof window !== 'undefined' && saved === 'app' && !profileExists) {
+          localStorage.removeItem('aqwelia_view')
+        }
+        setView('landing')
+      }
+      setLoaded(true)
+    })
     return () => {
       cancelled = true
     }

@@ -13,6 +13,7 @@ import {
   Package,
   Settings2,
   Calendar,
+  Cpu,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -38,6 +39,7 @@ import { toast } from '@/hooks/use-toast'
 import { offlineApi } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
+import { IotSettings } from './iot-settings'
 
 interface EquipmentRow {
   id: string
@@ -127,6 +129,10 @@ export function ModuleMaintenance() {
             <Settings2 className="h-3.5 w-3.5" />
             {t('tabs.reminders')}
           </TabsTrigger>
+          <TabsTrigger value="iot">
+            <Cpu className="h-3.5 w-3.5" />
+            {t('tabs.iot')}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="equipment">
@@ -137,6 +143,9 @@ export function ModuleMaintenance() {
         </TabsContent>
         <TabsContent value="tasks">
           <RemindersPanel />
+        </TabsContent>
+        <TabsContent value="iot">
+          <IotSettings />
         </TabsContent>
       </Tabs>
     </div>
@@ -797,7 +806,12 @@ function RemindersPanel() {
   }
 
   // Derive simple reminders from equipment types
-  const reminders: { titleKey: 'filterWash' | 'cellClean' | 'pumpPrefilter' | 'phCalibration' | 'robotClean'; titleParams?: Record<string, unknown>; detailKey: string; urgency: 'soon' | 'normal' }[] = []
+  // P0-FIX Bug 1: TS2345 — next-intl's `t()` expects params shaped as
+  // `Record<string, string | number | Date>`, not the loose
+  // `Record<string, unknown>`. Tightening the type here aligns the local
+  // reminder shape with the i18n helper signature (the only value we ever
+  // store is the string returned by `equipmentLabel`).
+  const reminders: { titleKey: 'filterWash' | 'cellClean' | 'pumpPrefilter' | 'phCalibration' | 'robotClean'; titleParams?: Record<string, string | number>; detailKey: string; urgency: 'soon' | 'normal' }[] = []
   for (const eq of equipment) {
     if (eq.type === 'filter') {
       reminders.push({

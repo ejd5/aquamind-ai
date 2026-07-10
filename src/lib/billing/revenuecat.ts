@@ -23,14 +23,19 @@ async function ensureInitialized() {
 function mapPackageToProduct(pkg: any): Product | null {
   try {
     const id = pkg?.product?.identifier || ''
-    let plan: PlanId = 'free'
-    let duration: 'monthly' | 'yearly' = 'monthly'
+    let plan: PlanId = 'decouverte'
+    let duration: 'weekly' | 'monthly' | 'seasonal' | 'yearly' = 'monthly'
 
-    if (id.includes('premium')) plan = 'premium'
-    else if (id.includes('expert')) plan = 'expert'
+    // RevenueCat product id convention: aqwelia_<plan>_<duration>
+    //   plan: oasis | wellness
+    //   duration: weekly | monthly | seasonal | yearly
+    if (id.includes('wellness')) plan = 'wellness'
+    else if (id.includes('oasis')) plan = 'oasis'
     else return null
 
     if (id.includes('yearly')) duration = 'yearly'
+    else if (id.includes('seasonal')) duration = 'seasonal'
+    else if (id.includes('weekly')) duration = 'weekly'
 
     return {
       id,
@@ -52,10 +57,10 @@ function mapCustomerInfoToEntitlements(info: any): Entitlement[] {
   try {
     const all = info?.entitlements?.all || {}
     for (const [id, data] of Object.entries(all)) {
-      if (id !== 'premium' && id !== 'expert') continue
+      if (id !== 'oasis' && id !== 'wellness') continue
       const d = data as any
       entitlements.push({
-        id: id as 'premium' | 'expert',
+        id: id as 'oasis' | 'wellness',
         plan: id as PlanId,
         isActive: !!d?.isActive,
         willRenew: !!d?.willRenew,
@@ -147,13 +152,13 @@ export const revenueCatClient: BillingClient = {
   },
 
   async getActivePlan(): Promise<PlanId> {
-    if (!isNative()) return 'free'
+    if (!isNative()) return 'decouverte'
     const entitlements = await this.getEntitlements()
-    const expert = entitlements.find((e) => e.plan === 'expert' && e.isActive)
-    if (expert) return 'expert'
-    const premium = entitlements.find((e) => e.plan === 'premium' && e.isActive)
-    if (premium) return 'premium'
-    return 'free'
+    const wellness = entitlements.find((e) => e.plan === 'wellness' && e.isActive)
+    if (wellness) return 'wellness'
+    const oasis = entitlements.find((e) => e.plan === 'oasis' && e.isActive)
+    if (oasis) return 'oasis'
+    return 'decouverte'
   },
 
   async manageSubscription(): Promise<void> {

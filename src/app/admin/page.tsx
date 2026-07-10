@@ -7,7 +7,9 @@ import { useToast } from '@/hooks/use-toast'
 import { useTranslations } from 'next-intl'
 
 // Simple admin gate — password stored in localStorage after first entry
-const ADMIN_PASSWORD = 'aqwelia-admin-2026' // TODO: move to env
+// TODO: Move admin auth to server-side (move password to process.env.ADMIN_PASSWORD_HASH,
+// validate via /api/admin/auth, issue httpOnly session cookie — see audit §17 risk #1/#2)
+const ADMIN_PASSWORD = 'aqwelia-admin-2026'
 
 type AdminTab = 'banner' | 'popup' | 'content' | 'analytics' | 'users'
 

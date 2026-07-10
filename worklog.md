@@ -3117,3 +3117,68 @@ Stage Summary:
 - Server running with watchdog (auto-restart on OOM kill)
 - Admin credentials: admin@aqwelia.app / aqwelia-admin-2026
 - Key files changed: prisma/schema.prisma, .env, src/lib/auth.ts, src/middleware.ts, src/app/page.tsx, package.json, start-dev.sh
+
+---
+Task ID: ONBOARDING-FIX-001
+Agent: main
+Task: Fix user stuck on onboarding page + "unauthorized" error at step 4
+
+Work Log:
+- Diagnosed root cause: unauthenticated users were landing in the AppShell (because localStorage.aqwelia_view='app'), which triggered the Onboarding (because profile fetch returned 401 → null), and then the Onboarding's save() POST also returned 401 "unauthorized"
+- Fixed src/app/page.tsx: added session check via /api/auth/session. Now the app view is only shown when the user IS authenticated. Unauthenticated users always see the landing page.
+- Fixed src/app/page.tsx: set hasProfile = isAuthenticated || profileExists so the landing page shows "Open app" / "My space" when authenticated (even without a pool profile yet)
+- Fixed src/components/aquamind/app-shell.tsx: when /api/pool/profile returns 401, redirect to /auth/signin instead of showing onboarding
+- Fixed src/components/mobile/mobile-app-shell.tsx: same 401 → signin redirect
+- Fixed src/components/aquamind/onboarding.tsx: when save() or skip() returns 401, show a clear toast message ("Vous devez être connecté pour sauvegarder. Redirection...") and redirect to signin
+- Verified with agent-browser: login → landing page shows "Open app" → click → onboarding shows → skip → profile created → app displays correctly with all modules
+- No console errors, no NextAuth warnings, server alive
+
+Stage Summary:
+- Root cause: the app never checked authentication before showing the onboarding
+- Unauthenticated users were stuck in a loop: onboarding → save → 401 unauthorized
+- Now: unauthenticated → landing page (can sign in); authenticated → can access app and onboarding works
+- Flow verified end-to-end: login → landing → Open app → onboarding → skip → app with "My pool 40 m³"
+- Key files changed: src/app/page.tsx, src/components/aquamind/app-shell.tsx, src/components/mobile/mobile-app-shell.tsx, src/components/aquamind/onboarding.tsx
+
+---
+Task ID: RESTORE-FULL-001
+Agent: main
+Task: Restore all missing content from GitHub + fix 3 user-reported bugs
+
+Work Log:
+- Diagnosed: sandbox was reset to a very early state (7 pages instead of 86, 15 models instead of 43)
+- Cloned GitHub repo (ejd5/aquamind-ai) and restored ALL content:
+  - 86 pages (was 7)
+  - 43 DB models (was 15)
+  - 67 API routes (was 25)
+  - 378 source files (was 192)
+  - All 7 locale files with 5767 keys each
+- Re-applied auth fixes (lost in sandbox reset):
+  - trustHost: true in src/lib/auth.ts
+  - AUTH_TRUST_HOST=true in .env
+  - Middleware: 401 JSON instead of redirect to signin
+  - page.tsx: session check before showing app (non-auth → landing, not onboarding)
+  - app-shell.tsx + mobile-app-shell.tsx: 401 → redirect to signin
+  - onboarding.tsx: 401 → clear error message + redirect to signin
+  - page.tsx: lazy imports for AppShell/MobileAppShell (reduce memory)
+  - package.json: NODE_OPTIONS=--max-old-space-size=2048
+- Fixed bug 1: Weather code 152 missing → created weatherCodeLabel() helper with fallback to "codes.undefined"
+- Fixed bug 2: GPS detects Asian city → weather API now falls back to "Paris,France" instead of IP geolocation
+- Fixed bug 3: NVIDIA_API_KEY not configured → created unified AI module (src/lib/ai/nvidia.ts):
+  - If NVIDIA_API_KEY is set → uses NVIDIA NIM (GLM-5.2 for chat, Nemotron for vision)
+  - If NOT set → falls back to z-ai-web-dev-sdk (always available, no key needed)
+  - Backward-compatible: nvidiaVision and nvidiaChat exports still work
+- Installed missing posthog-node package
+- Pushed DB schema (43 models) and created admin user
+- Verified: lint passes, login works, session valid, 401 JSON correct, AI responds (z-ai fallback tested)
+
+Stage Summary:
+- All 12 phases restored from GitHub (86 pages, 43 models, 67 routes)
+- All 10 revolutionary features restored (StripScan, Copilot, Predict, Savings, Gamification, Family, AutoRestock, Stories, Climate, IoT)
+- Auth fixes re-applied and verified
+- Weather code 152: graceful fallback (no more MISSING_MESSAGE error)
+- GPS: Paris fallback (no more Asian city)
+- AI: dual-mode (NVIDIA if key present, z-ai fallback otherwise)
+- User needs to add their NVIDIA_API_KEY to .env to use NVIDIA NIM (GLM-5.2)
+- Without the key, AI still works via z-ai-web-dev-sdk (free, built-in)
+- Key files changed: src/lib/ai/nvidia.ts, src/lib/auth.ts, src/middleware.ts, src/app/page.tsx, src/components/aquamind/app-shell.tsx, src/components/mobile/mobile-app-shell.tsx, src/components/aquamind/onboarding.tsx, src/components/aquamind/module-weather.tsx, src/app/api/pool/weather/route.ts, package.json, .env

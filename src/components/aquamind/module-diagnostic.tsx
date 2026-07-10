@@ -15,6 +15,7 @@ import {
   ShieldAlert,
   Trash2,
   Pencil,
+  ScanLine,
 } from 'lucide-react'
 import {
   AlertDialog,
@@ -39,6 +40,7 @@ import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
 import { hapticSuccess, hapticError } from '@/lib/native/haptics'
 import { DiagnosticActionPlan } from './diagnostic-action-plan'
+import { StripScanner } from './strip-scanner-v2'
 
 interface DiagnosticResult {
   imageType?: string
@@ -129,6 +131,7 @@ function isResolvedText(text: string | null | undefined): boolean {
 
 export function ModuleDiagnostic() {
   const t = useTranslations('diagnostic')
+  const tStrip = useTranslations('stripScan')
   const locale = useLocale()
   const [typeHint, setTypeHint] = useState<string>('water')
   const [image, setImage] = useState<string | null>(null)
@@ -136,6 +139,9 @@ export function ModuleDiagnostic() {
   const [loading, setLoading] = useState(false)
   const [history, setHistory] = useState<SavedDiagnostic[]>([])
   const [loadingHistory, setLoadingHistory] = useState(true)
+  const [activeTab, setActiveTab] = useState<'photo' | 'strip'>('photo')
+  const [scannerOpen, setScannerOpen] = useState(false)
+  const [stripSaved, setStripSaved] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const queueAction = useOfflineStore((s) => s.queueAction)
   const isOnline = useOfflineStore((s) => s.isOnline)
@@ -255,7 +261,92 @@ export function ModuleDiagnostic() {
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      {/* Tabs: Photo piscine | Bandelette */}
+      <div className="flex gap-2 rounded-xl border border-border/40 bg-background/40 p-1">
+        {[
+          { v: 'photo' as const, label: t('tabPhotoPool'), icon: Camera },
+          { v: 'strip' as const, label: t('tabStrip'), icon: ScanLine },
+        ].map((tab) => {
+          const Icon = tab.icon
+          return (
+            <button
+              key={tab.v}
+              onClick={() => setActiveTab(tab.v)}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                activeTab === tab.v
+                  ? 'border border-gold/60 bg-gold/10 text-gold shadow-sm'
+                  : 'border border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {tab.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Strip tab — opens StripScanner modal directly */}
+      {activeTab === 'strip' && (
+        <Card className="glass-card border-gold/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 font-display text-base">
+              <ScanLine className="h-4 w-4 text-gold" />
+              {tStrip('title')}
+            </CardTitle>
+            <CardDescription className="text-xs">
+              {tStrip('subtitle')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {stripSaved ? (
+              <div className="flex flex-col items-center gap-3 rounded-2xl border border-[oklch(0.7_0.15_155)]/30 bg-[oklch(0.7_0.15_155)]/5 p-6 text-center">
+                <CheckCircle2 className="h-10 w-10 text-[oklch(0.45_0.13_155)]" />
+                <div>
+                  <p className="font-display text-sm font-bold">{tStrip('savedFromDiagnosticTitle')}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{tStrip('savedFromDiagnosticDesc')}</p>
+                </div>
+                <Button
+                  onClick={() => {
+                    setStripSaved(false)
+                    setScannerOpen(true)
+                  }}
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                >
+                  <ScanLine className="h-3.5 w-3.5" />
+                  {tStrip('scanAnother')}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-gold/30 bg-gold/5 p-8 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-gold to-[oklch(0.65_0.11_195)] shadow-lg shadow-gold/30">
+                  <ScanLine className="h-8 w-8 text-[oklch(0.99_0.01_195)]" />
+                </div>
+                <div>
+                  <p className="font-display text-sm font-semibold">{tStrip('diagnosticStripCta')}</p>
+                  <p className="mt-1 max-w-xs text-[11px] text-muted-foreground">{tStrip('diagnosticStripCtaDesc')}</p>
+                </div>
+                <Button
+                  onClick={() => setScannerOpen(true)}
+                  className="gap-2 bg-gradient-to-r from-gold to-[oklch(0.65_0.11_195)] text-[oklch(0.99_0.01_195)] shadow-md shadow-gold/30 hover:shadow-lg hover:shadow-gold/40"
+                >
+                  <ScanLine className="h-4 w-4" />
+                  {tStrip('startScan')}
+                </Button>
+              </div>
+            )}
+            <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+              <ShieldAlert className="mt-0.5 h-3 w-3 shrink-0 text-gold" />
+              {tStrip('disclaimer')}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Photo diagnostic tab — existing UI */}
+      {activeTab === 'photo' && (
+        <div className="grid gap-5 lg:grid-cols-2">
         {/* Left: upload + type selector */}
         <Card className="glass-card">
           <CardHeader className="pb-3">
@@ -519,9 +610,10 @@ export function ModuleDiagnostic() {
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Action Plan — appears after a diagnostic is produced */}
-      {result && (
+      {result && activeTab === 'photo' && (
         <DiagnosticActionPlan
           diagnostic={result}
           onRecheck={async (newImage) => {
@@ -736,6 +828,27 @@ export function ModuleDiagnostic() {
           )}
         </CardContent>
       </Card>
+
+      {/* StripScan™ modal — shared by the Bandelette tab */}
+      <StripScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onSave={async (values) => {
+          // Persist via the existing /api/pool/water-test endpoint so a
+          // WaterTest + action plan are created with source='strip_photo'.
+          const body: Record<string, unknown> = { ph: Number(values.ph), source: 'strip_photo' }
+          for (const [k, v] of Object.entries(values)) {
+            if (k === 'ph') continue
+            if (v !== '') body[k] = v
+          }
+          await api.post('/api/pool/water-test', body)
+          setStripSaved(true)
+          toast({
+            title: tStrip('savedFromDiagnosticTitle'),
+            description: tStrip('savedFromDiagnosticDesc'),
+          })
+        }}
+      />
     </div>
   )
 }

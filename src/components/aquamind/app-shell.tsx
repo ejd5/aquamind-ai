@@ -41,6 +41,9 @@ import {
 import { useNetworkStatus } from '@/hooks/use-network-status'
 import { OfflineBanner } from '@/components/offline-banner'
 import { useTranslations } from 'next-intl'
+import { api } from '@/lib/api-client'
+import { canAccess, PLANS, DEFAULT_PLAN, type PlanId } from '@/lib/pool/freemium'
+import { toast } from '@/hooks/use-toast'
 
 export type TabId =
   | 'today'
@@ -80,13 +83,19 @@ export interface AppShellProps {
 export function AppShell({ onBackToLanding }: AppShellProps) {
   const t = useTranslations('nav')
   const tc = useTranslations('common')
+  const tp = useTranslations('pool')
   const [profile, setProfile] = useState<PoolProfileLite | null | undefined>(undefined)
+  const [pools, setPools] = useState<PoolProfileLite[]>([])
+  const [activePoolId, setActivePoolId] = useState<string | null>(null)
+  const [planId, setPlanId] = useState<PlanId>(DEFAULT_PLAN)
   const [activeTab, setActiveTab] = useState<TabId>('today')
   const [emergencyOpen, setEmergencyOpen] = useState(false)
   // Mount network status listener (auto-updates offline store + banner)
   useNetworkStatus()
   const [presetQuestion, setPresetQuestion] = useState<string | undefined>(undefined)
   const [moreOpen, setMoreOpen] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [addingPool, setAddingPool] = useState(false)
 
   const NAV: NavItem[] = [
     { id: 'today', label: t('today'), short: t('home'), icon: Home, primary: true },
@@ -107,27 +116,124 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
   const fetchProfile = useCallback(async () => {
     try {
       const res = await fetch('/api/pool/profile')
+      // 401 = not authenticated → redirect to signin (never show onboarding
+      // to an unauthenticated user — they can't save a profile without auth).
+      if (res.status === 401) {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/auth/signin?callbackUrl=/'
+        }
+        return
+      }
       const data = await res.json()
-      setProfile(data.profile || null)
+      const list: PoolProfileLite[] = data.profiles || []
+      setPools(list)
+      // Resolve the active profile:
+      //   1. ?id=xxx (activePoolId) if still present
+      //   2. else `data.profile` (most recently created)
+      const resolved =
+        (activePoolId ? list.find((p) => p.id === activePoolId) : null) ||
+        data.profile ||
+        list[list.length - 1] ||
+        null
+      setProfile(resolved)
+      if (resolved) setActivePoolId(resolved.id)
     } catch {
       setProfile(null)
+      setPools([])
     }
-  }, [])
+  }, [activePoolId])
 
+  // Initial load + subscription fetch (plan for multi_pool gate)
   useEffect(() => {
     let cancelled = false
-    fetch('/api/pool/profile')
-      .then((r) => r.json())
-      .then((d) => {
-        if (!cancelled) setProfile(d.profile || null)
+    Promise.all([
+      fetch('/api/pool/profile').then(async (r) => {
+        if (r.status === 401) {
+          if (typeof window !== 'undefined') {
+            window.location.href = '/auth/signin?callbackUrl=/'
+          }
+          return null
+        }
+        return r.json()
+      }),
+      fetch('/api/subscription').then((r) => r.json()).catch(() => null),
+    ])
+      .then(([d, sub]) => {
+        if (cancelled || !d) return
+        const list: PoolProfileLite[] = d.profiles || []
+        setPools(list)
+        const resolved =
+          (activePoolId ? list.find((p) => p.id === activePoolId) : null) ||
+          d.profile ||
+          list[list.length - 1] ||
+          null
+        setProfile(resolved)
+        if (resolved) setActivePoolId(resolved.id)
+        if (sub?.plan?.id) setPlanId(sub.plan.id)
       })
       .catch(() => {
-        if (!cancelled) setProfile(null)
+        if (!cancelled) {
+          setProfile(null)
+          setPools([])
+        }
       })
     return () => {
       cancelled = true
     }
   }, [])
+
+  const plan = PLANS.find((p) => p.id === planId) || PLANS[0]
+  const multiPoolGate = canAccess(planId, 'multi_pool')
+  const canAddPool =
+    multiPoolGate.allowed && pools.length < plan.limits.maxPools
+
+  async function handleSwitchPool(id: string) {
+    setActivePoolId(id)
+    const next = pools.find((p) => p.id === id) || null
+    setProfile(next)
+    // Update the server's view of the "active" pool (best-effort, non-fatal)
+    try {
+      await fetch(`/api/pool/profile?id=${id}`).then((r) => r.json())
+    } catch { /* ignore */ }
+    // Force the dashboard to refetch with the new poolId
+    setRefreshKey((k) => k + 1)
+  }
+
+  async function handleAddPool() {
+    // Reuse the onboarding flow but mark it as "add" mode so it POSTs a NEW pool.
+    // For now: simplest UX is to send the user to the onboarding screen again,
+    // which POSTs a new profile. The new profile becomes the active one.
+    // We pass `addMode=true` to Onboarding so it adapts its copy.
+    setActiveTab('today')
+    setAddingPool(true)
+  }
+
+  async function handleDeletePool(id: string) {
+    if (pools.length <= 1) {
+      toast({ title: tp('cannotDeleteLast'), variant: 'destructive' })
+      return
+    }
+    try {
+      const res = await api.delete<{ profile: PoolProfileLite | null; profiles: PoolProfileLite[] }>(
+        `/api/pool/profile?id=${id}`
+      )
+      setPools(res.profiles)
+      if (res.profile) {
+        setProfile(res.profile)
+        setActivePoolId(res.profile.id)
+      } else {
+        setProfile(null)
+        setActivePoolId(null)
+      }
+      toast({ title: tp('poolDeleted') })
+    } catch (e) {
+      toast({
+        title: tp('deleteError'),
+        description: e instanceof Error ? e.message : '',
+        variant: 'destructive',
+      })
+    }
+  }
 
   function navigate(tab: TabId) {
     setActiveTab(tab)
@@ -159,8 +265,22 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
   }
 
   // No profile → onboarding
-  if (profile === null) {
+  if (profile === null && !addingPool) {
     return <Onboarding onDone={fetchProfile} />
+  }
+
+  // "Add pool" mode — overlay the onboarding flow without clearing the existing profile.
+  if (addingPool) {
+    return (
+      <Onboarding
+        addMode
+        onDone={() => {
+          setAddingPool(false)
+          fetchProfile()
+        }}
+        onCancel={() => setAddingPool(false)}
+      />
+    )
   }
 
   return (
@@ -168,6 +288,11 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
       <OfflineBanner />
       <Header
         profile={profile}
+        pools={pools}
+        canAddPool={canAddPool}
+        onSwitchPool={handleSwitchPool}
+        onAddPool={handleAddPool}
+        onDeletePool={handleDeletePool}
         activeTab={activeTab}
         onNavigate={navigate}
         onBackToLanding={onBackToLanding}
@@ -234,6 +359,8 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
         <main className="min-w-0 flex-1 px-4 py-6 pb-28 sm:px-6 md:pb-10">
           {activeTab === 'today' && (
             <ModuleDashboard
+              key={refreshKey}
+              activePoolId={activePoolId}
               onNavigate={navigate}
               onOpenEmergency={openEmergency}
               onAskAssistant={askAssistant}
@@ -244,8 +371,8 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
           {activeTab === 'assistant' && (
             <ModuleAssistant presetQuestion={presetQuestion} onConsumePreset={() => setPresetQuestion(undefined)} />
           )}
-          {activeTab === 'plan' && <ModuleActionPlan onNavigate={navigate} />}
-          {activeTab === 'log' && <ModuleHealthLog />}
+          {activeTab === 'plan' && <ModuleActionPlan onNavigate={navigate} activePoolId={activePoolId} />}
+          {activeTab === 'log' && <ModuleHealthLog activePoolId={activePoolId} />}
           {activeTab === 'maintenance' && <ModuleMaintenance />}
           {activeTab === 'weather' && <ModuleWeather onNavigate={navigate} />}
           {activeTab === 'guides' && <ModuleGuides onNavigate={navigate} />}

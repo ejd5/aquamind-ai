@@ -105,7 +105,7 @@ export default function SettingsPage() {
   const router = useRouter()
 
   // Active plan (loaded async from billing client).
-  const [activePlan, setActivePlan] = useState<PlanId>('free')
+  const [activePlan, setActivePlan] = useState<PlanId>('decouverte')
   const [loadingPlan, setLoadingPlan] = useState(true)
 
   // Notification preferences (local state — POST to /api/account/notifications).
@@ -325,9 +325,9 @@ export default function SettingsPage() {
   }
 
   const planLabel: Record<PlanId, string> = {
-    free: t('planFree'),
-    premium: t('planPremium'),
-    expert: t('planExpert'),
+    decouverte: t('planDecouverte'),
+    oasis: t('planOasis'),
+    wellness: t('planWellness'),
   }
 
   return (

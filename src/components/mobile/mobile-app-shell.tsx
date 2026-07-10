@@ -107,9 +107,20 @@ export function MobileAppShell({ initialPresetQuestion, onBackToLanding }: Mobil
   useEffect(() => {
     let cancelled = false
     fetch('/api/pool/profile')
-      .then((r) => r.json())
+      .then(async (r) => {
+        // 401 = not authenticated → redirect to signin instead of showing
+        // onboarding (which would fail on save with "unauthorized").
+        if (r.status === 401) {
+          if (typeof window !== 'undefined') {
+            window.location.href = '/auth/signin?callbackUrl=/'
+          }
+          return null
+        }
+        return r.json()
+      })
       .then((d) => {
-        if (!cancelled) setProfile(d.profile || null)
+        if (cancelled || !d) return
+        setProfile(d.profile || null)
       })
       .catch(() => {
         if (!cancelled) setProfile(null)
@@ -122,6 +133,13 @@ export function MobileAppShell({ initialPresetQuestion, onBackToLanding }: Mobil
   const fetchProfile = useCallback(async () => {
     try {
       const res = await fetch('/api/pool/profile')
+      // 401 = not authenticated → redirect to signin.
+      if (res.status === 401) {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/auth/signin?callbackUrl=/'
+        }
+        return
+      }
       const data = await res.json()
       setProfile(data.profile || null)
     } catch {

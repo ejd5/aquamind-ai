@@ -5,6 +5,7 @@ import { nvidiaVision } from '@/lib/ai/nvidia'
 import { db } from '@/lib/db'
 import { VISION_DIAGNOSTIC_PROMPT, getVisionLanguageInstruction } from '@/lib/pool/ai-context'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { trackEventServer } from '@/lib/analytics-server'
 
 export const runtime = 'nodejs'
 
@@ -80,6 +81,18 @@ export async function POST(req: NextRequest) {
         safetyWarnings: JSON.stringify(parsed?.safetyWarnings || []),
       },
     })
+
+    // Analytics — fire-and-forget.
+    void trackEventServer(
+      'photo_diagnostic_run',
+      {
+        type: parsed?.imageType || typeHint || 'unknown',
+        confidence: Number(parsed?.confidence) || 0,
+        hadTypeHint: Boolean(typeHint),
+        fallbackRaw: Boolean(parsed?._raw),
+      },
+      userId
+    )
 
     return NextResponse.json({ diagnostic: parsed, raw: content, id: saved.id })
   } catch (e) {

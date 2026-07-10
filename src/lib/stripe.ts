@@ -30,11 +30,25 @@ export function getStripe(): Stripe {
 // Product / Price mapping (Stripe Price IDs).
 // Each value MUST be created in the Stripe Dashboard and wired to the env var.
 // Keys are stable identifiers used by the client and the webhook metadata.
+//
+// Plan mapping (B2C — P1-TARIFS):
+//   oasis_*     → AQWELIA Oasis (1 piscine, analyses illimitées, mode pro)
+//   wellness_*  → AQWELIA Wellness (Oasis + spa + traitements spa)
+//
+// Durations:
+//   weekly   → Pass urgence 7j
+//   monthly  → 1 mois
+//   seasonal → 6 mois (saison)
+//   yearly   → 12 mois
 export const STRIPE_PRICES = {
-  premium_monthly: process.env.STRIPE_PRICE_PREMIUM_MONTHLY || '',
-  premium_yearly: process.env.STRIPE_PRICE_PREMIUM_YEARLY || '',
-  expert_monthly: process.env.STRIPE_PRICE_EXPERT_MONTHLY || '',
-  expert_yearly: process.env.STRIPE_PRICE_EXPERT_YEARLY || '',
+  oasis_weekly: process.env.STRIPE_PRICE_OASIS_WEEKLY || '',
+  oasis_monthly: process.env.STRIPE_PRICE_OASIS_MONTHLY || '',
+  oasis_seasonal: process.env.STRIPE_PRICE_OASIS_SEASONAL || '',
+  oasis_yearly: process.env.STRIPE_PRICE_OASIS_YEARLY || '',
+  wellness_weekly: process.env.STRIPE_PRICE_WELLNESS_WEEKLY || '',
+  wellness_monthly: process.env.STRIPE_PRICE_WELLNESS_MONTHLY || '',
+  wellness_seasonal: process.env.STRIPE_PRICE_WELLNESS_SEASONAL || '',
+  wellness_yearly: process.env.STRIPE_PRICE_WELLNESS_YEARLY || '',
 } as const
 
 export type StripeProductId = keyof typeof STRIPE_PRICES
@@ -43,9 +57,9 @@ export function isValidProductId(id: string): id is StripeProductId {
   return id in STRIPE_PRICES
 }
 
-// Maps a Stripe product id (e.g. "expert_yearly") to the AQWELIA plan name
-// stored in the `Subscription.plan` column ("premium" | "expert").
-export function getPlanFromProductId(productId: string): 'premium' | 'expert' {
-  if (productId.includes('expert')) return 'expert'
-  return 'premium'
+// Maps a Stripe product id (e.g. "wellness_yearly") to the AQWELIA plan name
+// stored in the `Subscription.plan` column ("oasis" | "wellness").
+export function getPlanFromProductId(productId: string): 'oasis' | 'wellness' {
+  if (productId.includes('wellness')) return 'wellness'
+  return 'oasis'
 }

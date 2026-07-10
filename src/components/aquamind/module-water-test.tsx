@@ -14,6 +14,7 @@ import {
   Euro,
   ShieldX,
   Sparkles,
+  ScanLine,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -29,6 +30,7 @@ import type { TabId } from './app-shell'
 import { offlineApi } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
+import { StripScanner } from './strip-scanner-v2'
 
 interface Props {
   onNavigate: (tab: TabId) => void
@@ -183,6 +185,7 @@ export function ModuleWaterTest({ onNavigate }: Props) {
   const [tests, setTests] = useState<WaterTestRow[]>([])
   const [loadingHistory, setLoadingHistory] = useState(true)
   const [stale, setStale] = useState(false)
+  const [scannerOpen, setScannerOpen] = useState(false)
 
   const isOnline = useOfflineStore((s) => s.isOnline)
   const queueAction = useOfflineStore((s) => s.queueAction)
@@ -308,24 +311,35 @@ export function ModuleWaterTest({ onNavigate }: Props) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Source toggle */}
-            <div className="flex gap-2">
-              {[
-                { v: 'manual' as const, label: t('sourceManual') },
-                { v: 'strip_photo' as const, label: t('sourceStrip') },
-              ].map((s) => (
-                <button
-                  key={s.v}
-                  onClick={() => setSource(s.v)}
-                  className={`flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
-                    source === s.v
-                      ? 'border-gold/60 bg-gold/10 text-gold shadow-sm'
-                      : 'border-border bg-background hover:border-gold/30'
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
+            {/* Source toggle + StripScan CTA */}
+            <div className="flex flex-wrap items-stretch gap-2">
+              <div className="flex flex-1 gap-2">
+                {[
+                  { v: 'manual' as const, label: t('sourceManual') },
+                  { v: 'strip_photo' as const, label: t('sourceStrip') },
+                ].map((s) => (
+                  <button
+                    key={s.v}
+                    onClick={() => setSource(s.v)}
+                    className={`flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
+                      source === s.v
+                        ? 'border-gold/60 bg-gold/10 text-gold shadow-sm'
+                        : 'border-border bg-background hover:border-gold/30'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+              <Button
+                type="button"
+                onClick={() => setScannerOpen(true)}
+                className="gap-1.5 bg-gradient-to-r from-gold to-[oklch(0.65_0.11_195)] text-[oklch(0.99_0.01_195)] shadow-md shadow-gold/30 hover:shadow-lg hover:shadow-gold/40"
+                size="sm"
+              >
+                <ScanLine className="h-3.5 w-3.5" />
+                {t('stripScanButton')}
+              </Button>
             </div>
 
             {/* Fields grid */}
@@ -670,6 +684,22 @@ export function ModuleWaterTest({ onNavigate }: Props) {
         <CheckCircle2 className="h-3 w-3 text-[oklch(0.7_0.15_155)]" />
         {t('tip')}
       </div>
+
+      {/* StripScan™ modal — IA-powered test strip scanner */}
+      <StripScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onSave={(values) => {
+          // Pre-fill the manual form with scanned values + switch source
+          setValues((v) => ({ ...v, ...values }))
+          setSource('strip_photo')
+          setScannerOpen(false)
+          toast({
+            title: t('stripScanPrefilled'),
+            description: t('stripScanPrefilledDesc'),
+          })
+        }}
+      />
     </div>
   )
 }

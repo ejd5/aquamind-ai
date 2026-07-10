@@ -32,8 +32,9 @@ import { isNative } from '@/lib/platform'
 import { offlineApi } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
+import { trackEvent } from '@/lib/analytics-client'
 
-type Duration = 'week' | 'month' | 'quarter' | 'halfyear'
+type Duration = 'week' | 'month' | 'halfyear' | 'year'
 
 interface Plan {
   id: PlanId
@@ -41,12 +42,14 @@ interface Plan {
   nameKey: string
   tagline: string
   taglineKey: string
-  price: { week: number; month: number; quarter: number; halfyear: number }
+  price: { week: number; month: number; quarter: number; halfyear: number; year: number }
   features: string[]
   featureKeys: string[]
   limits: {
     maxPools: number
+    maxSpas: number
     maxPhotoScansPerMonth: number
+    maxTestsPerMonth: number
     weatherEnabled: boolean
     smartReminders: boolean
     guidesAccess: string
@@ -54,32 +57,34 @@ interface Plan {
     pdfReport: boolean
     proMode: boolean
     historyDays: number
+    spaSupport: boolean
   }
   highlighted?: boolean
   color: string
   icon: string
 }
 
-const DURATIONS: { id: Duration; suffixKey: 'perWeek' | 'perMonth' | 'perQuarter' | 'perHalfyear'; labelKey: 'week' | 'month' | 'quarter' | 'halfyear'; save?: string }[] = [
-  { id: 'week', labelKey: 'week', suffixKey: 'perWeek' },
+const DURATIONS: { id: Duration; suffixKey: 'perWeek' | 'perMonth' | 'perHalfyear' | 'perYear'; labelKey: 'week' | 'month' | 'halfyear' | 'year'; save?: string; emergency?: boolean }[] = [
+  { id: 'week', labelKey: 'week', suffixKey: 'perWeek', emergency: true },
   { id: 'month', labelKey: 'month', suffixKey: 'perMonth' },
-  { id: 'quarter', labelKey: 'quarter', suffixKey: 'perQuarter', save: '10%' },
   { id: 'halfyear', labelKey: 'halfyear', suffixKey: 'perHalfyear', save: '20%' },
+  { id: 'year', labelKey: 'year', suffixKey: 'perYear', save: '30%' },
 ]
 
 // Feature comparison table rows: { labelKey, key, accessor }
 const COMPARISON: {
-  labelKey: 'photoScans' | 'weather' | 'reminders' | 'guides' | 'multiPool' | 'pdfReport' | 'proMode' | 'history'
+  labelKey: 'photoScans' | 'weather' | 'reminders' | 'guides' | 'multiPool' | 'pdfReport' | 'proMode' | 'history' | 'spa'
   values: (p: Plan) => { ok: boolean; text?: string }
 }[] = [
   { labelKey: 'photoScans', values: (p) => ({ ok: p.limits.maxPhotoScansPerMonth >= 999, text: p.limits.maxPhotoScansPerMonth >= 999 ? 'unlimited' : `${p.limits.maxPhotoScansPerMonth}` }) },
-  { labelKey: 'weather', values: (p) => ({ ok: p.limits.weatherEnabled && p.id !== 'free' }) },
+  { labelKey: 'weather', values: (p) => ({ ok: p.limits.weatherEnabled && p.id !== 'decouverte' }) },
   { labelKey: 'reminders', values: (p) => ({ ok: p.limits.smartReminders }) },
   { labelKey: 'guides', values: (p) => ({ ok: p.limits.guidesAccess !== 'basic' }) },
   { labelKey: 'multiPool', values: (p) => ({ ok: p.limits.multiPool, text: p.limits.maxPools >= 999 ? 'unlimited' : `${p.limits.maxPools}` }) },
   { labelKey: 'pdfReport', values: (p) => ({ ok: p.limits.pdfReport }) },
   { labelKey: 'proMode', values: (p) => ({ ok: p.limits.proMode }) },
   { labelKey: 'history', values: (p) => ({ ok: p.limits.historyDays >= 90, text: p.limits.historyDays >= 9999 ? 'unlimited' : 'days' }) },
+  { labelKey: 'spa', values: (p) => ({ ok: p.limits.spaSupport, text: p.limits.maxSpas > 0 ? `${p.limits.maxSpas}` : undefined }) },
 ]
 
 const FAQ_KEYS = ['changePlan', 'endSubscription', 'annual', 'refund'] as const
@@ -88,7 +93,7 @@ export function ModulePaywall() {
   const t = useTranslations('plans')
   const locale = useLocale()
   const [plans, setPlans] = useState<Plan[]>([])
-  const [currentPlanId, setCurrentPlanId] = useState<PlanId>('free')
+  const [currentPlanId, setCurrentPlanId] = useState<PlanId>('decouverte')
   const [subscription, setSubscription] = useState<{ expiresAt?: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
   const [duration, setDuration] = useState<Duration>('month')
@@ -102,7 +107,7 @@ export function ModulePaywall() {
     try {
       const { data } = await offlineApi.subscription()
       setPlans((data as any)?.allPlans || [])
-      setCurrentPlanId((data as any)?.plan?.id || 'free')
+      setCurrentPlanId((data as any)?.plan?.id || 'decouverte')
       setSubscription((data as any)?.subscription || null)
       // On native, also refresh entitlements from RevenueCat
       if (isNative()) {
@@ -120,13 +125,22 @@ export function ModulePaywall() {
     load()
   }, [load])
 
-  const paidPlans = useMemo(() => plans.filter((p) => p.id !== 'free'), [plans])
-  const freePlan = plans.find((p) => p.id === 'free')
+  // Analytics — paywall shown. Fire once on mount with the current plan
+  // (if any) so we can compute upgrade conversion rates in PostHog.
+  useEffect(() => {
+    trackEvent('paywall_shown', {
+      currentPlan: currentPlanId,
+      platform: isNative() ? 'native' : 'web',
+    })
+  }, [])
+
+  const paidPlans = useMemo(() => plans.filter((p) => p.id !== 'decouverte'), [plans])
+  const freePlan = plans.find((p) => p.id === 'decouverte')
 
   async function activate(planId: PlanId) {
     setActivating(planId)
     try {
-      if (planId === 'free') {
+      if (planId === 'decouverte') {
         // Downgrade — no billing needed
         await api.post('/api/subscription', { plan: planId, duration })
         setCurrentPlanId(planId)
@@ -137,7 +151,14 @@ export function ModulePaywall() {
 
       if (isNative()) {
         // Native: use RevenueCat IAP
-        const productId = `aqwelia_${planId}_${duration === 'halfyear' ? 'yearly' : 'monthly'}`
+        // Map UI duration → RevenueCat product id convention:
+        //   week → weekly, month → monthly, halfyear → seasonal, year → yearly
+        const durationSuffix =
+          duration === 'week' ? 'weekly'
+          : duration === 'halfyear' ? 'seasonal'
+          : duration === 'year' ? 'yearly'
+          : 'monthly'
+        const productId = `aqwelia_${planId}_${durationSuffix}`
         const result = await billing.purchase(productId)
         if (result.userCancelled) {
           toast({ title: t('purchaseCancelled'), description: t('purchaseCancelledDesc') })
@@ -155,7 +176,12 @@ export function ModulePaywall() {
           toast({ title: t('offline'), description: t('offlineDesc'), variant: 'destructive' })
           return
         }
-        const productId = `stripe_${planId}_${duration === 'halfyear' ? 'yearly' : 'monthly'}`
+        const durationSuffix =
+          duration === 'week' ? 'weekly'
+          : duration === 'halfyear' ? 'seasonal'
+          : duration === 'year' ? 'yearly'
+          : 'monthly'
+        const productId = `stripe_${planId}_${durationSuffix}`
         const result = await api.post<{ url: string }>('/api/stripe/checkout', { productId })
         if (result?.url) {
           window.location.href = result.url
@@ -238,13 +264,13 @@ export function ModulePaywall() {
                 <span className="h-px w-8 bg-gold/40" />
               </div>
               <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-                {t('passTo', { plan: 'AQWELIA Premium' })}
+                {t('passTo', { plan: 'AQWELIA Oasis' })}
               </h1>
               <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
                 {t('heroSubtitle')}
               </p>
             </div>
-            {currentPlanId !== 'free' && (
+            {currentPlanId !== 'decouverte' && (
               <Badge variant="outline" className="border-gold/40 bg-gold/10 px-3 py-1 text-xs font-bold text-gold">
                 <Crown className="mr-1 h-3 w-3" />
                 {t('currentPlan', { name: plans.find((p) => p.id === currentPlanId)?.nameKey ? t(plans.find((p) => p.id === currentPlanId)!.nameKey) : '' })}
@@ -272,6 +298,11 @@ export function ModulePaywall() {
               }`}
             >
               {t(d.labelKey)}
+              {d.emergency && (
+                <Badge variant="outline" className="border-primary/40 bg-primary/10 px-1.5 text-[9px] font-bold text-primary">
+                  {t('emergencyPass')}
+                </Badge>
+              )}
               {d.save && (
                 <Badge variant="outline" className="border-gold/40 bg-gold/10 px-1.5 text-[9px] font-bold text-gold">
                   -{d.save}
@@ -363,7 +394,7 @@ export function ModulePaywall() {
               <div className="flex items-center gap-2">
                 <p className="font-display text-sm font-bold">{t(freePlan.nameKey)}</p>
                 <span className="text-xs text-muted-foreground">— {t('freeTagline')}</span>
-                {currentPlanId === 'free' && (
+                {currentPlanId === 'decouverte' && (
                   <Badge variant="outline" className="border-border bg-secondary/60 text-[9px] text-muted-foreground">
                     {t('yourPlan')}
                   </Badge>
@@ -373,15 +404,15 @@ export function ModulePaywall() {
                 {freePlan.featureKeys.slice(0, 3).map((k) => t(k)).join(' · ')}
               </p>
             </div>
-            {currentPlanId !== 'free' && (
+            {currentPlanId !== 'decouverte' && (
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => activate('free')}
-                disabled={activating === 'free'}
+                onClick={() => activate('decouverte')}
+                disabled={activating === 'decouverte'}
                 className="border-border/60"
               >
-                {activating === 'free' ? <Loader2 className="h-4 w-4 animate-spin" /> : t('backToFree')}
+                {activating === 'decouverte' ? <Loader2 className="h-4 w-4 animate-spin" /> : t('backToFree')}
               </Button>
             )}
           </CardContent>
@@ -418,7 +449,7 @@ export function ModulePaywall() {
           {restoring ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
           {t('restore')}
         </Button>
-        {currentPlanId !== 'free' && (
+        {currentPlanId !== 'decouverte' && (
           <Button
             variant="outline"
             size="sm"
@@ -518,7 +549,7 @@ export function ModulePaywall() {
         </CardContent>
       </Card>
 
-      {subscription?.expiresAt && currentPlanId !== 'free' && (
+      {subscription?.expiresAt && currentPlanId !== 'decouverte' && (
         <p className="text-center text-[11px] text-muted-foreground">
           {t('subscriptionActive', { date: new Date(subscription.expiresAt).toLocaleDateString(locale, {
             day: '2-digit',

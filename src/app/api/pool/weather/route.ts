@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { assessWeather, wttrCodeToFr, isStormCode, type WeatherData } from '@/lib/pool/weather-engine'
+import { getClimateMode, getSeason } from '@/lib/pool/climate-engine'
 import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
@@ -129,7 +130,11 @@ export async function GET(req: NextRequest) {
     if (profile?.region && isValidRegion(profile.region)) {
       query = profile.region.trim()
     }
-    // Sinon : query reste vide → wttr.in fait la géoloc par IP
+    // Sinon : fallback sur Paris (France) au lieu de la géoloc IP qui
+    // renvoie souvent une ville asiatique dans le sandbox cloud.
+    if (!query) {
+      query = 'Paris,France'
+    }
   }
 
   const weather = await fetchWeather(query)
@@ -155,5 +160,34 @@ export async function GET(req: NextRequest) {
   }
 
   const assessment = assessWeather(weather, lastTestDaysAgo)
+
+  // AQWELIA Climate — attach the climate mode assessment to the WeatherAssessment.
+  try {
+    const profile = await db.poolProfile.findFirst({ where: { userId } })
+    if (profile) {
+      const isSouthern = (profile.region || '').toLowerCase().includes('brésil') ||
+        (profile.region || '').toLowerCase().includes('brazil') ||
+        (profile.region || '').toLowerCase().includes('brasil')
+      const season = getSeason(new Date(), isSouthern)
+      const climate = getClimateMode(weather, season, {
+        region: profile.region,
+        treatmentType: profile.treatmentType,
+        saltSystem: profile.saltSystem,
+      })
+      assessment.climate = {
+        mode: climate.mode,
+        modeLabelKey: climate.modeLabelKey,
+        modeDescKey: climate.modeDescKey,
+        modeLabel: climate.modeLabel,
+        modeDesc: climate.modeDesc,
+        filtrationBoostHours: climate.filtrationBoostHours,
+        adjustments: climate.adjustments,
+        badgeHue: climate.badgeHue,
+      }
+    }
+  } catch {
+    // Climate is a best-effort add-on — never fail the weather request if it errors.
+  }
+
   return NextResponse.json({ weather, assessment, lastTestDaysAgo })
 }

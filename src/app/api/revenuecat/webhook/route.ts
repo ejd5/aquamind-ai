@@ -23,9 +23,9 @@ export async function POST(req: NextRequest) {
     }
 
     const productId = event?.product_id || ''
-    let plan: 'free' | 'premium' | 'expert' = 'free'
-    if (productId.includes('expert')) plan = 'expert'
-    else if (productId.includes('premium')) plan = 'premium'
+    let plan: 'decouverte' | 'oasis' | 'wellness' = 'decouverte'
+    if (productId.includes('wellness')) plan = 'wellness'
+    else if (productId.includes('oasis')) plan = 'oasis'
 
     const eventType = event?.event_type
     const isActive = !['CANCELLATION', 'EXPIRATION', 'BILLING_ISSUE'].includes(eventType)
@@ -35,13 +35,19 @@ export async function POST(req: NextRequest) {
       data: { active: false },
     })
 
-    if (isActive && plan !== 'free') {
+    if (isActive && plan !== 'decouverte') {
       const expiresAt = event?.expiration_at ? new Date(event.expiration_at * 1000) : null
       await db.subscription.create({
         data: {
           userId,
           plan,
-          duration: productId.includes('yearly') ? 'halfyear' : 'month',
+          duration: productId.includes('yearly')
+            ? 'year'
+            : productId.includes('seasonal')
+            ? 'halfyear'
+            : productId.includes('weekly')
+            ? 'week'
+            : 'month',
           startedAt: event?.purchased_at ? new Date(event.purchased_at * 1000) : new Date(),
           expiresAt,
           active: true,

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { hashPassword } from '@/lib/password'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { trackEventServer } from '@/lib/analytics-server'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -62,6 +63,23 @@ export async function POST(req: Request) {
       },
       select: { id: true, email: true, name: true },
     })
+
+    // Analytics — fire-and-forget, never block the response.
+    void trackEventServer('user_signed_up', { email, hasName: Boolean(name) }, user.id)
+
+    // Best-effort: send welcome email. Fire-and-forget so a slow SMTP server
+    // never blocks the 201 response. The user is already created — losing the
+    // email is not a critical failure (they can still log in).
+    void import('@/lib/email')
+      .then(({ sendWelcomeEmail }) =>
+        sendWelcomeEmail(user.email, {
+          userName: user.name || undefined,
+          userEmail: user.email,
+        }),
+      )
+      .catch((err) => {
+        console.error('[register] welcome email failed:', err)
+      })
 
     return NextResponse.json({ user }, { status: 201 })
   } catch (err) {
