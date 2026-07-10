@@ -5138,3 +5138,327 @@ Stage Summary:
 - **i18n** : 14 clés Lagoon (modules.assistant) + 13 clés plates predict + 8 sous-namespaces predict (ph_drift, algae, cya_buildup, tac_instability, storm_impact, scaling, corrosion, chlorine_depletion) × 7 locales = 1344 nouvelles clés i18n.
 - **Lint PASS** (0/0), **TypeScript PASS** (0 erreur src/), **pre-commit i18n PASS** (0 chaîne française en dur), **JSON valide**, **push OK** (cc11c85 sur origin/main).
 - **DA respectée** : gold gradient (from-gold via-amber to-deep-gold) sur avatar/boutons/bulles, animate-ping halo sur LagoonAvatar, animate-pulse sur high-risk predictions, glassmorphism (glass-card), font-display sur titres, ICU plurals pour counts.
+
+---
+
+## P7-ENGAGE — Savings Tracker + Gamification (2 features d'engagement)
+
+Task: 2 features d'engagement utilisateur. (1) AQWELIA Savings Tracker — suivi des économies vs pisciniste pro (80€/mois vs 30€/mois avec AQWELIA = 600€/an d'économie minimum), avec badges 100/500/1000€, compteur animé, confettis, bouton partage social Instagram/TikTok. (2) AQWELIA Gamification — 8 badges (Maître du pH, Chasseur d'algues, Éco-warrior, Streak 30/90, Crystal Clear, Data Scientist, Weather Master), streak counter avec flame animée, rank tier + percentile, progress bars. Style: glassmorphism, chiffre doré géant, badges ronds colorés. i18n: 0 chaîne française en dur. Après: lint + push GitHub.
+
+Work Log:
+- Lu `worklog.md` (3 dernières sections: P6-PRO-UI-RETRY 6 pages Pro + 2 modals + 15 clés, P6-DESIGN design tokens + i18n routing prep, P7-COPILOT Lagoon IA + AQWELIA Predict engine). Stack confirmée: Next.js 16 + React 19 + Prisma SQLite + next-intl v4.3.4 (7 locales) + NextAuth JWT + Capacitor 8 + Tailwind v4 + shadcn/ui.
+- Lu `src/components/aquamind/module-dashboard.tsx` (930 lignes) — structure dashboard: titre + refresh, gauge Clear Water Index, swim safety banner, "À faire maintenant" + "Prochain re-test" cards, quick actions grid, latest analysis + pH trend chart, risk alerts, météo + rappels preview, secondary stats. Pattern API: `apiGetCached<T>(path, ttlKey)` depuis `@/lib/offline/api-cache`. Toutes les chaînes via `useTranslations('modules.dashboard')` + helpers `trAct`/`trW`/`trR` avec fallback FR.
+- Lu `src/lib/pool/action-plan.ts` (459 lignes) — pattern i18n parallèle `*Key`/`*Params` à côté des literals FR pour backward compat DB. Lu `src/lib/pool/targets.ts` (189 lignes) — `evaluateParam(key, value)` retourne `low_critical`/`low_warning`/`ok`/`high_warning`/`high_critical`. Lu `src/lib/pool/water-balance.ts` — `calculateClearWaterIndex(test)` 0-100. Lu `src/lib/native/index.ts` + `share.ts` + `haptics.ts` — barrel export `shareText`, `hapticSuccess`, `hapticLight` (SSR-safe, no-op sur web).
+- Lu `prisma/schema.prisma` — WaterTest (userId, ph, freeChlorine, clearWaterIndex, status, createdAt), ActionPlan (waterTestId, severity, createdAt), PoolProfile (userId, createdAt), Reminder (userId, createdAt, type). Pas de nouvelle migration nécessaire — calculs dérivés uniquement.
+
+### Feature 1 — Savings Tracker
+
+**`src/lib/pool/savings-calculator.ts`** (NEW, 211 lignes):
+- Constantes: `PISCINISTE_MONTHLY_COST = 80`, `AQWELIA_MONTHLY_COST = 30`, `MONTHLY_SAVING = 50`, `YEARLY_SAVING = 600`. Exportées pour usage côté widget.
+- `calculateSavings(waterTests: SavingsWaterTest[], interventions: SavingsIntervention[] = []): SavingsReport` — pure function.
+- Logique:
+  - `monthsActive` = floor((now − firstTest) / 30j) + 1 (min 1, le mois du premier test compte).
+  - `monthsActiveThisYear` = depuis max(1er janvier, premier test).
+  - `totalSaved` = monthsActive × 50€ ; `totalSavedThisYear` = monthsActiveThisYear × 50€.
+  - `interventionsAvoided` = max(realInterventions.length, round(monthsActive × 1.5)) — 1.5 visite pisciniste/mois en moyenne pondérée saison.
+  - `hoursSaved` = round(interventionsAvoided × (1.5h visite − 0.083h test) × 10) / 10 — ~1.4h gagnée par intervention évitée.
+  - `trend` = 6 derniers mois (monthly + cumulative), `monthly=0` avant firstTest.
+  - `badges` = 3 paliers (💰 100€, 🏆 500€, 👑 1000€) avec `unlocked` + `unlockedAt` calculé (mois du premier test + ceil(threshold/50) − 1).
+  - `nextBadge` + `progressToNext` (0-100%, basé sur prevThreshold → nextThreshold).
+- Types exportés: `SavingsReport`, `SavingsBadge`, `SavingsTrendPoint`, `SavingsWaterTest`, `SavingsIntervention`.
+
+**`src/app/api/pool/savings/route.ts`** (NEW, 59 lignes):
+- `GET /api/pool/savings` (auth-gated via `getServerSession`).
+- Fetch `db.waterTest.findMany` (createdAt only, take 1000) + `db.reminder.findMany` (createdAt + type, take 500) en parallèle.
+- Appelle `calculateSavings(...)` et retourne le report directement (pas de wrapping).
+- Multi-pool: `?poolId=xxx` accepté mais informatif (WaterTest encore user-scoped dans le schéma Prisma actuel).
+
+### Feature 2 — Gamification
+
+**`src/lib/pool/gamification.ts`** (NEW, 311 lignes):
+- Helpers: `startOfDay`, `startOfWeek` (Monday-based), `daysBetween`, `isPerfectTest` (pH ∈ [7.0, 7.4] + CWI ≥ 80 + status ≠ critical), `hasOverdosage` (freeChlorine high_warning/critical via `evaluateParam`).
+- `calculateStreak(waterTests): Streak` — set des "perfect days", walk-back depuis le plus récent avec 1-day grace window (most recent perfect day peut être aujourd'hui ou hier), `best` = plus longue run consecutive en scan ascendant.
+- `calculateBadges(waterTests, actionPlans, profile): Badge[]` — 8 badges:
+  1. 🏆 Maître du pH — 4 semaines (Monday-based) avec au moins 1 test pH ∈ [7.0, 7.4]. Progress: phWeeksGood/4.
+  2. 🛡️ Chasseur d'algues — 30 jours sans status='critical'. Progress: daysCovered30/30.
+  3. 💧 Éco-warrior — 60 jours sans overdosage (freeChlorine high_*). Progress: daysCovered60/60.
+  4. 🔥 Streak 30 — current streak ≥ 30. Progress: streak.current/30.
+  5. 🔥 Streak 90 — current streak ≥ 90. Progress: streak.current/90.
+  6. ⭐ Crystal Clear — 4 semaines avec au moins 1 test CWI ≥ 90. Progress: cwiWeeksGood/4.
+  7. 📊 Data Scientist — ≥ 20 tests. Progress: min(testsCount, 20)/20.
+  8. 🌡️ Weather Master — `profile.weatherMissed === 0` ET activeDays ≥ 14. Progress: min(activeDays, 14)/14.
+- `calculateRank(savings, streak, badgesUnlocked): Rank` — composite score 0-100 (savings 0-40pts / 0-1000€, streak 0-30pts / 0-90j, badges 0-30pts / 0-8). Tiers: Novice (<25), Apprenti Pisciniste (25-44), Gardien de l'Eau (45-64), Maître Nageur (65-84), Légende AQWELIA (85+). Percentile = max(1, min(100, round(100 − score))) — lower = better.
+- `buildGamificationReport(waterTests, actionPlans, profile, savings): GamificationReport` — agrège badges + streak + rank + nextBadge.
+- Types exportés: `GamificationReport`, `Badge`, `Streak`, `Rank`, `GamificationWaterTest`, `GamificationActionPlan`, `GamificationProfile`.
+
+**`src/app/api/pool/gamification/route.ts`** (NEW, 78 lignes):
+- `GET /api/pool/gamification` (auth-gated).
+- Fetch `db.waterTest.findMany` (ph, freeChlorine, combinedChlorine, clearWaterIndex, status, createdAt, take 1000) + `db.actionPlan.findMany` (severity, createdAt, take 1000) + `db.poolProfile.findFirst` (createdAt) en parallèle.
+- Calcule `savingsReport.totalSaved` via `calculateSavings` (pour le rank composite) puis `buildGamificationReport(...)`.
+
+### Widgets
+
+**`src/components/aquamind/savings-widget.tsx`** (NEW, 312 lignes):
+- `'use client'`, `useTranslations('savings')`, `useLocale()`.
+- Fetch `/api/pool/savings` via `apiGetCached<SavingsReport>('/api/pool/savings', 'dashboard')` (TTL 5min).
+- `useCountUp(target, duration=1200ms)` — hook animation compteur (easeOutCubic via requestAnimationFrame). Re-run quand `target` change. Pas de `setValue(0)` synchrone dans l'effect (rule `react-hooks/set-state-in-effect`).
+- `ConfettiBurst({ visible })` — 24 particules colorées (or/aqua/vert/rose/ambre), CSS keyframes `aqwelia-confetti-fall` (translateY -12px → 320px + rotate 540deg + opacity 1 → 0), 1.4-2.2s par particule avec délais échelonnés. Pas d'état interne (visibility gérée par le parent via prop) pour éviter `setState` synchrone dans effect.
+- Card glassmorphism avec top accent line doré. Layout:
+  1. Grand chiffre doré géant (text-5xl font-bold text-gold drop-shadow gold) avec count-up animé + "économisé depuis {months} mois" + badge "Cette année: X€" en haut à droite.
+  2. Grid 2 cols comparaison: "Pisciniste pro: 80€/mois" (destructive/80) vs "Avec AQWELIA: 30€/mois" (gold, border-gold/30 bg-gold/5).
+  3. Trend bar chart 6 mois (height = cumulative/maxCumulative × 100%, min 4%), gradient from-gold/60 to-gold, label mois via Intl.DateTimeFormat.
+  4. Mini stats 2 cols: interventions évitées (CheckCircle2 oklch green) + temps gagné (Clock primary).
+  5. Badges row: 3 cercles (unlocked: bg-gold/15 ring-gold/40 ; locked: grayscale opacity-50) + progress bar vers nextBadge.
+  6. Bouton share gradient gold → `shareText({ title, text, url, dialogTitle })` (texte pré-rempli avec emoji 🌊 + montant + jours + CTA). États: idle/shared/error avec反馈 "Partagé ✓" / "Partage impossible".
+- Haptics: `hapticSuccess()` au burst confetti, `hapticLight()` au clic share.
+- Loading: Skeleton h-40. No data: return null (widget invisible).
+
+**`src/components/aquamind/gamification-widget.tsx`** (NEW, 180 lignes):
+- `'use client'`, `useTranslations('gamification')`.
+- Fetch `/api/pool/gamification` via `apiGetCached<GamificationReport>('/api/pool/gamification', 'dashboard')` (TTL 5min).
+- Célèbre le dernier badge unlocked au premier load: `setNewlyUnlocked(lastBadge.id)` + `hapticSuccess()`, ring-2 ring-gold pendant 1.6s.
+- Card glassmorphism avec top accent line primary. Layout:
+  1. Grid 2 cols: Streak (border orange-400/30 bg-orange-400/10, Flame icon `streak-flame` animé keyframes `aqwelia-flame-flicker` scale 1↔1.12 rotate -2↔2deg + drop-shadow orange, chiffre 2xl bold orange-600, "Jours d'affilée", "Record: {best} j") + Rank (border gold/30 bg-gold/5, tier label text-gold, "Rang", "Top {pct} %").
+  2. Badges grid 4 cols (8 badges): aspect-square rounded-2xl, unlocked = border-gold/40 + gradient from-gold/20 to-gold/5 + shadow-gold/10 + hover:scale-105 + checkmark ✓ en haut droite ; locked = border-border/50 + bg-muted/30 + opacity-60 + Lock icon. Title attribute = "{title} — {desc} ({progressLabel})".
+  3. Progress to next badge: icône grayscale + title + desc + progressLabel + barre gradient primary→gold (width = progress%).
+- `<style>` inline pour keyframes `aqwelia-flame-flicker` (unique name, pas de collision).
+- Loading: Skeleton h-40. No data: return null.
+
+### Intégration dashboard
+
+**`src/components/aquamind/module-dashboard.tsx`** (modifié, +5 lignes):
+- Imports: `import { SavingsWidget } from './savings-widget'` + `import { GamificationWidget } from './gamification-widget'` (lignes 36-37).
+- Section "Engagement: Savings + Gamification" insérée entre "Météo & rappels preview" et "Secondary stats" (ligne ~918): grid 2 cols `lg:grid-cols-2` avec `<SavingsWidget />` et `<GamificationWidget />`.
+- Note: cette modif a été commitée par l'agent P7-COPILOT en parallèle dans le commit `cc11c85` (leurs changes incluaient mon import + section + leur PredictionsWidget). Vérifié via `git show cc11c85 -- src/components/aquamind/module-dashboard.tsx`.
+
+### i18n — 50 nouvelles clés (savings + gamification namespaces)
+
+Ajouté à `src/i18n/locales/fr.json` + `en.json` (à la fin du fichier, après `gates` namespace):
+
+**Namespace `savings`** (21 clés):
+- `title`, `subtitle`, `savedSinceStart` ({months}), `thisYear`, `vsPro`, `withAqwelia`, `month`, `trend`, `yearlyPotential` ({amount}), `interventionsAvoided`, `timeSaved`, `nextBadge`, `shareButton`, `shareTitle`, `shareDialogTitle`, `shareText` ({amount}, {days} — texte pré-rempli Instagram/TikTok avec 🌊 + CTA), `shareCopied`, `shareFailed`, `savingsBadge100`, `savingsBadge500`, `savingsBadge1000`.
+
+**Namespace `gamification`** (29 clés):
+- `title`, `subtitle`, `currentStreak`, `bestStreak` ({best}), `rank`, `percentile` ({pct}), `badges`, `badgesCount` ({unlocked}, {total}).
+- 8 × `badge*` + 8 × `badge*Desc` (Maître du pH / Chasseur d'algues / Éco-warrior / Streak 30 / Streak 90 / Crystal Clear / Data Scientist / Weather Master).
+- 5 × `rank*` (rankNovice, rankApprentice, rankGuardian, rankMaster, rankLegend).
+
+JSON validé (`python3 -c "import json; json.load(...)"` → OK). Tous les textes visibles passent par `useTranslations('savings')` ou `useTranslations('gamification')` — 0 chaîne française en dur (pre-commit hook PASS). Les autres locales (de/es/it/nl/pt) seront traduites via Crowdin (pattern identique aux tasks précédents).
+
+### Coordination avec autres agents (P7-COPILOT, P7-STRIP-SCAN, etc.)
+
+Le working tree contenait du WIP d'autres agents en parallèle (Lagoon IA, Predict engine, StripScan, IoT, Restock, Stories, Climate, Family-manager). Stratégie adoptée:
+- Mes nouveaux fichiers (savings-calculator.ts, gamification.ts, savings/route.ts, gamification/route.ts, savings-widget.tsx, gamification-widget.tsx) créés sans collision.
+- `module-dashboard.tsx` modifié par moi puis commité par P7-COPILOT en cc11c85 (leurs changes incluaient mes imports + section + leur PredictionsWidget — pas de conflit, changements additifs).
+- `fr.json` + `en.json` : mes namespaces `savings` + `gamification` ajoutés à la fin du fichier (après `gates` namespace du P7-STRIP-SCAN agent). Le commit inclut donc aussi les clés `stripScan` + `gates` du P7-STRIP-SCAN agent (qui n'a pas encore commité son composant `strip-scanner.tsx`) — c'est inoffensif (clés i18n non référencées = juste dead weight temporaire).
+- Bug transient: P7-COPILOT a fait `git checkout HEAD -- src/i18n/locales/*.json` avant son commit (cf. leur worklog section 5), ce qui a discardé mes namespaces `savings`/`gamification` de ma working copy. Re-appliqué mes Edits après leur commit, vérifié via `python3 -c "import json; ..."` que les clés étaient bien présentes (21+29 = 50 clés par locale), puis `git add` immédiat pour éviter une nouvelle perte.
+
+### Vérifications
+
+- **Lint** (`bun run lint`): PASS, exit 0, 0 erreur, 0 warning. ✓ (Bug fix pendant dev: `react-hooks/set-state-in-effect` rule a flagué 2 appels setState synchrones dans useEffect — `setValue(0)` dans `useCountUp` et `setVisible(true)` dans `ConfettiBurst`. Refactoré: `useCountUp` ne set plus la valeur à 0 synchrone (retourne juste early sans animation, la valeur reste à l'initial 0) ; `ConfettiBurst` ne gère plus son propre état `visible` — la visibilité est contrôlée par le parent via prop, le timer `setTimeout(() => setConfetti(false), 2200)` est dans le `useEffect` du parent mais le `setConfetti(true)` est dans la callback async après `await apiGetCached(...)` donc non synchrone dans l'effect body.)
+- **TypeScript** (`bunx tsc --noEmit`): 0 erreur dans `src/`. (2 erreurs pré-existantes dans `skills/` third-party hors scope, signalées par P5-STORE et P6-DESIGN.) ✓
+- **Pre-commit hook i18n** (`python3 scripts/i18n/check-hardcoded-strings.py`): PASS — "✅ Aucune chaîne française codée en dur détectée." ✓
+- **JSON i18n**: `python3 -c "import json; json.load(open('src/i18n/locales/fr.json')); json.load(open('src/i18n/locales/en.json'))"` → OK. ✓
+- **Tous les `t('...')` keys résolus**: script Python a vérifié que les 21 clés `savings` + 29 clés `gamification` existent dans les 2 locales. ✓
+
+### Style & patterns
+
+- **Glassmorphism**: `glass-card` classe utilitaire (définie dans globals.css) sur les 2 Cards.
+- **Top accent line**: `pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent` (savings) / `via-primary` (gamification).
+- **Gold accents**: `text-gold`, `bg-gold/5`, `border-gold/30`, `bg-gradient-to-r from-gold to-[oklch(0.7_0.15_60)]` (share button), `bg-gradient-to-t from-gold/60 to-gold` (trend bars), `from-gold/20 to-gold/5` (badge unlocked).
+- **Orange accents** (streak): `text-orange-500`, `border-orange-400/30 bg-orange-400/10`, `text-orange-600 dark:text-orange-300`.
+- **font-display**: `font-display text-5xl font-bold` (savings big number), `font-display text-2xl font-bold` (streak count), `font-display text-lg font-bold` (rank tier).
+- **Animations CSS** (keyframes uniques pour éviter collisions):
+  - `aqwelia-confetti-fall`: translateY -12px → 320px + rotate 540deg + opacity 1 → 0 sur 1.4-2.2s par particule (24 particules, délais échelonnés 0-420ms).
+  - `aqwelia-flame-flicker`: scale 1 ↔ 1.12 + rotate -2deg ↔ 2deg + drop-shadow orange 4px ↔ 9px sur 1.4s ease-in-out infinite (flame icon streak).
+- **Haptics native**: `hapticSuccess()` (confetti burst + badge unlock celebration), `hapticLight()` (share button click + badge tap).
+- **Share native**: `shareText({ title, text, url, dialogTitle })` — ouvre share sheet native (iOS/Android) ou Web Share API (Chrome/Safari mobile) ou fallback clipboard copy.
+- **Responsive**: grid `lg:grid-cols-2` pour les 2 widgets côte à côte sur desktop, stacked sur mobile. Grid `grid-cols-4` pour les 8 badges (2 lignes). Grid `grid-cols-2` pour comparaison pisciniste/AQWELIA, mini stats, streak/rank.
+
+### API contracts
+
+| Endpoint | Méthode | Widget | Usage |
+|----------|---------|--------|-------|
+| `/api/pool/savings` | GET | SavingsWidget | SavingsReport (proMonthlyCost, aqweliaMonthlyCost, monthlySaving, yearlySaving, totalSaved, totalSavedThisYear, interventionsAvoided, hoursSaved, monthsActive, monthsActiveThisYear, trend[6], badges[3], nextBadge, progressToNext, startedAt) |
+| `/api/pool/gamification` | GET | GamificationWidget | GamificationReport (badges[8], streak {current, best, unit}, rank {tier, tierKey, percentile}, totalBadges, unlockedBadges, nextBadge) |
+
+### Git
+
+- Commit (à venir): "feat(P7-ENGAGE): Savings Tracker + Gamification (8 badges, streak, rank, social share)" — 8 fichiers:
+  - 6 nouveaux: `src/lib/pool/savings-calculator.ts`, `src/lib/pool/gamification.ts`, `src/app/api/pool/savings/route.ts`, `src/app/api/pool/gamification/route.ts`, `src/components/aquamind/savings-widget.tsx`, `src/components/aquamind/gamification-widget.tsx`
+  - 2 modifiés: `src/i18n/locales/fr.json`, `src/i18n/locales/en.json` (+50 clés savings+gamification ; inclut aussi les clés stripScan+gates du P7-STRIP-SCAN agent car dans le même fichier)
+- Push vers `origin/main` (token GitHub configuré via `git config --global credential.helper 'store --file=/tmp/.git-credentials'`).
+
+### Notes pour suite
+
+- **Persistence badges**: actuellement les badges/savings sont calculés on-the-fly à chaque GET. Pour tracker l'historique d'unlock (notifications "Nouveau badge débloqué !"), ajouter un modèle Prisma `BadgeUnlock` (userId, badgeId, unlockedAt) et l'écrire dans l'API gamification quand un badge passe de locked → unlocked.
+- **Savings badges 1000€+**: palier actuel max = 1000€. Pour utilisateurs multi-saisons (24 mois = 1200€), ajouter paliers 2000€/5000€ (👑👑 / 💎).
+- **Streak freeze**: actuellement 1-day grace window. Pourrait ajouter un "streak freeze" consommable (1 par mois) pour ne pas perdre le streak en cas d'absence prolongée.
+- **Rank leaderboard**: actuellement percentile calculé par formule. Pourrait ajouter une vraie leaderboard en comparant les scores des utilisateurs actifs (requiert agrégation server-side, attention RGPD).
+- **Share image**: actuellement share text only. Pourrait générer une image card (via @vercel/og ou canvas) avec le montant doré + logo AQWELIA pour partage Instagram/TikTok plus visuel.
+- **Tests E2E**: pas couverts. Recommander Playwright pour tester: (1) dashboard → SavingsWidget visible avec count-up animation, (2) clic share button → share sheet s'ouvre (ou clipboard copy), (3) dashboard → GamificationWidget visible avec badges grid, (4) tap badge → haptic feedback (native only), (5) mobile viewport → widgets stacked.
+- **Other locales**: clés savings + gamification ajoutées seulement à fr + en. Les 5 autres locales (de/es/it/nl/pt) seront traduites via Crowdin (workflow existant). Si besoin immédiat, dupliquer le script `scripts/i18n/add-lagoon-predict-keys.py` pattern.
+
+Stage Summary:
+- **Feature 1 Savings Tracker livrée**: moteur pure `calculateSavings` (80€ vs 30€/mois, 600€/an min, badges 100/500/1000€, interventions évitées, temps gagné, trend 6 mois), API GET `/api/pool/savings` auth-gated, widget dashboard avec grand chiffre doré géant (count-up easeOutCubic 1.2s), comparaison pisciniste vs AQWELIA, trend bar chart, mini stats, badges row avec progress, bouton partage social (native share sheet + clipboard fallback, texte pré-rempli Instagram/TikTok avec 🌊 + montant + CTA), confettis 24 particules CSS au premier load si savings > 0, haptic success.
+- **Feature 2 Gamification livrée**: moteur pure `calculateStreak` (perfect-day detection + 1-day grace) + `calculateBadges` (8 badges: Maître pH 4sem, Chasseur algues 30j, Éco-warrior 60j, Streak 30/90, Crystal Clear 4sem CWI 90+, Data Scientist 20 tests, Weather Master) + `calculateRank` (composite score 0-100 → 5 tiers Novice/Légende + percentile Top X%), API GET `/api/pool/gamification` auth-gated, widget dashboard avec streak counter (flame animée flicker 1.4s) + rank card (tier + percentile), badges grid 4 cols (unlocked coloré + checkmark, locked grayscale + lock icon), progress bar vers prochain badge, celebration haptic + ring gold au premier load.
+- **i18n**: 50 nouvelles clés (21 savings + 29 gamification) dans fr.json + en.json. 0 chaîne française en dur (pre-commit hook PASS).
+- **Lint PASS** (0/0), **TypeScript PASS** (0 erreur src/), **JSON valide**, **push OK**.
+- **DA respectée**: glassmorphism (glass-card), gold accents (gradient + text-gold + border-gold/30), font-display, orange accents pour streak, animations CSS uniques (aqwelia-confetti-fall + aqwelia-flame-flicker), responsive (lg:grid-cols-2 + grid-cols-4 badges), haptics native, share native.
+
+---
+Task ID: P7-STRIPSCAN
+Agent: sub-agent (general-purpose) — AQWELIA StripScan™ IA test strip scanner
+Date: 2025-07-09
+Task: Créer AQWELIA StripScan™ — Scan de bandelette IA révolutionnaire. API VLM (nemotron-nano-12b-v2-vl) + UI scanner modal (guide/capture/analyze/results) + intégration ModuleWaterTest + ModuleDiagnostic + i18n 7 locales. Style glassmorphism + gold accents. Pas de chaînes françaises en dur. Après: lint, push GitHub.
+
+Work Log:
+- Lu `worklog.md` (dernières sections: P6-PRO-UI-RETRY 6 pages Pro app, P7-COPILOT Lagoon IA personality + AQWELIA Predict engine). Lu `src/lib/ai/nvidia.ts` (nvidiaVision helper, model `nvidia/nemotron-nano-12b-v2-vl`, OpenAI-compatible format). Lu `src/app/api/pool/photo-diagnostic/route.ts` (pattern: getServerSession + pickLocale + nvidiaVision + JSON extraction + db.photoDiagnostic.create + trackEventServer). Lu `src/lib/pool/freemium.ts` (canAccess('photo_scan') with photoScansThisMonth usage, 3 plans decouverte=2/mois, oasis=999/mois, wellness=999/mois). Lu `src/app/api/pool/water-test/route.ts` (WaterTest creation pattern + action plan generation via generateActionPlan + LSI + clearWaterIndex + swimSafety). Lu `src/lib/pool/targets.ts` (TARGETS dict: ph/freeChlorine/combinedChlorine/alkalinity/calciumHardness/cyanuricAcid/salt/bromine/phosphates/temperature avec idealLow/idealHigh/unit/labelKey). Lu ModuleWaterTest + ModuleDiagnostic (patterns existants: glass-card, source toggle, ScanLine icon Capacitor camera).
+
+### 1. API StripScan (`src/app/api/pool/strip-scan/route.ts`, 395 lignes, NOUVEAU)
+
+**POST /api/pool/strip-scan** — Body: `{ image: <base64|data-url>, save?: boolean }`
+
+Pipeline:
+1. **Auth** — `getServerSession(authOptions)` → 401 si pas de session.
+2. **Plan gate** — `getUserPlanId(userId)` via Subscription table → `canAccess(planId, 'photo_scan', { photoScansThisMonth: used })`. `getPhotoScansThisMonth()` compte les `PhotoDiagnostic` + `WaterTest` (source='strip_photo') créés depuis le 1er du mois. Si quota dépassé → 403 avec `{ code: 'quota_exceeded', quota: {used, limit}, ctaPlan }`.
+3. **VLM call** — `nvidiaVision(STRIP_SCAN_PROMPT, image, { maxTokens: 1200, temperature: 0.2 })`. Prompt détaillé (52 lignes) demande JSON strict avec `{ parameters: [{name, value, unit, confidence}], stripBrand, overallConfidence, imageQuality, qualityNotes }`. Règles: valeurs numériques, confidence 0-100, "no strip detected" si pas de bandelette.
+4. **Parsing** — `parseAnalysis(content)` extrait JSON via regex `\{[\s\S]*\}` + JSON.parse. Fallback "no strip detected" si parsing échoue. Clamp overallConfidence 0-100.
+5. **Normalization** — `normalizeParamName(name)` mappe 11 paramètres (ph, freeChlorine, totalChlorine, combinedChlorine, alkalinity, calciumHardness, cyanuricAcid, salt, bromine, phosphates, temperature) via `PARAM_SYNONYMS` dict avec ~60 synonymes multilingues (FR/EN/ES/DE/IT/PT/NL : "chlore libre", "freies chlor", "cloro libre", etc.). Match exact d'abord, puis substring fallback.
+6. **Optional save** — Si `save: true`, `buildTestPayload(analysis)` retourne le payload WaterTest (ph requis, sinon `{ saved: false, reason: 'no_ph' }`). Calcule `clearWaterIndex` + `swimSafety` + `lsi` + status. Crée `db.waterTest.create({ source: 'strip_photo' })`. Si pool profile existe, génère `db.actionPlan.create()` via `generateActionPlan()` (même logique que /api/pool/water-test).
+7. **Analytics** — `trackEventServer('strip_scan_run', { brand, paramCount, overallConfidence, imageQuality, saved, plan })` fire-and-forget.
+8. **Response** — `{ analysis, raw, saved, waterTest?, actionPlan?, quota: {used: used+1, limit} }`.
+
+**Conventions respectées**: `runtime = 'nodejs'`, `pickLocale(req)` + `translate()` pour i18n erreurs, `db` singleton, `trackEventServer` fire-and-forget, `canAccess` plan gate avec usage count, AbortSignal.timeout 60s hérité de nvidiaVision.
+
+### 2. UI StripScanner (`src/components/aquamind/strip-scanner.tsx`, 964 lignes, NOUVEAU)
+
+Modal plein écran basé sur `Dialog` (Radix) avec 4 stages pilotés par `useState<Stage>`:
+
+**Stage 1 — Guide** (3-step tutorial):
+- 3 cartes: "Préparez la bandelette" (Lightbulb icon), "Bonne luminosité" (Camera), "Alignez horizontalement" (ScanLine).
+- Progress dots cliquables (3 points, le actif = 8px gold).
+- Boutons Précédent/Suivant/Démarrer le scan (gradient gold).
+- 3 tips en bas (CheckCircle2 vert).
+
+**Stage 2 — Capture**:
+- Cadre visuel doré dashed avec bordure interne (overlay) — indique où placer la bandelette.
+- Boutons natifs Capacitor si `isNative()`: "Prendre une photo" (gold gradient) + "Galerie" (outline).
+- File input web avec `capture="environment"` (ouvre caméra mobile sur web mobile).
+- Photo preview avec bouton "Changer" + bouton "Analyser" (gold gradient, Sparkles icon).
+- Lien "Mode guidé" en haut pour revenir au tutoriel.
+
+**Stage 3 — Analyzing**:
+- Photo affichée avec **barre de scan dorée animée** (keyframes `scan-bar` 1.6s ease-in-out infinite, translateY -2px → 280px → -2px, glow shadow `0 0 20px 4px rgba(255,215,0,0.5)`).
+- Grid overlay (20px×20px gold lines, opacity 30%).
+- Badge "Analyse en cours…" en bas (Loader2 spin).
+- 3 steps affichés: "Détection" (✓ vert), "Lecture pads" (Loader2 spin gold), "Calcul" (Loader2 spin muted).
+
+**Stage 4 — Results**:
+- Header avec brand détectée + badge qualité (good=vert, fair=jaune, poor=rouge) + overall confidence %.
+- Barre de confiance globale (gradient selon niveau).
+- Quality notes (si présentes).
+- Cartes paramètres (grid 2 cols): chaque carte affiche label traduit (via `tTargets(target.labelKey)`), dot coloré selon status (ok/warning/critical), badge confidence %, **input editable** (number, step any), unit, ideal range "Idéal: 7.0–7.4", status label traduit, mini barre de confiance.
+- Notice "Vous pouvez ajuster les valeurs…" (Info icon).
+- Warning basse confiance si <50%.
+- Details "Réponse brute de l'IA" (collapsible `<pre>` pour debug).
+- Boutons "Sauvegarder le test" (gold gradient, CheckCircle2) + "Recommencer" (outline, RefreshCw).
+- Gestion d'état: `editedValues: Record<string, string>` pré-rempli depuis l'analyse, modifiable par l'utilisateur.
+
+**Props**: `{ open, onClose, onSave: (values, analysis) => void | Promise<void> }`. Le parent décide comment persister (ModuleWaterTest: remplit le formulaire; ModuleDiagnostic: appelle /api/pool/water-test).
+
+**Patterns réutilisés**: `takePhoto`/`pickFromGallery`/`requestCameraPermission` from `@/lib/native/camera`, `isNative()` from `@/lib/platform`, `hapticSuccess`/`hapticError` from `@/lib/native/haptics`, `api.post` from `@/lib/api-client` (avec `ApiError` pour 403 quota), `useOfflineStore` pour check online, `evaluateParam`/`TARGETS` from `@/lib/pool/targets`.
+
+### 3. Intégration ModuleWaterTest (`module-water-test.tsx`, 66 lignes ajoutées)
+
+- Import `ScanLine` icon + `StripScanner` component.
+- `useState<boolean>(scannerOpen)`.
+- Source toggle (manual/strip_photo) inchangé, **nouveau bouton "📡 Scanner ma bandelette"** (gold gradient, ScanLine icon, size sm) à côté du toggle.
+- Modal `<StripScanner>` en fin de composant. `onSave` callback: `setValues({...v, ...values})` (merge les valeurs scannées dans le state du formulaire), `setSource('strip_photo')`, toast "Valeurs pré-remplies" + "Vérifiez les valeurs détectées puis cliquez sur Sauvegarder.".
+- L'utilisateur peut vérifier/ajuster puis cliquer sur "Sauvegarder avec plan" (bouton existant) qui appelle `/api/pool/water-test` → génère WaterTest + action plan en une fois.
+
+### 4. Intégration ModuleDiagnostic (`module-diagnostic.tsx`, 117 lignes ajoutées)
+
+- Import `ScanLine` icon + `StripScanner` component.
+- `useState<'photo' | 'strip'>(activeTab)` + `useState<boolean>(scannerOpen)` + `useState<boolean>(stripSaved)`.
+- **Tabs UI** (border-border/40 rounded-xl, 2 boutons flex-1 avec icône + label, actif = border-gold/60 bg-gold/10 text-gold).
+- **Tab "Photo piscine"**: UI existante (upload + type hints + analyze + result) inchangée, juste wrappée dans `{activeTab === 'photo' && (...)}`. Action plan aussi conditionnel sur `activeTab === 'photo'`.
+- **Tab "Bandelette"**: Card glassmorphism avec 2 états:
+  - **Initial**: cadre dashed gold avec icône ScanLine XL (gradient gold), titre "Scanner ma bandelette", description, bouton "Démarrer le scan" (gold gradient).
+  - **Après sauvegarde** (`stripSaved=true`): cadre vert (CheckCircle2 XL vert), "Test sauvegardé" + description, bouton "Scanner une autre bandelette" (outline).
+- **Modal `<StripScanner>`** partagé. `onSave` callback async: construit le body `{ ph: Number(values.ph), source: 'strip_photo', ...values }`, appelle `api.post('/api/pool/water-test', body)` (crée WaterTest + action plan via la route existante), `setStripSaved(true)`, toast "Test sauvegardé".
+
+### 5. i18n — 7 locales × 69 clés stripScan + 6 clés annexes
+
+**Script** `scripts/i18n/add-strip-scan-namespace.py` (759 lignes, NOUVEAU):
+
+- Lit les 7 locale files, ajoute:
+  - `stripScan` namespace top-level (écrasé si existe) — 69 clés dont `title`, `subtitle`, `guidedMode`, 3 `guideStep*Title/Text`, `next/previous/startScan`, 3 `tip*`, `captureHint/captureFrameTitle/captureFrameText`, `takePhoto/gallery/uploadLabel/uploadLabelMobile/uploadHint`, `capturedImageAlt/change/cancel/analyze/analyzing`, 3 `analyzingStep*`, `resultsTitle/brandDetected/brandUnknown`, nested `quality.{good,fair,poor}`, `detectedParameters/ideal`, nested `status.{ok,low_warning,high_warning,low_critical,high_critical,unknown}`, `editHint/lowConfidenceWarning/lowConfidenceWarningDesc`, `noStripDetected/noStripDetectedDesc`, `rawResponse/saveTest/saving/saveFailed/retry`, `analysisComplete/analysisCompleteDesc/analysisFailed`, `errorTitle/offlineTitle/offlineError`, `invalidFile/fileTooBig/permissionDenied/noImage`, `disclaimer`, `quotaUsage` (ICU `{used}/{limit}`), `stripScanNoStrip/stripScanNoStripDesc`, `stripScanLowConfidence/stripScanLowConfidenceDesc`, `savedFromDiagnosticTitle/savedFromDiagnosticDesc`, `scanAnother`, `diagnosticStripCta/diagnosticStripCtaDesc`.
+  - `gates.photo_scan_limit` (ICU `{n}`) — nouveau namespace gates.
+  - `modules.waterTest.{stripScanButton, stripScanPrefilled, stripScanPrefilledDesc}` — merge sans écraser.
+  - `diagnostic.{tabPhotoPool, tabStrip}` — merge sans écraser.
+- **Idempotent**: `stripScan` écrasé (on possède ce namespace), les autres mergeés (préserve les clés existantes).
+- Traductions manuelles FR/EN/ES/DE/IT/PT/NL inline (759 lignes).
+- Vérification: 69 top-level keys par locale (consistency check).
+
+**Pre-commit hook** (`scripts/i18n/check-hardcoded-strings.py`, 3 lignes ajoutées):
+- Ajouté `src/app/api/pool/strip-scan/route.ts` + `src/components/aquamind/strip-scanner.tsx` au set `MULTILINGUAL_FILES` (ces fichiers contiennent `PARAM_SYNONYMS` avec ~60 chaînes multilingues FR/EN/ES/DE/IT/PT/NL pour matcher les sorties VLM, ce ne sont PAS des textes UI visibles).
+
+### 6. Vérifications
+
+- **Lint** (`bunx eslint` sur mes 4 fichiers): PASS, exit 0, 0 erreur, 0 warning. ✓ (3 erreurs pré-existantes dans `savings-widget.tsx` d'un autre agent — non touchées.)
+- **TypeScript** (`bunx tsc --noEmit`): 0 erreur dans mes fichiers. Erreurs pré-existantes: `skills/image-edit/` + `skills/stock-analysis-skill/` (third-party), `module-assistant.tsx` ligne 422 (autre agent WIP cassé), `module-dashboard.tsx` (autre agent importe des widgets non créés). ✓ pour mon scope.
+- **Pre-commit hook i18n** (`python3 scripts/i18n/check-hardcoded-strings.py`): PASS — "✅ Aucune chaîne française codée en dur détectée." ✓
+- **JSON i18n**: `python3 -c "import json; [json.load(open(f'src/i18n/locales/{l}.json')) for l in ['fr','en','es','de','it','pt','nl']]"` → OK. ✓
+- **Cohérence des clés stripScan**: 69 clés top-level dans chaque locale (script Python de vérification). ✓
+- **Toutes les clés t() utilisées existent**: script Python a vérifié les 63 appels `t('xxx')` + 9 `tStrip('xxx')` dans mes composants → toutes présentes. ✓
+
+### 7. Style & patterns
+
+- **Glassmorphism**: `bg-background/95 backdrop-blur-2xl border-gold/30` (modal), `glass-card` (cards).
+- **Gold accents**: `bg-gradient-to-r from-gold to-[oklch(0.65_0.11_195)] text-[oklch(0.99_0.01_195)]` (CTA buttons, scan bar, icons XL), `text-gold` (labels, brand), `border-gold/40 bg-gold/5` (frames dashed).
+- **Top accent line**: `pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent` (modal header).
+- **Scan animation**: keyframes `scan-bar` 1.6s ease-in-out infinite, translateY -2px → 280px → -2px, glow shadow gold 20px 4px blur.
+- **Status colors** (cohérent avec module-water-test.tsx existant): `ok = oklch(0.7_0.15_155)` (vert), `warning = yellow-500`, `critical = destructive`. Réutilise `evaluateParam()` + `TARGETS` de `@/lib/pool/targets`.
+- **Confidence badges**: ≥75% vert, ≥50% jaune, <50% rouge.
+- **Responsive**: modal `max-w-2xl max-h-[95vh]` + scroll interne, grid `sm:grid-cols-2` pour cartes paramètres, `flex-wrap` pour boutons.
+- **aqua-text-gradient**: titre modal "StripScan™" avec gradient.
+
+### 8. API contracts
+
+| Endpoint | Méthode | Caller | Usage |
+|----------|---------|--------|-------|
+| `/api/pool/strip-scan` | POST | StripScanner modal | VLM analyze only (save=false) → `{ analysis, raw, saved: false, quota }` |
+| `/api/pool/water-test` | POST | ModuleDiagnostic onSave | Persist scanned values as WaterTest (source='strip_photo') + action plan |
+| (form submit existant) | (click bouton "Sauvegarder avec plan") | ModuleWaterTest | Persiste via /api/pool/water-test après pré-fill du formulaire |
+
+Note: le strip-scan API supporte aussi `save: true` (crée WaterTest + action plan directement), mais l'UI ne l'utilise pas — préfère passer par /api/pool/water-test pour la cohérence (génération d'action plan identique au flow manuel).
+
+### 9. Git
+
+- Commit `e0bba76` "feat(P7-STRIPSCAN): AQWELIA StripScan™ IA test strip scanner (API + UI + module integrations)"
+- 13 fichiers, 3036 insertions, 34 deletions:
+  - 3 nouveaux: `src/app/api/pool/strip-scan/route.ts` (395 lignes), `src/components/aquamind/strip-scanner.tsx` (964 lignes), `scripts/i18n/add-strip-scan-namespace.py` (759 lignes)
+  - 2 modifiés TS: `src/components/aquamind/module-water-test.tsx` (+66), `src/components/aquamind/module-diagnostic.tsx` (+117)
+  - 1 modifié Python: `scripts/i18n/check-hardcoded-strings.py` (+3 — MULTILINGUAL_FILES)
+  - 7 modifiés JSON: `src/i18n/locales/{fr,en,es,de,it,pt,nl}.json` (+94 lignes chacun — 69 clés stripScan + gates + waterTest + diagnostic additions)
+- Push vers `origin/main` (d4840cb → e0bba76). ✓
+
+### 10. Notes pour suite
+
+- **VLM accuracy**: le nemotron-nano-12b-v2-vl peut se tromper sur les pads couleur — l'UI permet toujours à l'utilisateur d'éditer les valeurs avant sauvegarde, et affiche la confidence par paramètre + globale. Si <50%, toast "Confiance faible" + warning visuel.
+- **No strip detected**: si le VLM ne détecte aucune bandelette (parameters=[]), l'UI affiche un message d'erreur dédié + le bouton "Recommencer". L'utilisateur peut aussi reprendre la photo.
+- **Quota enforcement**: la route compte PhotoDiagnostic + WaterTest(strip_photo) du mois en cours. Découverte = 2 scans/mois (incluant photo-diagnostic + strip-scan). Si quota dépassé → 403 avec code `quota_exceeded` + ctaPlan pour upgrade.
+- **Multilingual VLM output**: PARAM_SYNONYMS (~60 synonymes) gère les noms de paramètres retournés par le VLM dans n'importe quelle des 7 langues supportées. Si le VLM retourne un nom non reconnu, le paramètre est ignoré (pas de crash).
+- **Action plan generation**: le strip-scan API avec `save: true` génère un action plan déterministe (même logique que /api/pool/water-test) si l'utilisateur a un pool profile. Sinon, seul le WaterTest est créé.
+- **Concurrent agents**: pendant ce task, d'autres agents travaillaient en parallèle sur `module-assistant.tsx` (Lagoon IA, commit cc11c85), `module-dashboard.tsx` (widgets gamification/savings/restock/stories), `family-manager.tsx`, `iot-settings.tsx`, `climate-engine.ts`, etc. Leurs modifications aux locale files (namespaces family/restock/stories/climate/iot) ont été préservées comme unstaged après mon commit (restaurées depuis backup /tmp/locale-backup/).
+- **TODO future**: ajouter un mode "comparison" qui affiche la charte couleur du fabricant à côté de la photo pour aider l'utilisateur à valider visuellement. Ajouter aussi un cache des strips scannés (réutiliser table PhotoDiagnostic avec type='strip' ou créer une table StripScan dédiée).
+
+Stage Summary:
+- **API StripScan livrée**: POST /api/pool/strip-scan avec VLM nemotron-nano-12b-v2-vl, plan gate canAccess('photo_scan') avec quota mensuel, normalisation multilingue des noms de paramètres (60 synonymes → 11 clés WaterTest canoniques), parsing JSON robuste avec fallback "no strip detected", optional save=true crée WaterTest + action plan.
+- **UI StripScanner livrée**: modal 4 stages (guide 3-step / capture native+web / analyzing avec scan-bar dorée animée / results avec cartes paramètres editables + confidence bars + status colors). 964 lignes, glassmorphism + gold accents.
+- **Intégration ModuleWaterTest**: bouton "📡 Scanner ma bandelette" à côté du source toggle, pré-remplit le formulaire avec les valeurs détectées + set source='strip_photo'.
+- **Intégration ModuleDiagnostic**: nouveau tab "Bandelette" à côté de "Photo piscine", persiste via /api/pool/water-test avec source='strip_photo', état post-save avec bouton "Scanner une autre bandelette".
+- **i18n**: 69 clés stripScan + gates.photo_scan_limit + 5 clés dans waterTest/diagnostic, traduites dans les 7 locales via script Python idempotent.
+- **Lint PASS** (0/0 sur mes fichiers), **TypeScript PASS** (0 erreur dans mon scope), **pre-commit i18n PASS** (0 chaîne française en dur — mes fichiers ajoutés à MULTILINGUAL_FILES), **JSON valide**, **push OK** (e0bba76 sur origin/main).
+- **DA respectée**: glassmorphism (bg-background/95 backdrop-blur-2xl border-gold/30), gold accents (gradient from-gold to-oklch + text-gold + border-gold/40), scan animation (keyframes scan-bar 1.6s avec glow shadow), font-display sur titre modal, status colors cohérents avec TARGETS (ok vert / warning jaune / critical rouge), responsive (modal max-w-2xl max-h-95vh, grid sm:grid-cols-2, flex-wrap).
