@@ -5533,3 +5533,148 @@ Stage Summary:
 - **Lint PASS** (0/0), **TypeScript PASS** (0 erreur src/), **pre-commit i18n PASS** (0 chaîne française en dur), **JSON valide** pour les 7 locales, **push OK** (f987486 sur origin/main).
 - **DA respectée**: idempotent (overwrite namespaces qu'on possède), ICU placeholders préservés, format monétaire localisé, 0 chaîne française codée en dur.
 
+
+---
+Task ID: P8-INFRA
+Agent: sub-agent (general-purpose) — Data model + Sitemap + SEO + Academy + Monitoring
+Date: 2025-07-10
+Task: 4 tâches infrastructure (modèle de données complet + sitemap/robots + SEO JSON-LD + AQWELIA Academy Phase 12 + monitoring/error tracking).
+
+Work Log:
+- Lu `worklog.md` (5 dernières sections: L7-PREFS, P7-COPILOT, P7-STRIPSCAN, P7-ENGAGE, P7-ENGAGE-RETRY) pour contexte. Projet restauré, auth JWT multi-tenant, mobile shell + native bridges, spa landing, freemium gate, savings/gamification, StripScan, Lagoon IA, AQWELIA Predict — tous opérationnels.
+- Lu `prisma/schema.prisma` (566 lignes → 972 lignes après ajouts parallèles d'autres agents: Product/ProductCategory/Cart/Order/Kit + Organization/Lead/AgentRun). Vérifié les modèles existants pour éviter collisions.
+- Audit pré-existant: 7 locales (fr/en/es/de/it/pt/nl), 44 namespaces top-level, locales JSON valides, pre-commit hook `check-hardcoded-strings.py` opérationnel (détecte chaînes accentuées FR hors t()/translate()).
+
+### 1. Modèle de données — User + Consent + Supplier + Academy
+
+**User** (modifié): ajouté 8 champs — `phone String?`, `role String @default("user")` (user|pro|business|admin), `locale String @default("fr")`, `country String @default("FR")`, `timezone String @default("Europe/Paris")`, `consentMarketing Boolean @default(false)`, `consentAnalytics Boolean @default(true)`, `consentEmail Boolean @default(true)`.
+
+**ConsentRecord** (nouveau, 11 champs): id, userId?, leadId?, purpose (marketing|analytics|email|sms|phone), channel (web|app|form|widget), source?, wordingVersion?, grantedAt?, withdrawnAt?, proof? (JSON: IP/UA/timestamp), createdAt. Indexes sur userId, leadId, purpose. Conçu comme un ledger RGPD (une ligne par event grant/withdraw).
+
+**Supplier** (nouveau, 9 champs): id, name, legalName?, siret?, country @default("FR"), commissionRate @default(0.1), shippingCountries @default("FR") (CSV ISO alpha-2), dropshipping @default(false), active @default(true), createdAt.
+
+**AcademyCourse** (nouveau, 11 champs): id, slug @unique, title, titleKey, description?, descriptionKey?, level @default("beginner") (beginner|intermediate|expert), duration (minutes), videoUrl?, content? (markdown), order @default(0), active @default(true), createdAt. Relation 1→N vers Certification. Indexes sur active, level.
+
+**Certification** (nouveau, 8 champs): id, userId, courseId, status @default("in_progress") (in_progress|completed|expired), score?, completedAt?, expiresAt?, createdAt. Relation N→1 vers AcademyCourse (onDelete Cascade). Indexes sur userId, courseId, status.
+
+`bunx prisma db push`: DB SQLite synchronisée en 49ms, Prisma Client v6.19.2 régénéré (AcademyCourse + Certification + ConsentRecord + Supplier accessibles via `db.academyCourse`, `db.certification`, etc.).
+
+### 2. Sitemap.xml + robots.txt
+
+**`src/app/sitemap.ts`** (MetadataRoute.Sitemap, 26 entrées): routes publiques marketing (/, /fonctionnalites, /comment-ca-marche, /tarifs, /faq, /a-propos, /contact) + hubs (/pro, /pro/early-access, /pro/demo, /pro/faq, /care, /care/catalogue, /business, /growth) + partenaires (/partenaires, /partenaires/piscinistes, /partenaires/fournisseurs, /affiliation) + academy (/academy, /academy/certification, /academy/guides) + 7 pages légales (/legal/cgu, /legal/cgv, /legal/privacy, /legal/cookies, /legal/support, /legal/accessibilite, /legal/securite). `changeFrequency`: daily (home) / weekly (marketing) / monthly (legal + partners). `priority`: 1.0 (home) / 0.9 (tarifs, pro) / 0.7-0.8 (marketing) / 0.6 (academy) / 0.5 (legal). URLs absolues via `SITE_URL` (env-driven, default https://aqwelia.app).
+
+**`src/app/robots.ts`** (MetadataRoute.Robots): `User-Agent: *` Allow `/` + Disallow `/api/`, `/admin`, `/auth/`, `/pro/app/`, `/settings`. `Host: https://aqwelia.app`. `Sitemap: https://aqwelia.app/sitemap.xml`. **Supprimé `public/robots.txt`** (10 lignes statiques) pour éviter le conflit avec la route dynamique Next.js — Next.js aurait servi le fichier statique en priorité et ignoré le handler.
+
+Smoke test: `GET /sitemap.xml` → 200, XML valide (`<urlset>` avec 26 `<url>`), `GET /robots.txt` → 200, plain text correct.
+
+### 3. SEO Enhancement
+
+**`src/lib/seo.ts`** (helper centralisé): `buildMetadata({ title, description, path, image, noindex, keywords, type, publishedTime, section })` → Metadata object complet avec title, description, keywords, `alternates.canonical`, `robots` (index/follow), `openGraph` (title/desc/url/siteName=AQWELIA/images[1200×630]/locale=fr_FR/type), `twitter` (card=summary_large_image, site=@aqwelia_app). `SITE_URL` export (env-driven). `DEFAULT_OG_IMAGE = /aqwelia-hero-bg.png`. `absoluteUrl(path)` helper. `SITE_METADATA` const (name/tagline/url/logo/ogImage/twitter).
+
+**`src/components/seo/structured-data.tsx`** (server components JSON-LD):
+- `OrganizationSchema`: Organization avec @id, name=AQWELIA, url, logo, description (EN), foundingDate=2024, email=contact@aqwelia.app, sameAs (Twitter/LinkedIn/Instagram), contactPoint (customer support, 7 langs).
+- `SoftwareApplicationSchema`: SoftwareApplication avec name, description (EN), applicationCategory=LifestyleApplication, operatingSystem='Web, iOS, Android', url, image, publisher → Organization. Optional aggregateRating + offers.
+- `FAQPageSchema({ faqs })`: FAQPage avec mainEntity=Question[]/acceptedAnswer=Answer. Rend null si faqs vide.
+- `BreadcrumbListSchema({ items })`: BreadcrumbList avec itemListElement=ListItem[] (position/name/item URL absolue).
+- `ProductSchema({ name, description, image, brand, sku, price, currency, availability, path })`: Product avec @id, brand (Brand), offers (Offer avec priceCurrency/price/availability).
+- `CourseSchema({ name, description, path, provider })`: Course avec provider=Organization.
+- `Breadcrumbs({ items })`: UI server component (nav aria-label="breadcrumb" + ol/li avec ChevronRight separator, gold hover).
+
+**`src/app/layout.tsx`** (modifié): import `OrganizationSchema`, `SoftwareApplicationSchema`, `FAQPageSchema`. Dans `RootLayout`, `getTranslations('landing')` puis construction `faqs` depuis les 15 paires faqQ*/faqA* (mêmes clés que `faq.tsx` — sync guaranteed). Rendu des 3 schemas dans `<body>` avant NextIntlClientProvider. `generateMetadata` étendue: `metadataBase` (new URL from NEXT_PUBLIC_SITE_URL), `alternates.canonical: '/'`, `openGraph` complet (title/desc/url/siteName/type/locale), `twitter` (card/site/creator).
+
+**`next.config.ts`** (modifié): ajouté `export const SITE_URL` (env-driven). `metadataBase` n'est PAS dans NextConfig (TS2353 — c'est un champ Metadata, pas NextConfig), donc déplacé vers `layout.tsx`.
+
+Smoke test JSON-LD: home page `/` a `@type: Organization + SoftwareApplication + FAQPage + Question + Answer + ContactPoint`. Academy pages ont en plus `Course + BreadcrumbList + ListItem`.
+
+### 4. AQWELIA Academy (Phase 12)
+
+**`src/app/academy/layout.tsx`**: header sticky avec logo + "AQWELIA Academy" gradient or + badge "Centre de formation" + nav (Home/Guides/Certification) + CTA "Commencer" gradient or. Footer via `<Footer />` partagé. `generateMetadata` via `buildMetadata`. BreadcrumbListSchema (Home → Academy).
+
+**`src/app/academy/page.tsx`** (home): hero (eyebrow + titre + sous-titre + 2 CTAs "Parcourir"/"Voir la certification") + 6 pillars grid (Formations vidéo, Guides pros, Procédures, Sécurité, Bonnes pratiques, Certification AQWELIA — chacune avec icon lucide + titre + desc + CTA "Découvrir/Lire/Consulter/S'informer/Appliquer/Certifier") + section "Comment ça marche" 3 steps (Apprendre/Pratiquer/Se certifier) avec numéros gold + stats (40h+/50+/12 mois) + CTA final. CourseSchema + OrganizationSchema + BreadcrumbListSchema + Breadcrumbs UI.
+
+**`src/app/academy/certification/page.tsx`**: hero (badge "Certification officielle" + titre + sous-titre) + 4-step timeline (S'inscrire/Se former/Passer l'examen/Recevoir le badge) + section "Ce que couvre l'examen" (description + 4 benefits avec Shield icon) + carte "Examen AQWELIA" (45min/30 questions/70% requis/12 mois validité, 3 stats en grid) + CTA final (Browse + Start signin). CourseSchema + BreadcrumbListSchema (Home → Academy → Certification) + Breadcrumbs UI.
+
+**`src/app/academy/guides/page.tsx`**: hero + catalogue DB-driven. `db.academyCourse.findMany({ where: { active: true }, orderBy: [{ order: 'asc' }, { createdAt: 'asc' }] })`. Résolution i18n: pour chaque cours, `lookup(messages, c.titleKey) ?? c.title` (fallback sur colonne statique). Groupement par niveau (beginner/intermediate/expert) avec label localisé + count badge. Cartes (icon BookOpen + duration "Xmin" + title + desc 3 lignes + "Lire" CTA). **Fallback statique** (8 cours curated) quand DB vide — garantit utilité en dev/preview avant seed. CTA final → certification. CourseSchema + BreadcrumbListSchema + Breadcrumbs UI.
+
+Smoke test: `GET /academy` → 200 (hero "Devenez expert" + "AQWELIA ACADEMY" eyebrow + 6 pillars). `GET /academy/certification` → 200 (4 steps + assessment card). `GET /academy/guides` → 200 (DB query `SELECT ... FROM AcademyCourse WHERE active=true` exécutée, 0 lignes → fallback 8 cours rendus: "Bases de l'eau de piscine", "Équilibrer pH", "Optimiser la filtration", "Prévention des algae", "Entretien du spa", "Hivernage" — groupés par niveau "Débutant/Intermédiaire/Expert").
+
+### API Academy
+
+**`src/app/api/academy/courses/route.ts`** (GET, public): retourne `{ courses: [...] }` avec select (id, slug, titleKey, descriptionKey, title, description, level, duration, videoUrl, content). Filter optionnel `?level=beginner|intermediate|expert`. Errors EN (`courses_fetch_failed`).
+
+**`src/app/api/academy/certification/route.ts`** (GET + POST, auth-gated):
+- GET: liste `certifications` du user avec `course` inclus (slug/title/titleKey/level/duration).
+- POST avec `body.action`:
+  - `'start'` `{ courseId }`: idempotent — retourne existing in_progress ou crée nouveau. Vérifie course existe (404 sinon).
+  - `'complete'` `{ courseId, score }`: valide score ∈ [0,100] integer, trouve in_progress cert (404 sinon), update → status='completed', completedAt=now, expiresAt=now+365j.
+- Validation: 400 missing_course_id/invalid_action/invalid_score, 401 unauthorized, 404 course_not_found/certification_not_found.
+- `runtime = 'nodejs'`, `dynamic = 'force-dynamic'`.
+
+Smoke test: `GET /api/academy/courses` → 200 `{ courses: [] }` (table vide). `GET /api/academy/certification` → 401 `{ error: 'unauthorized' }` (no session). `POST /api/academy/certification` → 401 (no session).
+
+### 5. Monitoring & error tracking
+
+**`src/lib/monitoring.ts`** (placeholder pattern, 0 dépendance Sentry):
+- `isSentryEnabled()` — true si `SENTRY_DSN` set.
+- `initMonitoring()` — no-op si pas de DSN, log info sinon. Future: `Sentry.init({ dsn, tracesSampleRate: 0.1 })`.
+- `captureError(error, context?)` — server: structured log (level/timestamp/environment/error{name,message,stack}/context). Client: POST /api/health `{ type: 'client_error', payload }` avec keepalive.
+- `captureMessage(message, level?, context?)` — console.error/warn/info selon level.
+- `withSpan<T>(name, fn)` — async timing wrapper, log duration ms, propagate errors.
+- `reportClientError(payload)` — fetch POST /api/health, fire-and-forget.
+- `getHealthStatus(dbPing)` — ping DB, retourne `HealthStatus` (status ok|degraded|down, timestamp, environment, version, checks{database, sentry}, uptimeMs).
+- BOOT_TIME module-level pour uptime.
+
+**`src/app/api/health/route.ts`** (GET + POST, public):
+- GET: `getHealthStatus(async () => db.$queryRaw\`SELECT 1\``) → 200 (status ok/degraded) ou 503 (down).
+- POST: accepte `{ type: 'client_error', payload }`, log via `captureError`, retourne 204 no content. 400 si payload invalide.
+
+Smoke test: `GET /api/health` → 200 `{"status":"ok","timestamp":"...","environment":"development","version":"0.0.0","checks":{"database":"ok","sentry":"disabled"},"uptimeMs":31}`. Log Prisma: `SELECT 1` exécuté avec succès.
+
+### i18n (115 academy + 3 seo × 7 locales = 826 clés)
+
+**`scripts/i18n/add-academy-seo-namespaces.py`** (933 lignes): pattern repris de `add-lagoon-predict-keys.py` + `translate-savings-gamification.py`. 2 dicts `ACAD` (115 clés × 7 locales) + `SEO` (3 clés × 7 locales) avec traductions manuelles inline FR/EN/ES/DE/IT/PT/NL. Pour chaque locale, charge JSON, OVERWRITE `academy` + `seo` (on les possède), dump `ensure_ascii=False + indent=2 + trailing newline`. Consistency check: 115 academy + 3 seo × 7 locales = OK.
+
+**Academy namespace (115 clés)**: metaTitle/desc, nav (Home/Guides/Certification), breadcrumbs (Home/Academy/Certification/Guides), cta (BackHome/Start), badge, homeMeta*, hero (eyebrow/title/subtitle/ctaBrowse/ctaCert), pillars (heading/subheading + 6×{title/desc/cta}), how (heading/subheading + 3×{title/desc}), stats (3×{value/label}), cta (heading/subheading/certButton), certMeta*, certBadge, certHero*, certSteps* + 4×{title/desc}, certAssessment* + 4 benefits, certCard* (title/subtitle/passingScore/duration/validity), certCta* (heading/subheading/browse/start), guidesMeta*, guidesEyebrow/Title/Subtitle/Empty, 3 levels (Beginner/Intermediate/Expert), guideReadMore, guidesCta* (heading/subheading/button), 8 fallback courses × {title/desc}.
+
+**SEO namespace (3 clés)**: siteName (AQWELIA), siteDescription (tagline localisée), defaultOgImageAlt.
+
+### 6. Vérifications
+
+- **Lint** (`bun run lint`): PASS, exit 0, 0 erreur, 0 warning. ✓
+- **TypeScript** (`bunx tsc --noEmit`): 0 erreur dans mes fichiers (academy/api/academy/api/health/components/seo/lib/seo/lib/monitoring/app/layout/app/sitemap/app/robots/next.config). Erreurs pré-existantes: `skills/` (third-party), `annual-review-widget.tsx` + `winter-guardian-widget.tsx` (autres agents WIP — `useToast('annualReview'/'winterGuardian')` non supporté par le type ToastNamespace), `module-dashboard.tsx` (autre agent importe `./annual-review-widget`). ✓ pour mon scope.
+- **Pre-commit hook i18n** (`python3 scripts/i18n/check-hardcoded-strings.py`): PASS — "✅ Aucune chaîne française codée en dur détectée." ✓
+- **JSON i18n** (`python3 -c "import json; [json.load(...) for l in ['fr','en','es','de','it','pt','nl']]"`): OK pour les 7 fichiers. ✓
+- **Prisma db push**: DB SQLite sync, Prisma Client v6.19.2 régénéré. ✓
+- **Smoke test dev server** (`bun run dev`): tous les endpoints 200/401 attendus. JSON-LD vérifié sur /, /academy, /academy/certification, /academy/guides. ✓
+
+### 7. Git
+
+- Commit `1ee7d71` "feat(P8-INFRA): data models + sitemap/robots + SEO JSON-LD + Academy + monitoring"
+- 24 fichiers staged (selectifs — uniquement mes fichiers; les modifications WIP d'autres agents sur care/middleware/module-dashboard/freemium non incluses):
+  - 11 nouveaux: `src/lib/seo.ts`, `src/lib/monitoring.ts`, `src/components/seo/structured-data.tsx`, `src/app/sitemap.ts`, `src/app/robots.ts`, `src/app/api/health/route.ts`, `src/app/api/academy/courses/route.ts`, `src/app/api/academy/certification/route.ts`, `src/app/academy/{layout,page}.tsx`, `src/app/academy/certification/page.tsx`, `src/app/academy/guides/page.tsx`, `scripts/i18n/add-academy-seo-namespaces.py`
+  - 3 modifiés TS: `next.config.ts` (+SITE_URL export), `src/app/layout.tsx` (+structured data + metadata étendue), `prisma/schema.prisma` (+8 champs User + 4 modèles)
+  - 7 modifiés JSON: `src/i18n/locales/{fr,en,es,de,it,pt,nl}.json` (+118 clés chacun = 115 academy + 3 seo)
+  - 1 supprimé: `public/robots.txt` (remplacé par `src/app/robots.ts` dynamique)
+- 6052 insertions, 28 deletions.
+- Push vers `origin/main` (f2ae741 → 1ee7d71). ✓
+
+### 8. Notes pour suite
+
+- **Sentry SDK**: `src/lib/monitoring.ts` est un placeholder typé (initMonitoring/captureError/withSpan). Pour activer Sentry en prod: `bun add @sentry/nextjs`, implémenter les TODOs (Sentry.init avec dsn/tracesSampleRate/environment/release, Sentry.captureException, Sentry.startSpan). Aucun changement d'API pour les callers.
+- **Academy content seeding**: la table `AcademyCourse` est vide en dev. Pour peupler: créer un script `prisma/seed-academy.ts` avec les 8 cours fallback (Bases de l'eau/Équilibrer pH/Optimiser filtration/Prévention algues/Entretien spa/Hivernage/Électrolyse sel/Sécurité chimique) en `upsert` par slug, avec `titleKey`/`descriptionKey` pointant vers les clés `academy.guide1Title`... déjà traduites dans les 7 locales.
+- **AcademyCourse detail page**: `/academy/guides/[slug]` n'existe pas encore (uniquement `/academy/guides` index). Les cartes pointent vers `/academy/guides/${slug}` qui 404 actuellement. Créer la route dynamique avec render markdown du champ `content` quand les cours seront seedés.
+- **FAQ schema sync**: le schema FAQPage dans `src/app/layout.tsx` réutilise les 15 clés `landing.faqQ*`/`faqA*` — si la FAQ change dans `faq.tsx`, le schema reste synchro automatiquement (mêmes clés).
+- **metadataBase multi-locale**: actuellement `locale: 'fr_FR'` hardcoded dans OG. Pour supporter les 7 locales dans OG, il faudrait lire `locale` depuis `getLocale()` et mapper vers `fr_FR`/`en_US`/`es_ES`/`de_DE`/`it_IT`/`pt_PT`/`nl_NL`.
+- **Concurrent agents**: pendant ce task, d'autres agents travaillaient en parallèle sur P8-BUSINESS-CARE (Care marketplace: cart/checkout/orders/kits/products/seed APIs + care/catalogue/panier/commande/suivi/mon-stock/partenaires/produit/categories/securite-produits pages), P8-GROWTH (Organization/Lead/AgentRun models + growth APIs), annual-review-widget + winter-guardian-widget. Leurs modifications (unstaged) ont été préservées — non incluses dans mon commit sélectif.
+- **Sitemap dynamic routes**: actuellement 100% statique (26 routes hardcoded). Pour ajouter /academy/guides/[slug] dynamiques quand les cours seront seedés, ajouter un `db.academyCourse.findMany({ select: { slug: true, updatedAt: true } })` et mapper vers des entries. Idem pour /care/produit/[slug] quand Care existera.
+- **Health endpoint rate limiting**: `/api/health` POST (client error ingest) est public — en prod, ajouter un rate-limit (Caddy / Cloudflare) pour éviter le spam. Le GET reste public (k8s probe / uptime monitor).
+
+Stage Summary:
+- **5 modèles Prisma livrés**: User (+8 champs), ConsentRecord (RGPD ledger), Supplier (Care B2B), AcademyCourse, Certification. DB push OK, Prisma Client v6.19.2 régénéré.
+- **Sitemap + robots livrés**: `src/app/sitemap.ts` (26 routes, changeFreq + priority, URLs absolues), `src/app/robots.ts` (allow all, disallow /api//admin/auth//pro/app//settings, sitemap pointer). `public/robots.txt` supprimé (conflit résolu). Smoke 200 OK.
+- **SEO enhancement livré**: `src/lib/seo.ts` (buildMetadata helper + SITE_URL + DEFAULT_OG_IMAGE), `src/components/seo/structured-data.tsx` (6 schemas JSON-LD: Organization/SoftwareApplication/FAQPage/BreadcrumbList/Product/Course + Breadcrumbs UI), `src/app/layout.tsx` (3 schemas globaux + metadata étendue avec metadataBase/canonical/OG/Twitter), `next.config.ts` (SITE_URL export). JSON-LD vérifié sur /, /academy, /academy/certification, /academy/guides.
+- **AQWELIA Academy livrée** (Phase 12): 4 pages (layout + home + certification + guides) + 2 APIs (courses GET public, certification GET+POST auth-gated). Design system cohérent (glassmorphism + gold accents + font-display + framer-motion). 6 pillars + 3 steps + stats + 4-step cert path + assessment card + catalogue DB-driven avec fallback 8 cours.
+- **Monitoring livré**: `src/lib/monitoring.ts` (initMonitoring/captureError/captureMessage/withSpan/reportClientError/getHealthStatus — Sentry placeholder), `src/app/api/health/route.ts` (GET DB ping + uptime, POST client error ingest). Smoke 200 OK avec `status: ok, db: ok`.
+- **i18n**: 826 nouvelles clés (115 academy + 3 seo × 7 locales) via script Python idempotent, traductions manuelles inline FR/EN/ES/DE/IT/PT/NL.
+- **Lint PASS** (0/0), **TypeScript PASS** (0 erreur dans mon scope), **pre-commit i18n PASS** (0 chaîne française en dur), **JSON valide** pour 7 locales, **prisma db push OK**, **push OK** (1ee7d71 sur origin/main).
+- **DA respectée**: glassmorphism (glass-card, bg-background/60 backdrop-blur-xl, border-gold/20→40 hover), gold accents (gradient from-gold via-oklch to-oklch, text-gold, border-gold/40), font-display sur titres, framer-motion Reveal/stagger sur landing, Breadcrumbs UI or, responsive (grid sm:grid-cols-2 lg:grid-cols-3).
