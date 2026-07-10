@@ -133,7 +133,8 @@ export const authOptions: NextAuthOptions = {
   // CRITICAL for sandbox/preview: trust the X-Forwarded-Host / X-Forwarded-Proto
   // headers set by the Caddy gateway so NextAuth computes the correct base URL
   // (cookies, CSRF origin, OAuth callbacks) when accessed through the proxy.
-  trustHost: true,
+  // In NextAuth v4, this is controlled by the AUTH_TRUST_HOST env var (set in .env)
+  // — no explicit option here. See: https://next-auth.js.org/options#top
   providers: buildProviders(),
   callbacks: {
     /**

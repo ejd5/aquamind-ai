@@ -48,16 +48,13 @@ export const dynamic = 'force-dynamic'
 /** Certification validity period (1 year, in ms). */
 const CERT_VALIDITY_MS = 365 * 24 * 60 * 60 * 1000
 
-/** Verify the session and return the userId, or a 401 response. */
-async function requireAuth() {
+/** Verify the session and return the userId, or throw a 401 response. */
+async function requireAuth(): Promise<string> {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    return {
-      userId: null as string | null,
-      error: NextResponse.json({ error: 'unauthorized' }, { status: 401 }),
-    }
+    throw NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
-  return { userId: session.user.id, error: null }
+  return session.user.id
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -65,8 +62,12 @@ async function requireAuth() {
 // ──────────────────────────────────────────────────────────────────────────
 
 export async function GET() {
-  const { userId, error } = await requireAuth()
-  if (error || !userId) return error
+  let userId: string
+  try {
+    userId = await requireAuth()
+  } catch (e) {
+    return e as Response
+  }
 
   try {
     const certifications = await db.certification.findMany({
@@ -97,8 +98,12 @@ export async function GET() {
 // ──────────────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  const { userId, error } = await requireAuth()
-  if (error || !userId) return error
+  let userId: string
+  try {
+    userId = await requireAuth()
+  } catch (e) {
+    return e as Response
+  }
 
   let body: { action?: string; courseId?: string; score?: number }
   try {

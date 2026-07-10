@@ -142,6 +142,7 @@ async function zaiVision(
   }
 
   const response = await zai.chat.completions.createVision({
+    model: 'glm-4.6v',
     messages: [
       {
         role: 'user',
