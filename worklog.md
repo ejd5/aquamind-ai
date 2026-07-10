@@ -5462,3 +5462,74 @@ Stage Summary:
 - **i18n**: 69 clés stripScan + gates.photo_scan_limit + 5 clés dans waterTest/diagnostic, traduites dans les 7 locales via script Python idempotent.
 - **Lint PASS** (0/0 sur mes fichiers), **TypeScript PASS** (0 erreur dans mon scope), **pre-commit i18n PASS** (0 chaîne française en dur — mes fichiers ajoutés à MULTILINGUAL_FILES), **JSON valide**, **push OK** (e0bba76 sur origin/main).
 - **DA respectée**: glassmorphism (bg-background/95 backdrop-blur-2xl border-gold/30), gold accents (gradient from-gold to-oklch + text-gold + border-gold/40), scan animation (keyframes scan-bar 1.6s avec glow shadow), font-display sur titre modal, status colors cohérents avec TARGETS (ok vert / warning jaune / critical rouge), responsive (modal max-w-2xl max-h-95vh, grid sm:grid-cols-2, flex-wrap).
+
+---
+Task ID: P7-ENGAGE-RETRY
+Agent: sub-agent (general-purpose) — Savings Tracker + Gamification (i18n retry)
+Date: 2025-07-10
+Task: Compléter le i18n du P7-ENGAGE (Savings Tracker + Gamification). Les 6 fichiers (savings-calculator.ts, gamification.ts, /api/pool/savings, /api/pool/gamification, savings-widget.tsx, gamification-widget.tsx) + l'intégration module-dashboard.tsx + 50 clés fr/en étaient déjà en place depuis la tentative précédente (commit 512dac3), mais les 5 locales es/de/it/pt/nl n'avaient pas reçu les namespaces `savings` + `gamification`. Ce retry complète ce manque via un script Python idempotent.
+
+Work Log:
+- Lu `worklog.md` (3 dernières sections: P7-ENGAGE 5142, P7-STRIPSCAN 5309, P7-FEATURES 512dac3) pour contexte. Constaté que la précédente tentative P7-ENGAGE avait livré les 6 fichiers + i18n fr/en mais n'avait jamais été commitée — le commit groupé `512dac3` "feat(P7-FEATURES): Family, AutoRestock, Stories, Climate, IoT — uncommitted WIP from failed agents" avait ensuite absorbé tout le WIP non-committé des agents précédents (y compris savings + gamification).
+- `git ls-files` confirme que les 6 fichiers sont bien trackés (savings-calculator.ts, gamification.ts, /api/pool/savings/route.ts, /api/pool/gamification/route.ts, savings-widget.tsx, gamification-widget.tsx) et qu'aucune modification n'était en cours (`git status --short` vide au démarrage).
+- Audit des fichiers existants:
+  * `savings-calculator.ts` (213 lignes) — `calculateSavings(waterTests, interventions)` retourne SavingsReport (proMonthlyCost 80€, aqweliaMonthlyCost 30€, monthlySaving 50€, yearlySaving 600€, totalSaved, totalSavedThisYear, interventionsAvoided, hoursSaved, monthsActive, monthsActiveThisYear, trend[6], badges[3] 100/500/1000€, nextBadge, progressToNext, startedAt). Pure function, 0 chaîne française en dur (titre/desc via titleKey).
+  * `gamification.ts` (396 lignes) — `calculateStreak(waterTests)` (perfect-day = pH ∈ [7.0, 7.4] + CWI ≥ 80 + status !== 'critical', 1-day grace window) + `calculateBadges(waterTests, actionPlans, profile)` (8 badges: ph_master 4sem, algae_hunter 30j, eco_warrior 60j, streak_30, streak_90, crystal_clear 4sem CWI 90+, data_scientist 20 tests, weather_master 14j + 0 missed) + `calculateRank(savings, streak, badgesUnlocked)` (composite score 0-100 → 5 tiers Novice/Légende + percentile Top X%) + `buildGamificationReport()` agrégateur.
+  * `/api/pool/savings/route.ts` (54 lignes) — GET auth-gated, récupère WaterTest + Reminder (proxy interventions), appelle calculateSavings.
+  * `/api/pool/gamification/route.ts` (78 lignes) — GET auth-gated, récupère WaterTest + ActionPlan + PoolProfile, appelle buildGamificationReport (qui consomme aussi calculateSavings pour le score composite du rank).
+  * `savings-widget.tsx` (339 lignes) — Card glassmorphism avec count-up easeOutCubic 1.2s sur le chiffre doré géant (text-gold + drop-shadow), comparaison vsPro/vsAqwelia grid 2 cols, trend bar chart 6 mois, mini stats interventions évitées + temps gagné, badges row (3) avec progress au prochain palier, bouton Partager (gradient gold, shareText pré-rempli 🌊 + montant + CTA Instagram/TikTok), confettis 24 particules CSS au premier load si savings > 0, hapticSuccess.
+  * `gamification-widget.tsx` (221 lignes) — Card glassmorphism avec streak counter (flame icon animée flicker 1.4s scale 1↔1.12 + drop-shadow orange) + rank card (tier traduit + percentile "Top X%"), badges grid 4 cols (8 badges, unlocked coloré avec ✓ badge gold, locked grayscale avec Lock icon), progress bar vers prochain badge, hapticLight sur tap badge, hapticSuccess sur first load si unlockedBadges > 0.
+  * `module-dashboard.tsx` lignes 38-39 (imports) + 937-940 (render): `<div className="grid gap-4 lg:grid-cols-2"><SavingsWidget /><GamificationWidget /></div>` — déjà intégré juste avant RestockWidget + StoriesWidget. ✓
+- Vérifié que `bun run lint` PASS (exit 0, 0 erreur 0 warning) et `bunx tsc --noEmit` PASS (0 erreur src/) AVANT mes modifications.
+- Vérifié le nombre de clés par locale: fr=21 savings + 29 gamification, en=21+29, es/de/it/pt/nl=0+0 → c'est le manque à combler.
+- Lu toutes les clés fr + en pour préparer les traductions manuelles (21 + 29 = 50 clés × 5 locales = 250 traductions à produire).
+
+### 1. Script Python idempotent (`scripts/i18n/translate-savings-gamification.py`, 343 lignes, NOUVEAU)
+
+Pattern repris de `add-lagoon-predict-keys.py` et `add-strip-scan-namespace.py`:
+- 2 dicts `SAVINGS` (21 clés × 7 locales) + `GAMIFICATION` (29 clés × 7 locales) avec traductions manuelles inline FR/EN/ES/DE/IT/PT/NL.
+- Pour chaque locale, charge le JSON, OVERWRITE les namespaces `savings` + `gamification` (ce sont nos namespaces, on les possède), dump `ensure_ascii=False + indent=2 + trailing newline`.
+- Consistency check final: 21 savings + 29 gamification × 7 locales = 50 × 7 = 350 clés. Sort en erreur si un count != référence FR.
+- 100% idempotent: re-run ne change rien une fois les namespaces en place.
+
+### 2. Traductions manuelles (50 clés × 5 nouvelles locales)
+
+Toutes les ICU placeholders ({months}, {amount}, {days}, {best}, {pct}, {unlocked}, {total}) préservés à l'identique. Format monétaire adapté (€ français avec espace insécable vs Anglo-saxon avec virgule). Exemples:
+
+| Key | ES | DE | IT | PT | NL |
+|-----|----|----|----|----|----|
+| savings.title | Control de ahorros | Ersparnis-Tracker | Tracciamento risparmi | Acompanhamento de poupança | Besparings tracker |
+| savings.shareText | 🌊 ¡Ahorré {amount}… | 🌊 Ich habe {amount}… | 🌊 Ho risparmiato {amount}… | 🌊 Poupei {amount}… | 🌊 Ik bespaarde {amount}… |
+| gamification.badgePhMaster | Maestro del pH | pH-Meister | Maestro del pH | Mestre do pH | pH-Meester |
+| gamification.rankLegend | Leyenda AQWELIA | AQWELIA-Legende | Leggenda AQWELIA | Lenda AQWELIA | AQWELIA-Legende |
+
+### 3. Vérifications
+
+- **Lint** (`bun run lint`): PASS, exit 0, 0 erreur, 0 warning. ✓
+- **TypeScript** (`bunx tsc --noEmit`): 0 erreur dans `src/`. ✓
+- **Pre-commit hook i18n** (`python3 scripts/i18n/check-hardcoded-strings.py`): PASS — "✅ Aucune chaîne française codée en dur détectée." ✓ (Les 6 fichiers TS n'ont pas été touchés; les nouveaux keys JSON sont valides.)
+- **JSON i18n** (`python3 -c "import json; [json.load(open(f'src/i18n/locales/{l}.json')) for l in ['fr','en','es','de','it','pt','nl']]"`): OK pour les 7 fichiers. ✓
+- **Consistency check** (intégré au script): 21 savings + 29 gamification × 7 locales = OK. ✓
+
+### 4. Git
+
+- Commit `f987486` "feat(P7-ENGAGE-RETRY): translate savings + gamification i18n keys to es/de/it/pt/nl"
+- 6 fichiers, 718 insertions:
+  - 1 nouveau: `scripts/i18n/translate-savings-gamification.py` (343 lignes)
+  - 5 modifiés JSON: `src/i18n/locales/{es,de,it,pt,nl}.json` (+54 lignes chacun = 50 clés + namespace markers)
+- Push vers `origin/main` (512dac3 → f987486). ✓
+
+### 5. Notes pour suite
+
+- **Persistence badges/savings**: toujours on-the-fly à chaque GET (pas de modèle Prisma `BadgeUnlock`). Voir note P7-ENGAGE originale pour proposition d'ajout (userId, badgeId, unlockedAt).
+- **Savings badges 2000€/5000€**: palier max actuel = 1000€. Pour utilisateurs multi-saisons (>24 mois), ajouter paliers supérieurs (👑👑 / 💎).
+- **Streak freeze**: 1-day grace window actuel. Pourrait ajouter un "streak freeze" consommable (1/mois).
+- **Tests E2E**: pas couverts. Playwright pourrait tester: (1) dashboard → SavingsWidget visible avec count-up animation, (2) clic Partager → share sheet (ou clipboard copy), (3) GamificationWidget visible avec badges grid, (4) tap badge → haptic feedback (native only), (5) mobile viewport → widgets stacked, (6) changement de locale (es/de/it/pt/nl) → texte traduit correctement.
+- **Autres namespaces manquants?**: ce retry a couvert uniquement `savings` + `gamification` (le scope du task). Si d'autres namespaces (restock, stories, climate, iot, family) manquent aussi dans les 5 locales non-EN/FR, ils devront être traités par leurs propres agents/scripts.
+
+Stage Summary:
+- **i18n retry livré**: 50 clés (21 savings + 29 gamification) × 5 locales (es/de/it/pt/nl) = 250 nouvelles traductions manuelles via script Python idempotent `translate-savings-gamification.py`. Le script couvre aussi fr + en (référence) pour rester reproductible.
+- **0 modification aux fichiers TS existants** (savings-calculator.ts, gamification.ts, /api/pool/savings, /api/pool/gamification, savings-widget.tsx, gamification-widget.tsx, module-dashboard.tsx) — déjà en place et fonctionnels depuis le commit `512dac3`.
+- **Lint PASS** (0/0), **TypeScript PASS** (0 erreur src/), **pre-commit i18n PASS** (0 chaîne française en dur), **JSON valide** pour les 7 locales, **push OK** (f987486 sur origin/main).
+- **DA respectée**: idempotent (overwrite namespaces qu'on possède), ICU placeholders préservés, format monétaire localisé, 0 chaîne française codée en dur.
+
