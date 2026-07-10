@@ -58,6 +58,9 @@ const PROTECTED_PATTERNS = [
   /^\/api\/analytics\//,
   /^\/api\/account\//,
   /^\/api\/stripe\//,
+  // AQWELIA Growth OS — dashboard + agents (public lead capture POST is OK)
+  /^\/api\/growth\/dashboard\//,
+  /^\/api\/growth\/agents\//,
 ]
 
 const authMiddleware = withAuth(

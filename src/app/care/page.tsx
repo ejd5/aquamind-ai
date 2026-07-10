@@ -34,6 +34,7 @@ import {
   Cpu,
 } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
+import { db } from '@/lib/db'
 import { NotifyForm } from './notify-form'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -46,6 +47,39 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function CarePage() {
   const t = await getTranslations('care')
+
+  // Pull a real catalog preview from the DB (3 newest active products per
+  // green/orange category). Falls back to an empty array on error so the page
+  // still renders even if the DB is uninitialised.
+  let catalogPreview: Array<{
+    id: string
+    sku: string
+    name: string
+    price: number
+    currency: string
+    unit: string
+    imageUrl: string | null
+    category: string
+  }> = []
+  try {
+    catalogPreview = await db.product.findMany({
+      where: { active: true, category: { in: ['green', 'orange'] } },
+      orderBy: [{ category: 'asc' }, { name: 'asc' }],
+      take: 6,
+      select: {
+        id: true,
+        sku: true,
+        name: true,
+        price: true,
+        currency: true,
+        unit: true,
+        imageUrl: true,
+        category: true,
+      },
+    })
+  } catch (err) {
+    console.error('[care/page] catalog preview failed:', err)
+  }
 
   const STEPS = [
     {
@@ -295,6 +329,81 @@ export default async function CarePage() {
           </div>
         </div>
       </section>
+
+      {/* ===== Catalog preview ===== */}
+      {catalogPreview.length > 0 && (
+        <section className="relative py-20 sm:py-28">
+          <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-background via-secondary/30 to-background" />
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="mx-auto max-w-3xl text-center">
+              <span className="section-label inline-block">{t('previewEyebrow')}</span>
+              <h2 className="mt-3 font-display text-3xl font-bold leading-tight tracking-tight sm:text-4xl md:text-[2.75rem]">
+                {t('previewTitle')}
+              </h2>
+              <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
+                {t('previewSubtitle')}
+              </p>
+            </div>
+
+            <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {catalogPreview.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/care/produit/${p.sku}`}
+                  className="group relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-md border border-white/40 shadow-[0_18px_40px_-22px_oklch(0.45_0.12_195/0.25)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_55px_-22px_oklch(0.45_0.12_195/0.4)] dark:bg-white/[0.06] dark:border-white/15"
+                >
+                  <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  <div className="aspect-[4/3] w-full bg-gradient-to-br from-secondary/40 to-background">
+                    {p.imageUrl && (
+                      <img
+                        src={p.imageUrl}
+                        alt={p.name}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    )}
+                  </div>
+                  <div className="p-5">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`inline-block h-1.5 w-1.5 rounded-full ${
+                          p.category === 'green'
+                            ? 'bg-emerald-500'
+                            : p.category === 'orange'
+                              ? 'bg-amber-500'
+                              : 'bg-red-500'
+                        }`}
+                      />
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        {p.sku}
+                      </span>
+                    </div>
+                    <h3 className="mt-2 font-display text-base font-bold text-foreground">
+                      {p.name}
+                    </h3>
+                    <div className="mt-3 flex items-baseline gap-1">
+                      <span className="font-display text-lg font-bold text-gold">
+                        {p.price.toFixed(2)} €
+                      </span>
+                      <span className="text-xs text-muted-foreground">/ {p.unit}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            <div className="mt-10 text-center">
+              <Link
+                href="/care/catalogue"
+                className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-background/80 px-5 py-2.5 text-sm font-bold text-foreground transition-colors hover:border-gold hover:text-gold"
+              >
+                {t('previewCta')}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ===== Notify form ===== */}
       <section id="notifier" className="relative py-20 sm:py-28">
