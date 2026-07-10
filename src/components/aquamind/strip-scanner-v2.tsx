@@ -770,7 +770,7 @@ function ResultsStage({
                 {analysis.stripBrand && analysis.stripBrand !== 'unknown' ? analysis.stripBrand : t('brandUnknown')}
               </p>
               <p className="font-display text-sm font-bold">
-                {critCount > 0 ? '⚠️ Action requise' : warnCount > 0 ? '👀 À surveiller' : '✅ Eau équilibrée'}
+                {critCount > 0 ? t('statusActionRequired') : warnCount > 0 ? t('statusWatch') : t('statusBalanced')}
               </p>
               <div className="mt-0.5 flex gap-2 text-[10px]">
                 <span className="text-emerald-500">✓ {okCount}</span>

@@ -41,6 +41,8 @@ SKIP_PATTERNS = [
 MULTILINGUAL_FILES = {
     'src/components/aquamind/module-diagnostic.tsx',
     'src/components/aquamind/diagnostic-action-plan.tsx',
+    'src/app/api/pool/strip-scan/route.ts',
+    'src/components/aquamind/strip-scanner-v2.tsx',
 }
 
 def should_skip(filepath):

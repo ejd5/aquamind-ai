@@ -240,7 +240,7 @@ export function Onboarding({ onDone, addMode, onCancel }: OnboardingProps) {
       if (res.status === 401) {
         toast({
           title: t('errorTitle'),
-          description: 'Vous devez être connecté pour sauvegarder. Redirection...',
+          description: t('authRequiredRedirect'),
           variant: 'destructive',
         })
         if (typeof window !== 'undefined') {
