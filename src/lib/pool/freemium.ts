@@ -1,6 +1,6 @@
 // Freemium logic — plans, limites, gating
-// 3 plans RevenueCat-ready : decouverte / oasis / wellness
-// (anciennement free / premium / expert — voir worklog P1-TARIFS)
+// 4 plans RevenueCat-ready : decouverte / oasis / wellness / spa365
+// (anciennement free / premium / expert — voir worklog P1-TARIFS; spa365 ajouté en P8-B2C)
 //
 // i18n strategy: the French literals stay as legacy fallback, but each Plan
 // also exposes `nameKey`, `taglineKey`, and `featureKeys` (array of translation
@@ -10,7 +10,7 @@
 // Legacy i18n keys (free.*, premium.*, expert.*) are kept in locale files for
 // backward compatibility but are no longer referenced by PLANS.
 
-export type PlanId = 'decouverte' | 'oasis' | 'wellness'
+export type PlanId = 'decouverte' | 'oasis' | 'wellness' | 'spa365'
 
 export interface Plan {
   id: PlanId
@@ -188,6 +188,48 @@ export const PLANS: Plan[] = [
     color: 'primary',
     icon: '🛡️',
   },
+  {
+    id: 'spa365',
+    name: 'Spa 365',
+    nameKey: 'spa365.name',
+    tagline: "Spa uniquement, toute l'année",
+    taglineKey: 'spa365.tagline',
+    price: { week: 2.49, month: 6.99, quarter: 18.99, halfyear: 32.99, year: 49.99 },
+    features: [
+      "1 spa",
+      'Analyses illimitées',
+      'Brome, chlore et oxygène actif',
+      'Vidanges, filtres, canalisations',
+      'Suivi consommation',
+      'Gestion du stock',
+      'Rappels intelligents',
+    ],
+    featureKeys: [
+      'spa365.features.1spa',
+      'spa365.features.unlimitedTests',
+      'spa365.features.treatments',
+      'spa365.features.drainsFilters',
+      'spa365.features.consumption',
+      'spa365.features.stock',
+      'spa365.features.reminders',
+    ],
+    limits: {
+      maxPools: 1,
+      maxSpas: 1,
+      maxPhotoScansPerMonth: 999,
+      maxTestsPerMonth: 999,
+      weatherEnabled: false,
+      smartReminders: true,
+      guidesAccess: 'all',
+      multiPool: false,
+      pdfReport: false,
+      proMode: false,
+      historyDays: 9999,
+      spaSupport: true,
+    },
+    color: 'accent',
+    icon: '♨️',
+  },
 ]
 
 export const DURATIONS = [
@@ -264,9 +306,16 @@ export function canAccess(plan: PlanId, feature: FeatureGate, usage?: { photoSca
         ? { allowed: true }
         : { allowed: false, reason: 'Historique étendu réservé aux plans payants.', reasonKey: 'gates.history_extended', ctaPlan: PLANS[1].id }
     case 'spa_support':
-      return p.limits.spaSupport
-        ? { allowed: true }
-        : { allowed: false, reason: 'Le support des spas est réservé au plan Wellness.', reasonKey: 'gates.spa_support', ctaPlan: PLANS[2].id }
+      // spa365 and wellness both unlock spa features; the CTA points to the
+      // cheapest plan that unlocks the feature — spa365 (PLANS[3]) for users
+      // who only want a spa, wellness (PLANS[2]) for pool+spa owners.
+      if (p.limits.spaSupport) return { allowed: true }
+      return {
+        allowed: false,
+        reason: 'Le support des spas est réservé aux plans Wellness et Spa 365.',
+        reasonKey: 'gates.spa_support',
+        ctaPlan: PLANS[3].id,
+      }
     default:
       return { allowed: true }
   }

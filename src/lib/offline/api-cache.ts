@@ -35,6 +35,8 @@ export const CACHE_TTL = {
   equipment: 60 * 60 * 1000, // 1 hour
   inventory: 60 * 60 * 1000, // 1 hour
   subscription: 60 * 60 * 1000, // 1 hour
+  winterGuardian: 30 * 60 * 1000, // 30 min — weather-driven, refresh 2x/hour
+  annualReview: 60 * 60 * 1000, // 1 hour — recomputed from history, slow-moving
 } as const
 
 export type CacheTtlKey = keyof typeof CACHE_TTL

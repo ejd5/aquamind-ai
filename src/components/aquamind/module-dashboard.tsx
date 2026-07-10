@@ -38,6 +38,8 @@ import { StoriesWidget } from './stories-widget'
 import { SavingsWidget } from './savings-widget'
 import { GamificationWidget } from './gamification-widget'
 import { PredictionsWidget } from './predictions-widget'
+import { WinterGuardianWidget } from './winter-guardian-widget'
+import { AnnualReviewWidget } from './annual-review-widget'
 
 interface DashboardData {
   profile: any
@@ -945,6 +947,12 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
         <div className="flex flex-col gap-3">
           <StoriesWidget limit={6} />
         </div>
+      </div>
+
+      {/* Winter Guardian + Annual Review */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <WinterGuardianWidget activePoolId={activePoolId} onAskAssistant={onAskAssistant} />
+        <AnnualReviewWidget activePoolId={activePoolId} />
       </div>
 
       {/* Secondary stats */}
