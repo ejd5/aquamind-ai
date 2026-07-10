@@ -61,6 +61,11 @@ const STATIC_ENTRIES: SitemapEntry[] = [
 
   // ── Pro hub (/pro) ────────────────────────────────────────────────────
   { path: '/pro', changeFrequency: 'weekly', priority: 0.9 },
+  { path: '/pro/fonctionnalites', changeFrequency: 'monthly', priority: 0.8 },
+  { path: '/pro/tarifs', changeFrequency: 'monthly', priority: 0.9 },
+  { path: '/pro/solo', changeFrequency: 'monthly', priority: 0.7 },
+  { path: '/pro/team', changeFrequency: 'monthly', priority: 0.7 },
+  { path: '/pro/fleet', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/pro/early-access', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/pro/demo', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/pro/faq', changeFrequency: 'monthly', priority: 0.6 },
@@ -68,6 +73,7 @@ const STATIC_ENTRIES: SitemapEntry[] = [
   // ── Care hub (/care) ──────────────────────────────────────────────────
   { path: '/care', changeFrequency: 'weekly', priority: 0.8 },
   { path: '/care/catalogue', changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/care/recommandations', changeFrequency: 'monthly', priority: 0.6 },
 
   // ── Business hub (placeholders for future phases) ─────────────────────
   { path: '/business', changeFrequency: 'monthly', priority: 0.6 },
@@ -94,6 +100,13 @@ const STATIC_ENTRIES: SitemapEntry[] = [
   { path: '/legal/support', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/legal/accessibilite', changeFrequency: 'monthly', priority: 0.3 },
   { path: '/legal/securite', changeFrequency: 'monthly', priority: 0.3 },
+
+  // ── RGPD data management (standalone, complements /legal/privacy) ─────
+  { path: '/gestion-donnees', changeFrequency: 'monthly', priority: 0.5 },
+
+  // NOTE: /mentions-legales, /confidentialite, /conditions-utilisation are
+  // legacy redirects (308 → /legal/cgu or /legal/privacy). They are NOT
+  // listed here because the sitemap must point to canonical URLs only.
 ]
 
 /**
