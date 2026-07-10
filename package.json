@@ -21,7 +21,9 @@
     "mobile:add:android": "npx cap add android",
     "mobile:clean": "rm -rf out .next && next build -c next.config.mobile.ts && npx cap sync",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "typecheck:tools": "tsc --noEmit --project tsconfig.tools.json"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.0",
