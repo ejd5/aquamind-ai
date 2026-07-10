@@ -6,10 +6,16 @@
  *     `getRequestConfig` in `src/i18n/request.ts` can read it via `requestLocale`.
  *  2. NextAuth authentication — protects business API routes by requiring a
  *     valid JWT session.
+ *
+ * IMPORTANT: For API routes we return a 401 JSON response instead of redirecting
+ * to /auth/signin. A 307 redirect on a fetch() delivers the signin page HTML,
+ * which breaks client-side JSON parsing and leaves the user "stuck" on the
+ * loading/onboarding screen. The client is expected to detect the 401 and
+ * trigger the signin flow explicitly.
  */
-import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 import { locales, defaultLocale, normalizeLocale } from '@/i18n/config'
 
 /**
@@ -60,15 +66,6 @@ const PROTECTED_PATTERNS = [
   /^\/api\/stripe\//,
 ]
 
-const authMiddleware = withAuth(
-  function middleware(req: NextRequest) {
-    return NextResponse.next()
-  },
-  {
-    pages: { signIn: '/auth/signin' },
-  }
-)
-
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
@@ -98,10 +95,21 @@ export default async function middleware(req: NextRequest) {
   res.headers.set('accept-language', detected)
 
   // --- Auth protection (runs only on protected API routes) ---
+  // For API routes: return 401 JSON (NOT a redirect) so client-side fetch()
+  // can cleanly detect "not authenticated" and trigger the signin flow.
+  // A 307 redirect would deliver the signin page HTML, breaking JSON parsing.
   const isProtected = PROTECTED_PATTERNS.some((p) => p.test(pathname))
   if (isProtected) {
-    // Delegate to withAuth for session check
-    return authMiddleware(req as any)
+    const token = await getToken({
+      req,
+      secret: process.env.NEXTAUTH_SECRET,
+    })
+    if (!token) {
+      return NextResponse.json(
+        { error: 'unauthorized', authenticated: false },
+        { status: 401 }
+      )
+    }
   }
 
   return res
@@ -109,6 +117,6 @@ export default async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|icon.png|icon-aqwelia-48.png|apple-touch-icon.png|robots.txt|.*\\..*).*)',
+    '/((?!_next/static|_next/image|favicon.ico|icon.png|icon-aqwelia-48.png|apple-touch-icon.png|robots.txt|api/auth|.*\\..*).*)',
   ],
 }

@@ -21,6 +21,11 @@ import { verifyPassword } from '@/lib/password'
 export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt', maxAge: 30 * 24 * 60 * 60 }, // 30 jours
   jwt: { maxAge: 30 * 24 * 60 * 60 },
+  // CRITICAL for sandbox/preview: trust the X-Forwarded-Host / X-Forwarded-Proto
+  // headers set by the Caddy gateway so NextAuth computes the correct base URL
+  // (cookies, CSRF origin, OAuth callbacks) when accessed through the proxy on
+  // port 81 instead of the direct Next.js port 3000.
+  trustHost: true,
   providers: [
     CredentialsProvider({
       name: 'Credentials',

@@ -1,11 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { useTranslations } from 'next-intl'
 import { LandingPage } from '@/components/landing/landing-page'
-import { AppShell } from '@/components/aquamind/app-shell'
-import { MobileAppShell } from '@/components/mobile/mobile-app-shell'
 import { isMobile, isNative } from '@/lib/platform'
+
+// Dynamic imports: AppShell and MobileAppShell are heavy components
+// (full dashboard with many features). Loading them lazily avoids
+// compiling them on the initial page load, which reduces memory
+// pressure in memory-constrained environments (sandbox/preview).
+const AppShell = lazy(() =>
+  import('@/components/aquamind/app-shell').then((m) => ({ default: m.AppShell }))
+)
+const MobileAppShell = lazy(() =>
+  import('@/components/mobile/mobile-app-shell').then((m) => ({ default: m.MobileAppShell }))
+)
 
 type View = 'landing' | 'app'
 
@@ -102,19 +111,56 @@ export default function Home() {
 
   // Native app (Capacitor) → always MobileAppShell, no landing
   if (native) {
-    return <MobileAppShell onBackToLanding={backToLanding} />
+    return (
+      <Suspense fallback={<LoadingSplash t={t} />}>
+        <MobileAppShell onBackToLanding={backToLanding} />
+      </Suspense>
+    )
   }
 
   // Mobile browser + app view → MobileAppShell
   if (mobile && view === 'app') {
-    return <MobileAppShell onBackToLanding={backToLanding} />
+    return (
+      <Suspense fallback={<LoadingSplash t={t} />}>
+        <MobileAppShell onBackToLanding={backToLanding} />
+      </Suspense>
+    )
   }
 
   // Desktop + app view → desktop AppShell
   if (view === 'app') {
-    return <AppShell onBackToLanding={backToLanding} />
+    return (
+      <Suspense fallback={<LoadingSplash t={t} />}>
+        <AppShell onBackToLanding={backToLanding} />
+      </Suspense>
+    )
   }
 
   // Default: landing page (desktop or mobile browser)
   return <LandingPage hasProfile={hasProfile} onEnterApp={enterApp} />
+}
+
+function LoadingSplash({ t }: { t: (k: string) => string }) {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background">
+      <div className="relative">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-gold shadow-lg shadow-primary/30">
+          <svg
+            className="h-6 w-6 animate-pulse text-primary-foreground"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
+            <path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
+            <path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
+          </svg>
+        </div>
+      </div>
+      <p className="text-sm text-muted-foreground">{t('loading')}</p>
+    </div>
+  )
 }

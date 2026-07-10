@@ -3084,3 +3084,36 @@ Stage Summary:
 - 60 hardcoded French API strings → 0 violations: 13 previously-unwrapped strings now wrapped in `translate()`; 5 redundant double-translate call sites cleaned up to single calls; 2 const-fallback strings inlined; 2 `locale` undefined bugs fixed (stripe/portal + subscription GET).
 - The i18n check script's regex was extended to accept French strings used as the 3rd (fallback) argument of `translate(locale, key, fallback)`, both inline and across multi-line calls. This unblocks the `translate(locale, key, 'French fallback')` pattern that the predecessor task 4-final had already started using.
 - Lint: PASS. TypeScript: PASS for all modified files. i18n check: PASS (0 violations, exit 0).
+
+---
+Task ID: AUTH-FIX-002
+Agent: main
+Task: Fix site/app completely down since last night - sandbox was reset
+
+Work Log:
+- Diagnosed: sandbox was reset to earlier state, losing all previous fixes
+- Found: no database file (db/ folder missing)
+- Found: prisma schema was on postgresql but .env has SQLite URL
+- Found: no NEXTAUTH_SECRET in .env
+- Found: no AUTH_TRUST_HOST in .env
+- Found: middleware using withAuth (redirecting to signin HTML instead of 401 JSON)
+- Found: auth.ts missing trustHost:true
+- Fixed prisma/schema.prisma: changed provider from postgresql to sqlite
+- Created db/ directory and ran `bun run db:push` to create SQLite database
+- Created admin user (admin@aqwelia.app / aqwelia-admin-2026) with scrypt password hash
+- Updated .env: added NEXTAUTH_SECRET and AUTH_TRUST_HOST=true
+- Updated src/lib/auth.ts: added trustHost:true to authOptions
+- Rewrote src/middleware.ts: return 401 JSON for protected API routes (no redirect)
+- Updated package.json: added NODE_OPTIONS='--max-old-space-size=2048' to dev script
+- Updated src/app/page.tsx: lazy imports for AppShell and MobileAppShell (reduce memory)
+- Created start-dev.sh watchdog script that auto-restarts server if it dies (OOM)
+- Verified: CSRF → login → session → 401 JSON all work correctly
+- Verified: no NextAuth warnings in dev.log
+- Verified: server stable after 15s (watchdog keeps it alive)
+
+Stage Summary:
+- Root cause: sandbox reset wiped all previous fixes + database
+- All auth fixes re-applied and verified working
+- Server running with watchdog (auto-restart on OOM kill)
+- Admin credentials: admin@aqwelia.app / aqwelia-admin-2026
+- Key files changed: prisma/schema.prisma, .env, src/lib/auth.ts, src/middleware.ts, src/app/page.tsx, package.json, start-dev.sh
