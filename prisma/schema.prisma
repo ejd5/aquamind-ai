@@ -337,6 +337,9 @@ model Subscription {
   currentPeriodEnd      DateTime?
   stripeCustomerId      String?
   stripeSubscriptionId  String?
+  // P0-B: out-of-order event protection
+  lastProviderEventId   String?   // eventId of the last provider event applied
+  lastProviderEventAt   DateTime? // effective date of that event (provider timestamp)
   active                Boolean   @default(false) // legacy — derived from status
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

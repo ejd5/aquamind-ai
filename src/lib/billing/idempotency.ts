@@ -1,41 +1,95 @@
 /**
- * AQWELIA — Billing event idempotency helper.
+ * AQWELIA — Atomic billing event idempotency (P0-B fix).
  *
- * Ensures each webhook event is processed exactly once.
- * Uses the BillingEvent Prisma model with a unique constraint on `eventId`.
+ * Pattern: INSERT-first (atomic reservation), then process.
+ *
+ * 1. ATTEMPT INSERT into BillingEvent with result='processing'
+ *    - If unique constraint fails → event already processed → skip
+ * 2. Execute handler (business logic)
+ * 3. UPDATE BillingEvent to 'processed' or 'failed'
+ *
+ * This is atomic because the INSERT + unique constraint is a single DB operation.
+ * Two concurrent requests cannot both pass step 1.
  */
 
 import { db } from '@/lib/db'
 
-/**
- * Check if a billing event has already been processed.
- * Returns true if the event exists in the BillingEvent table.
- */
-export async function isEventProcessed(
-  source: 'stripe' | 'revenuecat',
-  eventId: string
-): Promise<boolean> {
-  const existing = await db.billingEvent.findUnique({
-    where: { eventId },
-    select: { id: true },
-  })
-  return !!existing
-}
+export type EventSource = 'stripe' | 'revenuecat'
+export type EventResult = 'processing' | 'processed' | 'failed' | 'ignored'
 
-/**
- * Record a processed billing event.
- * If the eventId already exists (race condition), the unique constraint
- * will throw — the caller should catch and treat as idempotent success.
- */
-export async function recordBillingEvent(params: {
+export interface ProcessEventParams {
   eventId: string
-  source: 'stripe' | 'revenuecat'
+  source: EventSource
   eventType: string
   userId?: string
   payload: string
-  result: 'success' | 'error' | 'ignored'
-  errorMessage?: string
-}): Promise<void> {
+  handler: () => Promise<void>
+}
+
+export interface ProcessEventResult {
+  skipped: boolean
+  error?: string
+}
+
+/**
+ * Generate a deterministic SHA-256 fingerprint when no stable event ID is provided.
+ * Uses stable fields from the event to create a unique identifier.
+ */
+export async function generateEventFingerprint(
+  source: EventSource,
+  eventType: string,
+  stableFields: Record<string, unknown>
+): Promise<string> {
+  const crypto = await import('crypto')
+  const data = JSON.stringify({ source, eventType, ...stableFields })
+  return `${source}_${crypto.createHash('sha256').update(data).digest('hex').slice(0, 32)}`
+}
+
+/**
+ * Redact sensitive data from payload before storing.
+ * Removes: card numbers, CVCs, bank accounts, API keys, tokens.
+ */
+export function redactPayload(payload: string): string {
+  try {
+    const data = JSON.parse(payload)
+    const redacted = JSON.parse(JSON.stringify(data), (key, value) => {
+      const lower = key.toLowerCase()
+      if (
+        lower.includes('card') && lower.includes('number') ||
+        lower === 'cvc' || lower === 'cvv' ||
+        lower.includes('bank_account') ||
+        lower.includes('api_key') || lower.includes('secret') ||
+        lower.includes('token') && !lower.includes('event_token')
+      ) {
+        return '[REDACTED]'
+      }
+      return value
+    })
+    return JSON.stringify(redacted).slice(0, 10000)
+  } catch {
+    // If not JSON, return as-is but capped
+    return payload.slice(0, 10000)
+  }
+}
+
+/**
+ * Process a webhook event with ATOMIC idempotency.
+ *
+ * Flow:
+ *   1. INSERT BillingEvent with result='processing' (atomic reservation)
+ *      → If unique constraint (P2002) → already processed → return { skipped: true }
+ *   2. Execute handler
+ *   3. UPDATE BillingEvent to 'processed' or 'failed'
+ *
+ * This prevents the race condition where two concurrent requests
+ * both pass the check-then-act pattern.
+ */
+export async function processEventIdempotently(
+  params: ProcessEventParams
+): Promise<ProcessEventResult> {
+  const redactedPayload = redactPayload(params.payload)
+
+  // 1. ATOMIC RESERVATION: insert with 'processing' status
   try {
     await db.billingEvent.create({
       data: {
@@ -43,83 +97,56 @@ export async function recordBillingEvent(params: {
         source: params.source,
         eventType: params.eventType,
         userId: params.userId || null,
-        payload: params.payload.slice(0, 10000), // Cap at 10KB to avoid DB bloat
-        result: params.result,
-        errorMessage: params.errorMessage || null,
+        payload: redactedPayload,
+        result: 'processing',
       },
     })
   } catch (err: any) {
-    // If it's a unique constraint violation, the event was already processed
-    // by a concurrent request — this is expected (idempotent).
+    // P2002 = unique constraint violation = event already being processed or done
     if (err?.code === 'P2002') {
-      throw new Error('DUPLICATE_EVENT')
+      return { skipped: true }
     }
     throw err
   }
-}
 
-/**
- * Safely process a webhook event with idempotency.
- *
- * 1. Check if the event was already processed → return early.
- * 2. Execute the handler.
- * 3. Record the result in BillingEvent.
- * 4. If the handler throws, record the error and re-throw.
- *
- * If a duplicate event arrives (same eventId), it is silently ignored
- * (returns { skipped: true }).
- */
-export async function processEventIdempotently(params: {
-  eventId: string
-  source: 'stripe' | 'revenuecat'
-  eventType: string
-  userId?: string
-  payload: string
-  handler: () => Promise<void>
-}): Promise<{ skipped: boolean; error?: string }> {
-  // 1. Idempotency check
-  const alreadyProcessed = await isEventProcessed(params.source, params.eventId)
-  if (alreadyProcessed) {
-    return { skipped: true }
-  }
-
-  // 2. Execute handler
+  // 2. EXECUTE HANDLER
   try {
     await params.handler()
 
-    // 3. Record success
-    await recordBillingEvent({
-      eventId: params.eventId,
-      source: params.source,
-      eventType: params.eventType,
-      userId: params.userId,
-      payload: params.payload,
-      result: 'success',
+    // 3a. Mark as processed
+    await db.billingEvent.updateMany({
+      where: { eventId: params.eventId },
+      data: { result: 'processed' },
     })
 
     return { skipped: false }
   } catch (err: any) {
-    // Check if it's a duplicate (race condition)
-    if (err?.message === 'DUPLICATE_EVENT') {
-      return { skipped: true }
-    }
-
-    // 4. Record error
     const errorMessage = err instanceof Error ? err.message : String(err)
-    try {
-      await recordBillingEvent({
-        eventId: params.eventId,
-        source: params.source,
-        eventType: params.eventType,
-        userId: params.userId,
-        payload: params.payload,
-        result: 'error',
+
+    // 3b. Mark as failed
+    await db.billingEvent.updateMany({
+      where: { eventId: params.eventId },
+      data: {
+        result: 'failed',
         errorMessage: errorMessage.slice(0, 500),
-      })
-    } catch {
-      // If recording the error also fails (e.g. duplicate), ignore.
-    }
+      },
+    })
 
     return { skipped: false, error: errorMessage }
   }
+}
+
+/**
+ * Check if an event has already been fully processed.
+ * Used for debugging/monitoring.
+ */
+export async function getEventStatus(
+  source: EventSource,
+  eventId: string
+): Promise<EventResult | null> {
+  const event = await db.billingEvent.findUnique({
+    where: { eventId },
+    select: { result: true },
+  })
+  return event?.result as EventResult | null
 }
