@@ -1233,7 +1233,8 @@
     "defaultProfileCreatedTitle": "Profil par défaut créé",
     "defaultProfileCreatedDesc": "Vous pourrez le modifier plus tard.",
     "cannotCreateDefault": "Impossible de créer le profil par défaut",
-    "bottomNote": "Vos données restent sur votre appareil. Vous pourrez tout modifier plus tard."
+    "bottomNote": "Vos données restent sur votre appareil. Vous pourrez tout modifier plus tard.",
+    "authRequiredRedirect": "Vous devez être connecté pour sauvegarder. Redirection..."
   },
   "settings": {
     "title": "Paramètres et confidentialité",
@@ -5171,7 +5172,10 @@
     "savedFromDiagnosticDesc": "Le test d'eau a été enregistré avec les valeurs scannées.",
     "scanAnother": "Scanner une autre bandelette",
     "diagnosticStripCta": "Scanner ma bandelette",
-    "diagnosticStripCtaDesc": "L'IA lit les pads couleur de votre bandelette et remplit automatiquement les valeurs du test d'eau."
+    "diagnosticStripCtaDesc": "L'IA lit les pads couleur de votre bandelette et remplit automatiquement les valeurs du test d'eau.",
+    "statusActionRequired": "⚠️ Action requise",
+    "statusWatch": "👀 À surveiller",
+    "statusBalanced": "✅ Eau équilibrée"
   },
   "gates": {
     "photo_scan_limit": "Limite de {n} scans/mois atteinte. Passez à un plan supérieur pour continuer."
