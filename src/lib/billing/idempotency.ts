@@ -105,64 +105,41 @@ export async function processEventIdempotently(
   } catch (err: any) {
     if (err?.code !== 'P2002') throw err
 
-    // Event already exists — check its state
-    const existing = await db.billingEvent.findUnique({
-      where: { source_eventId: { source: params.source, eventId: params.eventId } },
+    // Event already exists — ATOMIC compare-and-swap to reclaim
+    // Use conditional updateMany so only ONE concurrent request can reclaim
+    const nowMs = now.getTime()
+    const leaseExpiry = new Date(nowMs - PROCESSING_LEASE_MS)
+
+    // Try to reclaim: either failed with nextRetryAt <= now, or processing with expired lease
+    const reclaim = await db.billingEvent.updateMany({
+      where: {
+        source: params.source,
+        eventId: params.eventId,
+        OR: [
+          // Failed event with nextRetryAt in the past
+          {
+            result: 'failed',
+            attemptCount: { lt: MAX_RETRIES },
+            nextRetryAt: { lte: now },
+          },
+          // Processing event with expired lease
+          {
+            result: 'processing',
+            processingStartedAt: { lt: leaseExpiry },
+            attemptCount: { lt: MAX_RETRIES },
+          },
+        ],
+      },
+      data: {
+        result: 'processing',
+        attemptCount: { increment: 1 },
+        processingStartedAt: now,
+        nextRetryAt: null,
+      },
     })
 
-    if (!existing) {
-      // Shouldn't happen, but handle gracefully
-      return { skipped: true }
-    }
-
-    // Already processed → skip
-    if (existing.result === 'processed' || existing.result === 'ignored') {
-      return { skipped: true }
-    }
-
-    // Processing but lease expired → reclaim
-    if (existing.result === 'processing' && existing.processingStartedAt) {
-      const leaseExpiry = new Date(existing.processingStartedAt.getTime() + PROCESSING_LEASE_MS)
-      if (now < leaseExpiry) {
-        // Lease still active — skip
-        return { skipped: true }
-      }
-      // Lease expired — reclaim with incremented attemptCount
-      if (existing.attemptCount >= MAX_RETRIES) {
-        // Too many retries — mark as failed permanently
-        await db.billingEvent.update({
-          where: { id: existing.id },
-          data: {
-            result: 'failed',
-            errorMessage: 'Max retries exceeded',
-            processingStartedAt: null,
-          },
-        })
-        return { skipped: true }
-      }
-      // Reclaim
-      await db.billingEvent.update({
-        where: { id: existing.id },
-        data: {
-          result: 'processing',
-          attemptCount: { increment: 1 },
-          processingStartedAt: now,
-        },
-      })
-    }
-
-    // Failed and retries available → retry
-    if (existing.result === 'failed' && existing.attemptCount < MAX_RETRIES) {
-      await db.billingEvent.update({
-        where: { id: existing.id },
-        data: {
-          result: 'processing',
-          attemptCount: { increment: 1 },
-          processingStartedAt: now,
-        },
-      })
-    } else if (existing.result === 'failed') {
-      // Max retries exceeded — skip
+    if (reclaim.count === 0) {
+      // Could not reclaim — either already processed, lease active, or max retries
       return { skipped: true }
     }
   }

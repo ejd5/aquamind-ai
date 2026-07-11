@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { assessWeather, wttrCodeToFr, isStormCode, type WeatherData } from '@/lib/pool/weather-engine'
 import { getClimateMode, getSeason } from '@/lib/pool/climate-engine'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { requireFeatureAccess } from '@/lib/billing/gate'
 
 export const runtime = 'nodejs'
 
@@ -103,6 +104,10 @@ async function fetchWeather(query: string): Promise<WeatherData | null> {
 }
 
 export async function GET(req: NextRequest) {
+  // P0-B: Feature gate — Weather advanced data
+  const gate = await requireFeatureAccess(req, 'weather_advanced')
+  if (gate.denied) return gate.response!
+
   const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {

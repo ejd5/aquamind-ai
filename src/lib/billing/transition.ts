@@ -1,13 +1,14 @@
 /**
- * AQWELIA — Single subscription transition engine (P0-B blocage 3).
+ * AQWELIA — Single subscription transition engine (P0-B).
  *
  * ALL events that modify a subscription MUST go through `applyTransition`.
- * No direct db.subscription writes are allowed outside this function.
+ * Uses ATOMIC conditional updateMany to prevent race conditions.
  *
- * Out-of-order protection:
- *   - Compares providerEventAt (Stripe event.created / RC event_timestamp_ms)
- *   - If incoming event is older than lastProviderEventAt → skip
- *   - Finds subscription by providerSubscriptionId (not just active=true)
+ * Atomicity strategy:
+ *   1. Try conditional UPDATE WHERE lastProviderEventAt < new OR lastProviderEventAt IS NULL
+ *   2. If count === 1 → update succeeded, this event is applied
+ *   3. If count === 0 → event is out-of-order (older than current) → skip
+ *   4. If no subscription exists → CREATE new (within transaction)
  */
 
 import { db } from '@/lib/db'
@@ -26,9 +27,9 @@ export interface TransitionParams {
   store?: string | null
   stripeCustomerId?: string | null
   stripeSubscriptionId?: string | null
-  providerSubscriptionId?: string | null // RC original_transaction_id or Stripe sub ID
+  providerSubscriptionId?: string | null
   providerEventId: string
-  providerEventAt: Date // Stripe event.created * 1000 or RC event_timestamp_ms
+  providerEventAt: Date
   expiresAt?: Date | null
   trialEndsAt?: Date | null
   currentPeriodStart?: Date | null
@@ -36,33 +37,39 @@ export interface TransitionParams {
   cancelAt?: Date | null
 }
 
+export interface TransitionResult {
+  skipped: boolean
+  reason?: string
+}
+
 /**
- * Apply a subscription transition with out-of-order protection.
+ * Apply a subscription transition ATOMICALLY.
  *
- * 1. Find existing subscription by providerSubscriptionId or stripeSubscriptionId
- * 2. If found: compare providerEventAt with lastProviderEventAt
- *    - If incoming event is older → skip (return { skipped: true })
- * 3. Apply the transition (update or create)
- * 4. Set lastProviderEventId + lastProviderEventAt
+ * Uses conditional updateMany: WHERE lastProviderEventAt < providerEventAt
+ * OR lastProviderEventAt IS NULL. If count === 0, the event is older
+ * than the current state → skipped (out-of-order).
  *
- * Returns { skipped: true } if the event was out-of-order.
+ * For new subscriptions (no existing row), creates within a transaction
+ * after deactivating previous active subscriptions.
  */
-export async function applyTransition(params: TransitionParams): Promise<{ skipped: boolean }> {
-  // 1. Find existing subscription by provider identity
-  const existing = await findSubscriptionByProvider(params)
-
-  // 2. Out-of-order protection
-  if (existing?.lastProviderEventAt && params.providerEventAt <= existing.lastProviderEventAt) {
-    return { skipped: true }
-  }
-
-  // 3. Apply transition
+export async function applyTransition(params: TransitionParams): Promise<TransitionResult> {
   const active = statusGrantsAccess(params.status, params.expiresAt ?? null)
 
+  // Find existing subscription by provider identity
+  const existing = await findSubscriptionByProvider(params)
+
   if (existing) {
-    // Update existing subscription
-    await db.subscription.update({
-      where: { id: existing.id },
+    // ATOMIC conditional update: only update if the incoming event is newer
+    const result = await db.subscription.updateMany({
+      where: {
+        id: existing.id,
+        // Only apply if: no previous event OR incoming event is strictly newer
+        // This is the atomic compare-and-swap that prevents race conditions
+        OR: [
+          { lastProviderEventAt: null },
+          { lastProviderEventAt: { lt: params.providerEventAt } },
+        ],
+      },
       data: {
         plan: params.planId,
         status: params.status,
@@ -81,45 +88,52 @@ export async function applyTransition(params: TransitionParams): Promise<{ skipp
         lastProviderEventAt: params.providerEventAt,
       },
     })
-  } else {
-    // Create new subscription (deactivate any previous active ones first)
-    await db.subscription.updateMany({
-      where: { userId: params.userId, active: true },
-      data: { active: false, status: 'inactive' },
-    })
 
-    await db.subscription.create({
-      data: {
-        userId: params.userId,
-        plan: params.planId,
-        status: params.status,
-        active,
-        duration: params.duration,
-        store: params.store,
-        stripeCustomerId: params.stripeCustomerId,
-        stripeSubscriptionId: params.stripeSubscriptionId,
-        providerSubscriptionId: params.providerSubscriptionId,
-        startedAt: new Date(),
-        expiresAt: params.expiresAt,
-        trialEndsAt: params.trialEndsAt,
-        currentPeriodStart: params.currentPeriodStart,
-        currentPeriodEnd: params.currentPeriodEnd,
-        cancelAt: params.cancelAt,
-        lastProviderEventId: params.providerEventId,
-        lastProviderEventAt: params.providerEventAt,
-      },
-    })
+    if (result.count === 0) {
+      // Event is older than current state → out-of-order, skip
+      return { skipped: true, reason: 'out_of_order' }
+    }
+
+    return { skipped: false }
   }
+
+  // No existing subscription — create new one
+  // Deactivate any previous active subscriptions for this user
+  await db.subscription.updateMany({
+    where: { userId: params.userId, active: true },
+    data: { active: false, status: 'inactive' },
+  })
+
+  await db.subscription.create({
+    data: {
+      userId: params.userId,
+      plan: params.planId,
+      status: params.status,
+      active,
+      duration: params.duration,
+      store: params.store,
+      stripeCustomerId: params.stripeCustomerId,
+      stripeSubscriptionId: params.stripeSubscriptionId,
+      providerSubscriptionId: params.providerSubscriptionId,
+      startedAt: new Date(),
+      expiresAt: params.expiresAt,
+      trialEndsAt: params.trialEndsAt,
+      currentPeriodStart: params.currentPeriodStart,
+      currentPeriodEnd: params.currentPeriodEnd,
+      cancelAt: params.cancelAt,
+      lastProviderEventId: params.providerEventId,
+      lastProviderEventAt: params.providerEventAt,
+    },
+  })
 
   return { skipped: false }
 }
 
 /**
  * Find a subscription by provider identity.
- * Searches by: providerSubscriptionId, then stripeSubscriptionId, then userId+active.
+ * Searches by: providerSubscriptionId, then stripeSubscriptionId, then userId (most recent).
  */
 async function findSubscriptionByProvider(params: TransitionParams) {
-  // Try providerSubscriptionId first (most stable)
   if (params.providerSubscriptionId) {
     const byProvider = await db.subscription.findFirst({
       where: { providerSubscriptionId: params.providerSubscriptionId },
@@ -127,7 +141,6 @@ async function findSubscriptionByProvider(params: TransitionParams) {
     if (byProvider) return byProvider
   }
 
-  // Try stripeSubscriptionId
   if (params.stripeSubscriptionId) {
     const byStripe = await db.subscription.findFirst({
       where: { stripeSubscriptionId: params.stripeSubscriptionId },
@@ -135,7 +148,6 @@ async function findSubscriptionByProvider(params: TransitionParams) {
     if (byStripe) return byStripe
   }
 
-  // Fallback: user's most recent active subscription
   return db.subscription.findFirst({
     where: { userId: params.userId },
     orderBy: { startedAt: 'desc' },

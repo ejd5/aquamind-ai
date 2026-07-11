@@ -48,82 +48,92 @@ async function handleStripeEvent(event: any): Promise<void> {
   switch (event.type) {
     case 'checkout.session.completed': {
       const cs = event.data.object
-      // BLOCAGE 7: verify payment_status
+      // BLOCAGE 5: verify payment_status
       if (cs.payment_status !== 'paid') return
 
       const userId = cs.metadata?.userId || cs.client_reference_id
       if (!userId) return
 
-      // BLOCAGE 7: determine plan from the REAL Price ID
       const stripeSubId = cs.subscription as string | null
-      let priceId = ''
+      if (!stripeSubId) return
 
-      // Try to get price from checkout session line items
-      if (cs.line_items?.data?.[0]?.price?.id) {
-        priceId = cs.line_items.data[0].price.id
-      }
-
-      // If no price in line items, try expanding the subscription
-      if (!priceId && stripeSubId) {
-        try {
-          const stripe = getStripe()
-          const sub = await stripe.subscriptions.retrieve(stripeSubId, {
-            expand: ['items.data.price'],
-          })
-          priceId = sub.items?.data?.[0]?.price?.id || ''
-        } catch { /* ignore — will be caught by price validation below */ }
-      }
-
-      // BLOCAGE 7: reject unknown/empty Price IDs
-      if (!priceId) {
-        console.warn('[stripe.webhook] No Price ID found in checkout session')
+      // BLOCAGE 5: retrieve the REAL Stripe Subscription to get Price ID, status, trial, periods
+      let stripeSub
+      try {
+        const stripe = getStripe()
+        stripeSub = await stripe.subscriptions.retrieve(stripeSubId, {
+          expand: ['items.data.price'],
+        })
+      } catch {
+        // Can't retrieve subscription — don't activate blindly
         return
       }
 
+      // BLOCAGE 5: read Price ID from subscription items (not from metadata)
+      const priceId = stripeSub.items?.data?.[0]?.price?.id || ''
+      if (!priceId) return
+
       const planInfo = getPlanFromStripePriceId(priceId)
       if (!planInfo) {
+        // BLOCAGE 11: unknown Price ID → mark as ignored, don't grant access
         console.warn('[stripe.webhook] Unknown Stripe Price ID:', priceId)
         return
       }
 
-      // BLOCAGE 7: verify metadata.productId matches the real Price ID
-      const metadataProductId = cs.metadata?.productId || ''
-      if (metadataProductId) {
-        const metadataPlan = getPlanFromProductId(metadataProductId)
-        if (metadataPlan !== planInfo.plan) {
-          console.warn('[stripe.webhook] Metadata productId does not match Price ID plan')
-          return
-        }
-      }
-
-      const isTrial = cs.mode === 'subscription' && cs.subscription_details?.status === 'trialing'
+      // BLOCAGE 5: read status, trial_end, current_period from the subscription object
+      const status = mapStripeStatus(stripeSub.status)
+      const trialEndsAt = stripeSub.trial_end ? new Date(stripeSub.trial_end * 1000) : null
+      const currentPeriodStart = stripeSub.current_period_start ? new Date(stripeSub.current_period_start * 1000) : null
+      const currentPeriodEnd = stripeSub.current_period_end ? new Date(stripeSub.current_period_end * 1000) : null
+      const stripeCustomerId = stripeSub.customer as string | null
 
       await applyTransition({
         userId,
         planId: planInfo.plan,
-        status: isTrial ? 'trialing' : 'active',
+        status,
         duration: planInfo.duration,
         store: 'web',
-        stripeCustomerId: cs.customer as string | null,
+        stripeCustomerId,
         stripeSubscriptionId: stripeSubId,
         providerSubscriptionId: stripeSubId,
         providerEventId: event.id,
         providerEventAt,
-        trialEndsAt: cs.subscription_details?.trial_end
-          ? new Date(cs.subscription_details.trial_end * 1000) : null,
-        currentPeriodEnd: cs.expires_at ? new Date(cs.expires_at * 1000) : null,
+        trialEndsAt,
+        currentPeriodStart,
+        currentPeriodEnd,
+        expiresAt: currentPeriodEnd,
       })
       break
     }
 
     case 'customer.subscription.updated': {
       const sub = event.data.object
-      const userId = sub.metadata?.userId
+
+      // BLOCAGE 6: find by stripeSubscriptionId first, don't require metadata.userId
+      const existing = await db.subscription.findFirst({
+        where: { stripeSubscriptionId: sub.id },
+      })
+      const userId = sub.metadata?.userId || existing?.userId
       if (!userId) return
+
+      // BLOCAGE 6: determine plan from sub.items.data[*].price.id
+      const priceId = sub.items?.data?.[0]?.price?.id || ''
+      let planId: PlanId
+      if (priceId) {
+        const planInfo = getPlanFromStripePriceId(priceId)
+        if (!planInfo) {
+          console.warn('[stripe.webhook] Unknown Price ID in subscription.updated:', priceId)
+          return // BLOCAGE 11: don't grant access with unknown price
+        }
+        planId = planInfo.plan
+      } else {
+        // Keep existing plan if we can't determine from price
+        planId = (existing?.plan as PlanId) || 'decouverte'
+      }
 
       await applyTransition({
         userId,
-        planId: (sub.metadata?.plan as PlanId) || 'oasis',
+        planId,
         status: mapStripeStatus(sub.status),
         stripeSubscriptionId: sub.id,
         providerSubscriptionId: sub.id,
@@ -140,14 +150,20 @@ async function handleStripeEvent(event: any): Promise<void> {
 
     case 'customer.subscription.deleted': {
       const sub = event.data.object
-      const userId = sub.metadata?.userId
+
+      // BLOCAGE 6: find by stripeSubscriptionId
+      const existing = await db.subscription.findFirst({
+        where: { stripeSubscriptionId: sub.id },
+      })
+      const userId = sub.metadata?.userId || existing?.userId
       if (!userId) return
 
+      const planId = (existing?.plan as PlanId) || 'decouverte'
       // BLOCAGE 4: distinguish canceled (access until expiry) vs expired (no access)
       const isExpired = sub.ended_at != null
       await applyTransition({
         userId,
-        planId: (sub.metadata?.plan as PlanId) || 'oasis',
+        planId,
         status: isExpired ? 'expired' : 'canceled',
         stripeSubscriptionId: sub.id,
         providerSubscriptionId: sub.id,
@@ -206,12 +222,27 @@ async function handleStripeEvent(event: any): Promise<void> {
     }
 
     case 'charge.refunded': {
+      // BLOCAGE 7: Don't automatically expire on every refund.
+      // Rule: only expire on FULL refund of a subscription charge.
+      // Partial refunds keep the subscription active.
       const charge = event.data.object
       const stripeSubId = charge.metadata?.subscriptionId
       if (!stripeSubId) return
 
+      // Check if this is a full refund
+      const refundedAmount = charge.amount_refunded || 0
+      const totalAmount = charge.amount || 0
+      const isFullRefund = refundedAmount >= totalAmount && totalAmount > 0
+
+      if (!isFullRefund) {
+        // Partial refund — keep subscription active
+        console.log('[stripe.webhook] Partial refund, keeping subscription active')
+        break
+      }
+
+      // Full refund — revoke access
       const sub = await findSubByProvider(stripeSubId, null, null)
-      if (!sub) return
+      if (!sub) break
 
       await applyTransition({
         userId: sub.userId,

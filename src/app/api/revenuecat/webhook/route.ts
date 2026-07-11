@@ -19,7 +19,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import {
   type PlanId, type SubscriptionStatus, type Duration,
-  getPlanFromProductId, PROVIDER_TO_DURATION,
+  getPlanFromProductId, getPlanFromRCProductId, PROVIDER_TO_DURATION,
 } from '@/lib/billing/plans'
 import { processEventIdempotently, generateEventFingerprint } from '@/lib/billing/idempotency'
 import { applyTransition } from '@/lib/billing/transition'
@@ -98,12 +98,19 @@ async function handleRevenueCatEvent(
 ): Promise<void> {
   const eventType = event?.type || event?.event_type || 'UNKNOWN'
   const productId = event?.product_id || ''
-  const planId = getPlanFromProductId(productId) as PlanId
 
   // Ignore non-subscription events (TEST, TRANSFER, etc.)
   const isActivation = RC_ACTIVE_EVENTS.has(eventType)
   const isDeactivation = RC_DEACTIVE_EVENTS.has(eventType)
   if (!isActivation && !isDeactivation) return
+
+  // BLOCAGE 8: use exact RC product mapping
+  const rcProduct = getPlanFromRCProductId(productId)
+  if (!rcProduct && isActivation) {
+    // Unknown product — ignore, don't grant access
+    return
+  }
+  const planId = rcProduct?.plan || getPlanFromProductId(productId) as PlanId
   if (isActivation && planId === 'decouverte') return
 
   // BLOCAGE 1: official field names (milliseconds, not seconds)
@@ -112,10 +119,11 @@ async function handleRevenueCatEvent(
   const originalTransactionId = event?.original_transaction_id || event?.transaction_id || null
   const store = mapRCStore(event?.store)
   const duration = inferDuration(productId)
-  const periodType = event?.period_type
+  const periodType = (event?.period_type || '').toUpperCase()
 
-  // BLOCAGE 1: trial detection via period_type
-  const isTrial = periodType === 'trial'
+  // BLOCAGE 8: normalize period_type with uppercase
+  // TRIAL → trialing, NORMAL → active, INTRO → active, GRACE → grace_period
+  const isTrial = periodType === 'TRIAL'
 
   if (isDeactivation) {
     // BLOCAGE 4: CANCELLATION ≠ EXPIRATION

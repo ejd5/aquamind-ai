@@ -5,10 +5,15 @@ import { db } from '@/lib/db'
 import { generateReminders, getCurrentSeason, type ReminderContext } from '@/lib/pool/reminders'
 import { assessWeather } from '@/lib/pool/weather-engine'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { requireFeatureAccess } from '@/lib/billing/gate'
 
 export const runtime = 'nodejs'
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
+  // P0-B: Feature gate — Smart reminders
+  const gate = await requireFeatureAccess(req, 'smart_reminders')
+  if (gate.denied) return gate.response!
+
   const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {

@@ -4,10 +4,15 @@ import { authOptions } from '@/lib/auth'
 import { GUIDES, CATEGORIES, recommendGuides } from '@/lib/pool/guides-data'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { requireFeatureAccess } from '@/lib/billing/gate'
 
 export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
+  // P0-B: Feature gate — Premium guides
+  const gate = await requireFeatureAccess(req, 'guides_premium')
+  if (gate.denied) return gate.response!
+
   const locale = pickLocale(req)
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')

@@ -106,6 +106,19 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // P0-B: Feature gate — spa_support (block spa creation without Wellness/Spa365)
+    const waterBodyType = body.waterBodyType || 'pool'
+    if (waterBodyType === 'spa' || waterBodyType === 'both') {
+      const spaGate = canAccess(planId, status, 'spa_support', undefined, expiresAt)
+      if (!spaGate.allowed) {
+        const msg = await translate(locale, 'gates.spa_support', 'Support spa requis')
+        return NextResponse.json(
+          { error: msg, code: 'SPA_NOT_SUPPORTED', ctaPlan: spaGate.ctaPlan },
+          { status: 403 }
+        )
+      }
+    }
+
     // Normalise spa fields (onboarding uses long names, schema uses short)
     const spaTempTarget =
       body.spaTempTarget != null

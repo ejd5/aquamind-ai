@@ -512,6 +512,48 @@ export function getPlanFromProductId(productId: string): PlanId {
   return 'decouverte'
 }
 
+// ─── RevenueCat exact product mapping ────────────────────────────────────────
+// Maps exact RC product IDs to (planId, duration).
+// Convention: aqwelia_<plan>_<duration>
+//   plan: oasis | wellness | spa365
+//   duration: weekly | monthly | seasonal | yearly
+const RC_PRODUCT_MAP: Record<string, { plan: PlanId; duration: Duration }> = {
+  'aqwelia_oasis_weekly':     { plan: 'oasis',    duration: 'week' },
+  'aqwelia_oasis_monthly':    { plan: 'oasis',    duration: 'month' },
+  'aqwelia_oasis_seasonal':   { plan: 'oasis',    duration: 'halfyear' },
+  'aqwelia_oasis_yearly':     { plan: 'oasis',    duration: 'year' },
+  'aqwelia_wellness_weekly':  { plan: 'wellness', duration: 'week' },
+  'aqwelia_wellness_monthly': { plan: 'wellness', duration: 'month' },
+  'aqwelia_wellness_seasonal':{ plan: 'wellness', duration: 'halfyear' },
+  'aqwelia_wellness_yearly':  { plan: 'wellness', duration: 'year' },
+  'aqwelia_spa365_weekly':    { plan: 'spa365',   duration: 'week' },
+  'aqwelia_spa365_monthly':   { plan: 'spa365',   duration: 'month' },
+  'aqwelia_spa365_seasonal':  { plan: 'spa365',   duration: 'halfyear' },
+  'aqwelia_spa365_yearly':    { plan: 'spa365',   duration: 'year' },
+}
+
+/**
+ * Map a RevenueCat product ID to (planId, duration) using EXACT matching.
+ * Falls back to includes() only if no exact match (for product IDs with
+ * different prefixes). Returns null for unknown products.
+ */
+export function getPlanFromRCProductId(productId: string): { plan: PlanId; duration: Duration } | null {
+  // Exact match
+  if (RC_PRODUCT_MAP[productId]) return RC_PRODUCT_MAP[productId]
+  // Fallback: includes() matching (for non-standard IDs)
+  const plan = getPlanFromProductId(productId)
+  if (plan === 'decouverte') return null
+  const duration = inferDurationFromProvider(productId)
+  return { plan, duration: duration || 'month' }
+}
+
+function inferDurationFromProvider(productId: string): Duration | null {
+  for (const [provider, internal] of Object.entries(PROVIDER_TO_DURATION)) {
+    if (productId.includes(provider)) return internal as Duration
+  }
+  return null
+}
+
 // ─── Duration display (legacy compat) ───────────────────────────────────────
 
 export const DURATIONS = [
