@@ -9,6 +9,7 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { PrismaClient } from '@prisma/client'
+import { createHmac } from 'node:crypto'
 
 const BASE = process.env.SMOKE_BASE_URL || 'http://localhost:3000'
 const TEST_EMAIL = 'test@aqwelia.app'
@@ -45,6 +46,14 @@ async function getBillingEvents(userId: string) {
     where: { userId },
     orderBy: { createdAt: 'asc' },
   })
+}
+
+function stripeSignature(payload: string): string {
+  const timestamp = Math.floor(Date.now() / 1000)
+  const digest = createHmac('sha256', process.env.STRIPE_WEBHOOK_SECRET!)
+    .update(`${timestamp}.${payload}`)
+    .digest('hex')
+  return `t=${timestamp},v1=${digest}`
 }
 
 describe('P0-B — DB-level billing tests', () => {
@@ -111,6 +120,66 @@ describe('P0-B — DB-level billing tests', () => {
     expect(res.status).toBe(400)
     const afterCount = await db.billingEvent.count()
     expect(afterCount).toBe(beforeCount)
+  })
+
+  it('Stripe webhook: valid signature updates the subscription and BillingEvent', async () => {
+    await clearSubscriptions(userId)
+    const stripeSubscriptionId = 'sub_signed_ci_001'
+    await db.subscription.create({
+      data: {
+        userId,
+        plan: 'oasis',
+        status: 'inactive',
+        active: false,
+        duration: 'month',
+        store: 'web',
+        stripeSubscriptionId,
+        providerSubscriptionId: stripeSubscriptionId,
+      },
+    })
+
+    const now = Math.floor(Date.now() / 1000)
+    const eventId = 'evt_signed_subscription_updated_001'
+    const payload = JSON.stringify({
+      id: eventId,
+      object: 'event',
+      type: 'customer.subscription.updated',
+      created: now,
+      data: {
+        object: {
+          id: stripeSubscriptionId,
+          object: 'subscription',
+          status: 'active',
+          cancel_at_period_end: false,
+          metadata: { userId },
+          items: { data: [{ price: { id: process.env.STRIPE_PRICE_OASIS_MONTHLY } }] },
+          current_period_start: now,
+          current_period_end: now + 30 * 24 * 60 * 60,
+          cancel_at: null,
+          trial_end: null,
+        },
+      },
+    })
+
+    const res = await fetch(`${BASE}/api/stripe/webhook`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'stripe-signature': stripeSignature(payload),
+      },
+      body: payload,
+    })
+    expect(res.status).toBe(200)
+
+    const subscription = await db.subscription.findUnique({ where: { stripeSubscriptionId } })
+    expect(subscription?.plan).toBe('oasis')
+    expect(subscription?.status).toBe('active')
+    expect(subscription?.active).toBe(true)
+
+    const event = await db.billingEvent.findUnique({
+      where: { source_eventId: { source: 'stripe', eventId } },
+    })
+    expect(event?.result).toBe('processed')
   })
 
   it('RevenueCat webhook: invalid Bearer → 401, no BillingEvent', async () => {
