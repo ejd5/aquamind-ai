@@ -1,5 +1,6 @@
 -- AQWELIA P0-B: Billing security migration
--- Adds subscription status, store, Stripe/RC fields, and BillingEvent model
+-- Adds subscription status, store, Stripe/RC fields, BillingEvent model
+-- with composite unique [source, eventId] for idempotency
 
 -- AlterTable: add new columns to Subscription
 ALTER TABLE "Subscription" ADD COLUMN "status" TEXT NOT NULL DEFAULT 'inactive';
@@ -10,14 +11,16 @@ ALTER TABLE "Subscription" ADD COLUMN "currentPeriodStart" DATETIME;
 ALTER TABLE "Subscription" ADD COLUMN "currentPeriodEnd" DATETIME;
 ALTER TABLE "Subscription" ADD COLUMN "stripeCustomerId" TEXT;
 ALTER TABLE "Subscription" ADD COLUMN "stripeSubscriptionId" TEXT;
+ALTER TABLE "Subscription" ADD COLUMN "providerSubscriptionId" TEXT;
 ALTER TABLE "Subscription" ADD COLUMN "lastProviderEventId" TEXT;
 ALTER TABLE "Subscription" ADD COLUMN "lastProviderEventAt" DATETIME;
 
 -- CreateIndex
 CREATE INDEX "Subscription_stripeSubscriptionId_idx" ON "Subscription"("stripeSubscriptionId");
+CREATE INDEX "Subscription_providerSubscriptionId_idx" ON "Subscription"("providerSubscriptionId");
 CREATE INDEX "Subscription_status_idx" ON "Subscription"("status");
 
--- CreateTable: BillingEvent (idempotency log)
+-- CreateTable: BillingEvent (idempotency log with retry support)
 CREATE TABLE "BillingEvent" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "eventId" TEXT NOT NULL,
@@ -25,16 +28,21 @@ CREATE TABLE "BillingEvent" (
     "eventType" TEXT NOT NULL,
     "userId" TEXT,
     "payload" TEXT,
-    "processedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "result" TEXT NOT NULL,
-    "errorMessage" TEXT
+    "result" TEXT NOT NULL DEFAULT 'processing',
+    "errorMessage" TEXT,
+    "attemptCount" INTEGER NOT NULL DEFAULT 0,
+    "processingStartedAt" DATETIME,
+    "processedAt" DATETIME,
+    "nextRetryAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- CreateIndex: unique constraint on eventId
-CREATE UNIQUE INDEX "BillingEvent_eventId_key" ON "BillingEvent"("eventId");
+-- CreateIndex: composite unique [source, eventId] — prevents collision
+-- between Stripe and RevenueCat event IDs
+CREATE UNIQUE INDEX "BillingEvent_source_eventId_key" ON "BillingEvent"("source", "eventId");
 
--- CreateIndex: composite index for source + eventType queries
+-- CreateIndex: query helpers
 CREATE INDEX "BillingEvent_source_eventType_idx" ON "BillingEvent"("source", "eventType");
-
--- CreateIndex: userId for user-scoped queries
 CREATE INDEX "BillingEvent_userId_idx" ON "BillingEvent"("userId");
+CREATE INDEX "BillingEvent_result_idx" ON "BillingEvent"("result");
+CREATE INDEX "BillingEvent_nextRetryAt_idx" ON "BillingEvent"("nextRetryAt");

@@ -1,15 +1,16 @@
 /**
- * AQWELIA — Stripe webhook (P0-B: atomic idempotency + payment_status + out-of-order).
+ * AQWELIA — Stripe webhook (P0-B: transition engine, real Price ID, payment_status).
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { getStripe } from '@/lib/stripe'
-import { db } from '@/lib/db'
-import {
-  type PlanId, type SubscriptionStatus, type Duration,
-  getPlanFromProductId, PROVIDER_TO_DURATION, statusGrantsAccess,
-} from '@/lib/billing/plans'
 import { processEventIdempotently } from '@/lib/billing/idempotency'
+import { applyTransition } from '@/lib/billing/transition'
+import {
+  type PlanId, type SubscriptionStatus,
+  getPlanFromStripePriceId, getPlanFromProductId,
+  PROVIDER_TO_DURATION, type Duration,
+} from '@/lib/billing/plans'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -17,20 +18,14 @@ export const dynamic = 'force-dynamic'
 export async function POST(req: NextRequest) {
   const body = await req.text()
   const signature = (await headers()).get('stripe-signature')
-
-  if (!signature) {
-    return NextResponse.json({ error: 'Missing signature' }, { status: 400 })
-  }
+  if (!signature) return NextResponse.json({ error: 'Missing signature' }, { status: 400 })
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
-  if (!webhookSecret) {
-    return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 })
-  }
+  if (!webhookSecret) return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 })
 
   let event
   try {
-    const stripe = getStripe()
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    event = getStripe().webhooks.constructEvent(body, signature, webhookSecret)
   } catch {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
@@ -43,49 +38,77 @@ export async function POST(req: NextRequest) {
     handler: async () => { await handleStripeEvent(event) },
   })
 
-  if (result.error) {
-    return NextResponse.json({ error: 'Processing failed' }, { status: 500 })
-  }
-
+  if (result.error) return NextResponse.json({ error: 'Processing failed' }, { status: 500 })
   return NextResponse.json({ received: true, skipped: result.skipped })
 }
 
 async function handleStripeEvent(event: any): Promise<void> {
+  const providerEventAt = new Date(event.created * 1000)
+
   switch (event.type) {
     case 'checkout.session.completed': {
       const cs = event.data.object
-
-      // BLOCK 6: verify payment_status — don't activate blindly
+      // BLOCAGE 7: verify payment_status
       if (cs.payment_status !== 'paid') return
 
       const userId = cs.metadata?.userId || cs.client_reference_id
       if (!userId) return
 
-      // BLOCK 6: determine plan from the actual Price ID purchased
-      const priceId = cs.metadata?.priceId || ''
-      const productId = cs.metadata?.productId || ''
-      const planId = getPlanFromProductId(productId) as PlanId
+      // BLOCAGE 7: determine plan from the REAL Price ID
+      const stripeSubId = cs.subscription as string | null
+      let priceId = ''
 
-      // Reject unknown/empty price IDs for paid plans
-      if (planId === 'decouverte' && productId) {
-        console.warn('[stripe.webhook] Unknown product ID:', productId)
+      // Try to get price from checkout session line items
+      if (cs.line_items?.data?.[0]?.price?.id) {
+        priceId = cs.line_items.data[0].price.id
+      }
+
+      // If no price in line items, try expanding the subscription
+      if (!priceId && stripeSubId) {
+        try {
+          const stripe = getStripe()
+          const sub = await stripe.subscriptions.retrieve(stripeSubId, {
+            expand: ['items.data.price'],
+          })
+          priceId = sub.items?.data?.[0]?.price?.id || ''
+        } catch { /* ignore — will be caught by price validation below */ }
+      }
+
+      // BLOCAGE 7: reject unknown/empty Price IDs
+      if (!priceId) {
+        console.warn('[stripe.webhook] No Price ID found in checkout session')
         return
       }
-      if (planId === 'decouverte') return
 
-      const duration = inferDuration(productId)
+      const planInfo = getPlanFromStripePriceId(priceId)
+      if (!planInfo) {
+        console.warn('[stripe.webhook] Unknown Stripe Price ID:', priceId)
+        return
+      }
+
+      // BLOCAGE 7: verify metadata.productId matches the real Price ID
+      const metadataProductId = cs.metadata?.productId || ''
+      if (metadataProductId) {
+        const metadataPlan = getPlanFromProductId(metadataProductId)
+        if (metadataPlan !== planInfo.plan) {
+          console.warn('[stripe.webhook] Metadata productId does not match Price ID plan')
+          return
+        }
+      }
+
       const isTrial = cs.mode === 'subscription' && cs.subscription_details?.status === 'trialing'
 
-      await applySubscriptionUpdate({
+      await applyTransition({
         userId,
-        planId,
+        planId: planInfo.plan,
         status: isTrial ? 'trialing' : 'active',
-        duration,
+        duration: planInfo.duration,
         store: 'web',
         stripeCustomerId: cs.customer as string | null,
-        stripeSubscriptionId: (cs.subscription as string) || null,
+        stripeSubscriptionId: stripeSubId,
+        providerSubscriptionId: stripeSubId,
         providerEventId: event.id,
-        providerEventAt: new Date(event.created * 1000),
+        providerEventAt,
         trialEndsAt: cs.subscription_details?.trial_end
           ? new Date(cs.subscription_details.trial_end * 1000) : null,
         currentPeriodEnd: cs.expires_at ? new Date(cs.expires_at * 1000) : null,
@@ -98,13 +121,14 @@ async function handleStripeEvent(event: any): Promise<void> {
       const userId = sub.metadata?.userId
       if (!userId) return
 
-      const status = mapStripeStatus(sub.status)
-      await updateSubscriptionByStripeId({
-        stripeSubscriptionId: sub.id,
+      await applyTransition({
         userId,
-        status,
+        planId: (sub.metadata?.plan as PlanId) || 'oasis',
+        status: mapStripeStatus(sub.status),
+        stripeSubscriptionId: sub.id,
+        providerSubscriptionId: sub.id,
         providerEventId: event.id,
-        providerEventAt: new Date(event.created * 1000),
+        providerEventAt,
         expiresAt: sub.current_period_end ? new Date(sub.current_period_end * 1000) : null,
         currentPeriodStart: sub.current_period_start ? new Date(sub.current_period_start * 1000) : null,
         currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end * 1000) : null,
@@ -119,43 +143,44 @@ async function handleStripeEvent(event: any): Promise<void> {
       const userId = sub.metadata?.userId
       if (!userId) return
 
-      // BLOCK 6: distinguish cancellation vs expiration
+      // BLOCAGE 4: distinguish canceled (access until expiry) vs expired (no access)
       const isExpired = sub.ended_at != null
-      await updateSubscriptionByStripeId({
-        stripeSubscriptionId: sub.id,
+      await applyTransition({
         userId,
+        planId: (sub.metadata?.plan as PlanId) || 'oasis',
         status: isExpired ? 'expired' : 'canceled',
+        stripeSubscriptionId: sub.id,
+        providerSubscriptionId: sub.id,
         providerEventId: event.id,
-        providerEventAt: new Date(event.created * 1000),
-        expiresAt: sub.ended_at ? new Date(sub.ended_at * 1000) : new Date(),
-        active: false,
+        providerEventAt,
+        expiresAt: sub.ended_at ? new Date(sub.ended_at * 1000) : sub.current_period_end ? new Date(sub.current_period_end * 1000) : new Date(),
       })
       break
     }
 
     case 'invoice.paid': {
       const invoice = event.data.object
-      // BLOCK 6: find subscription by stripeSubscriptionId, not just metadata
+      // BLOCAGE 6: find by stripeSubscriptionId or stripeCustomerId
       const stripeSubId = invoice.subscription as string | null
       const stripeCustomerId = invoice.customer as string | null
       const userId = invoice.metadata?.userId
-
       if (!userId && !stripeSubId && !stripeCustomerId) return
 
       const periodEnd = invoice.lines?.data?.[0]?.period?.end
-      await db.subscription.updateMany({
-        where: {
-          OR: [
-            { stripeSubscriptionId: stripeSubId || undefined },
-            { stripeCustomerId: stripeCustomerId || undefined },
-          ].filter(c => Object.values(c)[0]),
-        },
-        data: {
-          status: 'active',
-          active: true,
-          expiresAt: periodEnd ? new Date(periodEnd * 1000) : null,
-          currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : null,
-        },
+      // Find the subscription to get planId
+      const sub = await findSubByProvider(stripeSubId, stripeCustomerId, userId)
+      if (!sub) return
+
+      await applyTransition({
+        userId: sub.userId,
+        planId: sub.plan as PlanId,
+        status: 'active',
+        stripeSubscriptionId: stripeSubId || sub.stripeSubscriptionId,
+        providerSubscriptionId: stripeSubId || sub.providerSubscriptionId,
+        providerEventId: event.id,
+        providerEventAt,
+        expiresAt: periodEnd ? new Date(periodEnd * 1000) : null,
+        currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : null,
       })
       break
     }
@@ -165,9 +190,17 @@ async function handleStripeEvent(event: any): Promise<void> {
       const stripeSubId = invoice.subscription as string | null
       if (!stripeSubId) return
 
-      await db.subscription.updateMany({
-        where: { stripeSubscriptionId: stripeSubId },
-        data: { status: 'past_due', active: true },
+      const sub = await findSubByProvider(stripeSubId, null, null)
+      if (!sub) return
+
+      await applyTransition({
+        userId: sub.userId,
+        planId: sub.plan as PlanId,
+        status: 'past_due',
+        stripeSubscriptionId: stripeSubId,
+        providerSubscriptionId: stripeSubId,
+        providerEventId: event.id,
+        providerEventAt,
       })
       break
     }
@@ -177,9 +210,18 @@ async function handleStripeEvent(event: any): Promise<void> {
       const stripeSubId = charge.metadata?.subscriptionId
       if (!stripeSubId) return
 
-      await db.subscription.updateMany({
-        where: { stripeSubscriptionId: stripeSubId },
-        data: { status: 'expired', active: false },
+      const sub = await findSubByProvider(stripeSubId, null, null)
+      if (!sub) return
+
+      await applyTransition({
+        userId: sub.userId,
+        planId: sub.plan as PlanId,
+        status: 'expired',
+        stripeSubscriptionId: stripeSubId,
+        providerSubscriptionId: stripeSubId,
+        providerEventId: event.id,
+        providerEventAt,
+        expiresAt: new Date(),
       })
       break
     }
@@ -189,103 +231,23 @@ async function handleStripeEvent(event: any): Promise<void> {
   }
 }
 
-/**
- * Apply a subscription update with OUT-OF-ORDER protection.
- * Checks lastProviderEventAt — if the incoming event is older, skip it.
- */
-async function applySubscriptionUpdate(params: {
-  userId: string
-  planId: PlanId
-  status: SubscriptionStatus
-  duration: Duration | null
-  store: string
-  stripeCustomerId?: string | null
-  stripeSubscriptionId?: string | null
-  providerEventId: string
-  providerEventAt: Date
-  trialEndsAt?: Date | null
-  currentPeriodEnd?: Date | null
-}): Promise<void> {
-  // BLOCK 4: out-of-order protection
-  const existing = await db.subscription.findFirst({
-    where: { userId: params.userId, active: true },
-    orderBy: { startedAt: 'desc' },
-  })
-
-  if (existing?.lastProviderEventAt && params.providerEventAt <= existing.lastProviderEventAt) {
-    // This event is older than the last applied event — skip to prevent regression
-    console.log('[stripe.webhook] Skipping out-of-order event:', params.providerEventId)
-    return
+async function findSubByProvider(stripeSubId: string | null, stripeCustomerId: string | null, userId: string | null) {
+  if (stripeSubId) {
+    const bySub = await db.subscription.findFirst({ where: { stripeSubscriptionId: stripeSubId } })
+    if (bySub) return bySub
   }
-
-  // Deactivate previous subscriptions
-  await db.subscription.updateMany({
-    where: { userId: params.userId, active: true },
-    data: { active: false, status: 'inactive' },
-  })
-
-  // Create new subscription
-  await db.subscription.create({
-    data: {
-      userId: params.userId,
-      plan: params.planId,
-      status: params.status,
-      duration: params.duration,
-      store: params.store,
-      startedAt: new Date(),
-      expiresAt: params.currentPeriodEnd || null,
-      active: true,
-      stripeCustomerId: params.stripeCustomerId || null,
-      stripeSubscriptionId: params.stripeSubscriptionId || null,
-      trialEndsAt: params.trialEndsAt || null,
-      currentPeriodEnd: params.currentPeriodEnd || null,
-      lastProviderEventId: params.providerEventId,
-      lastProviderEventAt: params.providerEventAt,
-    },
-  })
+  if (stripeCustomerId) {
+    const byCust = await db.subscription.findFirst({ where: { stripeCustomerId } })
+    if (byCust) return byCust
+  }
+  if (userId) {
+    return db.subscription.findFirst({ where: { userId, active: true }, orderBy: { startedAt: 'desc' } })
+  }
+  return null
 }
 
-/**
- * Update a subscription by Stripe ID with out-of-order protection.
- */
-async function updateSubscriptionByStripeId(params: {
-  stripeSubscriptionId: string
-  userId: string
-  status: SubscriptionStatus
-  providerEventId: string
-  providerEventAt: Date
-  expiresAt?: Date | null
-  currentPeriodStart?: Date | null
-  currentPeriodEnd?: Date | null
-  cancelAt?: Date | null
-  trialEndsAt?: Date | null
-  active?: boolean
-}): Promise<void> {
-  // BLOCK 4: out-of-order protection
-  const existing = await db.subscription.findFirst({
-    where: { stripeSubscriptionId: params.stripeSubscriptionId },
-  })
-
-  if (existing?.lastProviderEventAt && params.providerEventAt <= existing.lastProviderEventAt) {
-    console.log('[stripe.webhook] Skipping out-of-order event:', params.providerEventId)
-    return
-  }
-
-  await db.subscription.updateMany({
-    where: { stripeSubscriptionId: params.stripeSubscriptionId },
-    data: {
-      status: params.status,
-      active: params.active ?? statusGrantsAccess(params.status, params.expiresAt ?? null),
-      expiresAt: params.expiresAt ?? null,
-      currentPeriodStart: params.currentPeriodStart ?? null,
-      currentPeriodEnd: params.currentPeriodEnd ?? null,
-      cancelAt: params.cancelAt ?? null,
-      trialEndsAt: params.trialEndsAt ?? null,
-      lastProviderEventId: params.providerEventId,
-      lastProviderEventAt: params.providerEventAt,
-    },
-  })
-}
+// Import db at the top level (needed for findSubByProvider)
+import { db } from '@/lib/db'
 
 function mapStripeStatus(stripeStatus: string): SubscriptionStatus {
   switch (stripeStatus) {
@@ -296,12 +258,4 @@ function mapStripeStatus(stripeStatus: string): SubscriptionStatus {
     case 'unpaid': return 'expired'
     default: return 'inactive'
   }
-}
-
-function inferDuration(productId: string): Duration | null {
-  if (!productId) return null
-  for (const [provider, internal] of Object.entries(PROVIDER_TO_DURATION)) {
-    if (productId.includes(provider)) return internal as Duration
-  }
-  return null
 }

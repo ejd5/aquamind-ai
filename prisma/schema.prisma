@@ -337,6 +337,8 @@ model Subscription {
   currentPeriodEnd      DateTime?
   stripeCustomerId      String?
   stripeSubscriptionId  String?
+  // P0-B: stable provider identity for finding inactive subscriptions
+  providerSubscriptionId String?  // RC original_transaction_id or Stripe sub ID
   // P0-B: out-of-order event protection
   lastProviderEventId   String?   // eventId of the last provider event applied
   lastProviderEventAt   DateTime? // effective date of that event (provider timestamp)
@@ -346,26 +348,34 @@ model Subscription {
 
   @@index([userId])
   @@index([stripeSubscriptionId])
+  @@index([providerSubscriptionId])
   @@index([status])
 }
 
 // P0-B: Billing event log — idempotency for webhooks.
-// Each webhook event (Stripe or RevenueCat) is stored here with its unique
-// event ID. Before processing, the handler checks if the event ID already
-// exists — if so, it returns 200 without re-processing (idempotent).
+// Uses composite unique [source, eventId] so Stripe and RC can have
+// overlapping event IDs without collision.
+// Retry/crash recovery: attemptCount, processingStartedAt, nextRetryAt.
 model BillingEvent {
-  id              String   @id @default(cuid())
-  eventId         String   @unique // Stripe event.id or RC event_id
-  source          String   // stripe | revenuecat
-  eventType       String   // checkout.session.completed, CANCELLATION, etc.
-  userId          String?
-  payload         String   // JSON of the event (for audit/debugging)
-  processedAt     DateTime @default(now())
-  result          String   // success | error | ignored
-  errorMessage    String?
+  id                  String    @id @default(cuid())
+  eventId             String    // Stripe event.id or RC event.id
+  source              String    // stripe | revenuecat
+  eventType           String    // checkout.session.completed, CANCELLATION, etc.
+  userId              String?
+  payload             String?  // Redacted JSON (no card numbers, secrets)
+  result              String    @default("processing") // processing | processed | failed | ignored
+  errorMessage        String?
+  attemptCount        Int       @default(0)
+  processingStartedAt DateTime?
+  processedAt         DateTime?
+  nextRetryAt         DateTime?
+  createdAt           DateTime  @default(now())
 
+  @@unique([source, eventId])
   @@index([source, eventType])
   @@index([userId])
+  @@index([result])
+  @@index([nextRetryAt])
 }
 
 // Événements analytics (funnel, rétention)
