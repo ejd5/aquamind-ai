@@ -1,9 +1,10 @@
 import crypto from 'crypto'
 import { PrismaClient } from '@prisma/client'
 
-const dbUrl = process.env.TEST_DB_URL
+// Use DATABASE_URL from .env (the test script swaps .env before calling this)
+const dbUrl = process.env.DATABASE_URL || process.env.TEST_DB_URL
 if (!dbUrl) {
-  console.error('TEST_DB_URL env var required')
+  console.error('DATABASE_URL (or TEST_DB_URL) env var required')
   process.exit(1)
 }
 

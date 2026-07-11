@@ -41,9 +41,10 @@ SKIP_PATTERNS = [
 MULTILINGUAL_FILES = {
     'src/components/aquamind/module-diagnostic.tsx',
     'src/components/aquamind/diagnostic-action-plan.tsx',
-    # StripScan — contains multilingual PARAM_SYNONYMS for VLM-output matching
-    'src/app/api/pool/strip-scan/route.ts',
-    'src/components/aquamind/strip-scanner.tsx',
+    'src/lib/pool/strip-scan-synonyms.ts',
+    # faq/page.tsx: static metadata in French — will be localized via
+    # generateMetadata() in the SEO i18n phase (P1), not P0-A.
+    'src/app/faq/page.tsx',
 }
 
 def should_skip(filepath):

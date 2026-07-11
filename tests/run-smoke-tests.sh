@@ -1,23 +1,5 @@
 #!/bin/bash
 # AQWELIA — Reproducible smoke test runner (P0-A, portable)
-#
-# This script:
-#   1. Determines PROJECT_ROOT from BASH_SOURCE (no hardcoded paths)
-#   2. Prepares an isolated test database (SQLite file in /tmp)
-#   3. Starts the dev server on a configurable port (default 3099)
-#   4. Waits for the server to be ready
-#   5. Runs the smoke tests
-#   6. Stops the server cleanly (only SERVER_PID, never pkill)
-#   7. Cleans up the test DB even if tests fail (trap cleanup)
-#
-# Usage:
-#   bash tests/run-smoke-tests.sh
-#   PORT=3100 bash tests/run-smoke-tests.sh
-#
-# Exit codes:
-#   0 — all tests passed
-#   1 — tests failed or server didn't start
-
 set -euo pipefail
 
 # ── 1. Determine PROJECT_ROOT ────────────────────────────────────────────────
@@ -32,60 +14,66 @@ TEST_DB="/tmp/aqwelia-test-$$-$(date +%s).db"
 DB_URL="file:${TEST_DB}"
 SERVER_PID=""
 SERVER_LOG="/tmp/aqwelia-test-server-$$.log"
+ENV_BACKUP=""
 
-# ── 3. Cleanup function (called on EXIT, INT, TERM) ──────────────────────────
+# ── 3. Cleanup function ──────────────────────────────────────────────────────
 cleanup() {
   local exit_code=$?
   echo ""
   echo "=== Cleanup ==="
-
-  # Stop ONLY our server (never pkill — would kill other Next.js instances)
   if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
     echo "Stopping server (PID $SERVER_PID)..."
     kill "$SERVER_PID" 2>/dev/null || true
     sleep 2
-    # Force kill only if still alive
     if kill -0 "$SERVER_PID" 2>/dev/null; then
       kill -9 "$SERVER_PID" 2>/dev/null || true
     fi
   fi
-
-  # Remove test DB
-  if [ -f "$TEST_DB" ]; then
-    rm -f "$TEST_DB" "$TEST_DB-journal" 2>/dev/null || true
+  if [ -n "$ENV_BACKUP" ] && [ -f "$ENV_BACKUP" ]; then
+    mv "$ENV_BACKUP" "$PROJECT_ROOT/.env" 2>/dev/null || true
+    echo ".env restored."
   fi
-
-  # Remove server log
-  rm -f "$SERVER_LOG" 2>/dev/null || true
-
+  rm -f "$TEST_DB" "$TEST_DB-journal" "$SERVER_LOG" 2>/dev/null || true
   echo "Cleanup done."
   exit $exit_code
 }
 
 trap cleanup EXIT INT TERM
 
-# ── 4. Prepare isolated test DB ──────────────────────────────────────────────
-echo "=== 1. Prepare isolated test DB ==="
-echo "DB: $TEST_DB"
+# ── 4. Swap .env FIRST (before any DB operations) ────────────────────────────
+echo "=== 1. Swap .env to test DB ==="
+if [ -f "$PROJECT_ROOT/.env" ]; then
+  ENV_BACKUP="/tmp/aqwelia-env-backup-$$.env"
+  cp "$PROJECT_ROOT/.env" "$ENV_BACKUP"
+  sed "s|^DATABASE_URL=.*|DATABASE_URL=${DB_URL}|" "$ENV_BACKUP" > "$PROJECT_ROOT/.env"
+  echo ".env swapped to test DB: $DB_URL"
+else
+  echo "DATABASE_URL=${DB_URL}" > "$PROJECT_ROOT/.env"
+  echo "NEXTAUTH_SECRET=test-secret-for-ci-only" >> "$PROJECT_ROOT/.env"
+  echo "AUTH_TRUST_HOST=true" >> "$PROJECT_ROOT/.env"
+fi
 
-DATABASE_URL="$DB_URL" bun run db:push 2>&1 | tail -3
-
-# Create test admin user
-TEST_DB_URL="$DB_URL" node "$PROJECT_ROOT/tests/create-test-user.mjs" 2>&1 | tail -2
-
-# ── 5. Start dev server on configurable port ─────────────────────────────────
+# ── 5. Push schema to test DB ────────────────────────────────────────────────
 echo ""
-echo "=== 2. Start dev server on port $PORT ==="
+echo "=== 2. Push schema to test DB ==="
+bun run db:push 2>&1 | tail -3
 
-DATABASE_URL="$DB_URL" \
+# ── 6. Create test user ──────────────────────────────────────────────────────
+echo ""
+echo "=== 3. Create test user ==="
+node "$PROJECT_ROOT/tests/create-test-user.mjs" 2>&1 | tail -2
+
+# ── 7. Start dev server ──────────────────────────────────────────────────────
+echo ""
+echo "=== 4. Start dev server on port $PORT ==="
 NODE_OPTIONS="--max-old-space-size=1024" \
   node node_modules/.bin/next dev -p "$PORT" > "$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
 echo "Server PID: $SERVER_PID"
 
-# ── 6. Wait for server ready ─────────────────────────────────────────────────
+# ── 8. Wait for server ready ─────────────────────────────────────────────────
 echo ""
-echo "=== 3. Wait for server ready ==="
+echo "=== 5. Wait for server ready ==="
 for i in $(seq 1 60); do
   HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 "${BASE_URL}/api/auth/csrf" 2>/dev/null || echo "000")
   if [ "$HTTP" = "200" ]; then
@@ -94,20 +82,18 @@ for i in $(seq 1 60); do
   fi
   if [ "$i" = "60" ]; then
     echo "❌ Server failed to start (60s timeout)"
-    echo "=== Server log (last 20 lines) ==="
     tail -20 "$SERVER_LOG" 2>/dev/null
     exit 1
   fi
   sleep 1
 done
 
-# ── 7. Run smoke tests ───────────────────────────────────────────────────────
+# ── 9. Run smoke tests ───────────────────────────────────────────────────────
 echo ""
-echo "=== 4. Run smoke tests ==="
+echo "=== 6. Run smoke tests ==="
 SMOKE_BASE_URL="$BASE_URL" bun run test 2>&1
 TEST_EXIT=$?
 
-# ── 8. Result ────────────────────────────────────────────────────────────────
 echo ""
 if [ $TEST_EXIT -eq 0 ]; then
   echo "✅ ALL SMOKE TESTS PASSED"

@@ -60,7 +60,10 @@ const PROTECTED_PATTERNS = [
   /^\/api\/subscription\//,
   /^\/api\/analytics\//,
   /^\/api\/account\//,
-  /^\/api\/stripe\//,
+  // Stripe — protect checkout + portal (require auth), but NOT webhook
+  // (Stripe sends webhooks with its own signature, no user session)
+  /^\/api\/stripe\/checkout\//,
+  /^\/api\/stripe\/portal\//,
   // AQWELIA Growth OS — dashboard + agents (public lead capture POST is OK)
   /^\/api\/growth\/dashboard\//,
   /^\/api\/growth\/agents\//,
@@ -94,10 +97,10 @@ export default async function middleware(req: NextRequest) {
   // Also set on the request headers so getRequestConfig can read it
   res.headers.set('accept-language', detected)
 
-  // ── Anti-cache headers (for dev sandbox — prevents stale JS) ──
-  res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-  res.headers.set('Pragma', 'no-cache')
-  res.headers.set('Expires', '0')
+  // NOTE: No global anti-cache headers in production. They would hurt
+  // performance for public pages (landing, marketing, etc.) and are
+  // unnecessary — Next.js handles dev HMR correctly without them.
+  // If dev caching becomes an issue, add a NODE_ENV-scoped block here.
 
   // --- Auth protection (runs only on protected API routes) ---
   // For API routes: return 401 JSON (NOT a redirect) so client-side fetch()

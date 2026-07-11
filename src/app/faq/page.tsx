@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'FAQ - AQWELIA', description: 'AQWELIA FAQ — common questions about pool and spa maintenance' }
+export const metadata: Metadata = { title: 'FAQ - AQWELIA', description: 'Questions fréquentes sur AQWELIA' }
 
 export default function FaqPage() {
   return (
