@@ -23,7 +23,8 @@
     "typecheck": "tsc --noEmit",
     "typecheck:tools": "tsc --noEmit --project tsconfig.tools.json",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:migration": "bash tests/test-migration.sh"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.0",

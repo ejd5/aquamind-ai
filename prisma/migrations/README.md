@@ -1,131 +1,69 @@
-# AQWELIA — Migrations Prisma (SQLite → PostgreSQL)
+# AQWELIA — Migrations Prisma
 
-> ⚠️ Ce README documente la procédure de migration.
-> La migration n'est **pas exécutée** dans le sandbox (pas de Postgres disponible).
-> Les fichiers de migration SQL seront générés par Prisma au premier `migrate dev` sur un poste disposant de PostgreSQL.
+## Provider actuel : SQLite (dev)
 
-## 1. Pré-requis
+Le projet utilise **SQLite** en développement (fichier `db/custom.db`).
+En production, basculez vers PostgreSQL (voir section ci-dessous).
 
-- **PostgreSQL ≥ 14** installé et démarré localement (ou Docker)
-- Une base `aqwelia` créée :
-  ```bash
-  createdb aqwelia
-  # ou en SQL :
-  # CREATE DATABASE aqwelia;
-  ```
-- Node.js ≥ 20 / Bun
-- Dépendances installées : `bun install`
+## Procédures
 
-## 2. Configurer le `.env`
-
-Copiez `.env.example` en `.env` et adaptez la `DATABASE_URL` :
+### Nouvelle base (fresh)
 
 ```bash
-DATABASE_URL="postgresql://user:password@localhost:5432/aqwelia?schema=public"
-```
+# 1. Supprimer l'ancienne base
+rm -f db/custom.db
 
-Pour vérifier la connexion :
-
-```bash
-bunx prisma db pull --url "$DATABASE_URL"
-# doit retourner "The database is empty" ou lister des tables existantes
-```
-
-## 3. Générer la première migration PostgreSQL
-
-Puisque le schéma a été migré de SQLite vers PostgreSQL avec ajout du modèle `User`
-et de toutes les relations `userId`, on repart d'une migration initiale propre :
-
-```bash
-# Option A — Schéma vierge (recommandé pour la première mise en prod / dev mobile)
-bunx prisma migrate dev --name init_postgres_user_auth
-
-# Option B — Si une base SQLite locale contient des données à conserver,
-# exportez-les en JSON puis réimportez après la migration :
-#   bunx prisma db pull   (sur l'ancienne base SQLite, depuis une branche séparée)
-#   → script ad hoc d'export/import à écrire (voir §5)
-```
-
-`prisma migrate dev` va :
-1. Créer le dossier `prisma/migrations/<timestamp>_init_postgres_user_auth/`
-2. Y écrire un `migration.sql` (DDL complet : `CREATE TABLE`, `CREATE INDEX`, ...)
-3. Appliquer la migration sur la base Postgres
-4. Régénérer `node_modules/.prisma/client`
-
-## 4. Régénérer le client Prisma (sans relancer la migration)
-
-À chaque modification du `schema.prisma` :
-
-```bash
-bunx prisma generate       # régénère le client TS
-bunx prisma migrate dev    # crée + applique une nouvelle migration
-# ou, en dev rapide (sans historique de migration) :
-bunx prisma db push
-```
-
-## 5. Migration des données existantes (optionnel)
-
-Si une base SQLite `db/custom.db` contient des données à conserver
-(profils créés pendant la phase de dev pré-auth) :
-
-```bash
-# 1. Sur la branche SQLite (avant le switch de provider), exporter :
-bunx prisma studio   # export manuel, ou script Node avec prisma.client.sqlite
-
-# 2. Attribuer un userId "legacy" à toutes les données existantes
-#    (soit créer un User admin, soit marquer userId NULL temporairement
-#     — NON recommandé car userId est NOT NULL dans le nouveau schéma)
-
-# 3. Réimporter dans Postgres après la migration initiale
-```
-
-> 💡 Recommandation : pour le passage mobile multi-utilisateur, repartir d'une base propre.
-> Les données dev locales n'ont pas vocation à être migrées en production.
-
-## 6. CI / Déploiement
-
-```bash
-# En CI / prod — applique les migrations sans générer de nouvelle migration
+# 2. Appliquer toutes les migrations
 bunx prisma migrate deploy
 
-# Régénère le client (utile post-build)
-bunx prisma generate
+# 3. Générer le client Prisma
+bun run db:generate
 ```
 
-## 7. Rollback
+### Base existante pré-Prisma-Migrate (migration initiale)
 
-Prisma ne gère pas les migrations "down" automatiquement.
-Pour annuler une migration :
+Si vous avez une base créée avec `db:push` (sans migrations) :
 
 ```bash
-# Voir l'état des migrations
+# 1. Sauvegarder la base existante
+cp db/custom.db db/custom.db.backup
+
+# 2. Marquer la migration baseline comme appliquée
+bunx prisma migrate resolve --applied 20260710000000_baseline
+
+# 3. Appliquer les migrations restantes
+bunx prisma migrate deploy
+
+# 4. Vérifier l'état
 bunx prisma migrate status
-
-# En dev : réinitialiser complètement (DESTRUCTIF)
-bunx prisma migrate reset
-
-# En prod : écrire une nouvelle migration qui annule les changements
 ```
 
-## 8. Notes spécifiques au schéma AQWELIA
-
-- **Provider** : `postgresql` ( était `sqlite` )
-- **JSON** : tous les champs JSON restent en `String` (pas de type `Json` Prisma)
-  pour éviter les breaking changes côté application.
-- **Indexes** : `@@index([userId])` ajouté sur toutes les tables user-owned
-  pour la performance des requêtes filtrant par utilisateur.
-- **Cascade** : `onDelete: Cascade` sur toutes les relations `user` → suppression
-  d'un User supprime toutes ses données associées (RGPD-friendly).
-- **ActionPlan** : pas de `userId` direct (hérite via `WaterTest.userId`).
-- **Account** : modèle NextAuth (OAuth futur), structure minimale.
-- **Session** : non créé (NextAuth JWT strategy → pas de table Session).
-
-## 9. Vérification post-migration
+### Test de migration
 
 ```bash
-# Vérifier que toutes les tables sont créées
-bunx prisma db pull --url "$DATABASE_URL"   # doit afficher le schéma complet
-
-# Lancer un script de smoke test
-bun run src/scripts/check-db.ts  # à créer si besoin
+# Test sur une base isolée
+bun run test:migration
 ```
+
+Ce script :
+1. Crée une base SQLite temporaire
+2. Applique `migrate deploy`
+3. Vérifie les tables et colonnes
+4. Nettoie la base de test
+
+## Migration vers PostgreSQL (production)
+
+1. Changer `provider = "sqlite"` → `provider = "postgresql"` dans `prisma/schema.prisma`
+2. Mettre à jour `DATABASE_URL` dans `.env`
+3. Créer les migrations PostgreSQL :
+   ```bash
+   bunx prisma migrate dev --name init_postgresql
+   ```
+4. Migrer les données depuis SQLite (script de transfert nécessaire)
+
+## Migrations disponibles
+
+| Migration | Description |
+|-----------|-------------|
+| `20260710000000_baseline` | Schéma initial (tous les modèles P0-A) |
+| `20260711000000_p0_b_billing_security` | P0-B : status, store, BillingEvent, backfill, unique constraints |
