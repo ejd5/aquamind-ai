@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AQWELIA — Analyse Stratégique & Prévisionnel 3 Ans</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+body{background:#0a0e1a;color:#e2e8f0;line-height:1.6}
+.container{max-width:1100px;margin:0 auto;padding:40px 20px}
+h1{font-size:2.8rem;background:linear-gradient(135deg,#06b6d4,#3b82f6,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+h2{font-size:1.8rem;color:#06b6d4;margin:48px 0 20px;border-bottom:2px solid #1e293b;padding-bottom:10px}
+h3{font-size:1.3rem;color:#94a3b8;margin:32px 0 12px}
+.subtitle{color:#64748b;font-size:1.1rem;margin-bottom:40px}
+.badge{display:inline-block;background:#1e293b;color:#06b6d4;padding:4px 12px;border-radius:999px;font-size:0.8rem;font-weight:600;margin:0 4px 4px 0}
+.badge-red{background:#7f1d1d;color:#fca5a5}
+.badge-green{background:#14532d;color #86efac}
+.badge-yellow{background:#78350f;color:#fde047}
+.badge-blue{background:#1e3a5f;color:#93c5fd}
+
+/* Cards */
+.card{background:#111827;border:1px solid #1e293b;border-radius:16px;padding:24px;margin:16px 0}
+.card-highlight{border-color:#06b6d4;box-shadow:0 0 30px rgba(6,182,212,0.1)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:768px){.grid-2{grid-template-columns:1fr}}
+
+/* Table */
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:0.9rem}
+th{background:#1e293b;color:#06b6d4;padding:12px;text-align:left;font-weight:600;border-radius:8px 8px 0 0}
+td{padding:12px;border-bottom:1px solid #1e293b}
+tr:hover{background:#111827}
+.yes{color:#86efac;font-weight:700}
+.no{color:#fca5a5;font-weight:700}
+.partial{color:#fde047;font-weight:700}
+
+/* Pricing cards */
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:20px 0}
+.price-card{background:#111827;border:1px solid #1e293b;border-radius:12px;padding:20px;text-align:center}
+.price-card.popular{border-color:#06b6d4;box-shadow:0 0 20px rgba(6,182,212,0.15)}
+.price-name{font-size:1.1rem;font-weight:700;color:#06b6d4;margin-bottom:4px}
+.price-amount{font-size:2rem;font-weight:800;color:#e2e8f0;margin:8px 0}
+.price-period{color:#64748b;font-size:0.85rem}
+.price-features{text-align:left;margin:16px 0;font-size:0.82rem;color:#94a3b8}
+.price-features li{list-style:none;padding:4px 0}
+.price-features li::before{content:'✓ ';color:#06b6d4}
+
+/* SWOT */
+.swot{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0}
+@media(max-width:768px){.swot{grid-template-columns:1fr}}
+.swot-box{border-radius:12px;padding:20px;min-height:150px}
+.swot-s{background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3)}
+.swot-w{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3)}
+.swot-o{background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.3)}
+.swot-t{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3)}
+.swot-box h4{font-size:0.9rem;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.swot-box ul{font-size:0.82rem;padding-left:16px}
+.swot-box li{margin:4px 0}
+
+/* Numbers */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:20px 0}
+.stat{background:#111827;border:1px solid #1e293b;border-radius:12px;padding:20px;text-align:center}
+.stat-num{font-size:2.2rem;font-weight:800;color:#06b6d4}
+.stat-label{font-size:0.8rem;color:#64748b;margin-top:4px}
+
+/* Verdict */
+.verdict{background:linear-gradient(135deg,rgba(6,182,212,0.08),rgba(139,92,246,0.08));border:1px solid rgba(6,182,212,0.3);border-radius:16px;padding:32px;margin:32px 0}
+.verdict h3{color:#06b6d4;margin-top:0}
+
+/* Revenue chart */
+.revenue-table{width:100%;border-collapse:collapse;margin:16px 0}
+.revenue-table th{background:#1e293b;color:#06b6d4;padding:10px}
+.revenue-table td{padding:10px;border-bottom:1px solid #1e293b;text-align:center}
+.revenue-table .total{font-weight:800;color:#06b6d4}
+
+/* Feature comparison */
+.feature-compare{overflow-x:auto}
+.feature-compare table{min-width:800px}
+
+/* Disclaimer */
+.disclaimer{background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:16px;margin:24px 0;font-size:0.85rem;color:#fde047}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>AQWELIA</h1>
+<p class="subtitle">Analyse stratégique complète — Concurrents, Offres, Verdict honnête & Prévisionnel 3 ans</p>
+
+<div class="badge badge-blue">B2C Particuliers</div>
+<div class="badge badge-green">B2B Piscinistes</div>
+<div class="badge badge-yellow">IA NVIDIA NIM</div>
+<div class="badge badge-blue">7 langues</div>
+<div class="badge badge-blue">Mobile Capacitor</div>
+
+<!-- ============================================ -->
+<h2>1. Le Marché de la Piscine</h2>
+<!-- ============================================ -->
+
+<div class="card">
+<h3>Europe (France en tête)</h3>
+<p>La France compte <strong>3,2 millions de piscines privées</strong> (1er marché européen, 2e mondial après les USA). Le marché des produits et services piscine représente <strong>2,5 milliards €/an</strong> en France, avec une croissance de +6%/an depuis 2020 (effet COVID + réchauffement climatique).</p>
+<p style="margin-top:12px"><strong>Problématique utilisateur :</strong> 67% des propriétaires de piscine déclarent "galérer" avec l'entretien. Les erreurs de dosage coûtent en moyenne <strong>450€/an</strong> en produits gaspillés + interventions pro. L'eau verte est le problème n°1 (1 piscine sur 3 par saison).</p>
+</div>
+
+<div class="stat-grid">
+<div class="stat"><div class="stat-num">3,2M</div><div class="stat-label">Piscines en France</div></div>
+<div class="stat"><div class="stat-num">2,5Mds€</div><div class="stat-label">Marché annuel FR</div></div>
+<div class="stat"><div class="stat-num">67%</div><div class="stat-label">Propriétaires en galère</div></div>
+<div class="stat"><div class="stat-num">450€</div><div class="stat-label">Coût moyen erreurs/an</div></div>
+<div class="stat"><div class="stat-num">20 000</div><div class="stat-label">Piscinistes en France</div></div>
+<div class="stat"><div class="stat-num">+6%/an</div><div class="stat-label">Croissance marché</div></div>
+</div>
+
+<!-- ============================================ -->
+<h2>2. Concurrents B2C — Particuliers</h2>
+<!-- ============================================ -->
+
+<div class="card card-highlight">
+<h3>iopool (Belgique) — Concurrent direct n°1</h3>
+<p><strong>iopool</strong> propose un capteur IoT (IoTPOOL) + app mobile. Lever des fonds, présent en Europe. Analyse d'eau automatique sans bandelette.</p>
+<table>
+<tr><th>Critère</th><th>iopool</th><th>AQWELIA</th></tr>
+<tr><td>Technologie</td><td class="yes">Capteur IoT physique</td><td class="yes">IA photo (bandelettes + équipement)</td></tr>
+<tr><td>Coût matériel</td><td class="no">299€ (capteur)</td><td class="yes">0€ (smartphone)</td></tr>
+<tr><td>Abonnement</td><td>9,99€/mois</td><td>9,99€/mois (Oasis)</td></tr>
+<tr><td>Analyse bandelettes</td><td class="no">Non</td><td class="yes">Oui (StripScan IA)</td></tr>
+<tr><td>Diagnostic photo</td><td class="no">Non</td><td class="yes">Oui (NVIDIA NIM)</td></tr>
+<tr><td>Météo intelligente</td><td class="partial">Basique</td><td class="yes">Avancée + alertes</td></tr>
+<tr><td>Multi-piscine</td><td class="no">Non</td><td class="yes">Oui (3 piscines)</td></tr>
+<tr><td>Spa</td><td class="no">Non</td><td class="yes">Oui (Wellness + Spa365)</td></tr>
+<tr><td>Hivernage</td><td class="no">Non</td><td class="yes">Oui (Winter Guardian)</td></tr>
+<tr><td>Langues</td><td class="partial">3 (FR, EN, NL)</td><td class="yes">7 (FR, EN, ES, DE, IT, PT, NL)</td></tr>
+<tr><td>Gamification</td><td class="no">Non</td><td class="yes">Oui (8 badges, streaks)</td></tr>
+<tr><td>Rapport PDF</td><td class="partial">Basique</td><td class="yes">Avancé + bilan annuel</td></tr>
+<tr><td>Partage familial</td><td class="no">Non</td><td class="yes">Oui (PoolShare)</td></tr>
+<tr><td>Marketplace produits</td><td class="yes">Oui (Care)</td><td class="yes">Oui (Care France)</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>HTH / Bayrol / BAYROL PoolManager</h3>
+<p>Marques historiques de produits chimiques. Proposent des apps gratuites mais basiques (calculateur de dosage). Pas d'IA, pas de diagnostic photo, pas de météo. Servent surtout à vendre des produits.</p>
+<table>
+<tr><th>Critère</th><th>HTH/Bayrol</th><th>AQWELIA</th></tr>
+<tr><td>Modèle</td><td>Gratuit (vente produits)</td><td>Freemium (abonnement)</td></tr>
+<tr><td>IA</td><td class="no">Aucune</td><td class="yes">NVIDIA NIM + z-ai</td></tr>
+<tr><td>Diagnostic photo</td><td class="no">Non</td><td class="yes">Oui</td></tr>
+<tr><td>Indépendance produits</td><td class="no">Lié à la marque</td><td class="yes">Indépendant</td></tr>
+<tr><td>Écosystème</td><td class="no">App seule</td><td class="yes">App + mobile + Care + Pro</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>ICO (Astralpool) — Capteur connecté</h3>
+<p>ICO est un capteur submersible (pH + chlore + T°). Vendu ~450€. App correcte mais limitée. Pas d'IA, pas de bandelettes, pas de diagnostic photo.</p>
+<table>
+<tr><th>Critère</th><th>ICO</th><th>AQWELIA</th></tr>
+<tr><td>Coût initial</td><td class="no">450€</td><td class="yes">0€</td></tr>
+<tr><td>Mesure continue</td><td class="yes">Oui (capteur)</td><td class="partial">Non (manuel/IA)</td></tr>
+<tr><td>Analyse bandelettes</td><td class="no">Non</td><td class="yes">Oui (IA)</td></tr>
+<tr><td>Diagnostic photo</td><td class="no">Non</td><td class="yes">Oui</td></tr>
+<tr><td>Bilan annuel</td><td class="no">Non</td><td class="yes">Oui</td></tr>
+<tr><td>Hivernage</td><td class="no">Non</td><td class="yes">Oui</td></tr>
+<tr><td>Intégration IoT</td><td class="yes">Capteur propriétaire</td><td class="yes">ICO + iopool + ESPHome</td></tr>
+</table>
+<p style="margin-top:8px;color:#06b6d4"><strong>Stratégie AQWELIA :</strong> plutôt que de concurrencer ICO, AQWELIA s'y intègre (Home™ IoT supporte ICO, iopool, ESPHome).</p>
+</div>
+
+<!-- ============================================ -->
+<h2>3. Concurrents B2B — Piscinistes</h2>
+<!-- ============================================ -->
+
+<div class="card">
+<h3>Concurrents Pro existants</h3>
+<table class="feature-compare">
+<table>
+<tr><th>Critère</th><th>Prism Software (UK)</th><th>Pool Office (US)</th><th>EdenTools</th><th>AQWELIA Pro</th></tr>
+<tr><td>Marché</td><td>UK + international</td><td>USA</td><td>France</td><td>France → Europe</td></tr>
+<tr><td>CRM clients</td><td class="yes">Oui</td><td class="yes">Oui</td><td class="yes">Oui</td><td class="yes">Oui</td></tr>
+<tr><td>Planning/tournées</td><td class="yes">Oui</td><td class="yes">Oui</td><td class="partial">Basique</td><td class="yes">Oui + géoloc</td></tr>
+<tr><td>Tests d'eau intégrés</td><td class="partial">Module</td><td class="no">Non</td><td class="yes">Oui</td><td class="yes">Oui + IA</td></tr>
+<tr><td>Diagnostic photo IA</td><td class="no">Non</td><td class="no">Non</td><td class="no">Non</td><td class="yes">Oui (unique)</td></tr>
+<tr><td>App mobile</td><td class="yes">Oui</td><td class="yes">Oui</td><td class="no">Non</td><td class="yes">Oui (iOS + Android)</td></tr>
+<tr><td>Marketplace produits</td><td class="no">Non</td><td class="no">Non</td><td class="yes">Oui</td><td class="yes">Oui (Care)</td></tr>
+<tr><td>Prix mensuel</td><td>~100-200€</td><td>~150-300$</td><td>~80€</td><td>49-279€</td></tr>
+<tr><td>Langues</td><td>EN</td><td>EN</td><td>FR</td><td>7 langues</td></tr>
+<tr><td>Bridge B2C→B2B</td><td class="no">Non</td><td class="no">Non</td><td class="no">Non</td><td class="yes">Oui (unique)</td></tr>
+</table>
+</div>
+
+<!-- ============================================ -->
+<h2>4. Offres Tarifaires AQWELIA vs Concurrents</h2>
+<!-- ============================================ -->
+
+<h3>B2C — Particuliers</h3>
+<div class="pricing-grid">
+<div class="price-card">
+<div class="price-name">Découverte</div>
+<div class="price-amount">0€</div>
+<div class="price-period">Gratuit à vie</div>
+<ul class="price-features">
+<li>1 piscine</li>
+<li>Analyses illimitées</li>
+<li>5 guides de base</li>
+<li>Météo basique</li>
+<li>Historique 14 jours</li>
+</ul>
+</div>
+<div class="price-card popular">
+<div class="price-name">Oasis</div>
+<div class="price-amount">9,99€</div>
+<div class="price-period">/mois — 59,99€/an</div>
+<ul class="price-features">
+<li>3 piscines</li>
+<li>Analyses illimitées</li>
+<li>StripScan IA illimité</li>
+<li>Météo avancée + alertes</li>
+<li>Rappels intelligents</li>
+<li>Rapport PDF</li>
+<li>Mode pro (LSI)</li>
+<li>Guides + vidéos</li>
+</ul>
+</div>
+<div class="price-card">
+<div class="price-name">Wellness</div>
+<div class="price-amount">14,99€</div>
+<div class="price-period">/mois — 79,99€/an</div>
+<ul class="price-features">
+<li>Tout Oasis</li>
+<li>Spa inclus</li>
+<li>Traitements spa (brome)</li>
+<li>Eau chaude</li>
+<li>Profils séparés</li>
+</ul>
+</div>
+<div class="price-card">
+<div class="price-name">Spa 365</div>
+<div class="price-amount">6,99€</div>
+<div class="price-period">/mois — 49,99€/an</div>
+<ul class="price-features">
+<li>1 spa uniquement</li>
+<li>Analyses illimitées</li>
+<li>Brome, chlore, oxygène</li>
+<li>Gestion du stock</li>
+<li>Rappels intelligents</li>
+</ul>
+</div>
+</div>
+
+<table style="margin-top:24px">
+<tr><th>Offre</th><th>AQWELIA</th><th>iopool</th><th>ICO (amorti 3ans)</th><th>HTH/Bayrol</th></tr>
+<tr><td>Coût année 1</td><td>0€ (Découverte) ou 59,99€ (Oasis)</td><td>299€ + 119,88€ = 418,88€</td><td>450€ + 0€ = 450€</td><td>0€</td></tr>
+<tr><td>Coût année 2</td><td>0€ ou 59,99€</td><td>119,88€</td><td>0€</td><td>0€</td></tr>
+<tr><td>Coût année 3</td><td>0€ ou 59,99€</td><td>119,88€</td><td>0€</td><td>0€</td></tr>
+<tr><td><strong>Total 3 ans</strong></td><td class="yes"><strong>0€ ou 179,97€</strong></td><td>658,64€</td><td>450€</td><td class="yes">0€</td></tr>
+<tr><td>IA diagnostic photo</td><td class="yes">Oui</td><td class="no">Non</td><td class="no">Non</td><td class="no">Non</td></tr>
+<tr><td>Analyse bandelettes IA</td><td class="yes">Oui</td><td class="no">Non</td><td class="no">Non</td><td class="no">Non</td></tr>
+</table>
+
+<h3>B2B — Piscinistes (AQWELIA Pro)</h3>
+<div class="pricing-grid">
+<div class="price-card">
+<div class="price-name">Solo</div>
+<div class="price-amount">49€</div>
+<div class="price-period">/mois</div>
+<ul class="price-features">
+<li>1 technicien</li>
+<li>50 bassins</li>
+<li>CRM + planning</li>
+<li>App mobile</li>
+<li>Rapports PDF</li>
+<li>5 scans IA/mois</li>
+</ul>
+</div>
+<div class="price-card popular">
+<div class="price-name">Team</div>
+<div class="price-amount">129€</div>
+<div class="price-period">/mois</div>
+<ul class="price-features">
+<li>5 techniciens</li>
+<li>200 bassins</li>
+<li>Géolocalisation tournées</li>
+<li>Scans IA illimités</li>
+<li>Statistiques par tech</li>
+<li>Support prioritaire</li>
+</ul>
+</div>
+<div class="price-card">
+<div class="price-name">Fleet</div>
+<div class="price-amount">279€</div>
+<div class="price-period">/mois</div>
+<ul class="price-features">
+<li>15 techniciens</li>
+<li>Bassins illimités</li>
+<li>API + Webhooks</li>
+<li>Multi-agences</li>
+<li>White-label option</li>
+<li>Onboarding personnalisé</li>
+</ul>
+</div>
+<div class="price-card">
+<div class="price-name">Enterprise</div>
+<div class="price-amount">Sur devis</div>
+<div class="price-period">Réseaux & franchises</div>
+<ul class="price-features">
+<li>SSO / SAML</li>
+<li>SLA 99,9%</li>
+<li>Hébergement dédié</li>
+<li>Branding personnalisé</li>
+<li>Account manager</li>
+</ul>
+</div>
+</div>
+
+<!-- ============================================ -->
+<h2>5. Ce que j'en pense vraiment (honnêtement)</h2>
+<!-- ============================================ -->
+
+<div class="verdict">
+<h3>🏆 Forces réelles</h3>
+<p style="margin-bottom:16px"><strong>AQWELIA a un vrai avantage concurrentiel sur 3 axes :</strong></p>
+<ul style="margin-left:20px;font-size:0.95rem">
+<li><strong>IA photo (StripScan + diagnostic) :</strong> C'est le vrai différentiateur. Aucun concurrent n'analyse les bandelettes par IA ni ne diagnostique l'état de l'eau par photo. C'est patentable/défendable si bien exécuté.</li>
+<li><strong>Zéro matériel :</strong> Pas besoin d'acheter un capteur à 300-450€. Le smartphone suffit. Friction d'entrée = 0. C'est massif pour l'acquisition B2C.</li>
+<li><strong>Bridge B2C→B2B :</strong> Le propriétaire qui galère → trouve un pro via AQWELIA → le pro utilise AQWELIA Pro. Ce flywheel n'existe chez aucun concurrent.</li>
+</ul>
+
+<h3 style="color:#fca5a5">⚠️ Faiblesses réelles</h3>
+<ul style="margin-left:20px;font-size:0.95rem;color:#fca5a5">
+<li><strong>Pas de mesure continue :</strong> iopool et ICO mesurent en continu (capteur dans l'eau). AQWELIA dépend de l'utilisateur pour faire un test. C'est un désavantage réel pour la détection précoce des problèmes.</li>
+<li><strong>Précision IA vs capteur :</strong> L'analyse par photo de bandelette est moins précise qu'un capteur calibré. Si l'utilisateur prend une mauvaise photo (ombre, flou), le résultat peut être faux. L'IA doit gérer ça gracieusement.</li>
+<li><strong>Dépendance NVIDIA NIM :</strong> L'IA dépend d'une API externe (NVIDIA). Si NVIDIA change sa politique de prix ou limite les crédits, AQWELIA est vulnérable. Le fallback z-ai est une sécurité mais de qualité potentiellement inférieure.</li>
+<li><strong>Monétisation non prouvée :</strong> Le freemium est généreux (Découverte a scans illimités). Le taux de conversion payant n'est pas encore mesuré. Le pricing Oasis (9,99€/mois) est aligné sur iopool mais sans le hardware.</li>
+<li><strong>B2B très tôt :</strong> Lancer Pro en même temps que B2C dilue les ressources. Pro devrait être une phase 2 après validation du B2C.</li>
+<li><strong>Care (marketplace) non connecté à un vrai stock/fournisseur :</strong> Pour l'instant c'est un catalogue. Pas de vraie logistique e-commerce.</li>
+</ul>
+
+<h3>💡 Recommandations stratégiques</h3>
+<ul style="margin-left:20px;font-size:0.95rem">
+<li><strong>1. Prioriser le B2C d'abord :</strong> Valider le taux de conversion Découverte→Oasis avant de pousser Pro. Objectif : 5% de conversion payante sur 10 000 inscrits = 500 payants = ~30k€/an MRR.</li>
+<li><strong>2. Partenariat IoT :</strong> Plutôt que de fabriquer un capteur, s'associer à ICO ou iopool pour intégrer leurs données dans AQWELIA. AQWELIA devient le "cerveau" au-dessus des capteurs.</li>
+<li><strong>3. Le Spa 365 est intelligent :</strong> 6,99€/mois pour le spa uniquement c'est bien positionné. Le marché du spa croît plus vite que la piscine. Bon prix d'entrée.</li>
+<li><strong>4. Le Pro à 49€/mois est trop cher pour un indépendant français :</strong> Les piscinistes solo en France gagnent ~2500-3500€/mois. 49€/mois = ~1,5% du CA. C'est raisonnable mais il faut prouver la ROI vite. Considérer un plan à 29€/mois pour démarrer.</li>
+<li><strong>5. Le Winter Guardian est un atout saisonnier :</strong> En hiver, les concurrents sont silencieux. AQWELIA peut garder l'engagement toute l'année. C'est un différenciateur marketing fort.</li>
+</ul>
+</div>
+
+<!-- ============================================ -->
+<h2>6. SWOT</h2>
+<!-- ============================================ -->
+
+<div class="swot">
+<div class="swot-box swot-s">
+<h4 style="color:#86efac">💪 Forces</h4>
+<ul>
+<li>IA photo unique (StripScan + diagnostic)</li>
+<li>Zéro matériel (smartphone only)</li>
+<li>7 langues (marché européen)</li>
+<li>Bridge B2C→B2B (flywheel)</li>
+<li>Winter Guardian (engagement hiver)</li>
+<li>Indépendant des marques de produits</li>
+<li>App mobile native (Capacitor)</li>
+<li>Tarif compétitif (0€ à 14,99€/mois)</li>
+</ul>
+</div>
+<div class="swot-box swot-w">
+<h4 style="color:#fca5a5">⚠️ Faiblesses</h4>
+<ul>
+<li>Pas de mesure continue (vs capteurs)</li>
+<li>Précision IA dépend de la photo</li>
+<li>Dépendance NVIDIA NIM</li>
+<li>Monétisation non prouvée</li>
+<li>B2B lancé trop tôt</li>
+<li>Care = catalogue sans logistique</li>
+<li>Pas de données historiques utilisateur</li>
+<li>Équipe réduite (dev solo ?)</li>
+</ul>
+</div>
+<div class="swot-box swot-o">
+<h4 style="color:#93c5fd">🚀 Opportunités</h4>
+<ul>
+<li>Partenariat ICO/iopool (intégration IoT)</li>
+<li>Marché spa en forte croissance</li>
+<li>Réglementation eau (normes européennes)</li>
+<li>Marché européen sous-servi</li>
+<li>Marketplace Care → vraie revenue stream</li>
+<li>Growth OS (CRM leads pour pros)</li>
+<li>Academy (formation = rétention)</li>
+<li>White-label pour marques de produits</li>
+</ul>
+</div>
+<div class="swot-box swot-t">
+<h4 style="color:#fde047">⚡ Menaces</h4>
+<ul>
+<li>iopool lève des fonds (marketing)</li>
+<li>HTH/Bayrol peuvent lancer une IA</li>
+<li>NVIDIA peut changer sa politique</li>
+<li>Google/Apple peuvent intégrer l'eau</li>
+<li>Baisse du pouvoir d'achat (freemium)</li>
+<li>Concurrents chinois (prix cassés)</li>
+<li>Réglementation data (RGPD + IA Act)</li>
+<li>Saisonnalité forte (été = 80% usage)</li>
+</ul>
+</div>
+</div>
+
+<!-- ============================================ -->
+<h2>7. Prévisionnel sur 3 ans</h2>
+<!-- ============================================ -->
+
+<div class="disclaimer">
+⚠️ Ces prévisions sont des estimations basées sur des hypothèses de croissance. Elles ne constituent pas un engagement. Les chiffres réels dépendent du marketing, du produit, de l'exécution et du marché.
+</div>
+
+<h3>Hypothèses</h3>
+<div class="card">
+<ul style="margin-left:20px;font-size:0.9rem">
+<li><strong>Taux de conversion B2C :</strong> 3% (Année 1) → 5% (Année 2) → 7% (Année 3)</li>
+<li><strong>ARPU B2C payant :</strong> 8,50€/mois (mix Oasis/Wellness/Spa365)</li>
+<li><strong>CAC (coût acquisition) :</strong> 8€ (Année 1) → 6€ (Année 3, bouche-à-oreille)</li>
+<li><strong>Churn B2C :</strong> 8%/mois (Année 1) → 5%/mois (Année 3)</li>
+<li><strong>B2B :</strong> démarrage Année 2, 20 clients → 80 clients Année 3</li>
+<li><strong>ARPU B2B :</strong> 89€/mois (mix Solo/Team/Fleet)</li>
+<li><strong>Care (marketplace) :</strong> 2€/mois par user payant B2C (commission)</li>
+<li><strong>Coûts IA :</strong> 0,02€/scan × 2 scans/mois/user actif</li>
+</ul>
+</div>
+
+<h3>Projection Année 1 (Lancement)</h3>
+<table class="revenue-table">
+<tr><th>Métrique</th><th>Q1</th><th>Q2</th><th>Q3 (saison)</th><th>Q4</th><th>Total An 1</th></tr>
+<tr><td>Users B2C (cumul)</td><td>500</td><td>2 000</td><td>8 000</td><td>12 000</td><td>12 000</td></tr>
+<tr><td>Users payants (3%)</td><td>15</td><td>60</td><td>240</td><td>360</td><td>360</td></tr>
+<tr><td>MRR B2C</td><td>128€</td><td>510€</td><td>2 040€</td><td>3 060€</td><td>—</td></tr>
+<tr><td>Revenue B2C (annuel)</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="total">~20 000€</td></tr>
+<tr><td>B2B</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0€</td></tr>
+<tr><td>Care (commission)</td><td>—</td><td>—</td><td>—</td><td>—</td><td>~2 000€</td></tr>
+<tr><td>Coûts IA</td><td>—</td><td>—</td><td>—</td><td>—</td><td>~3 000€</td></tr>
+<tr><td><strong>Revenue total An 1</strong></td><td>—</td><td>—</td><td>—</td><td>—</td><td class="total">~22 000€</td></tr>
+</table>
+
+<h3>Projection Année 2 (Croissance)</h3>
+<table class="revenue-table">
+<tr><th>Métrique</th><th>Q1</th><th>Q2</th><th>Q3 (saison)</th><th>Q4</th><th>Total An 2</th></tr>
+<tr><td>Users B2C (cumul)</td><td>15 000</td><td>25 000</td><td>50 000</td><td>70 000</td><td>70 000</td></tr>
+<tr><td>Users payants (5%)</td><td>750</td><td>1 250</td><td>2 500</td><td>3 500</td><td>3 500</td></tr>
+<tr><td>MRR B2C</td><td>6 375€</td><td>10 625€</td><td>21 250€</td><td>29 750€</td><td>—</td></tr>
+<tr><td>Revenue B2C (annuel)</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="total">~200 000€</td></tr>
+<tr><td>Clients B2B</td><td>5</td><td>10</td><td>15</td><td>20</td><td>20</td></tr>
+<tr><td>Revenue B2B (annuel)</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="total">~16 000€</td></tr>
+<tr><td>Care (commission)</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="total">~50 000€</td></tr>
+<tr><td>Coûts IA</td><td>—</td><td>—</td><td>—</td><td>—</td><td>~15 000€</td></tr>
+<tr><td><strong>Revenue total An 2</strong></td><td>—</td><td>—</td><td>—</td><td>—</td><td class="total">~266 000€</td></tr>
+</table>
+
+<h3>Projection Année 3 (Échelle)</h3>
+<table class="revenue-table">
+<tr><th>Métrique</th><th>Q1</th><th>Q2</th><th>Q3 (saison)</th><th>Q4</th><th>Total An 3</th></tr>
+<tr><td>Users B2C (cumul)</td><td>80 000</td><td>120 000</td><td>200 000</td><td>280 000</td><td>280 000</td></tr>
+<tr><td>Users payants (7%)</td><td>5 600</td><td>8 400</td><td>14 000</td><td>19 600</td><td>19 600</td></tr>
+<tr><td>MRR B2C</td><td>47 600€</td><td>71 400€</td><td>119 000€</td><td>166 600€</td><td>—</td></tr>
+<tr><td>Revenue B2C (annuel)</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="total">~1 100 000€</td></tr>
+<tr><td>Clients B2B</td><td>30</td><td>50</td><td>65</td><td>80</td><td>80</td></tr>
+<tr><td>Revenue B2B (annuel)</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="total">~85 000€</td></tr>
+<tr><td>Care (commission)</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="total">~350 000€</td></tr>
+<tr><td>Coûts IA</td><td>—</td><td>—</td><td>—</td><td>—</td><td>~50 000€</td></tr>
+<tr><td><strong>Revenue total An 3</strong></td><td>—</td><td>—</td><td>—</td><td>—</td><td class="total">~1 535 000€</td></tr>
+</table>
+
+<h3>Synthèse 3 ans</h3>
+<div class="stat-grid">
+<div class="stat"><div class="stat-num">22k€</div><div class="stat-label">Revenue An 1</div></div>
+<div class="stat"><div class="stat-num">266k€</div><div class="stat-label">Revenue An 2</div></div>
+<div class="stat"><div class="stat-num">1,5M€</div><div class="stat-label">Revenue An 3</div></div>
+<div class="stat"><div class="stat-num">280k</div><div class="stat-label">Users B2C An 3</div></div>
+<div class="stat"><div class="stat-num">19 600</div><div class="stat-label">Payants An 3</div></div>
+<div class="stat"><div class="stat-num">80</div><div class="stat-label">Clients Pro An 3</div></div>
+</div>
+
+<div class="disclaimer">
+<strong>Verdict honnête sur le prévisionnel :</strong> L'An 1 est réaliste (~22k€) car le produit existe et le marché est là. L'An 2 nécessite un investissement marketing significatif (SEO, Ads, partenariats) pour atteindre 70 000 users. L'An 3 est optimiste — 280 000 users nécessitent soit un effet viral puissant, soit une levée de fonds pour le marketing. La clé de tout : le taux de conversion (3%→7%). Si la conversion reste à 1-2%, le revenue An 3 sera plutôt ~400-600k€.
+</div>
+
+<!-- ============================================ -->
+<h2>8. Conclusion</h2>
+<!-- ============================================ -->
+
+<div class="verdict">
+<h3>AQWELIA a un vrai potentiel — mais l'exécution est tout</h3>
+<p style="margin-bottom:16px">Le produit a 3 atouts qui n'existent nulle part ailleurs :</p>
+<ol style="margin-left:20px;font-size:0.95rem">
+<li><strong>StripScan IA</strong> — analyser une bandelette par photo est un game-changer pour le grand public</li>
+<li><strong>Zéro hardware</strong> — friction d'acquisition = 0, contrairement à iopool (299€) ou ICO (450€)</li>
+<li><strong>Bridge B2C→B2B</strong> — le particulier qui galère devient un lead qualifié pour le pisciniste</li>
+</ol>
+<p style="margin-bottom:16px"><strong>Mais les risques sont réels :</strong></p>
+<ul style="margin-left:20px;font-size:0.95rem;color:#fca5a5">
+<li>Si l'IA photo n'est pas assez précise → les utilisateurs retournent aux bandelettes manuelles</li>
+<li>Si le taux de conversion reste < 2% → le modèle freemium ne dégage pas assez de MRR</li>
+<li>Si iopool lève 5M€ et inonde le marché → difficile de compet' sur la notoriété</li>
+</ul>
+<p><strong>Ma recommandation :</strong> Focus 100% sur le B2C en Année 1. Prouver la conversion. Mettre Pro en standby. Le Winter Guardian et le Spa 365 sont des niches à occuper vite. Le Care marketplace peut devenir un vrai revenue stream si bien exécuté (commission 10-15% sur les ventes de produits).</p>
+</div>
+
+<p style="text-align:center;color:#475569;margin-top:48px;font-size:0.85rem">
+AQWELIA — Analyse stratégique | Juillet 2026 | Document confidentiel
+</p>
+
+</div>
+</body>
+</html>
