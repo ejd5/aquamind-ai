@@ -1,6 +1,7 @@
 import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor'
 import { isNative, getPlatform } from '@/lib/platform'
 import type { BillingClient, Product, Entitlement, PurchaseResult, PlanId } from './types'
+import { getPlanFromRCProductId, DURATION_TO_PROVIDER } from './plans'
 
 const RC_API_KEYS = {
   ios: process.env.NEXT_PUBLIC_REVENUECAT_IOS_KEY || '',
@@ -23,24 +24,13 @@ async function ensureInitialized() {
 function mapPackageToProduct(pkg: any): Product | null {
   try {
     const id = pkg?.product?.identifier || ''
-    let plan: PlanId = 'decouverte'
-    let duration: 'weekly' | 'monthly' | 'seasonal' | 'yearly' = 'monthly'
-
-    // RevenueCat product id convention: aqwelia_<plan>_<duration>
-    //   plan: oasis | wellness
-    //   duration: weekly | monthly | seasonal | yearly
-    if (id.includes('wellness')) plan = 'wellness'
-    else if (id.includes('oasis')) plan = 'oasis'
-    else return null
-
-    if (id.includes('yearly')) duration = 'yearly'
-    else if (id.includes('seasonal')) duration = 'seasonal'
-    else if (id.includes('weekly')) duration = 'weekly'
+    const mapped = getPlanFromRCProductId(id)
+    if (!mapped) return null
 
     return {
       id,
-      plan,
-      duration,
+      plan: mapped.plan,
+      duration: DURATION_TO_PROVIDER[mapped.duration],
       price: parseFloat(pkg?.product?.price || '0') || 0,
       priceString: pkg?.product?.priceString || '',
       currency: pkg?.product?.currencyCode || 'EUR',
@@ -57,10 +47,10 @@ function mapCustomerInfoToEntitlements(info: any): Entitlement[] {
   try {
     const all = info?.entitlements?.all || {}
     for (const [id, data] of Object.entries(all)) {
-      if (id !== 'oasis' && id !== 'wellness') continue
+      if (id !== 'oasis' && id !== 'wellness' && id !== 'spa365') continue
       const d = data as any
       entitlements.push({
-        id: id as 'oasis' | 'wellness',
+        id: id as 'oasis' | 'wellness' | 'spa365',
         plan: id as PlanId,
         isActive: !!d?.isActive,
         willRenew: !!d?.willRenew,
@@ -156,6 +146,8 @@ export const revenueCatClient: BillingClient = {
     const entitlements = await this.getEntitlements()
     const wellness = entitlements.find((e) => e.plan === 'wellness' && e.isActive)
     if (wellness) return 'wellness'
+    const spa365 = entitlements.find((e) => e.plan === 'spa365' && e.isActive)
+    if (spa365) return 'spa365'
     const oasis = entitlements.find((e) => e.plan === 'oasis' && e.isActive)
     if (oasis) return 'oasis'
     return 'decouverte'

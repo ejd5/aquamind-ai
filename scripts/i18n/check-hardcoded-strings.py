@@ -42,6 +42,10 @@ MULTILINGUAL_FILES = {
     'src/components/aquamind/module-diagnostic.tsx',
     'src/components/aquamind/diagnostic-action-plan.tsx',
     'src/lib/pool/strip-scan-synonyms.ts',
+    # billing/plans.ts: legacy French fallback strings alongside i18n keys.
+    # Each string has a corresponding featureKey. Will be removed when
+    # legacy fallbacks are dropped (P1 i18n cleanup).
+    'src/lib/billing/plans.ts',
 }
 
 # Littéraux exacts autorisés, limités à un fichier spécifique.

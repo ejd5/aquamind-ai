@@ -48,27 +48,32 @@ cleanup() {
 
 trap cleanup EXIT INT TERM
 
-# ── 4. Push schema to test DB ────────────────────────────────────────────────
-echo "=== 1. Push schema to test DB ==="
+# ── 4. Verify migration on legacy and fresh databases ──────────────────────
+echo "=== 1. Verify P0-B migration ==="
+bash "$PROJECT_ROOT/tests/run-billing-migration-test.sh"
+
+# ── 5. Push schema to test DB ────────────────────────────────────────────────
+echo "=== 2. Push schema to test DB ==="
 echo "DB: $TEST_DB"
+touch "$TEST_DB"
 bun run db:push 2>&1 | tail -3
 
 # ── 5. Create test user ──────────────────────────────────────────────────────
 echo ""
-echo "=== 2. Create test user ==="
+echo "=== 3. Create test user ==="
 node "$PROJECT_ROOT/tests/create-test-user.mjs" 2>&1 | tail -2
 
 # ── 6. Start dev server ──────────────────────────────────────────────────────
 echo ""
-echo "=== 3. Start dev server on port $PORT ==="
+echo "=== 4. Start dev server on port $PORT ==="
 NODE_OPTIONS="--max-old-space-size=1024" \
-  node node_modules/.bin/next dev -p "$PORT" > "$SERVER_LOG" 2>&1 &
+  node node_modules/.bin/next dev -H 127.0.0.1 -p "$PORT" > "$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
 echo "Server PID: $SERVER_PID"
 
 # ── 7. Wait for server ready ─────────────────────────────────────────────────
 echo ""
-echo "=== 4. Wait for server ready ==="
+echo "=== 5. Wait for server ready ==="
 for i in $(seq 1 60); do
   HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 "${BASE_URL}/api/auth/csrf" 2>/dev/null || echo "000")
   if [ "$HTTP" = "200" ]; then
@@ -85,7 +90,7 @@ done
 
 # ── 8. Run smoke tests ───────────────────────────────────────────────────────
 echo ""
-echo "=== 5. Run smoke tests ==="
+echo "=== 6. Run smoke tests ==="
 SMOKE_BASE_URL="$BASE_URL" bun run test 2>&1
 TEST_EXIT=$?
 

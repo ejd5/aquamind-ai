@@ -167,7 +167,9 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
   }, [])
 
   const plan = PLANS.find((p) => p.id === planId) || PLANS[0]
-  const multiPoolGate = canAccess(planId, 'multi_pool')
+  // Client-side gate is a secondary defense — the real gate is server-side.
+  // Pass 'active' as status (the server validates the real status).
+  const multiPoolGate = canAccess(planId, 'active', 'multi_pool')
   const canAddPool =
     multiPoolGate.allowed && pools.length < plan.limits.maxPools
 

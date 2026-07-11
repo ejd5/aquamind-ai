@@ -319,18 +319,63 @@ model GuideView {
 }
 
 // Abonnement freemium
+// P0-B: added status, store, stripeCustomerId, stripeSubscriptionId,
+// cancelAt, trialEndsAt, currentPeriodStart, currentPeriodEnd.
+// The `active` field is kept for backward compat but is derived from `status`.
 model Subscription {
-  id        String    @id @default(cuid())
-  userId    String
-  plan      String    @default("decouverte") // decouverte, oasis, wellness
-  duration  String? // week, month, halfyear, year
-  startedAt DateTime  @default(now())
-  expiresAt DateTime?
-  active    Boolean   @default(false)
+  id                    String    @id @default(cuid())
+  userId                String
+  plan                  String    @default("decouverte") // decouverte, oasis, wellness, spa365
+  status                String    @default("inactive")   // inactive, trialing, active, past_due, canceled, expired, grace_period
+  duration              String?   // week, month, halfyear, year
+  store                 String?   // web, ios, android
+  startedAt             DateTime  @default(now())
+  expiresAt             DateTime?
+  cancelAt              DateTime?
+  trialEndsAt           DateTime?
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  stripeCustomerId      String?
+  stripeSubscriptionId  String?   @unique
+  // P0-B: stable provider identity for finding inactive subscriptions
+  providerSubscriptionId String?  @unique // RC original_transaction_id or Stripe sub ID
+  // P0-B: out-of-order event protection
+  lastProviderEventId   String?
+  lastProviderEventAt   DateTime?
+  active                Boolean   @default(false) // legacy — derived from status
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([status])
+}
+
+// P0-B: Billing event log — idempotency for webhooks.
+// Uses composite unique [source, eventId] so Stripe and RC can have
+// overlapping event IDs without collision.
+// Retry/crash recovery: attemptCount, processingStartedAt, nextRetryAt.
+model BillingEvent {
+  id                  String    @id @default(cuid())
+  eventId             String    // Stripe event.id or RC event.id
+  source              String    // stripe | revenuecat
+  eventType           String    // checkout.session.completed, CANCELLATION, etc.
+  userId              String?
+  payload             String?  // Redacted JSON (no card numbers, secrets)
+  result              String    @default("processing") // processing | processed | failed | ignored
+  ignoredReason       String?   // unknown_product | unknown_price | event_type_not_supported | missing_user_mapping | no_subscription_link
+  errorMessage        String?
+  attemptCount        Int       @default(0)
+  processingStartedAt DateTime?
+  processingToken     String?
+  processedAt         DateTime?
+  nextRetryAt         DateTime?
+  createdAt           DateTime  @default(now())
+
+  @@unique([source, eventId])
+  @@index([source, eventType])
+  @@index([userId])
+  @@index([result])
+  @@index([nextRetryAt])
 }
 
 // Événements analytics (funnel, rétention)

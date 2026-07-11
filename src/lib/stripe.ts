@@ -8,6 +8,7 @@
  * by API routes that run on the Node.js runtime.
  */
 import Stripe from 'stripe'
+import { PLANS, DURATION_TO_PROVIDER, type Duration, type PlanId } from '@/lib/billing/plans'
 
 // Singleton Stripe client — created lazily on first use
 let _stripe: Stripe | null = null
@@ -40,26 +41,24 @@ export function getStripe(): Stripe {
 //   monthly  → 1 mois
 //   seasonal → 6 mois (saison)
 //   yearly   → 12 mois
-export const STRIPE_PRICES = {
-  oasis_weekly: process.env.STRIPE_PRICE_OASIS_WEEKLY || '',
-  oasis_monthly: process.env.STRIPE_PRICE_OASIS_MONTHLY || '',
-  oasis_seasonal: process.env.STRIPE_PRICE_OASIS_SEASONAL || '',
-  oasis_yearly: process.env.STRIPE_PRICE_OASIS_YEARLY || '',
-  wellness_weekly: process.env.STRIPE_PRICE_WELLNESS_WEEKLY || '',
-  wellness_monthly: process.env.STRIPE_PRICE_WELLNESS_MONTHLY || '',
-  wellness_seasonal: process.env.STRIPE_PRICE_WELLNESS_SEASONAL || '',
-  wellness_yearly: process.env.STRIPE_PRICE_WELLNESS_YEARLY || '',
-} as const
+export type StripeProductId = `${Exclude<PlanId, 'decouverte'>}_${ReturnType<typeof providerDuration>}`
 
-export type StripeProductId = keyof typeof STRIPE_PRICES
+function providerDuration(duration: Duration) { return DURATION_TO_PROVIDER[duration] }
+
+export const STRIPE_PRICES = Object.fromEntries(
+  PLANS.filter(plan => plan.id !== 'decouverte').flatMap(plan =>
+    (Object.entries(plan.stripePrices) as [Duration, string][]).map(([duration, priceId]) => [
+      `${plan.id}_${providerDuration(duration)}`,
+      priceId || '',
+    ])
+  )
+) as Record<StripeProductId, string>
 
 export function isValidProductId(id: string): id is StripeProductId {
   return id in STRIPE_PRICES
 }
 
 // Maps a Stripe product id (e.g. "wellness_yearly") to the AQWELIA plan name
-// stored in the `Subscription.plan` column ("oasis" | "wellness").
-export function getPlanFromProductId(productId: string): 'oasis' | 'wellness' {
-  if (productId.includes('wellness')) return 'wellness'
-  return 'oasis'
-}
+// stored in the `Subscription.plan` column.
+// Uses the centralized getPlanFromProductId from billing/plans.ts.
+export { getPlanFromProductId, getPlanFromWebProductId } from '@/lib/billing/plans'

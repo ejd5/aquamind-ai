@@ -328,6 +328,7 @@ export default function SettingsPage() {
     decouverte: t('planDecouverte'),
     oasis: t('planOasis'),
     wellness: t('planWellness'),
+    spa365: t('planSpa365'),
   }
 
   return (

@@ -5,10 +5,11 @@ import { db } from '@/lib/db'
 import { generateReminders, getCurrentSeason, type ReminderContext } from '@/lib/pool/reminders'
 import { assessWeather } from '@/lib/pool/weather-engine'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { requireFeatureAccess } from '@/lib/billing/gate'
 
 export const runtime = 'nodejs'
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
@@ -16,6 +17,11 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
+
+  // P0-B: Feature gate — smart reminders (intelligent generation)
+  // Manual reminders are kept for all users; only smart generation is gated.
+  const gate = await requireFeatureAccess(req, 'smart_reminders')
+  const hasSmartReminders = !gate.denied
 
   try {
     const [profile, lastTest, savedReminders, equipment, products] = await Promise.all([
@@ -69,7 +75,7 @@ export async function GET(req: Request) {
       season: getCurrentSeason(),
     }
 
-    const generated = generateReminders(ctx)
+    const generated = hasSmartReminders ? generateReminders(ctx) : []
 
     // Fusionner avec rappels manuels persistés (source='manual')
     const manual = savedReminders.filter((r) => r.source === 'manual')
