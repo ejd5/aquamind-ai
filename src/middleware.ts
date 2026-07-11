@@ -4,12 +4,15 @@
  * Combines:
  *  1. Locale detection — sets the `NEXT_LOCALE` cookie + header so that
  *     `getRequestConfig` in `src/i18n/request.ts` can read it via `requestLocale`.
- *  2. NextAuth authentication — protects business API routes by requiring a
- *     valid JWT session.
+ *  2. NextAuth authentication — protects API routes by requiring a valid JWT.
+ *
+ * IMPORTANT: For API routes we return a 401 JSON response instead of redirecting
+ * to /auth/signin. A 307 redirect on a fetch() delivers the signin page HTML,
+ * which breaks client-side JSON parsing.
  */
-import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 import { locales, defaultLocale, normalizeLocale } from '@/i18n/config'
 
 /**
@@ -63,15 +66,6 @@ const PROTECTED_PATTERNS = [
   /^\/api\/growth\/agents\//,
 ]
 
-const authMiddleware = withAuth(
-  function middleware(req: NextRequest) {
-    return NextResponse.next()
-  },
-  {
-    pages: { signIn: '/auth/signin' },
-  }
-)
-
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
@@ -100,17 +94,26 @@ export default async function middleware(req: NextRequest) {
   // Also set on the request headers so getRequestConfig can read it
   res.headers.set('accept-language', detected)
 
+  // ── Anti-cache headers (for dev sandbox — prevents stale JS) ──
+  res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+  res.headers.set('Pragma', 'no-cache')
+  res.headers.set('Expires', '0')
+
   // --- Auth protection (runs only on protected API routes) ---
+  // For API routes: return 401 JSON (NOT a redirect) so client-side fetch()
+  // can cleanly detect "not authenticated" and trigger the signin flow.
   const isProtected = PROTECTED_PATTERNS.some((p) => p.test(pathname))
   if (isProtected) {
-    // P0-FIX Bug 3: TS2554 — `withAuth(...)` returns a Next.js middleware
-    // function whose signature is `(req, ctx)` (the `ctx` carries the
-    // matched route `params`). Calling it with only `req` was a type error
-    // AND silently dropped the context. We forward an empty params object
-    // (the matcher above has no `:params` so this is correct) and let
-    // next-auth introspect the session cookie / `next-auth.session-token`
-    // header that the request already carries.
-    return authMiddleware(req as any, { params: {} } as any)
+    const token = await getToken({
+      req,
+      secret: process.env.NEXTAUTH_SECRET,
+    })
+    if (!token) {
+      return NextResponse.json(
+        { error: 'unauthorized', authenticated: false },
+        { status: 401 }
+      )
+    }
   }
 
   return res

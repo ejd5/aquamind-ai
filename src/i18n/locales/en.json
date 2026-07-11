@@ -1233,7 +1233,8 @@
     "defaultProfileCreatedTitle": "Default profile created",
     "defaultProfileCreatedDesc": "You can edit it later.",
     "cannotCreateDefault": "Unable to create default profile",
-    "bottomNote": "Your data stays on your device. You can edit everything later."
+    "bottomNote": "Your data stays on your device. You can edit everything later.",
+    "authRequiredRedirect": "You must be signed in to save. Redirecting..."
   },
   "settings": {
     "title": "Settings & privacy",
@@ -5171,7 +5172,10 @@
     "savedFromDiagnosticDesc": "The water test was saved with the scanned values.",
     "scanAnother": "Scan another strip",
     "diagnosticStripCta": "Scan my test strip",
-    "diagnosticStripCtaDesc": "The AI reads the color pads on your strip and auto-fills the water test values."
+    "diagnosticStripCtaDesc": "The AI reads the color pads on your strip and auto-fills the water test values.",
+    "statusActionRequired": "⚠️ Action required",
+    "statusWatch": "👀 Watch",
+    "statusBalanced": "✅ Water balanced"
   },
   "gates": {
     "photo_scan_limit": "Monthly limit of {n} scans reached. Upgrade to a higher plan to continue."
