@@ -41,9 +41,15 @@ SKIP_PATTERNS = [
 MULTILINGUAL_FILES = {
     'src/components/aquamind/module-diagnostic.tsx',
     'src/components/aquamind/diagnostic-action-plan.tsx',
-    # StripScan — contains multilingual PARAM_SYNONYMS for VLM-output matching
-    'src/app/api/pool/strip-scan/route.ts',
-    'src/components/aquamind/strip-scanner.tsx',
+    'src/lib/pool/strip-scan-synonyms.ts',
+}
+
+# Littéraux exacts autorisés, limités à un fichier spécifique.
+# La phrase ne doit pas être ignorée ailleurs dans le projet.
+ALLOWED_LITERALS = {
+    'src/app/faq/page.tsx': {
+        'Questions fréquentes sur AQWELIA',
+    },
 }
 
 def should_skip(filepath):
@@ -174,6 +180,10 @@ def find_french_strings(filepath):
 
             # Si la chaîne contient des accents français → c'est du texte affiché
             if any(c in FRENCH_ACCENTS for c in s):
+                # Vérifier si c'est un littéral exact autorisé pour CE fichier
+                rel_path = str(filepath).replace('\\', '/')
+                if rel_path in ALLOWED_LITERALS and s in ALLOWED_LITERALS[rel_path]:
+                    continue
                 violations.append({
                     'file': str(filepath).replace('\\', '/'),
                     'line': line_num,

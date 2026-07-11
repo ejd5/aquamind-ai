@@ -109,84 +109,9 @@ interface StripScanAnalysis {
 }
 
 // ── Parameter name normalization ─────────────────────────────────────────────
-// Maps VLM-returned parameter names (case-insensitive, synonym-tolerant) to
-// the canonical WaterTest field keys used by the rest of the app.
-const PARAM_SYNONYMS: Record<string, string[]> = {
-  ph: ['ph', 'phvalue', 'ph value', 'potential hydrogen'],
-  freeChlorine: [
-    'free chlorine',
-    'free cl',
-    'cl libre',
-    'chlore libre',
-    'cl2 libre',
-    'freies chlor',
-    'cloro libre',
-    'cloro attivo',
-  ],
-  totalChlorine: [
-    'total chlorine',
-    'total cl',
-    'cl total',
-    'chlore total',
-    'cl2 total',
-    'gesamtes chlor',
-    'cloro total',
-    'cloro totale',
-  ],
-  combinedChlorine: [
-    'combined chlorine',
-    'chloramines',
-    'chlore combine',
-    'chlore combiné',
-  ],
-  alkalinity: [
-    'total alkalinity',
-    'alkalinity',
-    'tac',
-    'alcalinite',
-    'alcalinité',
-    'alcalinidad',
-    'alkalität',
-    'alcalinità',
-  ],
-  calciumHardness: [
-    'hardness',
-    'calcium hardness',
-    'th',
-    'durete',
-    'dureté',
-    'dureté calcique',
-    'dureza',
-    'härte',
-    'durezza',
-  ],
-  cyanuricAcid: [
-    'cyanuric acid',
-    'cya',
-    'stabilizer',
-    'stabilisant',
-    'estabilizante',
-    'stabilisator',
-    'acido cianurico',
-    'acido isocianurico',
-  ],
-  salt: ['salt', 'sel', 'salz', 'sale', 'sal', 'sodium chloride'],
-  bromine: ['bromine', 'brome', 'brom', 'bromo'],
-  phosphates: ['phosphates', 'phosphate', 'fosfatos', 'phosphat', 'fosfati'],
-  temperature: ['temperature', 'temp', 'temperatur', 'temperatura'],
-}
+// Multilingual parameter synonyms — imported from the single source of truth.
+import { normalizeParamName } from '@/lib/pool/strip-scan-synonyms'
 
-function normalizeParamName(name: string): string | null {
-  const lower = name.trim().toLowerCase()
-  for (const [canonical, synonyms] of Object.entries(PARAM_SYNONYMS)) {
-    if (synonyms.includes(lower)) return canonical
-  }
-  // Partial match: if the synonym appears as a substring
-  for (const [canonical, synonyms] of Object.entries(PARAM_SYNONYMS)) {
-    if (synonyms.some((s) => lower.includes(s))) return canonical
-  }
-  return null
-}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function numOrNull(v: unknown): number | null {

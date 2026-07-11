@@ -48,12 +48,32 @@ export const dynamic = 'force-dynamic'
 /** Certification validity period (1 year, in ms). */
 const CERT_VALIDITY_MS = 365 * 24 * 60 * 60 * 1000
 
-/** Verify the session and return the userId, or a 401 response. */
-async function requireAuth() {
-  const session = await getServerSession(authOptions)
+/**
+ * Verify the session and return the userId.
+ * Returns:
+ *   - { userId: string, error: null } on success
+ *   - { userId: null, error: Response } if no session (401)
+ *   - { userId: null, error: Response } if getServerSession throws (500 generic)
+ *
+ * The caller MUST check `error` first and return it directly.
+ * This pattern avoids throwing NextResponse as an exception (anti-pattern)
+ * and keeps 401/500 errors distinct.
+ */
+async function requireAuth(): Promise<{ userId: string | null; error: Response | null }> {
+  let session
+  try {
+    session = await getServerSession(authOptions)
+  } catch {
+    // getServerSession failed (DB down, JWT secret missing, etc.)
+    // Return a generic 500 — do NOT leak the internal error.
+    return {
+      userId: null,
+      error: NextResponse.json({ error: 'internal_error' }, { status: 500 }),
+    }
+  }
   if (!session?.user?.id) {
     return {
-      userId: null as string | null,
+      userId: null,
       error: NextResponse.json({ error: 'unauthorized' }, { status: 401 }),
     }
   }
@@ -66,7 +86,8 @@ async function requireAuth() {
 
 export async function GET() {
   const { userId, error } = await requireAuth()
-  if (error || !userId) return error
+  if (error) return error
+  if (!userId) return NextResponse.json({ error: 'internal_error' }, { status: 500 })
 
   try {
     const certifications = await db.certification.findMany({
@@ -98,7 +119,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const { userId, error } = await requireAuth()
-  if (error || !userId) return error
+  if (error) return error
+  if (!userId) return NextResponse.json({ error: 'internal_error' }, { status: 500 })
 
   let body: { action?: string; courseId?: string; score?: number }
   try {

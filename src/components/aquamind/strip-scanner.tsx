@@ -65,31 +65,10 @@ interface StripScanResponse {
   ctaPlan?: string
 }
 
-// Parameter-name normalization (mirror of API logic for client-side rendering)
-const PARAM_SYNONYMS: Record<string, string[]> = {
-  ph: ['ph', 'phvalue', 'ph value', 'potential hydrogen'],
-  freeChlorine: ['free chlorine', 'free cl', 'cl libre', 'chlore libre', 'cloro libre'],
-  totalChlorine: ['total chlorine', 'total cl', 'cl total', 'chlore total', 'cloro total'],
-  combinedChlorine: ['combined chlorine', 'chloramines', 'chlore combiné'],
-  alkalinity: ['total alkalinity', 'alkalinity', 'tac', 'alcalinité', 'alcalinidad'],
-  calciumHardness: ['hardness', 'calcium hardness', 'th', 'dureté', 'dureza', 'härte'],
-  cyanuricAcid: ['cyanuric acid', 'cya', 'stabilizer', 'stabilisant'],
-  salt: ['salt', 'sel', 'salz', 'sale', 'sal'],
-  bromine: ['bromine', 'brome', 'brom', 'bromo'],
-  phosphates: ['phosphates', 'phosphate', 'fosfatos', 'phosphat'],
-  temperature: ['temperature', 'temp', 'temperatur', 'temperatura'],
-}
-
-function normalizeParamName(name: string): string | null {
-  const lower = name.trim().toLowerCase()
-  for (const [canonical, synonyms] of Object.entries(PARAM_SYNONYMS)) {
-    if (synonyms.includes(lower)) return canonical
-  }
-  for (const [canonical, synonyms] of Object.entries(PARAM_SYNONYMS)) {
-    if (synonyms.some((s) => lower.includes(s))) return canonical
-  }
-  return null
-}
+// Parameter-name normalization — imported from the single source of truth.
+// The synonyms file contains multilingual keywords (FR/EN/ES/DE/IT) for
+// matching AI-detected parameter names. It is NOT user-facing text.
+import { normalizeParamName } from '@/lib/pool/strip-scan-synonyms'
 
 interface Props {
   open: boolean
