@@ -200,17 +200,20 @@ describe('Smoke — Middleware (auth + public access)', () => {
     expect(res.status).toBe(200)
   })
 
-  it('Stripe webhook — accessible without session (no 401 from middleware)', async () => {
-    // Stripe webhooks must NOT be blocked by the auth middleware.
-    // The webhook will fail signature verification (400) but should NOT return 401.
+  it('Stripe webhook — returns 400 on missing signature (not 401, not 500)', async () => {
+    // Stripe webhooks must NOT be blocked by the auth middleware (no 401).
+    // With STRIPE_WEBHOOK_SECRET configured, a missing signature returns 400.
+    // A 500 would mean the webhook secret is not configured (test env bug).
     const res = await fetch(`${BASE}/api/stripe/webhook`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
     })
-    // 400 (bad signature) or 500 (not configured) is acceptable;
-    // 401 means middleware blocked it.
-    expect(res.status).not.toBe(401)
+    expect(res.status).not.toBe(401) // not middleware-blocked
+    expect(res.status).not.toBe(500) // not a server error
+    expect(res.status).toBe(400)     // missing signature → 400
+    const data = await res.json()
+    expect(data.error).toBeTruthy()
   })
 
   it('RevenueCat webhook — accessible without session, returns 401 from webhook verification (not middleware)', async () => {
@@ -231,10 +234,11 @@ describe('Smoke — Middleware (auth + public access)', () => {
     expect(data.error).toBe('Unauthorized') // route handler error, not middleware
   })
 
-  it('Public lead capture (Growth) — POST /api/growth/leads without session returns 401 from route (not middleware)', async () => {
-    // The growth/leads POST route checks auth internally (getServerSession).
-    // It's NOT in the middleware PROTECTED_PATTERNS, so the middleware won't block it.
-    // The 401 comes from the route handler itself.
+  it('Growth CRM leads — route-level authentication required', async () => {
+    // /api/growth/leads POST checks auth internally (getServerSession).
+    // It is NOT in the middleware PROTECTED_PATTERNS, so the middleware
+    // does not block it. The 401 comes from the route handler itself.
+    // This route is NOT public — it requires a NextAuth session.
     const res = await fetch(`${BASE}/api/growth/leads`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
