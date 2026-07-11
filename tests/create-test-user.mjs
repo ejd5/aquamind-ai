@@ -1,10 +1,11 @@
 import crypto from 'crypto'
 import { PrismaClient } from '@prisma/client'
 
-// Use DATABASE_URL from .env (the test script swaps .env before calling this)
-const dbUrl = process.env.DATABASE_URL || process.env.TEST_DB_URL
+// Uses DATABASE_URL from the environment (set by run-smoke-tests.sh).
+// NEVER reads or modifies .env.
+const dbUrl = process.env.DATABASE_URL
 if (!dbUrl) {
-  console.error('DATABASE_URL (or TEST_DB_URL) env var required')
+  console.error('DATABASE_URL env var required')
   process.exit(1)
 }
 

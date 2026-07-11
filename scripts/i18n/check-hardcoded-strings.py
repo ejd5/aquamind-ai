@@ -42,9 +42,12 @@ MULTILINGUAL_FILES = {
     'src/components/aquamind/module-diagnostic.tsx',
     'src/components/aquamind/diagnostic-action-plan.tsx',
     'src/lib/pool/strip-scan-synonyms.ts',
-    # faq/page.tsx: static metadata in French — will be localized via
-    # generateMetadata() in the SEO i18n phase (P1), not P0-A.
-    'src/app/faq/page.tsx',
+}
+
+# Littéraux exacts autorisés (metadata statique en français, à localiser plus tard)
+# Liste précise — n'ignore jamais un fichier complet.
+ALLOWED_LITERALS = {
+    'Questions fréquentes sur AQWELIA',
 }
 
 def should_skip(filepath):
@@ -175,6 +178,9 @@ def find_french_strings(filepath):
 
             # Si la chaîne contient des accents français → c'est du texte affiché
             if any(c in FRENCH_ACCENTS for c in s):
+                # Vérifier si c'est un littéral exact autorisé (allowlist précise)
+                if s in ALLOWED_LITERALS:
+                    continue
                 violations.append({
                     'file': str(filepath).replace('\\', '/'),
                     'line': line_num,
