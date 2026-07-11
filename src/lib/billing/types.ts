@@ -1,4 +1,4 @@
-export type PlanId = 'decouverte' | 'oasis' | 'wellness'
+export type PlanId = 'decouverte' | 'oasis' | 'wellness' | 'spa365'
 export type BillingPlatform = 'web' | 'ios' | 'android'
 
 export interface Product {

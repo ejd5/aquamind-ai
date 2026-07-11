@@ -1355,7 +1355,8 @@
     "deleteFailedDesc": "Suppression échec",
     "planDecouverte": "Découverte",
     "planOasis": "Oasis",
-    "planWellness": "Wellness"
+    "planWellness": "Wellness",
+    "planSpa365": "Spa 365"
   },
   "auth": {
     "backHome": "Retour à l'accueil",

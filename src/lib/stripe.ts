@@ -49,6 +49,10 @@ export const STRIPE_PRICES = {
   wellness_monthly: process.env.STRIPE_PRICE_WELLNESS_MONTHLY || '',
   wellness_seasonal: process.env.STRIPE_PRICE_WELLNESS_SEASONAL || '',
   wellness_yearly: process.env.STRIPE_PRICE_WELLNESS_YEARLY || '',
+  spa365_weekly: process.env.STRIPE_PRICE_SPA365_WEEKLY || '',
+  spa365_monthly: process.env.STRIPE_PRICE_SPA365_MONTHLY || '',
+  spa365_seasonal: process.env.STRIPE_PRICE_SPA365_SEASONAL || '',
+  spa365_yearly: process.env.STRIPE_PRICE_SPA365_YEARLY || '',
 } as const
 
 export type StripeProductId = keyof typeof STRIPE_PRICES
@@ -58,8 +62,6 @@ export function isValidProductId(id: string): id is StripeProductId {
 }
 
 // Maps a Stripe product id (e.g. "wellness_yearly") to the AQWELIA plan name
-// stored in the `Subscription.plan` column ("oasis" | "wellness").
-export function getPlanFromProductId(productId: string): 'oasis' | 'wellness' {
-  if (productId.includes('wellness')) return 'wellness'
-  return 'oasis'
-}
+// stored in the `Subscription.plan` column.
+// Uses the centralized getPlanFromProductId from billing/plans.ts.
+export { getPlanFromProductId } from '@/lib/billing/plans'

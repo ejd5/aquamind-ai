@@ -10,7 +10,7 @@
 
 // ─── Plan ID (stable internal identifier) ───────────────────────────────────
 
-export type PlanId = 'decouverte' | 'oasis' | 'wellness'
+export type PlanId = 'decouverte' | 'oasis' | 'wellness' | 'spa365'
 
 // ─── Subscription status ────────────────────────────────────────────────────
 
@@ -273,6 +273,57 @@ export const PLANS: PlanDefinition[] = [
     color: 'primary',
     icon: '🛡️',
   },
+  {
+    id: 'spa365',
+    name: 'Spa 365',
+    nameKey: 'spa365.name',
+    tagline: "Spa uniquement, toute l'année",
+    taglineKey: 'spa365.tagline',
+    active: true,
+    platform: ['web', 'ios', 'android'],
+    price: { week: 2.49, month: 6.99, halfyear: 32.99, year: 49.99 },
+    features: [
+      "1 spa",
+      'Analyses illimitées',
+      'Brome, chlore et oxygène actif',
+      'Vidanges, filtres, canalisations',
+      'Suivi consommation',
+      'Gestion du stock',
+      'Rappels intelligents',
+    ],
+    featureKeys: [
+      'spa365.features.1spa',
+      'spa365.features.unlimitedTests',
+      'spa365.features.treatments',
+      'spa365.features.drainsFilters',
+      'spa365.features.consumption',
+      'spa365.features.stock',
+      'spa365.features.reminders',
+    ],
+    limits: {
+      maxPools: 1,
+      maxSpas: 1,
+      maxPhotoScansPerMonth: 999999,
+      maxTestsPerMonth: 999999,
+      weatherEnabled: false,
+      smartReminders: true,
+      guidesAccess: 'all',
+      multiPool: false,
+      pdfReport: false,
+      proMode: false,
+      historyDays: 9999,
+      spaSupport: true,
+    },
+    stripePrices: {
+      week: process.env.STRIPE_PRICE_SPA365_WEEKLY || '',
+      month: process.env.STRIPE_PRICE_SPA365_MONTHLY || '',
+      halfyear: process.env.STRIPE_PRICE_SPA365_SEASONAL || '',
+      year: process.env.STRIPE_PRICE_SPA365_YEARLY || '',
+    },
+    revenueCatEntitlement: 'spa365',
+    color: 'accent',
+    icon: '♨️',
+  },
 ]
 
 // ─── Helper functions ───────────────────────────────────────────────────────
@@ -421,9 +472,12 @@ export function canAccess(
         : { allowed: false, reason: 'Historique étendu réservé aux plans payants.', reasonKey: 'gates.history_extended', ctaPlan: 'oasis' }
 
     case 'spa_support':
+      // spa365 and wellness both unlock spa features; the CTA points to the
+      // cheapest plan that unlocks the feature — spa365 for spa-only users,
+      // wellness for pool+spa owners.
       return plan.limits.spaSupport
         ? { allowed: true }
-        : { allowed: false, reason: 'Le support des spas est réservé au plan Wellness.', reasonKey: 'gates.spa_support', ctaPlan: 'wellness' }
+        : { allowed: false, reason: 'Le support des spas est réservé aux plans Spa 365 et Wellness.', reasonKey: 'gates.spa_support', ctaPlan: 'spa365' }
 
     default:
       return { allowed: true }
@@ -453,6 +507,7 @@ export function getPlanFromStripePriceId(priceId: string): { plan: PlanId; durat
  */
 export function getPlanFromProductId(productId: string): PlanId {
   if (productId.includes('wellness')) return 'wellness'
+  if (productId.includes('spa365') || productId.includes('spa_365')) return 'spa365'
   if (productId.includes('oasis')) return 'oasis'
   return 'decouverte'
 }
