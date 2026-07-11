@@ -325,7 +325,7 @@ model GuideView {
 model Subscription {
   id                    String    @id @default(cuid())
   userId                String
-  plan                  String    @default("decouverte") // decouverte, oasis, wellness
+  plan                  String    @default("decouverte") // decouverte, oasis, wellness, spa365
   status                String    @default("inactive")   // inactive, trialing, active, past_due, canceled, expired, grace_period
   duration              String?   // week, month, halfyear, year
   store                 String?   // web, ios, android
@@ -336,19 +336,17 @@ model Subscription {
   currentPeriodStart    DateTime?
   currentPeriodEnd      DateTime?
   stripeCustomerId      String?
-  stripeSubscriptionId  String?
+  stripeSubscriptionId  String?   @unique
   // P0-B: stable provider identity for finding inactive subscriptions
-  providerSubscriptionId String?  // RC original_transaction_id or Stripe sub ID
+  providerSubscriptionId String?  @unique // RC original_transaction_id or Stripe sub ID
   // P0-B: out-of-order event protection
-  lastProviderEventId   String?   // eventId of the last provider event applied
-  lastProviderEventAt   DateTime? // effective date of that event (provider timestamp)
+  lastProviderEventId   String?
+  lastProviderEventAt   DateTime?
   active                Boolean   @default(false) // legacy — derived from status
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([stripeSubscriptionId])
-  @@index([providerSubscriptionId])
   @@index([status])
 }
 
@@ -364,6 +362,7 @@ model BillingEvent {
   userId              String?
   payload             String?  // Redacted JSON (no card numbers, secrets)
   result              String    @default("processing") // processing | processed | failed | ignored
+  ignoredReason       String?   // unknown_product | unknown_price | event_type_not_supported | missing_user_mapping | no_subscription_link
   errorMessage        String?
   attemptCount        Int       @default(0)
   processingStartedAt DateTime?

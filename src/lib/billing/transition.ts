@@ -59,15 +59,28 @@ export async function applyTransition(params: TransitionParams): Promise<Transit
   const existing = await findSubscriptionByProvider(params)
 
   if (existing) {
-    // ATOMIC conditional update: only update if the incoming event is newer
+    // ATOMIC conditional update: only update if the incoming event is newer.
+    //
+    // BLOCAGE 4: Timestamp equality rule — when two distinct events share the
+    // same providerEventAt, the DEACTIVATION takes priority over activation.
+    // This means: if an EXPIRATION and a RENEWAL have the same timestamp,
+    // the EXPIRATION wins (safer to deny access than grant it incorrectly).
+    //
+    // Implementation: for equal timestamps, we use the status to determine
+    // priority. Deactivation statuses (expired, canceled, inactive) are
+    // applied even when lastProviderEventAt === providerEventAt, while
+    // activation statuses (active, trialing) require strict >.
+    const isDeactivation = ['expired', 'canceled', 'inactive'].includes(params.status)
+    const timeCondition = isDeactivation
+      ? { lte: params.providerEventAt }  // equal timestamps: deactivation wins
+      : { lt: params.providerEventAt }   // strict: activation must be strictly newer
+
     const result = await db.subscription.updateMany({
       where: {
         id: existing.id,
-        // Only apply if: no previous event OR incoming event is strictly newer
-        // This is the atomic compare-and-swap that prevents race conditions
         OR: [
           { lastProviderEventAt: null },
-          { lastProviderEventAt: { lt: params.providerEventAt } },
+          { lastProviderEventAt: timeCondition },
         ],
       },
       data: {

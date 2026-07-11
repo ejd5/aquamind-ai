@@ -7,6 +7,7 @@ import { calculateClearWaterIndex, calculateLSI, lsiInterpretation } from '@/lib
 import { assessSwimSafety } from '@/lib/pool/safety-rules'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { trackEventServer } from '@/lib/analytics-server'
+import { requireFeatureAccess } from '@/lib/billing/gate'
 
 export const runtime = 'nodejs'
 
@@ -19,13 +20,18 @@ export async function GET(req: Request) {
   }
   const userId = session.user.id
 
+  // P0-B: Feature gate — history_extended
+  // Free plan (Découverte) gets 14 days of history, paid plans get unlimited.
+  const historyGate = await requireFeatureAccess(req as any, 'history_extended')
+  const take = historyGate.denied ? 5 : 50 // Free: last 5 tests, Paid: last 50
+
   const tests = await db.waterTest.findMany({
     where: { userId },
-    take: 50,
+    take,
     orderBy: { createdAt: 'desc' },
     include: { actionPlans: true },
   })
-  return NextResponse.json({ tests })
+  return NextResponse.json({ tests, historyLimited: historyGate.denied })
 }
 
 export async function POST(req: NextRequest) {
@@ -125,7 +131,20 @@ export async function POST(req: NextRequest) {
       userId
     )
 
-    return NextResponse.json({ test: created, actionPlan, lsiInfo: lsiInterpretation(lsi) })
+    // P0-B: Feature gate — pro_mode (LSI interpretation is a "pro" feature)
+    // All users get the water test result + action plan.
+    // Pro mode (LSI detailed interpretation) is only for paid plans.
+    const proGate = await requireFeatureAccess(req, 'pro_mode')
+    const response: any = { test: created, actionPlan }
+    if (!proGate.denied) {
+      response.lsiInfo = lsiInterpretation(lsi)
+      response.lsi = lsi
+    } else {
+      response.lsiInfo = null
+      response.proModeRequired = true
+    }
+
+    return NextResponse.json(response)
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Erreur'
     return NextResponse.json({ error: msg }, { status: 500 })

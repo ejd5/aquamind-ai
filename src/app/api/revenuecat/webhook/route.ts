@@ -21,7 +21,7 @@ import {
   type PlanId, type SubscriptionStatus, type Duration,
   getPlanFromProductId, getPlanFromRCProductId, PROVIDER_TO_DURATION,
 } from '@/lib/billing/plans'
-import { processEventIdempotently, generateEventFingerprint } from '@/lib/billing/idempotency'
+import { processEventIdempotently, generateEventFingerprint, type HandlerResult } from '@/lib/billing/idempotency'
 import { applyTransition } from '@/lib/billing/transition'
 
 export const runtime = 'nodejs'
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
     userId,
     payload: JSON.stringify(event),
     handler: async () => {
-      await handleRevenueCatEvent(event, userId, eventId, providerEventAt)
+      return await handleRevenueCatEvent(event, userId, eventId, providerEventAt)
     },
   })
 
@@ -95,23 +95,22 @@ async function handleRevenueCatEvent(
   userId: string,
   eventId: string,
   providerEventAt: Date
-): Promise<void> {
+): Promise<HandlerResult> {
   const eventType = event?.type || event?.event_type || 'UNKNOWN'
   const productId = event?.product_id || ''
 
   // Ignore non-subscription events (TEST, TRANSFER, etc.)
   const isActivation = RC_ACTIVE_EVENTS.has(eventType)
   const isDeactivation = RC_DEACTIVE_EVENTS.has(eventType)
-  if (!isActivation && !isDeactivation) return
+  if (!isActivation && !isDeactivation) return { result: 'ignored', reason: 'event_type_not_supported' }
 
   // BLOCAGE 8: use exact RC product mapping
   const rcProduct = getPlanFromRCProductId(productId)
   if (!rcProduct && isActivation) {
-    // Unknown product — ignore, don't grant access
-    return
+    return { result: 'ignored', reason: 'unknown_product' }
   }
   const planId = rcProduct?.plan || getPlanFromProductId(productId) as PlanId
-  if (isActivation && planId === 'decouverte') return
+  if (isActivation && planId === 'decouverte') return { result: 'ignored', reason: 'unknown_product' }
 
   // BLOCAGE 1: official field names (milliseconds, not seconds)
   const expiresAt = event?.expiration_at_ms ? new Date(event.expiration_at_ms) : null
@@ -184,6 +183,7 @@ async function handleRevenueCatEvent(
     trialEndsAt: isTrial ? expiresAt : null,
     currentPeriodEnd: expiresAt,
   })
+  return // default: processed (void)
 }
 
 function mapRCStore(rcStore: string): string {

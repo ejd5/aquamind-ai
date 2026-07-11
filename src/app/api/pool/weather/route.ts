@@ -104,10 +104,6 @@ async function fetchWeather(query: string): Promise<WeatherData | null> {
 }
 
 export async function GET(req: NextRequest) {
-  // P0-B: Feature gate — Weather advanced data
-  const gate = await requireFeatureAccess(req, 'weather_advanced')
-  if (gate.denied) return gate.response!
-
   const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
@@ -115,6 +111,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
+
+  // P0-B: Feature gate — advanced weather (storm alerts, UV recommendations)
+  // Basic weather (temperature, conditions) is accessible to ALL authenticated users.
+  // Advanced assessment is only returned to paid plans.
+  const gate = await requireFeatureAccess(req, 'weather_advanced')
+  const hasAdvanced = !gate.denied
 
   const { searchParams } = new URL(req.url)
   const lat = searchParams.get('lat')
@@ -190,5 +192,13 @@ export async function GET(req: NextRequest) {
     // Climate is a best-effort add-on — never fail the weather request if it errors.
   }
 
-  return NextResponse.json({ weather, assessment, lastTestDaysAgo })
+  // P0-B: filter advanced assessment for non-paid users
+  const response: any = { weather, lastTestDaysAgo }
+  if (hasAdvanced) {
+    response.assessment = assessment
+  } else {
+    response.assessment = null
+    response.upgradeRequired = true
+  }
+  return NextResponse.json(response)
 }

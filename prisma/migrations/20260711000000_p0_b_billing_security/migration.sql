@@ -15,9 +15,11 @@ ALTER TABLE "Subscription" ADD COLUMN "providerSubscriptionId" TEXT;
 ALTER TABLE "Subscription" ADD COLUMN "lastProviderEventId" TEXT;
 ALTER TABLE "Subscription" ADD COLUMN "lastProviderEventAt" DATETIME;
 
--- CreateIndex
-CREATE INDEX "Subscription_stripeSubscriptionId_idx" ON "Subscription"("stripeSubscriptionId");
-CREATE INDEX "Subscription_providerSubscriptionId_idx" ON "Subscription"("providerSubscriptionId");
+-- CreateIndex: unique constraints on provider identity fields
+-- SQLite allows multiple NULLs in a unique column, so inactive subscriptions
+-- without a provider ID coexist without conflict.
+CREATE UNIQUE INDEX "Subscription_stripeSubscriptionId_key" ON "Subscription"("stripeSubscriptionId");
+CREATE UNIQUE INDEX "Subscription_providerSubscriptionId_key" ON "Subscription"("providerSubscriptionId");
 CREATE INDEX "Subscription_status_idx" ON "Subscription"("status");
 
 -- CreateTable: BillingEvent (idempotency log with retry support)
@@ -29,6 +31,7 @@ CREATE TABLE "BillingEvent" (
     "userId" TEXT,
     "payload" TEXT,
     "result" TEXT NOT NULL DEFAULT 'processing',
+    "ignoredReason" TEXT,
     "errorMessage" TEXT,
     "attemptCount" INTEGER NOT NULL DEFAULT 0,
     "processingStartedAt" DATETIME,

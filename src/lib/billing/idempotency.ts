@@ -27,13 +27,17 @@ export interface ProcessEventParams {
   eventType: string
   userId?: string
   payload: string
-  handler: () => Promise<void>
+  handler: () => Promise<HandlerResult | void>  // handler can return 'ignored' with a reason
 }
 
 export interface ProcessEventResult {
   skipped: boolean
   error?: string
+  ignored?: boolean
+  ignoredReason?: string
 }
+
+export type HandlerResult = { result: 'ignored'; reason: string } | { result: 'processed' } | void
 
 /**
  * Generate a deterministic SHA-256 fingerprint when no stable event ID is provided.
@@ -146,7 +150,22 @@ export async function processEventIdempotently(
 
   // 2. EXECUTE HANDLER
   try {
-    await params.handler()
+    const handlerResult = await params.handler()
+
+    // Handler can return { result: 'ignored', reason: '...' } for non-actionable events
+    if (handlerResult && handlerResult.result === 'ignored') {
+      await db.billingEvent.updateMany({
+        where: { source: params.source, eventId: params.eventId },
+        data: {
+          result: 'ignored',
+          ignoredReason: handlerResult.reason,
+          processedAt: new Date(),
+          processingStartedAt: null,
+          nextRetryAt: null,
+        },
+      })
+      return { skipped: false, ignored: true, ignoredReason: handlerResult.reason }
+    }
 
     // 3a. Mark as processed
     await db.billingEvent.updateMany({

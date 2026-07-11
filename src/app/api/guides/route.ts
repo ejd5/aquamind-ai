@@ -9,10 +9,6 @@ import { requireFeatureAccess } from '@/lib/billing/gate'
 export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
-  // P0-B: Feature gate — Premium guides
-  const gate = await requireFeatureAccess(req, 'guides_premium')
-  if (gate.denied) return gate.response!
-
   const locale = pickLocale(req)
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
@@ -20,8 +16,6 @@ export async function GET(req: NextRequest) {
   const recommend = searchParams.get('recommend')
 
   // Auth optional — catalog is public, but GuideView tracking requires userId.
-  // We use `.catch(() => null)` so the route keeps working even if session
-  // resolution fails (e.g. on static / pre-rendered contexts).
   const session = await getServerSession(authOptions).catch(() => null)
   const userId = session?.user?.id
 
@@ -30,6 +24,13 @@ export async function GET(req: NextRequest) {
     if (!guide) {
       const msg = await translate(locale, 'common.errors.guideNotFound', 'Guide introuvable')
       return NextResponse.json({ error: msg }, { status: 404 })
+    }
+    // P0-B: Feature gate — only premium guides are gated.
+    // Basic guides (first 5) remain accessible to all users.
+    const isPremium = guide.level === 'expert' || guide.level === 'intermediate'
+    if (isPremium) {
+      const gate = await requireFeatureAccess(req, 'guides_premium')
+      if (gate.denied) return gate.response!
     }
     // Track view only if user is authenticated
     if (userId) {

@@ -10,10 +10,6 @@ import { requireFeatureAccess } from '@/lib/billing/gate'
 export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
-  // P0-B: Feature gate — Smart reminders
-  const gate = await requireFeatureAccess(req, 'smart_reminders')
-  if (gate.denied) return gate.response!
-
   const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
@@ -21,6 +17,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
+
+  // P0-B: Feature gate — smart reminders (intelligent generation)
+  // Manual reminders are kept for all users; only smart generation is gated.
+  const gate = await requireFeatureAccess(req, 'smart_reminders')
+  const hasSmartReminders = !gate.denied
 
   try {
     const [profile, lastTest, savedReminders, equipment, products] = await Promise.all([
@@ -98,6 +99,11 @@ export async function POST(req: NextRequest) {
   }
   const userId = session.user.id
 
+  // P0-B: Feature gate — smart reminders (intelligent generation)
+  // Manual reminders are kept for all users; only smart generation is gated.
+  const gate = await requireFeatureAccess(req, 'smart_reminders')
+  const hasSmartReminders = !gate.denied
+
   try {
     const body = await req.json()
     // Créer un rappel manuel
@@ -132,6 +138,11 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
+
+  // P0-B: Feature gate — smart reminders (intelligent generation)
+  // Manual reminders are kept for all users; only smart generation is gated.
+  const gate = await requireFeatureAccess(req, 'smart_reminders')
+  const hasSmartReminders = !gate.denied
 
   try {
     const body = await req.json()
@@ -173,6 +184,11 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
+
+  // P0-B: Feature gate — smart reminders (intelligent generation)
+  // Manual reminders are kept for all users; only smart generation is gated.
+  const gate = await requireFeatureAccess(req, 'smart_reminders')
+  const hasSmartReminders = !gate.denied
 
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')

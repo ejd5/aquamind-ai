@@ -533,25 +533,11 @@ const RC_PRODUCT_MAP: Record<string, { plan: PlanId; duration: Duration }> = {
 }
 
 /**
- * Map a RevenueCat product ID to (planId, duration) using EXACT matching.
- * Falls back to includes() only if no exact match (for product IDs with
- * different prefixes). Returns null for unknown products.
+ * Map a RevenueCat product ID to (planId, duration) using EXACT matching ONLY.
+ * No includes() fallback — unknown products return null (no access granted).
  */
 export function getPlanFromRCProductId(productId: string): { plan: PlanId; duration: Duration } | null {
-  // Exact match
-  if (RC_PRODUCT_MAP[productId]) return RC_PRODUCT_MAP[productId]
-  // Fallback: includes() matching (for non-standard IDs)
-  const plan = getPlanFromProductId(productId)
-  if (plan === 'decouverte') return null
-  const duration = inferDurationFromProvider(productId)
-  return { plan, duration: duration || 'month' }
-}
-
-function inferDurationFromProvider(productId: string): Duration | null {
-  for (const [provider, internal] of Object.entries(PROVIDER_TO_DURATION)) {
-    if (productId.includes(provider)) return internal as Duration
-  }
-  return null
+  return RC_PRODUCT_MAP[productId] || null
 }
 
 // ─── Duration display (legacy compat) ───────────────────────────────────────
