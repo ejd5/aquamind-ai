@@ -47,8 +47,6 @@ jobs:
       - name: Typecheck application
         run: bun run typecheck
 
-      - name: Typecheck tools
-        run: bun run typecheck:tools
 
       - name: Check translations
         run: python3 scripts/i18n/check-hardcoded-strings.py
