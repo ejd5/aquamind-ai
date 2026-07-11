@@ -42,7 +42,7 @@ interface Plan {
   nameKey: string
   tagline: string
   taglineKey: string
-  price: { week: number; month: number; quarter: number; halfyear: number; year: number }
+  price: { week: number; month: number; halfyear: number; year: number }
   features: string[]
   featureKeys: string[]
   limits: {
@@ -141,8 +141,22 @@ export function ModulePaywall() {
     setActivating(planId)
     try {
       if (planId === 'decouverte') {
-        // Downgrade — no billing needed
-        await api.post('/api/subscription', { plan: planId, duration })
+        // P0-B correctif 7: Don't call POST /api/subscription (it returns 403).
+        // Instead, redirect to subscription management (Stripe portal / Apple / Google)
+        if (isNative()) {
+          await billing.manageSubscription()
+        } else {
+          // Web: redirect to Stripe Customer Portal
+          try {
+            const result = await api.post<{ url: string }>('/api/stripe/portal', {})
+            if (result?.url) {
+              window.location.href = result.url
+              return
+            }
+          } catch {
+            // If portal fails, just show a message
+          }
+        }
         setCurrentPlanId(planId)
         setSubscription(null)
         toast({ title: t('freeActivated'), description: t('freeActivatedDesc') })
@@ -151,8 +165,6 @@ export function ModulePaywall() {
 
       if (isNative()) {
         // Native: use RevenueCat IAP
-        // Map UI duration → RevenueCat product id convention:
-        //   week → weekly, month → monthly, halfyear → seasonal, year → yearly
         const durationSuffix =
           duration === 'week' ? 'weekly'
           : duration === 'halfyear' ? 'seasonal'
@@ -176,12 +188,13 @@ export function ModulePaywall() {
           toast({ title: t('offline'), description: t('offlineDesc'), variant: 'destructive' })
           return
         }
+        // P0-B correctif 7: Remove stripe_ prefix — product ID is oasis_monthly, not stripe_oasis_monthly
         const durationSuffix =
           duration === 'week' ? 'weekly'
           : duration === 'halfyear' ? 'seasonal'
           : duration === 'year' ? 'yearly'
           : 'monthly'
-        const productId = `stripe_${planId}_${durationSuffix}`
+        const productId = `${planId}_${durationSuffix}`
         const result = await api.post<{ url: string }>('/api/stripe/checkout', { productId })
         if (result?.url) {
           window.location.href = result.url

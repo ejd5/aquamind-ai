@@ -1,14 +1,14 @@
 /**
- * AQWELIA — Single subscription transition engine (P0-B).
+ * AQWELIA — Single subscription transition engine (P0-B final).
  *
  * ALL events that modify a subscription MUST go through `applyTransition`.
- * Uses ATOMIC conditional updateMany to prevent race conditions.
  *
- * Atomicity strategy:
- *   1. Try conditional UPDATE WHERE lastProviderEventAt < new OR lastProviderEventAt IS NULL
- *   2. If count === 1 → update succeeded, this event is applied
- *   3. If count === 0 → event is out-of-order (older than current) → skip
- *   4. If no subscription exists → CREATE new (within transaction)
+ * Rules:
+ * 1. Atomic CAS: updateMany WHERE lastProviderEventAt < new OR NULL
+ * 2. Equal timestamps: priority expired > canceled > past_due > grace_period > active > trialing > inactive
+ * 3. Cancellation without expiresAt preserves existing expiry
+ * 4. Expired/inactive for old providerSubscriptionId never deactivates current active sub
+ * 5. New active sub with older event than current → ignored
  */
 
 import { db } from '@/lib/db'
@@ -42,47 +42,80 @@ export interface TransitionResult {
   reason?: string
 }
 
-/**
- * Apply a subscription transition ATOMICALLY.
- *
- * Uses conditional updateMany: WHERE lastProviderEventAt < providerEventAt
- * OR lastProviderEventAt IS NULL. If count === 0, the event is older
- * than the current state → skipped (out-of-order).
- *
- * For new subscriptions (no existing row), creates within a transaction
- * after deactivating previous active subscriptions.
- */
-export async function applyTransition(params: TransitionParams): Promise<TransitionResult> {
-  const active = statusGrantsAccess(params.status, params.expiresAt ?? null)
+// Priority for equal timestamps: higher number = wins
+const STATUS_PRIORITY: Record<string, number> = {
+  expired: 6,
+  canceled: 5,
+  past_due: 4,
+  grace_period: 3,
+  active: 2,
+  trialing: 1,
+  inactive: 0,
+}
 
-  // Find existing subscription by provider identity
+export async function applyTransition(params: TransitionParams): Promise<TransitionResult> {
+  // Calculate effective expiry: don't overwrite existing expiry with null on cancellation
   const existing = await findSubscriptionByProvider(params)
 
   if (existing) {
-    // ATOMIC conditional update: only update if the incoming event is newer.
-    //
-    // BLOCAGE 4: Timestamp equality rule — when two distinct events share the
-    // same providerEventAt, the DEACTIVATION takes priority over activation.
-    // This means: if an EXPIRATION and a RENEWAL have the same timestamp,
-    // the EXPIRATION wins (safer to deny access than grant it incorrectly).
-    //
-    // Implementation: for equal timestamps, we use the status to determine
-    // priority. Deactivation statuses (expired, canceled, inactive) are
-    // applied even when lastProviderEventAt === providerEventAt, while
-    // activation statuses (active, trialing) require strict >.
+    // Rule 4: expired/inactive for OLD provider should never deactivate current ACTIVE sub
+    // If the found subscription is NOT the current active one, and the event is a deactivation,
+    // only apply if it's the same provider identity
     const isDeactivation = ['expired', 'canceled', 'inactive'].includes(params.status)
-    const timeCondition = isDeactivation
-      ? { lte: params.providerEventAt }  // equal timestamps: deactivation wins
-      : { lt: params.providerEventAt }   // strict: activation must be strictly newer
+    const isCurrentActive = existing.active === true
+
+    // If this is a deactivation event and the found sub is NOT the active one,
+    // try to find the active sub instead
+    if (isDeactivation && !isCurrentActive) {
+      const activeSub = await db.subscription.findFirst({
+        where: { userId: params.userId, active: true },
+        orderBy: { startedAt: 'desc' },
+      })
+      if (activeSub && activeSub.id !== existing.id) {
+        // The deactivation is for an old subscription — don't touch the active one
+        return { skipped: true, reason: 'old_provider_deactivation' }
+      }
+    }
+
+    // Effective expiresAt: preserve existing if new is null (cancellation without new date)
+    const effectiveExpiresAt = params.expiresAt ?? existing.expiresAt ?? null
+    const active = statusGrantsAccess(params.status, effectiveExpiresAt)
+
+    // Rule 2: equal timestamps — priority-based
+    const incomingPriority = STATUS_PRIORITY[params.status] ?? 0
+    const existingPriority = STATUS_PRIORITY[existing.status] ?? 0
+
+    let timeCondition
+    if (existing.lastProviderEventAt) {
+      const cmp = params.providerEventAt.getTime() - existing.lastProviderEventAt.getTime()
+      if (cmp < 0) {
+        // Strictly older → skip (Rule 5)
+        return { skipped: true, reason: 'out_of_order' }
+      } else if (cmp === 0) {
+        // Equal timestamps: apply only if incoming has higher priority
+        if (incomingPriority <= existingPriority) {
+          return { skipped: true, reason: 'equal_timestamp_lower_priority' }
+        }
+        timeCondition = { lte: params.providerEventAt }
+      } else {
+        // Strictly newer → apply
+        timeCondition = { lt: params.providerEventAt }
+      }
+    } else {
+      timeCondition = undefined // no previous event → apply
+    }
+
+    // Build WHERE condition for atomic CAS
+    const whereCondition: any = { id: existing.id }
+    if (timeCondition) {
+      whereCondition.OR = [
+        { lastProviderEventAt: null },
+        { lastProviderEventAt: timeCondition },
+      ]
+    }
 
     const result = await db.subscription.updateMany({
-      where: {
-        id: existing.id,
-        OR: [
-          { lastProviderEventAt: null },
-          { lastProviderEventAt: timeCondition },
-        ],
-      },
+      where: whereCondition,
       data: {
         plan: params.planId,
         status: params.status,
@@ -92,7 +125,7 @@ export async function applyTransition(params: TransitionParams): Promise<Transit
         stripeCustomerId: params.stripeCustomerId ?? existing.stripeCustomerId,
         stripeSubscriptionId: params.stripeSubscriptionId ?? existing.stripeSubscriptionId,
         providerSubscriptionId: params.providerSubscriptionId ?? existing.providerSubscriptionId,
-        expiresAt: params.expiresAt ?? existing.expiresAt,
+        expiresAt: effectiveExpiresAt,
         trialEndsAt: params.trialEndsAt ?? existing.trialEndsAt,
         currentPeriodStart: params.currentPeriodStart ?? existing.currentPeriodStart,
         currentPeriodEnd: params.currentPeriodEnd ?? existing.currentPeriodEnd,
@@ -103,14 +136,15 @@ export async function applyTransition(params: TransitionParams): Promise<Transit
     })
 
     if (result.count === 0) {
-      // Event is older than current state → out-of-order, skip
-      return { skipped: true, reason: 'out_of_order' }
+      return { skipped: true, reason: 'cas_failed' }
     }
 
     return { skipped: false }
   }
 
   // No existing subscription — create new one
+  const active = statusGrantsAccess(params.status, params.expiresAt ?? null)
+
   // Deactivate any previous active subscriptions for this user
   await db.subscription.updateMany({
     where: { userId: params.userId, active: true },
@@ -142,10 +176,6 @@ export async function applyTransition(params: TransitionParams): Promise<Transit
   return { skipped: false }
 }
 
-/**
- * Find a subscription by provider identity.
- * Searches by: providerSubscriptionId, then stripeSubscriptionId, then userId (most recent).
- */
 async function findSubscriptionByProvider(params: TransitionParams) {
   if (params.providerSubscriptionId) {
     const byProvider = await db.subscription.findFirst({
@@ -160,6 +190,13 @@ async function findSubscriptionByProvider(params: TransitionParams) {
     })
     if (byStripe) return byStripe
   }
+
+  // Fallback: user's most recent active subscription, then most recent overall
+  const active = await db.subscription.findFirst({
+    where: { userId: params.userId, active: true },
+    orderBy: { startedAt: 'desc' },
+  })
+  if (active) return active
 
   return db.subscription.findFirst({
     where: { userId: params.userId },

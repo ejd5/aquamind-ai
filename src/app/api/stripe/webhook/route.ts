@@ -48,8 +48,10 @@ async function handleStripeEvent(event: any): Promise<HandlerResult> {
   switch (event.type) {
     case 'checkout.session.completed': {
       const cs = event.data.object
-      // BLOCAGE 5: verify payment_status
-      if (cs.payment_status !== 'paid') return { result: 'ignored', reason: 'payment_not_paid' }
+      // BLOCAGE 2: verify payment_status — accept paid OR no_payment_required (free trials)
+      if (cs.payment_status !== 'paid' && cs.payment_status !== 'no_payment_required') {
+        return { result: 'ignored', reason: 'payment_not_paid' }
+      }
 
       const userId = cs.metadata?.userId || cs.client_reference_id
       if (!userId) return { result: 'ignored', reason: 'missing_user_mapping' }
@@ -64,9 +66,9 @@ async function handleStripeEvent(event: any): Promise<HandlerResult> {
         stripeSub = await stripe.subscriptions.retrieve(stripeSubId, {
           expand: ['items.data.price'],
         })
-      } catch {
-        // Can't retrieve subscription — don't activate blindly
-        return
+      } catch (err) {
+        // BLOCAGE 2: Stripe temporary error → throw to trigger retry (not ignored)
+        throw new Error('stripe_subscription_retrieve_failed')
       }
 
       // BLOCAGE 5: read Price ID from subscription items (not from metadata)
@@ -243,7 +245,10 @@ async function handleStripeEvent(event: any): Promise<HandlerResult> {
               ? invoice.subscription
               : invoice.subscription.id
           }
-        } catch { /* ignore — fall through to path 2 */ }
+        } catch (err) {
+          // BLOCAGE 3: Stripe temporary error → throw to trigger retry
+          throw new Error('stripe_paymentintent_retrieve_failed')
+        }
       }
 
       // Path 2: Invoice from charge.invoice
@@ -259,13 +264,18 @@ async function handleStripeEvent(event: any): Promise<HandlerResult> {
               ? inv.subscription
               : inv.subscription.id
           }
-        } catch { /* ignore */ }
+        } catch (err) {
+          // BLOCAGE 3: Stripe temporary error → throw to trigger retry
+          throw new Error('stripe_invoice_retrieve_failed')
+        }
       }
 
-      // Path 3: Search by customer
-      if (!stripeSubId && charge.customer) {
+      // Path 3: Search by customer in DB only (don't use customerId as sole source)
+      if (!stripeSubId) {
+        // Only use customerId if we can confirm it's linked to a subscription
         const sub = await db.subscription.findFirst({
-          where: { stripeCustomerId: charge.customer as string },
+          where: { stripeCustomerId: charge.customer as string, active: true },
+          orderBy: { startedAt: 'desc' },
         })
         if (sub?.stripeSubscriptionId) stripeSubId = sub.stripeSubscriptionId
       }
@@ -275,18 +285,34 @@ async function handleStripeEvent(event: any): Promise<HandlerResult> {
         return { result: 'ignored', reason: 'no_subscription_link' }
       }
 
-      // BLOCAGE 9: Rule — only FULL refund of the latest invoice → revoke.
-      // Partial refund → keep active.
+      // BLOCAGE 3/9: Rule — only FULL refund of the LATEST invoice → revoke.
+      // Partial refund or old invoice → ignored with reason.
       const refundedAmount = charge.amount_refunded || 0
       const totalAmount = charge.amount || 0
       const isFullRefund = refundedAmount >= totalAmount && totalAmount > 0
 
       if (!isFullRefund) {
-        // Partial refund — keep subscription active
         return { result: 'ignored', reason: 'partial_refund_no_revoke' }
       }
 
-      // Full refund — revoke access
+      // Check if this charge is for the latest invoice of the subscription
+      try {
+        const stripe = getStripe()
+        const invoices = await stripe.invoices.list({
+          subscription: stripeSubId,
+          limit: 1,
+        })
+        const latestInvoice = invoices.data?.[0]
+        if (latestInvoice && charge.invoice && latestInvoice.id !== (typeof charge.invoice === 'string' ? charge.invoice : charge.invoice.id)) {
+          // Refund is for an OLD invoice, not the latest → ignored
+          return { result: 'ignored', reason: 'old_invoice_refund' }
+        }
+      } catch {
+        // Can't verify invoice → throw to trigger retry
+        throw new Error('stripe_invoice_list_failed')
+      }
+
+      // Full refund of latest invoice — revoke access
       const sub = await findSubByProvider(stripeSubId, null, null)
       if (!sub) return { result: 'ignored', reason: 'no_subscription_link' }
 

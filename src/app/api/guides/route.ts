@@ -8,6 +8,19 @@ import { requireFeatureAccess } from '@/lib/billing/gate'
 
 export const runtime = 'nodejs'
 
+// P0-B correctif 6: Explicit, stable list of 5 free guides
+const FREE_GUIDE_IDS = new Set([
+  'green-water',
+  'cloudy-water',
+  'chlorine-shock',
+  'combined-chlorine',
+  'filter-backwash',
+])
+
+function isPremiumGuide(guideId: string): boolean {
+  return !FREE_GUIDE_IDS.has(guideId)
+}
+
 export async function GET(req: NextRequest) {
   const locale = pickLocale(req)
   const { searchParams } = new URL(req.url)
@@ -26,11 +39,19 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: msg }, { status: 404 })
     }
     // P0-B: Feature gate — only premium guides are gated.
-    // Basic guides (first 5) remain accessible to all users.
-    const isPremium = guide.level === 'expert' || guide.level === 'intermediate'
-    if (isPremium) {
+    // Free guides (explicit list) remain accessible to all users.
+    if (isPremiumGuide(id)) {
       const gate = await requireFeatureAccess(req, 'guides_premium')
-      if (gate.denied) return gate.response!
+      if (gate.denied) {
+        // Return guide metadata WITHOUT steps (locked preview)
+        return NextResponse.json({
+          guide: {
+            ...guide,
+            steps: [], // Don't expose premium steps
+            locked: true,
+          },
+        })
+      }
     }
     // Track view only if user is authenticated
     if (userId) {
@@ -40,7 +61,6 @@ export async function GET(req: NextRequest) {
   }
 
   if (recommend) {
-    // recommendation context from query params
     const ctx = {
       problemDetected: searchParams.get('problem') || undefined,
       photoType: searchParams.get('photo') || undefined,
@@ -53,8 +73,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ guides: recommendGuides(ctx) })
   }
 
+  // Catalog: return all guides, but mark premium ones as locked (no steps)
   let guides = GUIDES
   if (category) guides = guides.filter((g) => g.category === category)
 
-  return NextResponse.json({ guides, categories: CATEGORIES })
+  // For unauthenticated or free users: return premium guides without steps
+  const publicGuides = guides.map(g => {
+    if (isPremiumGuide(g.id)) {
+      return { ...g, steps: [], locked: true }
+    }
+    return g
+  })
+
+  return NextResponse.json({ guides: publicGuides, categories: CATEGORIES })
 }

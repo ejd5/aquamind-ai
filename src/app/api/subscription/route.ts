@@ -1,17 +1,8 @@
 /**
- * AQWELIA — Subscription API (P0-B: secure).
+ * AQWELIA — Subscription API (P0-B: secure, no internal fields exposed).
  *
- * GET  — returns the user's current plan + subscription state.
- * POST — REMOVED. Subscriptions can only be activated via Stripe checkout
- *        or RevenueCat purchase. Direct POST activation was a CRITICAL
- *        vulnerability (P0-B fix).
- *
- * To change plan, the client must:
- *   1. POST /api/stripe/checkout → get a Stripe Checkout URL
- *   2. Complete payment on Stripe
- *   3. Stripe webhook activates the subscription
- *
- * On mobile, the client uses RevenueCat SDK directly.
+ * GET  — returns the user's current plan + public subscription state.
+ * POST — DISABLED. Use Stripe checkout or RevenueCat.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
@@ -31,8 +22,11 @@ export async function GET(req: NextRequest) {
   }
   const userId = session.user.id
 
-  // Get the most recent subscription (active or not)
+  // Select active subscription in priority, then most recent
   const sub = await db.subscription.findFirst({
+    where: { userId, active: true },
+    orderBy: { startedAt: 'desc' },
+  }) || await db.subscription.findFirst({
     where: { userId },
     orderBy: { startedAt: 'desc' },
   })
@@ -41,26 +35,60 @@ export async function GET(req: NextRequest) {
   const plan = getPlan(planId) || PLANS[0]
   const status: SubscriptionStatus = (sub?.status as SubscriptionStatus) || 'inactive'
 
+  // Return ONLY public fields — never expose internal provider fields
+  const publicSub = sub ? {
+    plan: sub.plan,
+    status,
+    duration: sub.duration,
+    store: sub.store,
+    startedAt: sub.startedAt,
+    expiresAt: sub.expiresAt,
+    trialEndsAt: sub.trialEndsAt,
+    active: sub.active,
+    cancelAt: sub.cancelAt,
+    currentPeriodEnd: sub.currentPeriodEnd,
+  } : null
+
+  // Return public plan info (no stripePrices, no revenueCatEntitlement)
+  const publicPlans = PLANS.map(p => ({
+    id: p.id,
+    name: p.name,
+    nameKey: p.nameKey,
+    tagline: p.tagline,
+    taglineKey: p.taglineKey,
+    price: p.price,
+    features: p.features,
+    featureKeys: p.featureKeys,
+    limits: p.limits,
+    highlighted: p.highlighted,
+    color: p.color,
+    icon: p.icon,
+    active: p.active,
+    platform: p.platform,
+  }))
+
   return NextResponse.json({
-    plan,
-    subscription: sub ? {
-      ...sub,
-      status,
-    } : null,
-    allPlans: PLANS,
+    plan: {
+      id: plan.id,
+      name: plan.name,
+      nameKey: plan.nameKey,
+      tagline: plan.tagline,
+      taglineKey: plan.taglineKey,
+      price: plan.price,
+      features: plan.features,
+      featureKeys: plan.featureKeys,
+      limits: plan.limits,
+      highlighted: plan.highlighted,
+      color: plan.color,
+      icon: plan.icon,
+      active: plan.active,
+      platform: plan.platform,
+    },
+    subscription: publicSub,
+    allPlans: publicPlans,
   })
 }
 
-/**
- * POST is DISABLED in P0-B.
- * Subscriptions can only be activated via payment (Stripe checkout or RevenueCat).
- * The previous implementation allowed any authenticated user to activate any
- * plan by directly writing to the Subscription table — a CRITICAL vulnerability.
- *
- * If a client needs to downgrade to the free plan, it should use:
- *   DELETE /api/subscription (to be implemented in a future lot)
- *   or the Stripe Customer Portal (/api/stripe/portal)
- */
 export async function POST() {
   return NextResponse.json(
     { error: 'Direct subscription activation is not allowed. Use Stripe checkout or RevenueCat.' },

@@ -363,13 +363,17 @@ export function statusGrantsAccess(
 ): boolean {
   switch (status) {
     case 'active':
-    case 'trialing':
-    case 'grace_period':
       return true
+    case 'trialing':
+      // Trialing must have a future expiry (trial end)
+      if (!expiresAt) return true // no expiry = treat as active during trial
+      return now < expiresAt
+    case 'grace_period':
+      // Grace period must have a future date
+      if (!expiresAt) return false
+      return now < expiresAt
     case 'past_due':
       // Past due gives access for a limited grace period (7 days)
-      // RevenueCat and Stripe both have their own grace periods, but
-      // we enforce a server-side fallback of 7 days.
       if (!expiresAt) return false
       const graceEnd = new Date(expiresAt.getTime() + 7 * 24 * 60 * 60 * 1000)
       return now < graceEnd
@@ -491,6 +495,7 @@ export function canAccess(
  * Returns null if the ID doesn't match any configured plan.
  */
 export function getPlanFromStripePriceId(priceId: string): { plan: PlanId; duration: Duration } | null {
+  if (!priceId || priceId.trim() === '') return null
   for (const plan of PLANS) {
     for (const [dur, id] of Object.entries(plan.stripePrices)) {
       if (id === priceId) {

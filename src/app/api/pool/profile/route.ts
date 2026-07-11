@@ -210,7 +210,27 @@ export async function PATCH(req: NextRequest) {
     if (body.sunExposure) data.sunExposure = body.sunExposure
     if (typeof body.covered === 'boolean') data.covered = body.covered
     if (body.usageLevel) data.usageLevel = body.usageLevel
-    if (body.waterBodyType) data.waterBodyType = body.waterBodyType
+
+    // P0-B correctif 5: Block pool→spa/both conversion without spa_support gate
+    if (body.waterBodyType) {
+      const existingProfile = await db.poolProfile.findFirst({ where: { id, userId } })
+      const currentType = existingProfile?.waterBodyType || 'pool'
+      const newType = body.waterBodyType
+
+      // If changing from pool to spa/both, require spa_support gate
+      if (currentType === 'pool' && (newType === 'spa' || newType === 'both')) {
+        const { planId, status, expiresAt } = await getUserPlanInfo(userId)
+        const spaGate = canAccess(planId, status, 'spa_support', undefined, expiresAt)
+        if (!spaGate.allowed) {
+          const msg = await translate(locale, 'gates.spa_support', 'Support spa requis')
+          return NextResponse.json(
+            { error: msg, code: 'SPA_NOT_SUPPORTED', ctaPlan: spaGate.ctaPlan },
+            { status: 403 }
+          )
+        }
+      }
+      data.waterBodyType = body.waterBodyType
+    }
     if (body.spaSeats != null && body.spaSeats !== '')
       data.spaSeats = Number(body.spaSeats)
     if (spaTempTarget !== undefined && Number.isFinite(spaTempTarget))
