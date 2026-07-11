@@ -319,17 +319,49 @@ model GuideView {
 }
 
 // Abonnement freemium
+// P0-B: added status, store, stripeCustomerId, stripeSubscriptionId,
+// cancelAt, trialEndsAt, currentPeriodStart, currentPeriodEnd.
+// The `active` field is kept for backward compat but is derived from `status`.
 model Subscription {
-  id        String    @id @default(cuid())
-  userId    String
-  plan      String    @default("decouverte") // decouverte, oasis, wellness
-  duration  String? // week, month, halfyear, year
-  startedAt DateTime  @default(now())
-  expiresAt DateTime?
-  active    Boolean   @default(false)
+  id                    String    @id @default(cuid())
+  userId                String
+  plan                  String    @default("decouverte") // decouverte, oasis, wellness
+  status                String    @default("inactive")   // inactive, trialing, active, past_due, canceled, expired, grace_period
+  duration              String?   // week, month, halfyear, year
+  store                 String?   // web, ios, android
+  startedAt             DateTime  @default(now())
+  expiresAt             DateTime?
+  cancelAt              DateTime?
+  trialEndsAt           DateTime?
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  stripeCustomerId      String?
+  stripeSubscriptionId  String?
+  active                Boolean   @default(false) // legacy — derived from status
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([stripeSubscriptionId])
+  @@index([status])
+}
+
+// P0-B: Billing event log — idempotency for webhooks.
+// Each webhook event (Stripe or RevenueCat) is stored here with its unique
+// event ID. Before processing, the handler checks if the event ID already
+// exists — if so, it returns 200 without re-processing (idempotent).
+model BillingEvent {
+  id              String   @id @default(cuid())
+  eventId         String   @unique // Stripe event.id or RC event_id
+  source          String   // stripe | revenuecat
+  eventType       String   // checkout.session.completed, CANCELLATION, etc.
+  userId          String?
+  payload         String   // JSON of the event (for audit/debugging)
+  processedAt     DateTime @default(now())
+  result          String   // success | error | ignored
+  errorMessage    String?
+
+  @@index([source, eventType])
   @@index([userId])
 }
 

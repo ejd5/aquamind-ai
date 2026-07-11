@@ -1,27 +1,36 @@
+/**
+ * AQWELIA — Stripe webhook handler (P0-B: secure + idempotent).
+ *
+ * Security:
+ *   - Raw body signature verification (Stripe SDK constructEvent)
+ *   - Idempotency via BillingEvent table (event.id unique)
+ *   - No information leakage in error responses
+ *   - Out-of-order event handling: status is set from event data, not
+ *     derived from event sequence
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { getStripe } from '@/lib/stripe'
 import { db } from '@/lib/db'
+import {
+  type PlanId,
+  type SubscriptionStatus,
+  type Duration,
+  getPlanFromProductId,
+  PROVIDER_TO_DURATION,
+  statusGrantsAccess,
+} from '@/lib/billing/plans'
+import { processEventIdempotently } from '@/lib/billing/idempotency'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// Stripe webhook handler — syncs subscription state to the Prisma DB.
-//
-// IMPORTANT: Stripe requires the RAW request body for signature verification.
-// We use `req.text()` (not `req.json()`) and pass it directly to
-// `stripe.webhooks.constructEvent`. Next.js does not buffer the body when
-// `.text()` is called, so the signature check is performed against the exact
-// bytes Stripe sent.
-//
-// Auth: NONE. This route is server-to-server (Stripe → our backend). The
-// `STRIPE_WEBHOOK_SECRET` env var replaces session-based auth.
 export async function POST(req: NextRequest) {
   const body = await req.text()
   const signature = (await headers()).get('stripe-signature')
 
   if (!signature) {
-    return NextResponse.json({ error: 'No signature' }, { status: 400 })
+    return NextResponse.json({ error: 'Missing signature' }, { status: 400 })
   }
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
@@ -29,185 +38,215 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 })
   }
 
+  // Verify signature
   let event
   try {
     const stripe = getStripe()
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err)
+  } catch {
+    // Do NOT leak the verification error details
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
-  try {
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        const cs = event.data.object
-        const userId = cs.metadata?.userId || cs.client_reference_id
-        const productId = cs.metadata?.productId
-        const plan = cs.metadata?.plan as 'oasis' | 'wellness'
+  // Process with idempotency
+  const result = await processEventIdempotently({
+    eventId: event.id,
+    source: 'stripe',
+    eventType: event.type,
+    payload: JSON.stringify(event),
+    handler: async () => {
+      await handleStripeEvent(event)
+    },
+  })
 
-        if (userId && plan) {
-          // Deactivate previous subscriptions for this user
-          await db.subscription.updateMany({
-            where: { userId, active: true },
-            data: { active: false },
-          })
-          // Create the new active subscription
-          await db.subscription.create({
-            data: {
-              userId,
-              plan,
-              duration: productId?.includes('yearly')
-                ? 'year'
-                : productId?.includes('seasonal')
-                ? 'halfyear'
-                : productId?.includes('weekly')
-                ? 'week'
-                : 'month',
-              startedAt: new Date(),
-              expiresAt: null, // Will be updated by subsequent invoice/subscription events
-              active: true,
-            },
-          })
+  if (result.error) {
+    console.error('[stripe.webhook] processing error:', result.error)
+    return NextResponse.json({ error: 'Processing failed' }, { status: 500 })
+  }
 
-          // Best-effort: send the subscription-confirmation email.
-          // Fire-and-forget so a slow SMTP server never blocks the webhook
-          // (Stripe would retry on 500, which would re-create the subscription
-          // record — so we MUST return 200 even if the email fails).
-          void (async () => {
-            try {
-              const { sendSubscriptionConfirmationEmail } = await import('@/lib/email')
-              const user = await (db as any).user.findUnique({
-                where: { id: userId },
-                select: { email: true, name: true },
-              })
-              if (user?.email) {
-                const duration = productId?.includes('yearly')
-                  ? 'year'
-                  : productId?.includes('seasonal')
-                  ? 'halfyear'
-                  : productId?.includes('weekly')
-                  ? 'week'
-                  : 'month'
-                await sendSubscriptionConfirmationEmail(user.email, {
-                  userName: user.name || undefined,
-                  plan,
-                  duration,
-                })
-              }
-            } catch (err) {
-              console.error('[stripe.webhook] subscription confirmation email failed:', err)
-            }
-          })()
-        }
-        break
-      }
+  return NextResponse.json({ received: true, skipped: result.skipped })
+}
 
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted': {
-        const sub = event.data.object
-        const userId = sub.metadata?.userId
+/**
+ * Handle a verified Stripe event.
+ * Each case sets the subscription status deterministically from the event data
+ * (not from the previous state), so out-of-order events don't cause regressions.
+ */
+async function handleStripeEvent(event: any): Promise<void> {
+  switch (event.type) {
+    case 'checkout.session.completed': {
+      const cs = event.data.object
+      const userId = cs.metadata?.userId || cs.client_reference_id
+      const productId = cs.metadata?.productId || ''
+      const planId = getPlanFromProductId(productId) as PlanId
+      const duration = inferDuration(productId)
 
-        if (userId) {
-          if (event.type === 'customer.subscription.deleted') {
-            await db.subscription.updateMany({
-              where: { userId, active: true },
-              data: { active: false },
-            })
-          } else {
-            // Refresh expiry date from the Stripe subscription object
-            await db.subscription.updateMany({
-              where: { userId, active: true },
-              data: {
-                expiresAt: sub.current_period_end
-                  ? new Date(sub.current_period_end * 1000)
-                  : null,
-              },
-            })
-          }
-        }
-        break
-      }
+      if (!userId || planId === 'decouverte') return
 
-      case 'invoice.paid': {
-        // Subscription renewed — refresh the expiry date from the invoice line period.
-        const invoice = event.data.object
-        const userId = invoice.metadata?.userId
-        if (userId) {
-          await db.subscription.updateMany({
-            where: { userId, active: true },
-            data: {
-              expiresAt: invoice.lines?.data?.[0]?.period?.end
-                ? new Date(invoice.lines.data[0].period.end * 1000)
-                : null,
-            },
-          })
-        }
-        break
-      }
+      // Deactivate previous active subscriptions for this user
+      await db.subscription.updateMany({
+        where: { userId, active: true },
+        data: { active: false, status: 'inactive' },
+      })
 
-      case 'customer.subscription.trial_will_end': {
-        // Stripe fires this event 3 days before the trial ends (default).
-        // Use it to:
-        //   1. Refresh the subscription's expiry date from the trial_end timestamp.
-        //   2. Trigger a "trial ending soon" notification email to the user
-        //      (best-effort — if email is not configured, the event is silently
-        //      ignored so the webhook still returns 200).
-        const sub = event.data.object
-        const userId = sub.metadata?.userId
-        if (userId) {
-          try {
-            // Refresh expiry (defensive — the subscription may already be set,
-            // but the trial_end → period_end transition is the right moment to
-            // re-sync).
-            await db.subscription.updateMany({
-              where: { userId, active: true },
-              data: {
-                expiresAt: sub.current_period_end
-                  ? new Date(sub.current_period_end * 1000)
-                  : null,
-              },
-            })
-          } catch (err) {
-            // Don't fail the webhook over a DB write error — log + continue.
-            console.error('[stripe.webhook] trial_will_end DB update failed:', err)
-          }
-
-          // Best-effort trial-ending notification email.
-          // Imported lazily so the webhook does not pay the email-module import
-          // cost when SMTP is not configured (dev / CI).
-          try {
-            const { sendTrialEndingEmail } = await import('@/lib/email')
-            // Fetch the user's email from the DB.
-            const user = await (db as any).user.findUnique({
-              where: { id: userId },
-              select: { email: true, name: true },
-            })
-            if (user?.email) {
-              const trialEnd = sub.trial_end ? new Date(sub.trial_end * 1000) : null
-              await sendTrialEndingEmail(user.email, {
-                userName: user.name || undefined,
-                plan: (sub.metadata?.plan as 'oasis' | 'wellness') || 'oasis',
-                trialEnd,
-              })
-            }
-          } catch (err) {
-            // Email failures must NOT fail the webhook — Stripe would retry
-            // the event indefinitely and re-send the email on every retry.
-            console.error('[stripe.webhook] trial_will_end email send failed:', err)
-          }
-        }
-        break
-      }
-
-      default:
-        // Ignore other event types — only the 5 above are subscription-relevant.
-        break
+      // Create new active subscription
+      const isTrial = cs.mode === 'setup' || !!cs.subscription_details?.status
+      await db.subscription.create({
+        data: {
+          userId,
+          plan: planId,
+          status: isTrial ? 'trialing' : 'active',
+          duration,
+          store: 'web',
+          startedAt: new Date(),
+          expiresAt: null,
+          active: true,
+          stripeCustomerId: cs.customer as string | null,
+          stripeSubscriptionId: (cs.subscription as string) || null,
+          trialEndsAt: cs.subscription_details?.trial_end
+            ? new Date(cs.subscription_details.trial_end * 1000)
+            : null,
+        },
+      })
+      break
     }
 
-    return NextResponse.json({ received: true })
-  } catch (err) {
-    console.error('Stripe webhook processing error:', err)
-    return NextResponse.json({ error: 'Webhook failed' }, { status: 500 })
+    case 'customer.subscription.updated': {
+      const sub = event.data.object
+      const userId = sub.metadata?.userId
+      if (!userId) return
+
+      const status = mapStripeStatus(sub.status)
+      await db.subscription.updateMany({
+        where: { userId, stripeSubscriptionId: sub.id },
+        data: {
+          status,
+          active: statusGrantsAccess(status, null),
+          expiresAt: sub.current_period_end
+            ? new Date(sub.current_period_end * 1000)
+            : null,
+          currentPeriodStart: sub.current_period_start
+            ? new Date(sub.current_period_start * 1000)
+            : null,
+          currentPeriodEnd: sub.current_period_end
+            ? new Date(sub.current_period_end * 1000)
+            : null,
+          cancelAt: sub.cancel_at
+            ? new Date(sub.cancel_at * 1000)
+            : null,
+          trialEndsAt: sub.trial_end
+            ? new Date(sub.trial_end * 1000)
+            : null,
+        },
+      })
+      break
+    }
+
+    case 'customer.subscription.deleted': {
+      const sub = event.data.object
+      const userId = sub.metadata?.userId
+      if (!userId) return
+
+      await db.subscription.updateMany({
+        where: { userId, stripeSubscriptionId: sub.id },
+        data: {
+          status: 'expired',
+          active: false,
+          expiresAt: sub.ended_at ? new Date(sub.ended_at * 1000) : new Date(),
+        },
+      })
+      break
+    }
+
+    case 'invoice.paid': {
+      const invoice = event.data.object
+      const userId = invoice.metadata?.userId
+      if (!userId) return
+
+      const periodEnd = invoice.lines?.data?.[0]?.period?.end
+      await db.subscription.updateMany({
+        where: { userId, active: true },
+        data: {
+          status: 'active',
+          active: true,
+          expiresAt: periodEnd ? new Date(periodEnd * 1000) : null,
+          currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : null,
+        },
+      })
+      break
+    }
+
+    case 'invoice.payment_failed': {
+      const invoice = event.data.object
+      const userId = invoice.metadata?.userId
+      if (!userId) return
+
+      await db.subscription.updateMany({
+        where: { userId, active: true },
+        data: {
+          status: 'past_due',
+          active: true, // Still active during grace period
+        },
+      })
+      break
+    }
+
+    case 'customer.subscription.trial_will_end': {
+      const sub = event.data.object
+      const userId = sub.metadata?.userId
+      if (!userId) return
+
+      // Just update the expiry — don't change status yet
+      await db.subscription.updateMany({
+        where: { userId, stripeSubscriptionId: sub.id },
+        data: {
+          expiresAt: sub.current_period_end
+            ? new Date(sub.current_period_end * 1000)
+            : null,
+          trialEndsAt: sub.trial_end
+            ? new Date(sub.trial_end * 1000)
+            : null,
+        },
+      })
+      break
+    }
+
+    default:
+      // Ignore non-subscription events
+      break
   }
+}
+
+/**
+ * Map Stripe subscription status to AQWELIA SubscriptionStatus.
+ */
+function mapStripeStatus(stripeStatus: string): SubscriptionStatus {
+  switch (stripeStatus) {
+    case 'trialing':
+      return 'trialing'
+    case 'active':
+      return 'active'
+    case 'past_due':
+      return 'past_due'
+    case 'canceled':
+      return 'canceled'
+    case 'unpaid':
+      return 'expired'
+    case 'incomplete':
+    case 'incomplete_expired':
+      return 'inactive'
+    default:
+      return 'inactive'
+  }
+}
+
+/**
+ * Infer duration from a product ID string.
+ */
+function inferDuration(productId: string): Duration | null {
+  if (!productId) return null
+  for (const [provider, internal] of Object.entries(PROVIDER_TO_DURATION)) {
+    if (productId.includes(provider)) return internal as Duration
+  }
+  return null
 }

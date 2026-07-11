@@ -44,7 +44,7 @@ export function usePdfReport() {
     }
   }, [])
 
-  const canDownload = planId ? canAccess(planId, 'pdf_report').allowed : false
+  const canDownload = planId ? canAccess(planId, 'active', 'pdf_report').allowed : false
 
   const download = useCallback(async (poolId?: string | null) => {
     setPreparing(true)

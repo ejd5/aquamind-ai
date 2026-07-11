@@ -5765,3 +5765,414 @@ Stage Summary:
 - **8 nouveaux namespaces i18n** (proFeatures, proSolo, proTeam, proFleet, proPricing, careRecos, redirectPages, planDetail) × 7 locales = 56 namespaces ajoutés via script idempotent `add-p8-final-pages-keys.py` (740 lignes).
 - **Sitemap enrichi**: 7 nouvelles entries (33 total), legacy redirects exclus (canonical URLs only).
 - **Lint PASS** (0/0), **TypeScript PASS** (0 erreur dans mon scope), **pre-commit i18n PASS**, **JSON valide** pour 7 locales, **smoke test 200/308** sur 10 URLs, **push OK** (d7eb706 sur origin/main).
+
+---
+Task ID: P0-B-AUDIT
+Agent: audit
+Task: Billing system audit (read-only)
+Date: 2025-07-11
+
+# AQWELIA Billing / Subscription System — P0-B Security Audit
+
+Scope: plan definitions, subscription state, payment routes, webhook security, feature gates, subscription API. READ-ONLY audit — no code modified.
+
+## Executive summary
+
+The billing system has **one CRITICAL security vulnerability** (free plan activation with no payment), **two HIGH-severity webhook issues** (no idempotency, weak RC auth), and **multiple plan-definition duplications/inconsistencies** that cause `spa365` to be unreachable via real payment while being freely activatable through the unprotected `POST /api/subscription` endpoint. Six of the nine `FeatureGate` values are defined but never enforced server-side, and the `photo_scan` quota is bypassable via the legacy `/api/pool/photo-diagnostic` endpoint.
+
+---
+
+## 1. Plan definitions
+
+### Files that define plans / prices / rights
+
+| File | Role |
+|------|------|
+| `src/lib/pool/freemium.ts` (lines 13–326) | Authoritative PLANS array + `PlanId` type + `canAccess()` |
+| `src/lib/billing/types.ts` (lines 1–39) | Second `PlanId` type (subset) + `Entitlement.id` union |
+| `src/lib/billing/stripe-web.ts` (lines 14–28) | Hardcoded web product catalogue (8 products) |
+| `src/lib/billing/revenuecat.ts` (lines 23–76) | Native RC product→plan mapping (oasis/wellness only) |
+| `src/lib/stripe.ts` (lines 43–65) | `STRIPE_PRICES` env-var map + `getPlanFromProductId()` |
+| `prisma/schema.prisma` (lines 322–334) | `Subscription` model + comment listing valid plans |
+| `.env.example` (lines 67–90) | STRIPE_PRICE_* + REVENUECAT_* env-var documentation |
+
+### Every plan, price, and rights
+
+Source of truth: `src/lib/pool/freemium.ts` PLANS array (lines 43–233).
+
+| PlanId | Name | week | month | quarter | halfyear | year | limits (maxPools / maxSpas / scans/mo / tests/mo / weather / smartReminders / guides / multiPool / pdf / pro / historyDays / spa) |
+|--------|------|------|-------|---------|----------|------|---|
+| `decouverte` | Découverte | 0 | 0 | 0 | 0 | 0 | 1 / 0 / 2 / 2 / basic / false / basic / false / false / false / 14 / false |
+| `oasis` | Oasis | 3.99 | 9.99 | 24.99 | 39.99 | 59.99 | 3 / 0 / 999 / 999 / true / true / all_plus_video / true / true / true / 9999 / false |
+| `wellness` | Wellness | 5.99 | 14.99 | 39.99 | 54.99 | 79.99 | 3 / 1 / 999 / 999 / true / true / all_plus_video / true / true / true / 9999 / true |
+| `spa365` | Spa 365 | 2.49 | 6.99 | 18.99 | 32.99 | 49.99 | 1 / 1 / 999 / 999 / false / true / all / false / false / false / 9999 / true |
+
+`DEFAULT_PLAN = 'decouverte'` (line 325).
+
+### DUPLICATIONS / inconsistencies found
+
+1. **Two diverging `PlanId` types**
+   - `src/lib/pool/freemium.ts:13` → `'decouverte' | 'oasis' | 'wellness' | 'spa365'` (4 values)
+   - `src/lib/billing/types.ts:1` → `'decouverte' | 'oasis' | 'wellness'` (3 values — spa365 MISSING)
+   - The same name `PlanId` is exported from both modules. Callers that import from `@/lib/billing` (e.g. `src/app/settings/page.tsx:31`, `stripe-web.ts:2`, `revenuecat.ts:3`) silently get the 3-value type, while callers that import from `@/lib/pool/freemium` (the subscription API, paywall, app-shell) get the 4-value type. The TS types are structurally compatible (they're strings), so the compiler does not flag the gap.
+
+2. **`spa365` is unreachable through any real payment path**
+   - `STRIPE_PRICES` in `src/lib/stripe.ts:43-52` lists 8 env vars for `oasis_*` and `wellness_*` only — NO `spa365_*` env vars.
+   - `stripeWebClient.getProducts()` in `src/lib/billing/stripe-web.ts:15-28` returns 8 hardcoded products (oasis/wellness × weekly/monthly/seasonal/yearly) — NO spa365.
+   - `revenueCatClient.mapPackageToProduct()` in `src/lib/billing/revenuecat.ts:23-51` returns `null` for any product ID not containing `oasis` or `wellness` — spa365 silently dropped.
+   - `revenueCatClient.mapCustomerInfoToEntitlements()` in `src/lib/billing/revenuecat.ts:53-76` filters entitlement IDs to `oasis` and `wellness` only (line 60).
+   - The Prisma `Subscription.plan` comment at `prisma/schema.prisma:325` says `"decouverte, oasis, wellness"` — no spa365.
+   - The only way to reach `spa365` is via `POST /api/subscription` (see §7 — that is the security hole).
+
+3. **Price tables duplicated across 2 files**
+   - `freemium.ts PLANS[].price` (5 keys per plan × 4 plans = 20 numbers)
+   - `stripe-web.ts` hardcoded product catalogue (8 products × 5 fields = 40 numbers)
+   - The two tables overlap on oasis/wellness × weekly/monthly/halfyear↔seasonal/yearly and the values are consistent TODAY, but there is no compile-time guarantee they stay in sync. A price change in one place can drift silently.
+
+4. **Duration taxonomy mismatch**
+   - `freemium.ts PLANS[].price`: keys are `week / month / quarter / halfyear / year` (5 keys).
+   - `freemium.ts DURATIONS` (line 235): ids are `week / month / halfyear / year` (4 — no `quarter`).
+   - `stripe-web.ts` products + `stripe.ts STRIPE_PRICES` + `revenuecat.ts` + `billing/types.ts`: `weekly / monthly / seasonal / yearly` (4 — `seasonal` instead of `halfyear`, no `quarter`).
+   - The `quarter` price (24.99 oasis / 39.99 wellness / 18.99 spa365) defined in `PLANS[].price.quarter` is NEVER SOLD anywhere. It is dead data that misleads readers.
+   - The Stripe/RC `seasonal` duration is mapped to `halfyear` only inside the webhook handlers (`stripe/webhook/route.ts:62-63`, `revenuecat/webhook/route.ts:46-47`) and the client paywall (`module-paywall.tsx:158, 181`). The mapping is implicit and undocumented in the schema.
+
+5. **Plan name inconsistencies between code and i18n**
+   - `freemium.ts` oasis `featureKeys` includes `'oasis.features.3pools'` ("Jusqu'à 3 piscines"), but the i18n locale file (`fr.json:1046`) ALSO defines `'oasis.features.1pool'` ("1 piscine") that is never referenced. Confusing duplicate feature key.
+   - `freemium.ts` wellness `featureKeys` references `'wellness.features.3profiles'`, `'allOasis'`, `'spaTreatments'`, `'warmWater'`, `'separatedHistory'`, `'pdfReports'`, `'separatedProfiles'`, `'spaAlerts'`. The locale file (`fr.json:1069`) ALSO defines `'wellness.features.1pool1spa'` ("1 piscine + 1 spa") that is never referenced.
+
+6. **`getPlanFromProductId()` ignores spa365**
+   - `src/lib/stripe.ts:62-65` maps any productId containing `'wellness'` → `'wellness'`, else `'oasis'`. A `spa365_*` product (if it ever existed) would be silently mapped to `'oasis'`.
+
+---
+
+## 2. Subscription states — Prisma model
+
+### Model definition (`prisma/schema.prisma:322-334`)
+
+```prisma
+model Subscription {
+  id        String    @id @default(cuid())
+  userId    String
+  plan      String    @default("decouverte") // decouverte, oasis, wellness
+  duration  String?   // week, month, halfyear, year
+  startedAt DateTime  @default(now())
+  expiresAt DateTime?
+  active    Boolean   @default(false)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+```
+
+### Fields and observed values
+
+| Field | Type | Possible values (per code + comments) | Notes |
+|-------|------|---------------------------------------|-------|
+| `id` | String (cuid) | cuid | PK |
+| `userId` | String | User.id | FK, cascaded on user delete |
+| `plan` | String (default `'decouverte'`) | `decouverte`, `oasis`, `wellness`, `spa365` | Comment lists only the first 3 — but `POST /api/subscription` accepts any `PLANS[].id`, so `spa365` is also storable. NO enum constraint at DB level (SQLite string column). |
+| `duration` | String? | `week`, `month`, `quarter`, `halfyear`, `year`, `null` | Comment lists `week, month, halfyear, year` — but the subscription POST handler (`/api/subscription/route.ts:54`) also accepts `quarter`. NO DB constraint. |
+| `startedAt` | DateTime (default now) | ISO timestamp | Set on creation. |
+| `expiresAt` | DateTime? | ISO timestamp or null | Set by POST /api/subscription (computed from duration), by Stripe webhook `invoice.paid` + `customer.subscription.updated` + `customer.subscription.trial_will_end`, and by RC webhook. NULL after `checkout.session.completed` until next event arrives. |
+| `active` | Boolean (default false) | true / false | Single boolean — NO granular status. |
+
+### Problems found
+
+- **NO `status` field.** Stripe subscriptions go through `trialing → active → past_due → canceled → incomplete`, but the DB collapses everything into one boolean. A subscription that is `past_due` (payment failure but Stripe still retries) is indistinguishable from a healthy `active` one. A `trialing` subscription (no card charged yet) is also `active: true`.
+- **NO `cancelAt` / `canceledAt` / `trialEndsAt` / `currentPeriodStart` / `currentPeriodEnd`** — Stripe webhook `customer.subscription.updated` only refreshes `expiresAt` (`stripe/webhook/route.ts:119-126`); cancellation scheduling is lost.
+- **NO `stripeCustomerId` / `stripeSubscriptionId` / `stripePriceId` / `revenuecatOriginalTransactionId`** — there is no way to correlate a DB Subscription row to the upstream Stripe/RC objects. The `updateMany where: { userId, active: true }` pattern used in both webhooks (`stripe/webhook/route.ts:51-54, 113-126, 137-145, 163-170` and `revenuecat/webhook/route.ts:33-36`) updates ALL active rows for a user, regardless of which Stripe subscription the event actually refers to.
+- **NO `store` field** — web/iOS/Android provenance is not recorded. A user with both a Stripe (web) subscription and a RevenueCat (mobile) subscription will see one deactivate the other when both webhooks fire.
+- **NO BillingEvent model, NO WebhookEvent model** in `prisma/schema.prisma` (only `Subscription` and `AnalyticsEvent`). Confirmed by full schema scan (972 lines, 24 models, none billing-related). This means there is no audit trail of payment events — see §4.
+- **NO unique constraint on `(userId, active)`** — multiple `active: true` rows for the same user can co-exist (the webhooks' "deactivate-then-create" pattern leaves orphaned `active: false` rows and is not transactional; a race between two webhook deliveries can produce two `active: true` rows).
+- **Comment in `schema.prisma:325` lies** — it says `// decouverte, oasis, wellness` but the code accepts and stores `spa365` too.
+
+### Subscription states actually handled
+
+`POST /api/subscription/route.ts:46-62` and the two webhooks implement a state machine with 2 effective states:
+- **active** (`active: true`) — created on checkout completed, RC purchase, or POST /api/subscription. ExpiresAt is computed/refreshed from duration or Stripe events.
+- **inactive** (`active: false`) — set on `customer.subscription.deleted`, RC `CANCELLATION`/`EXPIRATION`/`BILLING_ISSUE`, or when a new active subscription is created for the same user.
+
+There is NO handling of: trial, past_due, paused, pending_payment, incomplete, scheduling cancellation, refund, chargeback.
+
+---
+
+## 3. Payment routes
+
+### Routes found
+
+| Route | Method | File | Auth? | What it does |
+|-------|--------|------|-------|--------------|
+| `/api/stripe/checkout` | POST | `src/app/api/stripe/checkout/route.ts` (1–71) | ✓ NextAuth session (line 13) | Validates `productId` against `STRIPE_PRICES`, creates a Stripe Checkout Session in `subscription` mode with 7-day trial (skipped for `_weekly`), `client_reference_id = session.user.id`, metadata `userId/productId/plan`, redirects on success/cancel via `NEXTAUTH_URL`. |
+| `/api/stripe/portal` | POST | `src/app/api/stripe/portal/route.ts` (1–44) | ✓ NextAuth session (line 14) | Lists Stripe customers by email (`limit: 1`), opens a Customer Portal session for the first match. |
+| `/api/stripe/webhook` | POST | `src/app/api/stripe/webhook/route.ts` (1–213) | ✗ none — Stripe signature only (line 35) | See §4. |
+| `/api/revenuecat/webhook` | POST | `src/app/api/revenuecat/webhook/route.ts` (1–63) | ✗ none — Bearer token only (line 14) | See §4. |
+| `/api/subscription` | GET | `src/app/api/subscription/route.ts` (15–27) | ✓ NextAuth session (line 17) | Returns the user's active Subscription row + the matching PLANS entry + the full PLANS array. |
+| `/api/subscription` | POST | `src/app/api/subscription/route.ts` (29–86) | ✓ NextAuth session (line 31) | **🚨 CRITICAL — see §7.** |
+| `/api/demo/login` | POST | `src/app/api/demo/login/route.ts` (1–115) | ✗ public | Provisions the shared demo account (`demo@aqwelia.app`) with a `decouverte` subscription. |
+
+### Auth verification (detailed)
+
+- **`/api/stripe/checkout`** (lines 12-16): `getServerSession(authOptions)` → checks `session?.user?.id` → 401 if missing. ✓
+- **`/api/stripe/portal`** (lines 13-17): same pattern. ✓
+- **`/api/stripe/webhook`** (lines 19-39): NO session check; instead `stripe.webhooks.constructEvent(body, signature, webhookSecret)` (line 35). Returns 400 if no signature header, 500 if env var missing, 400 on invalid signature. ✓
+- **`/api/revenuecat/webhook`** (lines 7-16): NO session check; instead `authHeader !== \`Bearer ${webhookSecret}\`` (line 14). Returns 500 if env var missing, 401 if header mismatch. ✓ (but weak — see §4)
+- **`/api/subscription` GET + POST** (lines 17, 31): `getServerSession(authOptions)` → 401 if missing. ✓
+- **`/api/demo/login`** (line 33): intentionally public.
+
+### Middleware cross-check (`src/middleware.ts:55-70`)
+
+The `PROTECTED_PATTERNS` array includes `/^\/api\/subscription\//` (with trailing slash). The actual route is `/api/subscription` (NO trailing slash), so the middleware regex DOES NOT match it. The middleware never blocks unauthenticated calls to `/api/subscription`. The handler's own `getServerSession` check is the only protection. Functional today, but the regex is wrong (dead defense-in-depth).
+
+The webhooks are intentionally NOT in `PROTECTED_PATTERNS` — that is correct (they have their own auth).
+
+### Idempotency
+
+- **`/api/stripe/checkout`**: NOT idempotent. Two identical POSTs create two Checkout Sessions. Stripe itself does not deduplicate.
+- **`/api/stripe/portal`**: NOT idempotent (creates a new portal session each time). Harmless.
+- **`/api/stripe/webhook`**: NOT idempotent — see §4.
+- **`/api/revenuecat/webhook`**: NOT idempotent — see §4.
+- **`/api/subscription` POST**: NOT idempotent — but always deactivates prior rows first, so consecutive identical POSTs result in only one `active: true` row (the latest). However, repeated POSTs accumulate dead `active: false` Subscription rows.
+
+---
+
+## 4. Webhook security
+
+### `src/app/api/stripe/webhook/route.ts` (Stripe)
+
+**Signature validation** (lines 27-39):
+```ts
+const body = await req.text()
+const signature = (await headers()).get('stripe-signature')
+if (!signature) return 400
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+if (!webhookSecret) return 500
+event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+```
+- ✓ Uses the raw body (`req.text()`) — required by Stripe.
+- ✓ Uses the official `stripe.webhooks.constructEvent` with the webhook secret.
+- ✓ Returns 400 on missing/invalid signature.
+
+**Idempotency**: ✗ NONE.
+- No `BillingEvent` or `WebhookEvent` model exists in `prisma/schema.prisma`.
+- No `stripeEventId` field on `Subscription`.
+- The handler does NOT check `event.id` for replay. Every event delivery creates or updates DB rows.
+- Stripe typically retries a webhook on any non-2xx response; if a transient DB error causes a 500, Stripe retries, and the retry re-runs the full handler. For `checkout.session.completed`, the retry creates ANOTHER `Subscription` row (the prior one was deactivated by the first delivery — but the row still exists, orphaned). For `customer.subscription.deleted`, the retry runs `updateMany where: { userId, active: true } data: { active: false }` again — idempotent for that specific event type, but not for `checkout.session.completed` or `invoice.paid`.
+
+**Event types handled** (lines 42-205):
+- `checkout.session.completed` → deactivate prior subs + create new active sub (lines 43-104). NO check that `cs.metadata.userId` matches the Stripe customer's email — relies entirely on metadata set during checkout (acceptable, since metadata is set server-side in `/api/stripe/checkout`).
+- `customer.subscription.updated` → refresh `expiresAt` (lines 106-127).
+- `customer.subscription.deleted` → set `active: false` (lines 107, 112-116).
+- `invoice.paid` → refresh `expiresAt` from invoice line period (lines 132-147).
+- `customer.subscription.trial_will_end` → refresh `expiresAt` + send "trial ending" email (lines 149-201).
+- All other event types: silently ignored (default branch, line 203).
+
+**Replay behavior**: On Stripe replay (manual or via Dashboard), every event re-runs. The result is a long sequence of `Subscription` rows for the same user with overlapping `startedAt` values; only the latest one ends up `active: true`. The audit trail is lost (no event IDs stored). A replay of `checkout.session.completed` for an old, since-canceled subscription would RESURRECT the subscription (deactivate current active, create new active) — because the handler unconditionally trusts the event.
+
+### `src/app/api/revenuecat/webhook/route.ts` (RevenueCat)
+
+**Signature validation** (lines 7-16):
+```ts
+const authHeader = req.headers.get('authorization')
+const webhookSecret = process.env.REVENUECAT_WEBHOOK_SECRET
+if (!webhookSecret) return 500
+if (authHeader !== `Bearer ${webhookSecret}`) return 401
+```
+- ✓ Checks the Bearer token against `REVENUECAT_WEBHOOK_SECRET`.
+- ✗ NO HMAC signature verification. RevenueCat does NOT sign webhooks cryptographically (their official pattern is the bearer token), so this is the best available — but it means anyone with the secret can forge events.
+- ✗ The check uses strict string equality — vulnerable to timing attacks (low practical risk given the 32+ char random secret, but non-constant-time comparison is a code-smell).
+- ✗ NO IP allowlist for RevenueCat's egress IPs.
+
+**Idempotency**: ✗ NONE.
+- No event ID storage.
+- No `revenuecatEventId` / `originalTransactionId` field on `Subscription`.
+- The handler unconditionally deactivates prior subs and creates a new one (lines 33-55) on every "active" event. RC retries on 5xx — retry would create another Subscription row.
+
+**Event handling** (lines 25-55):
+```ts
+const eventType = event?.event_type
+const isActive = !['CANCELLATION', 'EXPIRATION', 'BILLING_ISSUE'].includes(eventType)
+```
+- ✗ **Three event types deactivate; everything else activates.** RC sends many event types: `INITIAL_PURCHASE`, `RENEWAL`, `PRODUCT_CHANGE`, `TEST`, `NON_RENEWING_PURCHASE`, `BILLING_ISSUE`, `CANCELLATION`, `EXPIRATION`, `UNCANCELLATION`, `SUBSCRIPTION_PAUSED`, `SUBSCRIPTION_RESUMED`, `TRANSFER`, `SUBSCRIPTION_EXTENDED`. A `TEST` event (sent by RC dashboard when you click "Test webhook") would activate a paid subscription. A `SUBSCRIPTION_PAUSED` event would activate it. A `TRANSFER` event (user migrated accounts) would activate for the new `app_user_id`.
+- ✗ **Trusts `event.app_user_id` from the request body** (line 21). This is the user ID under which RC stored the purchase. If the bearer secret leaks, an attacker can forge a webhook call with `app_user_id: "<any-user-id>"` and grant that user `wellness` plan indefinitely.
+- ✗ **Does NOT validate that `app_user_id` matches a real User** in the DB before creating the Subscription row. A typo or attack would create orphaned Subscription rows pointing to nonexistent userIds (the FK constraint on `userId` would actually reject this — but only because Prisma enforces it, not because the handler checks).
+
+**Replay behavior**: On RC retry or replay, every event re-runs. Activating events create new Subscription rows. There is no deduplication.
+
+---
+
+## 5. Feature gates — `canAccess()` in `freemium.ts`
+
+### `FeatureGate` values (lines 242-251)
+
+```ts
+export type FeatureGate =
+  | 'photo_scan'
+  | 'weather_advanced'
+  | 'smart_reminders'
+  | 'guides_premium'
+  | 'multi_pool'
+  | 'pdf_report'
+  | 'pro_mode'
+  | 'history_extended'
+  | 'spa_support'
+```
+
+### Server-side enforcement (search: `canAccess(` in `src/app/api/**`)
+
+| FeatureGate | Server route | File:line | Behavior |
+|-------------|-------------|-----------|----------|
+| `photo_scan` | `POST /api/pool/strip-scan` | `src/app/api/pool/strip-scan/route.ts:196` | Quota check: `usage.photoScansThisMonth >= maxPhotoScansPerMonth` → 403 with `ctaPlan`. ✓ enforced. |
+| `multi_pool` | `POST /api/pool/profile` | `src/app/api/pool/profile/route.ts:84` | Refuses creating a 2nd pool if `!multiPoolGate.allowed` OR `atCapacity`. ✓ enforced. |
+| `pdf_report` | `GET /api/pool/report` | `src/app/api/pool/report/route.tsx:73` | 403 with `PDF_REPORT_NOT_ALLOWED` if `!gate.allowed`. ✓ enforced. |
+| `weather_advanced` | — | — | **NOT enforced anywhere.** |
+| `smart_reminders` | — | — | **NOT enforced anywhere.** |
+| `guides_premium` | — | — | **NOT enforced anywhere.** |
+| `pro_mode` | — | — | **NOT enforced anywhere.** |
+| `history_extended` | — | — | **NOT enforced anywhere.** |
+| `spa_support` | — | — | **NOT enforced anywhere.** |
+
+### Client-side enforcement (UI feedback only, NOT security)
+
+| FeatureGate | Client file | Behavior |
+|-------------|-------------|----------|
+| `multi_pool` | `src/components/aquamind/app-shell.tsx:170` | Disables "Add pool" button via `canAddPool = multiPoolGate.allowed && pools.length < plan.limits.maxPools`. |
+| `pdf_report` | `src/hooks/use-pdf-report.ts:47` | Hides download button via `canDownload = canAccess(planId, 'pdf_report').allowed`. |
+
+### Server-side bypasses found
+
+- **`POST /api/pool/photo-diagnostic`** (`src/app/api/pool/photo-diagnostic/route.ts:25-101`): the regular photo diagnostic endpoint does NOT call `canAccess('photo_scan')` and does NOT check the monthly quota. A `decouverte` user (limit: 2 scans/month) can run unlimited photo diagnostics via this endpoint, persisting them as `PhotoDiagnostic` rows. The quota is enforced ONLY on the newer `/api/pool/strip-scan` endpoint (which counts BOTH `photoDiagnostic` and `waterTest(source='strip_photo')` rows — `strip-scan/route.ts:55-67`).
+  - Note: `getPhotoScansThisMonth()` in `strip-scan/route.ts:60-65` DOES count `photoDiagnostic` rows, but only `/api/pool/strip-scan` calls it. The legacy `/api/pool/photo-diagnostic` route is the bypass.
+- **All other API routes** (`/api/pool/weather`, `/api/pool/reminders`, `/api/pool/water-test`, `/api/pool/guides`, `/api/pool/equipment`, `/api/pool/inventory`, `/api/pool/restock`, `/api/pool/predictions`, `/api/pool/share`, `/api/pool/iot`, `/api/pool/annual-review`, `/api/pool/winter-guardian`, `/api/pool/gamification`, `/api/pool/savings`, `/api/pool/action-plan`) — none import `canAccess` or `PLANS` (verified via grep). They check only NextAuth session, not plan. So `weather_advanced`, `smart_reminders`, `guides_premium`, `pro_mode`, `history_extended`, `spa_support` are de facto free for any authenticated user.
+
+### Summary
+
+- 3 of 9 gates are server-enforced: `photo_scan` (strip-scan only), `multi_pool` (profile POST only), `pdf_report` (report GET only).
+- 6 of 9 gates are NEVER enforced server-side.
+- 1 gate (`photo_scan`) has a bypass via the legacy `photo-diagnostic` endpoint.
+- 2 gates are enforced on the client only (UI cosmetics, trivially bypassed via curl).
+
+---
+
+## 6. Subscription API — `src/app/api/subscription/route.ts`
+
+### `GET /api/subscription` (lines 15-27)
+
+Returns JSON:
+```json
+{
+  "plan": <Plan object from PLANS array>,           // full plan incl. prices, features, limits
+  "subscription": <Subscription DB row | null>,      // id, userId, plan, duration, startedAt, expiresAt, active
+  "allPlans": <Plan[]>                                // all 4 PLANS entries with full pricing
+}
+```
+- Reads `db.subscription.findFirst({ where: { userId, active: true }, orderBy: { startedAt: 'desc' } })` (line 23). If no active sub, `planId = DEFAULT_PLAN = 'decouverte'`.
+- The `subscription` field leaks `userId` back to the client (minor — already known to the user). It also exposes the raw DB row including the `active` flag, which the client trusts.
+- The `allPlans` array exposes full pricing for all plans including the unsold `spa365` and the unsold `quarter` duration — informational only, no security impact.
+
+### `POST /api/subscription` (lines 29-86) — 🚨 CRITICAL
+
+```ts
+const { plan, duration } = await req.json()
+const validPlan = PLANS.find((p) => p.id === plan)
+if (!validPlan) return 400  // invalidPlan
+
+await db.subscription.updateMany({
+  where: { userId, active: true },
+  data: { active: false },
+})
+
+const now = new Date()
+const expires = new Date(now)
+switch (duration) {
+  case 'week':    expires.setDate(now.getDate() + 7); break
+  case 'month':   expires.setMonth(now.getMonth() + 1); break
+  case 'quarter': expires.setMonth(now.getMonth() + 3); break
+  case 'halfyear':expires.setMonth(now.getMonth() + 6); break
+  case 'year':    expires.setFullYear(now.getFullYear() + 1); break
+  default:        expires.setMonth(now.getMonth() + 1)
+}
+
+const sub = await db.subscription.create({
+  data: { userId, plan, duration, startedAt: now, expiresAt: expires, active: true },
+})
+```
+
+**CRITICAL SECURITY VULNERABILITY.**
+
+- The endpoint accepts `plan` and `duration` from the request body.
+- It validates that `plan` is in `PLANS` (i.e. one of `decouverte`, `oasis`, `wellness`, `spa365`).
+- It validates `duration` via the switch default (any unknown value falls back to 1 month — but `week`/`month`/`quarter`/`halfyear`/`year` are all accepted).
+- **It does NOT verify any payment.** No Stripe checkout session ID, no Stripe customer ID, no Stripe subscription ID, no RevenueCat entitlement, no RevenueCat receipt, no signature, nothing.
+- It directly creates a new `Subscription` row with `active: true`, `expiresAt` computed from the requested duration (up to 1 year in the future), `plan` set to whatever the user requested.
+
+**Exploit (single curl):**
+```bash
+curl -X POST https://aqwelia.app/api/subscription \
+  -H "Content-Type: application/json" \
+  -H "Cookie: <next-auth JWT cookie>" \
+  -d '{"plan":"wellness","duration":"year"}'
+```
+→ Returns 200 with the new Subscription row, `active: true`, `expiresAt` = now + 1 year, `plan: 'wellness'`. Cost to attacker: €0. Real price: €79.99.
+
+**Impact:**
+- Any authenticated user can self-grant ANY plan (oasis, wellness, spa365) for ANY duration (week/month/quarter/halfyear/year) for free.
+- The Stripe Checkout flow and RevenueCat IAP flow are completely bypassed.
+- `canAccess()` server-side gates (strip-scan, profile multi-pool, pdf_report) will now PASS for this user, because they read `plan` from `Subscription` and the user just wrote `wellness` into it.
+- The user can also pick `spa365` — a plan that has NO Stripe/RevenueCat product configured, so it cannot be purchased through any legitimate path. The unprotected POST is the ONLY way to reach it.
+
+**Why this is even more dangerous than it looks:**
+- The legitimate client (`module-paywall.tsx:140-189`) only calls POST /api/subscription for `decouverte` (downgrade) — for paid plans it calls `/api/stripe/checkout` or `billing.purchase()`. So a casual user testing the UI would never trigger the bug. But the API is fully open to any HTTP client.
+- The endpoint does NOT distinguish "downgrade to free" from "upgrade to paid". It treats all plan changes identically.
+
+**Other problems with POST /api/subscription:**
+- NO idempotency: repeated POSTs accumulate dead `active: false` rows.
+- NO concurrency control: two parallel POSTs could both pass the `updateMany` then both `create`, leaving two `active: true` rows.
+- The handler fires PostHog events `subscription_started` / `subscription_cancelled` (lines 68-80) — analytics are polluted by fraudulent activations.
+- The handler writes to `db.analyticsEvent` with `event: 'subscription_activated'` (line 65) — same pollution.
+
+---
+
+## Cross-cutting security risks (summary)
+
+1. **FREE PLAN ACTIVATION** (`POST /api/subscription`): trivial full billing bypass. CVSS ~9.8 (network, low complexity, low priv, high impact on revenue). **Highest priority.**
+2. **NO webhook idempotency** (Stripe + RC): replays and retries can resurrect canceled subscriptions, accumulate orphan rows, and double-fire emails. No audit trail.
+3. **RC webhook trusts `app_user_id` from body**: if `REVENUECAT_WEBHOOK_SECRET` leaks (env var, git history, logging), attacker can grant any user any paid plan via a forged webhook call.
+4. **RC webhook event-type mapping is naive**: `TEST`, `SUBSCRIPTION_PAUSED`, `TRANSFER` events would activate paid plans.
+5. **No `store` field on Subscription**: web + mobile subscriptions can collide and silently deactivate each other.
+6. **6 of 9 FeatureGates are unenforced** server-side — `weather_advanced`, `smart_reminders`, `guides_premium`, `pro_mode`, `history_extended`, `spa_support` are paid features accessible to free users via the regular API.
+7. **`photo_scan` quota bypassed** via `/api/pool/photo-diagnostic` (legacy endpoint, no quota check).
+8. **Two diverging `PlanId` types** — `spa365` exists in one type but not the other. Any code that imports from `@/lib/billing` cannot even name `spa365`.
+9. **`spa365` plan is unreachable via real payment** — not in Stripe env, not in stripe-web catalogue, not in RevenueCat mapping, not in schema comment. Only reachable via the vulnerable `POST /api/subscription`.
+10. **`stripe/webhook` "deactivate-then-create" is not transactional**: between the `updateMany` (line 51) and `create` (line 56) the user has zero active subscriptions. A concurrent request reading `findFirst where active: true` would see `decouverte` (default fallback) for a brief window.
+11. **Stripe portal route** (`/api/stripe/portal/route.ts:23-26`) resolves the customer by `email` only — if two Stripe customers share the same email (e.g. test + live mode, or a typo), the portal opens for whichever Stripe returns first (`limit: 1`).
+12. **Middleware regex bug**: `/^\/api\/subscription\//` requires a trailing slash and does NOT match `/api/subscription` (the actual route). Defense-in-depth at the middleware layer is dead. The handler's own `getServerSession` check is the only protection.
+13. **No DB-level enum on `Subscription.plan` or `Subscription.duration`** — any string is accepted (SQLite has no enum type, but Prisma could enforce via `@db.VarChar` + app-level validation; the comment in the schema is the only documentation).
+
+---
+
+## Files audited (read-only)
+
+- `src/lib/pool/freemium.ts` (326 lines)
+- `src/lib/stripe.ts` (66 lines)
+- `src/lib/billing/types.ts` (40 lines)
+- `src/lib/billing/index.ts` (23 lines)
+- `src/lib/billing/stripe-web.ts` (81 lines)
+- `src/lib/billing/revenuecat.ts` (178 lines)
+- `src/app/api/stripe/checkout/route.ts` (72 lines)
+- `src/app/api/stripe/portal/route.ts` (45 lines)
+- `src/app/api/stripe/webhook/route.ts` (214 lines)
+- `src/app/api/revenuecat/webhook/route.ts` (64 lines)
+- `src/app/api/subscription/route.ts` (87 lines)
+- `src/app/api/demo/login/route.ts` (116 lines)
+- `src/app/api/pool/strip-scan/route.ts` (321 lines)
+- `src/app/api/pool/photo-diagnostic/route.ts` (128 lines)
+- `src/app/api/pool/report/route.tsx` (209 lines)
+- `src/app/api/pool/profile/route.ts` (256 lines)
+- `src/app/api/account/export/route.ts` (relevant lines)
+- `src/components/aquamind/module-paywall.tsx` (564 lines)
+- `src/components/aquamind/app-shell.tsx` (relevant lines)
+- `src/hooks/use-pdf-report.ts` (full)
+- `src/middleware.ts` (130 lines)
+- `prisma/schema.prisma` (972 lines — full scan for `BillingEvent` / `WebhookEvent` models: NONE found)
+- `.env` / `.env.example` (env-var documentation)
+
+**No code was modified.** This is a read-only audit.

@@ -20,12 +20,16 @@ export const runtime = 'nodejs'
  * client code (Header, Onboarding, …) which expects a single object.
  */
 
-async function getUserPlanId(userId: string): Promise<PlanId> {
+async function getUserPlanInfo(userId: string): Promise<{ planId: PlanId; status: import('@/lib/billing/plans').SubscriptionStatus; expiresAt: Date | null }> {
   const sub = await db.subscription.findFirst({
     where: { userId, active: true },
     orderBy: { startedAt: 'desc' },
   })
-  return (sub?.plan as PlanId) || DEFAULT_PLAN
+  return {
+    planId: (sub?.plan as PlanId) || DEFAULT_PLAN,
+    status: (sub?.status as import('@/lib/billing/plans').SubscriptionStatus) || 'inactive',
+    expiresAt: sub?.expiresAt || null,
+  }
 }
 
 export async function GET(req: Request) {
@@ -75,13 +79,13 @@ export async function POST(req: NextRequest) {
 
     // ── Plan limit check ────────────────────────────────────────────────
     // Découverte = 1 pool max, Oasis/Wellness = 3 pools max.
-    const planId = await getUserPlanId(userId)
+    const { planId, status, expiresAt } = await getUserPlanInfo(userId)
     const plan = PLANS.find((p) => p.id === planId) || PLANS[0]
     const existingCount = await db.poolProfile.count({ where: { userId } })
 
     // If the user already has at least 1 pool and the plan does not allow
     // multi-pool, OR they've reached the maxPools ceiling → 403.
-    const multiPoolGate = canAccess(planId, 'multi_pool')
+    const multiPoolGate = canAccess(planId, status, 'multi_pool', undefined, expiresAt)
     const atCapacity = existingCount >= plan.limits.maxPools
     if (atCapacity || (existingCount >= 1 && !multiPoolGate.allowed)) {
       const template = await translate(
