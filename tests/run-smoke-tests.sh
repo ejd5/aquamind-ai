@@ -27,6 +27,7 @@ export AUTH_TRUST_HOST="true"
 export REVENUECAT_WEBHOOK_SECRET="rc_wh_test_ci_only"
 export STRIPE_SECRET_KEY="sk_test_ci_placeholder"
 export STRIPE_WEBHOOK_SECRET="whsec_test_ci_placeholder"
+export STRIPE_PRICE_OASIS_MONTHLY="price_oasis_monthly_ci"
 
 # ── 3. Cleanup function ──────────────────────────────────────────────────────
 cleanup() {
