@@ -18,6 +18,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { isAdminEmail } from '@/lib/admin'
+import { checkRateLimit, rateLimitedResponse } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
@@ -29,6 +30,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
  */
 export async function POST(req: Request) {
   const locale = pickLocale(req)
+  const rateLimit = checkRateLimit(req, 'pro-early-access', 10, 60 * 60 * 1000)
+  if (!rateLimit.allowed) return rateLimitedResponse(rateLimit)
 
   let body: any
   try {
