@@ -49,7 +49,15 @@ const COEFFS = {
 const MAX_SAFE_DELTA_PH = 0.3
 
 export function calculateDosage(input: DosageInput): DosageResult | null {
+  if (
+    !Number.isFinite(input.current) ||
+    !Number.isFinite(input.target) ||
+    !Number.isFinite(input.volume) ||
+    input.volume <= 0
+  ) return null
+
   const m3 = toM3(input.volume, input.volumeUnit)
+  if (!Number.isFinite(m3) || m3 <= 0) return null
   const delta = input.target - input.current
   const warnings: string[] = []
   const warningKeys: string[] = []
@@ -192,7 +200,18 @@ export function calculateDosage(input: DosageInput): DosageResult | null {
 
     case 'stabilizer_plus': {
       if (delta <= 0) return null
-      const qty = (delta / 10) * COEFFS.stabilizer_plus_per_10_per_m3 * m3
+      // AQWELIA's own safety rule forbids exceeding 50 mg/L CYA. Cap a
+      // requested target instead of calculating a contradictory overdose.
+      if (input.current >= 50) return null
+      const safeTarget = Math.min(input.target, 50)
+      const safeDelta = safeTarget - input.current
+      if (safeDelta <= 0) return null
+      const qty = (safeDelta / 10) * COEFFS.stabilizer_plus_per_10_per_m3 * m3
+      if (input.target > 50) pushWarning(
+        'Cible limitée à 50 mg/L pour éviter de bloquer le chlore.',
+        'doseStabilizerPlusWarningMax',
+        { target: 50 }
+      )
       return {
         product: 'Stabilisant (acide cyanurique)',
         productKey: 'doseStabilizerPlusProduct',
@@ -203,9 +222,9 @@ export function calculateDosage(input: DosageInput): DosageResult | null {
         filtrationHours: 6,
         retestInHours: 48,
         waitBeforeSwimHours: 1,
-        warnings: ['Ne pas dépasser 50 mg/L. Trop de stabilisant bloque le chlore.'],
-        warningKeys: ['doseStabilizerPlusWarningMax'],
-        warningParams: [{}],
+        warnings: warnings.length > 0 ? warnings : ['Ne pas dépasser 50 mg/L. Trop de stabilisant bloque le chlore.'],
+        warningKeys: warningKeys.length > 0 ? warningKeys : ['doseStabilizerPlusWarningMax'],
+        warningParams: warningParams.length > 0 ? warningParams : [{}],
       }
     }
 

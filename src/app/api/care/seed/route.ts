@@ -14,17 +14,9 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { seedCareDatabase } from '@/lib/pool/care-seed'
+import { isAdminEmail } from '@/lib/admin'
 
 export const runtime = 'nodejs'
-
-function getAdminEmails(): Set<string> | null {
-  const raw = process.env.ADMIN_EMAILS
-  if (!raw) return null
-  const set = new Set(
-    raw.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
-  )
-  return set.size > 0 ? set : null
-}
 
 export async function POST(req: Request) {
   const locale = pickLocale(req)
@@ -33,18 +25,8 @@ export async function POST(req: Request) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
-  const adminEmails = getAdminEmails()
-  if (adminEmails && !adminEmails.has(session.user.email.toLowerCase())) {
+  if (!isAdminEmail(session.user.email)) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
-    return NextResponse.json({ error: msg }, { status: 403 })
-  }
-  if (!adminEmails) {
-    // No ADMIN_EMAILS configured — refuse to seed from the network for safety.
-    const msg = await translate(
-      locale,
-      'care.errAdminNotConfigured',
-      'ADMIN_EMAILS non configuré.'
-    )
     return NextResponse.json({ error: msg }, { status: 403 })
   }
 

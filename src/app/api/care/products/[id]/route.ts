@@ -16,17 +16,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { isAdminEmail } from '@/lib/admin'
 
 export const runtime = 'nodejs'
-
-function getAdminEmails(): Set<string> | null {
-  const raw = process.env.ADMIN_EMAILS
-  if (!raw) return null
-  const set = new Set(
-    raw.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
-  )
-  return set.size > 0 ? set : null
-}
 
 export async function GET(
   req: Request,
@@ -50,10 +42,7 @@ export async function GET(
     // Hide inactive products from non-admin callers.
     if (!product.active) {
       const session = await getServerSession(authOptions)
-      const adminEmails = getAdminEmails()
-      const isAdmin =
-        !!session?.user?.email &&
-        (!adminEmails || adminEmails.has(session.user.email.toLowerCase()))
+      const isAdmin = isAdminEmail(session?.user?.email)
       if (!isAdmin) {
         const msg = await translate(
           locale,

@@ -32,9 +32,11 @@ export function assessSwimSafety(test: {
   let status: SwimStatus = 'allowed'
 
   const phStatus = evaluateParam('ph', test.ph)
-  if (phStatus === 'low_critical' || phStatus === 'high_critical') {
+  const phExtremeLow = test.ph < 6.5
+  const phExtremeHigh = test.ph > 8.2
+  if (phExtremeLow || phExtremeHigh || phStatus === 'low_critical' || phStatus === 'high_critical') {
     status = 'forbidden'
-    if (phStatus === 'low_critical') {
+    if (phExtremeLow || phStatus === 'low_critical') {
       reasons.push(`pH ${test.ph} hors plage de sécurité (trop acide).`)
       reasonKeys.push('swimReasonPhCriticalAcidic')
       reasonParams.push({ ph: test.ph })

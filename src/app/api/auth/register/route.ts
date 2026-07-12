@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { hashPassword } from '@/lib/password'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { trackEventServer } from '@/lib/analytics-server'
+import { checkRateLimit, rateLimitedResponse } from '@/lib/rate-limit'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -17,6 +18,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
  */
 export async function POST(req: Request) {
   const locale = pickLocale(req)
+  const rateLimit = checkRateLimit(req, 'auth-register', 10, 60 * 60 * 1000)
+  if (!rateLimit.allowed) return rateLimitedResponse(rateLimit)
   let body: any
   try {
     body = await req.json()
