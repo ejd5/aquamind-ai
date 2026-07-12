@@ -21,19 +21,13 @@ import { getStripe } from '@/lib/stripe'
 import { applyTransition } from '@/lib/billing/transition'
 import { getPlanFromStripePriceId, getPlanFromRCProductId, type SubscriptionStatus } from '@/lib/billing/plans'
 import { processEventIdempotently, generateEventFingerprint } from '@/lib/billing/idempotency'
+import { isAdminEmail } from '@/lib/admin'
 
 export const runtime = 'nodejs'
 
-function isAdmin(email?: string | null): boolean {
-  if (!email) return false
-  const adminEmails = process.env.ADMIN_EMAILS
-  if (!adminEmails) return false
-  return adminEmails.split(',').map(e => e.trim().toLowerCase()).includes(email.toLowerCase())
-}
-
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.email || !isAdmin(session.user.email)) {
+  if (!session?.user?.email || !isAdminEmail(session.user.email)) {
     return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
   }
 
