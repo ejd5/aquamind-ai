@@ -348,4 +348,21 @@ describe('P0-B — DB-level billing tests', () => {
     })
     expect(res.status).toBe(403)
   })
+
+  it('Demo account provisioning is disabled by default', async () => {
+    const res = await fetch(`${BASE}/api/demo/login`, { method: 'POST' })
+    expect(res.status).toBe(404)
+  })
+
+  it.each([
+    '/api/contact',
+    '/api/pro/early-access',
+    '/api/care/notify',
+    '/api/partners/apply',
+  ])('Admin listing %s denies an authenticated non-admin', async path => {
+    const res = await fetch(`${BASE}${path}`, {
+      headers: { 'Cookie': `next-auth.session-token=${sessionCookie}` },
+    })
+    expect(res.status).toBe(403)
+  })
 })
