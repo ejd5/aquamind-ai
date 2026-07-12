@@ -217,8 +217,8 @@ Thank you for reviewing AQWELIA.
 
 DEMO ACCOUNT
 Use the in-app "Compte démo" button on the sign-in screen, or sign in with:
-- Email: demo@aqwelia.app
-- Password: aqwelia-demo-2026
+- Email: valeur temporaire configurée dans `DEMO_ACCOUNT_EMAIL`
+- Password: valeur temporaire configurée dans `DEMO_ACCOUNT_PASSWORD`
 The demo account is pre-loaded with a sample pool profile (45 m³, salt chlorinator)
 so the reviewer can explore all features without going through onboarding.
 
