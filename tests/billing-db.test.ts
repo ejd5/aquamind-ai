@@ -334,4 +334,18 @@ describe('P0-B — DB-level billing tests', () => {
     })
     expect(res.status).toBe(403)
   })
+
+  it('Admin page: anonymous visitor is redirected to sign in', async () => {
+    const res = await fetch(`${BASE}/admin`, { redirect: 'manual' })
+    expect([307, 308]).toContain(res.status)
+    expect(res.headers.get('location')).toContain('/auth/signin')
+  })
+
+  it('Admin page: authenticated non-admin receives 403', async () => {
+    const res = await fetch(`${BASE}/admin`, {
+      headers: { 'Cookie': `next-auth.session-token=${sessionCookie}` },
+      redirect: 'manual',
+    })
+    expect(res.status).toBe(403)
+  })
 })
