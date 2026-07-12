@@ -58,6 +58,7 @@ echo "=== 2. Push schema to test DB ==="
 echo "DB: $TEST_DB"
 touch "$TEST_DB"
 bun run db:push 2>&1 | tail -3
+bun run db:pg:generate 2>&1 | tail -3
 
 # ── 5. Create test user ──────────────────────────────────────────────────────
 echo ""
