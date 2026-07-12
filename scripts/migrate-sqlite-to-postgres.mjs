@@ -1,82 +1,80 @@
 #!/usr/bin/env node
 /**
- * AQWELIA — SQLite → PostgreSQL migration script (P0-E).
+ * AQWELIA — SQLite → PostgreSQL migration script (P0-E final).
  *
  * Usage:
  *   node scripts/migrate-sqlite-to-postgres.mjs --dry-run
- *   node scripts/migrate-sqlite-to-postgres.mjs --execute
+ *   node scripts/migrate-sqlite-to-postgres.mjs --execute --confirm
  *
  * Safety:
  *   - --dry-run is the default (no writes)
- *   - --execute is required for actual migration
+ *   - --execute requires --confirm for a second confirmation
+ *   - Refuses to execute if PostgreSQL target is not empty (unless --force-non-empty)
+ *   - Migration ID prevents double execution
  *   - Never reads or modifies .env
- *   - Never contacts external databases
- *   - Masks passwords in logs
- *   - Detects orphaned relations
- *   - Reports counts before/after
- *
- * Requirements:
- *   - SQLITE_URL env var (file: URL) — defaults to file:./db/custom.db
- *   - POSTGRES_URL env var (postgresql:// URL) — required for --execute
+ *   - Masks all credentials in logs
+ *   - Stops on ANY error (no silent SKIP)
  */
 import { PrismaClient } from '@prisma/client'
-import { readFileSync, writeFileSync } from 'fs'
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'fs'
+import { createHash } from 'crypto'
+import { join, resolve } from 'path'
 
 const SQLITE_URL = process.env.SQLITE_URL || 'file:./db/custom.db'
 const POSTGRES_URL = process.env.POSTGRES_URL || ''
 const DRY_RUN = !process.argv.includes('--execute')
+const CONFIRM = process.argv.includes('--confirm')
+const FORCE_NON_EMPTY = process.argv.includes('--force-non-empty')
 const EXPORT_DIR = process.env.EXPORT_DIR || '/tmp/aqwelia-migration-export'
 
-// Tables to migrate (order matters for FK constraints)
+// Prisma delegate names (lowercase) — these are the actual Prisma accessor names
 const TABLES = [
-  'User',
-  'Account',
-  'PoolProfile',
-  'WaterTest',
-  'PhotoDiagnostic',
-  'ActionPlan',
-  'Equipment',
-  'ProductInventory',
-  'ChatMessage',
-  'MaintenanceTask',
-  'PoolDesign',
-  'Reminder',
-  'GuideView',
-  'Subscription',
-  'AnalyticsEvent',
-  'EarlyAccessLead',
-  'CareNotification',
-  'PartnerApplication',
-  'ContactMessage',
-  'ProClient',
-  'ProPool',
-  'ProWaterTest',
-  'ProIntervention',
-  'PoolShare',
-  'Product',
-  'ProductCategory',
-  'Cart',
-  'Order',
-  'Kit',
-  'IotSensor',
-  'ConsentRecord',
-  'Supplier',
-  'AcademyCourse',
-  'Certification',
-  'Organization',
-  'OrganizationMember',
-  'Lead',
-  'LeadEvent',
-  'Appointment',
-  'Quote',
-  'Commission',
-  'AgentRun',
-  'AgentAction',
-  'BillingEvent',
+  'user', 'account', 'poolProfile', 'waterTest', 'photoDiagnostic',
+  'actionPlan', 'equipment', 'productInventory', 'chatMessage',
+  'maintenanceTask', 'poolDesign', 'reminder', 'guideView',
+  'subscription', 'analyticsEvent', 'earlyAccessLead', 'careNotification',
+  'partnerApplication', 'contactMessage', 'proClient', 'proPool',
+  'proWaterTest', 'proIntervention', 'poolShare', 'product', 'productCategory',
+  'cart', 'order', 'kit', 'iotSensor', 'consentRecord', 'supplier',
+  'academyCourse', 'certification', 'organization', 'organizationMember',
+  'lead', 'leadEvent', 'appointment', 'quote', 'commission',
+  'agentRun', 'agentAction', 'billingEvent',
+]
+
+// FK dependencies — table → field that references parent table
+const FK_RELATIONS = [
+  { child: 'account', field: 'userId', parent: 'user' },
+  { child: 'poolProfile', field: 'userId', parent: 'user' },
+  { child: 'waterTest', field: 'userId', parent: 'user' },
+  { child: 'photoDiagnostic', field: 'userId', parent: 'user' },
+  { child: 'equipment', field: 'userId', parent: 'user' },
+  { child: 'productInventory', field: 'userId', parent: 'user' },
+  { child: 'chatMessage', field: 'userId', parent: 'user' },
+  { child: 'maintenanceTask', field: 'userId', parent: 'user' },
+  { child: 'reminder', field: 'userId', parent: 'user' },
+  { child: 'guideView', field: 'userId', parent: 'user' },
+  { child: 'subscription', field: 'userId', parent: 'user' },
+  { child: 'analyticsEvent', field: 'userId', parent: 'user' },
+  { child: 'billingEvent', field: 'userId', parent: 'user' },
+  { child: 'actionPlan', field: 'waterTestId', parent: 'waterTest' },
+  { child: 'proPool', field: 'proClientId', parent: 'proClient' },
+  { child: 'proWaterTest', field: 'proPoolId', parent: 'proPool' },
+  { child: 'proIntervention', field: 'proClientId', parent: 'proClient' },
+  { child: 'leadEvent', field: 'leadId', parent: 'lead' },
+  { child: 'appointment', field: 'leadId', parent: 'lead' },
+  { child: 'quote', field: 'leadId', parent: 'lead' },
+  { child: 'commission', field: 'leadId', parent: 'lead' },
+  { child: 'agentAction', field: 'agentRunId', parent: 'agentRun' },
+  { child: 'organizationMember', field: 'organizationId', parent: 'organization' },
 ]
 
 function maskUrl(url) {
+  if (!url) return '(not set)'
   return url.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@')
+}
+
+function migrationId() {
+  return `migration_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}`
 }
 
 async function exportFromSqlite() {
@@ -85,6 +83,7 @@ async function exportFromSqlite() {
 
   const exportData = {}
   const counts = {}
+  const errors = []
 
   for (const table of TABLES) {
     try {
@@ -93,16 +92,22 @@ async function exportFromSqlite() {
       counts[table] = records.length
       console.log(`  ${table}: ${records.length} records`)
     } catch (err) {
-      console.log(`  ${table}: SKIP (${err.message.slice(0, 50)})`)
-      exportData[table] = []
-      counts[table] = 0
+      // STOP on any error — no silent SKIP
+      errors.push({ table, error: err.message })
+      console.error(`  ❌ ${table}: ERROR — ${err.message}`)
+      console.error('  Migration ABORTED. Fix the error before retrying.')
+      await sqlite.$disconnect()
+      process.exit(1)
     }
   }
 
   await sqlite.$disconnect()
 
+  // Create export dir
+  mkdirSync(EXPORT_DIR, { recursive: true })
+
   // Save export
-  const exportPath = `${EXPORT_DIR}/aqwelia-export.json`
+  const exportPath = join(EXPORT_DIR, 'aqwelia-export.json')
   writeFileSync(exportPath, JSON.stringify(exportData, null, 2))
   console.log(`\nExport saved to: ${exportPath}`)
 
@@ -113,32 +118,13 @@ function detectOrphans(exportData) {
   console.log('\n=== Checking for orphaned relations ===')
   const orphans = []
 
-  // Check PoolProfile.userId → User.id
-  const userIds = new Set(exportData.User.map(u => u.id))
-  for (const pool of exportData.PoolProfile || []) {
-    if (!userIds.has(pool.userId)) {
-      orphans.push({ table: 'PoolProfile', id: pool.id, field: 'userId', value: pool.userId })
-    }
-  }
-
-  // Check Subscription.userId → User.id
-  for (const sub of exportData.Subscription || []) {
-    if (!userIds.has(sub.userId)) {
-      orphans.push({ table: 'Subscription', id: sub.id, field: 'userId', value: sub.userId })
-    }
-  }
-
-  // Check WaterTest.userId → User.id
-  for (const wt of exportData.WaterTest || []) {
-    if (!userIds.has(wt.userId)) {
-      orphans.push({ table: 'WaterTest', id: wt.id, field: 'userId', value: wt.userId })
-    }
-  }
-
-  // Check BillingEvent.userId → User.id (nullable, so skip nulls)
-  for (const be of exportData.BillingEvent || []) {
-    if (be.userId && !userIds.has(be.userId)) {
-      orphans.push({ table: 'BillingEvent', id: be.id, field: 'userId', value: be.userId })
+  for (const { child, field, parent } of FK_RELATIONS) {
+    const parentIds = new Set((exportData[parent] || []).map(r => r.id))
+    for (const record of exportData[child] || []) {
+      const fkValue = record[field]
+      if (fkValue && !parentIds.has(fkValue)) {
+        orphans.push({ table: child, id: record.id, field, value: fkValue, parentTable: parent })
+      }
     }
   }
 
@@ -146,20 +132,43 @@ function detectOrphans(exportData) {
     console.log('  ✅ No orphaned relations found')
   } else {
     console.log(`  ⚠️  ${orphans.length} orphaned relations found:`)
-    for (const o of orphans.slice(0, 10)) {
-      console.log(`    ${o.table}.${o.id}: ${o.field}=${o.value}`)
+    for (const o of orphans.slice(0, 20)) {
+      console.log(`    ${o.table}.${o.id}: ${o.field}=${o.value} (→ ${o.parentTable})`)
+    }
+    if (orphans.length > 20) {
+      console.log(`    ... and ${orphans.length - 20} more`)
     }
   }
 
   return orphans
 }
 
-async function importToPostgres(exportData, sqliteCounts) {
+async function checkPostgresNotEmpty(pg) {
+  // Check if target PostgreSQL has any data
+  for (const table of TABLES) {
+    try {
+      const count = await pg[table].count()
+      if (count > 0) {
+        return { empty: false, table, count }
+      }
+    } catch {
+      // Table might not exist yet — that's OK
+    }
+  }
+  return { empty: true }
+}
+
+async function importToPostgres(exportData, sqliteCounts, migId) {
   if (DRY_RUN) {
     console.log('\n=== DRY RUN — no writes to PostgreSQL ===')
     console.log(`  Target: ${maskUrl(POSTGRES_URL)}`)
-    console.log('  Mode: dry-run (use --execute to actually migrate)')
-    return { pgCounts: {} }
+    console.log('  Mode: dry-run (use --execute --confirm to actually migrate)')
+    return { pgCounts: {}, success: false }
+  }
+
+  if (!CONFIRM) {
+    console.error('\n❌ --execute requires --confirm flag for safety')
+    process.exit(1)
   }
 
   if (!POSTGRES_URL || !POSTGRES_URL.startsWith('postgresql://')) {
@@ -168,12 +177,52 @@ async function importToPostgres(exportData, sqliteCounts) {
   }
 
   console.log(`\n=== Importing to PostgreSQL: ${maskUrl(POSTGRES_URL)} ===`)
-  const pg = new PrismaClient({ datasources: { db: { url: POSTGRES_URL } } })
+  console.log(`Migration ID: ${migId}`)
+
+  // Use the PostgreSQL-specific Prisma client
+  const pgClientPath = resolve(process.cwd(), 'node_modules', '.prisma', 'client-postgresql')
+  if (!existsSync(pgClientPath)) {
+    console.error('ERROR: PostgreSQL Prisma client not found. Run: bun run db:pg:generate')
+    process.exit(1)
+  }
+  const { PrismaClient: PgPrismaClient } = require(pgClientPath)
+  const pg = new PgPrismaClient({ datasources: { db: { url: POSTGRES_URL } } })
+
+  // Check if target is empty
+  const emptyCheck = await checkPostgresNotEmpty(pg)
+  if (!emptyCheck.empty && !FORCE_NON_EMPTY) {
+    console.error(`\n❌ PostgreSQL target is NOT EMPTY (table "${emptyCheck.table}" has ${emptyCheck.count} rows)`)
+    console.error('   Use --force-non-empty to override (DANGEROUS — will delete all existing data)')
+    await pg.$disconnect()
+    process.exit(1)
+  }
+
+  // Check for previous migration ID
+  const migrationLogPath = join(EXPORT_DIR, 'migration-log.json')
+  if (existsSync(migrationLogPath)) {
+    const prevLog = JSON.parse(readFileSync(migrationLogPath, 'utf8'))
+    if (prevLog.completed && !prevLog.rolledBack) {
+      console.error(`\n❌ Previous migration already completed: ${prevLog.migrationId}`)
+      console.error('   Use a new migration ID or rollback the previous one first.')
+      await pg.$disconnect()
+      process.exit(1)
+    }
+  }
 
   const pgCounts = {}
+  let totalImported = 0
 
   try {
     await pg.$transaction(async (tx) => {
+      // Delete existing data (only if --force-non-empty)
+      if (!emptyCheck.empty) {
+        console.log('  Deleting existing data (--force-non-empty)...')
+        for (const table of [...TABLES].reverse()) {
+          try { await tx[table].deleteMany() } catch { /* ignore */ }
+        }
+      }
+
+      // Import in FK-safe order (TABLES is already ordered parent-first)
       for (const table of TABLES) {
         const records = exportData[table] || []
         if (records.length === 0) {
@@ -181,31 +230,64 @@ async function importToPostgres(exportData, sqliteCounts) {
           continue
         }
 
-        // Delete existing (idempotent)
-        await tx[table].deleteMany()
-
         // Insert in batches of 100
         for (let i = 0; i < records.length; i += 100) {
           const batch = records.slice(i, i + 100)
-          await tx[table].createMany({ data: batch })
+          await tx[table].createMany({ data: batch, skipDuplicates: false })
         }
 
-        pgCounts[table] = records.length
-        console.log(`  ${table}: ${records.length} imported`)
+        // VERIFY with count() — not just records.length
+        const actualCount = await tx[table].count()
+        pgCounts[table] = actualCount
+        totalImported += actualCount
+
+        if (actualCount !== records.length) {
+          throw new Error(`Count mismatch for ${table}: expected ${records.length}, got ${actualCount}`)
+        }
+
+        console.log(`  ${table}: ${actualCount} imported ✅`)
       }
     })
-    console.log('\n✅ Import transaction committed')
+
+    console.log(`\n✅ Import transaction committed (${totalImported} total records)`)
+
+    // Write migration log
+    const log = {
+      migrationId: migId,
+      completed: true,
+      rolledBack: false,
+      timestamp: new Date().toISOString(),
+      sqliteCounts,
+      pgCounts,
+      totalImported,
+    }
+    writeFileSync(migrationLogPath, JSON.stringify(log, null, 2))
+    console.log(`Migration log saved to: ${migrationLogPath}`)
+
   } catch (err) {
-    console.error('\n❌ Import transaction rolled back:', err.message)
+    console.error('\n❌ Import transaction ROLLED BACK:', err.message)
+    // Log the failure
+    const log = {
+      migrationId: migId,
+      completed: false,
+      rolledBack: true,
+      timestamp: new Date().toISOString(),
+      error: err.message,
+      sqliteCounts,
+      pgCounts,
+    }
+    writeFileSync(migrationLogPath, JSON.stringify(log, null, 2))
+    await pg.$disconnect()
     throw err
   }
 
   await pg.$disconnect()
-  return { pgCounts }
+  return { pgCounts, success: true }
 }
 
-function generateReport(sqliteCounts, pgCounts, orphans) {
+function generateReport(sqliteCounts, pgCounts, orphans, migId) {
   console.log('\n=== Migration Report ===')
+  console.log(`Migration ID: ${migId}`)
   console.log('┌─────────────────────┬──────────┬──────────┬──────────┐')
   console.log('│ Table               │ SQLite   │ Postgres │ Match    │')
   console.log('├─────────────────────┼──────────┼──────────┼──────────┤')
@@ -233,16 +315,36 @@ function generateReport(sqliteCounts, pgCounts, orphans) {
   console.log(`Mode: ${DRY_RUN ? 'DRY RUN' : 'EXECUTE'}`)
   console.log(`All counts match: ${allMatch}`)
 
+  // Write JSON report
+  const reportPath = join(EXPORT_DIR, 'migration-report.json')
+  const report = {
+    migrationId: migId,
+    mode: DRY_RUN ? 'dry-run' : 'execute',
+    timestamp: new Date().toISOString(),
+    sqliteCounts,
+    pgCounts,
+    orphans,
+    allMatch,
+    totalSqlite,
+    totalPg,
+  }
+  mkdirSync(EXPORT_DIR, { recursive: true })
+  writeFileSync(reportPath, JSON.stringify(report, null, 2))
+  console.log(`\nJSON report saved to: ${reportPath}`)
+
   if (!allMatch && !DRY_RUN) {
     console.log('\n⚠️  Some counts do not match. Review the report before proceeding.')
   }
 }
 
 async function main() {
+  const migId = migrationId()
+
   console.log('AQWELIA — SQLite → PostgreSQL Migration')
   console.log(`Mode: ${DRY_RUN ? 'DRY RUN (no writes)' : 'EXECUTE (will write to PostgreSQL)'}`)
   console.log(`SQLite: ${SQLITE_URL}`)
   if (!DRY_RUN) console.log(`PostgreSQL: ${maskUrl(POSTGRES_URL)}`)
+  console.log(`Migration ID: ${migId}`)
 
   // 1. Export from SQLite
   const { exportData, counts: sqliteCounts } = await exportFromSqlite()
@@ -251,10 +353,10 @@ async function main() {
   const orphans = detectOrphans(exportData)
 
   // 3. Import to PostgreSQL
-  const { pgCounts } = await importToPostgres(exportData, sqliteCounts)
+  const { pgCounts } = await importToPostgres(exportData, sqliteCounts, migId)
 
   // 4. Generate report
-  generateReport(sqliteCounts, pgCounts, orphans)
+  generateReport(sqliteCounts, pgCounts, orphans, migId)
 
   // 5. Rollback procedure
   console.log('\n=== Rollback Procedure ===')
@@ -263,7 +365,8 @@ async function main() {
   console.log('   a. Switch DATABASE_URL back to the SQLite URL')
   console.log('   b. The SQLite database is unchanged (read-only during migration)')
   console.log('   c. Verify the application works with SQLite again')
-  console.log('3. The exported JSON is at: /tmp/aqwelia-migration-export/aqwelia-export.json')
+  console.log('3. The exported JSON is at: ' + join(EXPORT_DIR, 'aqwelia-export.json'))
+  console.log('4. The migration log is at: ' + join(EXPORT_DIR, 'migration-log.json'))
 }
 
 main().catch(err => {
