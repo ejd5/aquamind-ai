@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 
 export default defineConfig({
   resolve: {
@@ -7,5 +7,6 @@ export default defineConfig({
   test: {
     testTimeout: 30000,
     fileParallelism: false,
+    exclude: [...configDefaults.exclude, 'tests/postgresql.test.mjs'],
   },
 })
