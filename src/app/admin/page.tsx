@@ -5,11 +5,7 @@ import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { useTranslations } from 'next-intl'
-
-// Simple admin gate — password stored in localStorage after first entry
-// TODO: Move admin auth to server-side (move password to process.env.ADMIN_PASSWORD_HASH,
-// validate via /api/admin/auth, issue httpOnly session cookie — see audit §17 risk #1/#2)
-const ADMIN_PASSWORD = 'aqwelia-admin-2026'
+import { signOut } from 'next-auth/react'
 
 type AdminTab = 'banner' | 'popup' | 'content' | 'analytics' | 'users'
 
@@ -37,76 +33,7 @@ interface PopupConfig {
 
 export default function AdminPage() {
   const t = useTranslations('admin')
-  const { toast } = useToast()
-  const [authed, setAuthed] = useState(false)
-  const [password, setPassword] = useState('')
   const [activeTab, setActiveTab] = useState<AdminTab>('banner')
-
-  // Check if already authed
-  useEffect(() => {
-    const saved = localStorage.getItem('aqwelia-admin')
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (saved === 'ok') setAuthed(true)
-  }, [])
-
-  function tryAuth() {
-    if (password === ADMIN_PASSWORD) {
-      localStorage.setItem('aqwelia-admin', 'ok')
-      setAuthed(true)
-    } else {
-      toast({
-        title: t('wrongPassword'),
-        description: t('accessDenied'),
-        variant: 'destructive',
-      })
-    }
-  }
-
-  if (!authed) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="glass-card w-full max-w-sm rounded-2xl p-8">
-          <div className="mb-6 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl">
-              <img
-                src="/logo-aqwelia-web.png"
-                alt="AQWELIA"
-                className="h-12 w-12 object-cover"
-              />
-            </div>
-            <h1 className="font-display text-xl font-bold">
-              <span className="aqua-text-gradient">AQWELIA Admin</span>
-            </h1>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {t('protected')}
-            </p>
-          </div>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') tryAuth()
-            }}
-            placeholder={t('password')}
-            className="w-full rounded-xl border border-border bg-background/60 px-4 py-2.5 text-sm outline-none focus:border-gold/50 focus:ring-2 focus:ring-gold/20"
-          />
-          <button
-            onClick={tryAuth}
-            className="mt-3 w-full rounded-full bg-gradient-to-r from-primary to-gold px-6 py-2.5 text-sm font-bold text-primary-foreground transition-transform hover:scale-[1.02]"
-          >
-            {t('access')}
-          </button>
-          <a
-            href="/"
-            className="mt-3 block text-center text-xs text-muted-foreground hover:text-foreground"
-          >
-            {t('backToSiteArrow')}
-          </a>
-        </div>
-      </div>
-    )
-  }
 
   const tabs: Array<{ id: AdminTab; label: string; icon: string }> = [
     { id: 'banner', label: t('tabBanner'), icon: '📢' },
@@ -142,10 +69,7 @@ export default function AdminPage() {
               {t('viewSite')}
             </a>
             <button
-              onClick={() => {
-                localStorage.removeItem('aqwelia-admin')
-                setAuthed(false)
-              }}
+              onClick={() => void signOut({ callbackUrl: '/' })}
               className="text-xs text-muted-foreground hover:text-foreground"
             >
               {t('signOut')}
