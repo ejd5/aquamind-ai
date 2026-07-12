@@ -14,6 +14,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { locales, defaultLocale, normalizeLocale } from '@/i18n/config'
+import { isAdminEmail } from '@/lib/admin'
 
 /**
  * Detect the user's preferred locale.
@@ -116,6 +117,23 @@ export default async function middleware(req: NextRequest) {
         { error: 'unauthorized', authenticated: false },
         { status: 401 }
       )
+    }
+  }
+
+  // Admin pages are protected on the server. Never rely on a client-side
+  // password or localStorage flag: both are visible and modifiable by users.
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+    if (!token) {
+      const signin = new URL('/auth/signin', req.url)
+      signin.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(signin)
+    }
+    if (!isAdminEmail(token.email)) {
+      return new NextResponse('Forbidden', {
+        status: 403,
+        headers: { 'Cache-Control': 'private, no-store' },
+      })
     }
   }
 
