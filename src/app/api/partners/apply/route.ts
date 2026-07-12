@@ -23,6 +23,7 @@ import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { trackEventServer } from '@/lib/analytics-server'
 import { isAdminEmail } from '@/lib/admin'
+import { checkRateLimit, rateLimitedResponse } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
@@ -36,6 +37,8 @@ const MAX_FIELD = 5000 // generous guard against giant payloads
  */
 export async function POST(req: Request) {
   const locale = pickLocale(req)
+  const rateLimit = checkRateLimit(req, 'partners-apply', 10, 60 * 60 * 1000)
+  if (!rateLimit.allowed) return rateLimitedResponse(rateLimit)
 
   let body: any
   try {
