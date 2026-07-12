@@ -1,2 +1,0 @@
-scripts/migrate-sqlite-to-postgres.mjs
-tests/test-postgresql.mjs

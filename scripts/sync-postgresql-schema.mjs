@@ -16,6 +16,10 @@ const generated = source
     /\s*\/\/ P0-FIX Bug 6:[\s\S]*?provider = "sqlite"/,
     '\n  provider = "postgresql"'
   )
+  .replace(
+    /generator client \{\s*provider = "prisma-client-js"\s*\}/,
+    'generator client {\n  provider = "prisma-client-js"\n  output   = "../../generated/client-postgresql"\n}'
+  )
 
 if (!generated.includes('provider = "postgresql"') || generated.includes('provider = "sqlite"')) {
   throw new Error('Unable to generate the PostgreSQL Prisma schema safely')
