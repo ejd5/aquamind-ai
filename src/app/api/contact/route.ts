@@ -19,6 +19,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { isAdminEmail } from '@/lib/admin'
 
 export const runtime = 'nodejs'
 
@@ -28,19 +29,6 @@ const MIN_MESSAGE = 10
 const MAX_MESSAGE = 5000
 const MAX_NAME = 120
 const MAX_EMAIL = 254
-
-/** Parse the ADMIN_EMAILS env var into a lowercased Set (or null if unset). */
-function getAdminEmails(): Set<string> | null {
-  const raw = process.env.ADMIN_EMAILS
-  if (!raw) return null
-  const set = new Set(
-    raw
-      .split(',')
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean)
-  )
-  return set.size > 0 ? set : null
-}
 
 /**
  * POST /api/contact
@@ -156,15 +144,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: msg }, { status: 401 })
   }
 
-  // If ADMIN_EMAILS is configured, restrict to those emails.
-  // Otherwise, any authenticated user can list (loose admin check —
-  // upgrade to a proper admin role when the User model gains one).
-  const adminEmails = getAdminEmails()
-  if (adminEmails && session.user.email) {
-    if (!adminEmails.has(session.user.email.toLowerCase())) {
-      const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
-      return NextResponse.json({ error: msg }, { status: 403 })
-    }
+  if (!isAdminEmail(session.user.email)) {
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 403 })
   }
 
   try {
