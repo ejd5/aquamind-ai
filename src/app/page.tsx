@@ -6,6 +6,7 @@ import { LandingPage } from '@/components/landing/landing-page'
 import { AppShell } from '@/components/aquamind/app-shell'
 import { MobileAppShell } from '@/components/mobile/mobile-app-shell'
 import { isMobile, isNative } from '@/lib/platform'
+import { getAppEntryTarget, resolveInitialWebView } from '@/lib/entry-flow'
 
 type View = 'landing' | 'app'
 
@@ -13,6 +14,7 @@ export default function Home() {
   const t = useTranslations('common')
   const [view, setView] = useState<View>('landing')
   const [hasProfile, setHasProfile] = useState(false)
+  const [authenticated, setAuthenticated] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [mobile, setMobile] = useState(false)
   const [native, setNative] = useState(false)
@@ -36,16 +38,18 @@ export default function Home() {
     }
 
     fetch('/api/pool/profile')
-      .then((r) => r.json())
-      .then((d) => {
+      .then(async (response) => ({ response, data: await response.json() }))
+      .then(({ response, data: d }) => {
         if (cancelled) return
         const profileExists = !!d?.profile
+        const authenticated = response.ok
         setMobile(mobileVal)
         setNative(nativeVal)
         setHasProfile(profileExists)
+        setAuthenticated(authenticated)
         // In native app, skip landing and go directly to app
-        // On web, default to landing unless user previously chose app
-        setView(nativeVal ? 'app' : (saved === 'app' ? 'app' : 'landing'))
+        // On web, a remembered app view is honored only with a valid session.
+        setView(nativeVal ? 'app' : resolveInitialWebView(saved as View | null, authenticated))
         setLoaded(true)
       })
       .catch(() => {
@@ -53,7 +57,9 @@ export default function Home() {
         setMobile(mobileVal)
         setNative(nativeVal)
         setHasProfile(false)
-        setView(nativeVal ? 'app' : (saved === 'app' ? 'app' : 'landing'))
+        setAuthenticated(false)
+        // A failed session check must fail closed on the web.
+        setView(nativeVal ? 'app' : 'landing')
         setLoaded(true)
       })
 
@@ -64,6 +70,15 @@ export default function Home() {
 
   function enterApp() {
     if (typeof window !== 'undefined') localStorage.setItem('aqwelia_view', 'app')
+
+    // The profile endpoint is the source of truth for the current session:
+    // an anonymous visitor cannot have a profile. Redirect to sign-up instead
+    // of exposing an onboarding form that will inevitably fail with HTTP 401.
+    if (getAppEntryTarget(authenticated) === 'signup') {
+      window.location.assign('/auth/signin?mode=signup')
+      return
+    }
+
     setView('app')
     if (typeof window !== 'undefined') window.scrollTo({ top: 0 })
   }
