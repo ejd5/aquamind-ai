@@ -3,9 +3,9 @@
  *
  * POST /api/demo/login
  *
- * Idempotently provisions a shared demo account:
- *   email:    demo@aqwelia.app
- *   password: aqwelia-demo-2026
+ * Idempotently provisions a temporary shared review account only when
+ * DEMO_ACCOUNT_ENABLED=true. Credentials are supplied through server-side
+ * environment variables and never committed to the application bundle.
  *
  * If the account does not yet exist, creates it with a sample pool profile
  * (Sud-Est PACA, 40 m³ liner, sand filter, chlorine treatment) so the
@@ -27,11 +27,19 @@ import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
 
-const DEMO_EMAIL = 'demo@aqwelia.app'
-const DEMO_PASSWORD = 'aqwelia-demo-2026'
-
 export async function POST(req: Request) {
   const locale = pickLocale(req)
+  if (process.env.DEMO_ACCOUNT_ENABLED !== 'true') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
+  const demoEmail = process.env.DEMO_ACCOUNT_EMAIL?.toLowerCase().trim() || ''
+  const demoPassword = process.env.DEMO_ACCOUNT_PASSWORD || ''
+  if (!demoEmail || demoPassword.length < 16) {
+    console.error('[demo/login] enabled without secure credentials')
+    return NextResponse.json({ error: 'Demo account not configured' }, { status: 503 })
+  }
+
   try {
     // Resolve the user's UI locale so the demo account name + pool name are
     // stored in the reviewer's language at creation time. The middleware
@@ -53,13 +61,13 @@ export async function POST(req: Request) {
     )
 
     // Find or create the demo user.
-    let user = await db.user.findUnique({ where: { email: DEMO_EMAIL } })
+    let user = await db.user.findUnique({ where: { email: demoEmail } })
 
     if (!user) {
       user = await db.user.create({
         data: {
-          email: DEMO_EMAIL,
-          passwordHash: hashPassword(DEMO_PASSWORD),
+          email: demoEmail,
+          passwordHash: hashPassword(demoPassword),
           name: demoName,
         },
       })
@@ -99,8 +107,8 @@ export async function POST(req: Request) {
       'Utilisez ces identifiants pour vous connecter'
     )
     return NextResponse.json({
-      email: DEMO_EMAIL,
-      password: DEMO_PASSWORD,
+      email: demoEmail,
+      password: demoPassword,
       message: demoLoginMessage,
     })
   } catch (err) {
