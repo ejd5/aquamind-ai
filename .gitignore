@@ -19,6 +19,7 @@ node_modules
 
 # production
 /build
+/generated/client-postgresql/
 
 # misc
 .DS_Store
