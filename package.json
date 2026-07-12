@@ -21,8 +21,9 @@
     "mobile:add:android": "npx cap add android",
     "mobile:clean": "rm -rf out .next && next build -c next.config.mobile.ts && npx cap sync",
     "typecheck": "tsc --noEmit",
-    "typecheck:tools": "tsc --noEmit --project tsconfig.tools.json",
+    "typecheck:tools": "node scripts/typecheck-tools.mjs",
     "test": "vitest run",
+    "test:migration": "bash tests/run-billing-migration-test.sh",
     "test:watch": "vitest"
   },
   "dependencies": {

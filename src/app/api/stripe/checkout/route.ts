@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { getStripe, STRIPE_PRICES, isValidProductId, getPlanFromProductId } from '@/lib/stripe'
+import { getStripe, STRIPE_PRICES, isValidProductId, getPlanFromWebProductId } from '@/lib/stripe'
 import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
@@ -16,7 +16,8 @@ export async function POST(req: NextRequest) {
   }
 
   const { productId } = await req.json()
-  if (!productId || !isValidProductId(productId)) {
+  const product = typeof productId === 'string' ? getPlanFromWebProductId(productId) : null
+  if (!productId || !isValidProductId(productId) || !product) {
     const msg = await translate(locale, 'common.errors.invalidProduct', 'Produit invalide')
     return NextResponse.json({ error: msg }, { status: 400 })
   }
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
       metadata: {
         userId: session.user.id,
         productId,
-        plan: getPlanFromProductId(productId),
+        plan: product.plan,
       },
       success_url: `${process.env.NEXTAUTH_URL}/?subscription=success`,
       cancel_url: `${process.env.NEXTAUTH_URL}/?subscription=cancelled`,
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
         metadata: {
           userId: session.user.id,
           productId,
-          plan: getPlanFromProductId(productId),
+          plan: product.plan,
         },
         // 7-day free trial — Stripe will not charge the customer until the
         // trial ends. The trial applies only to non-weekly subscriptions.

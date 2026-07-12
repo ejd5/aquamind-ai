@@ -46,12 +46,16 @@ async function getTranslations(locale: Locale): Promise<PdfReportTranslations> {
   return out as unknown as PdfReportTranslations
 }
 
-async function getUserPlanId(userId: string): Promise<PlanId> {
+async function getUserPlanInfo(userId: string): Promise<{ planId: PlanId; status: import('@/lib/billing/plans').SubscriptionStatus; expiresAt: Date | null }> {
   const sub = await db.subscription.findFirst({
     where: { userId, active: true },
     orderBy: { startedAt: 'desc' },
   })
-  return (sub?.plan as PlanId) || DEFAULT_PLAN
+  return {
+    planId: (sub?.plan as PlanId) || DEFAULT_PLAN,
+    status: (sub?.status as import('@/lib/billing/plans').SubscriptionStatus) || 'inactive',
+    expiresAt: sub?.expiresAt || null,
+  }
 }
 
 function safeParse<T>(s: string | null, fallback: T): T {
@@ -69,8 +73,8 @@ export async function GET(req: NextRequest) {
   const userId = session.user.id
 
   // ── Plan gate ──────────────────────────────────────────────────────────
-  const planId = await getUserPlanId(userId)
-  const gate = canAccess(planId, 'pdf_report')
+  const { planId, status, expiresAt } = await getUserPlanInfo(userId)
+  const gate = canAccess(planId, status, 'pdf_report', undefined, expiresAt)
   if (!gate.allowed) {
     const plan = PLANS.find((p) => p.id === planId) || PLANS[0]
     const msg = await translate(

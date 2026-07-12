@@ -1,5 +1,6 @@
 import { api } from '@/lib/api-client'
 import type { BillingClient, Product, Entitlement, PurchaseResult, PlanId } from './types'
+import { PLANS, DURATION_TO_PROVIDER, type Duration } from './plans'
 
 // Web (Stripe) product catalogue.
 // IDs mirror the Stripe Price IDs env-var names from src/lib/stripe.ts.
@@ -13,18 +14,17 @@ import type { BillingClient, Product, Entitlement, PurchaseResult, PlanId } from
 //   stripe_wellness_yearly  → Annuel (79,99 €)
 export const stripeWebClient: BillingClient = {
   async getProducts(): Promise<Product[]> {
-    return [
-      // Oasis
-      { id: 'stripe_oasis_weekly', plan: 'oasis', duration: 'weekly', price: 3.99, priceString: '3,99 €', currency: 'EUR' },
-      { id: 'stripe_oasis_monthly', plan: 'oasis', duration: 'monthly', price: 9.99, priceString: '9,99 €', currency: 'EUR' },
-      { id: 'stripe_oasis_seasonal', plan: 'oasis', duration: 'seasonal', price: 39.99, priceString: '39,99 €', currency: 'EUR' },
-      { id: 'stripe_oasis_yearly', plan: 'oasis', duration: 'yearly', price: 59.99, priceString: '59,99 €', currency: 'EUR', trialAvailable: true },
-      // Wellness
-      { id: 'stripe_wellness_weekly', plan: 'wellness', duration: 'weekly', price: 5.99, priceString: '5,99 €', currency: 'EUR' },
-      { id: 'stripe_wellness_monthly', plan: 'wellness', duration: 'monthly', price: 14.99, priceString: '14,99 €', currency: 'EUR' },
-      { id: 'stripe_wellness_seasonal', plan: 'wellness', duration: 'seasonal', price: 54.99, priceString: '54,99 €', currency: 'EUR' },
-      { id: 'stripe_wellness_yearly', plan: 'wellness', duration: 'yearly', price: 79.99, priceString: '79,99 €', currency: 'EUR', trialAvailable: true },
-    ]
+    return PLANS.filter(plan => plan.id !== 'decouverte' && plan.active).flatMap(plan =>
+      (Object.entries(plan.price) as [Duration, number][]).map(([duration, price]) => ({
+        id: `${plan.id}_${DURATION_TO_PROVIDER[duration]}`,
+        plan: plan.id,
+        duration: DURATION_TO_PROVIDER[duration],
+        price,
+        priceString: `${price.toFixed(2).replace('.', ',')} €`,
+        currency: 'EUR',
+        trialAvailable: duration === 'year',
+      }))
+    )
   },
 
   async getEntitlements(): Promise<Entitlement[]> {
@@ -33,7 +33,7 @@ export const stripeWebClient: BillingClient = {
       if (!sub?.subscription?.active) return []
       return [
         {
-          id: sub.plan === 'wellness' ? 'wellness' : 'oasis',
+          id: sub.plan === 'spa365' ? 'spa365' : sub.plan === 'wellness' ? 'wellness' : 'oasis',
           plan: sub.plan,
           isActive: true,
           willRenew: true,
@@ -67,6 +67,8 @@ export const stripeWebClient: BillingClient = {
     const entitlements = await this.getEntitlements()
     const wellness = entitlements.find((e) => e.plan === 'wellness' && e.isActive)
     if (wellness) return 'wellness'
+    const spa365 = entitlements.find((e) => e.plan === 'spa365' && e.isActive)
+    if (spa365) return 'spa365'
     const oasis = entitlements.find((e) => e.plan === 'oasis' && e.isActive)
     if (oasis) return 'oasis'
     return 'decouverte'

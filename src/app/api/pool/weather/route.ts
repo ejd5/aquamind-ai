@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { assessWeather, wttrCodeToFr, isStormCode, type WeatherData } from '@/lib/pool/weather-engine'
 import { getClimateMode, getSeason } from '@/lib/pool/climate-engine'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { requireFeatureAccess } from '@/lib/billing/gate'
 
 export const runtime = 'nodejs'
 
@@ -111,6 +112,12 @@ export async function GET(req: NextRequest) {
   }
   const userId = session.user.id
 
+  // P0-B: Feature gate — advanced weather (storm alerts, UV recommendations)
+  // Basic weather (temperature, conditions) is accessible to ALL authenticated users.
+  // Advanced assessment is only returned to paid plans.
+  const gate = await requireFeatureAccess(req, 'weather_advanced')
+  const hasAdvanced = !gate.denied
+
   const { searchParams } = new URL(req.url)
   const lat = searchParams.get('lat')
   const lon = searchParams.get('lon')
@@ -185,5 +192,13 @@ export async function GET(req: NextRequest) {
     // Climate is a best-effort add-on — never fail the weather request if it errors.
   }
 
-  return NextResponse.json({ weather, assessment, lastTestDaysAgo })
+  // P0-B: filter advanced assessment for non-paid users
+  const response: any = { weather, lastTestDaysAgo }
+  if (hasAdvanced) {
+    response.assessment = assessment
+  } else {
+    response.assessment = null
+    response.upgradeRequired = true
+  }
+  return NextResponse.json(response)
 }

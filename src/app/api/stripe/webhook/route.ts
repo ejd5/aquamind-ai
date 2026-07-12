@@ -1,213 +1,347 @@
+/**
+ * AQWELIA — Stripe webhook (P0-B: transition engine, real Price ID, payment_status).
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { getStripe } from '@/lib/stripe'
-import { db } from '@/lib/db'
+import { processEventIdempotently, type HandlerResult } from '@/lib/billing/idempotency'
+import { applyTransition } from '@/lib/billing/transition'
+import {
+  type PlanId, type SubscriptionStatus,
+  getPlanFromStripePriceId,
+} from '@/lib/billing/plans'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// Stripe webhook handler — syncs subscription state to the Prisma DB.
-//
-// IMPORTANT: Stripe requires the RAW request body for signature verification.
-// We use `req.text()` (not `req.json()`) and pass it directly to
-// `stripe.webhooks.constructEvent`. Next.js does not buffer the body when
-// `.text()` is called, so the signature check is performed against the exact
-// bytes Stripe sent.
-//
-// Auth: NONE. This route is server-to-server (Stripe → our backend). The
-// `STRIPE_WEBHOOK_SECRET` env var replaces session-based auth.
 export async function POST(req: NextRequest) {
   const body = await req.text()
   const signature = (await headers()).get('stripe-signature')
-
-  if (!signature) {
-    return NextResponse.json({ error: 'No signature' }, { status: 400 })
-  }
+  if (!signature) return NextResponse.json({ error: 'Missing signature' }, { status: 400 })
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
-  if (!webhookSecret) {
-    return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 })
-  }
+  if (!webhookSecret) return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 })
 
   let event
   try {
-    const stripe = getStripe()
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err)
+    event = getStripe().webhooks.constructEvent(body, signature, webhookSecret)
+  } catch {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
-  try {
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        const cs = event.data.object
-        const userId = cs.metadata?.userId || cs.client_reference_id
-        const productId = cs.metadata?.productId
-        const plan = cs.metadata?.plan as 'oasis' | 'wellness'
+  const result = await processEventIdempotently({
+    eventId: event.id,
+    source: 'stripe',
+    eventType: event.type,
+    payload: JSON.stringify(event),
+    handler: async () => { return await handleStripeEvent(event) },
+  })
 
-        if (userId && plan) {
-          // Deactivate previous subscriptions for this user
-          await db.subscription.updateMany({
-            where: { userId, active: true },
-            data: { active: false },
-          })
-          // Create the new active subscription
-          await db.subscription.create({
-            data: {
-              userId,
-              plan,
-              duration: productId?.includes('yearly')
-                ? 'year'
-                : productId?.includes('seasonal')
-                ? 'halfyear'
-                : productId?.includes('weekly')
-                ? 'week'
-                : 'month',
-              startedAt: new Date(),
-              expiresAt: null, // Will be updated by subsequent invoice/subscription events
-              active: true,
-            },
-          })
+  if (result.error) return NextResponse.json({ error: 'Processing failed' }, { status: 500 })
+  return NextResponse.json({ received: true, skipped: result.skipped })
+}
 
-          // Best-effort: send the subscription-confirmation email.
-          // Fire-and-forget so a slow SMTP server never blocks the webhook
-          // (Stripe would retry on 500, which would re-create the subscription
-          // record — so we MUST return 200 even if the email fails).
-          void (async () => {
-            try {
-              const { sendSubscriptionConfirmationEmail } = await import('@/lib/email')
-              const user = await (db as any).user.findUnique({
-                where: { id: userId },
-                select: { email: true, name: true },
-              })
-              if (user?.email) {
-                const duration = productId?.includes('yearly')
-                  ? 'year'
-                  : productId?.includes('seasonal')
-                  ? 'halfyear'
-                  : productId?.includes('weekly')
-                  ? 'week'
-                  : 'month'
-                await sendSubscriptionConfirmationEmail(user.email, {
-                  userName: user.name || undefined,
-                  plan,
-                  duration,
-                })
-              }
-            } catch (err) {
-              console.error('[stripe.webhook] subscription confirmation email failed:', err)
-            }
-          })()
-        }
-        break
+async function handleStripeEvent(event: any): Promise<HandlerResult> {
+  const providerEventAt = new Date(event.created * 1000)
+
+  switch (event.type) {
+    case 'checkout.session.completed': {
+      const cs = event.data.object
+      // BLOCAGE 5: verify payment_status
+      if (cs.payment_status !== 'paid') return { result: 'ignored', reason: 'payment_not_paid' }
+
+      const userId = cs.metadata?.userId || cs.client_reference_id
+      if (!userId) return { result: 'ignored', reason: 'missing_user_mapping' }
+
+      const stripeSubId = cs.subscription as string | null
+      if (!stripeSubId) return { result: 'ignored', reason: 'no_subscription_link' }
+
+      // BLOCAGE 5: retrieve the REAL Stripe Subscription to get Price ID, status, trial, periods
+      let stripeSub
+      try {
+        const stripe = getStripe()
+        stripeSub = await stripe.subscriptions.retrieve(stripeSubId, {
+          expand: ['items.data.price'],
+        })
+      } catch (error) {
+        // A provider outage is retryable; never acknowledge it as processed.
+        throw new Error(`Stripe subscription retrieval failed: ${error instanceof Error ? error.message : 'unknown error'}`)
       }
 
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted': {
-        const sub = event.data.object
-        const userId = sub.metadata?.userId
+      // BLOCAGE 5: read Price ID from subscription items (not from metadata)
+      const priceId = stripeSub.items?.data?.[0]?.price?.id || ''
+      if (!priceId) return { result: 'ignored', reason: 'unknown_price' }
 
-        if (userId) {
-          if (event.type === 'customer.subscription.deleted') {
-            await db.subscription.updateMany({
-              where: { userId, active: true },
-              data: { active: false },
-            })
-          } else {
-            // Refresh expiry date from the Stripe subscription object
-            await db.subscription.updateMany({
-              where: { userId, active: true },
-              data: {
-                expiresAt: sub.current_period_end
-                  ? new Date(sub.current_period_end * 1000)
-                  : null,
-              },
-            })
-          }
-        }
-        break
+      const planInfo = getPlanFromStripePriceId(priceId)
+      if (!planInfo) {
+        // BLOCAGE 11: unknown Price ID → mark as ignored, don't grant access
+        console.warn('[stripe.webhook] Unknown Stripe Price ID:', priceId)
+        return { result: 'ignored', reason: 'unknown_price' }
       }
 
-      case 'invoice.paid': {
-        // Subscription renewed — refresh the expiry date from the invoice line period.
-        const invoice = event.data.object
-        const userId = invoice.metadata?.userId
-        if (userId) {
-          await db.subscription.updateMany({
-            where: { userId, active: true },
-            data: {
-              expiresAt: invoice.lines?.data?.[0]?.period?.end
-                ? new Date(invoice.lines.data[0].period.end * 1000)
-                : null,
-            },
-          })
-        }
-        break
-      }
+      // BLOCAGE 5: read status, trial_end, current_period from the subscription object
+      const status = mapStripeStatus(stripeSub.status)
+      const trialEndsAt = stripeSub.trial_end ? new Date(stripeSub.trial_end * 1000) : null
+      const currentPeriodStart = stripeSub.current_period_start ? new Date(stripeSub.current_period_start * 1000) : null
+      const currentPeriodEnd = stripeSub.current_period_end ? new Date(stripeSub.current_period_end * 1000) : null
+      const stripeCustomerId = stripeSub.customer as string | null
 
-      case 'customer.subscription.trial_will_end': {
-        // Stripe fires this event 3 days before the trial ends (default).
-        // Use it to:
-        //   1. Refresh the subscription's expiry date from the trial_end timestamp.
-        //   2. Trigger a "trial ending soon" notification email to the user
-        //      (best-effort — if email is not configured, the event is silently
-        //      ignored so the webhook still returns 200).
-        const sub = event.data.object
-        const userId = sub.metadata?.userId
-        if (userId) {
-          try {
-            // Refresh expiry (defensive — the subscription may already be set,
-            // but the trial_end → period_end transition is the right moment to
-            // re-sync).
-            await db.subscription.updateMany({
-              where: { userId, active: true },
-              data: {
-                expiresAt: sub.current_period_end
-                  ? new Date(sub.current_period_end * 1000)
-                  : null,
-              },
-            })
-          } catch (err) {
-            // Don't fail the webhook over a DB write error — log + continue.
-            console.error('[stripe.webhook] trial_will_end DB update failed:', err)
-          }
-
-          // Best-effort trial-ending notification email.
-          // Imported lazily so the webhook does not pay the email-module import
-          // cost when SMTP is not configured (dev / CI).
-          try {
-            const { sendTrialEndingEmail } = await import('@/lib/email')
-            // Fetch the user's email from the DB.
-            const user = await (db as any).user.findUnique({
-              where: { id: userId },
-              select: { email: true, name: true },
-            })
-            if (user?.email) {
-              const trialEnd = sub.trial_end ? new Date(sub.trial_end * 1000) : null
-              await sendTrialEndingEmail(user.email, {
-                userName: user.name || undefined,
-                plan: (sub.metadata?.plan as 'oasis' | 'wellness') || 'oasis',
-                trialEnd,
-              })
-            }
-          } catch (err) {
-            // Email failures must NOT fail the webhook — Stripe would retry
-            // the event indefinitely and re-send the email on every retry.
-            console.error('[stripe.webhook] trial_will_end email send failed:', err)
-          }
-        }
-        break
-      }
-
-      default:
-        // Ignore other event types — only the 5 above are subscription-relevant.
-        break
+      const transition = await applyTransition({
+        userId,
+        planId: planInfo.plan,
+        status,
+        duration: planInfo.duration,
+        store: 'web',
+        stripeCustomerId,
+        stripeSubscriptionId: stripeSubId,
+        providerSubscriptionId: stripeSubId,
+        providerEventId: event.id,
+        providerEventAt,
+        trialEndsAt,
+        currentPeriodStart,
+        currentPeriodEnd,
+        expiresAt: currentPeriodEnd,
+      })
+      if (transition.skipped) return { result: 'ignored', reason: 'out_of_order' }
+      break
     }
 
-    return NextResponse.json({ received: true })
-  } catch (err) {
-    console.error('Stripe webhook processing error:', err)
-    return NextResponse.json({ error: 'Webhook failed' }, { status: 500 })
+    case 'customer.subscription.updated': {
+      const sub = event.data.object
+
+      // BLOCAGE 6: find by stripeSubscriptionId first, don't require metadata.userId
+      const existing = await db.subscription.findFirst({
+        where: { stripeSubscriptionId: sub.id },
+      })
+      const userId = sub.metadata?.userId || existing?.userId
+      if (!userId) return { result: 'ignored', reason: 'missing_user_mapping' }
+
+      // BLOCAGE 6: determine plan from sub.items.data[*].price.id
+      const priceId = sub.items?.data?.[0]?.price?.id || ''
+      let planId: PlanId
+      if (priceId) {
+        const planInfo = getPlanFromStripePriceId(priceId)
+        if (!planInfo) {
+          console.warn('[stripe.webhook] Unknown Price ID in subscription.updated:', priceId)
+          return { result: 'ignored', reason: 'unknown_price' } // BLOCAGE 11: don't grant access with unknown price
+        }
+        planId = planInfo.plan
+      } else return { result: 'ignored', reason: 'unknown_price' }
+
+      const transition = await applyTransition({
+        userId,
+        planId,
+        status: sub.cancel_at_period_end ? 'canceled' : mapStripeStatus(sub.status),
+        stripeSubscriptionId: sub.id,
+        providerSubscriptionId: sub.id,
+        providerEventId: event.id,
+        providerEventAt,
+        expiresAt: sub.current_period_end ? new Date(sub.current_period_end * 1000) : null,
+        currentPeriodStart: sub.current_period_start ? new Date(sub.current_period_start * 1000) : null,
+        currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end * 1000) : null,
+        cancelAt: sub.cancel_at ? new Date(sub.cancel_at * 1000) : null,
+        trialEndsAt: sub.trial_end ? new Date(sub.trial_end * 1000) : null,
+      })
+      if (transition.skipped) return { result: 'ignored', reason: 'out_of_order' }
+      break
+    }
+
+    case 'customer.subscription.deleted': {
+      const sub = event.data.object
+
+      // BLOCAGE 6: find by stripeSubscriptionId
+      const existing = await db.subscription.findFirst({
+        where: { stripeSubscriptionId: sub.id },
+      })
+      const userId = sub.metadata?.userId || existing?.userId
+      if (!userId) return { result: 'ignored', reason: 'missing_user_mapping' }
+
+      const planId = (existing?.plan as PlanId) || 'decouverte'
+      // BLOCAGE 4: distinguish canceled (access until expiry) vs expired (no access)
+      const transition = await applyTransition({
+        userId,
+        planId,
+        status: 'expired',
+        stripeSubscriptionId: sub.id,
+        providerSubscriptionId: sub.id,
+        providerEventId: event.id,
+        providerEventAt,
+        expiresAt: sub.ended_at ? new Date(sub.ended_at * 1000) : sub.current_period_end ? new Date(sub.current_period_end * 1000) : new Date(),
+      })
+      if (transition.skipped) return { result: 'ignored', reason: 'out_of_order' }
+      break
+    }
+
+    case 'invoice.paid': {
+      const invoice = event.data.object
+      // BLOCAGE 6: find by stripeSubscriptionId or stripeCustomerId
+      const stripeSubId = invoice.subscription as string | null
+      const stripeCustomerId = invoice.customer as string | null
+      const userId = invoice.metadata?.userId
+      if (!userId && !stripeSubId && !stripeCustomerId) return { result: 'ignored', reason: 'no_subscription_link' }
+
+      const periodEnd = invoice.lines?.data?.[0]?.period?.end
+      // Find the subscription to get planId
+      const sub = await findSubByProvider(stripeSubId, stripeCustomerId, userId)
+      if (!sub) return { result: 'ignored', reason: 'no_subscription_link' }
+
+      const transition = await applyTransition({
+        userId: sub.userId,
+        planId: sub.plan as PlanId,
+        status: 'active',
+        stripeSubscriptionId: stripeSubId || sub.stripeSubscriptionId,
+        providerSubscriptionId: stripeSubId || sub.providerSubscriptionId,
+        providerEventId: event.id,
+        providerEventAt,
+        expiresAt: periodEnd ? new Date(periodEnd * 1000) : null,
+        currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : null,
+      })
+      if (transition.skipped) return { result: 'ignored', reason: 'out_of_order' }
+      break
+    }
+
+    case 'invoice.payment_failed': {
+      const invoice = event.data.object
+      const stripeSubId = invoice.subscription as string | null
+      if (!stripeSubId) return { result: 'ignored', reason: 'no_subscription_link' }
+
+      const sub = await findSubByProvider(stripeSubId, null, null)
+      if (!sub) return { result: 'ignored', reason: 'no_subscription_link' }
+
+      const transition = await applyTransition({
+        userId: sub.userId,
+        planId: sub.plan as PlanId,
+        status: 'past_due',
+        stripeSubscriptionId: stripeSubId,
+        providerSubscriptionId: stripeSubId,
+        providerEventId: event.id,
+        providerEventAt,
+      })
+      if (transition.skipped) return { result: 'ignored', reason: 'out_of_order' }
+      break
+    }
+
+    case 'charge.refunded': {
+      // BLOCAGE 9: Resolve Charge → PaymentIntent → Invoice → Subscription.
+      // Don't depend solely on charge.metadata.subscriptionId.
+      const charge = event.data.object
+
+      // Try to find the subscription via multiple paths
+      let stripeSubId: string | null = charge.metadata?.subscriptionId || null
+
+      // Path 1: PaymentIntent → Invoice → Subscription
+      if (!stripeSubId && charge.payment_intent) {
+        try {
+          const stripe = getStripe()
+          const piId = typeof charge.payment_intent === 'string'
+            ? charge.payment_intent
+            : charge.payment_intent.id
+          const pi: any = await stripe.paymentIntents.retrieve(piId, { expand: ['invoice'] })
+          const invoice = pi.invoice as any
+          if (invoice?.subscription) {
+            stripeSubId = typeof invoice.subscription === 'string'
+              ? invoice.subscription
+              : invoice.subscription.id
+          }
+        } catch { /* ignore — fall through to path 2 */ }
+      }
+
+      // Path 2: Invoice from charge.invoice
+      if (!stripeSubId && charge.invoice) {
+        try {
+          const stripe = getStripe()
+          const invId = typeof charge.invoice === 'string'
+            ? charge.invoice
+            : charge.invoice.id
+          const inv: any = await stripe.invoices.retrieve(invId)
+          if (inv.subscription) {
+            stripeSubId = typeof inv.subscription === 'string'
+              ? inv.subscription
+              : inv.subscription.id
+          }
+        } catch { /* ignore */ }
+      }
+
+      // Path 3: Search by customer
+      if (!stripeSubId && charge.customer) {
+        const sub = await db.subscription.findFirst({
+          where: { stripeCustomerId: charge.customer as string },
+        })
+        if (sub?.stripeSubscriptionId) stripeSubId = sub.stripeSubscriptionId
+      }
+
+      if (!stripeSubId) {
+        // No subscription identifiable — ignored and logged
+        return { result: 'ignored', reason: 'no_subscription_link' }
+      }
+
+      // BLOCAGE 9: Rule — only FULL refund of the latest invoice → revoke.
+      // Partial refund → keep active.
+      const refundedAmount = charge.amount_refunded || 0
+      const totalAmount = charge.amount || 0
+      const isFullRefund = refundedAmount >= totalAmount && totalAmount > 0
+
+      if (!isFullRefund) {
+        // Partial refund — keep subscription active
+        return { result: 'ignored', reason: 'partial_refund_no_revoke' }
+      }
+
+      // Full refund — revoke access
+      const sub = await findSubByProvider(stripeSubId, null, null)
+      if (!sub) return { result: 'ignored', reason: 'no_subscription_link' }
+
+      const chargeInvoiceId = typeof charge.invoice === 'string' ? charge.invoice : charge.invoice?.id
+      if (chargeInvoiceId) {
+        const latest = await getStripe().invoices.list({ subscription: stripeSubId, limit: 1 })
+        if (latest.data[0]?.id !== chargeInvoiceId) {
+          return { result: 'ignored', reason: 'refund_not_latest_invoice' }
+        }
+      }
+
+      const transition = await applyTransition({
+        userId: sub.userId,
+        planId: sub.plan as PlanId,
+        status: 'expired',
+        stripeSubscriptionId: stripeSubId,
+        providerSubscriptionId: stripeSubId,
+        providerEventId: event.id,
+        providerEventAt,
+        expiresAt: new Date(),
+      })
+      if (transition.skipped) return { result: 'ignored', reason: 'out_of_order' }
+      break
+    }
+
+    default:
+      return { result: 'ignored', reason: 'event_type_not_supported' }
+  }
+}
+
+async function findSubByProvider(stripeSubId: string | null, stripeCustomerId: string | null, userId: string | null) {
+  if (stripeSubId) {
+    const bySub = await db.subscription.findFirst({ where: { stripeSubscriptionId: stripeSubId } })
+    if (bySub) return bySub
+  }
+  if (stripeCustomerId) {
+    const byCust = await db.subscription.findFirst({ where: { stripeCustomerId } })
+    if (byCust) return byCust
+  }
+  if (userId) {
+    return db.subscription.findFirst({ where: { userId, active: true }, orderBy: { startedAt: 'desc' } })
+  }
+  return null
+}
+
+// Import db at the top level (needed for findSubByProvider)
+import { db } from '@/lib/db'
+
+function mapStripeStatus(stripeStatus: string): SubscriptionStatus {
+  switch (stripeStatus) {
+    case 'trialing': return 'trialing'
+    case 'active': return 'active'
+    case 'past_due': return 'past_due'
+    case 'canceled': return 'canceled'
+    case 'unpaid': return 'expired'
+    default: return 'inactive'
   }
 }

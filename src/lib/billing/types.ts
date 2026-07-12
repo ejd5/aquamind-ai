@@ -1,10 +1,10 @@
-export type PlanId = 'decouverte' | 'oasis' | 'wellness'
-export type BillingPlatform = 'web' | 'ios' | 'android'
+import type { PlanId, BillingPlatform, ProviderDuration } from './plans'
+export type { PlanId, BillingPlatform } from './plans'
 
 export interface Product {
   id: string
   plan: PlanId
-  duration: 'weekly' | 'monthly' | 'seasonal' | 'yearly'
+  duration: ProviderDuration
   price: number
   priceString: string
   currency: string
@@ -12,7 +12,7 @@ export interface Product {
 }
 
 export interface Entitlement {
-  id: 'oasis' | 'wellness'
+  id: 'oasis' | 'wellness' | 'spa365'
   plan: PlanId
   isActive: boolean
   willRenew: boolean

@@ -7,6 +7,7 @@ import { calculateClearWaterIndex, calculateLSI, lsiInterpretation } from '@/lib
 import { assessSwimSafety } from '@/lib/pool/safety-rules'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { trackEventServer } from '@/lib/analytics-server'
+import { requireFeatureAccess } from '@/lib/billing/gate'
 
 export const runtime = 'nodejs'
 
@@ -19,13 +20,23 @@ export async function GET(req: Request) {
   }
   const userId = session.user.id
 
+  // P0-B: Feature gate — history_extended
+  // Free plan (Découverte) gets 14 days of history, paid plans get unlimited.
+  const historyGate = await requireFeatureAccess(req as any, 'history_extended')
+  const createdAt = historyGate.denied
+    ? { gte: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) }
+    : undefined
+
   const tests = await db.waterTest.findMany({
-    where: { userId },
-    take: 50,
+    where: { userId, createdAt },
+    take: historyGate.denied ? 100 : 500,
     orderBy: { createdAt: 'desc' },
     include: { actionPlans: true },
   })
-  return NextResponse.json({ tests })
+  return NextResponse.json({
+    tests: historyGate.denied ? tests.map(({ lsi: _lsi, ...test }) => test) : tests,
+    historyLimited: historyGate.denied,
+  })
 }
 
 export async function POST(req: NextRequest) {
@@ -125,7 +136,21 @@ export async function POST(req: NextRequest) {
       userId
     )
 
-    return NextResponse.json({ test: created, actionPlan, lsiInfo: lsiInterpretation(lsi) })
+    // P0-B: Feature gate — pro_mode (LSI interpretation is a "pro" feature)
+    // All users get the water test result + action plan.
+    // Pro mode (LSI detailed interpretation) is only for paid plans.
+    const proGate = await requireFeatureAccess(req, 'pro_mode')
+    const { lsi: _storedLsi, ...publicTest } = created
+    const response: any = { test: proGate.denied ? publicTest : created, actionPlan }
+    if (!proGate.denied) {
+      response.lsiInfo = lsiInterpretation(lsi)
+      response.lsi = lsi
+    } else {
+      response.lsiInfo = null
+      response.proModeRequired = true
+    }
+
+    return NextResponse.json(response)
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Erreur'
     return NextResponse.json({ error: msg }, { status: 500 })
