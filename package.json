@@ -29,7 +29,10 @@
     "test": "vitest run",
     "test:migration": "bash tests/run-billing-migration-test.sh",
     "test:postgresql": "bash tests/check-postgresql-schema.sh",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:postgresql:integration": "node tests/test-postgresql.mjs",
+    "migrate:dry-run": "node scripts/migrate-sqlite-to-postgres.mjs --dry-run",
+    "migrate:execute": "node scripts/migrate-sqlite-to-postgres.mjs --execute"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.0",
