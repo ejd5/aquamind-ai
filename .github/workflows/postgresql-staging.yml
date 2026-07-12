@@ -7,7 +7,7 @@ on:
       - 'prisma/**'
       - 'scripts/migrate-sqlite-to-postgres.mjs'
       - 'scripts/sync-postgresql-schema.mjs'
-      - 'tests/test-postgresql.mjs'
+      - 'tests/postgresql.test.mjs'
       - 'tests/seed-migration-fixture.mjs'
       - 'tests/verify-postgresql-migration.mjs'
       - '.github/workflows/postgresql-staging.yml'
