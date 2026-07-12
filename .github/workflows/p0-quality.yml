@@ -41,6 +41,9 @@ jobs:
       - name: Generate Prisma client
         run: bun run db:generate
 
+      - name: Validate PostgreSQL schema and baseline
+        run: bun run test:postgresql
+
       - name: Lint
         run: bun run lint
 

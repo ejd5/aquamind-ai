@@ -11,6 +11,10 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
+    "db:pg:sync": "node scripts/sync-postgresql-schema.mjs --write",
+    "db:pg:check": "node scripts/sync-postgresql-schema.mjs",
+    "db:pg:generate": "prisma generate --schema prisma/postgresql/schema.prisma",
+    "db:pg:deploy": "prisma migrate deploy --schema prisma/postgresql/schema.prisma",
     "mobile:build": "MOBILE_BUILD=true next build -c next.config.mobile.ts",
     "mobile:sync": "next build -c next.config.mobile.ts && npx cap sync ios android",
     "mobile:ios": "next build -c next.config.mobile.ts && npx cap sync ios && npx cap open ios",
@@ -24,6 +28,7 @@
     "typecheck:tools": "node scripts/typecheck-tools.mjs",
     "test": "vitest run",
     "test:migration": "bash tests/run-billing-migration-test.sh",
+    "test:postgresql": "bash tests/check-postgresql-schema.sh",
     "test:watch": "vitest"
   },
   "dependencies": {
