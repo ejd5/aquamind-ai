@@ -14,10 +14,7 @@ interface PricingProps {
 type DurationId = (typeof DURATIONS)[number]['id']
 
 const DURATION_SUFFIX_KEY: Record<DurationId, string> = {
-  week: 'perWeek',
   month: 'perMonth',
-  halfyear: 'perHalfyear',
-  year: 'perYear',
 }
 
 export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
