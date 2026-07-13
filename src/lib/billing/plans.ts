@@ -108,9 +108,9 @@ export interface PlanDefinition {
 export const PLANS: PlanDefinition[] = [
   {
     id: 'decouverte',
-    name: 'Découverte',
+    name: 'Free',
     nameKey: 'decouverte.name',
-    tagline: 'Gratuit — pour tester',
+    tagline: 'Gratuit — pour découvrir',
     taglineKey: 'decouverte.tagline',
     active: true,
     platform: ['web', 'ios', 'android'],
@@ -155,15 +155,15 @@ export const PLANS: PlanDefinition[] = [
   },
   {
     id: 'oasis',
-    name: 'Oasis',
+    name: 'Pool',
     nameKey: 'oasis.name',
-    tagline: 'Le copilote piscine complet',
+    tagline: 'Le copilote intelligent pour votre piscine',
     taglineKey: 'oasis.tagline',
     active: true,
     platform: ['web', 'ios', 'android'],
-    price: { week: 3.99, month: 9.99, halfyear: 39.99, year: 59.99 },
+    price: { week: 0, month: 5.99, halfyear: 0, year: 0 },
     features: [
-      'Jusqu\'à 3 piscines',
+      '1 piscine',
       'Analyses illimitées',
       'Recommandations personnalisées',
       'Calculs de dosage',
@@ -199,7 +199,7 @@ export const PLANS: PlanDefinition[] = [
       'oasis.features.proMode',
     ],
     limits: {
-      maxPools: 3,
+      maxPools: 1,
       maxSpas: 0,
       maxPhotoScansPerMonth: 999999,
       maxTestsPerMonth: 999999,
@@ -213,14 +213,10 @@ export const PLANS: PlanDefinition[] = [
       spaSupport: false,
     },
     stripePrices: {
-      week: process.env.STRIPE_PRICE_OASIS_WEEKLY || '',
       month: process.env.STRIPE_PRICE_OASIS_MONTHLY || '',
-      halfyear: process.env.STRIPE_PRICE_OASIS_SEASONAL || '',
-      year: process.env.STRIPE_PRICE_OASIS_YEARLY || '',
     },
     revenueCatProducts: {
-      week: 'aqwelia_oasis_weekly', month: 'aqwelia_oasis_monthly',
-      halfyear: 'aqwelia_oasis_seasonal', year: 'aqwelia_oasis_yearly',
+      month: 'aqwelia_oasis_monthly',
     },
     revenueCatEntitlement: 'oasis',
     highlighted: true,
@@ -229,16 +225,16 @@ export const PLANS: PlanDefinition[] = [
   },
   {
     id: 'wellness',
-    name: 'Wellness',
+    name: 'Complete',
     nameKey: 'wellness.name',
-    tagline: 'Piscine + Spa, sereinement',
+    tagline: 'Piscine + spa, tout-en-un',
     taglineKey: 'wellness.tagline',
     active: true,
     platform: ['web', 'ios', 'android'],
-    price: { week: 5.99, month: 14.99, halfyear: 54.99, year: 79.99 },
+    price: { week: 0, month: 8.99, halfyear: 0, year: 0 },
     features: [
-      'Jusqu\'à 3 profils (piscine + spa)',
-      'Tout Oasis',
+      '1 piscine + 1 spa',
+      'Tout AQWELIA Pool',
       'Traitements spécifiques spa (brome, oxygène actif)',
       'Eau chaude',
       'Historiques illimités séparés',
@@ -257,7 +253,7 @@ export const PLANS: PlanDefinition[] = [
       'wellness.features.spaAlerts',
     ],
     limits: {
-      maxPools: 3,
+      maxPools: 2,
       maxSpas: 1,
       maxPhotoScansPerMonth: 999999,
       maxTestsPerMonth: 999999,
@@ -271,14 +267,10 @@ export const PLANS: PlanDefinition[] = [
       spaSupport: true,
     },
     stripePrices: {
-      week: process.env.STRIPE_PRICE_WELLNESS_WEEKLY || '',
       month: process.env.STRIPE_PRICE_WELLNESS_MONTHLY || '',
-      halfyear: process.env.STRIPE_PRICE_WELLNESS_SEASONAL || '',
-      year: process.env.STRIPE_PRICE_WELLNESS_YEARLY || '',
     },
     revenueCatProducts: {
-      week: 'aqwelia_wellness_weekly', month: 'aqwelia_wellness_monthly',
-      halfyear: 'aqwelia_wellness_seasonal', year: 'aqwelia_wellness_yearly',
+      month: 'aqwelia_wellness_monthly',
     },
     revenueCatEntitlement: 'wellness',
     color: 'primary',
@@ -286,13 +278,13 @@ export const PLANS: PlanDefinition[] = [
   },
   {
     id: 'spa365',
-    name: 'Spa 365',
+    name: 'Spa',
     nameKey: 'spa365.name',
-    tagline: "Spa uniquement, toute l'année",
+    tagline: "Le copilote intelligent pour votre spa",
     taglineKey: 'spa365.tagline',
     active: true,
     platform: ['web', 'ios', 'android'],
-    price: { week: 2.49, month: 6.99, halfyear: 32.99, year: 49.99 },
+    price: { week: 0, month: 3.99, halfyear: 0, year: 0 },
     features: [
       "1 spa",
       'Analyses illimitées',
@@ -326,14 +318,10 @@ export const PLANS: PlanDefinition[] = [
       spaSupport: true,
     },
     stripePrices: {
-      week: process.env.STRIPE_PRICE_SPA365_WEEKLY || '',
       month: process.env.STRIPE_PRICE_SPA365_MONTHLY || '',
-      halfyear: process.env.STRIPE_PRICE_SPA365_SEASONAL || '',
-      year: process.env.STRIPE_PRICE_SPA365_YEARLY || '',
     },
     revenueCatProducts: {
-      week: 'aqwelia_spa365_weekly', month: 'aqwelia_spa365_monthly',
-      halfyear: 'aqwelia_spa365_seasonal', year: 'aqwelia_spa365_yearly',
+      month: 'aqwelia_spa365_monthly',
     },
     revenueCatEntitlement: 'spa365',
     color: 'accent',
@@ -469,17 +457,17 @@ export function canAccess(
     case 'multi_pool':
       return plan.limits.multiPool
         ? { allowed: true }
-        : { allowed: false, reason: 'Multi-piscines réservé à Oasis et Wellness.', reasonKey: 'gates.multi_pool', ctaPlan: 'oasis' }
+        : { allowed: false, reason: 'Plusieurs bassins nécessitent AQWELIA Complete.', reasonKey: 'gates.multi_pool', ctaPlan: 'wellness' }
 
     case 'pdf_report':
       return plan.limits.pdfReport
         ? { allowed: true }
-        : { allowed: false, reason: 'Rapport PDF réservé à Oasis et Wellness.', reasonKey: 'gates.pdf_report', ctaPlan: 'oasis' }
+        : { allowed: false, reason: 'Rapport PDF réservé à AQWELIA Pool et Complete.', reasonKey: 'gates.pdf_report', ctaPlan: 'oasis' }
 
     case 'pro_mode':
       return plan.limits.proMode
         ? { allowed: true }
-        : { allowed: false, reason: 'Mode pro réservé à Oasis et Wellness.', reasonKey: 'gates.pro_mode', ctaPlan: 'oasis' }
+        : { allowed: false, reason: 'Mode avancé réservé à AQWELIA Pool et Complete.', reasonKey: 'gates.pro_mode', ctaPlan: 'oasis' }
 
     case 'history_extended':
       return plan.limits.historyDays >= 90
@@ -492,7 +480,7 @@ export function canAccess(
       // wellness for pool+spa owners.
       return plan.limits.spaSupport
         ? { allowed: true }
-        : { allowed: false, reason: 'Le support des spas est réservé aux plans Spa 365 et Wellness.', reasonKey: 'gates.spa_support', ctaPlan: 'spa365' }
+        : { allowed: false, reason: 'Le support spa nécessite AQWELIA Spa ou Complete.', reasonKey: 'gates.spa_support', ctaPlan: 'spa365' }
 
     default:
       return { allowed: true }
@@ -547,6 +535,9 @@ export function getPlanFromRCProductId(productId: string): { plan: PlanId; durat
 }
 
 export function getPlanFromWebProductId(productId: string): { plan: PlanId; duration: Duration } | null {
+  // Launch offer: monthly subscriptions only. Historical duration types stay
+  // supported internally for provider reconciliation, but cannot be sold.
+  if (!productId.endsWith('_monthly')) return null
   for (const plan of PLANS) {
     for (const duration of Object.keys(plan.price) as Duration[]) {
       if (`${plan.id}_${DURATION_TO_PROVIDER[duration]}` === productId && plan.id !== 'decouverte') {
@@ -560,8 +551,5 @@ export function getPlanFromWebProductId(productId: string): { plan: PlanId; dura
 // ─── Duration display (legacy compat) ───────────────────────────────────────
 
 export const DURATIONS = [
-  { id: 'week' as const, label: '7 jours', suffix: '/semaine', labelKey: 'week', suffixKey: 'perWeek' },
   { id: 'month' as const, label: '1 mois', suffix: '/mois', labelKey: 'month', suffixKey: 'perMonth' },
-  { id: 'halfyear' as const, label: '6 mois', suffix: '/6 mois', save: '20%', labelKey: 'halfyear', suffixKey: 'perHalfyear' },
-  { id: 'year' as const, label: '12 mois', suffix: '/an', save: '30%', labelKey: 'year', suffixKey: 'perYear' },
 ]

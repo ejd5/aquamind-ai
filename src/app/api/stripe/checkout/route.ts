@@ -31,12 +31,6 @@ export async function POST(req: NextRequest) {
   try {
     const stripe = getStripe()
 
-    // Trial period: 7 days for monthly / seasonal / yearly subscriptions.
-    // The weekly "Pass urgence" (productId ends with `_weekly`) is a one-shot
-    // short-term purchase with NO trial — users want immediate access.
-    const isWeekly = productId.endsWith('_weekly')
-    const trialPeriodDays = isWeekly ? undefined : 7
-
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -57,9 +51,6 @@ export async function POST(req: NextRequest) {
           productId,
           plan: product.plan,
         },
-        // 7-day free trial — Stripe will not charge the customer until the
-        // trial ends. The trial applies only to non-weekly subscriptions.
-        ...(trialPeriodDays ? { trial_period_days: trialPeriodDays } : {}),
       },
     })
 

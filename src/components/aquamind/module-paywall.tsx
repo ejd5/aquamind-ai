@@ -96,7 +96,7 @@ export function ModulePaywall() {
   const [currentPlanId, setCurrentPlanId] = useState<PlanId>('decouverte')
   const [subscription, setSubscription] = useState<{ expiresAt?: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [duration, setDuration] = useState<Duration>('month')
+  const duration: Duration = 'month'
   const [activating, setActivating] = useState<PlanId | null>(null)
   const [restoring, setRestoring] = useState(false)
   const queueAction = useOfflineStore((s) => s.queueAction)
@@ -151,14 +151,7 @@ export function ModulePaywall() {
 
       if (isNative()) {
         // Native: use RevenueCat IAP
-        // Map UI duration → RevenueCat product id convention:
-        //   week → weekly, month → monthly, halfyear → seasonal, year → yearly
-        const durationSuffix =
-          duration === 'week' ? 'weekly'
-          : duration === 'halfyear' ? 'seasonal'
-          : duration === 'year' ? 'yearly'
-          : 'monthly'
-        const productId = `aqwelia_${planId}_${durationSuffix}`
+        const productId = `aqwelia_${planId}_monthly`
         const result = await billing.purchase(productId)
         if (result.userCancelled) {
           toast({ title: t('purchaseCancelled'), description: t('purchaseCancelledDesc') })
@@ -176,12 +169,7 @@ export function ModulePaywall() {
           toast({ title: t('offline'), description: t('offlineDesc'), variant: 'destructive' })
           return
         }
-        const durationSuffix =
-          duration === 'week' ? 'weekly'
-          : duration === 'halfyear' ? 'seasonal'
-          : duration === 'year' ? 'yearly'
-          : 'monthly'
-        const productId = `stripe_${planId}_${durationSuffix}`
+        const productId = `${planId}_monthly`
         const result = await api.post<{ url: string }>('/api/stripe/checkout', { productId })
         if (result?.url) {
           window.location.href = result.url
@@ -264,7 +252,7 @@ export function ModulePaywall() {
                 <span className="h-px w-8 bg-gold/40" />
               </div>
               <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-                {t('passTo', { plan: 'AQWELIA Oasis' })}
+                {t('passTo', { plan: 'AQWELIA Pool' })}
               </h1>
               <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
                 {t('heroSubtitle')}
@@ -279,39 +267,6 @@ export function ModulePaywall() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Duration selector */}
-      <div>
-        <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          <CreditCard className="h-3 w-3" />
-          {t('chooseDuration')}
-        </p>
-        <div className="custom-scroll flex gap-2 overflow-x-auto pb-1">
-          {DURATIONS.map((d) => (
-            <button
-              key={d.id}
-              onClick={() => setDuration(d.id)}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-all ${
-                duration === d.id
-                  ? 'border-gold/60 bg-gold/10 text-gold shadow-sm'
-                  : 'border-border bg-background hover:border-gold/30'
-              }`}
-            >
-              {t(d.labelKey)}
-              {d.emergency && (
-                <Badge variant="outline" className="border-primary/40 bg-primary/10 px-1.5 text-[9px] font-bold text-primary">
-                  {t('emergencyPass')}
-                </Badge>
-              )}
-              {d.save && (
-                <Badge variant="outline" className="border-gold/40 bg-gold/10 px-1.5 text-[9px] font-bold text-gold">
-                  -{d.save}
-                </Badge>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Plan cards */}
       <div className="grid gap-4 lg:grid-cols-3">

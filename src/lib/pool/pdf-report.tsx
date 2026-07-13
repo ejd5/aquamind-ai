@@ -604,5 +604,5 @@ export const PDF_REPORT_FR_FALLBACKS: Record<string, string> = {
   page: 'Page {n}',
   noPlanAvailable: "Aucun plan d'action disponible",
   latestTestsSection: '5 derniers tests',
-  upgradeForPdf: 'Passez à Oasis ou Wellness pour télécharger le rapport PDF.',
+  upgradeForPdf: 'Passez à AQWELIA Pool ou Complete pour télécharger le rapport PDF.',
 }

@@ -2,9 +2,8 @@
  * AQWELIA — Page /tarifs (standalone pricing page)
  *
  * Server component. Renders:
- *  - hero + duration selector + 3 plans (interactive, in PricingExplorer)
- *  - pass urgence card (in PricingExplorer)
- *  - comparison table (15+ functions × 3 plans)
+ *  - hero + four monthly plans (interactive, in PricingExplorer)
+ *  - comparison table (15+ functions × 4 plans)
  *  - FAQ tarifaire
  *  - moyens de paiement
  *  - conditions de résiliation
@@ -41,27 +40,27 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function TarifsPage() {
   const t = await getTranslations('tarifs')
 
-  // Comparison table rows: feature label + per-plan availability (D / O / W)
+  // Comparison table rows: feature label + Free / Pool / Spa / Complete.
   // 'yes' | 'no' | 'partial'
   type RowKind = 'yes' | 'no' | 'partial'
-  const ROWS: { label: string; d: RowKind; o: RowKind; w: RowKind }[] = [
-    { label: t('cmpRow1'), d: 'yes', o: 'yes', w: 'yes' },
-    { label: t('cmpRow2'), d: 'partial', o: 'yes', w: 'yes' },
-    { label: t('cmpRow3'), d: 'partial', o: 'yes', w: 'yes' },
-    { label: t('cmpRow4'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow5'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow6'), d: 'partial', o: 'yes', w: 'yes' },
-    { label: t('cmpRow7'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow8'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow9'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow10'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow11'), d: 'partial', o: 'yes', w: 'yes' },
-    { label: t('cmpRow12'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow13'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow14'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow15'), d: 'no', o: 'no', w: 'yes' },
-    { label: t('cmpRow16'), d: 'no', o: 'no', w: 'yes' },
-    { label: t('cmpRow17'), d: 'no', o: 'no', w: 'yes' },
+  const ROWS: { label: string; free: RowKind; pool: RowKind; spa: RowKind; complete: RowKind }[] = [
+    { label: t('cmpRow1'), free: 'yes', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow2'), free: 'partial', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow3'), free: 'partial', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow4'), free: 'no', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow5'), free: 'no', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow6'), free: 'partial', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow7'), free: 'no', pool: 'yes', spa: 'no', complete: 'yes' },
+    { label: t('cmpRow8'), free: 'no', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow9'), free: 'no', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow10'), free: 'no', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow11'), free: 'partial', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow12'), free: 'no', pool: 'yes', spa: 'no', complete: 'yes' },
+    { label: t('cmpRow13'), free: 'no', pool: 'yes', spa: 'no', complete: 'yes' },
+    { label: t('cmpRow14'), free: 'no', pool: 'yes', spa: 'no', complete: 'yes' },
+    { label: t('cmpRow15'), free: 'no', pool: 'no', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow16'), free: 'no', pool: 'no', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow17'), free: 'no', pool: 'no', spa: 'yes', complete: 'yes' },
   ]
 
   const FAQ = [
@@ -130,6 +129,9 @@ export default async function TarifsPage() {
                     {t('cmpColO')}
                   </th>
                   <th className="p-4 text-center font-display font-bold text-foreground">
+                    {t('cmpColS')}
+                  </th>
+                  <th className="p-4 text-center font-display font-bold text-foreground">
                     {t('cmpColW')}
                   </th>
                 </tr>
@@ -141,9 +143,10 @@ export default async function TarifsPage() {
                     className={`border-b border-border/30 last:border-0 ${idx % 2 === 1 ? 'bg-background/30' : ''}`}
                   >
                     <td className="p-4 text-left text-muted-foreground">{row.label}</td>
-                    <td className="p-4 text-center"><CellIcon kind={row.d} /></td>
-                    <td className="bg-gold/5 p-4 text-center"><CellIcon kind={row.o} /></td>
-                    <td className="p-4 text-center"><CellIcon kind={row.w} /></td>
+                    <td className="p-4 text-center"><CellIcon kind={row.free} /></td>
+                    <td className="bg-gold/5 p-4 text-center"><CellIcon kind={row.pool} /></td>
+                    <td className="p-4 text-center"><CellIcon kind={row.spa} /></td>
+                    <td className="p-4 text-center"><CellIcon kind={row.complete} /></td>
                   </tr>
                 ))}
               </tbody>

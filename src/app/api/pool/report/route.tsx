@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
     const msg = await translate(
       locale,
       'pdfReport.upgradeForPdf',
-      'Passez à Oasis ou Wellness pour télécharger le rapport PDF.'
+      'Passez à AQWELIA Pool ou Complete pour télécharger le rapport PDF.'
     )
     return NextResponse.json(
       {

@@ -351,16 +351,16 @@ export async function sendCareNotificationEmail(data: CareLeadData): ReturnType<
 
 export interface SubscriptionConfirmationData {
   userName?: string
-  plan: 'oasis' | 'wellness'
+  plan: 'oasis' | 'wellness' | 'spa365'
   duration: 'week' | 'month' | 'halfyear' | 'year'
   price?: number
   currency?: string
-  trialEnd?: Date | null
 }
 
-const PLAN_LABEL: Record<'oasis' | 'wellness', string> = {
-  oasis: 'AQWELIA Oasis',
-  wellness: 'AQWELIA Wellness',
+const PLAN_LABEL: Record<'oasis' | 'wellness' | 'spa365', string> = {
+  oasis: 'AQWELIA Pool',
+  wellness: 'AQWELIA Complete',
+  spa365: 'AQWELIA Spa',
 }
 
 const DURATION_LABEL: Record<SubscriptionConfirmationData['duration'], string> = {
@@ -375,17 +375,10 @@ export function renderSubscriptionConfirmationEmail(data: SubscriptionConfirmati
   const planLabel = PLAN_LABEL[data.plan]
   const durationLabel = DURATION_LABEL[data.duration]
   const priceStr = typeof data.price === 'number' ? `${data.price.toLocaleString('en-US')} ${data.currency || 'EUR'}` : ''
-  const isTrial = !!data.trialEnd
-  const trialEndStr = data.trialEnd
-    ? new Date(data.trialEnd).toLocaleDateString('en-US', { dateStyle: 'long' })
-    : ''
-
-  const subject = isTrial
-    ? `Your ${planLabel} trial is active`
-    : `Your ${planLabel} subscription is active`
+  const subject = `Your ${planLabel} subscription is active`
 
   const html = emailShell(`
-    <h1>${isTrial ? 'Trial active!' : 'Subscription active!'} </h1>
+    <h1>Subscription active!</h1>
     <p>Hello${firstName ? ` ${escapeHtml(firstName)}` : ''}, your <strong>${planLabel}</strong> subscription is now active.</p>
 
     <h2>Summary</h2>
@@ -393,12 +386,7 @@ export function renderSubscriptionConfirmationEmail(data: SubscriptionConfirmati
       <strong>Plan:</strong> ${planLabel}<br>
       <strong>Duration:</strong> ${durationLabel}<br>
       ${priceStr ? `<strong>Price:</strong> ${priceStr}<br>` : ''}
-      ${isTrial && trialEndStr ? `<strong>Trial ends:</strong> ${escapeHtml(trialEndStr)}<br>` : ''}
     </p>
-
-    ${isTrial ? `
-      <p>You get <strong>7 days free</strong>. No charge will be made before the trial ends. You can cancel anytime from your settings.</p>
-    ` : ''}
 
     <a href="${APP_URL}/?utm_source=subscription_email" class="btn">Start using AQWELIA</a>
 
