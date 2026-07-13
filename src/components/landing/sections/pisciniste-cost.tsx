@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Check, X } from 'lucide-react'
+import { Check, Sparkles } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { GlassCard, Reveal, SectionHeading, staggerContainer, fadeUpVariants } from '../landing-utils'
 
@@ -63,13 +63,13 @@ export function PiscinisteCost() {
             </GlassCard>
           </motion.div>
 
-          {/* Not included column */}
+          {/* AQWELIA complement column */}
           <motion.div variants={fadeUpVariants}>
             <div className="relative h-full overflow-hidden rounded-2xl border-2 border-gold/40 bg-gradient-to-br from-gold/[0.08] to-white/40 p-6 backdrop-blur-xl dark:to-white/[0.02]">
               <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
               <div className="flex items-center gap-2">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/20 text-gold">
-                  <X className="h-4 w-4" />
+                  <Sparkles className="h-4 w-4" />
                 </span>
                 <h3 className="font-display text-xl font-bold">{t('piscinisteNotIncludedTitle')}</h3>
               </div>
@@ -79,7 +79,7 @@ export function PiscinisteCost() {
                     key={item}
                     className="flex items-start gap-2.5 text-sm font-medium text-foreground"
                   >
-                    <X className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
+                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
                     <span>{item}</span>
                   </li>
                 ))}

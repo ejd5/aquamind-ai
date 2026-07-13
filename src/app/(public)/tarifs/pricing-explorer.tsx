@@ -12,15 +12,17 @@
  * triggered) so we don't duplicate the Stripe flow here.
  */
 import Link from 'next/link'
+import { useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { Check, ArrowRight } from 'lucide-react'
-import { PLANS, type PlanId } from '@/lib/pool/freemium'
+import { PLANS, DURATIONS, type PlanId, type Duration } from '@/lib/pool/freemium'
+import { getPriceAdvantage } from '@/lib/billing/plans'
 
 export function PricingExplorer() {
   const t = useTranslations('tarifs')
   const tPlan = useTranslations('plans')
   const locale = useLocale()
-  const duration = 'month' as const
+  const [duration, setDuration] = useState<Exclude<Duration, 'week'>>('halfyear')
 
   function formatPrice(value: number) {
     if (value === 0) return '0'
@@ -32,12 +34,34 @@ export function PricingExplorer() {
 
   return (
     <div>
+      <div className="mx-auto mb-10 flex max-w-2xl flex-wrap items-center justify-center gap-2 rounded-2xl border border-border/60 bg-background/70 p-2 shadow-sm">
+        {DURATIONS.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            onClick={() => setDuration(option.id)}
+            className={`relative rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
+              duration === option.id
+                ? 'bg-primary text-primary-foreground shadow-md'
+                : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+            }`}
+          >
+            {t(`duration_${option.id}`)}
+            {option.id === 'halfyear' && (
+              <span className="absolute -right-2 -top-3 rounded-full bg-gold px-2 py-0.5 text-[9px] font-bold uppercase text-white">
+                {t('badgeBestValue')}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
       {/* Plans grid */}
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
         {PLANS.map((plan) => {
           const isFree = plan.id === 'decouverte'
           const price = plan.price[duration]
-          const suffix = isFree ? t('suffixFree') : t('suffixMonth')
+          const suffix = isFree ? t('suffixFree') : t(`suffix_${duration}`)
+          const advantage = getPriceAdvantage(plan, duration)
           const highlighted = plan.highlighted
           // Use translated name/tagline from `plans` namespace (legacy keys
           // decouverte.name, oasis.name, wellness.name exist).
@@ -66,6 +90,20 @@ export function PricingExplorer() {
                   <p className="text-xs text-muted-foreground">{tagline}</p>
                 </div>
               </div>
+
+              {!isFree && duration !== 'month' && (
+                <div className="mt-3 rounded-xl bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300">
+                  <p className="font-bold">
+                    {t('savePercent', { percent: advantage.savedPercent })}
+                    {advantage.freeMonths >= 0.9 && (
+                      <> · {t('freeMonths', { months: Math.round(advantage.freeMonths) })}</>
+                    )}
+                  </p>
+                  <p className="mt-0.5 opacity-80">
+                    {t('monthlyEquivalent', { price: formatPrice(advantage.monthlyEquivalent) })}
+                  </p>
+                </div>
+              )}
 
               {/* Price */}
               <div className="mt-6 flex items-baseline gap-1.5">

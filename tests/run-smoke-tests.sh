@@ -28,6 +28,17 @@ export REVENUECAT_WEBHOOK_SECRET="rc_wh_test_ci_only"
 export STRIPE_SECRET_KEY="sk_test_ci_placeholder"
 export STRIPE_WEBHOOK_SECRET="whsec_test_ci_placeholder"
 export STRIPE_PRICE_OASIS_MONTHLY="price_oasis_monthly_ci"
+export STRIPE_PRICE_OASIS_QUARTERLY="price_oasis_quarterly_ci"
+export STRIPE_PRICE_OASIS_SEASONAL="price_oasis_seasonal_ci"
+export STRIPE_PRICE_OASIS_YEARLY="price_oasis_yearly_ci"
+export STRIPE_PRICE_WELLNESS_MONTHLY="price_wellness_monthly_ci"
+export STRIPE_PRICE_WELLNESS_QUARTERLY="price_wellness_quarterly_ci"
+export STRIPE_PRICE_WELLNESS_SEASONAL="price_wellness_seasonal_ci"
+export STRIPE_PRICE_WELLNESS_YEARLY="price_wellness_yearly_ci"
+export STRIPE_PRICE_SPA365_MONTHLY="price_spa365_monthly_ci"
+export STRIPE_PRICE_SPA365_QUARTERLY="price_spa365_quarterly_ci"
+export STRIPE_PRICE_SPA365_SEASONAL="price_spa365_seasonal_ci"
+export STRIPE_PRICE_SPA365_YEARLY="price_spa365_yearly_ci"
 
 # ── 3. Cleanup function ──────────────────────────────────────────────────────
 cleanup() {
@@ -93,14 +104,18 @@ done
 # ── 8. Run smoke tests ───────────────────────────────────────────────────────
 echo ""
 echo "=== 6. Run smoke tests ==="
+set +e
 SMOKE_BASE_URL="$BASE_URL" bun run test 2>&1
 TEST_EXIT=$?
+set -e
 
 echo ""
 if [ $TEST_EXIT -eq 0 ]; then
   echo "✅ ALL SMOKE TESTS PASSED"
 else
   echo "❌ SMOKE TESTS FAILED (exit code: $TEST_EXIT)"
+  echo "=== Server log (last 120 lines) ==="
+  tail -120 "$SERVER_LOG" 2>/dev/null || true
 fi
 
 exit $TEST_EXIT

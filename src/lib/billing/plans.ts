@@ -29,15 +29,16 @@ export type BillingPlatform = 'web' | 'ios' | 'android'
 
 // ─── Duration ───────────────────────────────────────────────────────────────
 
-export type Duration = 'week' | 'month' | 'halfyear' | 'year'
-export type ProviderDuration = 'weekly' | 'monthly' | 'seasonal' | 'yearly'
+export type Duration = 'week' | 'month' | 'quarter' | 'halfyear' | 'year'
+export type ProviderDuration = 'weekly' | 'monthly' | 'quarterly' | 'seasonal' | 'yearly'
 
-// Stripe/RevenueCat use 'weekly', 'monthly', 'seasonal', 'yearly'
-// We use 'week', 'month', 'halfyear', 'year' internally.
+// Stripe/RevenueCat use provider-facing duration names.
+// We keep shorter product-facing names internally.
 // This is the ONLY mapping.
 export const DURATION_TO_PROVIDER: Record<Duration, ProviderDuration> = {
   week: 'weekly',
   month: 'monthly',
+  quarter: 'quarterly',
   halfyear: 'seasonal',
   year: 'yearly',
 }
@@ -45,6 +46,7 @@ export const DURATION_TO_PROVIDER: Record<Duration, ProviderDuration> = {
 export const PROVIDER_TO_DURATION: Record<string, Duration> = {
   weekly: 'week',
   monthly: 'month',
+  quarterly: 'quarter',
   seasonal: 'halfyear',
   yearly: 'year',
 }
@@ -114,7 +116,7 @@ export const PLANS: PlanDefinition[] = [
     taglineKey: 'decouverte.tagline',
     active: true,
     platform: ['web', 'ios', 'android'],
-    price: { week: 0, month: 0, halfyear: 0, year: 0 },
+    price: { week: 0, month: 0, quarter: 0, halfyear: 0, year: 0 },
     features: [
       "Création d'un profil piscine",
       'Accès limité aux guides (5 guides de base)',
@@ -161,7 +163,7 @@ export const PLANS: PlanDefinition[] = [
     taglineKey: 'oasis.tagline',
     active: true,
     platform: ['web', 'ios', 'android'],
-    price: { week: 0, month: 5.99, halfyear: 0, year: 0 },
+    price: { week: 0, month: 6.99, quarter: 19.99, halfyear: 34.99, year: 64.99 },
     features: [
       '1 piscine',
       'Analyses illimitées',
@@ -214,9 +216,15 @@ export const PLANS: PlanDefinition[] = [
     },
     stripePrices: {
       month: process.env.STRIPE_PRICE_OASIS_MONTHLY || '',
+      quarter: process.env.STRIPE_PRICE_OASIS_QUARTERLY || '',
+      halfyear: process.env.STRIPE_PRICE_OASIS_SEASONAL || '',
+      year: process.env.STRIPE_PRICE_OASIS_YEARLY || '',
     },
     revenueCatProducts: {
       month: 'aqwelia_oasis_monthly',
+      quarter: 'aqwelia_oasis_quarterly',
+      halfyear: 'aqwelia_oasis_seasonal',
+      year: 'aqwelia_oasis_yearly',
     },
     revenueCatEntitlement: 'oasis',
     highlighted: true,
@@ -231,7 +239,7 @@ export const PLANS: PlanDefinition[] = [
     taglineKey: 'wellness.tagline',
     active: true,
     platform: ['web', 'ios', 'android'],
-    price: { week: 0, month: 8.99, halfyear: 0, year: 0 },
+    price: { week: 0, month: 10.99, quarter: 29.99, halfyear: 54.99, year: 99.99 },
     features: [
       '1 piscine + 1 spa',
       'Tout AQWELIA Pool',
@@ -268,9 +276,15 @@ export const PLANS: PlanDefinition[] = [
     },
     stripePrices: {
       month: process.env.STRIPE_PRICE_WELLNESS_MONTHLY || '',
+      quarter: process.env.STRIPE_PRICE_WELLNESS_QUARTERLY || '',
+      halfyear: process.env.STRIPE_PRICE_WELLNESS_SEASONAL || '',
+      year: process.env.STRIPE_PRICE_WELLNESS_YEARLY || '',
     },
     revenueCatProducts: {
       month: 'aqwelia_wellness_monthly',
+      quarter: 'aqwelia_wellness_quarterly',
+      halfyear: 'aqwelia_wellness_seasonal',
+      year: 'aqwelia_wellness_yearly',
     },
     revenueCatEntitlement: 'wellness',
     color: 'primary',
@@ -284,7 +298,7 @@ export const PLANS: PlanDefinition[] = [
     taglineKey: 'spa365.tagline',
     active: true,
     platform: ['web', 'ios', 'android'],
-    price: { week: 0, month: 3.99, halfyear: 0, year: 0 },
+    price: { week: 0, month: 4.99, quarter: 13.99, halfyear: 24.99, year: 44.99 },
     features: [
       "1 spa",
       'Analyses illimitées',
@@ -319,9 +333,15 @@ export const PLANS: PlanDefinition[] = [
     },
     stripePrices: {
       month: process.env.STRIPE_PRICE_SPA365_MONTHLY || '',
+      quarter: process.env.STRIPE_PRICE_SPA365_QUARTERLY || '',
+      halfyear: process.env.STRIPE_PRICE_SPA365_SEASONAL || '',
+      year: process.env.STRIPE_PRICE_SPA365_YEARLY || '',
     },
     revenueCatProducts: {
       month: 'aqwelia_spa365_monthly',
+      quarter: 'aqwelia_spa365_quarterly',
+      halfyear: 'aqwelia_spa365_seasonal',
+      year: 'aqwelia_spa365_yearly',
     },
     revenueCatEntitlement: 'spa365',
     color: 'accent',
@@ -535,12 +555,13 @@ export function getPlanFromRCProductId(productId: string): { plan: PlanId; durat
 }
 
 export function getPlanFromWebProductId(productId: string): { plan: PlanId; duration: Duration } | null {
-  // Launch offer: monthly subscriptions only. Historical duration types stay
-  // supported internally for provider reconciliation, but cannot be sold.
-  if (!productId.endsWith('_monthly')) return null
   for (const plan of PLANS) {
     for (const duration of Object.keys(plan.price) as Duration[]) {
-      if (`${plan.id}_${DURATION_TO_PROVIDER[duration]}` === productId && plan.id !== 'decouverte') {
+      if (
+        `${plan.id}_${DURATION_TO_PROVIDER[duration]}` === productId &&
+        plan.id !== 'decouverte' &&
+        plan.price[duration] > 0
+      ) {
         return { plan: plan.id, duration }
       }
     }
@@ -552,4 +573,38 @@ export function getPlanFromWebProductId(productId: string): { plan: PlanId; dura
 
 export const DURATIONS = [
   { id: 'month' as const, label: '1 mois', suffix: '/mois', labelKey: 'month', suffixKey: 'perMonth' },
+  { id: 'quarter' as const, label: '3 mois', suffix: '/3 mois', labelKey: 'quarter', suffixKey: 'perQuarter' },
+  { id: 'halfyear' as const, label: '6 mois', suffix: '/6 mois', labelKey: 'halfyear', suffixKey: 'perHalfyear' },
+  { id: 'year' as const, label: '1 an', suffix: '/an', labelKey: 'year', suffixKey: 'perYear' },
 ]
+
+export const DURATION_MONTHS: Record<Duration, number> = {
+  week: 0.25,
+  month: 1,
+  quarter: 3,
+  halfyear: 6,
+  year: 12,
+}
+
+export interface PriceAdvantage {
+  monthlyEquivalent: number
+  referencePrice: number
+  savedAmount: number
+  savedPercent: number
+  freeMonths: number
+}
+
+export function getPriceAdvantage(plan: PlanDefinition, duration: Duration): PriceAdvantage {
+  const months = DURATION_MONTHS[duration]
+  const price = plan.price[duration]
+  const referencePrice = plan.price.month * months
+  const savedAmount = Math.max(0, referencePrice - price)
+
+  return {
+    monthlyEquivalent: months > 0 ? price / months : price,
+    referencePrice,
+    savedAmount,
+    savedPercent: referencePrice > 0 ? Math.round((savedAmount / referencePrice) * 100) : 0,
+    freeMonths: plan.price.month > 0 ? savedAmount / plan.price.month : 0,
+  }
+}

@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, ShieldCheck, Lock, RotateCcw, Sparkles, ArrowRight } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { PLANS, DURATIONS } from '@/lib/pool/freemium'
+import { getPriceAdvantage } from '@/lib/billing/plans'
 import { Reveal, SectionHeading, scrollToId } from '../landing-utils'
 
 interface PricingProps {
@@ -15,6 +17,9 @@ type DurationId = (typeof DURATIONS)[number]['id']
 
 const DURATION_SUFFIX_KEY: Record<DurationId, string> = {
   month: 'perMonth',
+  quarter: 'perQuarter',
+  halfyear: 'perHalfyear',
+  year: 'perYear',
 }
 
 export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
@@ -22,7 +27,7 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
   const tPlans = useTranslations('plans')
   const locale = useLocale()
 
-  const duration: DurationId = 'month'
+  const [duration, setDuration] = useState<DurationId>('halfyear')
 
   const paidPlans = PLANS.filter((p) => p.id !== 'decouverte')
   const freePlan = PLANS.find((p) => p.id === 'decouverte')!
@@ -36,6 +41,28 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
           title={<>{t('pricingTitle')}</>}
         />
 
+        <div className="mx-auto mt-8 flex max-w-2xl flex-wrap items-center justify-center gap-2 rounded-2xl border border-border/60 bg-background/70 p-2 shadow-sm backdrop-blur-xl">
+          {DURATIONS.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setDuration(option.id)}
+              className={`relative rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
+                duration === option.id
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+              }`}
+            >
+              {tPlans(option.labelKey)}
+              {option.id === 'halfyear' && (
+                <span className="absolute -right-2 -top-3 rounded-full bg-gold px-2 py-0.5 text-[9px] font-bold uppercase text-white">
+                  {tPlans('bestValue')}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
         {/* Paid plan cards */}
         <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-3">
           {paidPlans.map((plan, idx) => {
@@ -45,6 +72,7 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
             const planName = tPlans(`${plan.id}.name`)
             const planTagline = tPlans(`${plan.id}.tagline`)
             const planFeatures = Object.values(tPlans.raw(`${plan.id}.features`) as Record<string, string>)
+            const advantage = getPriceAdvantage(plan, duration)
             return (
               <Reveal key={plan.id} delay={idx * 0.08}>
                 <div
@@ -91,6 +119,24 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
                         <span className="text-xs text-muted-foreground">{suffix}</span>
                       )}
                     </div>
+                    {duration !== 'month' && (
+                      <div className="mt-3 rounded-xl bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300">
+                        <p className="font-bold">
+                          {tPlans('savePercent', { percent: advantage.savedPercent })}
+                          {advantage.freeMonths >= 0.9 && (
+                            <> · {tPlans('freeMonths', { months: Math.round(advantage.freeMonths) })}</>
+                          )}
+                        </p>
+                        <p className="mt-0.5 opacity-80">
+                          {tPlans('monthlyEquivalent', {
+                            price: advantage.monthlyEquivalent.toLocaleString(locale, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            }),
+                          })}
+                        </p>
+                      </div>
+                    )}
 
                     <button
                       onClick={onEnterApp}

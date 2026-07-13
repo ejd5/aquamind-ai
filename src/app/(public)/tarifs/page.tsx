@@ -73,6 +73,14 @@ export default async function TarifsPage() {
     { q: t('faq7Q'), a: t('faq7A') },
   ]
 
+  const CHOICE_ROWS = [
+    { label: t('choiceRowStart'), aqwelia: t('choiceStartA'), hardware: t('choiceStartH'), pro: t('choiceStartP') },
+    { label: t('choiceRowCost'), aqwelia: t('choiceCostA'), hardware: t('choiceCostH'), pro: t('choiceCostP') },
+    { label: t('choiceRowAvailability'), aqwelia: t('choiceAvailabilityA'), hardware: t('choiceAvailabilityH'), pro: t('choiceAvailabilityP') },
+    { label: t('choiceRowAction'), aqwelia: t('choiceActionA'), hardware: t('choiceActionH'), pro: t('choiceActionP') },
+    { label: t('choiceRowBestFor'), aqwelia: t('choiceBestA'), hardware: t('choiceBestH'), pro: t('choiceBestP') },
+  ]
+
   return (
     <article>
       {/* Hero */}
@@ -154,6 +162,64 @@ export default async function TarifsPage() {
           </div>
         </div>
         <p className="mt-3 text-center text-xs text-muted-foreground">{t('cmpLegend')}</p>
+      </section>
+
+      {/* AQWELIA vs hardware vs professional service */}
+      <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
+        <div className="mb-8 text-center">
+          <p className="section-label">{t('choiceEyebrow')}</p>
+          <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+            {t('choiceTitle')}
+          </h2>
+          <p className="mx-auto mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+            {t('choiceIntro')}
+          </p>
+        </div>
+
+        <div className="glass-card overflow-hidden rounded-2xl">
+          <div className="overflow-x-auto custom-scroll">
+            <table className="w-full min-w-[760px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-border/40">
+                  <th className="p-4 text-left font-display font-bold">{t('choiceCriterion')}</th>
+                  <th className="bg-gold/10 p-4 text-left font-display font-bold text-gold">AQWELIA</th>
+                  <th className="p-4 text-left font-display font-bold">{t('choiceHardware')}</th>
+                  <th className="p-4 text-left font-display font-bold">{t('choiceProfessional')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {CHOICE_ROWS.map((row, index) => (
+                  <tr key={row.label} className={`border-b border-border/30 last:border-0 ${index % 2 ? 'bg-background/30' : ''}`}>
+                    <td className="p-4 font-semibold text-foreground">{row.label}</td>
+                    <td className="bg-gold/5 p-4 text-foreground">{row.aqwelia}</td>
+                    <td className="p-4 text-muted-foreground">{row.hardware}</td>
+                    <td className="p-4 text-muted-foreground">{row.pro}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-5 md:grid-cols-2">
+          <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6">
+            <h3 className="font-display text-xl font-bold">{t('fairTitle')}</h3>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{t('fairBody')}</p>
+          </div>
+          <div className="rounded-2xl border border-gold/30 bg-gold/5 p-6">
+            <h3 className="font-display text-xl font-bold">{t('partnerTitle')}</h3>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{t('partnerBody')}</p>
+            <Link href="/partenaires/piscinistes" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-gold hover:underline">
+              {t('partnerCta')} <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          {t('choiceSourceNote')}{' '}
+          <a className="underline hover:text-foreground" href="https://us.ondilo.com/product/ico-pool/" target="_blank" rel="noreferrer">Ondilo ICO</a>
+          {' · '}
+          <a className="underline hover:text-foreground" href="https://www.travaux.com/jardin-et-exterieur/guide-des-prix/prix-de-lentretien-dune-piscine" target="_blank" rel="noreferrer">Travaux.com</a>
+        </p>
       </section>
 
       {/* Payment methods + cancellation */}
