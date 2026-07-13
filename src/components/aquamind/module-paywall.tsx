@@ -26,7 +26,14 @@ import {
 } from '@/components/ui/accordion'
 import { toast } from '@/hooks/use-toast'
 import { useTranslations, useLocale } from 'next-intl'
-import type { PlanId } from '@/lib/pool/freemium'
+import {
+  DURATION_TO_PROVIDER,
+  DURATIONS,
+  getPriceAdvantage,
+  type Duration,
+  type PlanDefinition,
+  type PlanId,
+} from '@/lib/billing/plans'
 import { billing } from '@/lib/billing'
 import { isNative } from '@/lib/platform'
 import { offlineApi } from '@/lib/offline/api-cache'
@@ -34,42 +41,7 @@ import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
 import { trackEvent } from '@/lib/analytics-client'
 
-type Duration = 'week' | 'month' | 'halfyear' | 'year'
-
-interface Plan {
-  id: PlanId
-  name: string
-  nameKey: string
-  tagline: string
-  taglineKey: string
-  price: { week: number; month: number; quarter: number; halfyear: number; year: number }
-  features: string[]
-  featureKeys: string[]
-  limits: {
-    maxPools: number
-    maxSpas: number
-    maxPhotoScansPerMonth: number
-    maxTestsPerMonth: number
-    weatherEnabled: boolean
-    smartReminders: boolean
-    guidesAccess: string
-    multiPool: boolean
-    pdfReport: boolean
-    proMode: boolean
-    historyDays: number
-    spaSupport: boolean
-  }
-  highlighted?: boolean
-  color: string
-  icon: string
-}
-
-const DURATIONS: { id: Duration; suffixKey: 'perWeek' | 'perMonth' | 'perHalfyear' | 'perYear'; labelKey: 'week' | 'month' | 'halfyear' | 'year'; save?: string; emergency?: boolean }[] = [
-  { id: 'week', labelKey: 'week', suffixKey: 'perWeek', emergency: true },
-  { id: 'month', labelKey: 'month', suffixKey: 'perMonth' },
-  { id: 'halfyear', labelKey: 'halfyear', suffixKey: 'perHalfyear', save: '20%' },
-  { id: 'year', labelKey: 'year', suffixKey: 'perYear', save: '30%' },
-]
+type Plan = PlanDefinition
 
 // Feature comparison table rows: { labelKey, key, accessor }
 const COMPARISON: {
@@ -96,7 +68,7 @@ export function ModulePaywall() {
   const [currentPlanId, setCurrentPlanId] = useState<PlanId>('decouverte')
   const [subscription, setSubscription] = useState<{ expiresAt?: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [duration, setDuration] = useState<Duration>('month')
+  const [duration, setDuration] = useState<Exclude<Duration, 'week'>>('halfyear')
   const [activating, setActivating] = useState<PlanId | null>(null)
   const [restoring, setRestoring] = useState(false)
   const queueAction = useOfflineStore((s) => s.queueAction)
@@ -151,14 +123,7 @@ export function ModulePaywall() {
 
       if (isNative()) {
         // Native: use RevenueCat IAP
-        // Map UI duration → RevenueCat product id convention:
-        //   week → weekly, month → monthly, halfyear → seasonal, year → yearly
-        const durationSuffix =
-          duration === 'week' ? 'weekly'
-          : duration === 'halfyear' ? 'seasonal'
-          : duration === 'year' ? 'yearly'
-          : 'monthly'
-        const productId = `aqwelia_${planId}_${durationSuffix}`
+        const productId = `aqwelia_${planId}_${DURATION_TO_PROVIDER[duration]}`
         const result = await billing.purchase(productId)
         if (result.userCancelled) {
           toast({ title: t('purchaseCancelled'), description: t('purchaseCancelledDesc') })
@@ -176,12 +141,7 @@ export function ModulePaywall() {
           toast({ title: t('offline'), description: t('offlineDesc'), variant: 'destructive' })
           return
         }
-        const durationSuffix =
-          duration === 'week' ? 'weekly'
-          : duration === 'halfyear' ? 'seasonal'
-          : duration === 'year' ? 'yearly'
-          : 'monthly'
-        const productId = `stripe_${planId}_${durationSuffix}`
+        const productId = `${planId}_${DURATION_TO_PROVIDER[duration]}`
         const result = await api.post<{ url: string }>('/api/stripe/checkout', { productId })
         if (result?.url) {
           window.location.href = result.url
@@ -264,7 +224,7 @@ export function ModulePaywall() {
                 <span className="h-px w-8 bg-gold/40" />
               </div>
               <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-                {t('passTo', { plan: 'AQWELIA Oasis' })}
+                {t('passTo', { plan: 'AQWELIA Pool' })}
               </h1>
               <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
                 {t('heroSubtitle')}
@@ -280,44 +240,32 @@ export function ModulePaywall() {
         </CardContent>
       </Card>
 
-      {/* Duration selector */}
-      <div>
-        <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          <CreditCard className="h-3 w-3" />
-          {t('chooseDuration')}
-        </p>
-        <div className="custom-scroll flex gap-2 overflow-x-auto pb-1">
-          {DURATIONS.map((d) => (
-            <button
-              key={d.id}
-              onClick={() => setDuration(d.id)}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-all ${
-                duration === d.id
-                  ? 'border-gold/60 bg-gold/10 text-gold shadow-sm'
-                  : 'border-border bg-background hover:border-gold/30'
-              }`}
-            >
-              {t(d.labelKey)}
-              {d.emergency && (
-                <Badge variant="outline" className="border-primary/40 bg-primary/10 px-1.5 text-[9px] font-bold text-primary">
-                  {t('emergencyPass')}
-                </Badge>
-              )}
-              {d.save && (
-                <Badge variant="outline" className="border-gold/40 bg-gold/10 px-1.5 text-[9px] font-bold text-gold">
-                  -{d.save}
-                </Badge>
-              )}
-            </button>
-          ))}
-        </div>
+      {/* Plan cards */}
+      <div className="flex flex-wrap items-center justify-center gap-2 rounded-xl border border-border/60 bg-background/70 p-2">
+        {DURATIONS.map((option) => (
+          <Button
+            key={option.id}
+            type="button"
+            size="sm"
+            variant={duration === option.id ? 'default' : 'ghost'}
+            onClick={() => setDuration(option.id)}
+            className="relative"
+          >
+            {t(option.labelKey)}
+            {option.id === 'halfyear' && (
+              <Badge className="absolute -right-3 -top-3 bg-gold text-[8px] text-white">
+                {t('bestValue')}
+              </Badge>
+            )}
+          </Button>
+        ))}
       </div>
 
-      {/* Plan cards */}
       <div className="grid gap-4 lg:grid-cols-3">
         {paidPlans.map((plan) => {
           const isCurrent = plan.id === currentPlanId
           const highlighted = plan.highlighted
+          const advantage = getPriceAdvantage(plan, duration)
           return (
             <Card
               key={plan.id}
@@ -346,6 +294,14 @@ export function ModulePaywall() {
                     {t(DURATIONS.find((d) => d.id === duration)?.suffixKey || 'perMonth')}
                   </span>
                 </div>
+                {duration !== 'month' && (
+                  <div className="rounded-lg bg-emerald-500/10 px-3 py-2 text-[11px] text-emerald-700 dark:text-emerald-300">
+                    <strong>{t('savePercent', { percent: advantage.savedPercent })}</strong>
+                    {advantage.freeMonths >= 0.9 && (
+                      <> · {t('freeMonths', { months: Math.round(advantage.freeMonths) })}</>
+                    )}
+                  </div>
+                )}
                 <ul className="flex-1 space-y-1.5 text-xs">
                   {plan.featureKeys.map((f) => (
                     <li key={f} className="flex items-start gap-2">

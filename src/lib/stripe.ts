@@ -32,15 +32,8 @@ export function getStripe(): Stripe {
 // Each value MUST be created in the Stripe Dashboard and wired to the env var.
 // Keys are stable identifiers used by the client and the webhook metadata.
 //
-// Plan mapping (B2C — P1-TARIFS):
-//   oasis_*     → AQWELIA Oasis (1 piscine, analyses illimitées, mode pro)
-//   wellness_*  → AQWELIA Wellness (Oasis + spa + traitements spa)
-//
-// Durations:
-//   weekly   → Pass urgence 7j
-//   monthly  → 1 mois
-//   seasonal → 6 mois (saison)
-//   yearly   → 12 mois
+// Commercial names: oasis = Pool, spa365 = Spa, wellness = Complete.
+// The launch catalogue exposes monthly prices only.
 export type StripeProductId = `${Exclude<PlanId, 'decouverte'>}_${ReturnType<typeof providerDuration>}`
 
 function providerDuration(duration: Duration) { return DURATION_TO_PROVIDER[duration] }

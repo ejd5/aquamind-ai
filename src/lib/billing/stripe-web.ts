@@ -1,29 +1,20 @@
 import { api } from '@/lib/api-client'
 import type { BillingClient, Product, Entitlement, PurchaseResult, PlanId } from './types'
-import { PLANS, DURATION_TO_PROVIDER, type Duration } from './plans'
+import { PLANS, DURATION_TO_PROVIDER } from './plans'
 
-// Web (Stripe) product catalogue.
-// IDs mirror the Stripe Price IDs env-var names from src/lib/stripe.ts.
-//   stripe_oasis_weekly     → Pass urgence 7j (3,99 €)
-//   stripe_oasis_monthly    → Mensuel (9,99 €)
-//   stripe_oasis_seasonal   → Saison 6 mois (39,99 €)
-//   stripe_oasis_yearly     → Annuel (59,99 €)
-//   stripe_wellness_weekly  → Pass urgence 7j (5,99 €)
-//   stripe_wellness_monthly → Mensuel (14,99 €)
-//   stripe_wellness_seasonal→ Saison 6 mois (54,99 €)
-//   stripe_wellness_yearly  → Annuel (79,99 €)
+// Web launch catalogue: monthly subscriptions only.
 export const stripeWebClient: BillingClient = {
   async getProducts(): Promise<Product[]> {
-    return PLANS.filter(plan => plan.id !== 'decouverte' && plan.active).flatMap(plan =>
-      (Object.entries(plan.price) as [Duration, number][]).map(([duration, price]) => ({
-        id: `${plan.id}_${DURATION_TO_PROVIDER[duration]}`,
+    return PLANS.filter(plan => plan.id !== 'decouverte' && plan.active).map(plan =>
+      ({
+        id: `${plan.id}_monthly`,
         plan: plan.id,
-        duration: DURATION_TO_PROVIDER[duration],
-        price,
-        priceString: `${price.toFixed(2).replace('.', ',')} €`,
+        duration: DURATION_TO_PROVIDER.month,
+        price: plan.price.month,
+        priceString: `${plan.price.month.toFixed(2).replace('.', ',')} €`,
         currency: 'EUR',
-        trialAvailable: duration === 'year',
-      }))
+        trialAvailable: false,
+      })
     )
   },
 

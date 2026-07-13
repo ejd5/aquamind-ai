@@ -2,9 +2,8 @@
  * AQWELIA — Page /tarifs (standalone pricing page)
  *
  * Server component. Renders:
- *  - hero + duration selector + 3 plans (interactive, in PricingExplorer)
- *  - pass urgence card (in PricingExplorer)
- *  - comparison table (15+ functions × 3 plans)
+ *  - hero + four monthly plans (interactive, in PricingExplorer)
+ *  - comparison table (15+ functions × 4 plans)
  *  - FAQ tarifaire
  *  - moyens de paiement
  *  - conditions de résiliation
@@ -41,27 +40,27 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function TarifsPage() {
   const t = await getTranslations('tarifs')
 
-  // Comparison table rows: feature label + per-plan availability (D / O / W)
+  // Comparison table rows: feature label + Free / Pool / Spa / Complete.
   // 'yes' | 'no' | 'partial'
   type RowKind = 'yes' | 'no' | 'partial'
-  const ROWS: { label: string; d: RowKind; o: RowKind; w: RowKind }[] = [
-    { label: t('cmpRow1'), d: 'yes', o: 'yes', w: 'yes' },
-    { label: t('cmpRow2'), d: 'partial', o: 'yes', w: 'yes' },
-    { label: t('cmpRow3'), d: 'partial', o: 'yes', w: 'yes' },
-    { label: t('cmpRow4'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow5'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow6'), d: 'partial', o: 'yes', w: 'yes' },
-    { label: t('cmpRow7'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow8'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow9'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow10'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow11'), d: 'partial', o: 'yes', w: 'yes' },
-    { label: t('cmpRow12'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow13'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow14'), d: 'no', o: 'yes', w: 'yes' },
-    { label: t('cmpRow15'), d: 'no', o: 'no', w: 'yes' },
-    { label: t('cmpRow16'), d: 'no', o: 'no', w: 'yes' },
-    { label: t('cmpRow17'), d: 'no', o: 'no', w: 'yes' },
+  const ROWS: { label: string; free: RowKind; pool: RowKind; spa: RowKind; complete: RowKind }[] = [
+    { label: t('cmpRow1'), free: 'yes', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow2'), free: 'partial', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow3'), free: 'partial', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow4'), free: 'no', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow5'), free: 'no', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow6'), free: 'partial', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow7'), free: 'no', pool: 'yes', spa: 'no', complete: 'yes' },
+    { label: t('cmpRow8'), free: 'no', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow9'), free: 'no', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow10'), free: 'no', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow11'), free: 'partial', pool: 'yes', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow12'), free: 'no', pool: 'yes', spa: 'no', complete: 'yes' },
+    { label: t('cmpRow13'), free: 'no', pool: 'yes', spa: 'no', complete: 'yes' },
+    { label: t('cmpRow14'), free: 'no', pool: 'yes', spa: 'no', complete: 'yes' },
+    { label: t('cmpRow15'), free: 'no', pool: 'no', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow16'), free: 'no', pool: 'no', spa: 'yes', complete: 'yes' },
+    { label: t('cmpRow17'), free: 'no', pool: 'no', spa: 'yes', complete: 'yes' },
   ]
 
   const FAQ = [
@@ -72,6 +71,14 @@ export default async function TarifsPage() {
     { q: t('faq5Q'), a: t('faq5A') },
     { q: t('faq6Q'), a: t('faq6A') },
     { q: t('faq7Q'), a: t('faq7A') },
+  ]
+
+  const CHOICE_ROWS = [
+    { label: t('choiceRowStart'), aqwelia: t('choiceStartA'), hardware: t('choiceStartH'), pro: t('choiceStartP') },
+    { label: t('choiceRowCost'), aqwelia: t('choiceCostA'), hardware: t('choiceCostH'), pro: t('choiceCostP') },
+    { label: t('choiceRowAvailability'), aqwelia: t('choiceAvailabilityA'), hardware: t('choiceAvailabilityH'), pro: t('choiceAvailabilityP') },
+    { label: t('choiceRowAction'), aqwelia: t('choiceActionA'), hardware: t('choiceActionH'), pro: t('choiceActionP') },
+    { label: t('choiceRowBestFor'), aqwelia: t('choiceBestA'), hardware: t('choiceBestH'), pro: t('choiceBestP') },
   ]
 
   return (
@@ -130,6 +137,9 @@ export default async function TarifsPage() {
                     {t('cmpColO')}
                   </th>
                   <th className="p-4 text-center font-display font-bold text-foreground">
+                    {t('cmpColS')}
+                  </th>
+                  <th className="p-4 text-center font-display font-bold text-foreground">
                     {t('cmpColW')}
                   </th>
                 </tr>
@@ -141,9 +151,10 @@ export default async function TarifsPage() {
                     className={`border-b border-border/30 last:border-0 ${idx % 2 === 1 ? 'bg-background/30' : ''}`}
                   >
                     <td className="p-4 text-left text-muted-foreground">{row.label}</td>
-                    <td className="p-4 text-center"><CellIcon kind={row.d} /></td>
-                    <td className="bg-gold/5 p-4 text-center"><CellIcon kind={row.o} /></td>
-                    <td className="p-4 text-center"><CellIcon kind={row.w} /></td>
+                    <td className="p-4 text-center"><CellIcon kind={row.free} /></td>
+                    <td className="bg-gold/5 p-4 text-center"><CellIcon kind={row.pool} /></td>
+                    <td className="p-4 text-center"><CellIcon kind={row.spa} /></td>
+                    <td className="p-4 text-center"><CellIcon kind={row.complete} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -151,6 +162,64 @@ export default async function TarifsPage() {
           </div>
         </div>
         <p className="mt-3 text-center text-xs text-muted-foreground">{t('cmpLegend')}</p>
+      </section>
+
+      {/* AQWELIA vs hardware vs professional service */}
+      <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
+        <div className="mb-8 text-center">
+          <p className="section-label">{t('choiceEyebrow')}</p>
+          <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+            {t('choiceTitle')}
+          </h2>
+          <p className="mx-auto mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+            {t('choiceIntro')}
+          </p>
+        </div>
+
+        <div className="glass-card overflow-hidden rounded-2xl">
+          <div className="overflow-x-auto custom-scroll">
+            <table className="w-full min-w-[760px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-border/40">
+                  <th className="p-4 text-left font-display font-bold">{t('choiceCriterion')}</th>
+                  <th className="bg-gold/10 p-4 text-left font-display font-bold text-gold">AQWELIA</th>
+                  <th className="p-4 text-left font-display font-bold">{t('choiceHardware')}</th>
+                  <th className="p-4 text-left font-display font-bold">{t('choiceProfessional')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {CHOICE_ROWS.map((row, index) => (
+                  <tr key={row.label} className={`border-b border-border/30 last:border-0 ${index % 2 ? 'bg-background/30' : ''}`}>
+                    <td className="p-4 font-semibold text-foreground">{row.label}</td>
+                    <td className="bg-gold/5 p-4 text-foreground">{row.aqwelia}</td>
+                    <td className="p-4 text-muted-foreground">{row.hardware}</td>
+                    <td className="p-4 text-muted-foreground">{row.pro}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-5 md:grid-cols-2">
+          <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6">
+            <h3 className="font-display text-xl font-bold">{t('fairTitle')}</h3>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{t('fairBody')}</p>
+          </div>
+          <div className="rounded-2xl border border-gold/30 bg-gold/5 p-6">
+            <h3 className="font-display text-xl font-bold">{t('partnerTitle')}</h3>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{t('partnerBody')}</p>
+            <Link href="/partenaires/piscinistes" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-gold hover:underline">
+              {t('partnerCta')} <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          {t('choiceSourceNote')}{' '}
+          <a className="underline hover:text-foreground" href="https://us.ondilo.com/product/ico-pool/" target="_blank" rel="noreferrer">Ondilo ICO</a>
+          {' · '}
+          <a className="underline hover:text-foreground" href="https://www.travaux.com/jardin-et-exterieur/guide-des-prix/prix-de-lentretien-dune-piscine" target="_blank" rel="noreferrer">Travaux.com</a>
+        </p>
       </section>
 
       {/* Payment methods + cancellation */}
