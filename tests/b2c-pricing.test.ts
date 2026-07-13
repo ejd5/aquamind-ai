@@ -40,4 +40,12 @@ describe('AQWELIA B2C launch pricing', () => {
     expect(advantage.freeMonths).toBeCloseTo(0.99, 1)
     expect(pool.price.year).toBeLessThan(pool.price.halfyear * 2)
   })
+
+  it('keeps the Pool plan promise aligned with its one-pool server limit', () => {
+    const pool = PLANS.find((plan) => plan.id === 'oasis')!
+    expect(pool.featureKeys).toContain('oasis.features.1pool')
+    expect(pool.featureKeys).not.toContain('oasis.features.3pools')
+    expect(pool.limits.maxPools).toBe(1)
+    expect(pool.limits.multiPool).toBe(false)
+  })
 })

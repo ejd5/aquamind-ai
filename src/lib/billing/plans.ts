@@ -183,7 +183,7 @@ export const PLANS: PlanDefinition[] = [
       'Mode pro (LSI avancé)',
     ],
     featureKeys: [
-      'oasis.features.3pools',
+      'oasis.features.1pool',
       'oasis.features.unlimitedTests',
       'oasis.features.personalizedRecos',
       'oasis.features.dosageCalc',
@@ -208,7 +208,7 @@ export const PLANS: PlanDefinition[] = [
       weatherEnabled: true,
       smartReminders: true,
       guidesAccess: 'all_plus_video',
-      multiPool: true,
+      multiPool: false,
       pdfReport: true,
       proMode: true,
       historyDays: 9999,
