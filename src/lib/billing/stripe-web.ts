@@ -2,7 +2,8 @@ import { api } from '@/lib/api-client'
 import type { BillingClient, Product, Entitlement, PurchaseResult, PlanId } from './types'
 import { PLANS, DURATION_TO_PROVIDER } from './plans'
 
-// Web launch catalogue: monthly subscriptions only.
+// The public catalogue exposes every validated duration. Checkout accepts the
+// exact product ID selected by the pricing UI.
 export const stripeWebClient: BillingClient = {
   async getProducts(): Promise<Product[]> {
     return PLANS.filter(plan => plan.id !== 'decouverte' && plan.active).map(plan =>

@@ -5,6 +5,7 @@ import {
   getPriceAdvantage,
   getPlanFromRCProductId,
   getPlanFromWebProductId,
+  getWebProductId,
 } from '@/lib/billing/plans'
 
 describe('AQWELIA B2C launch pricing', () => {
@@ -24,6 +25,10 @@ describe('AQWELIA B2C launch pricing', () => {
     expect(getPlanFromWebProductId('wellness_seasonal')).toEqual({ plan: 'wellness', duration: 'halfyear' })
     expect(getPlanFromWebProductId('oasis_yearly')).toEqual({ plan: 'oasis', duration: 'year' })
     expect(getPlanFromWebProductId('oasis_weekly')).toBeNull()
+    expect(getWebProductId('oasis', 'month')).toBe('oasis_monthly')
+    expect(getWebProductId('spa365', 'quarter')).toBe('spa365_quarterly')
+    expect(getWebProductId('wellness', 'halfyear')).toBe('wellness_seasonal')
+    expect(getWebProductId('oasis', 'year')).toBe('oasis_yearly')
   })
 
   it('maps the exact RevenueCat product catalog', () => {

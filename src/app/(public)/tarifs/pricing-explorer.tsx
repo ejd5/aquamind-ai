@@ -3,10 +3,11 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowRight, BadgeCheck, Check, CreditCard, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowRight, BadgeCheck, Check, CreditCard, Loader2, ShieldCheck, Sparkles } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { PLANS, DURATIONS, type PlanId, type Duration } from '@/lib/pool/freemium'
 import { getPriceAdvantage } from '@/lib/billing/plans'
+import { useStripeCheckout } from '@/hooks/use-stripe-checkout'
 
 const PLAN_ACCENTS: Record<string, string> = {
   oasis: 'from-cyan-400 via-teal-500 to-emerald-500',
@@ -19,6 +20,7 @@ export function PricingExplorer() {
   const tPlan = useTranslations('plans')
   const locale = useLocale()
   const [duration, setDuration] = useState<Exclude<Duration, 'week'>>('halfyear')
+  const { startCheckout, isCheckoutPending } = useStripeCheckout()
   const paidPlans = ['oasis', 'spa365', 'wellness'].map((id) => PLANS.find((plan) => plan.id === id)!)
   const freePlan = PLANS.find((plan) => plan.id === 'decouverte')!
 
@@ -62,6 +64,8 @@ export function PricingExplorer() {
           const tagline = tPlan(`${plan.id}.tagline` as const)
           const visibleFeatures = plan.featureKeys.slice(0, 8)
           const isPopular = plan.id === 'oasis'
+          const paidPlanId = plan.id as Exclude<PlanId, 'decouverte'>
+          const checkoutPending = isCheckoutPending(paidPlanId, duration)
 
           return (
             <motion.article
@@ -106,9 +110,9 @@ export function PricingExplorer() {
                   ) : <p className="mt-4 text-xs text-muted-foreground">{tPlan('monthlyFreedom')}</p>}
                 </div>
 
-                <Link href="/#tarifs" className={`mt-6 inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-extrabold transition-all duration-300 active:scale-[0.98] ${isPopular ? 'bg-gradient-to-r from-primary to-teal-700 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30' : 'border border-primary/25 bg-primary/[0.06] text-foreground hover:border-primary/50 hover:bg-primary/[0.11]'}`}>
-                  {t('ctaPaid')} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Link>
+                <button type="button" onClick={() => startCheckout(paidPlanId, duration)} disabled={checkoutPending} className={`mt-6 inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-extrabold transition-all duration-300 active:scale-[0.98] disabled:cursor-wait disabled:opacity-70 ${isPopular ? 'bg-gradient-to-r from-primary to-teal-700 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30' : 'border border-primary/25 bg-primary/[0.06] text-foreground hover:border-primary/50 hover:bg-primary/[0.11]'}`}>
+                  {t('ctaPaid')} {checkoutPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />}
+                </button>
 
                 <div className="mt-7 flex-1">
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">{tPlan('included')}</p>
