@@ -728,7 +728,8 @@
     "carePreviewStep3Text": "A app verifica se o produto é compatível com o seu tratamento, o seu equipamento e os seus outros produtos.",
     "carePreviewStep4": "O produto pode ser adicionado ao carrinho",
     "carePreviewStep4Text": "Após validação, adicione o produto ao carrinho com um clique e compre-o onde quiser.",
-    "carePreviewCta": "Descobrir a AQWELIA Care"
+    "carePreviewCta": "Descobrir a AQWELIA Care",
+    "errorTitle": "Erro"
   },
   "plans": {
     "free": {

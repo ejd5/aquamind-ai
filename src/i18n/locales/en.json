@@ -820,7 +820,8 @@
     "footerComingSoon": "coming soon",
     "disclaimerLabel": "Disclaimer.",
     "heroPhoneChlorine": "Chlorine",
-    "heroTitleLine2": ""
+    "heroTitleLine2": "",
+    "errorTitle": "Error"
   },
   "plans": {
     "free": {

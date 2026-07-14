@@ -728,7 +728,8 @@
     "carePreviewStep3Text": "Die App überprüft, ob das Produkt mit Ihrer Behandlung, Ihrer Ausrüstung und Ihren anderen Produkten kompatibel ist.",
     "carePreviewStep4": "Das Produkt kann in den Warenkorb",
     "carePreviewStep4Text": "Sobald validiert, legen Sie das Produkt mit einem Klick in den Warenkorb und kaufen es, wo Sie möchten.",
-    "carePreviewCta": "AQWELIA Care entdecken"
+    "carePreviewCta": "AQWELIA Care entdecken",
+    "errorTitle": "Fehler"
   },
   "plans": {
     "free": {

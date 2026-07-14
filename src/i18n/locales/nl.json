@@ -728,7 +728,8 @@
     "carePreviewStep3Text": "De app verifieert dat het product compatibel is met uw behandeling, uw apparatuur en uw andere producten.",
     "carePreviewStep4": "Het product kan aan het winkelmandje worden toegevoegd",
     "carePreviewStep4Text": "Eenmaal gevalideerd, voegt u het product met één klik toe aan het winkelmandje en koopt u het waar u wilt.",
-    "carePreviewCta": "AQWELIA Care ontdekken"
+    "carePreviewCta": "AQWELIA Care ontdekken",
+    "errorTitle": "Fout"
   },
   "plans": {
     "free": {
