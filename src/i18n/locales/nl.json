@@ -808,7 +808,7 @@
     "month": "1 maand",
     "quarter": "3 maanden",
     "halfyear": "6 maanden",
-    "year": "1 jaar",
+    "year": "12 maanden",
     "perWeek": "per week",
     "perMonth": "/maand",
     "perQuarter": "/3 maanden",
@@ -817,7 +817,12 @@
     "bestValue": "Beste keuze",
     "pricingIntro": "Drie gespecialiseerde copiloten, een duidelijke keuze en geen verplichte hardware. Kies uw omgeving en gewenste looptijd.",
     "billingNote": "Prijs inclusief btw voor de gekozen periode. Verlenging kan op elk moment worden uitgeschakeld.",
-    "durationHint": { "month": "Maximale vrijheid", "quarter": "Om te starten", "halfyear": "Beste keuze", "year": "Jaarlijks comfort" },
+    "durationHint": {
+      "month": "Maximale vrijheid",
+      "quarter": "Om te starten",
+      "halfyear": "Beste keuze",
+      "year": "Jaarlijks comfort"
+    },
     "monthlyFreedom": "De meest flexibele optie, maandelijks verlengbaar.",
     "included": "Wat is inbegrepen",
     "moreBenefits": "+ {count} extra voordelen in dit aanbod",
@@ -1002,8 +1007,6 @@
         "3profiles": "Tot 3 profielen (zwembad + spa)"
       }
     },
-    "year": "12 maanden",
-    "perYear": "/jaar",
     "emergencyPass": "Spoedpass",
     "trialBadge": "7 dagen gratis",
     "trialLabel": "Gratis proefperiode",
@@ -4426,7 +4429,7 @@
     "mod10B2": "Voorraadherinneringen (lage voorraad)",
     "mod10B3": "Schema herinneringen (wekelijks / maandelijks)",
     "mod11Title": "Pas & paywall",
-    "mod11Desc": "7-daagse noodpas zonder verplichting + 3 abonnementen (Free / Pool / Complete) met proefperiodes.",
+    "mod11Desc": "3 abonnementen (Free / Pool / Spa / Complete) zonder Premium-proefperiode. Free is voor altijd gratis.",
     "mod11B1": "Noodpas €3.99 / 7 dagen",
     "mod11B2": "Gratis Free proefperiode",
     "mod11B3": "Veilige Stripe betaling",
@@ -4576,7 +4579,7 @@
     "faq7Q": "Accepteren jullie zakelijke betalingen?",
     "faq7A": "Voor professioneel gebruik (zwembadprofessionals, beheerders), neem contact met ons op via het /contactformulier of de /pro/early-access-pagina voor een op maat gemaakte offerte.",
     "ctaTitle": "Klaar om te beginnen?",
-    "ctaSubtitle": "Start met Free en kies daarna Pool, Spa of Complete. Maandelijks opzegbaar.",
+    "ctaSubtitle": "Begin met Free, kies dan Pool, Spa of Complete voor 1, 3, 6 of 12 maanden. Op elk moment opzegbaar.",
     "ctaPrimary": "Gratis beginnen",
     "ctaSecondary": "Neem contact op",
     "cmpColS": "Spa",
@@ -5351,7 +5354,7 @@
     "feature6Title": "Slimme herinneringen",
     "feature6Desc": "Lozing, filter, behandeling, test. Mis geen onderhoud meer.",
     "ctaTitle": "Klaar om uw spa als een pro te beheren?",
-    "ctaSubtitle": "Spa, 6,99 €/maand of 49,99 €/jaar. Zonder verplichting, in 1 klik opzegbaar.",
+    "ctaSubtitle": "Spa, 4,99 €/maand of 44,99 €/jaar. Zonder verplichting, opzegbaar in 1 klik.",
     "ctaPrimary": "Spa ontdekken",
     "ctaSecondary": "Alle prijzen bekijken"
   },

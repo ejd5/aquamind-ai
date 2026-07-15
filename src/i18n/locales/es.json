@@ -808,7 +808,7 @@
     "month": "1 mes",
     "quarter": "3 meses",
     "halfyear": "6 meses",
-    "year": "1 año",
+    "year": "12 meses",
     "perWeek": "/semana",
     "perMonth": "/mes",
     "perQuarter": "/3 meses",
@@ -817,7 +817,12 @@
     "bestValue": "Mejor opción",
     "pricingIntro": "Tres copilotos especializados, una elección clara y ningún equipo obligatorio. Elige tu universo y la duración adecuada.",
     "billingNote": "Precio con impuestos para todo el periodo seleccionado. La renovación puede desactivarse en cualquier momento.",
-    "durationHint": { "month": "Máxima libertad", "quarter": "Para empezar", "halfyear": "Mejor opción", "year": "Confort anual" },
+    "durationHint": {
+      "month": "Máxima libertad",
+      "quarter": "Para empezar",
+      "halfyear": "Mejor opción",
+      "year": "Confort anual"
+    },
     "monthlyFreedom": "La opción más flexible, renovable cada mes.",
     "included": "Qué incluye",
     "moreBenefits": "+ {count} ventajas más en esta oferta",
@@ -1002,8 +1007,6 @@
         "3profiles": "Hasta 3 perfiles (piscina + spa)"
       }
     },
-    "year": "12 meses",
-    "perYear": "/año",
     "emergencyPass": "Pass urgencia",
     "trialBadge": "7 días gratis",
     "trialLabel": "Prueba gratis",
@@ -4426,7 +4429,7 @@
     "mod10B2": "Recordatorios de stock (inventario bajo)",
     "mod10B3": "Recordatorios programados (semanal / mensual)",
     "mod11Title": "Pase y muro de pago",
-    "mod11Desc": "Pase de emergencia de 7 días sin compromiso + 3 suscripciones (Free / Pool / Complete) con periodos de prueba.",
+    "mod11Desc": "3 suscripciones (Free / Pool / Spa / Complete) sin período de prueba Premium. Free es gratis para siempre.",
     "mod11B1": "Pase de emergencia €3.99 / 7 días",
     "mod11B2": "Prueba gratuita Free",
     "mod11B3": "Pago seguro con Stripe",
@@ -4576,7 +4579,7 @@
     "faq7Q": "¿Aceptan pagos de empresas?",
     "faq7A": "Para uso profesional (profesionales de piscinas, administradores de propiedades), contáctenos a través del formulario /contact o la página /pro/early-access para un presupuesto personalizado.",
     "ctaTitle": "¿Listo para empezar?",
-    "ctaSubtitle": "Empieza con Free y elige Pool, Spa o Complete. Suscripciones mensuales sin compromiso.",
+    "ctaSubtitle": "Empieza con Free, luego elige Pool, Spa o Complete para 1, 3, 6 o 12 meses. Cancelable en cualquier momento.",
     "ctaPrimary": "Comenzar gratis",
     "ctaSecondary": "Contáctanos",
     "cmpColS": "Spa",
@@ -5351,7 +5354,7 @@
     "feature6Title": "Recordatorios inteligentes",
     "feature6Desc": "Vaciado, filtro, tratamiento, test. No te pierdas ningún mantenimiento.",
     "ctaTitle": "¿Listo para gestionar tu spa como un pro?",
-    "ctaSubtitle": "Spa, 6,99 €/mes o 49,99 €/año. Sin compromiso, cancelable en 1 clic.",
+    "ctaSubtitle": "Spa, 4,99 €/mes o 44,99 €/año. Sin compromiso, cancelable en 1 clic.",
     "ctaPrimary": "Descubrir Spa",
     "ctaSecondary": "Ver todos los precios"
   },

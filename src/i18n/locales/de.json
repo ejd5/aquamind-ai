@@ -808,7 +808,7 @@
     "month": "1 Monat",
     "quarter": "3 Monate",
     "halfyear": "6 Monate",
-    "year": "1 Jahr",
+    "year": "12 Monate",
     "perWeek": "/Woche",
     "perMonth": "/Monat",
     "perQuarter": "/3 Monate",
@@ -817,7 +817,12 @@
     "bestValue": "Beste Wahl",
     "pricingIntro": "Drei spezialisierte Copiloten, eine klare Auswahl und keine vorgeschriebene Hardware. Wählen Sie Ihren Bereich und Ihre Laufzeit.",
     "billingNote": "Preis inkl. MwSt. für den gewählten Zeitraum. Die Verlängerung kann jederzeit deaktiviert werden.",
-    "durationHint": { "month": "Maximale Freiheit", "quarter": "Einfach starten", "halfyear": "Beste Wahl", "year": "Komfort das ganze Jahr" },
+    "durationHint": {
+      "month": "Maximale Freiheit",
+      "quarter": "Einfach starten",
+      "halfyear": "Beste Wahl",
+      "year": "Komfort das ganze Jahr"
+    },
     "monthlyFreedom": "Die flexibelste Option mit monatlicher Verlängerung.",
     "included": "Enthalten",
     "moreBenefits": "+ {count} weitere Vorteile in diesem Angebot",
@@ -1002,8 +1007,6 @@
         "3profiles": "Bis zu 3 Profile (Pool + Spa)"
       }
     },
-    "year": "12 Monate",
-    "perYear": "/Jahr",
     "emergencyPass": "Notfall-Pass",
     "trialBadge": "7 Tage kostenlos",
     "trialLabel": "Kostenlose Testphase",
@@ -4426,7 +4429,7 @@
     "mod10B2": "Vorratserinnerungen (niedriger Vorrat)",
     "mod10B3": "Zeitplanerinnerungen (wöchentlich / monatlich)",
     "mod11Title": "Pass & Paywall",
-    "mod11Desc": "7-Tage-Notfallpass ohne Verpflichtung + 3 Abonnements (Free / Pool / Complete) mit Testphasen.",
+    "mod11Desc": "3 Abonnements (Free / Pool / Spa / Complete) ohne Premium-Testzeitraum. Free ist für immer kostenlos.",
     "mod11B1": "Notfallpass €3.99 / 7 Tage",
     "mod11B2": "Kostenlose Free-Testphase",
     "mod11B3": "Sichere Stripe-Zahlung",
@@ -4576,7 +4579,7 @@
     "faq7Q": "Akzeptieren Sie Geschäftszahlungen?",
     "faq7A": "Für den professionellen Einsatz (Pool-Profis, Verwalter) kontaktieren Sie uns über das /contact-Formular oder die /pro/early-access-Seite für ein individuelles Angebot.",
     "ctaTitle": "Bereit loszulegen?",
-    "ctaSubtitle": "Starten Sie mit Free und wählen Sie dann Pool, Spa oder Complete. Monatlich kündbar.",
+    "ctaSubtitle": "Starten Sie mit Free, dann wählen Sie Pool, Spa oder Complete für 1, 3, 6 oder 12 Monate. Jederzeit kündbar.",
     "ctaPrimary": "Kostenlos starten",
     "ctaSecondary": "Kontaktieren Sie uns",
     "cmpColS": "Spa",
@@ -5351,7 +5354,7 @@
     "feature6Title": "Intelligente Erinnerungen",
     "feature6Desc": "Entleerung, Filter, Behandlung, Test. Verpassen Sie keine Wartung mehr.",
     "ctaTitle": "Bereit, Ihren Spa wie ein Profi zu verwalten?",
-    "ctaSubtitle": "Spa, 6,99 €/Monat oder 49,99 €/Jahr. Ohne Verpflichtung, in 1 Klick kündbar.",
+    "ctaSubtitle": "Spa, 4,99 €/Monat oder 44,99 €/Jahr. Ohne Verpflichtung, in 1 Klick kündbar.",
     "ctaPrimary": "Spa entdecken",
     "ctaSecondary": "Alle Preise ansehen"
   },
