@@ -30,9 +30,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: msg }, { status: 404 })
     }
 
+    // Use the request origin (dynamic) instead of process.env.NEXTAUTH_URL,
+    // which is often missing or scoped to Production only on Vercel Preview.
+    const origin = req.nextUrl.origin
+    if (!origin.startsWith('http')) {
+      const msg = await translate(locale, 'common.errors.stripeError', 'Erreur Stripe')
+      return NextResponse.json({ error: msg }, { status: 500 })
+    }
+
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customers.data[0].id,
-      return_url: `${process.env.NEXTAUTH_URL}/`,
+      return_url: `${origin}/`,
     })
 
     return NextResponse.json({ url: portalSession.url })
