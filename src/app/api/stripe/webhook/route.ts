@@ -48,13 +48,19 @@ async function handleStripeEvent(event: any): Promise<HandlerResult> {
     case 'checkout.session.completed': {
       const cs = event.data.object
       // BLOCAGE 5: verify payment_status
-      if (cs.payment_status !== 'paid') return { result: 'ignored', reason: 'payment_not_paid' }
+      if (cs.payment_status !== 'paid') {
+        return { result: 'ignored', reason: 'payment_not_paid' }
+      }
 
       const userId = cs.metadata?.userId || cs.client_reference_id
-      if (!userId) return { result: 'ignored', reason: 'missing_user_mapping' }
+      if (!userId) {
+        return { result: 'ignored', reason: 'missing_user_mapping' }
+      }
 
       const stripeSubId = cs.subscription as string | null
-      if (!stripeSubId) return { result: 'ignored', reason: 'no_subscription_link' }
+      if (!stripeSubId) {
+        return { result: 'ignored', reason: 'no_subscription_link' }
+      }
 
       // BLOCAGE 5: retrieve the REAL Stripe Subscription to get Price ID, status, trial, periods
       let stripeSub
@@ -70,7 +76,9 @@ async function handleStripeEvent(event: any): Promise<HandlerResult> {
 
       // BLOCAGE 5: read Price ID from subscription items (not from metadata)
       const priceId = stripeSub.items?.data?.[0]?.price?.id || ''
-      if (!priceId) return { result: 'ignored', reason: 'unknown_price' }
+      if (!priceId) {
+        return { result: 'ignored', reason: 'unknown_price' }
+      }
 
       const planInfo = getPlanFromStripePriceId(priceId)
       if (!planInfo) {

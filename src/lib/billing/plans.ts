@@ -569,6 +569,13 @@ export function getPlanFromWebProductId(productId: string): { plan: PlanId; dura
   return null
 }
 
+export function getWebProductId(
+  planId: Exclude<PlanId, 'decouverte'>,
+  duration: Exclude<Duration, 'week'>
+): string {
+  return `${planId}_${DURATION_TO_PROVIDER[duration]}`
+}
+
 // ─── Duration display (legacy compat) ───────────────────────────────────────
 
 export const DURATIONS = [

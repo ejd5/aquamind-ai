@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 import {
   DURATIONS,
   PLANS,
   getPriceAdvantage,
   getPlanFromRCProductId,
   getPlanFromWebProductId,
+  getWebProductId,
 } from '@/lib/billing/plans'
 
 describe('AQWELIA B2C launch pricing', () => {
@@ -24,6 +26,10 @@ describe('AQWELIA B2C launch pricing', () => {
     expect(getPlanFromWebProductId('wellness_seasonal')).toEqual({ plan: 'wellness', duration: 'halfyear' })
     expect(getPlanFromWebProductId('oasis_yearly')).toEqual({ plan: 'oasis', duration: 'year' })
     expect(getPlanFromWebProductId('oasis_weekly')).toBeNull()
+    expect(getWebProductId('oasis', 'month')).toBe('oasis_monthly')
+    expect(getWebProductId('spa365', 'quarter')).toBe('spa365_quarterly')
+    expect(getWebProductId('wellness', 'halfyear')).toBe('wellness_seasonal')
+    expect(getWebProductId('oasis', 'year')).toBe('oasis_yearly')
   })
 
   it('maps the exact RevenueCat product catalog', () => {
@@ -47,5 +53,19 @@ describe('AQWELIA B2C launch pricing', () => {
     expect(pool.featureKeys).not.toContain('oasis.features.3pools')
     expect(pool.limits.maxPools).toBe(1)
     expect(pool.limits.multiPool).toBe(false)
+  })
+
+  it('exposes landing.errorTitle in every supported locale', () => {
+    // Regression: use-stripe-checkout.ts calls t('errorTitle') with the
+    // 'landing' namespace. If the key is missing, the raw key is shown to
+    // users instead of a translated title.
+    const locales = ['fr', 'en', 'es', 'de', 'it', 'pt', 'nl']
+    for (const loc of locales) {
+      const data = JSON.parse(
+        readFileSync(`src/i18n/locales/${loc}.json`, 'utf-8'),
+      ) as Record<string, Record<string, string>>
+      expect(data.landing?.errorTitle, `locale=${loc}`).toBeTruthy()
+      expect(typeof data.landing.errorTitle).toBe('string')
+    }
   })
 })

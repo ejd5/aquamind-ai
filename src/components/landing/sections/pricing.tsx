@@ -8,13 +8,15 @@ import {
   Check,
   CreditCard,
   Lock,
+  Loader2,
   RotateCcw,
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { PLANS, DURATIONS } from '@/lib/pool/freemium'
-import { getPriceAdvantage } from '@/lib/billing/plans'
+import { getPriceAdvantage, type PlanId } from '@/lib/billing/plans'
+import { useStripeCheckout } from '@/hooks/use-stripe-checkout'
 import { Reveal, SectionHeading, scrollToId } from '../landing-utils'
 
 interface PricingProps {
@@ -37,11 +39,12 @@ const PLAN_ACCENTS: Record<string, string> = {
   wellness: 'from-indigo-400 via-violet-500 to-fuchsia-500',
 }
 
-export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
+export function Pricing({ onEnterApp }: PricingProps) {
   const t = useTranslations('landing')
   const tPlans = useTranslations('plans')
   const locale = useLocale()
   const [duration, setDuration] = useState<DurationId>('halfyear')
+  const { startCheckout, isCheckoutPending } = useStripeCheckout()
 
   const paidPlans = ['oasis', 'spa365', 'wellness'].map((id) => PLANS.find((plan) => plan.id === id)!)
   const freePlan = PLANS.find((plan) => plan.id === 'decouverte')!
@@ -103,6 +106,8 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
             const visibleFeatures = planFeatures.slice(0, 8)
             const advantage = getPriceAdvantage(plan, duration)
             const isPopular = plan.id === 'oasis'
+            const paidPlanId = plan.id as Exclude<PlanId, 'decouverte'>
+            const checkoutPending = isCheckoutPending(paidPlanId, duration)
 
             return (
               <motion.article
@@ -173,15 +178,21 @@ export function Pricing({ hasProfile, onEnterApp }: PricingProps) {
                   </div>
 
                   <button
-                    onClick={onEnterApp}
+                    type="button"
+                    onClick={() => startCheckout(paidPlanId, duration)}
+                    disabled={checkoutPending}
                     className={`mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-extrabold transition-all duration-300 active:scale-[0.98] ${
                       isPopular
                         ? 'bg-gradient-to-r from-primary to-teal-700 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30'
                         : 'border border-primary/25 bg-primary/[0.06] text-foreground hover:border-primary/50 hover:bg-primary/[0.11]'
                     }`}
                   >
-                    {hasProfile ? t('pricingCtaAccess') : t('pricingCtaStart')}
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    {t('pricingCtaStart')}
+                    {checkoutPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    )}
                   </button>
 
                   <div className="mt-7 flex-1">
