@@ -47,6 +47,10 @@ export async function POST(req: NextRequest) {
       line_items: [{ price: priceId, quantity: 1 }],
       customer_email: session.user.email || undefined,
       client_reference_id: session.user.id,
+      // Force the Stripe Checkout language to match the AQWELIA locale.
+      // Without this, Stripe auto-detects from browser/IP and may display
+      // in an unexpected language (e.g. Chinese for users in Asia).
+      locale: locale,
       metadata: {
         userId: session.user.id,
         productId,
