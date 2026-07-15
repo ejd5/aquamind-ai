@@ -25,8 +25,15 @@ export async function POST(req: NextRequest) {
   let event
   try {
     event = getStripe().webhooks.constructEvent(body, signature, webhookSecret)
-  } catch {
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+  } catch (err) {
+    // TEMP DEBUG: expose the exact signature error to diagnose Vercel Preview
+    // config issues. Remove before merging to main.
+    const errMsg = err instanceof Error ? err.message : 'unknown error'
+    const secretPreview = webhookSecret ? webhookSecret.slice(0, 10) + '...' : '(empty)'
+    return NextResponse.json(
+      { error: 'Invalid signature', debug: { message: errMsg, secretPrefix: secretPreview, secretLength: webhookSecret?.length || 0, signaturePrefix: signature.slice(0, 30) + '...' } },
+      { status: 400 }
+    )
   }
 
   const result = await processEventIdempotently({
