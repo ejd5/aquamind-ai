@@ -21,12 +21,20 @@ export const stripeWebClient: BillingClient = {
 
   async getEntitlements(): Promise<Entitlement[]> {
     try {
-      const sub = await api.get<{ plan: PlanId; subscription?: { active: boolean; expiresAt?: string } }>('/api/subscription')
+      // /api/subscription returns:
+      //   plan: PlanDefinition (full object with id, name, price, ...)
+      //   subscription.plan: PlanId (string, e.g. "spa365")
+      // We must use subscription.plan (the string) for entitlement matching,
+      // NOT plan (the object) — otherwise `plan === 'spa365'` is always false.
+      const sub = await api.get<{ plan: PlanId; subscription?: { active: boolean; plan?: PlanId; expiresAt?: string } }>('/api/subscription')
       if (!sub?.subscription?.active) return []
+      const planId: PlanId = sub.subscription?.plan || (typeof sub.plan === 'string' ? sub.plan : 'decouverte')
+      // Entitlement.id only accepts paid plan IDs (not 'decouverte')
+      const entitlementId = (['oasis', 'wellness', 'spa365'].includes(planId) ? planId : 'oasis') as 'oasis' | 'wellness' | 'spa365'
       return [
         {
-          id: sub.plan === 'spa365' ? 'spa365' : sub.plan === 'wellness' ? 'wellness' : 'oasis',
-          plan: sub.plan,
+          id: entitlementId,
+          plan: planId,
           isActive: true,
           willRenew: true,
           expiresAt: sub.subscription.expiresAt ? new Date(sub.subscription.expiresAt) : undefined,
