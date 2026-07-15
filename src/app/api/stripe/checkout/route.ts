@@ -31,6 +31,16 @@ export async function POST(req: NextRequest) {
   try {
     const stripe = getStripe()
 
+    // Use the request origin (dynamic) instead of process.env.NEXTAUTH_URL,
+    // which is often missing or scoped to Production only on Vercel Preview.
+    // req.nextUrl.origin returns the full URL including scheme + host, so
+    // success/cancel URLs work correctly across Production, Preview and local.
+    const origin = req.nextUrl.origin
+    if (!origin.startsWith('http')) {
+      const msg = await translate(locale, 'common.errors.stripeError', 'Erreur Stripe')
+      return NextResponse.json({ error: msg }, { status: 500 })
+    }
+
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -42,8 +52,8 @@ export async function POST(req: NextRequest) {
         productId,
         plan: product.plan,
       },
-      success_url: `${process.env.NEXTAUTH_URL}/?subscription=success`,
-      cancel_url: `${process.env.NEXTAUTH_URL}/?subscription=cancelled`,
+      success_url: `${origin}/?subscription=success`,
+      cancel_url: `${origin}/?subscription=cancelled`,
       allow_promotion_codes: true,
       subscription_data: {
         metadata: {
