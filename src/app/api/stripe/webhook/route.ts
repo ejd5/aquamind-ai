@@ -47,14 +47,24 @@ async function handleStripeEvent(event: any): Promise<HandlerResult> {
   switch (event.type) {
     case 'checkout.session.completed': {
       const cs = event.data.object
+      console.log('[webhook.debug] checkout.session.completed received', { eventId: event.id, paymentStatus: cs.payment_status, hasUserId: !!cs.metadata?.userId, hasClientRef: !!cs.client_reference_id, subscriptionId: cs.subscription })
       // BLOCAGE 5: verify payment_status
-      if (cs.payment_status !== 'paid') return { result: 'ignored', reason: 'payment_not_paid' }
+      if (cs.payment_status !== 'paid') {
+        console.log('[webhook.debug] IGNORED: payment_not_paid', { paymentStatus: cs.payment_status })
+        return { result: 'ignored', reason: 'payment_not_paid' }
+      }
 
       const userId = cs.metadata?.userId || cs.client_reference_id
-      if (!userId) return { result: 'ignored', reason: 'missing_user_mapping' }
+      if (!userId) {
+        console.log('[webhook.debug] IGNORED: missing_user_mapping', { metadata: cs.metadata, clientRef: cs.client_reference_id })
+        return { result: 'ignored', reason: 'missing_user_mapping' }
+      }
 
       const stripeSubId = cs.subscription as string | null
-      if (!stripeSubId) return { result: 'ignored', reason: 'no_subscription_link' }
+      if (!stripeSubId) {
+        console.log('[webhook.debug] IGNORED: no_subscription_link')
+        return { result: 'ignored', reason: 'no_subscription_link' }
+      }
 
       // BLOCAGE 5: retrieve the REAL Stripe Subscription to get Price ID, status, trial, periods
       let stripeSub
@@ -70,9 +80,14 @@ async function handleStripeEvent(event: any): Promise<HandlerResult> {
 
       // BLOCAGE 5: read Price ID from subscription items (not from metadata)
       const priceId = stripeSub.items?.data?.[0]?.price?.id || ''
-      if (!priceId) return { result: 'ignored', reason: 'unknown_price' }
+      console.log('[webhook.debug] subscription retrieved', { stripeSubId, priceId, status: stripeSub.status })
+      if (!priceId) {
+        console.log('[webhook.debug] IGNORED: unknown_price (empty priceId)')
+        return { result: 'ignored', reason: 'unknown_price' }
+      }
 
       const planInfo = getPlanFromStripePriceId(priceId)
+      console.log('[webhook.debug] planInfo from priceId', { priceId, planInfo })
       if (!planInfo) {
         // BLOCAGE 11: unknown Price ID → mark as ignored, don't grant access
         console.warn('[stripe.webhook] Unknown Stripe Price ID:', priceId)
@@ -102,7 +117,9 @@ async function handleStripeEvent(event: any): Promise<HandlerResult> {
         currentPeriodEnd,
         expiresAt: currentPeriodEnd,
       })
+      console.log('[webhook.debug] applyTransition result', { skipped: transition.skipped, reason: transition.reason })
       if (transition.skipped) return { result: 'ignored', reason: 'out_of_order' }
+      console.log('[webhook.debug] checkout.session.completed SUCCESS — subscription activated', { userId, planId: planInfo.plan })
       break
     }
 
