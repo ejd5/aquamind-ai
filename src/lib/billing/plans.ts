@@ -576,6 +576,39 @@ export function getWebProductId(
   return `${planId}_${DURATION_TO_PROVIDER[duration]}`
 }
 
+// Paid plan ids that can be selected on the pricing surfaces.
+export const PAID_PLAN_IDS: readonly Exclude<PlanId, 'decouverte'>[] = ['oasis', 'spa365', 'wellness']
+
+// Web billing durations (excludes 'week' which is not sold on web).
+export const WEB_DURATIONS: readonly Exclude<Duration, 'week'>[] = ['month', 'quarter', 'halfyear', 'year']
+
+/**
+ * Validate a plan + duration pair coming from an untrusted source (URL
+ * query string, sessionStorage, etc.) against the validated B2C catalogue.
+ *
+ * Returns the normalized selection if both values are recognized and
+ * combinable, or null otherwise. Never throws, never falls back to a
+ * paid plan: an invalid input yields null so the caller can ignore the
+ * selection and let the user pick explicitly.
+ *
+ * Security note: this only validates the *catalogue* identifiers. The
+ * actual Stripe Price ID is always resolved server-side from the
+ * validated product id in /api/stripe/checkout — never trusted from
+ * the browser.
+ */
+export function parsePricingSelectionFromParams(
+  plan: string | null | undefined,
+  duration: string | null | undefined,
+): { planId: Exclude<PlanId, 'decouverte'>; duration: Exclude<Duration, 'week'> } | null {
+  if (typeof plan !== 'string' || typeof duration !== 'string') return null
+  if (!PAID_PLAN_IDS.includes(plan as Exclude<PlanId, 'decouverte'>)) return null
+  if (!WEB_DURATIONS.includes(duration as Exclude<Duration, 'week'>)) return null
+  return {
+    planId: plan as Exclude<PlanId, 'decouverte'>,
+    duration: duration as Exclude<Duration, 'week'>,
+  }
+}
+
 // ─── Duration display (legacy compat) ───────────────────────────────────────
 
 export const DURATIONS = [

@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight, BadgeCheck, Check, CreditCard, Loader2, ShieldCheck, Sparkles } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { PLANS, DURATIONS, type PlanId, type Duration } from '@/lib/pool/freemium'
-import { getPriceAdvantage } from '@/lib/billing/plans'
+import { getPriceAdvantage, parsePricingSelectionFromParams } from '@/lib/billing/plans'
 import { useStripeCheckout } from '@/hooks/use-stripe-checkout'
 
 const PLAN_ACCENTS: Record<string, string> = {
@@ -15,11 +15,20 @@ const PLAN_ACCENTS: Record<string, string> = {
   wellness: 'from-indigo-400 via-violet-500 to-fuchsia-500',
 }
 
+function useInitialDuration(): Exclude<Duration, 'week'> {
+  // Restore the duration selected before sign-in, if any. Only validated
+  // values are accepted; anything else falls back to the default.
+  if (typeof window === 'undefined') return 'halfyear'
+  const params = new URLSearchParams(window.location.search)
+  const restored = parsePricingSelectionFromParams(params.get('plan'), params.get('duration'))
+  return restored?.duration ?? 'halfyear'
+}
+
 export function PricingExplorer() {
   const t = useTranslations('tarifs')
   const tPlan = useTranslations('plans')
   const locale = useLocale()
-  const [duration, setDuration] = useState<Exclude<Duration, 'week'>>('halfyear')
+  const [duration, setDuration] = useState<Exclude<Duration, 'week'>>(useInitialDuration)
   const { startCheckout, isCheckoutPending } = useStripeCheckout()
   const paidPlans = ['oasis', 'spa365', 'wellness'].map((id) => PLANS.find((plan) => plan.id === id)!)
   const freePlan = PLANS.find((plan) => plan.id === 'decouverte')!

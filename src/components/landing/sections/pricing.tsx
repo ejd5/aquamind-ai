@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { PLANS, DURATIONS } from '@/lib/pool/freemium'
-import { getPriceAdvantage, type PlanId } from '@/lib/billing/plans'
+import { getPriceAdvantage, parsePricingSelectionFromParams, type PlanId } from '@/lib/billing/plans'
 import { useStripeCheckout } from '@/hooks/use-stripe-checkout'
 import { Reveal, SectionHeading, scrollToId } from '../landing-utils'
 
@@ -39,11 +39,20 @@ const PLAN_ACCENTS: Record<string, string> = {
   wellness: 'from-indigo-400 via-violet-500 to-fuchsia-500',
 }
 
+function useInitialDuration(): DurationId {
+  // Restore the duration selected before sign-in, if any. Only validated
+  // values are accepted; anything else falls back to the default.
+  if (typeof window === 'undefined') return 'halfyear'
+  const params = new URLSearchParams(window.location.search)
+  const restored = parsePricingSelectionFromParams(params.get('plan'), params.get('duration'))
+  return restored?.duration ?? 'halfyear'
+}
+
 export function Pricing({ onEnterApp }: PricingProps) {
   const t = useTranslations('landing')
   const tPlans = useTranslations('plans')
   const locale = useLocale()
-  const [duration, setDuration] = useState<DurationId>('halfyear')
+  const [duration, setDuration] = useState<DurationId>(useInitialDuration)
   const { startCheckout, isCheckoutPending } = useStripeCheckout()
 
   const paidPlans = ['oasis', 'spa365', 'wellness'].map((id) => PLANS.find((plan) => plan.id === id)!)
