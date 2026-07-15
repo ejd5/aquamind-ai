@@ -1,39 +1,57 @@
 import { api } from '@/lib/api-client'
 import type { BillingClient, Product, Entitlement, PurchaseResult, PlanId } from './types'
-import { PLANS, DURATION_TO_PROVIDER } from './plans'
+import { PLANS, DURATION_TO_PROVIDER, WEB_DURATIONS, PAID_PLAN_IDS } from './plans'
+
+// Paid plan ids that grant an entitlement.
+const PAID_ENTITLEMENT_IDS: ReadonlySet<string> = new Set(PAID_PLAN_IDS)
 
 // The public catalogue exposes every validated duration. Checkout accepts the
 // exact product ID selected by the pricing UI.
 export const stripeWebClient: BillingClient = {
   async getProducts(): Promise<Product[]> {
-    return PLANS.filter(plan => plan.id !== 'decouverte' && plan.active).map(plan =>
-      ({
-        id: `${plan.id}_monthly`,
-        plan: plan.id,
-        duration: DURATION_TO_PROVIDER.month,
-        price: plan.price.month,
-        priceString: `${plan.price.month.toFixed(2).replace('.', ',')} €`,
-        currency: 'EUR',
-        trialAvailable: false,
-      })
-    )
+    // Expose exactly the 12 validated paid products: 3 plans × 4 web durations.
+    // Free, week, and any zero-price product are never exposed.
+    const products: Product[] = []
+    for (const plan of PLANS) {
+      if (plan.id === 'decouverte') continue
+      if (!plan.active) continue
+      if (!PAID_ENTITLEMENT_IDS.has(plan.id)) continue
+      for (const duration of WEB_DURATIONS) {
+        const price = plan.price[duration]
+        if (typeof price !== 'number' || price <= 0) continue
+        products.push({
+          id: `${plan.id}_${DURATION_TO_PROVIDER[duration]}`,
+          plan: plan.id,
+          duration: DURATION_TO_PROVIDER[duration],
+          price,
+          priceString: `${price.toFixed(2).replace('.', ',')} €`,
+          currency: 'EUR',
+          trialAvailable: false,
+        })
+      }
+    }
+    return products
   },
 
   async getEntitlements(): Promise<Entitlement[]> {
     try {
-      // /api/subscription returns:
-      //   plan: PlanDefinition (full object with id, name, price, ...)
-      //   subscription.plan: PlanId (string, e.g. "spa365")
-      // We must use subscription.plan (the string) for entitlement matching,
-      // NOT plan (the object) — otherwise `plan === 'spa365'` is always false.
       const sub = await api.get<{ plan: PlanId; subscription?: { active: boolean; plan?: PlanId; expiresAt?: string } }>('/api/subscription')
       if (!sub?.subscription?.active) return []
       const planId: PlanId = sub.subscription?.plan || (typeof sub.plan === 'string' ? sub.plan : 'decouverte')
-      // Entitlement.id only accepts paid plan IDs (not 'decouverte')
-      const entitlementId = (['oasis', 'wellness', 'spa365'].includes(planId) ? planId : 'oasis') as 'oasis' | 'wellness' | 'spa365'
+      // SECURITY: an unknown or Free plan id must NEVER grant a paid
+      // entitlement. The previous implementation fell back to 'oasis',
+      // which would silently grant Pool access to any user with a
+      // corrupted or unknown plan. We now return no entitlement and
+      // log the anomaly for server-side investigation.
+      if (!PAID_ENTITLEMENT_IDS.has(planId)) {
+        if (typeof console !== 'undefined' && planId !== 'decouverte') {
+          console.warn('[billing] active subscription with unknown plan id — no entitlement granted:', planId)
+        }
+        return []
+      }
       return [
         {
-          id: entitlementId,
+          id: planId as 'oasis' | 'wellness' | 'spa365',
           plan: planId,
           isActive: true,
           willRenew: true,
@@ -75,7 +93,6 @@ export const stripeWebClient: BillingClient = {
   },
 
   async manageSubscription(): Promise<void> {
-    // Let the error propagate so callers can show a proper toast
     const result = await api.post<{ url: string }>('/api/stripe/portal', {})
     if (result?.url) window.location.href = result.url
   },
