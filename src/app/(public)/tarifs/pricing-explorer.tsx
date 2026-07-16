@@ -1,12 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight, BadgeCheck, Check, CreditCard, Loader2, ShieldCheck, Sparkles } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { PLANS, DURATIONS, type PlanId, type Duration } from '@/lib/pool/freemium'
-import { getPriceAdvantage } from '@/lib/billing/plans'
+import { getPriceAdvantage, parsePricingSelectionFromParams } from '@/lib/billing/plans'
 import { useStripeCheckout } from '@/hooks/use-stripe-checkout'
 
 const PLAN_ACCENTS: Record<string, string> = {
@@ -19,8 +19,29 @@ export function PricingExplorer() {
   const t = useTranslations('tarifs')
   const tPlan = useTranslations('plans')
   const locale = useLocale()
+  // Hydration-safe: start with the default on both server and client,
+  // then restore from URL after mount.
   const [duration, setDuration] = useState<Exclude<Duration, 'week'>>('halfyear')
-  const { startCheckout, isCheckoutPending } = useStripeCheckout()
+  const [highlightedPlan, setHighlightedPlan] = useState<Exclude<PlanId, 'decouverte'> | null>(null)
+  const { startCheckout, isCheckoutPending, isAnyCheckoutPending } = useStripeCheckout()
+  const planCardRefs = useRef<Record<string, HTMLElement | null>>({})
+
+  // Restore plan + duration from URL AFTER mount (hydration-safe).
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const sel = parsePricingSelectionFromParams(params.get('plan'), params.get('duration'))
+    if (sel) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDuration(sel.duration)
+
+      setHighlightedPlan(sel.planId)
+      const cardEl = planCardRefs.current[sel.planId]
+      if (cardEl) {
+        setTimeout(() => { cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' }) }, 200)
+      }
+    }
+  }, [])
   const paidPlans = ['oasis', 'spa365', 'wellness'].map((id) => PLANS.find((plan) => plan.id === id)!)
   const freePlan = PLANS.find((plan) => plan.id === 'decouverte')!
 
@@ -41,7 +62,8 @@ export function PricingExplorer() {
               <button
                 key={option.id}
                 type="button"
-                onClick={() => setDuration(option.id)}
+                onClick={() => { setDuration(option.id); setHighlightedPlan(null) }}
+                disabled={isAnyCheckoutPending}
                 className={`relative min-h-[4.25rem] overflow-hidden rounded-2xl px-2 py-2 transition-colors sm:px-4 ${selected ? 'text-primary-foreground' : 'text-muted-foreground hover:bg-primary/5 hover:text-foreground'}`}
               >
                 {selected && <motion.span layoutId="tarifs-duration" className="absolute inset-0 -z-10 bg-gradient-to-br from-primary to-teal-700" transition={{ type: 'spring', stiffness: 380, damping: 34 }} />}
@@ -70,12 +92,13 @@ export function PricingExplorer() {
           return (
             <motion.article
               key={plan.id}
+              ref={(el) => { planCardRefs.current[plan.id] = el }}
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-60px' }}
               transition={{ duration: 0.5, delay: index * 0.08 }}
-              whileHover={{ y: -8 }}
-              className={`group relative flex h-full flex-col overflow-hidden rounded-[2rem] border bg-background/90 shadow-[0_24px_70px_-42px_rgba(15,118,110,0.55)] backdrop-blur-xl transition-shadow hover:shadow-[0_32px_90px_-38px_rgba(15,118,110,0.62)] ${isPopular ? 'border-primary/55 ring-1 ring-primary/20' : 'border-primary/20'}`}
+              whileHover={isAnyCheckoutPending ? undefined : { y: -8 }}
+              className={`group relative flex h-full flex-col overflow-hidden rounded-[2rem] border bg-background/90 shadow-[0_24px_70px_-42px_rgba(15,118,110,0.55)] backdrop-blur-xl transition-all ${isPopular ? 'border-primary/55 ring-1 ring-primary/20' : 'border-primary/20'} ${highlightedPlan === plan.id ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-[1.02]' : ''}`}
             >
               <div className={`h-1.5 bg-gradient-to-r ${PLAN_ACCENTS[plan.id]}`} />
               <div className="flex flex-1 flex-col p-6 sm:p-8">
@@ -110,7 +133,7 @@ export function PricingExplorer() {
                   ) : <p className="mt-4 text-xs text-muted-foreground">{tPlan('monthlyFreedom')}</p>}
                 </div>
 
-                <button type="button" onClick={() => startCheckout(paidPlanId, duration)} disabled={checkoutPending} className={`mt-6 inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-extrabold transition-all duration-300 active:scale-[0.98] disabled:cursor-wait disabled:opacity-70 ${isPopular ? 'bg-gradient-to-r from-primary to-teal-700 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30' : 'border border-primary/25 bg-primary/[0.06] text-foreground hover:border-primary/50 hover:bg-primary/[0.11]'}`}>
+                <button type="button" onClick={() => startCheckout(paidPlanId, duration)} disabled={isAnyCheckoutPending} className={`mt-6 inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-extrabold transition-all duration-300 active:scale-[0.98] disabled:cursor-wait disabled:opacity-70 ${isPopular ? 'bg-gradient-to-r from-primary to-teal-700 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30' : 'border border-primary/25 bg-primary/[0.06] text-foreground hover:border-primary/50 hover:bg-primary/[0.11]'}`}>
                   {t('ctaPaid')} {checkoutPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />}
                 </button>
 
