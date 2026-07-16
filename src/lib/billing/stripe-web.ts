@@ -1,5 +1,5 @@
 import { api } from '@/lib/api-client'
-import type { BillingClient, Product, Entitlement, PurchaseResult, PlanId } from './types'
+import type { BillingClient, Product, Entitlement, PurchaseResult, PlanId, SubscriptionApiResponse } from './types'
 import { PLANS, DURATION_TO_PROVIDER, WEB_DURATIONS, PAID_PLAN_IDS } from './plans'
 
 // Paid plan ids that grant an entitlement.
@@ -35,9 +35,11 @@ export const stripeWebClient: BillingClient = {
 
   async getEntitlements(): Promise<Entitlement[]> {
     try {
-      const sub = await api.get<{ plan: PlanId; subscription?: { active: boolean; plan?: PlanId; expiresAt?: string } }>('/api/subscription')
+      const sub = await api.get<SubscriptionApiResponse>('/api/subscription')
       if (!sub?.subscription?.active) return []
-      const planId: PlanId = sub.subscription?.plan || (typeof sub.plan === 'string' ? sub.plan : 'decouverte')
+      // Always read the plan id from subscription.plan (the DB string),
+      // never from sub.plan (the object).
+      const planId: PlanId = sub.subscription.plan
       // SECURITY: an unknown or Free plan id must NEVER grant a paid
       // entitlement. The previous implementation fell back to 'oasis',
       // which would silently grant Pool access to any user with a

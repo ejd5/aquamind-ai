@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi, afterEach, afterAll } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
   PLANS,
@@ -13,6 +13,8 @@ import {
   DURATION_TO_PROVIDER,
 } from '@/lib/billing/plans'
 import { stripeWebClient } from '@/lib/billing/stripe-web'
+import type { SubscriptionApiResponse } from '@/lib/billing/types'
+import { api } from '@/lib/api-client'
 
 const LOCALES = ['fr', 'en', 'es', 'de', 'it', 'pt', 'nl'] as const
 
@@ -221,6 +223,120 @@ describe('P0-J — B2C release readiness', () => {
       expect(DURATION_TO_PROVIDER.quarter).toBe('quarterly')
       expect(DURATION_TO_PROVIDER.halfyear).toBe('seasonal')
       expect(DURATION_TO_PROVIDER.year).toBe('yearly')
+    })
+  })
+
+  // ─── Real getEntitlements tests with mocked api.get() ──────────
+  describe('stripeWebClient.getEntitlements() with mocked api.get()', () => {
+    const apiGetSpy = vi.spyOn(api, 'get')
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    afterEach(() => {
+      apiGetSpy.mockReset()
+      warnSpy.mockClear()
+    })
+
+    afterAll(() => {
+      warnSpy.mockRestore()
+    })
+
+    function mockSubResponse(planId: string, active: boolean, expiresAt?: string | null): SubscriptionApiResponse {
+      return {
+        plan: PLANS.find((p) => p.id === planId) || PLANS[0],
+        subscription: {
+          id: 'sub_test',
+          userId: 'user_test',
+          plan: planId as never,
+          status: active ? 'active' : 'inactive',
+          active,
+          duration: 'halfyear',
+          store: 'web',
+          startedAt: '2026-07-15T00:00:00.000Z',
+          expiresAt: expiresAt ?? null,
+          cancelAt: null,
+          trialEndsAt: null,
+          currentPeriodStart: null,
+          currentPeriodEnd: null,
+          stripeCustomerId: 'cus_test',
+          stripeSubscriptionId: 'sub_stripe_test',
+          providerSubscriptionId: 'sub_stripe_test',
+          lastProviderEventId: 'evt_test',
+          lastProviderEventAt: '2026-07-15T00:00:00.000Z',
+        },
+        allPlans: PLANS,
+      }
+    }
+
+    it('returns oasis entitlement for active Pool subscription', async () => {
+      apiGetSpy.mockResolvedValue(mockSubResponse('oasis', true) as never)
+      const result = await stripeWebClient.getEntitlements()
+      expect(result).toHaveLength(1)
+      expect(result[0].plan).toBe('oasis')
+      expect(result[0].id).toBe('oasis')
+      expect(result[0].isActive).toBe(true)
+    })
+
+    it('returns spa365 entitlement for active Spa subscription', async () => {
+      apiGetSpy.mockResolvedValue(mockSubResponse('spa365', true) as never)
+      const result = await stripeWebClient.getEntitlements()
+      expect(result).toHaveLength(1)
+      expect(result[0].plan).toBe('spa365')
+    })
+
+    it('returns wellness entitlement for active Complete subscription', async () => {
+      apiGetSpy.mockResolvedValue(mockSubResponse('wellness', true) as never)
+      const result = await stripeWebClient.getEntitlements()
+      expect(result).toHaveLength(1)
+      expect(result[0].plan).toBe('wellness')
+    })
+
+    it('returns no entitlement for inactive subscription', async () => {
+      apiGetSpy.mockResolvedValue(mockSubResponse('oasis', false) as never)
+      const result = await stripeWebClient.getEntitlements()
+      expect(result).toHaveLength(0)
+    })
+
+    it('returns no entitlement for active Free subscription (anomaly)', async () => {
+      apiGetSpy.mockResolvedValue(mockSubResponse('decouverte', true) as never)
+      const result = await stripeWebClient.getEntitlements()
+      expect(result).toHaveLength(0)
+    })
+
+    it('returns no entitlement for unknown plan id and logs warning', async () => {
+      apiGetSpy.mockResolvedValue(mockSubResponse('premium', true) as never)
+      const result = await stripeWebClient.getEntitlements()
+      expect(result).toHaveLength(0)
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[billing] active subscription with unknown plan id — no entitlement granted:',
+        'premium',
+      )
+    })
+
+    it('returns no entitlement when api.get() throws', async () => {
+      apiGetSpy.mockRejectedValue(new Error('Network error') as never)
+      const result = await stripeWebClient.getEntitlements()
+      expect(result).toHaveLength(0)
+    })
+
+    it('correctly converts expiresAt string to Date', async () => {
+      const iso = '2027-01-15T00:00:00.000Z'
+      apiGetSpy.mockResolvedValue(mockSubResponse('oasis', true, iso) as never)
+      const result = await stripeWebClient.getEntitlements()
+      expect(result[0].expiresAt).toBeInstanceOf(Date)
+      expect(result[0].expiresAt?.toISOString()).toBe(iso)
+    })
+
+    it('returns undefined expiresAt when not provided', async () => {
+      apiGetSpy.mockResolvedValue(mockSubResponse('oasis', true, null) as never)
+      const result = await stripeWebClient.getEntitlements()
+      expect(result[0].expiresAt).toBeUndefined()
+    })
+
+    it('never falls back to oasis for an unknown plan', async () => {
+      apiGetSpy.mockResolvedValue(mockSubResponse('unknown_plan', true) as never)
+      const result = await stripeWebClient.getEntitlements()
+      expect(result).toHaveLength(0)
+      expect(result.some((e) => e.plan === 'oasis')).toBe(false)
     })
   })
 })
