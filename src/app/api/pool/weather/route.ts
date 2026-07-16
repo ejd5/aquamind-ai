@@ -40,6 +40,13 @@ function isValidRegion(region: string): boolean {
   return false
 }
 
+// Base URL du fournisseur météo wttr.in.
+// La variable vient UNIQUEMENT de l'environnement serveur (process.env) :
+// jamais d'une valeur fournie par le navigateur. Défaut sûr en production
+// vers le fournisseur réel. En tests (run-smoke-tests.sh), on la redirige vers
+// un fixture local déterministe pour ne dépendre d'aucun réseau externe.
+const WTTR_BASE_URL = (process.env.WTTR_IN_BASE_URL || 'https://wttr.in').replace(/\/+$/, '')
+
 // Fetch météo réelle depuis wttr.in (gratuit, sans clé API)
 // - query vide  → géolocalisation par IP (dernier recours)
 // - "lat,lon"   → coordonnées GPS (pas d'encoding du séparateur)
@@ -48,12 +55,12 @@ async function fetchWeather(query: string): Promise<WeatherData | null> {
   try {
     let url: string
     if (!query) {
-      url = 'https://wttr.in/?format=j1' // IP-based geolocation
+      url = `${WTTR_BASE_URL}/?format=j1` // IP-based geolocation
     } else if (/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(query)) {
       // Coordonnées GPS : ne pas encoder la virgule
-      url = `https://wttr.in/${query}?format=j1`
+      url = `${WTTR_BASE_URL}/${query}?format=j1`
     } else {
-      url = `https://wttr.in/${encodeURIComponent(query)}?format=j1`
+      url = `${WTTR_BASE_URL}/${encodeURIComponent(query)}?format=j1`
     }
     const res = await fetch(url, { headers: { 'Accept-Language': 'fr' }, signal: AbortSignal.timeout(8000) })
     if (!res.ok) return null

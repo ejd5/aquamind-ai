@@ -19,6 +19,12 @@ DB_URL="file:${TEST_DB}"
 SERVER_PID=""
 SERVER_LOG="/tmp/aqwelia-test-server-$$.log"
 
+# Weather mock fixture — deterministic local replacement for https://wttr.in.
+# See tests/fixtures/weather-server.mjs. Default port 3100.
+WEATHER_PORT="${WEATHER_MOCK_PORT:-3100}"
+WEATHER_PID=""
+WEATHER_LOG="/tmp/aqwelia-test-weather-$$.log"
+
 # Test env vars (passed directly to commands — NEVER written to .env)
 export DATABASE_URL="$DB_URL"
 export NEXTAUTH_SECRET="test-secret-for-ci-only-do-not-use-in-production"
@@ -53,7 +59,15 @@ cleanup() {
       kill -9 "$SERVER_PID" 2>/dev/null || true
     fi
   fi
-  rm -f "$TEST_DB" "$TEST_DB-journal" "$SERVER_LOG" 2>/dev/null || true
+  if [ -n "$WEATHER_PID" ] && kill -0 "$WEATHER_PID" 2>/dev/null; then
+    echo "Stopping weather mock (PID $WEATHER_PID)..."
+    kill "$WEATHER_PID" 2>/dev/null || true
+    sleep 1
+    if kill -0 "$WEATHER_PID" 2>/dev/null; then
+      kill -9 "$WEATHER_PID" 2>/dev/null || true
+    fi
+  fi
+  rm -f "$TEST_DB" "$TEST_DB-journal" "$SERVER_LOG" "$WEATHER_LOG" 2>/dev/null || true
   echo "Cleanup done."
   exit $exit_code
 }
@@ -76,9 +90,38 @@ echo ""
 echo "=== 3. Create test user ==="
 node "$PROJECT_ROOT/tests/create-test-user.mjs" 2>&1 | tail -2
 
-# ── 6. Start dev server ──────────────────────────────────────────────────────
+# ── 6. Start weather mock fixture ───────────────────────────────────────────
 echo ""
-echo "=== 4. Start dev server on port $PORT ==="
+echo "=== 4a. Start weather mock on 127.0.0.1:${WEATHER_PORT} ==="
+WEATHER_MOCK_PORT="$WEATHER_PORT" \
+  node "$PROJECT_ROOT/tests/fixtures/weather-server.mjs" > "$WEATHER_LOG" 2>&1 &
+WEATHER_PID=$!
+echo "Weather mock PID: $WEATHER_PID"
+
+# Wait for weather mock readiness
+WEATHER_READY=0
+for i in $(seq 1 20); do
+  HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 \
+    "http://127.0.0.1:${WEATHER_PORT}/?format=j1" 2>/dev/null || echo "000")
+  if [ "$HTTP" = "200" ]; then
+    echo "✅ Weather mock ready (${i}s)"
+    WEATHER_READY=1
+    break
+  fi
+  if [ "$i" = "20" ]; then
+    echo "❌ Weather mock failed to start (20s timeout)"
+    tail -20 "$WEATHER_LOG" 2>/dev/null || true
+    exit 1
+  fi
+  sleep 1
+done
+
+# Redirect AQWELIA weather route to the local deterministic fixture.
+export WTTR_IN_BASE_URL="http://127.0.0.1:${WEATHER_PORT}"
+
+# ── 6b. Start dev server ─────────────────────────────────────────────────────
+echo ""
+echo "=== 4b. Start dev server on port $PORT ==="
 NODE_OPTIONS="--max-old-space-size=1024" \
   node node_modules/.bin/next dev -H 127.0.0.1 -p "$PORT" > "$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
