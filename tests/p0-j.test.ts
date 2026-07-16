@@ -237,6 +237,7 @@ describe('P0-J — B2C release readiness', () => {
     })
 
     afterAll(() => {
+      apiGetSpy.mockRestore()
       warnSpy.mockRestore()
     })
 
