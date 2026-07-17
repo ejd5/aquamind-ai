@@ -31,6 +31,7 @@ export function Savings() {
   ]
 
   // Use real plan annual prices from canonical source
+  const poolPlan = PLANS.find((plan) => plan.id === 'oasis')
   const paidPlans = PLANS.filter(p => p.id !== 'decouverte')
 
   return (
@@ -107,8 +108,7 @@ export function Savings() {
             <div className="flex items-center gap-3">
               <TrendingUp className="h-6 w-6 shrink-0 text-gold" />
               <p className="font-display text-base leading-relaxed text-foreground sm:text-lg">
-                {t('savingsRoi1')} <span className="font-bold">{paidPlans[0].price.year}€{t('savingsRoiYearSuffix')}</span> {t('savingsRoi2')}{' '}
-                <span className="font-bold text-gold">{t('savingsRoi550')}</span>.{' '}
+                {t('savingsRoiSentence', { price: poolPlan?.price.year ?? 64.99, savings: '550€' })}{' '}
                 <span className="gradient-text-premium font-bold">{t('savingsROI')}</span>. {t('savingsRoi3')}
               </p>
             </div>
