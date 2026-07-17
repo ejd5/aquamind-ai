@@ -2,13 +2,27 @@
 
 import { motion } from 'framer-motion'
 import { Clock, Coins, TrendingUp } from 'lucide-react'
-import { useTranslations } from 'next-intl'
-import { PLANS } from '@/lib/billing/plans'
+import { useLocale, useTranslations } from 'next-intl'
+import { PLANS, getPlan } from '@/lib/billing/plans'
 import { AnimatedCounter, GlassCard, Reveal, SectionHeading, staggerContainer, fadeUpVariants } from '../landing-utils'
+
+const SAVINGS_ROI = 550
+
+function formatCurrency(locale: string, amount: number): string {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+const CHART_ORDER: string[] = ['oasis', 'spa365', 'wellness']
 
 export function Savings() {
   const t = useTranslations('landing')
   const tPlan = useTranslations('plans')
+  const locale = useLocale()
 
   const PLAN_ACCENTS: Record<string, string> = {
     oasis: 'from-cyan-400 via-teal-500 to-emerald-500',
@@ -30,9 +44,9 @@ export function Savings() {
     t('savingsMoneyBreakdown4'),
   ]
 
-  // Use real plan annual prices from canonical source
-  const poolPlan = PLANS.find((plan) => plan.id === 'oasis')
-  const paidPlans = PLANS.filter(p => p.id !== 'decouverte')
+  const poolPlan = getPlan('oasis')
+
+  const chartPlans = CHART_ORDER.map(id => getPlan(id)).filter(Boolean) as NonNullable<ReturnType<typeof getPlan>>[]
 
   return (
     <section id="gains" className="relative py-20 sm:py-28">
@@ -85,7 +99,7 @@ export function Savings() {
                 <div>
                   <p className="text-xs uppercase tracking-wider text-muted-foreground">{t('savingsMoneySaved')}</p>
                   <p className="font-display text-3xl font-bold sm:text-4xl">
-                    <AnimatedCounter value={550} prefix="~" suffix=" €" />
+                    <AnimatedCounter value={SAVINGS_ROI} prefix="~" suffix=" \u20AC" />
                   </p>
                   <p className="text-xs text-muted-foreground">{t('savingsPerYear')}</p>
                 </div>
@@ -108,21 +122,24 @@ export function Savings() {
             <div className="flex items-center gap-3">
               <TrendingUp className="h-6 w-6 shrink-0 text-gold" />
               <p className="font-display text-base leading-relaxed text-foreground sm:text-lg">
-                {t('savingsRoiSentence', { price: poolPlan?.price.year ?? 64.99, savings: '550€' })}{' '}
+                {poolPlan && t('savingsRoiSentence', {
+                  price: formatCurrency(locale, poolPlan.price.year),
+                  savings: formatCurrency(locale, SAVINGS_ROI),
+                })}{' '}
                 <span className="gradient-text-premium font-bold">{t('savingsROI')}</span>. {t('savingsRoi3')}
               </p>
             </div>
           </div>
         </Reveal>
 
-        {/* Comparison bars */}
+        {/* Comparison bars — explicit commercial order: Pool → Spa → Complete */}
         <Reveal delay={0.15} className="mt-8">
           <div className="rounded-2xl border border-white/40 bg-white/60 p-6 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.03]">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">
               {t('savingsComparison')}
             </p>
             <div className="mt-4 space-y-4">
-              {paidPlans.map((plan, i) => (
+              {chartPlans.map((plan, i) => (
                 <motion.div
                   key={plan.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -135,7 +152,7 @@ export function Savings() {
                       {tPlan(`${plan.id}.name`)}
                     </span>
                     <span className="font-bold text-primary">
-                      {plan.price.year}€
+                      {formatCurrency(locale, plan.price.year)}
                     </span>
                   </div>
                   <div className="h-3 overflow-hidden rounded-full bg-secondary">

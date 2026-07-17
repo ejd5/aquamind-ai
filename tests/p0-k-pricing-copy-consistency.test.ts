@@ -21,6 +21,25 @@ function getNested(obj: Record<string, unknown>, path: string): unknown {
   }, obj)
 }
 
+function walkStrings(
+  obj: unknown,
+  path: string,
+  cb: (value: string, fullPath: string) => void,
+) {
+  if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+    for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+      const currentPath = path ? `${path}.${k}` : k
+      if (typeof v === 'string') {
+        cb(v, currentPath)
+      } else {
+        walkStrings(v, currentPath, cb)
+      }
+    }
+  } else if (Array.isArray(obj)) {
+    obj.forEach((v, i) => walkStrings(v, `${path}[${i}]`, cb))
+  }
+}
+
 describe('P0-K: Pricing copy consistency across all locales', () => {
   describe('No Premium in display values', () => {
     for (const locale of LOCALES) {
@@ -53,24 +72,15 @@ describe('P0-K: Pricing copy consistency across all locales', () => {
 
         const violations: string[] = []
 
-        function walk(obj: unknown, path: string) {
-          if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
-            for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
-              const currentPath = path ? `${path}.${k}` : k
-              if (typeof v === 'string' && v.includes('Premium')) {
-                const isAllowed = [...ALLOWED_PREMIUM_PATHS].some(p => currentPath.startsWith(p))
-                if (!isAllowed) {
-                  violations.push(`${currentPath} = "${v.slice(0, 60)}"`)
-                }
-              }
-              walk(v, currentPath)
+        walkStrings(data, '', (val, fullPath) => {
+          if (val.includes('Premium')) {
+            const isAllowed = [...ALLOWED_PREMIUM_PATHS].some(p => fullPath.startsWith(p))
+            if (!isAllowed) {
+              violations.push(`${fullPath} = "${val.slice(0, 60)}"`)
             }
-          } else if (Array.isArray(obj)) {
-            obj.forEach((v, i) => walk(v, `${path}[${i}]`))
           }
-        }
+        })
 
-        walk(data, '')
         expect(violations, `Premium found in ${locale} display values:\n${violations.join('\n')}`).toHaveLength(0)
       })
     }
@@ -96,47 +106,42 @@ describe('P0-K: Pricing copy consistency across all locales', () => {
     }
   })
 
-  describe('No Team/Fleet/Enterprise in B2C namespaces', () => {
+  describe('No Team/Fleet/Enterprise in B2C namespaces (recursive)', () => {
     const B2C_TERMS = ['Team', 'Fleet', 'Enterprise']
     const B2C_NAMESPACES = ['landing', 'tarifs', 'plans']
+    const NARRATIVE_EXCLUSIONS = new Set([
+      'landing.storyTeam',
+      'landing.storyQuote5',
+    ])
+
     for (const locale of LOCALES) {
-      it(`${locale}: B2C namespaces have no Team/Fleet/Enterprise (except narrative)`, () => {
+      it(`${locale}: B2C namespaces have no Team/Fleet/Enterprise (recursive, except narrative)`, () => {
         const data = loadLocale(locale)
         const violations: string[] = []
 
-        // Keys where Team/Fleet/Enterprise is used as a common word, not a plan name
-        const NARRATIVE_EXCLUSIONS = new Set([
-          'landing.storyTeam',
-          'landing.storyQuote5',
-        ])
-
         for (const ns of B2C_NAMESPACES) {
-          const obj = getNested(data, ns) as Record<string, unknown> | undefined
+          const obj = getNested(data, ns)
           if (!obj) continue
-          for (const [key, val] of Object.entries(obj)) {
-            if (typeof val !== 'string') continue
-            const fullPath = `${ns}.${key}`
-            if (NARRATIVE_EXCLUSIONS.has(fullPath)) continue
+          walkStrings(obj, ns, (val, fullPath) => {
+            if (NARRATIVE_EXCLUSIONS.has(fullPath)) return
             for (const term of B2C_TERMS) {
               if (val.includes(term)) {
                 violations.push(`${fullPath} contains "${term}"`)
               }
             }
-          }
+          })
         }
 
-        // Check legal.cgu and legal.cgv
         for (const legal of ['legal.cgu', 'legal.cgv']) {
-          const obj = getNested(data, legal) as Record<string, unknown> | undefined
+          const obj = getNested(data, legal)
           if (!obj) continue
-          for (const [key, val] of Object.entries(obj)) {
-            if (typeof val !== 'string') continue
+          walkStrings(obj, legal, (val, fullPath) => {
             for (const term of B2C_TERMS) {
               if (val.includes(term)) {
-                violations.push(`${legal}.${key} contains "${term}"`)
+                violations.push(`${fullPath} contains "${term}"`)
               }
             }
-          }
+          })
         }
 
         expect(violations, `${locale} B2C/Pro mix:\n${violations.join('\n')}`).toHaveLength(0)
@@ -151,17 +156,12 @@ describe('P0-K: Pricing copy consistency across all locales', () => {
         const PASS_KEYS = ['passUrgencyTitle', 'passUrgencyDesc', 'passUrgencyB1', 'passUrgencyB2', 'passUrgencyB3', 'passUrgencyCta']
 
         const found: string[] = []
-        function walk(obj: unknown, path: string) {
-          if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
-            for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
-              if (PASS_KEYS.includes(k)) {
-                found.push(`${path}.${k}`)
-              }
-              walk(v, `${path}.${k}`)
-            }
+        walkStrings(data, '', (_val, fullPath) => {
+          const leaf = fullPath.split('.').pop() ?? ''
+          if (PASS_KEYS.includes(leaf)) {
+            found.push(fullPath)
           }
-        }
-        walk(data, '')
+        })
         expect(found, `${locale} has passUrgence keys: ${found.join(', ')}`).toHaveLength(0)
       })
     }
@@ -225,11 +225,12 @@ describe('P0-K: Pricing copy consistency across all locales', () => {
         expect(item, 'article6Item3 should not contain Expert').not.toMatch(/Expert/i)
       })
 
-      it(`${locale}: article6Item4 contains Complete`, () => {
+      it(`${locale}: article6Item4 contains Complete with 2 pools + 1 spa`, () => {
         const data = loadLocale(locale)
         const item = getNested(data, 'legal.cgu.article6Item4') as string | undefined
         expect(item, 'article6Item4 should exist and contain Complete').toBeDefined()
         expect(item!).toMatch(/Complete/i)
+        expect(item!, 'article6Item4 should mention 2 pools').toMatch(/2/)
       })
 
       it(`${locale}: no B2C article6 item contains Expert`, () => {
@@ -276,26 +277,73 @@ describe('P0-K: Pricing copy consistency across all locales', () => {
     }
   })
 
-  describe('No artificial em dashes in commercial namespaces', () => {
+  describe('No artificial em dashes in commercial namespaces (recursive)', () => {
     const NS_CHECK = ['landing', 'nav', 'tarifs', 'plans', 'onboarding', 'settings', 'fonctionnalites']
+    const EM_DASH_EXCLUSIONS = new Set([
+      'landing.storyQuote1',
+      'landing.storyQuote2',
+      'landing.storyQuote3',
+      'landing.storyQuote4',
+      'landing.storyQuote5',
+      'landing.storyTeam',
+    ])
     for (const locale of LOCALES) {
-      it(`${locale}: no em-dashes in commercial namespace values (except ranges and quotes)`, () => {
+      it(`${locale}: no em-dashes in commercial namespace values (recursive, except narrative)`, () => {
         const data = loadLocale(locale)
         const violations: string[] = []
 
         for (const ns of NS_CHECK) {
-          const obj = getNested(data, ns) as Record<string, unknown> | undefined
+          const obj = getNested(data, ns)
           if (!obj) continue
-          for (const [key, val] of Object.entries(obj)) {
-            if (typeof val === 'string' && val.includes('—')) {
-              // Allow in story quotes and attribution lines
-              if (key.startsWith('storyQuote') || key === 'storyTeam') continue
-              violations.push(`${ns}.${key}: "${val.slice(0, 60)}"`)
+          walkStrings(obj, ns, (val, fullPath) => {
+            if (val.includes('\u2014')) {
+              if (EM_DASH_EXCLUSIONS.has(fullPath)) return
+              violations.push(`${fullPath}: "${val.slice(0, 60)}"`)
             }
-          }
+          })
         }
 
         expect(violations, `Artificial em-dashes found:\n${violations.join('\n')}`).toHaveLength(0)
+      })
+    }
+  })
+
+  describe('No broken sentences from em-dash replacement (recursive)', () => {
+    const NS_CHECK = ['landing', 'nav', 'tarifs', 'plans', 'onboarding', 'settings', 'fonctionnalites']
+    const DOT_LOWER_RE = /\.\s+[a-zà-ÿñ]/
+
+    const FALSE_POSITIVE_SUBSTRINGS = [
+      'EE. UU.', 'p. ej.', 'vs.', 'd. h.', 'MwSt.',
+      'Min.', 'Max.', 'Temp. max', 'Temp. máx', 'Max. temp',
+      '1. pH', '2. pH', '3. pH', '4. pH',
+      '24 Std.', '48 Std.', '8 Std.', '2 Std.', '3 Std.', '4 Std.', '10 Std.',
+      '15-20 Min.', '2-3 Min.', '10-15 Min.', '30 Min.',
+      'ggf.', 'art.', 'E.g.', 'Bijv.',
+      '4 Std.', '6 Std.', '7 Std.', '9 Std.', '11 Std.', '12 Std.',
+      '14 Std.', '16 Std.', '18 Std.', '20 Std.', '22 Std.',
+      '48\u00a0Std.', '24\u00a0Std.',
+      'nach 2 h',
+    ]
+
+    for (const locale of LOCALES) {
+      it(`${locale}: no ". [lowercase]" broken sentences (recursive)`, () => {
+        const data = loadLocale(locale)
+        const violations: string[] = []
+
+        for (const ns of NS_CHECK) {
+          const obj = getNested(data, ns)
+          if (!obj) continue
+          walkStrings(obj, ns, (val, fullPath) => {
+            if (DOT_LOWER_RE.test(val)) {
+              const isFalse = FALSE_POSITIVE_SUBSTRINGS.some(fp => val.includes(fp))
+              if (!isFalse) {
+                violations.push(`${fullPath}: "${val.slice(0, 80)}"`)
+              }
+            }
+          })
+        }
+
+        expect(violations, `Broken sentences (dot + lowercase) found:\n${violations.join('\n')}`).toHaveLength(0)
       })
     }
   })
@@ -401,5 +449,38 @@ describe('P0-K: Pricing copy consistency across all locales', () => {
         expect(title).not.toMatch(/\bPremium\b/)
       })
     }
+  })
+
+  describe('No empty mod11B1 or mod11B2 bullets', () => {
+    for (const locale of LOCALES) {
+      it(`${locale}: mod11B1 and mod11B2 are non-empty`, () => {
+        const data = loadLocale(locale)
+        const mod11B1 = getNested(data, 'fonctionnalites.mod11B1') as string | undefined
+        const mod11B2 = getNested(data, 'fonctionnalites.mod11B2') as string | undefined
+        expect(mod11B1, 'mod11B1 should be defined and non-empty').toBeDefined()
+        expect(mod11B1!.length, 'mod11B1 should not be empty').toBeGreaterThan(0)
+        expect(mod11B2, 'mod11B2 should be defined and non-empty').toBeDefined()
+        expect(mod11B2!.length, 'mod11B2 should not be empty').toBeGreaterThan(0)
+      })
+    }
+  })
+
+  describe('Complete plan = 2 pools + 1 spa (commercial decision)', () => {
+    it('wellness feature text mentions 2 pools', () => {
+      const data = loadLocale('fr')
+      const features = getNested(data, 'plans.wellness.features') as Record<string, string> | undefined
+      expect(features, 'wellness.features should exist').toBeDefined()
+      const featureStr = JSON.stringify(features)
+      expect(featureStr, 'wellness features should mention 2 pools').toMatch(/2/)
+    })
+
+    it('CGU article6Item4 mentions 2 pools + 1 spa across all locales', () => {
+      for (const locale of LOCALES) {
+        const data = loadLocale(locale)
+        const item = getNested(data, 'legal.cgu.article6Item4') as string | undefined
+        if (!item) continue
+        expect(item, `${locale}.article6Item4 should mention 2 pools`).toMatch(/2/)
+      }
+    })
   })
 })

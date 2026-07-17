@@ -312,7 +312,7 @@
     "moreDesc": "Wetter, Anleitungen, Erinnerungen und Pool-, SPA-, Complete-Angebote.",
     "user": "Benutzer",
     "backToLandingTitle": "Zurück zur Startseite",
-    "poolProfileTitle": "Pool-Profil. klicken, um Geräte zu verwalten",
+    "poolProfileTitle": "Pool-Profil : Klicken, um Geräte zu verwalten",
     "userMenuAria": "Benutzermenü",
     "settings": "Einstellungen",
     "signOut": "Abmelden",
@@ -345,7 +345,7 @@
     "headerSignin": "Anmelden",
     "headerMenuOpen": "Menü öffnen",
     "headerMenuClose": "Menü schließen",
-    "headerAriaLogo": "AQWELIA. zurück zum Anfang",
+    "headerAriaLogo": "AQWELIA, zurück zum Anfang",
     "heroBadge": "AQUA · WELL · KI",
     "heroTitle": "Die Poolpflege war noch nie so einfach",
     "heroTitleSuffix": "",
@@ -686,7 +686,7 @@
     "heroPhoneChlorine": "Chlor",
     "heroTitleLine2": "",
     "faqProReplace": "Ersetzt AQWELIA einen Poolfachmann?",
-    "faqProReplaceA": "Nein. es ergänzt ihn. Der Poolfachmann kommt einmal pro Woche; AQWELIA deckt die anderen 6 Tage ab, kümmert sich um Notfälle und hilft Ihnen, Ihr Wasser zu verstehen. Viele Nutzer behalten ihren Poolfachmann und nutzen AQWELIA parallel.",
+    "faqProReplaceA": "Nein, er ergänzt ihn. Der Poolfachmann kommt einmal pro Woche ; AQWELIA deckt die anderen 6 Tage ab, kümmert sich um Notfälle und unterstützt Sie bei der Verwaltung.",
     "faqHowIA": "Wie funktioniert die KI-Analyse?",
     "faqHowIAA": "Die KI analysiert Ihre Fotos von Teststreifen, Wasser und Pool, kombiniert diese Daten mit Ihrem chemischen Verlauf und dem Wetter und liefert dann eine Diagnose mit Konfidenzniveau. Kritische Dosierungsberechnungen werden von einer deterministischen Engine durchgeführt, nicht von der KI.",
     "faqSpaManage": "Kann ich einen Spa verwalten?",
@@ -715,7 +715,7 @@
     "proPreviewCta": "AQWELIA Pro entdecken",
     "carePreviewEyebrow": "14. AQWELIA Care",
     "carePreviewTitle": "Das richtige Produkt, zur richtigen Zeit, in der richtigen Menge.",
-    "carePreviewSubtitle": "AQWELIA Care listet nicht einfach einen Katalog auf: Es begleitet Sie bei jedem Schritt. vom erkannten Bedarf bis zum Warenkorb.",
+    "carePreviewSubtitle": "AQWELIA Care listet nicht einfach einen Katalog auf : Es begleitet Sie bei jedem Schritt, vom erkannten Bedarf bis zur Warenhaus-Bestellung.",
     "carePreviewBadge": "Bald verfügbar",
     "carePreviewStep1": "AQWELIA erkennt den Bedarf",
     "carePreviewStep1Text": "Aus Ihrer letzten Analyse, dem Verlauf und dem Wetter identifiziert die App das benötigte Produkt.",
@@ -728,12 +728,12 @@
     "carePreviewCta": "AQWELIA Care entdecken",
     "errorTitle": "Fehler",
     "savingsBarPool": "AQWELIA Pool",
-    "savingsRoiSentence": "Mit Pool für {price} € pro Jahr können Sie bis zu {savings} sparen."
+    "savingsRoiSentence": "Mit Pool für {price} pro Jahr können Sie bis zu {savings} sparen."
   },
   "plans": {
     "free": {
       "name": "Kostenlos",
-      "tagline": "Kostenlos. zum Entdecken",
+      "tagline": "Kostenlos zum Entdecken",
       "features": {
         "1pool": "1 Pool",
         "unlimitedManualTests": "Unbegrenzte Wassertests (manuell)",
@@ -863,7 +863,7 @@
       },
       "annual": {
         "q": "Gibt es einen Jahresplan?",
-        "a": "Wir bieten derzeit 7 Tage, 1 Monat, 3 Monate (-10%) und 6 Monate (-20%). Ein Jahresplan ist in Vorbereitung. kontaktieren Sie uns für frühen Zugang."
+        "a": "Wir bieten derzeit 7 Tage, 1 Monat, 3 Monate (-10%) und 6 Monate (-20%). Ein Jahresplan ist in Vorbereitung. Kontaktieren Sie uns, um beim Start benachrichtigt zu werden."
       },
       "refund": {
         "q": "Wie lautet die Rückerstattungsrichtlinie?",
@@ -976,7 +976,7 @@
       "name": "Complete",
       "tagline": "Pool + Spa, alles in einem",
       "features": {
-        "1pool1spa": "1 Pool + 1 Spa",
+        "1pool1spa": "2 Pools + 1 Spa",
         "allOasis": "Everything in AQWELIA Pool",
         "spaTreatments": "Spa-spezifische Behandlungen (Brom, Aktivsauerstoff)",
         "warmWater": "Warmes Wasser",
@@ -1109,7 +1109,7 @@
     "filterCartridge": "Kartusche",
     "filterGlass": "Glas",
     "filterDiatom": "Kieselgur",
-    "pumpLabel": "Pumpe (Marke / Modell. optional)",
+    "pumpLabel": "Pumpe (Marke / Modell, optional)",
     "pumpPlaceholder": "z. B.: Pentair Superflo 0,75 HP",
     "filterNote": "Diese Informationen ermöglichen es AQWELIA, die empfohlene Filtrationsdauer zu berechnen und Wartungs-Erinnerungen zu planen (Filter spülen usw.).",
     "cityLabel": "Ihre Stadt (fürs Wetter)",
@@ -1153,7 +1153,7 @@
     "preferences": "Einstellungen",
     "language": "Sprache",
     "languageDesc": "Wählen Sie die Sprache der Oberfläche",
-    "languageNote": "Unabhängig vom Land. ein Mexikaner in den USA kann Spanisch wählen",
+    "languageNote": "Unabhängig vom Land. Ein Mexikaner in den USA kann Spanisch wählen.",
     "country": "Land",
     "countryDesc": "Bestimmt Wasser-Standards, Partner und Währung",
     "units": "Maßeinheiten",
@@ -4366,12 +4366,12 @@
     "mod2B2": "Ablagerungen und Wasserlinien",
     "mod2B3": "Streifenmessung",
     "mod3Title": "Wasseranalyse",
-    "mod3Desc": "Geben Sie pH, Chlor, TA, CH, CYA, Salz, Phosphate ein. automatischer Klärindex, LSI und Dosierungsberechnungen.",
+    "mod3Desc": "Geben Sie pH, Chlor, TA, CH, CYA, Salz, Phosphate ein. Automatischer Klärindex, LSI und Dosierungsberechnungen.",
     "mod3B1": "9 unterstützte Parameter",
     "mod3B2": "LSI / Ryznar-Berechnung",
     "mod3B3": "Dosierungsempfehlungen",
     "mod4Title": "Kontextueller KI-Assistent",
-    "mod4Desc": "Ein Chat, der Ihren Pool, Ihre Geschichte und Ihren Vorrat kennt. stellen Sie jede technische Frage.",
+    "mod4Desc": "Ein Chat, der Ihren Pool, Ihre Geschichte und Ihren Vorrat kennt. Stellen Sie jede technische Frage.",
     "mod4B1": "Vollständiger Kontext (Profil + Tests)",
     "mod4B2": "Sichere Antworten (Chemikaliensicherheit)",
     "mod4B3": "Vorgeschlagene Aktionen",
