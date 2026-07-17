@@ -24,10 +24,10 @@ function getNested(obj: Record<string, unknown>, path: string): unknown {
 describe('P0-K: Pricing copy consistency across all locales', () => {
   describe('No Premium in display values', () => {
     for (const locale of LOCALES) {
-      it(`${locale}: has no "Premium" in user-facing values`, () => {
+      it(`${locale}: has no "Premium" in user-facing values (except allowed key names)`, () => {
         const data = loadLocale(locale)
 
-        const KEY_NAMES = new Set([
+        const ALLOWED_PREMIUM_KEYS = new Set([
           'premium', 'planPremium', 'allPremium', 'shortPremium', 'shortPremiumBadge',
           'lockedPremium', 'spaPremiumTitle', 'spaPremiumText1', 'spaPremiumText2',
           'spaPremiumCta', 'spaBrandCategoryPremium', 'spaPremiumNote', 'spaPremiumLead',
@@ -40,8 +40,7 @@ describe('P0-K: Pricing copy consistency across all locales', () => {
         function walk(obj: unknown, path: string) {
           if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
             for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
-              if (KEY_NAMES.has(k)) continue
-              if (typeof v === 'string' && v.includes('Premium')) {
+              if (typeof v === 'string' && v.includes('Premium') && !ALLOWED_PREMIUM_KEYS.has(k)) {
                 violations.push(`${path}.${k} = "${v.slice(0, 60)}"`)
               } else {
                 walk(v, `${path}.${k}`)
@@ -124,7 +123,7 @@ describe('P0-K: Pricing copy consistency across all locales', () => {
 
     for (const locale of LOCALES) {
       it(`${locale}: savingsBarPool references Pool`, () => {
-        const data = loadLocale('fr') // savingsBarPool only exists in fr
+        const data = loadLocale(locale)
         const val = getNested(data, 'landing.savingsBarPool') as string | undefined
         if (val) {
           expect(val).toContain('Pool')
@@ -163,6 +162,42 @@ describe('P0-K: Pricing copy consistency across all locales', () => {
         const title = getNested(data, 'legal.cgv.article3Title') as string | undefined
         if (!title) return
         expect(title).not.toMatch(/\bPremium\b/)
+      })
+    }
+  })
+
+  describe('settings.planPremium uses commercial names', () => {
+    for (const locale of LOCALES) {
+      it(`${locale}: settings.planPremium does not contain "Premium"`, () => {
+        const data = loadLocale(locale)
+        const val = getNested(data, 'settings.planPremium') as string | undefined
+        if (!val) return
+        expect(val).not.toMatch(/Premium/i)
+        expect(val).toMatch(/Pool|SPA|Complete/)
+      })
+    }
+  })
+
+  describe('No "3 subscriptions/offers" for 4 plans', () => {
+    const THIRIS_PATTERNS = [
+      /3 abonnements/i,
+      /3 subscriptions/i,
+      /3 Abonnements/i,
+      /3 suscripciones/i,
+      /3 Planes/i,
+      /3 Pläne/i,
+      /3 Piani/i,
+      /3 Planos/i,
+    ]
+    for (const locale of LOCALES) {
+      it(`${locale}: no "3 plans/subscriptions" wording in legal or b2c`, () => {
+        const data = loadLocale(locale)
+        const legal = JSON.stringify(getNested(data, 'legal') ?? {})
+        const b2c = JSON.stringify(getNested(data, 'b2c') ?? {})
+        const combined = legal + b2c
+        for (const pattern of THIRIS_PATTERNS) {
+          expect(combined, `Found "${pattern}" in ${locale}`).not.toMatch(pattern)
+        }
       })
     }
   })

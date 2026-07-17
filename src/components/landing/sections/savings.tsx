@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { Clock, Coins, TrendingUp } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { PLANS, DURATIONS, getPriceAdvantage } from '@/lib/billing/plans'
+import { PLANS } from '@/lib/billing/plans'
 import { AnimatedCounter, GlassCard, Reveal, SectionHeading, staggerContainer, fadeUpVariants } from '../landing-utils'
 
 export function Savings() {
@@ -32,18 +32,6 @@ export function Savings() {
 
   // Use real plan annual prices from canonical source
   const paidPlans = PLANS.filter(p => p.id !== 'decouverte')
-  const BARS = paidPlans.map((plan) => {
-    const annualPrice = plan.price.year
-    const label = plan.name === 'Pool' ? t('savingsBarPool') : plan.name === 'Spa' ? t('savingsBarSpa') : t('savingsBarComplete')
-    return {
-      label,
-      value: Math.round(annualPrice),
-      color: plan.id === 'oasis' ? 'from-cyan-400 via-teal-500 to-emerald-500' :
-             plan.id === 'spa365' ? 'from-rose-300 via-orange-400 to-amber-400' :
-             'from-indigo-400 via-violet-500 to-fuchsia-500',
-      highlight: plan.id === 'oasis',
-    }
-  })
 
   return (
     <section id="gains" className="relative py-20 sm:py-28">
@@ -144,7 +132,7 @@ export function Savings() {
                 >
                   <div className="mb-1.5 flex items-center justify-between text-sm">
                     <span className="font-medium text-foreground">
-                      {tPlan(`${plan.id}.name`)} <span className="text-primary">{plan.price.year}€</span>
+                      {tPlan(`${plan.id}.name`)}
                     </span>
                     <span className="font-bold text-primary">
                       {plan.price.year}€
