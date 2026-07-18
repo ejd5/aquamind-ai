@@ -771,29 +771,27 @@ export async function matching(
   })
 
   if (bestMatch) {
-    await db.lead.update({
-      where: { id: input.leadId },
-      data: {
-        organizationId: bestMatch.organizationId,
-        status: 'ASSIGNED',
-      },
-    })
-    await logLeadEvent(input.leadId, 'assigned', 'matching', {
+    // Matching only proposes a candidate. A human dispatcher must confirm
+    // the assignment from Growth Inbox; the agent never transfers ownership.
+    await logLeadEvent(input.leadId, 'match_suggested', 'matching', {
       organizationId: bestMatch.organizationId,
       score: bestMatch.score,
+      approvalRequired: true,
     })
   }
 
   const confidence = bestMatch ? (bestMatch.score >= 70 ? 0.9 : 0.65) : 0.2
   const result: AgentResult<MatchingOutput> = {
     agentType: 'matching',
-    status: bestMatch ? 'completed' : 'escalated',
+    status: 'escalated',
     confidence,
     output: { leadId: input.leadId, ranked, bestMatch },
     actions,
     cost: 0.04,
-    escalatedTo: bestMatch ? undefined : 'manual_dispatcher',
-    reason: bestMatch ? undefined : 'No organization available to match.',
+    escalatedTo: 'manual_dispatcher',
+    reason: bestMatch
+      ? 'Suggestion prête — validation humaine requise avant attribution.'
+      : 'Aucune organisation disponible — traitement manuel requis.',
   }
   await logAgentRun({ ...ctx, leadId: input.leadId }, result)
   return result

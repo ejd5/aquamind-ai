@@ -46,9 +46,11 @@ export async function GET(req: NextRequest) {
 
   const org = await getUserOrganization(session.user.id)
   if (!org) {
-    return NextResponse.json({ leads: [], total: 0, page: 1, pageSize: 20 })
+    return NextResponse.json(
+      { error: 'Configurez votre organisation Growth avant de créer une demande.' },
+      { status: 409 }
+    )
   }
-
   const url = new URL(req.url)
   const status = url.searchParams.get('status')
   const source = url.searchParams.get('source')
@@ -107,6 +109,12 @@ export async function POST(req: NextRequest) {
   }
 
   const org = await getUserOrganization(session.user.id)
+  if (!org) {
+    return NextResponse.json(
+      { error: 'Configurez votre organisation Growth avant de créer une demande.' },
+      { status: 409 }
+    )
+  }
 
   let body: any
   try {
@@ -148,7 +156,7 @@ export async function POST(req: NextRequest) {
   try {
     const result = await leadCapture(
       {
-        organizationId: org?.id,
+        organizationId: org.id,
         userId: session.user.id,
         objective: 'Capture lead from source ' + input.source,
         tools: ['consent_check', 'initial_scoring', 'lead_create'],

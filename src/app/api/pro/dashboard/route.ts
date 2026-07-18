@@ -26,6 +26,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { getProAccess } from '@/lib/pro/access'
 
 export const runtime = 'nodejs'
 
@@ -49,7 +50,7 @@ export async function GET(req: NextRequest) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
-  const userId = session.user.id
+  const userId = (await getProAccess(session.user.id)).ownerUserId
 
   const now = new Date()
   const { start: weekStart, end: weekEnd } = getWeekBounds(now)

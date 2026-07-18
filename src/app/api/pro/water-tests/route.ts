@@ -16,6 +16,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { getProAccess } from '@/lib/pro/access'
 
 export const runtime = 'nodejs'
 
@@ -34,6 +35,36 @@ function toInt(v: unknown): number | null {
   return Math.round(n)
 }
 
+export async function GET(req: NextRequest) {
+  const locale = pickLocale(req)
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
+  }
+
+  const url = new URL(req.url)
+  const proPoolId = url.searchParams.get('proPoolId')
+  const access = await getProAccess(session.user.id)
+  const where: any = { pool: { client: { proUserId: access.ownerUserId } } }
+  if (proPoolId) where.proPoolId = proPoolId
+  const waterTests = await db.proWaterTest.findMany({
+    where,
+    orderBy: { testedAt: 'desc' },
+    take: 200,
+    include: {
+      pool: {
+        select: {
+          id: true,
+          name: true,
+          client: { select: { id: true, firstName: true, lastName: true } },
+        },
+      },
+    },
+  })
+  return NextResponse.json({ waterTests, total: waterTests.length })
+}
+
 export async function POST(req: NextRequest) {
   const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
@@ -41,6 +72,8 @@ export async function POST(req: NextRequest) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
+  const access = await getProAccess(session.user.id)
+  if (!access.canWrite) return NextResponse.json({ error: 'Accès en lecture seule' }, { status: 403 })
 
   let body: any
   try {
@@ -62,7 +95,7 @@ export async function POST(req: NextRequest) {
 
   // Verify the pool belongs to a client owned by the authenticated pro.
   const pool = await db.proPool.findFirst({
-    where: { id: proPoolId, client: { proUserId: session.user.id } },
+    where: { id: proPoolId, client: { proUserId: access.ownerUserId } },
     select: { id: true },
   })
   if (!pool) {

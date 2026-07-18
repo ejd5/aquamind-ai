@@ -212,7 +212,7 @@ export default function ProInterventionsPage() {
                     <td className="px-4 py-3">
                       {iv.client ? (
                         <Link
-                          href={`/pro/app/clients/${iv.client.id}`}
+                          href={`/pro/app/interventions/${iv.id}`}
                           className="font-semibold text-foreground transition-colors hover:text-gold"
                         >
                           {iv.client.firstName ?? ''} {iv.client.lastName ?? ''}

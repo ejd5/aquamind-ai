@@ -130,7 +130,19 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     data.status = body.status
   }
   if (typeof body?.assignedTo === 'string') {
-    data.assignedTo = body.assignedTo.trim() || null
+    const assignedTo = body.assignedTo.trim()
+    if (!assignedTo) {
+      data.assignedTo = null
+    } else {
+      const member = await db.organizationMember.findFirst({
+        where: { organizationId: org.id, userId: assignedTo, status: 'active' },
+        select: { id: true },
+      })
+      if (!member) {
+        return NextResponse.json({ error: 'Collaborateur non autorisé' }, { status: 400 })
+      }
+      data.assignedTo = assignedTo
+    }
   }
   if (typeof body?.score === 'number') {
     data.score = Math.max(0, Math.min(100, Math.round(body.score)))

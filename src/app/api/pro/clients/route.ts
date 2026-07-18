@@ -16,6 +16,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { getProAccess } from '@/lib/pro/access'
 
 export const runtime = 'nodejs'
 
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
-  const userId = session.user.id
+  const userId = (await getProAccess(session.user.id)).ownerUserId
 
   const url = new URL(req.url)
   const q = (url.searchParams.get('q') || '').trim()
@@ -75,7 +76,9 @@ export async function POST(req: NextRequest) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
-  const userId = session.user.id
+  const access = await getProAccess(session.user.id)
+  if (!access.canWrite) return NextResponse.json({ error: 'Accès en lecture seule' }, { status: 403 })
+  const userId = access.ownerUserId
 
   let body: any
   try {

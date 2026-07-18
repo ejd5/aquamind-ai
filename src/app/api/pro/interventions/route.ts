@@ -27,6 +27,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { getProAccess } from '@/lib/pro/access'
 
 export const runtime = 'nodejs'
 
@@ -59,6 +60,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 401 })
   }
 
+  const access = await getProAccess(session.user.id)
   const url = new URL(req.url)
   const clientId = url.searchParams.get('clientId')
   const poolId = url.searchParams.get('poolId')
@@ -75,7 +77,7 @@ export async function GET(req: NextRequest) {
 
   // Build WHERE clause scoped to the pro's clients.
   const where: Record<string, unknown> = {
-    client: { proUserId: session.user.id },
+    client: { proUserId: access.ownerUserId },
   }
   if (clientId) where.proClientId = clientId
   if (poolId) where.proPoolId = poolId
@@ -122,6 +124,8 @@ export async function POST(req: NextRequest) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
+  const access = await getProAccess(session.user.id)
+  if (!access.canWrite) return NextResponse.json({ error: 'Accès en lecture seule' }, { status: 403 })
 
   let body: any
   try {
@@ -143,7 +147,7 @@ export async function POST(req: NextRequest) {
 
   // Verify the client belongs to the authenticated pro.
   const client = await db.proClient.findFirst({
-    where: { id: proClientId, proUserId: session.user.id },
+    where: { id: proClientId, proUserId: access.ownerUserId },
     select: { id: true },
   })
   if (!client) {
@@ -196,10 +200,25 @@ export async function POST(req: NextRequest) {
     typeof body?.status === 'string' && ALLOWED_STATUSES.has(body.status)
       ? body.status
       : 'scheduled'
-  const technicianId =
+  let technicianId =
     typeof body?.technicianId === 'string' && body.technicianId
       ? body.technicianId
       : null
+  if (!technicianId && access.role === 'technician') technicianId = session.user.id
+  if (technicianId && technicianId !== access.ownerUserId) {
+    const member = access.organizationId
+      ? await db.organizationMember.findFirst({
+          where: {
+            organizationId: access.organizationId,
+            userId: technicianId,
+            status: 'active',
+            role: { in: ['owner', 'admin', 'manager', 'technician'] },
+          },
+          select: { id: true },
+        })
+      : null
+    if (!member) technicianId = null
+  }
   const duration =
     body?.duration != null && Number.isFinite(Number(body.duration))
       ? Math.max(0, Math.round(Number(body.duration)))
@@ -217,24 +236,37 @@ export async function POST(req: NextRequest) {
     completedAt = new Date()
   }
 
+  const recurrence = ['weekly', 'biweekly', 'monthly'].includes(body?.recurrence)
+    ? String(body.recurrence)
+    : 'none'
+  const occurrences = recurrence === 'none'
+    ? 1
+    : Math.min(52, Math.max(2, Math.round(Number(body?.occurrences) || 4)))
+
   try {
-    const intervention = await db.proIntervention.create({
-      data: {
+    const interventions = await db.$transaction(
+      Array.from({ length: occurrences }, (_, index) => {
+        const occurrenceDate = new Date(scheduledAt)
+        if (recurrence === 'weekly') occurrenceDate.setDate(occurrenceDate.getDate() + 7 * index)
+        if (recurrence === 'biweekly') occurrenceDate.setDate(occurrenceDate.getDate() + 14 * index)
+        if (recurrence === 'monthly') occurrenceDate.setMonth(occurrenceDate.getMonth() + index)
+        return db.proIntervention.create({ data: {
         proClientId,
         proPoolId,
         technicianId,
         type,
         status,
-        scheduledAt,
+        scheduledAt: occurrenceDate,
         completedAt,
         duration,
         notes,
         photos: toJsonArray(body?.photos),
         actions: toJsonArray(body?.actions),
         productsUsed: toJsonArray(body?.productsUsed),
-      },
-    })
-    return NextResponse.json({ intervention }, { status: 201 })
+        } })
+      })
+    )
+    return NextResponse.json({ intervention: interventions[0], interventions, recurrence }, { status: 201 })
   } catch (err) {
     console.error('[pro/interventions] POST error:', err)
     const msg = await translate(locale, 'pro.errors.generic', 'Une erreur est survenue.')

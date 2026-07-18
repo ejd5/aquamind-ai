@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
   }
 
   const org = await getUserOrganization(session.user.id)
+  if (!org) return NextResponse.json({ error: 'Organisation requise' }, { status: 409 })
   if (!org) {
     return NextResponse.json({ quotes: [], total: 0 })
   }
@@ -86,6 +87,7 @@ export async function POST(req: NextRequest) {
   }
 
   const org = await getUserOrganization(session.user.id)
+  if (!org) return NextResponse.json({ error: 'Organisation requise' }, { status: 409 })
 
   let body: any
   try {
@@ -104,6 +106,8 @@ export async function POST(req: NextRequest) {
     )
     return NextResponse.json({ error: msg }, { status: 400 })
   }
+  const ownedLead = await db.lead.findFirst({ where: { id: leadId, organizationId: org.id }, select: { id: true } })
+  if (!ownedLead) return NextResponse.json({ error: 'Demande introuvable' }, { status: 404 })
 
   const total = items.reduce(
     (sum: number, i: any) => sum + (Number(i?.total) || 0),
@@ -114,7 +118,7 @@ export async function POST(req: NextRequest) {
     const quote = await db.quote.create({
       data: {
         leadId,
-        organizationId: org?.id ?? null,
+        organizationId: org.id,
         items: JSON.stringify(items),
         total,
         currency: 'EUR',

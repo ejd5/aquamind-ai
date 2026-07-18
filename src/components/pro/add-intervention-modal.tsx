@@ -14,6 +14,7 @@ import { AlertCircle, CalendarPlus, Check, Loader2, X } from 'lucide-react'
 
 type Client = { id: string; firstName: string; lastName: string }
 type Pool = { id: string; name: string }
+type TeamMember = { id: string; role: string; user: { id: string; name?: string | null; email: string } }
 
 type Props = {
   open: boolean
@@ -38,10 +39,14 @@ export function AddInterventionModal({ open, onClose, onCreated, initialClientId
   const [pools, setPools] = useState<Pool[]>([])
   const [clientId, setClientId] = useState(initialClientId ?? '')
   const [poolId, setPoolId] = useState('')
+  const [team, setTeam] = useState<TeamMember[]>([])
+  const [technicianId, setTechnicianId] = useState('')
   const [type, setType] = useState<(typeof TYPES)[number]>('maintenance')
   const [scheduledAt, setScheduledAt] = useState(defaultDateTime)
   const [duration, setDuration] = useState('60')
   const [notes, setNotes] = useState('')
+  const [recurrence, setRecurrence] = useState('none')
+  const [occurrences, setOccurrences] = useState('4')
   const [loadingClients, setLoadingClients] = useState(false)
   const [loadingPools, setLoadingPools] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -57,9 +62,12 @@ export function AddInterventionModal({ open, onClose, onCreated, initialClientId
     if (!open) return
     setClientId(initialClientId ?? '')
     setPoolId('')
+    setTechnicianId('')
     setScheduledAt(defaultDateTime())
     setDuration('60')
     setNotes('')
+    setRecurrence('none')
+    setOccurrences('4')
     setError(null)
     setSuccess(false)
 
@@ -79,6 +87,10 @@ export function AddInterventionModal({ open, onClose, onCreated, initialClientId
       .finally(() => {
         if (active) setLoadingClients(false)
       })
+    fetch('/api/pro/settings', { cache: 'no-store' })
+      .then((res) => res.ok ? res.json() : { members: [] })
+      .then((data) => { if (active) setTeam(data.members ?? []) })
+      .catch(() => { if (active) setTeam([]) })
     return () => {
       active = false
     }
@@ -129,7 +141,10 @@ export function AddInterventionModal({ open, onClose, onCreated, initialClientId
           type,
           scheduledAt: new Date(scheduledAt).toISOString(),
           duration: duration ? Number(duration) : undefined,
+          technicianId: technicianId || undefined,
           notes: notes.trim() || undefined,
+          recurrence,
+          occurrences: recurrence === 'none' ? 1 : Number(occurrences),
         }),
       })
       const data = await res.json().catch(() => null)
@@ -207,6 +222,25 @@ export function AddInterventionModal({ open, onClose, onCreated, initialClientId
             </div>
             <Field label={t('interventionScheduledAt')} required>
               <input className="input-glass" type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} required />
+            </Field>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Récurrence">
+                <select className="input-glass" value={recurrence} onChange={(event) => setRecurrence(event.target.value)}>
+                  <option value="none">Visite unique</option>
+                  <option value="weekly">Chaque semaine</option>
+                  <option value="biweekly">Toutes les 2 semaines</option>
+                  <option value="monthly">Chaque mois</option>
+                </select>
+              </Field>
+              {recurrence !== 'none' && <Field label="Nombre de visites">
+                <input className="input-glass" type="number" min="2" max="52" value={occurrences} onChange={(event) => setOccurrences(event.target.value)} />
+              </Field>}
+            </div>
+            <Field label={t('interventionTechnician')}>
+              <select className="input-glass" value={technicianId} onChange={(event) => setTechnicianId(event.target.value)}>
+                <option value="">{t('noTechnician')}</option>
+                {team.filter((member) => member.role !== 'viewer').map((member) => <option key={member.id} value={member.user.id}>{member.user.name || member.user.email} · {member.role}</option>)}
+              </select>
             </Field>
             <Field label={t('interventionNotes')}>
               <textarea className="input-glass min-h-24 resize-y" value={notes} onChange={(event) => setNotes(event.target.value)} />

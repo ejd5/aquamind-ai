@@ -5,8 +5,8 @@
  *
  * POST — run the matching agent. Body:
  *        `{ organizations: [{ id, name, city?, zipCode?, specialties[], capacity, rating, distanceKm? }] }`.
- *        If no organizations are provided, the API auto-discovers all
- *        organizations in the same country as the lead.
+ *        If no organizations are provided, the API discovers eligible
+ *        organizations but never invents capacity, rating or specialties.
  *
  * Auth: NextAuth session required.
  */
@@ -45,9 +45,10 @@ export async function POST(req: NextRequest, ctx: Ctx) {
 
   const { id } = await ctx.params
   const org = await getUserOrganization(session.user.id)
+  if (!org) return NextResponse.json({ error: 'Organisation requise' }, { status: 409 })
 
   const lead = await db.lead.findFirst({
-    where: org ? { id, organizationId: org.id } : { id },
+    where: { id, organizationId: org.id },
     select: { id: true, country: true, city: true, zipCode: true, serviceType: true },
   })
   if (!lead) {
@@ -90,9 +91,9 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       name: o.name,
       city: o.city ?? undefined,
       zipCode: o.zipCode ?? undefined,
-      specialties: ['maintenance'], // default; could be enriched later
-      capacity: 5,
-      rating: 4.5,
+      specialties: [],
+      capacity: 0,
+      rating: 0,
     }))
   }
 

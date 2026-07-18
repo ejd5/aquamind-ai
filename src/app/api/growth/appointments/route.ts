@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
   }
 
   const org = await getUserOrganization(session.user.id)
+  if (!org) return NextResponse.json({ error: 'Organisation requise' }, { status: 409 })
   if (!org) {
     return NextResponse.json({ appointments: [], total: 0 })
   }
@@ -88,6 +89,7 @@ export async function POST(req: NextRequest) {
   }
 
   const org = await getUserOrganization(session.user.id)
+  if (!org) return NextResponse.json({ error: 'Organisation requise' }, { status: 409 })
 
   let body: any
   try {
@@ -107,6 +109,8 @@ export async function POST(req: NextRequest) {
     )
     return NextResponse.json({ error: msg }, { status: 400 })
   }
+  const ownedLead = await db.lead.findFirst({ where: { id: leadId, organizationId: org.id }, select: { id: true } })
+  if (!ownedLead) return NextResponse.json({ error: 'Demande introuvable' }, { status: 404 })
 
   let startTime: Date
   let endTime: Date
@@ -127,7 +131,7 @@ export async function POST(req: NextRequest) {
     const appt = await db.appointment.create({
       data: {
         leadId,
-        organizationId: org?.id ?? null,
+        organizationId: org.id,
         assignedTo: body?.assignedTo ? String(body.assignedTo) : null,
         startTime,
         endTime,

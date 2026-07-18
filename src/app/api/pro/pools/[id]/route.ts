@@ -18,6 +18,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { getProAccess } from '@/lib/pro/access'
 
 export const runtime = 'nodejs'
 
@@ -43,8 +44,9 @@ export async function GET(req: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: msg }, { status: 401 })
   }
   const { id } = await ctx.params
+  const access = await getProAccess(session.user.id)
 
-  const owned = await getOwnedPool(id, session.user.id)
+  const owned = await getOwnedPool(id, access.ownerUserId)
   if (!owned) {
     const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
     return NextResponse.json({ error: msg }, { status: 404 })
@@ -87,8 +89,10 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: msg }, { status: 401 })
   }
   const { id } = await ctx.params
+  const access = await getProAccess(session.user.id)
+  if (!access.canWrite) return NextResponse.json({ error: 'Accès en lecture seule' }, { status: 403 })
 
-  const owned = await getOwnedPool(id, session.user.id)
+  const owned = await getOwnedPool(id, access.ownerUserId)
   if (!owned) {
     const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
     return NextResponse.json({ error: msg }, { status: 404 })
@@ -147,8 +151,10 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: msg }, { status: 401 })
   }
   const { id } = await ctx.params
+  const access = await getProAccess(session.user.id)
+  if (!access.canManage) return NextResponse.json({ error: 'Droits insuffisants' }, { status: 403 })
 
-  const owned = await getOwnedPool(id, session.user.id)
+  const owned = await getOwnedPool(id, access.ownerUserId)
   if (!owned) {
     const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
     return NextResponse.json({ error: msg }, { status: 404 })
