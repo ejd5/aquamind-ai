@@ -1,20 +1,22 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { getProAccess } from '@/lib/pro/access'
+import { toolWorkspaceText } from '@/i18n/locales/tool-workspaces'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const locale = req.headers.get('accept-language') ?? undefined
+  if (!session?.user?.id) return NextResponse.json({ error: toolWorkspaceText(locale, 'unauthorized') }, { status: 401 })
   const access = await getProAccess(session.user.id)
   const clients = await db.proClient.findMany({
     where: { proUserId: access.ownerUserId }, orderBy: { lastName: 'asc' },
     include: { pools: true, interventions: { orderBy: { scheduledAt: 'desc' } } },
   })
-  const rows = [['Client','Email','Téléphone','Ville','Bassin','Type bassin','Volume','Dernière intervention','Statut']]
+  const rows = [['Client','Email','Telephone','Ville','Bassin','Type bassin','Volume',toolWorkspaceText(locale, 'lastIntervention'),'Statut']]
   for (const client of clients) {
     const pools = client.pools.length ? client.pools : [null]
     for (const pool of pools) {

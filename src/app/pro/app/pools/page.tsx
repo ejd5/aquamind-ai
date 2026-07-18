@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Droplets, FlaskConical, Loader2, MapPin, RefreshCw, Search, Waves } from 'lucide-react'
+import { useToolWorkspaceText } from '@/hooks/use-tool-workspace-text'
 
 type PoolRow = {
   id: string
@@ -18,6 +19,7 @@ type PoolRow = {
 }
 
 export default function ProPoolsPage() {
+  const tt = useToolWorkspaceText()
   const [pools, setPools] = useState<PoolRow[]>([])
   const [q, setQ] = useState('')
   const [loading, setLoading] = useState(true)
@@ -40,7 +42,7 @@ export default function ProPoolsPage() {
     }
   }, [q])
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => { const timer = window.setTimeout(() => { void load() }, 0); return () => window.clearTimeout(timer) }, [load])
 
   return (
     <div className="space-y-6">
@@ -77,7 +79,7 @@ export default function ProPoolsPage() {
               </div>
               <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
                 <Info icon={<Droplets className="h-3.5 w-3.5" />} value={pool.volume ? `${pool.volume} ${pool.unit ?? 'm3'}` : 'Volume non renseigné'} />
-                <Info icon={<MapPin className="h-3.5 w-3.5" />} value={pool.client.city || 'Ville non renseignée'} />
+                <Info icon={<MapPin className="h-3.5 w-3.5" />} value={pool.client.city || tt('cityUnknown')} />
                 <Info icon={<FlaskConical className="h-3.5 w-3.5" />} value={last ? `pH ${last.ph ?? '—'} · Cl ${last.freeChlorine ?? '—'}` : 'Aucune analyse'} />
                 <Info icon={<Waves className="h-3.5 w-3.5" />} value={`${pool._count?.interventions ?? 0} intervention(s)`} />
               </div>

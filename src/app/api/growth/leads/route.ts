@@ -18,6 +18,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { leadCapture, type LeadCaptureInput } from '@/lib/growth/agents'
+import { toolWorkspaceText } from '@/i18n/locales/tool-workspaces'
 
 export const runtime = 'nodejs'
 
@@ -47,7 +48,7 @@ export async function GET(req: NextRequest) {
   const org = await getUserOrganization(session.user.id)
   if (!org) {
     return NextResponse.json(
-      { error: 'Configurez votre organisation Growth avant de créer une demande.' },
+      { error: toolWorkspaceText(locale, 'organizationRequired') },
       { status: 409 }
     )
   }
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest) {
   const org = await getUserOrganization(session.user.id)
   if (!org) {
     return NextResponse.json(
-      { error: 'Configurez votre organisation Growth avant de créer une demande.' },
+      { error: toolWorkspaceText(locale, 'organizationRequired') },
       { status: 409 }
     )
   }

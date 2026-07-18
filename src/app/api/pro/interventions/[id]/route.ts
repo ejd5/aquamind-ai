@@ -19,6 +19,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { getProAccess } from '@/lib/pro/access'
+import { toolWorkspaceText } from '@/i18n/locales/tool-workspaces'
 
 export const runtime = 'nodejs'
 
@@ -98,7 +99,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   }
   const { id } = await ctx.params
   const access = await getProAccess(session.user.id)
-  if (!access.canWrite) return NextResponse.json({ error: 'Accès en lecture seule' }, { status: 403 })
+  if (!access.canWrite) return NextResponse.json({ error: toolWorkspaceText(locale, 'readonly') }, { status: 403 })
 
   const existing = await getOwnedIntervention(id, access.ownerUserId)
   if (!existing) {
@@ -130,7 +131,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
             select: { id: true },
           })
         : null
-      if (!member) return NextResponse.json({ error: 'Technicien non autorisé' }, { status: 400 })
+      if (!member) return NextResponse.json({ error: toolWorkspaceText(locale, 'technicianUnauthorized') }, { status: 400 })
       data.technicianId = technicianId
     }
   }

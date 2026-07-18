@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { toolWorkspaceText } from '@/i18n/locales/tool-workspaces'
 
 export const runtime = 'nodejs'
 
@@ -9,9 +10,9 @@ async function organizationForOwner(userId: string) {
   return db.organization.findFirst({ where: { ownerId: userId }, orderBy: { createdAt: 'asc' } })
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  if (!session?.user?.id) return NextResponse.json({ error: toolWorkspaceText(req.headers.get('accept-language') ?? undefined, 'unauthorized') }, { status: 401 })
   const organization = await organizationForOwner(session.user.id)
   const members = organization
     ? await db.organizationMember.findMany({
@@ -25,7 +26,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  if (!session?.user?.id) return NextResponse.json({ error: toolWorkspaceText(req.headers.get('accept-language') ?? undefined, 'unauthorized') }, { status: 401 })
   const body = await req.json().catch(() => ({}))
   const name = text(body?.name)
   if (!name) return NextResponse.json({ error: 'Nom de l’organisation requis' }, { status: 400 })

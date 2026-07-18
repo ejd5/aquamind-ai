@@ -4,8 +4,10 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Loader2, ShieldCheck } from 'lucide-react'
+import { useToolWorkspaceText } from '@/hooks/use-tool-workspace-text'
 
 export default function NewGrowthLeadPage() {
+  const tt = useToolWorkspaceText()
   const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -15,7 +17,7 @@ export default function NewGrowthLeadPage() {
     const res = await fetch('/api/growth/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, poolVolume: form.poolVolume ? Number(form.poolVolume) : undefined, consentSource: 'growth_inbox_manual_form' }) })
     const json = await res.json().catch(() => ({})); setSaving(false)
     if (res.status === 409) { router.push('/growth/app/settings'); return }
-    if (!res.ok) { setError(json.error || json.warning || 'Impossible de créer la demande.'); return }
+    if (!res.ok) { setError(json.error || json.warning || tt('leadCreateFailed')); return }
     router.push(`/growth/app/leads/${json.leadId}`)
   }
   return <div className="space-y-6">

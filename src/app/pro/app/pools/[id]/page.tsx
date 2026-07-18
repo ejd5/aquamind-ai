@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Calendar, Download, FlaskConical, Loader2, Plus, Save, Wrench } from 'lucide-react'
+import { useToolWorkspaceText } from '@/hooks/use-tool-workspace-text'
 
 type WaterTest = { id: string; testedAt: string; ph?: number | null; freeChlorine?: number | null; alkalinity?: number | null; temperature?: number | null; notes?: string | null }
 type Pool = {
@@ -14,6 +15,7 @@ type Pool = {
 }
 
 export default function ProPoolDetailPage() {
+  const tt = useToolWorkspaceText()
   const { id } = useParams<{ id: string }>()
   const [pool, setPool] = useState<Pool | null>(null)
   const [loading, setLoading] = useState(true)
@@ -60,7 +62,7 @@ export default function ProPoolDetailPage() {
           <Field label="pH" value={form.ph} onChange={(v) => setForm({ ...form, ph: v })} />
           <Field label="Chlore libre (mg/L)" value={form.freeChlorine} onChange={(v) => setForm({ ...form, freeChlorine: v })} />
           <Field label="TAC (mg/L)" value={form.alkalinity} onChange={(v) => setForm({ ...form, alkalinity: v })} />
-          <Field label="Température (°C)" value={form.temperature} onChange={(v) => setForm({ ...form, temperature: v })} />
+          <Field label={tt('temperature')} value={form.temperature} onChange={(v) => setForm({ ...form, temperature: v })} />
         </div>
         <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Observations" className="mt-3 min-h-24 w-full rounded-xl border border-border bg-background p-3 text-sm" />
         <button disabled={saving} className="mt-3 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Enregistrer l’analyse</button>

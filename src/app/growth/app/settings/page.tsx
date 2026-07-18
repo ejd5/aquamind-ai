@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import { Loader2, Save, Settings, ShieldCheck } from 'lucide-react'
+import { useToolWorkspaceText } from '@/hooks/use-tool-workspace-text'
 
 type Org = { name?: string; legalName?: string | null; siret?: string | null; address?: string | null; city?: string | null; zipCode?: string | null; country?: string | null; phone?: string | null; email?: string | null; website?: string | null }
 
 export default function GrowthSettingsPage() {
+  const tt = useToolWorkspaceText()
   const [org, setOrg] = useState<Org>({ country: 'FR' })
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   useEffect(() => { fetch('/api/growth/settings', { cache: 'no-store' }).then((r) => r.json()).then((j) => setOrg(j.organization ?? { country: 'FR' })).finally(() => setLoading(false)) }, [])
-  async function save() { setLoading(true); const r = await fetch('/api/growth/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(org) }); const j = await r.json(); setMessage(r.ok ? 'Organisation enregistrée.' : j.error || 'Erreur'); if (r.ok) setOrg(j.organization); setLoading(false) }
+  async function save() { setLoading(true); const r = await fetch('/api/growth/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(org) }); const j = await r.json(); setMessage(r.ok ? tt('organizationSaved') : j.error || 'Error'); if (r.ok) setOrg(j.organization); setLoading(false) }
   if (loading && !org.name) return <div className="flex justify-center py-14"><Loader2 className="h-6 w-6 animate-spin" /></div>
   return <div className="space-y-6">
     <div><span className="section-label"><Settings className="mr-1 inline h-3 w-3" />Growth Inbox Beta</span><h1 className="mt-2 font-display text-3xl font-bold sm:text-4xl">Paramètres</h1><p className="mt-1 text-sm text-muted-foreground">Organisation et cadre de traitement des demandes entrantes.</p></div>

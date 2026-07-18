@@ -27,6 +27,7 @@
  * The Growth OS API (/api/growth/agents/run) dispatches on `agentType`.
  */
 import { db } from '@/lib/db'
+import { toolWorkspaceText } from '@/i18n/locales/tool-workspaces'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -790,7 +791,7 @@ export async function matching(
     cost: 0.04,
     escalatedTo: 'manual_dispatcher',
     reason: bestMatch
-      ? 'Suggestion prête — validation humaine requise avant attribution.'
+      ? toolWorkspaceText('fr', 'suggestionReady')
       : 'Aucune organisation disponible — traitement manuel requis.',
   }
   await logAgentRun({ ...ctx, leadId: input.leadId }, result)

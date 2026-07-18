@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Camera, CheckCircle2, Download, FlaskConical, Loader2, Play, Save, Trash2 } from 'lucide-react'
+import { useToolWorkspaceText } from '@/hooks/use-tool-workspace-text'
 
 type Photo = { url: string; capturedAt: string; label?: string }
 type Intervention = {
@@ -14,6 +15,7 @@ type Intervention = {
 }
 
 export default function ProInterventionDetailPage() {
+  const tt = useToolWorkspaceText()
   const { id } = useParams<{ id: string }>()
   const [intervention, setIntervention] = useState<Intervention | null>(null)
   const [loading, setLoading] = useState(true)
@@ -45,14 +47,14 @@ export default function ProInterventionDetailPage() {
       actions: lines(actions), productsUsed: lines(products), photos, ...extra,
     }) })
     setSaving(false)
-    if (res.ok) { setMessage('Rapport enregistré.'); await load() } else setMessage('Impossible d’enregistrer le rapport.')
+    if (res.ok) { setMessage(tt('reportSaved')); await load() } else setMessage('Unable to save the report.')
   }
 
   async function addWaterTest() {
     if (!intervention?.pool?.id) return
     setSaving(true)
     const res = await fetch('/api/pro/water-tests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ proPoolId: intervention.pool.id, ...test, notes: `Analyse liée à l’intervention ${id}` }) })
-    setSaving(false); setMessage(res.ok ? 'Analyse d’eau enregistrée.' : 'Impossible d’enregistrer l’analyse.')
+    setSaving(false); setMessage(res.ok ? tt('waterTestSaved') : 'Unable to save the water test.')
     if (res.ok) setTest({ ph: '', freeChlorine: '', alkalinity: '', temperature: '' })
   }
 

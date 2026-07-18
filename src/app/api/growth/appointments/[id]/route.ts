@@ -3,11 +3,12 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { getGrowthOrganization } from '@/lib/growth/access'
+import { toolWorkspaceText } from '@/i18n/locales/tool-workspaces'
 
 const STATUSES = new Set(['proposed', 'confirmed', 'completed', 'cancelled', 'no_show'])
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  if (!session?.user?.id) return NextResponse.json({ error: toolWorkspaceText(req.headers.get('accept-language') ?? undefined, 'unauthorized') }, { status: 401 })
   const org = await getGrowthOrganization(session.user.id)
   if (!org) return NextResponse.json({ error: 'Organisation requise' }, { status: 409 })
   const { id } = await params

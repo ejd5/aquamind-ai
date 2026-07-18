@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { toolWorkspaceText } from '@/i18n/locales/tool-workspaces'
 
 export const runtime = 'nodejs'
 
@@ -9,9 +10,9 @@ async function ownedOrganization(userId: string) {
   return db.organization.findFirst({ where: { ownerId: userId, type: 'pro' }, orderBy: { createdAt: 'asc' } })
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  if (!session?.user?.id) return NextResponse.json({ error: toolWorkspaceText(req.headers.get('accept-language') ?? undefined, 'unauthorized') }, { status: 401 })
   const organization = await ownedOrganization(session.user.id)
   if (!organization) return NextResponse.json({ organization: null, members: [] })
   const members = await db.organizationMember.findMany({
@@ -24,14 +25,15 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const locale = req.headers.get('accept-language') ?? undefined
+  if (!session?.user?.id) return NextResponse.json({ error: toolWorkspaceText(locale, 'unauthorized') }, { status: 401 })
   const body = await req.json().catch(() => ({}))
   const action = String(body?.action || 'save_company')
   let organization = await ownedOrganization(session.user.id)
 
   if (action === 'save_company') {
     const name = String(body?.name || '').trim()
-    if (!name) return NextResponse.json({ error: 'Nom de société requis' }, { status: 400 })
+    if (!name) return NextResponse.json({ error: toolWorkspaceText(locale, 'companyNameRequired') }, { status: 400 })
     const data = {
       name,
       legalName: clean(body?.legalName), siret: clean(body?.siret), vatNumber: clean(body?.vatNumber),
@@ -49,13 +51,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ organization })
   }
 
-  if (!organization) return NextResponse.json({ error: 'Configurez d’abord votre société' }, { status: 409 })
+  if (!organization) return NextResponse.json({ error: toolWorkspaceText(locale, 'companySetupRequired') }, { status: 409 })
 
   if (action === 'add_member') {
     const email = String(body?.email || '').trim().toLowerCase()
     const role = ['admin', 'manager', 'technician', 'viewer'].includes(body?.role) ? body.role : 'technician'
     const user = await db.user.findUnique({ where: { email }, select: { id: true, email: true, name: true } })
-    if (!user) return NextResponse.json({ error: 'Ce collaborateur doit d’abord créer son compte AQWELIA' }, { status: 404 })
+    if (!user) return NextResponse.json({ error: toolWorkspaceText(locale, 'userMustRegister') }, { status: 404 })
     const member = await db.organizationMember.upsert({
       where: { organizationId_userId: { organizationId: organization.id, userId: user.id } },
       create: { organizationId: organization.id, userId: user.id, role, status: 'active' },

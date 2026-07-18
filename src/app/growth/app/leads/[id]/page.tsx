@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
+import { useToolWorkspaceText } from '@/hooks/use-tool-workspace-text'
 import Link from 'next/link'
 import {
   ArrowLeft,
@@ -144,6 +145,7 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function GrowthLeadDetailPage() {
+  const tt = useToolWorkspaceText()
   const t = useTranslations('growthApp')
   const params = useParams<{ id: string }>()
   const leadId = params?.id ?? ''
@@ -184,7 +186,8 @@ export default function GrowthLeadDetailPage() {
   }, [leadId, t])
 
   useEffect(() => {
-    void load()
+    const timer = window.setTimeout(() => { void load() }, 0)
+    return () => window.clearTimeout(timer)
   }, [load])
 
   async function updateStatus(newStatus: string) {
@@ -266,9 +269,9 @@ export default function GrowthLeadDetailPage() {
     const end = new Date(start.getTime() + Math.max(15, Number(appointmentDuration) || 60) * 60_000)
     const res = await fetch('/api/growth/appointments', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ leadId, startTime: start.toISOString(), endTime: end.toISOString(), status: 'proposed', notes: 'Créneau proposé depuis Growth Inbox' }),
+      body: JSON.stringify({ leadId, startTime: start.toISOString(), endTime: end.toISOString(), status: 'proposed', notes: tt('slotProposedNote') }),
     })
-    setActionMessage(res.ok ? 'Créneau proposé et journalisé.' : 'Impossible de créer le rendez-vous.')
+    setActionMessage(res.ok ? tt('slotCreated') : tt('appointmentCreateFailed'))
     setActionLoading(null); if (res.ok) { setAppointmentStart(''); void load() }
   }
 
@@ -280,7 +283,7 @@ export default function GrowthLeadDetailPage() {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ leadId, status: 'draft', items: [{ label: quoteLabel.trim(), quantity: 1, unitPrice: amount, total: amount }] }),
     })
-    setActionMessage(res.ok ? 'Brouillon de devis créé et journalisé.' : 'Impossible de créer le devis.')
+    setActionMessage(res.ok ? tt('draftCreated') : tt('quoteCreateFailed'))
     setActionLoading(null); if (res.ok) { setQuoteAmount(''); void load() }
   }
 

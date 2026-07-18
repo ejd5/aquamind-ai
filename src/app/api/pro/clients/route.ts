@@ -17,6 +17,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { getProAccess } from '@/lib/pro/access'
+import { toolWorkspaceText } from '@/i18n/locales/tool-workspaces'
 
 export const runtime = 'nodejs'
 
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 401 })
   }
   const access = await getProAccess(session.user.id)
-  if (!access.canWrite) return NextResponse.json({ error: 'Accès en lecture seule' }, { status: 403 })
+  if (!access.canWrite) return NextResponse.json({ error: toolWorkspaceText(locale, 'readonly') }, { status: 403 })
   const userId = access.ownerUserId
 
   let body: any

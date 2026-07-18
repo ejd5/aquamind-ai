@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Download, Loader2, Plus, Save, Settings, Trash2, Users } from 'lucide-react'
+import { useToolWorkspaceText } from '@/hooks/use-tool-workspace-text'
 
 type Org = { name?: string; legalName?: string | null; siret?: string | null; vatNumber?: string | null; address?: string | null; city?: string | null; zipCode?: string | null; phone?: string | null; email?: string | null; website?: string | null }
 type Member = { id: string; role: string; user: { name?: string | null; email: string } }
 
 export default function ProSettingsPage() {
+  const tt = useToolWorkspaceText()
   const [org, setOrg] = useState<Org>({})
   const [members, setMembers] = useState<Member[]>([])
   const [memberEmail, setMemberEmail] = useState('')
@@ -15,7 +17,7 @@ export default function ProSettingsPage() {
   const [message, setMessage] = useState('')
   const load = useCallback(async () => { const r = await fetch('/api/pro/settings', { cache: 'no-store' }); if (r.ok) { const j = await r.json(); setOrg(j.organization ?? {}); setMembers(j.members ?? []) } setLoading(false) }, [])
   useEffect(() => { const timer = window.setTimeout(() => { void load() }, 0); return () => window.clearTimeout(timer) }, [load])
-  async function act(body: any) { setLoading(true); setMessage(''); const r = await fetch('/api/pro/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json(); setMessage(r.ok ? 'Modifications enregistrées.' : j.error || 'Une erreur est survenue.'); await load() }
+  async function act(body: any) { setLoading(true); setMessage(''); const r = await fetch('/api/pro/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json(); setMessage(r.ok ? tt('changesSaved') : j.error || 'Error'); await load() }
   if (loading && !org.name) return <div className="flex justify-center py-14"><Loader2 className="h-6 w-6 animate-spin" /></div>
   return <div className="space-y-6">
     <div><span className="section-label"><Settings className="mr-1 inline h-3 w-3" />AQWELIA Pro</span><h1 className="mt-2 font-display text-3xl font-bold sm:text-4xl">Paramètres</h1><p className="mt-1 text-sm text-muted-foreground">Société, équipe et portabilité des données.</p></div>
