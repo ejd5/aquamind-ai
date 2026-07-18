@@ -23,6 +23,7 @@ import {
   X,
   Sparkles,
 } from 'lucide-react'
+import { AddInterventionModal } from '@/components/pro/add-intervention-modal'
 
 interface InterventionRow {
   id: string
@@ -59,6 +60,7 @@ export default function ProInterventionsPage() {
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [typeFilter, setTypeFilter] = useState<string>('')
+  const [modalOpen, setModalOpen] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -113,13 +115,13 @@ export default function ProInterventionsPage() {
             {t('interventionsSubtitle')}
           </p>
         </div>
-        <Link
-          href="/pro/app/planning"
+        <button
+          onClick={() => setModalOpen(true)}
           className="glow-gold inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] px-4 py-2 text-xs font-bold text-[oklch(0.99_0.01_195)] shadow-lg transition-all hover:scale-[1.02]"
         >
           <Plus className="h-3.5 w-3.5" />
           {t('interventionsNew')}
-        </Link>
+        </button>
       </div>
 
       {/* Filters */}
@@ -245,13 +247,13 @@ export default function ProInterventionsPage() {
           <p className="mt-4 text-sm font-semibold text-foreground">
             {t('interventionsEmpty')}
           </p>
-          <Link
-            href="/pro/app/planning"
+          <button
+            onClick={() => setModalOpen(true)}
             className="mt-4 inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/5 px-4 py-2 text-xs font-semibold text-gold transition-colors hover:bg-gold/15"
           >
             <Plus className="h-3.5 w-3.5" />
             {t('interventionsNew')}
-          </Link>
+          </button>
         </div>
       )}
 
@@ -268,6 +270,7 @@ export default function ProInterventionsPage() {
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       )}
+      <AddInterventionModal open={modalOpen} onClose={() => setModalOpen(false)} onCreated={() => { void load() }} />
     </div>
   )
 }
