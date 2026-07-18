@@ -54,4 +54,4 @@ jobs:
       - name: Verify pooled application connection (read-only)
         env:
           DATABASE_URL: ${{ env.STAGING_DATABASE_URL }}
-        run: node tests/check-staging-postgresql.mjs
+        run: node tests/check-postgresql-connection.mjs
