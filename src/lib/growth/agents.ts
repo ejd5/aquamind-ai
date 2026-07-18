@@ -909,7 +909,7 @@ export interface NurturingOutput {
   scenario: NurturingScenario
   steps: Array<{
     day: number
-    channel: 'email' | 'sms' | 'whatsapp'
+    channel: 'email'
     template: string
     goal: string
   }>
@@ -920,18 +920,18 @@ const NURTURING_SCENARIOS: Record<NurturingScenario, NurturingOutput['steps']> =
   cold_3step: [
     { day: 0, channel: 'email', template: 'cold_intro', goal: 'educate' },
     { day: 3, channel: 'email', template: 'cold_testimonial', goal: 'social_proof' },
-    { day: 7, channel: 'sms', template: 'cold_offer', goal: 'convert' },
+    { day: 7, channel: 'email', template: 'cold_offer', goal: 'convert' },
   ],
   warm_5step: [
     { day: 0, channel: 'email', template: 'warm_recall', goal: 'reconnect' },
-    { day: 2, channel: 'whatsapp', template: 'warm_quick_question', goal: 'engage' },
+    { day: 2, channel: 'email', template: 'warm_quick_question', goal: 'engage' },
     { day: 5, channel: 'email', template: 'warm_case_study', goal: 'value' },
-    { day: 8, channel: 'sms', template: 'warm_slot_offer', goal: 'appointment' },
+    { day: 8, channel: 'email', template: 'warm_slot_offer', goal: 'appointment' },
     { day: 12, channel: 'email', template: 'warm_last_chance', goal: 'convert' },
   ],
   lost_winback: [
     { day: 0, channel: 'email', template: 'winback_we_miss_you', goal: 'reactivate' },
-    { day: 7, channel: 'sms', template: 'winback_discount', goal: 'incentive' },
+    { day: 7, channel: 'email', template: 'winback_discount', goal: 'incentive' },
     { day: 14, channel: 'email', template: 'winback_final', goal: 'closure' },
   ],
 }
