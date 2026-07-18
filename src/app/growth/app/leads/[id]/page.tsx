@@ -385,12 +385,6 @@ export default function GrowthLeadDetailPage() {
             loading={actionLoading === 'diagnostic'}
           />
           <ActionButton
-            label={t('actionNurturing')}
-            icon={<TrendingUp className="h-3.5 w-3.5" />}
-            onClick={() => runAgent('nurturing')}
-            loading={actionLoading === 'nurturing'}
-          />
-          <ActionButton
             label={t('actionAttribution')}
             icon={<Coins className="h-3.5 w-3.5" />}
             onClick={() => runAgent('attribution')}
