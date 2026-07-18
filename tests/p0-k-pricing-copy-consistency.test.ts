@@ -40,46 +40,48 @@ function walkStrings(
   }
 }
 
+const COMMERCIAL_ROOTS = [
+  'landing',
+  'tarifs',
+  'plans',
+  'nav',
+  'onboarding',
+  'settings',
+  'fonctionnalites',
+  'spaPage',
+  'modules.guides',
+  'guidesData',
+  'legal.cgu',
+  'legal.cgv',
+]
+
+// This is service availability, not a paid seven-day offer. Keeping the
+// exception path-scoped prevents a future commercial weekly offer elsewhere.
+const DURATION_COPY_EXCEPTIONS = new Set([
+  'landing.piscinisteCallout2',
+])
+
+function collectStrings(data: Record<string, unknown>, roots: string[]) {
+  const values: Array<{ path: string; value: string }> = []
+  for (const root of roots) {
+    const value = getNested(data, root)
+    if (value !== undefined) {
+      walkStrings(value, root, (stringValue, path) => values.push({ path, value: stringValue }))
+    }
+  }
+  return values
+}
+
 describe('P0-K: Pricing copy consistency across all locales', () => {
-  describe('No Premium in display values', () => {
+  describe('Commercial plan names never use Premium', () => {
     for (const locale of LOCALES) {
-      it(`${locale}: has no "Premium" in user-facing values (except allowed paths)`, () => {
+      it(`${locale}: has no visible Premium plan or guide label`, () => {
         const data = loadLocale(locale)
+        const violations = collectStrings(data, COMMERCIAL_ROOTS)
+          .filter(({ value }) => /\bpremium\b/i.test(value))
+          .map(({ path, value }) => `${path} = "${value.slice(0, 80)}"`)
 
-        const ALLOWED_PREMIUM_PATHS = new Set([
-          'plans.premium',
-          'plans.premium.name',
-          'plans.premium.tagline',
-          'plans.premium.features',
-          'plans.premium.highlight',
-          'nav.premium',
-          'settings.planPremium',
-          'onboarding.spaPremiumNote',
-          'onboarding.spaPremiumTitle',
-          'onboarding.spaPremiumText1',
-          'onboarding.spaPremiumText2',
-          'onboarding.spaPremiumCta',
-          'onboarding.spaBrandCategoryPremium',
-          'onboarding.spaPremiumLead',
-          'onboarding.spaPremiumBody',
-          'legal.support.responseTimePremium',
-          'modules.guides.premium',
-          'guidesData.premium',
-          'academy.levelPremium',
-        ])
-
-        const violations: string[] = []
-
-        walkStrings(data, '', (val, fullPath) => {
-          if (val.includes('Premium')) {
-            const isAllowed = [...ALLOWED_PREMIUM_PATHS].some(p => fullPath.startsWith(p))
-            if (!isAllowed) {
-              violations.push(`${fullPath} = "${val.slice(0, 60)}"`)
-            }
-          }
-        })
-
-        expect(violations, `Premium found in ${locale} display values:\n${violations.join('\n')}`).toHaveLength(0)
+        expect(violations, `Premium found in ${locale} commercial values:\n${violations.join('\n')}`).toHaveLength(0)
       })
     }
   })
@@ -147,20 +149,15 @@ describe('P0-K: Pricing copy consistency across all locales', () => {
     }
   })
 
-  describe('No passUrgence content', () => {
+  describe('No Emergency Pass product remains visible', () => {
+    const EMERGENCY_PASS = /pass urgence|emergency pass|notfallpass|pase de emergencia|pass emergenza|passe de emerg[eê]ncia|noodpas/i
     for (const locale of LOCALES) {
-      it(`${locale}: no passUrgency* keys exist in any namespace`, () => {
+      it(`${locale}: no former Emergency Pass wording remains in commercial copy`, () => {
         const data = loadLocale(locale)
-        const PASS_KEYS = ['passUrgencyTitle', 'passUrgencyDesc', 'passUrgencyB1', 'passUrgencyB2', 'passUrgencyB3', 'passUrgencyCta']
-
-        const found: string[] = []
-        walkStrings(data, '', (_val, fullPath) => {
-          const leaf = fullPath.split('.').pop() ?? ''
-          if (PASS_KEYS.includes(leaf)) {
-            found.push(fullPath)
-          }
-        })
-        expect(found, `${locale} has passUrgence keys: ${found.join(', ')}`).toHaveLength(0)
+        const found = collectStrings(data, COMMERCIAL_ROOTS)
+          .filter(({ value }) => EMERGENCY_PASS.test(value))
+          .map(({ path, value }) => `${path} = "${value.slice(0, 80)}"`)
+        expect(found, `${locale} has former Emergency Pass copy:\n${found.join('\n')}`).toHaveLength(0)
       })
     }
   })
@@ -415,13 +412,19 @@ describe('P0-K: Pricing copy consistency across all locales', () => {
     }
   })
 
-  describe('No 7-day trial or emergency pass pricing', () => {
+  describe('Only 1, 3, 6 and 12 month paid durations are commercialized', () => {
+    const FORBIDDEN_COMMERCIAL_DURATION = /(?:7\s*(?:jours?|days?|d[ií]as?|tage?|giorni|dagen)|\bweekly\b|\bhebdomadaire\b|\bsemanal\b|\bw[oö]chentlich\b|\bsettimanale\b|\bwekelijks\b)/i
+    const ANNUAL_NOT_LIVE = /(?:annuel|annual|anual|j[aä]hrlich|annuale)[^.]{0,60}(?:pr[eé]paration|prepar|coming soon|indisponible|not available|pr[oó]ximamente|vorbereitung)/i
     for (const locale of LOCALES) {
-      it(`${locale}: no "3.99" or "3,99" in tarifs or fonctionnalites`, () => {
+      it(`${locale}: no visible weekly, seven-day or annual-not-live offer`, () => {
         const data = loadLocale(locale)
-        const tarifs = JSON.stringify(getNested(data, 'tarifs') ?? {})
-        const fonctionnalites = JSON.stringify(getNested(data, 'fonctionnalites') ?? {})
-        expect(tarifs + fonctionnalites).not.toMatch(/[33][.,]99/)
+        const found = collectStrings(data, ['landing', 'tarifs', 'plans', 'spaPage'])
+          .filter(({ path, value }) =>
+            !DURATION_COPY_EXCEPTIONS.has(path) &&
+            (FORBIDDEN_COMMERCIAL_DURATION.test(value) || ANNUAL_NOT_LIVE.test(value)),
+          )
+          .map(({ path, value }) => `${path} = "${value.slice(0, 100)}"`)
+        expect(found, `${locale} has retired duration copy:\n${found.join('\n')}`).toHaveLength(0)
       })
     }
   })
@@ -449,16 +452,17 @@ describe('P0-K: Pricing copy consistency across all locales', () => {
     }
   })
 
-  describe('No empty mod11B1 or mod11B2 bullets', () => {
+  describe('Landing has no obsolete empty mod11 keys', () => {
     for (const locale of LOCALES) {
-      it(`${locale}: mod11B1 and mod11B2 are non-empty`, () => {
+      it(`${locale}: landing.mod11B1 and landing.mod11B2 are absent`, () => {
         const data = loadLocale(locale)
+        expect(getNested(data, 'landing.mod11B1')).toBeUndefined()
+        expect(getNested(data, 'landing.mod11B2')).toBeUndefined()
+
         const mod11B1 = getNested(data, 'fonctionnalites.mod11B1') as string | undefined
         const mod11B2 = getNested(data, 'fonctionnalites.mod11B2') as string | undefined
-        expect(mod11B1, 'mod11B1 should be defined and non-empty').toBeDefined()
-        expect(mod11B1!.length, 'mod11B1 should not be empty').toBeGreaterThan(0)
-        expect(mod11B2, 'mod11B2 should be defined and non-empty').toBeDefined()
-        expect(mod11B2!.length, 'mod11B2 should not be empty').toBeGreaterThan(0)
+        expect(mod11B1, 'fonctionnalites.mod11B1 should remain non-empty').toBeTruthy()
+        expect(mod11B2, 'fonctionnalites.mod11B2 should remain non-empty').toBeTruthy()
       })
     }
   })
@@ -482,6 +486,10 @@ describe('P0-K: Pricing copy consistency across all locales', () => {
     })
   })
   describe('Pool plan is limited to one pool in every locale', () => {
+    const ONE_POOL_COPY = {
+      fr: '1 piscine', en: '1 pool', es: '1 piscina', de: '1 Pool',
+      it: '1 piscina', pt: '1 piscina', nl: '1 zwembad',
+    }
     const POOL_ROOTS = ['plans.premium', 'plans.premiumFeatures', 'plans.oasis', 'legal.cgu.article6Item2']
     const MULTI_POOL = /(?:\b[23]\s*(?:piscines?|pools?|piscinas?|piscine|zwembaden|pool)\b|(?:piscines?|pools?|piscinas?|piscine|zwembaden|pool)\s*[23]\b)/i
     for (const locale of LOCALES) {
@@ -496,22 +504,57 @@ describe('P0-K: Pricing copy consistency across all locales', () => {
         }
         expect(violations, violations.join('\\n')).toHaveLength(0)
       })
+
+      it(`${locale}: Pool is explicitly sold for exactly one pool`, () => {
+        const data = loadLocale(locale)
+        const expected = ONE_POOL_COPY[locale]
+        expect(getNested(data, 'plans.premium.features.3pools')).toBe(expected)
+        expect(getNested(data, 'plans.oasis.features.3pools')).toBe(expected)
+        expect(getNested(data, 'plans.premiumFeatures.0')).toBe(expected)
+        expect(getNested(data, 'legal.cgu.article6Item2')).toContain(expected)
+      })
+    }
+  })
+
+  describe('CGV prices match the canonical commercial matrix', () => {
+    const CGV_PRICES: Record<(typeof LOCALES)[number], string[]> = {
+      fr: ['6,99 €', '19,99 €', '34,99 €', '64,99 €', '4,99 €', '13,99 €', '24,99 €', '44,99 €', '10,99 €', '29,99 €', '54,99 €', '99,99 €'],
+      en: ['€6.99', '€19.99', '€34.99', '€64.99', '€4.99', '€13.99', '€24.99', '€44.99', '€10.99', '€29.99', '€54.99', '€99.99'],
+      es: ['6,99 €', '19,99 €', '34,99 €', '64,99 €', '4,99 €', '13,99 €', '24,99 €', '44,99 €', '10,99 €', '29,99 €', '54,99 €', '99,99 €'],
+      de: ['6,99 €', '19,99 €', '34,99 €', '64,99 €', '4,99 €', '13,99 €', '24,99 €', '44,99 €', '10,99 €', '29,99 €', '54,99 €', '99,99 €'],
+      it: ['6,99 €', '19,99 €', '34,99 €', '64,99 €', '4,99 €', '13,99 €', '24,99 €', '44,99 €', '10,99 €', '29,99 €', '54,99 €', '99,99 €'],
+      pt: ['6,99 €', '19,99 €', '34,99 €', '64,99 €', '4,99 €', '13,99 €', '24,99 €', '44,99 €', '10,99 €', '29,99 €', '54,99 €', '99,99 €'],
+      nl: ['6,99 €', '19,99 €', '34,99 €', '64,99 €', '4,99 €', '13,99 €', '24,99 €', '44,99 €', '10,99 €', '29,99 €', '54,99 €', '99,99 €'],
+    }
+
+    for (const locale of LOCALES) {
+      it(`${locale}: CGV lists every canonical price`, () => {
+        const cgv = JSON.stringify(getNested(loadLocale(locale), 'legal.cgv') ?? {})
+        for (const price of CGV_PRICES[locale]) {
+          expect(cgv, `${locale} CGV is missing ${price}`).toContain(price)
+        }
+      })
     }
   })
 
   describe('Commercial copy has no invalid currency or empty keys', () => {
+    // Retired technical placeholders and optional hero-title fragments are intentionally
+    // empty. They are not rendered as commercial offers; any other empty value fails.
     const EMPTY_EXCEPTIONS = new Set([
-      'landing.heroTitleSuffix', 'landing.heroTitleLine2', 'plans.week', 'plans.perWeek',
-      'plans.emergencyPass', 'plans.trialEndingDays', 'plans.trialNoCharge', 'spaPage.planYearly',
+      'plans.week', 'plans.perWeek', 'plans.emergencyPass', 'plans.trialEndingDays',
+      'plans.trialNoCharge', 'spaPage.planYearly', 'landing.heroTitleSuffix',
+      'landing.heroTitleLine2',
     ])
     for (const locale of LOCALES) {
       it(`${locale}: no double euro and no unexpected empty commercial strings`, () => {
         const data = loadLocale(locale)
         const violations: string[] = []
-        walkStrings(data, '', (val, path) => {
+        for (const { value: val, path } of collectStrings(data, COMMERCIAL_ROOTS)) {
           if (val.includes('€€')) violations.push(`${path}: double euro`)
-          if (val === '' && /^(landing|plans|tarifs|fonctionnalites|legal\.(?:cgu|cgv)|pro|spaPage)(\.|$)/.test(path) && !EMPTY_EXCEPTIONS.has(path)) violations.push(`${path}: empty`)
-        })
+          if (val.includes('$$')) violations.push(`${path}: double dollar`)
+          if (locale !== 'en' && /€\s*\/\s*month/i.test(val)) violations.push(`${path}: English monthly currency copy`)
+          if (val === '' && !EMPTY_EXCEPTIONS.has(path)) violations.push(`${path}: empty`)
+        }
         expect(violations, violations.join('\\n')).toHaveLength(0)
       })
     }
