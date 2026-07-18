@@ -2,11 +2,33 @@
 
 import { motion } from 'framer-motion'
 import { Clock, Coins, TrendingUp } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { getPlan } from '@/lib/billing/plans'
 import { AnimatedCounter, GlassCard, Reveal, SectionHeading, staggerContainer, fadeUpVariants } from '../landing-utils'
+
+const SAVINGS_ROI = 550
+
+function formatCurrency(locale: string, amount: number): string {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+const CHART_ORDER: string[] = ['oasis', 'spa365', 'wellness']
 
 export function Savings() {
   const t = useTranslations('landing')
+  const tPlan = useTranslations('plans')
+  const locale = useLocale()
+
+  const PLAN_ACCENTS: Record<string, string> = {
+    oasis: 'from-cyan-400 via-teal-500 to-emerald-500',
+    spa365: 'from-rose-300 via-orange-400 to-amber-400',
+    wellness: 'from-indigo-400 via-violet-500 to-fuchsia-500',
+  }
 
   const TIME_BREAKDOWN = [
     t('savingsTimeBreakdown1'),
@@ -22,11 +44,9 @@ export function Savings() {
     t('savingsMoneyBreakdown4'),
   ]
 
-  const BARS = [
-    { label: t('savingsBar1'), value: 96, color: 'from-primary to-gold', highlight: true },
-    { label: t('savingsBar2'), value: 1000, color: 'from-amber-400 to-amber-600', highlight: false },
-    { label: t('savingsBar3'), value: 1500, color: 'from-rose-400 to-rose-600', highlight: false },
-  ]
+  const poolPlan = getPlan('oasis')
+
+  const chartPlans = CHART_ORDER.map(id => getPlan(id)).filter(Boolean) as NonNullable<ReturnType<typeof getPlan>>[]
 
   return (
     <section id="gains" className="relative py-20 sm:py-28">
@@ -79,7 +99,7 @@ export function Savings() {
                 <div>
                   <p className="text-xs uppercase tracking-wider text-muted-foreground">{t('savingsMoneySaved')}</p>
                   <p className="font-display text-3xl font-bold sm:text-4xl">
-                    <AnimatedCounter value={550} prefix="~" suffix=" €" />
+                    <span className="text-5xl font-semibold tracking-tight">~{formatCurrency(locale, SAVINGS_ROI)}</span>
                   </p>
                   <p className="text-xs text-muted-foreground">{t('savingsPerYear')}</p>
                 </div>
@@ -102,52 +122,50 @@ export function Savings() {
             <div className="flex items-center gap-3">
               <TrendingUp className="h-6 w-6 shrink-0 text-gold" />
               <p className="font-display text-base leading-relaxed text-foreground sm:text-lg">
-                {t('savingsRoi1')} <span className="font-bold">~96€{t('savingsRoiYearSuffix')}</span> {t('savingsRoi2')}{' '}
-                <span className="font-bold text-gold">550€</span>.{' '}
+                {poolPlan && t('savingsRoiSentence', {
+                  price: formatCurrency(locale, poolPlan.price.year),
+                  savings: formatCurrency(locale, SAVINGS_ROI),
+                })}{' '}
                 <span className="gradient-text-premium font-bold">{t('savingsROI')}</span>. {t('savingsRoi3')}
               </p>
             </div>
           </div>
         </Reveal>
 
-        {/* Comparison bars */}
+        {/* Comparison bars — explicit commercial order: Pool → Spa → Complete */}
         <Reveal delay={0.15} className="mt-8">
           <div className="rounded-2xl border border-white/40 bg-white/60 p-6 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.03]">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">
               {t('savingsComparison')}
             </p>
             <div className="mt-4 space-y-4">
-              {BARS.map((bar, i) => {
-                const max = 1500
-                return (
-                  <motion.div
-                    key={bar.label}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: i * 0.1 }}
-                  >
-                    <div className="mb-1.5 flex items-center justify-between text-sm">
-                      <span className={`font-medium ${bar.highlight ? 'text-foreground' : 'text-muted-foreground'}`}>
-                        {bar.highlight && <span className="mr-1.5 text-gold">★</span>}
-                        {bar.label}
-                      </span>
-                      <span className={`font-bold ${bar.highlight ? 'text-gold' : 'text-foreground'}`}>
-                        {bar.value}€
-                      </span>
-                    </div>
-                    <div className="h-3 overflow-hidden rounded-full bg-secondary">
-                      <motion.div
-                        className={`h-full rounded-full bg-gradient-to-r ${bar.color}`}
-                        initial={{ width: 0 }}
-                        whileInView={{ width: `${(bar.value / max) * 100}%` }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 1, delay: 0.2 + i * 0.1, ease: [0.22, 1, 0.36, 1] }}
-                      />
-                    </div>
-                  </motion.div>
-                )
-              })}
+              {chartPlans.map((plan, i) => (
+                <motion.div
+                  key={plan.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: 0.2 + i * 0.1, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <div className="mb-1.5 flex items-center justify-between text-sm">
+                    <span className="font-medium text-foreground">
+                      {tPlan(`${plan.id}.name`)}
+                    </span>
+                    <span className="font-bold text-primary">
+                      {formatCurrency(locale, plan.price.year)}
+                    </span>
+                  </div>
+                  <div className="h-3 overflow-hidden rounded-full bg-secondary">
+                    <motion.div
+                      className={`h-full rounded-full bg-gradient-to-r ${PLAN_ACCENTS[plan.id]}`}
+                      initial={{ width: 0 }}
+                      whileInView={{ width: `${(plan.price.year / 99.99) * 100}%` }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 1, delay: 0.2 + i * 0.1, ease: [0.22, 1, 0.36, 1] }}
+                    />
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </div>
         </Reveal>

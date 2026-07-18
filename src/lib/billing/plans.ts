@@ -124,7 +124,7 @@ export const PLANS: PlanDefinition[] = [
       'Aperçu des alertes météo (basique)',
       'Aperçu de l\'historique (14 jours)',
       '2 scans photo / mois',
-      'Fonctions premium visibles mais verrouillées',
+      'Fonctions avancées visibles mais verrouillées',
     ],
     featureKeys: [
       'decouverte.features.poolProfile',
@@ -241,7 +241,7 @@ export const PLANS: PlanDefinition[] = [
     platform: ['web', 'ios', 'android'],
     price: { week: 0, month: 10.99, quarter: 29.99, halfyear: 54.99, year: 99.99 },
     features: [
-      '1 piscine + 1 spa',
+      '2 piscines + 1 spa',
       'Tout AQWELIA Pool',
       'Traitements spécifiques spa (brome, oxygène actif)',
       'Eau chaude',
