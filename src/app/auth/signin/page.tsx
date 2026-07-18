@@ -34,6 +34,11 @@ export default function AuthPage() {
   const t = useTranslations('auth')
   const router = useRouter()
   const params = useSearchParams()
+  const requestedCallbackUrl = params.get('callbackUrl')
+  const callbackUrl =
+    requestedCallbackUrl?.startsWith('/') && !requestedCallbackUrl.startsWith('//')
+      ? requestedCallbackUrl
+      : '/'
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -65,7 +70,7 @@ export default function AuthPage() {
     setOauthLoading(provider)
     try {
       // Full-page redirect: OAuth flow needs to leave the SPA.
-      await signIn(provider, { callbackUrl: '/' })
+      await signIn(provider, { callbackUrl })
     } catch (err) {
       setError(err instanceof Error ? err.message : t('errorGeneric'))
       setOauthLoading(null)
@@ -89,14 +94,14 @@ export default function AuthPage() {
         // Auto-login after register
         const result = await signIn('credentials', { email, password, redirect: false })
         if (!result?.ok) throw new Error(t('errorCreatedNeedSignin'))
-        router.push('/')
+        router.push(callbackUrl)
         router.refresh()
       } else {
         const result = await signIn('credentials', { email, password, redirect: false })
         if (!result?.ok) {
           throw new Error(t('errorInvalidCredentials'))
         }
-        router.push('/')
+        router.push(callbackUrl)
         router.refresh()
       }
     } catch (err) {
