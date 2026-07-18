@@ -124,7 +124,7 @@ export const PLANS: PlanDefinition[] = [
       'Aperçu des alertes météo (basique)',
       'Aperçu de l\'historique (14 jours)',
       '2 scans photo / mois',
-      'Fonctions premium visibles mais verrouillées',
+      'Fonctions avancées visibles mais verrouillées',
     ],
     featureKeys: [
       'decouverte.features.poolProfile',

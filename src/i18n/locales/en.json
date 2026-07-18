@@ -840,7 +840,7 @@
       "name": "Pool",
       "tagline": "The complete copilot",
       "features": {
-        "3pools": "3 pools",
+        "3pools": "1 pool",
         "unlimitedScans": "Unlimited photo scans",
         "advancedWeather": "Advanced weather + alerts",
         "allGuidesVideos": "All guides + videos",
@@ -862,7 +862,7 @@
       "14-day history"
     ],
     "premiumFeatures": [
-      "3 pools",
+      "1 pool",
       "Unlimited photo scans",
       "Advanced weather + alerts",
       "All guides + videos",
@@ -873,12 +873,12 @@
       "Unlimited history",
       "Priority support"
     ],
-    "week": "7 days",
+    "week": "",
     "month": "1 month",
     "quarter": "3 months",
     "halfyear": "6 months",
     "year": "12 months",
-    "perWeek": "/week",
+    "perWeek": "",
     "perMonth": "/month",
     "perQuarter": "/3 months",
     "perHalfyear": "/6 months",
@@ -951,11 +951,11 @@
       },
       "endSubscription": {
         "q": "What happens at the end of the subscription?",
-        "a": "At the end of the paid period, you automatically revert to the Free plan. Your data is retained; only premium features are suspended."
+        "a": "At the end of the paid period, you automatically revert to the Free plan. Your data is retained; only advanced features are suspended."
       },
       "annual": {
         "q": "Is an annual plan available?",
-        "a": "For now we offer 7 days, 1 month, 3 months (-10%) and 6 months (-20%). An annual plan is in preparation. Contact us to be notified at launch."
+        "a": "We offer 1, 3, 6 and 12 month plans. Longer commitments include increasing savings."
       },
       "refund": {
         "q": "What is the refund policy?",
@@ -1018,7 +1018,7 @@
       "photo_scan_limit": "{n} scans/month limit reached.",
       "weather_advanced": "Advanced weather is reserved for paid plans.",
       "smart_reminders": "Smart reminders are reserved for paid plans.",
-      "guides_premium": "Premium guides are reserved for paid plans.",
+      "guides_premium": "Advanced guides reserved for paid plans.",
       "multi_pool": "Multi-pool reserved for Pool and Complete.",
       "pdf_report": "PDF report reserved for Pool and Complete.",
       "pro_mode": "Pro mode reserved for Pool and Complete.",
@@ -1035,7 +1035,7 @@
         "basicWeather": "Basic weather alerts preview",
         "history14": "14-day history preview",
         "2scans": "2 photo scans / month",
-        "lockedPremium": "Premium features visible but locked"
+        "lockedPremium": "Advanced features visible but locked"
       }
     },
     "oasis": {
@@ -1058,7 +1058,7 @@
         "aiChat": "Smart assistant (AI chat)",
         "pdfReport": "PDF report",
         "proMode": "Pro mode (advanced LSI)",
-        "3pools": "Up to 3 pools",
+        "3pools": "1 pool",
         "lockedPremium": "Paid features visible but locked",
         "guides": "Advanced guides",
         "guides_premium": "Advanced guides are reserved for paid plans."
@@ -2264,7 +2264,7 @@
       "recommended": "Recommended for you",
       "all": "All",
       "noResultsDesc": "No guide matches your search.",
-      "premiumBadge": "PREMIUM",
+      "premiumBadge": "ADVANCED",
       "min": "min",
       "level": {
         "beginner": "Beginner",
@@ -3419,7 +3419,7 @@
       "article6Title": "Article 6 — Subscriptions",
       "article6Body1": "The Service offers four plans:",
       "article6Item1": "<bold>Free</bold>: free, includes 1 pool, basic manual measurements, limited assistant.",
-      "article6Item2": "<bold>Pool</bold>: up to 3 pools, unlimited photo diagnostic, full AI assistant, weather alerts, advanced guides.",
+      "article6Item2": "<bold>Pool</bold>: 1 pool, unlimited photo diagnostics, full AI assistant, weather alerts, advanced guides.",
       "article6Item3": "<bold>Spa</bold>: 1 spa, bromine/chlorine/active oxygen treatment, drains, filters, stock management.",
       "article6Body2": "The features and pricing of each plan are detailed on the <link>Pricing</link> page. AQWELIA reserves the right to modify these offers at any time, subject to notifying subscribed Users at least 30 days before the effective date.",
       "article7Title": "Article 7 — Payment",
@@ -3536,7 +3536,7 @@
       "emailDesc": "The best way to reach us. Response within 48 business hours.",
       "responseTimeTitle": "Response time",
       "responseTimeFree": "<bold>Free plan</bold>: response within 72 business hours.",
-      "responseTimePremium": "<bold>Premium plan</bold>: response within 48 business hours.",
+      "responseTimePremium": "<bold>Paid plan</bold>: response within 48 business hours.",
       "responseTimeExpert": "<bold>Expert plan</bold>: response within 24h, priority support.",
       "cardFaqTitle": "FAQ",
       "cardFaqDesc": "Answers to the most frequent questions: subscriptions, data, pool, compatibility.",
@@ -3568,18 +3568,18 @@
       "eyebrow": "Legal",
       "title": "Terms and Conditions of Sale (T&Cs)",
       "article1Title": "Article 1 — Subject",
-      "article1Body1": "These General Terms and Conditions of Sale govern the contractual relationship between AQWELIA (hereinafter 'the Publisher') and any natural or legal person subscribing to a digital subscription or an emergency pass for the AQWELIA service (hereinafter 'the Customer').",
+      "article1Body1": "These General Terms and Conditions of Sale govern the contractual relationship between AQWELIA (hereinafter 'the Publisher') and any natural or legal person subscribing to a digital subscription for the AQWELIA service (hereinafter 'the Customer').",
       "article1Body2": "They apply to all sales of digital subscriptions made via the aqwelia.app website, the iOS and Android mobile application, as well as the future AQWELIA Care marketplace once launched.",
       "article2Title": "Article 2 — Products and services",
       "article2Body1": "AQWELIA markets:",
       "article2Item1": "AQWELIA Free — Free — discover AQWELIA",
-      "article2Item2": "AQWELIA Pool — 6,99 €/month — The intelligent copilot for your pool",
-      "article2Item3": "AQWELIA Spa — 4,99 €/month; AQWELIA Complete — 10,99 €/month.",
+      "article2Item2": "AQWELIA Pool — 1 month: €6.99; 3 months: €19.99; 6 months: €34.99; 12 months: €64.99.",
+      "article2Item3": "AQWELIA Spa — 1 month: €4.99; 3 months: €13.99; 6 months: €24.99; 12 months: €44.99. AQWELIA Complete — 1 month: €10.99; 3 months: €29.99; 6 months: €54.99; 12 months: €99.99.",
       "article3Title": "Article 3 — Free access and no free trial",
       "article3Body1": "AQWELIA Free lets customers discover the service with limited features. No temporary free access to Pool, Spa or Complete paid features is offered.",
       "article3Item1": "Free remains available without a time limit, within the displayed feature limits.",
       "article3Item2": "Paid subscriptions are charged when activated.",
-      "article3Item3": "No free trial or Urgency Pass is sold.",
+      "article3Item3": "No free trial is offered.",
       "article3Body2": "This structure avoids unexpected deferred billing and lets customers choose the offer matching their water body.",
       "article4Title": "Article 4 — Pricing",
       "article4Body1": "Prices in force are those displayed on the /tarifs page at the time of purchase. All prices are in euros (€), incl. VAT, French VAT 20% included.",
@@ -3990,7 +3990,7 @@
     "faqTitle": "Frequently asked questions about AQWELIA Pro",
     "faqContact": "Another question? Email us:",
     "faqQ1": "What's the difference with the consumer version?",
-    "faqA1": "The consumer version covers a single household (1 to 3 pools). AQWELIA Pro is multi-client and multi-technician: client CRM, route scheduling, proof of attendance, custom PDF reports, per-technician statistics and integration API. It's a real business software, not just a copilot.",
+    "faqA1": "The consumer version covers a single household (1 pool). AQWELIA Pro is multi-client and multi-technician: client CRM, route scheduling, proof of attendance, custom PDF reports, per-technician statistics and integration API.",
     "faqQ2": "How many pools can I manage?",
     "faqA2": "Solo up to 50 pools, Team up to 200, Fleet and Enterprise unlimited. If you manage more than 200 pools, contact us for a tailored Fleet or Enterprise plan.",
     "faqQ3": "Can I add technicians?",
@@ -5638,7 +5638,7 @@
   },
   "spaPage": {
     "metaTitle": "AQWELIA Spa",
-    "metaDescription": "AQWELIA Spa — 4,99 €/month. The intelligent copilot for your spa.",
+    "metaDescription": "AQWELIA Spa — €4.99 per month. The intelligent copilot for your spa.",
     "heroEyebrow": "AQWELIA Spa",
     "heroTitle": "Spa management",
     "heroSubtitle": "The AQWELIA copilot dedicated to your spa, all year round. Unlimited analyses, adapted treatments, complete tracking.",

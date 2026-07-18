@@ -748,7 +748,7 @@
       "name": "Pool",
       "tagline": "De volledige copiloot",
       "features": {
-        "3pools": "3 zwembaden",
+        "3pools": "1 zwembad",
         "unlimitedScans": "Onbeperkte fotoscans",
         "advancedWeather": "Geavanceerd weer + meldingen",
         "allGuidesVideos": "Alle gidsen + video's",
@@ -770,7 +770,7 @@
       "14-day history"
     ],
     "premiumFeatures": [
-      "3 zwembaden",
+      "1 zwembad",
       "Onbeperkte fotoscans",
       "Geavanceerd weer + waarschuwingen",
       "Alle handleidingen + video's",
@@ -781,12 +781,12 @@
       "Onbeperkte geschiedenis",
       "Voorrangsondersteuning"
     ],
-    "week": "7 dagen",
+    "week": "",
     "month": "1 maand",
     "quarter": "3 maanden",
     "halfyear": "6 maanden",
     "year": "12 maanden",
-    "perWeek": "per week",
+    "perWeek": "",
     "perMonth": "/maand",
     "perQuarter": "/3 maanden",
     "perHalfyear": "/6 maanden",
@@ -859,11 +859,11 @@
       },
       "endSubscription": {
         "q": "Wat gebeurt er aan het einde van het abonnement?",
-        "a": "Aan het einde van de betaalde periode keert u automatisch terug naar het Gratis abonnement. Uw gegevens worden bewaard; alleen premium-functies worden opgeschort."
+        "a": "Aan het einde van de betaalde periode keert u automatisch terug naar het Gratis abonnement. Uw gegevens worden bewaard; alleen geavanceerde functies worden opgeschort."
       },
       "annual": {
         "q": "Is er een jaarabonnement beschikbaar?",
-        "a": "Voorlopig bieden we 7 dagen, 1 maand, 3 maanden (-10%) en 6 maanden (-20%) aan. Een jaarabonnement is in voorbereiding. Neem contact met ons op om op de hoogte te worden gesteld bij de lancering."
+        "a": "We bieden abonnementen van 1, 3, 6 en 12 maanden. Langere looptijden bieden steeds meer voordeel."
       },
       "refund": {
         "q": "Wat is het terugbetalingsbeleid?",
@@ -906,7 +906,7 @@
       "Smart drain reminders",
       "Shareable PDF report",
       "Unlimited history",
-      "Geavanceerde video-tutorials",
+      "Geavanceerde videotutorials",
       "Priority support"
     ],
     "atlasFeatures": [
@@ -926,7 +926,7 @@
       "photo_scan_limit": "Limiet van {n} scans/maand bereikt.",
       "weather_advanced": "Geavanceerd weer is voorbehouden aan betaalde abonnementen.",
       "smart_reminders": "Slimme herinneringen zijn voorbehouden aan betaalde abonnementen.",
-      "guides_premium": "Premium-gidsen zijn voorbehouden aan betaalde abonnementen.",
+      "guides_premium": "Geavanceerde handleidingen voor betaalde abonnementen.",
       "multi_pool": "Multi-zwembad voorbehouden aan Pool en Complete.",
       "pdf_report": "PDF-rapport voorbehouden aan Pool en Complete.",
       "pro_mode": "Pro-modus voorbehouden aan Pool en Complete.",
@@ -943,7 +943,7 @@
         "basicWeather": "Voorvertoning van weeralarmen (basis)",
         "history14": "Voorvertoning van geschiedenis (14 dagen)",
         "2scans": "2 foto-scans / maand",
-        "lockedPremium": "Premium-functies zichtbaar maar vergrendeld"
+        "lockedPremium": "Geavanceerde functies zichtbaar maar vergrendeld"
       }
     },
     "oasis": {
@@ -966,7 +966,7 @@
         "aiChat": "Slimme assistent (AI-chat)",
         "pdfReport": "PDF-rapport",
         "proMode": "Pro-modus (geavanceerde LSI)",
-        "3pools": "Tot 3 zwembaden",
+        "3pools": "1 zwembad",
         "lockedPremium": "Betaalde functies zichtbaar maar vergrendeld",
         "guides": "Geavanceerde handleidingen",
         "guides_premium": "Geavanceerde handleidingen zijn voorbehouden aan betaalde abonnementen."
@@ -2170,7 +2170,7 @@
       "recommended": "Aanbevolen voor u",
       "all": "Alle",
       "noResultsDesc": "Geen handleiding komt overeen met uw zoekopdracht.",
-      "premiumBadge": "PREMIUM",
+      "premiumBadge": "GEAVANCEERD",
       "min": "min",
       "level": {
         "beginner": "Beginner",
@@ -3325,7 +3325,7 @@
       "article6Title": "Artikel 6 — Abonnementen",
       "article6Body1": "De Dienst biedt vier abonnementen:",
       "article6Item1": "<bold>Free</bold>: gratis, omvat 1 zwembad, basis handmatige metingen, beperkte assistent.",
-      "article6Item2": "<bold>Pool</bold>: tot 3 zwembaden, onbeperkte fotodiagnostiek, volledige AI-assistent, weerwaarschuwingen, geavanceerde handleidingen.",
+      "article6Item2": "<bold>Pool</bold>: 1 zwembad, onbeperkte fotodiagnostiek, volledige AI-assistent, weerwaarschuwingen en geavanceerde handleidingen.",
       "article6Item3": "<bold>Spa</bold>: 1 spa, broom/chloor/actief zuurstof behandeling, afvoeren, filters, voorraadbeheer.",
       "article6Body2": "De functies en prijzen van elk abonnement staan op de pagina <link>Prijzen</link>. AQWELIA behoudt zich het recht voor deze aanbiedingen op elk moment te wijzigen, mits de geabonneerde Gebruikers minstens 30 dagen vooraf worden geïnformeerd.",
       "article7Title": "Artikel 7 — Betaling",
@@ -3442,7 +3442,7 @@
       "emailDesc": "De beste manier om ons te bereiken. Antwoord binnen 48 werkuur.",
       "responseTimeTitle": "Responstijd",
       "responseTimeFree": "<bold>Free-abonnement</bold>: antwoord binnen 72 werkuur.",
-      "responseTimePremium": "<bold>Premium-abonnement</bold>: antwoord binnen 48 werkuur.",
+      "responseTimePremium": "<bold>Betaald abonnement</bold>: antwoord binnen 48 werkuur.",
       "responseTimeExpert": "<bold>Expert-abonnement</bold>: antwoord binnen 24 u, prioritaire support.",
       "cardFaqTitle": "FAQ",
       "cardFaqDesc": "Antwoorden op de meest gestelde vragen: abonnementen, gegevens, zwembad, compatibiliteit.",
@@ -3474,18 +3474,18 @@
       "eyebrow": "Juridisch",
       "title": "Algemene Voorwaarden van Verkoop (AVV)",
       "article1Title": "Artikel 1 — Onderwerp",
-      "article1Body1": "Deze Algemene Voorwaarden van Verkoop regelen de contractuele relatie tussen AQWELIA (hierna 'de Uitgever') en elke natuurlijke of rechtspersoon die een digitaal abonnement of een noodpas voor de AQWELIA-service afneemt (hierna 'de Klant').",
+      "article1Body1": "Deze Algemene Voorwaarden van Verkoop regelen de contractuele relatie tussen AQWELIA (hierna 'de Uitgever') en elke natuurlijke of rechtspersoon die een digitaal abonnement voor de AQWELIA-service afneemt (hierna 'de Klant').",
       "article1Body2": "Ze zijn van toepassing op alle verkopen van digitale abonnementen die via de website aqwelia.app, de iOS- en Android mobiele applicatie, evenals de toekomstige AQWELIA Care marketplace zodra deze gelanceerd is.",
       "article2Title": "Artikel 2 — Producten en diensten",
       "article2Body1": "AQWELIA biedt aan:",
       "article2Item1": "AQWELIA Free — Gratis — ontdek AQWELIA",
-      "article2Item2": "AQWELIA Pool — 6,99 €€/maand — De slimme copilot voor uw zwembad",
-      "article2Item3": "AQWELIA Spa — 4,99 €€/maand; AQWELIA Complete — 10,99 €€/maand.",
+      "article2Item2": "AQWELIA Pool — 1 maand: 6,99 €; 3 maanden: 19,99 €; 6 maanden: 34,99 €; 12 maanden: 64,99 €.",
+      "article2Item3": "AQWELIA Spa — 1 maand: 4,99 €; 3 maanden: 13,99 €; 6 maanden: 24,99 €; 12 maanden: 44,99 €. AQWELIA Complete — 1 maand: 10,99 €; 3 maanden: 29,99 €; 6 maanden: 54,99 €; 12 maanden: 99,99 €.",
       "article3Title": "Artikel 3 — Gratis toegang zonder gratis proefperiode",
       "article3Body1": "AQWELIA Free biedt beperkte functies. Er is geen tijdelijke gratis toegang tot Pool, Spa of Complete.",
       "article3Item1": "Free blijft onbeperkt beschikbaar.",
       "article3Item2": "Betaalde abonnementen worden bij activering aangerekend.",
-      "article3Item3": "Geen gratis proefperiode en geen Noodpas.",
+      "article3Item3": "Er wordt geen gratis proefperiode aangeboden.",
       "article3Body2": "Klanten kiezen direct het passende aanbod.",
       "article4Title": "Artikel 4 — Prijzen",
       "article4Body1": "De geldende prijzen zijn die die op de /tarifs-pagina worden getoond op het moment van aankoop. Alle prijzen zijn in euro's (€), inclusief btw, Franse btw 20% inbegrepen.",
@@ -3988,7 +3988,7 @@
     "faqTitle": "Veelgestelde vragen over AQWELIA Pro",
     "faqContact": "Een andere vraag? Schrijf ons:",
     "faqQ1": "Wat is het verschil met de particuliere versie?",
-    "faqA1": "De particuliere versie dekt één huishouden (1 tot 3 zwembaden). AQWELIA Pro is multi-klant en multi-technicus: klanten-CRM, routeplanning, bewijzen van passage, gepersonaliseerde PDF-rapporten, statistieken per technicus en integratie-API. Het is echte vaksoftware, niet alleen een copiloot.",
+    "faqA1": "De particuliere versie dekt één huishouden (1 zwembad). AQWELIA Pro is multi-klant en multi-technicus: klanten-CRM, routeplanning, bewijzen van passage, gepersonaliseerde PDF-rapporten, statistieken per technicus en integratie-API.",
     "faqQ2": "Hoeveel zwembaden kan ik beheren?",
     "faqA2": "Solo tot 50 zwembaden, Team tot 200, Fleet en Enterprise onbeperkt. Als u meer dan 200 zwembaden beheert, contacteer ons voor een aangepast Fleet- of Enterprise-aanbod.",
     "faqQ3": "Kan ik technici toevoegen?",
@@ -5301,14 +5301,14 @@
   },
   "spaPage": {
     "metaTitle": "AQWELIA Spa",
-    "metaDescription": "AQWELIA Spa — 4,99 €/month. De slimme copilot voor uw spa.",
+    "metaDescription": "AQWELIA Spa — 4,99 € per maand. De slimme copilot voor uw spa.",
     "heroEyebrow": "AQWELIA Spa",
     "heroTitle": "Spa-beheer",
     "heroSubtitle": "De AQWELIA-copilot voor uw spa, het hele jaar. Onbeperkte analyses, aangepaste behandelingen, volledige opvolging.",
     "heroCta": "AQWELIA Spa",
     "planTitle": "AQWELIA Spa",
     "planPrice": "4,99 €",
-    "planPriceSuffix": "/month",
+    "planPriceSuffix": "/maand",
     "planYearly": "",
     "planTagline": "De slimme copilot voor uw spa",
     "featuresTitle": "Alles voor uw spa",

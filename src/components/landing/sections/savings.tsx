@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { Clock, Coins, TrendingUp } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
-import { PLANS, getPlan } from '@/lib/billing/plans'
+import { getPlan } from '@/lib/billing/plans'
 import { AnimatedCounter, GlassCard, Reveal, SectionHeading, staggerContainer, fadeUpVariants } from '../landing-utils'
 
 const SAVINGS_ROI = 550
@@ -99,7 +99,7 @@ export function Savings() {
                 <div>
                   <p className="text-xs uppercase tracking-wider text-muted-foreground">{t('savingsMoneySaved')}</p>
                   <p className="font-display text-3xl font-bold sm:text-4xl">
-                    <AnimatedCounter value={SAVINGS_ROI} prefix="~" suffix=" \u20AC" />
+                    <span className="text-5xl font-semibold tracking-tight">~{formatCurrency(locale, SAVINGS_ROI)}</span>
                   </p>
                   <p className="text-xs text-muted-foreground">{t('savingsPerYear')}</p>
                 </div>

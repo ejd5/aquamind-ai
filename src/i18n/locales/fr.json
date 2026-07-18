@@ -825,8 +825,6 @@
     "faq1Q": "Y a-t-il un essai gratuit ?",
     "faq3Q": "Quels moyens de paiement acceptez-vous ?",
     "faq3A": "Carte bancaire (Visa, Mastercard, AMEX) et prélèvement SEPA.",
-    "mod11B1": "",
-    "mod11B2": "",
     "savingsRoiSentence": "Avec Pool à {price} par an, vous pouvez économiser jusqu’à {savings}."
   },
   "plans": {
@@ -847,7 +845,7 @@
       "name": "Pool",
       "tagline": "Le copilote complet",
       "features": {
-        "3pools": "3 piscines",
+        "3pools": "1 piscine",
         "unlimitedScans": "Scans photo illimités",
         "advancedWeather": "Météo avancée + alertes",
         "allGuidesVideos": "Tous les guides + vidéos",
@@ -869,7 +867,7 @@
       "Historique 14 jours"
     ],
     "premiumFeatures": [
-      "3 piscines",
+      "1 piscine",
       "Scans photo illimités",
       "Météo avancée + alertes",
       "Tous les guides + vidéos",
@@ -880,12 +878,12 @@
       "Historique illimité",
       "Support prioritaire"
     ],
-    "week": "7 jours",
+    "week": "",
     "month": "1 mois",
     "quarter": "3 mois",
     "halfyear": "6 mois",
     "year": "12 mois",
-    "perWeek": "/semaine",
+    "perWeek": "",
     "perMonth": "/mois",
     "perQuarter": "/3 mois",
     "perHalfyear": "/6 mois",
@@ -941,7 +939,7 @@
       "photoScans": "Scans photo / mois",
       "weather": "Météo avancée + alertes",
       "reminders": "Rappels intelligents",
-      "guides": "Guides premium",
+      "guides": "Guides avancés",
       "multiPool": "Multi-piscines",
       "pdfReport": "Rapport PDF",
       "proMode": "Mode pro (LSI avancé)",
@@ -958,11 +956,11 @@
       },
       "endSubscription": {
         "q": "Que se passe-t-il à la fin de l'abonnement ?",
-        "a": "À la fin de la période payée, vous repassez automatiquement sur le plan Free (gratuit). Vos données sont conservées ; seules les fonctionnalités premium sont suspendues."
+        "a": "À la fin de la période payée, vous repassez automatiquement sur le plan Free (gratuit). Vos données sont conservées ; seules les fonctionnalités avancées sont suspendues."
       },
       "annual": {
         "q": "Une formule annuelle est-elle disponible ?",
-        "a": "Pour l'instant nous proposons 7 jours, 1 mois, 3 mois (-10%) et 6 mois (-20%). Une formule annuelle est en préparation. Contactez-nous pour être informé du lancement."
+        "a": "Nous proposons des offres de 1, 3, 6 et 12 mois. Les durées longues incluent une remise croissante."
       },
       "refund": {
         "q": "Quelle est la politique de remboursement ?",
@@ -1005,7 +1003,7 @@
       "Rappels de vidange intelligents",
       "Rapport PDF partageable",
       "Historique illimité",
-      "Tutoriels vidéo premium",
+      "Tutoriels vidéo avancés",
       "Support prioritaire"
     ],
     "atlasFeatures": [
@@ -1025,7 +1023,7 @@
       "photo_scan_limit": "Limite de {n} scans/mois atteinte.",
       "weather_advanced": "Météo avancée réservée aux plans payants.",
       "smart_reminders": "Rappels intelligents réservés aux plans payants.",
-      "guides_premium": "Guides premium réservés aux plans payants.",
+      "guides_premium": "Guides avancés réservés aux formules payantes.",
       "multi_pool": "Multi-piscines réservé à Pool et Complete.",
       "pdf_report": "Rapport PDF réservé à Pool et Complete.",
       "pro_mode": "Mode pro réservé à Pool et Complete.",
@@ -1065,7 +1063,7 @@
         "aiChat": "Assistance intelligente (AI chat)",
         "pdfReport": "Rapport PDF",
         "proMode": "Mode pro (LSI avancé)",
-        "3pools": "Jusqu'à 3 piscines"
+        "3pools": "1 piscine"
       }
     },
     "wellness": {
@@ -2268,7 +2266,7 @@
       "recommended": "Recommandés pour vous",
       "all": "Tous",
       "noResultsDesc": "Aucun guide ne correspond à votre recherche.",
-      "premiumBadge": "PREMIUM",
+      "premiumBadge": "AVANCÉ",
       "min": "min",
       "level": {
         "beginner": "Débutant",
@@ -3572,18 +3570,18 @@
       "eyebrow": "Légal",
       "title": "Conditions Générales de Vente (CGV)",
       "article1Title": "Article 1 — Objet",
-      "article1Body1": "Les présentes Conditions Générales de Vente régissent les relations contractuelles entre AQWELIA (ci-après « l'Éditeur ») et toute personne physique ou morale souscrivant un abonnement digital.",
+      "article1Body1": "Les présentes Conditions Générales de Vente régissent les relations contractuelles entre AQWELIA (ci-après « l'Éditeur ») et toute personne physique ou morale souscrivant un abonnement numérique au service AQWELIA (ci-après « le Client »).",
       "article1Body2": "Elles s'appliquent à toutes les ventes d'abonnements numériques réalisées via le site web aqwelia.app, l'application mobile iOS et Android, ainsi qu'à la future marketplace AQWELIA Care lorsque celle-ci sera lancée.",
       "article2Title": "Article 2 — Produits et services",
       "article2Body1": "AQWELIA commercialise:",
       "article2Item1": "AQWELIA Free — Gratuit — pour découvrir",
-      "article2Item2": "AQWELIA Pool — 6,99 €/mois — Le copilote intelligent pour votre piscine",
-      "article2Item3": "AQWELIA Spa — 4,99 €/mois ; AQWELIA Complete — 10,99 €/mois.",
+      "article2Item2": "AQWELIA Pool — 1 mois : 6,99 € ; 3 mois : 19,99 € ; 6 mois : 34,99 € ; 12 mois : 64,99 €.",
+      "article2Item3": "AQWELIA Spa — 1 mois : 4,99 € ; 3 mois : 13,99 € ; 6 mois : 24,99 € ; 12 mois : 44,99 €. AQWELIA Complete — 1 mois : 10,99 € ; 3 mois : 29,99 € ; 6 mois : 54,99 € ; 12 mois : 99,99 €.",
       "article3Title": "Article 3 — Accès gratuit et absence d'essai gratuit",
       "article3Body1": "AQWELIA Free permet de découvrir le service avec des fonctionnalités limitées. Aucun accès temporaire gratuit aux fonctionnalités payantes Pool, Spa ou Complete n’est proposé.",
       "article3Item1": "L’offre Free reste accessible sans limite de temps, dans les limites fonctionnelles affichées.",
       "article3Item2": "Les abonnements payants sont facturés dès leur activation.",
-      "article3Item3": "Aucun essai gratuit ni Pass Urgence n'est commercialisé.",
+      "article3Item3": "Aucun essai gratuit n'est proposé.",
       "article3Body2": "Cette structure évite toute facturation différée imprévue et permet au Client de choisir directement l’offre correspondant à son bassin.",
       "article4Title": "Article 4 — Tarifs",
       "article4Body1": "Les tarifs en vigueur sont ceux affichés sur la page /tarifs au moment de la commande. Tous les prix sont indiqués en euros (€), TTC, TVA française 20% incluse.",
@@ -3994,7 +3992,7 @@
     "faqTitle": "Questions fréquentes sur AQWELIA Pro",
     "faqContact": "Une autre question ? Écrivez-nous :",
     "faqQ1": "Quelle est la différence avec la version particuliers ?",
-    "faqA1": "La version particuliers couvre un foyer (1 à 3 bassins). AQWELIA Pro est multi-clients et multi-techniciens : CRM clients, planning de tournées, preuves de passage, rapports PDF personnalisés, statistiques par technicien et API d'intégration. C'est un vrai logiciel métier, pas seulement un copilote.",
+    "faqA1": "La version particuliers couvre un foyer (1 piscine). AQWELIA Pro est multi-clients et multi-techniciens : CRM clients, planning de tournées, preuves de passage, rapports PDF personnalisés, statistiques par technicien et API d'intégration.",
     "faqQ2": "Combien de bassins puis-je gérer ?",
     "faqA2": "Solo jusqu'à 50 bassins, Team jusqu'à 200, Fleet et Enterprise illimités. Si vous gérez plus de 200 bassins, contactez-nous pour une offre Fleet ou Enterprise adaptée.",
     "faqQ3": "Puis-je ajouter des techniciens ?",
@@ -5643,14 +5641,14 @@
   },
   "spaPage": {
     "metaTitle": "AQWELIA Spa",
-    "metaDescription": "AQWELIA Spa — 4,99 €/month. Le copilote intelligent pour votre spa.",
+    "metaDescription": "AQWELIA Spa — 4,99 € par mois. Le copilote intelligent pour votre spa.",
     "heroEyebrow": "AQWELIA Spa",
     "heroTitle": "Gestion de votre spa",
     "heroSubtitle": "Le copilote AQWELIA dédié à votre spa, toute l'année. Analyses illimitées, traitements adaptés, suivi complet.",
     "heroCta": "AQWELIA Spa",
     "planTitle": "AQWELIA Spa",
     "planPrice": "4,99 €",
-    "planPriceSuffix": "/month",
+    "planPriceSuffix": "/mois",
     "planYearly": "",
     "planTagline": "Le copilote intelligent pour votre spa",
     "featuresTitle": "Tout pour votre spa",

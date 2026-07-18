@@ -52,8 +52,6 @@ describe('P0-K: Pricing copy consistency across all locales', () => {
           'plans.premium.tagline',
           'plans.premium.features',
           'plans.premium.highlight',
-          'plans.gates',
-          'plans.decouverte.features',
           'nav.premium',
           'settings.planPremium',
           'onboarding.spaPremiumNote',
@@ -483,4 +481,41 @@ describe('P0-K: Pricing copy consistency across all locales', () => {
       }
     })
   })
+  describe('Pool plan is limited to one pool in every locale', () => {
+    const POOL_ROOTS = ['plans.premium', 'plans.premiumFeatures', 'plans.oasis', 'legal.cgu.article6Item2']
+    const MULTI_POOL = /(?:\b[23]\s*(?:piscines?|pools?|piscinas?|piscine|zwembaden|pool)\b|(?:piscines?|pools?|piscinas?|piscine|zwembaden|pool)\s*[23]\b)/i
+    for (const locale of LOCALES) {
+      it(`${locale}: Pool copy never promises 2 or 3 pools`, () => {
+        const data = loadLocale(locale)
+        const violations: string[] = []
+        for (const root of POOL_ROOTS) {
+          const value = getNested(data, root)
+          walkStrings(value, root, (val, path) => {
+            if (MULTI_POOL.test(val) && !/wellness|complete|1pool1spa/i.test(path)) violations.push(`${path}: ${val}`)
+          })
+        }
+        expect(violations, violations.join('\\n')).toHaveLength(0)
+      })
+    }
+  })
+
+  describe('Commercial copy has no invalid currency or empty keys', () => {
+    const EMPTY_EXCEPTIONS = new Set([
+      'landing.heroTitleSuffix', 'landing.heroTitleLine2', 'plans.week', 'plans.perWeek',
+      'plans.emergencyPass', 'plans.trialEndingDays', 'plans.trialNoCharge', 'spaPage.planYearly',
+    ])
+    for (const locale of LOCALES) {
+      it(`${locale}: no double euro and no unexpected empty commercial strings`, () => {
+        const data = loadLocale(locale)
+        const violations: string[] = []
+        walkStrings(data, '', (val, path) => {
+          if (val.includes('€€')) violations.push(`${path}: double euro`)
+          if (val === '' && /^(landing|plans|tarifs|fonctionnalites|legal\.(?:cgu|cgv)|pro|spaPage)(\.|$)/.test(path) && !EMPTY_EXCEPTIONS.has(path)) violations.push(`${path}: empty`)
+        })
+        expect(violations, violations.join('\\n')).toHaveLength(0)
+      })
+    }
+  })
+
+
 })
