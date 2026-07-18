@@ -16,7 +16,7 @@ try {
     prisma.subscription.count(),
     prisma.billingEvent.count(),
   ])
-  console.log('Neon staging schema and pooled connection are ready')
+  console.log('PostgreSQL schema and pooled connection are ready')
 } finally {
   await prisma.$disconnect()
 }
