@@ -12,7 +12,6 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import Link from 'next/link'
 import {
   Calendar,
   ChevronLeft,
@@ -22,6 +21,7 @@ import {
   Plus,
   Sparkles,
 } from 'lucide-react'
+import { AddInterventionModal } from '@/components/pro/add-intervention-modal'
 
 interface InterventionLite {
   id: string
@@ -82,6 +82,7 @@ export default function ProPlanningPage() {
   const [interventions, setInterventions] = useState<InterventionLite[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
 
   const weekEnd = useMemo(() => addDays(weekStart, 7), [weekStart])
   const today = new Date()
@@ -162,13 +163,13 @@ export default function ProPlanningPage() {
             {t('planningSubtitle')}
           </p>
         </div>
-        <Link
-          href="/pro/app/interventions"
+        <button
+          onClick={() => setModalOpen(true)}
           className="glow-gold inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] px-4 py-2 text-xs font-bold text-[oklch(0.99_0.01_195)] shadow-lg transition-all hover:scale-[1.02]"
         >
           <Plus className="h-3.5 w-3.5" />
           {t('planningNew')}
-        </Link>
+        </button>
       </div>
 
       {/* Week navigation */}
@@ -284,6 +285,7 @@ export default function ProPlanningPage() {
           </p>
         </div>
       )}
+      <AddInterventionModal open={modalOpen} onClose={() => setModalOpen(false)} onCreated={() => { void load() }} />
     </div>
   )
 }
