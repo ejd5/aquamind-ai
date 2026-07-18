@@ -32,6 +32,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { AddPoolModal } from '@/components/pro/add-pool-modal'
+import { AddInterventionModal } from '@/components/pro/add-intervention-modal'
 
 interface PoolRow {
   id: string
@@ -84,6 +85,7 @@ export default function ProClientDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [poolModalOpen, setPoolModalOpen] = useState(false)
+  const [interventionModalOpen, setInterventionModalOpen] = useState(false)
 
   const load = useCallback(async () => {
     if (!clientId) return
@@ -128,13 +130,13 @@ export default function ProClientDetailPage() {
           {t('clientBackToList')}
         </button>
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/pro/app/planning"
+          <button
+            onClick={() => setInterventionModalOpen(true)}
             className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/60 px-4 py-2 text-xs font-semibold text-foreground backdrop-blur transition-colors hover:border-gold/60 hover:text-gold dark:border-white/10 dark:bg-white/[0.04]"
           >
             <Wrench className="h-3.5 w-3.5" />
             {t('clientNewIntervention')}
-          </Link>
+          </button>
           <button
             onClick={() => setPoolModalOpen(true)}
             className="glow-gold inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] px-4 py-2 text-xs font-bold text-[oklch(0.99_0.01_195)] shadow-lg transition-all hover:scale-[1.02]"
@@ -304,6 +306,14 @@ export default function ProClientDetailPage() {
           void load()
         }}
       />
+      <AddInterventionModal
+        open={interventionModalOpen}
+        initialClientId={clientId}
+        onClose={() => setInterventionModalOpen(false)}
+        onCreated={() => {
+          void load()
+        }}
+      />
     </div>
   )
 }
@@ -379,8 +389,8 @@ function PoolCard({ pool }: { pool: PoolRow }) {
           <span className="shrink-0 rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold">
             {t('treatmentSalt')}
           </span>
-        )}
-      </div>
+      )}
+    </div>
       <div className="mt-3 flex flex-wrap gap-1.5 text-[10px]">
         {typeof pool.volume === 'number' && (
           <Badge>{t('poolVolume')}: {pool.volume} {t('poolVolumeUnit')}</Badge>
