@@ -14,7 +14,7 @@ export default function ProSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const load = useCallback(async () => { const r = await fetch('/api/pro/settings', { cache: 'no-store' }); if (r.ok) { const j = await r.json(); setOrg(j.organization ?? {}); setMembers(j.members ?? []) } setLoading(false) }, [])
-  useEffect(() => { void load() }, [load])
+  useEffect(() => { const timer = window.setTimeout(() => { void load() }, 0); return () => window.clearTimeout(timer) }, [load])
   async function act(body: any) { setLoading(true); setMessage(''); const r = await fetch('/api/pro/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json(); setMessage(r.ok ? 'Modifications enregistrées.' : j.error || 'Une erreur est survenue.'); await load() }
   if (loading && !org.name) return <div className="flex justify-center py-14"><Loader2 className="h-6 w-6 animate-spin" /></div>
   return <div className="space-y-6">

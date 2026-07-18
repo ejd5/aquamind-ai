@@ -68,7 +68,7 @@ export function ProInterventionPdf({ intervention }: { intervention: any }) {
     <Section title="Actions réalisées">{actions.length ? actions.map((a, i) => <Text key={i}>• {label(a)}</Text>) : <Text>Aucune action renseignée.</Text>}</Section>
     <Section title="Produits utilisés">{products.length ? products.map((p, i) => <Text key={i}>• {label(p)}</Text>) : <Text>Aucun produit renseigné.</Text>}</Section>
     <Section title="Photos horodatées">{photos.length ? <View style={s.photoGrid}>{photos.slice(0, 6).map((photo: any, index: number) => <View key={index} style={s.photoCard}>
-      <Image src={typeof photo === 'string' ? photo : photo.url} style={s.photo} />
+      <Image src={typeof photo === 'string' ? photo : photo.url} style={s.photo} aria-label={`Photo terrain ${index + 1}`} />
       <Text style={s.photoCaption}>{photo?.capturedAt ? new Date(photo.capturedAt).toLocaleString('fr-FR') : `Photo ${index + 1}`}</Text>
     </View>)}</View> : <Text>Aucune photo enregistrée.</Text>}</Section>
     <Footer />

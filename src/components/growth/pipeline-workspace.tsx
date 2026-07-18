@@ -21,7 +21,7 @@ export function PipelineWorkspace({ mode }: { mode: 'qualification' | 'matching'
     const leadJson = await leadRes.json(); const settingsJson = await settingsRes.json()
     setLeads(leadJson.leads ?? []); setMembers(settingsJson.members ?? []); setNeedsSetup(false); setLoading(false)
   }, [])
-  useEffect(() => { void load() }, [load])
+  useEffect(() => { const timer = window.setTimeout(() => { void load() }, 0); return () => window.clearTimeout(timer) }, [load])
 
   async function qualify(lead: Lead) {
     setWorking(lead.id); setMessage('')

@@ -26,7 +26,7 @@ export default function ProPoolDetailPage() {
     if (res.ok) setPool((await res.json()).pool)
     setLoading(false)
   }, [id])
-  useEffect(() => { void load() }, [load])
+  useEffect(() => { const timer = window.setTimeout(() => { void load() }, 0); return () => window.clearTimeout(timer) }, [load])
 
   async function addTest(e: React.FormEvent) {
     e.preventDefault(); setSaving(true)
