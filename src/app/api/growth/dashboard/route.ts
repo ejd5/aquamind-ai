@@ -21,22 +21,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { getGrowthOrganization } from '@/lib/growth/access'
 
 export const runtime = 'nodejs'
-
-async function getUserOrganization(userId: string) {
-  const owned = await db.organization.findFirst({
-    where: { ownerId: userId },
-    orderBy: { createdAt: 'asc' },
-  })
-  if (owned) return owned
-  const membership = await db.organizationMember.findFirst({
-    where: { userId, status: 'active' },
-    orderBy: { createdAt: 'asc' },
-    include: { organization: true },
-  })
-  return membership?.organization ?? null
-}
 
 export async function GET(req: NextRequest) {
   const locale = pickLocale(req)
@@ -46,7 +33,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 401 })
   }
 
-  const org = await getUserOrganization(session.user.id)
+  const org = await getGrowthOrganization(session.user.id, {
+    id: true, name: true, plan: true, status: true, type: true,
+  })
   if (!org) {
     // Empty dashboard — user has no organization yet.
     return NextResponse.json({

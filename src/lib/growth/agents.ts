@@ -409,6 +409,7 @@ export async function leadCapture(
       status: 'NEW',
       score,
       consent: true,
+      consentAt: new Date(),
       consentSource: input.consentSource ?? input.source,
       notes: input.notes ?? null,
     },

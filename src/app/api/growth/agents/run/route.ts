@@ -16,6 +16,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { getGrowthOrganization } from '@/lib/growth/access'
 import { dispatchAgent, AGENT_LIST, type AgentType } from '@/lib/growth/agents'
 
 export const runtime = 'nodejs'
@@ -30,20 +31,6 @@ const LEAD_SCOPED_AGENT_TYPES = new Set<AgentType>([
   'quote',
   'attribution',
 ])
-
-async function getUserOrganization(userId: string) {
-  const owned = await db.organization.findFirst({
-    where: { ownerId: userId },
-    orderBy: { createdAt: 'asc' },
-  })
-  if (owned) return owned
-  const membership = await db.organizationMember.findFirst({
-    where: { userId, status: 'active' },
-    orderBy: { createdAt: 'asc' },
-    include: { organization: true },
-  })
-  return membership?.organization ?? null
-}
 
 export async function POST(req: NextRequest) {
   const locale = pickLocale(req)
@@ -71,7 +58,7 @@ export async function POST(req: NextRequest) {
   }
 
   const spec = AGENT_LIST.find((a) => a.type === agentType)!
-  const org = await getUserOrganization(session.user.id)
+  const org = await getGrowthOrganization(session.user.id)
   const requestedLeadId = typeof body?.leadId === 'string' ? body.leadId : undefined
 
   // Every action that changes a lead must be scoped to the caller's active

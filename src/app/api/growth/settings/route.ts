@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   const data = {
     name, legalName: text(body?.legalName), siret: text(body?.siret), address: text(body?.address),
     city: text(body?.city), zipCode: text(body?.zipCode), country: text(body?.country) || 'FR',
-    phone: text(body?.phone), email: text(body?.email), website: text(body?.website), type: 'pro',
+    phone: text(body?.phone), email: text(body?.email), website: text(body?.website), type: 'growth',
   }
   const organization = existing
     ? await db.organization.update({ where: { id: existing.id }, data })
