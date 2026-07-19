@@ -127,7 +127,8 @@ async function scenarioA() {
       ok(names.includes('20260719120000_add_lead_consent_at'), 'consentAt migration present')
 
       // Create lead with consentAt
-      const org = await c.organization.create({ data: { name: `OA-${db}`, type: 'growth' } })
+      const owner = await c.user.create({ data: { email: `owner-${db}@test.com`, name: 'Owner', role: 'admin', passwordHash: 'test' } })
+      const org = await c.organization.create({ data: { name: `OA-${db}`, type: 'growth', ownerId: owner.id } })
       const lead = await c.lead.create({ data: {
         organizationId: org.id, firstName: 'A', lastName: 'B',
         email: `a-${db}@test.com`, source: 'test', status: 'new', consentAt: new Date()
@@ -143,6 +144,7 @@ async function scenarioA() {
 
       await c.$executeRawUnsafe(`DELETE FROM "Lead" WHERE "organizationId" = '${org.id}'`)
       await c.organization.delete({ where: { id: org.id } })
+      await c.user.delete({ where: { id: owner.id } })
     } finally { await c.$disconnect() }
   } finally {
     dropDb(db); console.log(`  Dropped: ${db}`)
@@ -167,12 +169,14 @@ async function scenarioB() {
     console.log('  Step 2: Creating pre-migration data...')
     const c = await getClient(dbUrl)
     try {
-      const org = await c.organization.create({ data: { name: `OB-${db}`, type: 'growth' } })
-      const hist = await c.lead.create({ data: {
-        organizationId: org.id, firstName: 'H', lastName: 'B',
-        email: `h-${db}@test.com`, source: 'test', status: 'new'
-      }})
-      eq(hist.consentAt, null, 'pre-migration lead consentAt = null')
+      const owner = await c.user.create({ data: { email: `owner-${db}@test.com`, name: 'Owner', role: 'admin', passwordHash: 'test' } })
+      const org = await c.organization.create({ data: { name: `OB-${db}`, type: 'growth', ownerId: owner.id } })
+      // Use raw SQL because the Prisma client schema includes consentAt but
+      // the database only has the baseline schema at this point.
+      await c.$executeRawUnsafe(
+        `INSERT INTO "Lead" ("id", "organizationId", "firstName", "lastName", "email", "source", "status", "consent", "score", "createdAt", "updatedAt")
+         VALUES ('pre-mig-${db}', '${org.id}', 'H', 'B', 'h-${db}@test.com', 'test', 'new', false, 0, NOW(), NOW())`
+      )
 
       // Step 3: Apply ALL migrations (baseline already applied, consentAt is new)
       console.log('  Step 3: Applying incremental migration...')
@@ -206,6 +210,7 @@ async function scenarioB() {
 
       await c.$executeRawUnsafe(`DELETE FROM "Lead" WHERE "organizationId" = '${org.id}'`)
       await c.organization.delete({ where: { id: org.id } })
+      await c.user.delete({ where: { id: owner.id } })
     } finally { await c.$disconnect() }
   } finally {
     dropDb(db); console.log(`  Dropped: ${db}`)
@@ -226,7 +231,8 @@ async function scenarioC() {
 
     const c = await getClient(dbUrl)
     try {
-      const org = await c.organization.create({ data: { name: `OC-${db}`, type: 'growth' } })
+      const owner = await c.user.create({ data: { email: `owner-${db}@test.com`, name: 'Owner', role: 'admin', passwordHash: 'test' } })
+      const org = await c.organization.create({ data: { name: `OC-${db}`, type: 'growth', ownerId: owner.id } })
       await c.lead.create({ data: {
         organizationId: org.id, firstName: 'C', lastName: 'D',
         email: `c-${db}@test.com`, source: 'test', status: 'new', consentAt: new Date()
@@ -244,6 +250,7 @@ async function scenarioC() {
 
       await c.$executeRawUnsafe(`DELETE FROM "Lead" WHERE "organizationId" = '${org.id}'`)
       await c.organization.delete({ where: { id: org.id } })
+      await c.user.delete({ where: { id: owner.id } })
     } finally { await c.$disconnect() }
   } finally {
     dropDb(db); console.log(`  Dropped: ${db}`)
