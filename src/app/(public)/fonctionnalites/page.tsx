@@ -25,6 +25,7 @@ import {
   ArrowRight,
 } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
+import { BrainTechnologySection } from '@/components/brain/brain-technology-section'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('fonctionnalites')
@@ -132,6 +133,7 @@ export default async function FonctionnalitesPage() {
         </div>
       </section>
 
+      <BrainTechnologySection variant="home" />
       {/* CTA bottom */}
       <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-6">
         <div className="glass-card rounded-3xl p-10 text-center sm:p-14">
