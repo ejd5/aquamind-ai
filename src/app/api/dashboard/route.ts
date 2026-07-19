@@ -24,16 +24,18 @@ export async function GET(req: Request) {
   const url = new URL(req.url)
   const poolId = url.searchParams.get('poolId')
   const profileWhere = poolId ? { id: poolId, userId } : { userId }
+  const poolScope = poolId ? { OR: [{ poolId }, { poolId: null }] } : {}
 
   const [profile, latestTest, latestPlan, tests, diagnostics, equipment, products, chatCount] = await Promise.all([
     db.poolProfile.findFirst({ where: profileWhere }),
-    db.waterTest.findFirst({ where: { userId }, orderBy: { createdAt: 'desc' }, include: { actionPlans: true } }),
+    db.waterTest.findFirst({ where: { userId, ...poolScope }, orderBy: { createdAt: 'desc' }, include: { actionPlans: true } }),
     db.actionPlan.findFirst({
-      where: { waterTest: { userId } },
+      where: { waterTest: { userId, ...poolScope } },
       orderBy: { createdAt: 'desc' },
+      include: { executions: true, outcome: true },
     }),
-    db.waterTest.findMany({ where: { userId }, take: 30, orderBy: { createdAt: 'desc' } }),
-    db.photoDiagnostic.findMany({ where: { userId }, take: 5, orderBy: { createdAt: 'desc' } }),
+    db.waterTest.findMany({ where: { userId, ...poolScope }, take: 30, orderBy: { createdAt: 'desc' } }),
+    db.photoDiagnostic.findMany({ where: { userId, ...poolScope }, take: 5, orderBy: { createdAt: 'desc' } }),
     db.equipment.count({ where: { userId } }),
     db.productInventory.count({ where: { userId } }),
     db.chatMessage.count({ where: { userId } }),
