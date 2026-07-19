@@ -49,14 +49,7 @@ jobs:
         with:
           bun-version: '1.3.4'
       - run: bun install --frozen-lockfile
-      - name: Create shadow database for schema validation
-        env:
-          PGPASSWORD: ci-only-password
-        run: createdb -h 127.0.0.1 -U aqwelia_ci aqwelia_shadow
       - name: Validate generated PostgreSQL schema
-        env:
-          POSTGRES_TEST_DATABASE_URL: postgresql://aqwelia_ci:ci-only-password@127.0.0.1:5432/aqwelia_ci
-          SHADOW_DATABASE_URL: postgresql://aqwelia_ci:ci-only-password@127.0.0.1:5432/aqwelia_shadow
         run: bun run test:postgresql
       - name: Generate both Prisma clients
         run: |
