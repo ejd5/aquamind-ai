@@ -18,23 +18,10 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { leadCapture, type LeadCaptureInput } from '@/lib/growth/agents'
+import { getGrowthOrganization } from '@/lib/growth/access'
+import { toolWorkspaceText } from '@/i18n/locales/tool-workspaces'
 
 export const runtime = 'nodejs'
-
-async function getUserOrganization(userId: string) {
-  // First, owned organization; otherwise first membership.
-  const owned = await db.organization.findFirst({
-    where: { ownerId: userId },
-    orderBy: { createdAt: 'asc' },
-  })
-  if (owned) return owned
-  const membership = await db.organizationMember.findFirst({
-    where: { userId, status: 'active' },
-    orderBy: { createdAt: 'asc' },
-    include: { organization: true },
-  })
-  return membership?.organization ?? null
-}
 
 export async function GET(req: NextRequest) {
   const locale = pickLocale(req)
@@ -44,11 +31,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 401 })
   }
 
-  const org = await getUserOrganization(session.user.id)
+  const org = await getGrowthOrganization(session.user.id)
   if (!org) {
-    return NextResponse.json({ leads: [], total: 0, page: 1, pageSize: 20 })
+    return NextResponse.json(
+      { error: toolWorkspaceText(locale, 'organizationRequired') },
+      { status: 409 }
+    )
   }
-
   const url = new URL(req.url)
   const status = url.searchParams.get('status')
   const source = url.searchParams.get('source')
@@ -106,7 +95,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 401 })
   }
 
-  const org = await getUserOrganization(session.user.id)
+  const org = await getGrowthOrganization(session.user.id)
+  if (!org) {
+    return NextResponse.json(
+      { error: toolWorkspaceText(locale, 'organizationRequired') },
+      { status: 409 }
+    )
+  }
 
   let body: any
   try {
@@ -148,7 +143,7 @@ export async function POST(req: NextRequest) {
   try {
     const result = await leadCapture(
       {
-        organizationId: org?.id,
+        organizationId: org.id,
         userId: session.user.id,
         objective: 'Capture lead from source ' + input.source,
         tools: ['consent_check', 'initial_scoring', 'lead_create'],

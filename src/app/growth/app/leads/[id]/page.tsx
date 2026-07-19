@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
+import { useToolWorkspaceText } from '@/hooks/use-tool-workspace-text'
 import Link from 'next/link'
 import {
   ArrowLeft,
@@ -144,6 +145,7 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function GrowthLeadDetailPage() {
+  const tt = useToolWorkspaceText()
   const t = useTranslations('growthApp')
   const params = useParams<{ id: string }>()
   const leadId = params?.id ?? ''
@@ -154,6 +156,10 @@ export default function GrowthLeadDetailPage() {
   const [statusUpdating, setStatusUpdating] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [actionMessage, setActionMessage] = useState<string | null>(null)
+  const [appointmentStart, setAppointmentStart] = useState('')
+  const [appointmentDuration, setAppointmentDuration] = useState('60')
+  const [quoteLabel, setQuoteLabel] = useState('Intervention piscine')
+  const [quoteAmount, setQuoteAmount] = useState('')
 
   const load = useCallback(async () => {
     if (!leadId) return
@@ -180,7 +186,8 @@ export default function GrowthLeadDetailPage() {
   }, [leadId, t])
 
   useEffect(() => {
-    void load()
+    const timer = window.setTimeout(() => { void load() }, 0)
+    return () => window.clearTimeout(timer)
   }, [load])
 
   async function updateStatus(newStatus: string) {
@@ -253,6 +260,31 @@ export default function GrowthLeadDetailPage() {
     } finally {
       setActionLoading(null)
     }
+  }
+
+  async function createAppointment() {
+    if (!appointmentStart) return
+    setActionLoading('appointment_create')
+    const start = new Date(appointmentStart)
+    const end = new Date(start.getTime() + Math.max(15, Number(appointmentDuration) || 60) * 60_000)
+    const res = await fetch('/api/growth/appointments', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leadId, startTime: start.toISOString(), endTime: end.toISOString(), status: 'proposed', notes: tt('slotProposedNote') }),
+    })
+    setActionMessage(res.ok ? tt('slotCreated') : tt('appointmentCreateFailed'))
+    setActionLoading(null); if (res.ok) { setAppointmentStart(''); void load() }
+  }
+
+  async function createQuote() {
+    const amount = Number(quoteAmount)
+    if (!quoteLabel.trim() || !Number.isFinite(amount) || amount <= 0) return
+    setActionLoading('quote_create')
+    const res = await fetch('/api/growth/quotes', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leadId, status: 'draft', items: [{ label: quoteLabel.trim(), quantity: 1, unitPrice: amount, total: amount }] }),
+    })
+    setActionMessage(res.ok ? tt('draftCreated') : tt('quoteCreateFailed'))
+    setActionLoading(null); if (res.ok) { setQuoteAmount(''); void load() }
   }
 
   if (loading && !lead) {
@@ -383,12 +415,6 @@ export default function GrowthLeadDetailPage() {
             icon={<Activity className="h-3.5 w-3.5" />}
             onClick={() => runAgent('diagnostic')}
             loading={actionLoading === 'diagnostic'}
-          />
-          <ActionButton
-            label={t('actionNurturing')}
-            icon={<TrendingUp className="h-3.5 w-3.5" />}
-            onClick={() => runAgent('nurturing')}
-            loading={actionLoading === 'nurturing'}
           />
           <ActionButton
             label={t('actionAttribution')}
@@ -566,6 +592,11 @@ export default function GrowthLeadDetailPage() {
               <Calendar className="h-4 w-4 text-gold" />
               <h2 className="font-display text-lg font-bold">{t('appointmentsTitle')}</h2>
             </div>
+            <div className="mb-4 grid grid-cols-[1fr_5rem_auto] gap-2">
+              <input type="datetime-local" value={appointmentStart} onChange={(e) => setAppointmentStart(e.target.value)} className="min-w-0 rounded-lg border border-border bg-background p-2 text-xs" />
+              <input type="number" min="15" step="15" value={appointmentDuration} onChange={(e) => setAppointmentDuration(e.target.value)} className="rounded-lg border border-border bg-background p-2 text-xs" aria-label="Durée en minutes" />
+              <button onClick={createAppointment} disabled={!appointmentStart || actionLoading === 'appointment_create'} className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">Proposer</button>
+            </div>
             {appointments.length === 0 ? (
               <p className="text-xs text-muted-foreground">{t('appointmentsEmpty')}</p>
             ) : (
@@ -596,6 +627,11 @@ export default function GrowthLeadDetailPage() {
             <div className="mb-3 flex items-center gap-2">
               <FileText className="h-4 w-4 text-gold" />
               <h2 className="font-display text-lg font-bold">{t('quotesTitle')}</h2>
+            </div>
+            <div className="mb-4 grid grid-cols-[1fr_6rem_auto] gap-2">
+              <input value={quoteLabel} onChange={(e) => setQuoteLabel(e.target.value)} className="min-w-0 rounded-lg border border-border bg-background p-2 text-xs" placeholder="Prestation" />
+              <input type="number" min="0" step="0.01" value={quoteAmount} onChange={(e) => setQuoteAmount(e.target.value)} className="rounded-lg border border-border bg-background p-2 text-xs" placeholder="€" />
+              <button onClick={createQuote} disabled={!quoteAmount || actionLoading === 'quote_create'} className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">Créer</button>
             </div>
             {quotes.length === 0 ? (
               <p className="text-xs text-muted-foreground">{t('quotesEmpty')}</p>

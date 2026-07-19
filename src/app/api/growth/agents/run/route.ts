@@ -16,25 +16,21 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { getGrowthOrganization } from '@/lib/growth/access'
 import { dispatchAgent, AGENT_LIST, type AgentType } from '@/lib/growth/agents'
 
 export const runtime = 'nodejs'
 
 const VALID_AGENT_TYPES = new Set(AGENT_LIST.map((a) => a.type))
-
-async function getUserOrganization(userId: string) {
-  const owned = await db.organization.findFirst({
-    where: { ownerId: userId },
-    orderBy: { createdAt: 'asc' },
-  })
-  if (owned) return owned
-  const membership = await db.organizationMember.findFirst({
-    where: { userId, status: 'active' },
-    orderBy: { createdAt: 'asc' },
-    include: { organization: true },
-  })
-  return membership?.organization ?? null
-}
+const LEAD_SCOPED_AGENT_TYPES = new Set<AgentType>([
+  'qualification',
+  'diagnostic',
+  'matching',
+  'appointment',
+  'nurturing',
+  'quote',
+  'attribution',
+])
 
 export async function POST(req: NextRequest) {
   const locale = pickLocale(req)
@@ -62,21 +58,54 @@ export async function POST(req: NextRequest) {
   }
 
   const spec = AGENT_LIST.find((a) => a.type === agentType)!
-  const org = await getUserOrganization(session.user.id)
+  const org = await getGrowthOrganization(session.user.id)
+  const requestedLeadId = typeof body?.leadId === 'string' ? body.leadId : undefined
+
+  // Every action that changes a lead must be scoped to the caller's active
+  // organization.  The agent input cannot be allowed to point at a different
+  // lead than the URL/body context.
+  if (LEAD_SCOPED_AGENT_TYPES.has(agentType)) {
+    if (!org || !requestedLeadId) {
+      const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
+      return NextResponse.json({ error: msg }, { status: 404 })
+    }
+    const lead = await db.lead.findFirst({
+      where: { id: requestedLeadId, organizationId: org.id },
+      select: { id: true, consent: true },
+    })
+    if (!lead) {
+      const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
+      return NextResponse.json({ error: msg }, { status: 404 })
+    }
+    // AQWELIA Growth Inbox Beta never starts an outbound sequence without a
+    // recorded, explicit consent. Actual sending remains a later provider
+    // integration with an unsubscribe workflow.
+    if (agentType === 'nurturing' && !lead.consent) {
+      return NextResponse.json(
+        { error: 'Explicit consent is required before starting a nurture sequence.' },
+        { status: 409 }
+      )
+    }
+  }
+
+  const input = {
+    ...(body?.input && typeof body.input === 'object' ? body.input : {}),
+    ...(requestedLeadId ? { leadId: requestedLeadId } : {}),
+  }
 
   const ctx = {
     organizationId: org?.id,
     userId: session.user.id,
-    leadId: body?.leadId ? String(body.leadId) : undefined,
+    leadId: requestedLeadId,
     objective: body?.objective ? String(body.objective) : spec.objective,
     tools: spec.tools,
     budget: spec.budget,
     maxActions: spec.maxActions,
-    input: body?.input,
+    input,
   }
 
   try {
-    const result = await dispatchAgent(agentType, ctx, body?.input ?? {})
+    const result = await dispatchAgent(agentType, ctx, input)
     return NextResponse.json({ result })
   } catch (err) {
     console.error('[growth/agents/run] error:', err)

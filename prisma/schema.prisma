@@ -883,6 +883,7 @@ model Lead {
   score           Int      @default(0)
   assignedTo      String?
   consent         Boolean  @default(false)
+  consentAt       DateTime?
   consentSource   String?
   notes           String?
   createdAt       DateTime @default(now())

@@ -129,3 +129,31 @@ bunx prisma db pull --url "$DATABASE_URL"   # doit afficher le schéma complet
 # Lancer un script de smoke test
 bun run src/scripts/check-db.ts  # à créer si besoin
 ```
+
+## 10. SQLite : `db push` par défaut, migrations ciblées
+
+Le dépôt utilise **deux stratégies SQLite distinctes** :
+
+- **Dev local** (`DATABASE_URL=file:./db/custom.db`) : `prisma db push` applique
+  le schéma sans écrire de migration. Aucune donnée persistante n'est conservée
+  en production sur SQLite — SQLite est explicitement réservé au dev
+  (voir commentaire en tête de `prisma/schema.prisma`).
+- **Migrations SQLite ciblées** : seules les migrations ayant un enjeu de
+  rétro-compatibilité testable en CI sont écrites (par exemple
+  `20260711000000_p0_b_billing_security`). Le test `run-billing-migration-test.sh`
+  crée une base « pré-P0B » ne contenant que `Subscription`, marque la baseline
+  comme appliquée, puis exécute `migrate deploy` pour valider la migration.
+
+### `Lead.consentAt` (nullable, ajout 2026-07-19)
+
+- Une **migration PostgreSQL incrémentale** est fournie :
+  `prisma/postgresql/migrations/20260719120000_add_lead_consent_at/migration.sql`.
+- **Aucune migration SQLite n'est créée** pour `consentAt`, car :
+  1. SQLite n'est utilisé qu'en dev (`db push` applique le schéma) ;
+  2.une migration SQLite `ALTER TABLE "Lead" ADD COLUMN` casserait
+     `run-billing-migration-test.sh` (la base pré-P0B ne crée pas la table
+     `Lead`, la baseline étant marquée « applied » sans être exécutée) ;
+  3. aucune base SQLite persistante de production ne dépend de cette migration.
+- En dev local, exécuter `bun run db:push` pour ajouter `consentAt` à la base
+  SQLite existante — les leads historiques conserveront `consentAt = NULL`,
+  ce qui est le comportement attendu (nullable).

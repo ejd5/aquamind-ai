@@ -5,8 +5,8 @@
  *
  * POST — run the matching agent. Body:
  *        `{ organizations: [{ id, name, city?, zipCode?, specialties[], capacity, rating, distanceKm? }] }`.
- *        If no organizations are provided, the API auto-discovers all
- *        organizations in the same country as the lead.
+ *        If no organizations are provided, the API discovers eligible
+ *        organizations but never invents capacity, rating or specialties.
  *
  * Auth: NextAuth session required.
  */
@@ -15,25 +15,12 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { getGrowthOrganization } from '@/lib/growth/access'
 import { matching, type MatchingInput } from '@/lib/growth/agents'
 
 export const runtime = 'nodejs'
 
 type Ctx = { params: Promise<{ id: string }> }
-
-async function getUserOrganization(userId: string) {
-  const owned = await db.organization.findFirst({
-    where: { ownerId: userId },
-    orderBy: { createdAt: 'asc' },
-  })
-  if (owned) return owned
-  const membership = await db.organizationMember.findFirst({
-    where: { userId, status: 'active' },
-    orderBy: { createdAt: 'asc' },
-    include: { organization: true },
-  })
-  return membership?.organization ?? null
-}
 
 export async function POST(req: NextRequest, ctx: Ctx) {
   const locale = pickLocale(req)
@@ -44,10 +31,11 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   }
 
   const { id } = await ctx.params
-  const org = await getUserOrganization(session.user.id)
+  const org = await getGrowthOrganization(session.user.id)
+  if (!org) return NextResponse.json({ error: 'Organisation requise' }, { status: 409 })
 
   const lead = await db.lead.findFirst({
-    where: org ? { id, organizationId: org.id } : { id },
+    where: { id, organizationId: org.id },
     select: { id: true, country: true, city: true, zipCode: true, serviceType: true },
   })
   if (!lead) {
@@ -76,11 +64,13 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     : []
 
   // Auto-discover organizations in the same country if none provided.
+  // Exclude the caller's own organization to prevent self-matching.
   if (organizations.length === 0) {
     const candidates = await db.organization.findMany({
       where: {
         status: 'active',
         country: lead.country,
+        id: { not: org.id },
       },
       take: 20,
       orderBy: { createdAt: 'asc' },
@@ -90,9 +80,9 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       name: o.name,
       city: o.city ?? undefined,
       zipCode: o.zipCode ?? undefined,
-      specialties: ['maintenance'], // default; could be enriched later
-      capacity: 5,
-      rating: 4.5,
+      specialties: [],
+      capacity: 0,
+      rating: 0,
     }))
   }
 

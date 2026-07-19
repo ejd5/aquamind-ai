@@ -29,7 +29,7 @@ import {
 } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import { authOptions } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { getGrowthOrganization } from '@/lib/growth/access'
 import { Footer } from '@/components/aquamind/footer'
 
 export const dynamic = 'force-dynamic'
@@ -49,20 +49,8 @@ export default async function GrowthAppLayout({
   // Resolve user's primary organization (owned or first membership).
   let orgName = (session.user as any).name ?? session.user.email ?? ''
   try {
-    const owned = await db.organization.findFirst({
-      where: { ownerId: session.user.id },
-      orderBy: { createdAt: 'asc' },
-    })
-    if (owned) {
-      orgName = owned.name
-    } else {
-      const membership = await db.organizationMember.findFirst({
-        where: { userId: session.user.id, status: 'active' },
-        orderBy: { createdAt: 'asc' },
-        include: { organization: true },
-      })
-      if (membership?.organization) orgName = membership.organization.name
-    }
+    const org = await getGrowthOrganization(session.user.id, { id: true, name: true })
+    if (org) orgName = org.name
   } catch (err) {
     // ignore — keep session-based fallback
   }
@@ -70,13 +58,13 @@ export default async function GrowthAppLayout({
   const NAV = [
     { href: '/growth/app', label: t('navDashboard'), icon: LayoutDashboard },
     { href: '/growth/app/leads', label: t('navLeads'), icon: Inbox },
-    { href: '/growth/app', label: t('navQualification'), icon: Bot, soon: true },
-    { href: '/growth/app', label: t('navMatching'), icon: Users, soon: true },
-    { href: '/growth/app', label: t('navAppointments'), icon: Calendar, soon: true },
-    { href: '/growth/app', label: t('navQuotes'), icon: FileText, soon: true },
-    { href: '/growth/app', label: t('navAnalytics'), icon: BarChart3, soon: true },
-    { href: '/growth/app', label: t('navAgents'), icon: TrendingUp, soon: true },
-    { href: '/growth/app', label: t('navSettings'), icon: Settings, soon: true },
+    { href: '/growth/app/qualification', label: t('navQualification'), icon: Bot },
+    { href: '/growth/app/matching', label: t('navMatching'), icon: Users },
+    { href: '/growth/app/appointments', label: t('navAppointments'), icon: Calendar },
+    { href: '/growth/app/quotes', label: t('navQuotes'), icon: FileText },
+    { href: '/growth/app/analytics', label: t('navAnalytics'), icon: BarChart3 },
+    { href: '/growth/app/audit', label: t('navAgents'), icon: TrendingUp },
+    { href: '/growth/app/settings', label: t('navSettings'), icon: Settings },
   ]
 
   return (
@@ -174,11 +162,6 @@ export default async function GrowthAppLayout({
                     <Icon className="h-4 w-4" />
                   </span>
                   <span className="truncate">{link.label}</span>
-                  {link.soon && (
-                    <span className="ml-auto rounded-full bg-gold/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-gold">
-                      Soon
-                    </span>
-                  )}
                 </Link>
               )
             })}

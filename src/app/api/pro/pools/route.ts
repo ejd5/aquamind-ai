@@ -14,10 +14,51 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { getProAccess } from '@/lib/pro/access'
+import { toolWorkspaceText } from '@/i18n/locales/tool-workspaces'
 
 export const runtime = 'nodejs'
 
 const ALLOWED_TYPES = new Set(['pool', 'spa', 'both'])
+
+export async function GET(req: NextRequest) {
+  const locale = pickLocale(req)
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
+  }
+
+  const url = new URL(req.url)
+  const q = (url.searchParams.get('q') || '').trim()
+  const type = url.searchParams.get('type')
+  const access = await getProAccess(session.user.id)
+  const where: any = { client: { proUserId: access.ownerUserId } }
+  if (type && ALLOWED_TYPES.has(type)) where.type = type
+  if (q) {
+    where.OR = [
+      { name: { contains: q } },
+      { client: { firstName: { contains: q } } },
+      { client: { lastName: { contains: q } } },
+      { client: { city: { contains: q } } },
+    ]
+  }
+
+  const pools = await db.proPool.findMany({
+    where,
+    orderBy: { updatedAt: 'desc' },
+    take: 200,
+    include: {
+      client: {
+        select: { id: true, firstName: true, lastName: true, city: true },
+      },
+      waterTests: { orderBy: { testedAt: 'desc' }, take: 1 },
+      _count: { select: { interventions: true, waterTests: true } },
+    },
+  })
+
+  return NextResponse.json({ pools, total: pools.length })
+}
 
 export async function POST(req: NextRequest) {
   const locale = pickLocale(req)
@@ -26,6 +67,8 @@ export async function POST(req: NextRequest) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
+  const access = await getProAccess(session.user.id)
+  if (!access.canWrite) return NextResponse.json({ error: toolWorkspaceText(locale, 'readonly') }, { status: 403 })
 
   let body: any
   try {
@@ -47,7 +90,7 @@ export async function POST(req: NextRequest) {
 
   // Verify the client belongs to the authenticated pro.
   const client = await db.proClient.findFirst({
-    where: { id: proClientId, proUserId: session.user.id },
+    where: { id: proClientId, proUserId: access.ownerUserId },
     select: { id: true },
   })
   if (!client) {

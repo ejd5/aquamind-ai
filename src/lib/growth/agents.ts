@@ -27,6 +27,7 @@
  * The Growth OS API (/api/growth/agents/run) dispatches on `agentType`.
  */
 import { db } from '@/lib/db'
+import { toolWorkspaceText } from '@/i18n/locales/tool-workspaces'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -408,6 +409,7 @@ export async function leadCapture(
       status: 'NEW',
       score,
       consent: true,
+      consentAt: new Date(),
       consentSource: input.consentSource ?? input.source,
       notes: input.notes ?? null,
     },
@@ -771,29 +773,27 @@ export async function matching(
   })
 
   if (bestMatch) {
-    await db.lead.update({
-      where: { id: input.leadId },
-      data: {
-        organizationId: bestMatch.organizationId,
-        status: 'ASSIGNED',
-      },
-    })
-    await logLeadEvent(input.leadId, 'assigned', 'matching', {
+    // Matching only proposes a candidate. A human dispatcher must confirm
+    // the assignment from Growth Inbox; the agent never transfers ownership.
+    await logLeadEvent(input.leadId, 'match_suggested', 'matching', {
       organizationId: bestMatch.organizationId,
       score: bestMatch.score,
+      approvalRequired: true,
     })
   }
 
   const confidence = bestMatch ? (bestMatch.score >= 70 ? 0.9 : 0.65) : 0.2
   const result: AgentResult<MatchingOutput> = {
     agentType: 'matching',
-    status: bestMatch ? 'completed' : 'escalated',
+    status: 'escalated',
     confidence,
     output: { leadId: input.leadId, ranked, bestMatch },
     actions,
     cost: 0.04,
-    escalatedTo: bestMatch ? undefined : 'manual_dispatcher',
-    reason: bestMatch ? undefined : 'No organization available to match.',
+    escalatedTo: 'manual_dispatcher',
+    reason: bestMatch
+      ? toolWorkspaceText('fr', 'suggestionReady')
+      : 'Aucune organisation disponible — traitement manuel requis.',
   }
   await logAgentRun({ ...ctx, leadId: input.leadId }, result)
   return result
@@ -909,7 +909,7 @@ export interface NurturingOutput {
   scenario: NurturingScenario
   steps: Array<{
     day: number
-    channel: 'email' | 'sms' | 'whatsapp'
+    channel: 'email'
     template: string
     goal: string
   }>
@@ -920,18 +920,18 @@ const NURTURING_SCENARIOS: Record<NurturingScenario, NurturingOutput['steps']> =
   cold_3step: [
     { day: 0, channel: 'email', template: 'cold_intro', goal: 'educate' },
     { day: 3, channel: 'email', template: 'cold_testimonial', goal: 'social_proof' },
-    { day: 7, channel: 'sms', template: 'cold_offer', goal: 'convert' },
+    { day: 7, channel: 'email', template: 'cold_offer', goal: 'convert' },
   ],
   warm_5step: [
     { day: 0, channel: 'email', template: 'warm_recall', goal: 'reconnect' },
-    { day: 2, channel: 'whatsapp', template: 'warm_quick_question', goal: 'engage' },
+    { day: 2, channel: 'email', template: 'warm_quick_question', goal: 'engage' },
     { day: 5, channel: 'email', template: 'warm_case_study', goal: 'value' },
-    { day: 8, channel: 'sms', template: 'warm_slot_offer', goal: 'appointment' },
+    { day: 8, channel: 'email', template: 'warm_slot_offer', goal: 'appointment' },
     { day: 12, channel: 'email', template: 'warm_last_chance', goal: 'convert' },
   ],
   lost_winback: [
     { day: 0, channel: 'email', template: 'winback_we_miss_you', goal: 'reactivate' },
-    { day: 7, channel: 'sms', template: 'winback_discount', goal: 'incentive' },
+    { day: 7, channel: 'email', template: 'winback_discount', goal: 'incentive' },
     { day: 14, channel: 'email', template: 'winback_final', goal: 'closure' },
   ],
 }

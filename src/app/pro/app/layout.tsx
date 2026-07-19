@@ -60,9 +60,9 @@ export default async function ProAppLayout({
       label: t('navInterventions'),
       icon: Wrench,
     },
-    { href: '/pro/app', label: t('navPools'), icon: Waves, soon: true },
-    { href: '/pro/app', label: t('navReports'), icon: FileText, soon: true },
-    { href: '/pro/app', label: t('navSettings'), icon: Settings, soon: true },
+    { href: '/pro/app/pools', label: t('navPools'), icon: Waves },
+    { href: '/pro/app/reports', label: t('navReports'), icon: FileText },
+    { href: '/pro/app/settings', label: t('navSettings'), icon: Settings },
   ]
 
   return (
@@ -160,11 +160,6 @@ export default async function ProAppLayout({
                     <Icon className="h-4 w-4" />
                   </span>
                   <span className="truncate">{link.label}</span>
-                  {link.soon && (
-                    <span className="ml-auto rounded-full bg-gold/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-gold">
-                      Soon
-                    </span>
-                  )}
                 </Link>
               )
             })}
