@@ -24,6 +24,7 @@ import { Faq } from './sections/faq'
 import { ProPreview } from './sections/pro-preview'
 import { CarePreview } from './sections/care-preview'
 import { FinalCta } from './sections/final-cta'
+import { BrainTechnologySection } from '@/components/brain/brain-technology-section'
 import { scrollToId } from './landing-utils'
 
 interface LandingPageProps {
@@ -190,6 +191,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
         <RealCosts />
         <PiscinisteCost />
         <Solution />
+        <BrainTechnologySection variant="home" />
         <Comparator />
         <Simulations />
         <Savings />
