@@ -669,6 +669,7 @@ CREATE TABLE "Lead" (
     "score" INTEGER NOT NULL DEFAULT 0,
     "assignedTo" TEXT,
     "consent" BOOLEAN NOT NULL DEFAULT false,
+    "consentAt" TIMESTAMP(3),
     "consentSource" TEXT,
     "notes" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

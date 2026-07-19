@@ -3,9 +3,8 @@ import { db } from '@/lib/db'
 /**
  * Return the Growth workspace organization for the given user.
  *
- * The query deliberately excludes `type: 'pro'` organizations so that a
- * user who also owns a Pro workspace will never see it appear in Growth
- * routes.  This mirrors `getProAccess()` which filters to `type: 'pro'`.
+ * Only matches organizations with `type: 'growth'`.  Users who also own a
+ * Pro or Business workspace will never see those organizations here.
  *
  * When no `select` is passed, returns `{ id: string } | null`.
  * Pass a Prisma `select` to request additional fields:
@@ -19,13 +18,13 @@ export async function getGrowthOrganization(
 ): Promise<{ [key: string]: any } | null> {
   const sel = select ?? { id: true }
   const owned = await db.organization.findFirst({
-    where: { ownerId: userId, NOT: { type: 'pro' } },
+    where: { ownerId: userId, type: 'growth' },
     orderBy: { createdAt: 'asc' },
     select: sel,
   })
   if (owned) return owned
   const membership = await db.organizationMember.findFirst({
-    where: { userId, status: 'active', organization: { NOT: { type: 'pro' } } },
+    where: { userId, status: 'active', organization: { type: 'growth' } },
     orderBy: { createdAt: 'asc' },
     select: { organization: { select: sel } },
   })

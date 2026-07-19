@@ -211,6 +211,7 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
       db.leadEvent.deleteMany({ where: { leadId: id } }),
       db.appointment.deleteMany({ where: { leadId: id } }),
       db.quote.deleteMany({ where: { leadId: id } }),
+      db.commission.deleteMany({ where: { leadId: id } }),
       db.agentRun.deleteMany({ where: { leadId: id } }),
       db.lead.delete({ where: { id } }),
     ])
