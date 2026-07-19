@@ -27,6 +27,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
+import { BrainTechnologySection } from '@/components/brain/brain-technology-section'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('growth')
@@ -239,6 +240,7 @@ export default async function GrowthPage() {
         </div>
       </section>
 
+      <BrainTechnologySection variant="growth" />
       {/* ===== Pricing teaser ===== */}
       <section className="relative py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
