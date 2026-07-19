@@ -25,6 +25,7 @@ import { offlineApi, apiGetCached } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
 import { usePdfReport } from '@/hooks/use-pdf-report'
+import { BrainActionTracker } from '@/components/brain/brain-action-tracker'
 import type { TabId } from './app-shell'
 
 interface Props {
@@ -335,6 +336,7 @@ export function ModuleActionPlan({ onNavigate, activePoolId }: Props) {
                         {tr(ai.product, ai.productKey)}
                       </span>
                     )}
+                    <BrainActionTracker actionPlanId={plan.id} actionIndex={i} actionLabel={tr(ai.action, ai.actionKey)} productName={ai.product ? tr(ai.product, ai.productKey) : undefined} poolId={activePoolId} />
                   </div>
                 </li>
                 )
