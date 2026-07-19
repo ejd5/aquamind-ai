@@ -23,48 +23,51 @@ datasource db {
 
 // Utilisateur AQWELIA (propriétaire de toutes les données ci-dessous)
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  name         String?
-  phone        String?
-  role         String   @default("user") // user | pro | business | admin
-  locale       String   @default("fr")
-  country      String   @default("FR")
-  timezone     String   @default("Europe/Paris")
-  consentMarketing Boolean @default(false)
-  consentAnalytics Boolean @default(true)
-  consentEmail     Boolean @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id               String   @id @default(cuid())
+  email            String   @unique
+  passwordHash     String
+  name             String?
+  phone            String?
+  role             String   @default("user") // user | pro | business | admin
+  locale           String   @default("fr")
+  country          String   @default("FR")
+  timezone         String   @default("Europe/Paris")
+  consentMarketing Boolean  @default(false)
+  consentAnalytics Boolean  @default(true)
+  consentEmail     Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   // Relations vers les données possédées
-  poolProfiles     PoolProfile[]
-  waterTests       WaterTest[]
-  photoDiagnostics PhotoDiagnostic[]
-  equipment        Equipment[]
-  inventory        ProductInventory[]
-  chatMessages     ChatMessage[]
-  maintenanceTasks MaintenanceTask[]
-  poolDesigns      PoolDesign[]
-  reminders        Reminder[]
-  guideViews       GuideView[]
-  subscriptions    Subscription[]
-  analyticsEvents  AnalyticsEvent[]
+  poolProfiles             PoolProfile[]
+  waterTests               WaterTest[]
+  photoDiagnostics         PhotoDiagnostic[]
+  equipment                Equipment[]
+  inventory                ProductInventory[]
+  chatMessages             ChatMessage[]
+  maintenanceTasks         MaintenanceTask[]
+  poolDesigns              PoolDesign[]
+  reminders                Reminder[]
+  guideViews               GuideView[]
+  subscriptions            Subscription[]
+  analyticsEvents          AnalyticsEvent[]
+  recommendationExecutions RecommendationExecution[]
+  recommendationOutcomes   RecommendationOutcome[]
+  brainFeedback            BrainFeedback[]
 
   // AQWELIA Pro — clients gérés par ce pro (Pro MVP)
-  proClients       ProClient[]
+  proClients ProClient[]
 
   // AQWELIA Family — pools owned by this user
-  ownedPoolShares  PoolShare[]  @relation("PoolSharesOwnedBy")
+  ownedPoolShares  PoolShare[] @relation("PoolSharesOwnedBy")
   // AQWELIA Family — pools shared WITH this user
-  sharedPoolShares PoolShare[]  @relation("PoolSharesSharedWith")
+  sharedPoolShares PoolShare[] @relation("PoolSharesSharedWith")
 
   // AQWELIA Home (IoT) — sensors owned by this user
-  iotSensors       IotSensor[]
+  iotSensors IotSensor[]
 
   // AQWELIA Growth OS — organizations owned by this user
-  ownedOrganizations  Organization[]   @relation("OwnedOrganizations")
+  ownedOrganizations      Organization[]       @relation("OwnedOrganizations")
   // AQWELIA Growth OS — organizations this user is a member of
   organizationMemberships OrganizationMember[]
 
@@ -125,7 +128,12 @@ model PoolProfile {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // AQWELIA Family — shares granted on this pool (owner-side)
-  shares PoolShare[]
+  shares                   PoolShare[]
+  waterTests               WaterTest[]
+  photoDiagnostics         PhotoDiagnostic[]
+  recommendationExecutions RecommendationExecution[]
+  recommendationOutcomes   RecommendationOutcome[]
+  brainFeedback            BrainFeedback[]
 
   @@index([userId])
 }
@@ -134,6 +142,7 @@ model PoolProfile {
 model WaterTest {
   id               String   @id @default(cuid())
   userId           String
+  poolId           String?
   ph               Float
   freeChlorine     Float?
   totalChlorine    Float?
@@ -153,16 +162,22 @@ model WaterTest {
   lsi              Float? // Langelier Saturation Index
   createdAt        DateTime @default(now())
 
-  actionPlans ActionPlan[]
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actionPlans      ActionPlan[]
+  baselineOutcomes RecommendationOutcome[] @relation("BrainBaselineTest")
+  followupOutcome  RecommendationOutcome?  @relation("BrainFollowupTest")
+  user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pool             PoolProfile?            @relation(fields: [poolId], references: [id], onDelete: SetNull)
 
   @@index([userId])
+  @@index([poolId])
+  @@index([poolId, createdAt])
 }
 
 // Diagnostic photo IA (VLM structuré)
 model PhotoDiagnostic {
   id                  String   @id @default(cuid())
   userId              String
+  poolId              String?
   type                String // water | wall | filter | electrolyzer | pump | strip | product | equipment
   imageUrl            String
   detectedIssues      String // JSON string array
@@ -174,9 +189,11 @@ model PhotoDiagnostic {
   safetyWarnings      String // JSON string array
   createdAt           DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pool PoolProfile? @relation(fields: [poolId], references: [id], onDelete: SetNull)
 
   @@index([userId])
+  @@index([poolId])
 }
 
 // Plan d'action généré (déterministe + IA)
@@ -197,7 +214,141 @@ model ActionPlan {
   whenToCallProfessional String?
   createdAt              DateTime @default(now())
 
-  waterTest WaterTest @relation(fields: [waterTestId], references: [id], onDelete: Cascade)
+  waterTest  WaterTest                 @relation(fields: [waterTestId], references: [id], onDelete: Cascade)
+  executions RecommendationExecution[]
+  outcome    RecommendationOutcome?
+}
+
+model RecommendationExecution {
+  id            String      @id @default(cuid())
+  userId        String
+  poolId        String
+  actionPlanId  String
+  actionIndex   Int
+  actionLabel   String
+  status        String      @default("planned")
+  productName   String?
+  plannedDosage String?
+  actualDosage  Float?
+  actualUnit    String?
+  note          String?
+  executedAt    DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pool          PoolProfile @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  actionPlan    ActionPlan  @relation(fields: [actionPlanId], references: [id], onDelete: Cascade)
+
+  @@unique([actionPlanId, actionIndex])
+  @@index([userId])
+  @@index([poolId, createdAt])
+  @@index([status])
+}
+
+model RecommendationOutcome {
+  id                    String      @id @default(cuid())
+  userId                String
+  poolId                String
+  actionPlanId          String      @unique
+  baselineWaterTestId   String
+  followupWaterTestId   String?     @unique
+  status                String      @default("awaiting_retest")
+  clearWaterIndexBefore Int?
+  clearWaterIndexAfter  Int?
+  userRating            Int?
+  userFeedback          String?
+  evaluatedAt           DateTime?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pool                  PoolProfile @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  actionPlan            ActionPlan  @relation(fields: [actionPlanId], references: [id], onDelete: Cascade)
+  baselineWaterTest     WaterTest   @relation("BrainBaselineTest", fields: [baselineWaterTestId], references: [id], onDelete: Cascade)
+  followupWaterTest     WaterTest?  @relation("BrainFollowupTest", fields: [followupWaterTestId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([poolId, createdAt])
+  @@index([status])
+}
+
+model BrainFeedback {
+  id          String       @id @default(cuid())
+  userId      String
+  poolId      String?
+  contextType String
+  contextId   String?
+  rating      Int?
+  helpful     Boolean?
+  message     String?
+  status      String       @default("new")
+  createdAt   DateTime     @default(now())
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pool        PoolProfile? @relation(fields: [poolId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([poolId])
+  @@index([contextType, contextId])
+  @@index([status, createdAt])
+}
+
+model KnowledgeArticle {
+  id             String              @id @default(cuid())
+  slug           String              @unique
+  category       String
+  audience       String              @default("all")
+  riskLevel      String              @default("standard")
+  status         String              @default("draft")
+  currentVersion Int                 @default(1)
+  tags           String?
+  relatedSlugs   String?
+  publishedAt    DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  revisions      KnowledgeRevision[]
+
+  @@index([status, audience])
+  @@index([category])
+}
+
+model KnowledgeRevision {
+  id         String           @id @default(cuid())
+  articleId  String
+  version    Int
+  locale     String           @default("fr")
+  title      String
+  summary    String?
+  content    String
+  sources    String?
+  changeNote String?
+  createdBy  String?
+  reviewedBy String?
+  reviewedAt DateTime?
+  createdAt  DateTime         @default(now())
+  article    KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, version, locale])
+  @@index([articleId, locale])
+  @@index([reviewedAt])
+}
+
+model BrainEventOutbox {
+  id             String    @id @default(cuid())
+  idempotencyKey String    @unique
+  type           String
+  aggregateType  String
+  aggregateId    String
+  payload        String?
+  status         String    @default("pending")
+  attempts       Int       @default(0)
+  nextAttemptAt  DateTime?
+  lockedAt       DateTime?
+  processedAt    DateTime?
+  lastError      String?
+  createdAt      DateTime  @default(now())
+
+  @@index([status, nextAttemptAt])
+  @@index([aggregateType, aggregateId])
+  @@index([type, createdAt])
 }
 
 // Équipements de la piscine
@@ -323,26 +474,26 @@ model GuideView {
 // cancelAt, trialEndsAt, currentPeriodStart, currentPeriodEnd.
 // The `active` field is kept for backward compat but is derived from `status`.
 model Subscription {
-  id                    String    @id @default(cuid())
-  userId                String
-  plan                  String    @default("decouverte") // decouverte, oasis, wellness, spa365
-  status                String    @default("inactive")   // inactive, trialing, active, past_due, canceled, expired, grace_period
-  duration              String?   // week, month, halfyear, year
-  store                 String?   // web, ios, android
-  startedAt             DateTime  @default(now())
-  expiresAt             DateTime?
-  cancelAt              DateTime?
-  trialEndsAt           DateTime?
-  currentPeriodStart    DateTime?
-  currentPeriodEnd      DateTime?
-  stripeCustomerId      String?
-  stripeSubscriptionId  String?   @unique
+  id                     String    @id @default(cuid())
+  userId                 String
+  plan                   String    @default("decouverte") // decouverte, oasis, wellness, spa365
+  status                 String    @default("inactive") // inactive, trialing, active, past_due, canceled, expired, grace_period
+  duration               String? // week, month, halfyear, year
+  store                  String? // web, ios, android
+  startedAt              DateTime  @default(now())
+  expiresAt              DateTime?
+  cancelAt               DateTime?
+  trialEndsAt            DateTime?
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  stripeCustomerId       String?
+  stripeSubscriptionId   String?   @unique
   // P0-B: stable provider identity for finding inactive subscriptions
-  providerSubscriptionId String?  @unique // RC original_transaction_id or Stripe sub ID
+  providerSubscriptionId String?   @unique // RC original_transaction_id or Stripe sub ID
   // P0-B: out-of-order event protection
-  lastProviderEventId   String?
-  lastProviderEventAt   DateTime?
-  active                Boolean   @default(false) // legacy — derived from status
+  lastProviderEventId    String?
+  lastProviderEventAt    DateTime?
+  active                 Boolean   @default(false) // legacy — derived from status
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -356,13 +507,13 @@ model Subscription {
 // Retry/crash recovery: attemptCount, processingStartedAt, nextRetryAt.
 model BillingEvent {
   id                  String    @id @default(cuid())
-  eventId             String    // Stripe event.id or RC event.id
-  source              String    // stripe | revenuecat
-  eventType           String    // checkout.session.completed, CANCELLATION, etc.
+  eventId             String // Stripe event.id or RC event.id
+  source              String // stripe | revenuecat
+  eventType           String // checkout.session.completed, CANCELLATION, etc.
   userId              String?
-  payload             String?  // Redacted JSON (no card numbers, secrets)
+  payload             String? // Redacted JSON (no card numbers, secrets)
   result              String    @default("processing") // processing | processed | failed | ignored
-  ignoredReason       String?   // unknown_product | unknown_price | event_type_not_supported | missing_user_mapping | no_subscription_link
+  ignoredReason       String? // unknown_product | unknown_price | event_type_not_supported | missing_user_mapping | no_subscription_link
   errorMessage        String?
   attemptCount        Int       @default(0)
   processingStartedAt DateTime?
@@ -445,7 +596,7 @@ model ContactMessage {
   id        String   @id @default(cuid())
   name      String
   email     String
-  subject   String   // general | support | partnership | press | other
+  subject   String // general | support | partnership | press | other
   message   String
   // Statut de traitement interne (back-office)
   status    String   @default("new") // new | read | replied | archived
@@ -471,18 +622,18 @@ model ContactMessage {
 
 // Un client du pisciniste (pas un utilisateur AQWELIA — un client IRL)
 model ProClient {
-  id          String   @id @default(cuid())
-  proUserId   String   // l'utilisateur AQWELIA Pro qui gère ce client
-  firstName   String
-  lastName    String
-  email       String?
-  phone       String?
-  address     String?
-  city        String?
-  zipCode     String?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  proUserId String // l'utilisateur AQWELIA Pro qui gère ce client
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  address   String?
+  city      String?
+  zipCode   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   pools         ProPool[]
   interventions ProIntervention[]
@@ -496,23 +647,23 @@ model ProClient {
 
 // Un bassin géré par le pro pour un client
 model ProPool {
-  id          String   @id @default(cuid())
-  proClientId String
-  name        String   // "Piscine principale", "Spa"
-  type        String   @default("pool") // pool | spa | both
-  volume      Float?
-  unit        String   @default("m3")
-  shape       String?
-  surface     String?  // liner, tile, concrete, etc.
+  id            String   @id @default(cuid())
+  proClientId   String
+  name          String // "Piscine principale", "Spa"
+  type          String   @default("pool") // pool | spa | both
+  volume        Float?
+  unit          String   @default("m3")
+  shape         String?
+  surface       String? // liner, tile, concrete, etc.
   treatmentType String? // chlorine, salt, bromine, etc.
-  saltSystem  Boolean  @default(false)
-  filterType  String?  // sand, cartridge, etc.
-  address     String?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  saltSystem    Boolean  @default(false)
+  filterType    String? // sand, cartridge, etc.
+  address       String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  client        ProClient       @relation(fields: [proClientId], references: [id], onDelete: Cascade)
+  client        ProClient         @relation(fields: [proClientId], references: [id], onDelete: Cascade)
   interventions ProIntervention[]
   waterTests    ProWaterTest[]
 
@@ -521,23 +672,23 @@ model ProPool {
 
 // Un test d'eau effectué par le pro sur un bassin
 model ProWaterTest {
-  id          String   @id @default(cuid())
-  proPoolId   String
-  ph          Float?
-  freeChlorine Float?
-  totalChlorine Float?
+  id               String   @id @default(cuid())
+  proPoolId        String
+  ph               Float?
+  freeChlorine     Float?
+  totalChlorine    Float?
   combinedChlorine Float?
-  alkalinity  Float?
-  calciumHardness Float?
-  cyanuricAcid Float?
-  salt        Float?
-  phosphates  Float?
-  temperature Float?
-  clearWaterIndex Int?
-  notes       String?
-  testedAt    DateTime @default(now())
+  alkalinity       Float?
+  calciumHardness  Float?
+  cyanuricAcid     Float?
+  salt             Float?
+  phosphates       Float?
+  temperature      Float?
+  clearWaterIndex  Int?
+  notes            String?
+  testedAt         DateTime @default(now())
 
-  pool        ProPool @relation(fields: [proPoolId], references: [id], onDelete: Cascade)
+  pool ProPool @relation(fields: [proPoolId], references: [id], onDelete: Cascade)
 
   @@index([proPoolId])
   @@index([testedAt])
@@ -545,24 +696,24 @@ model ProWaterTest {
 
 // Une intervention du pro sur un bassin
 model ProIntervention {
-  id          String   @id @default(cuid())
-  proClientId String
-  proPoolId   String?
-  technicianId String?  // User id du technicien
-  type        String   @default("maintenance") // maintenance | repair | opening | closing | emergency
-  status      String   @default("scheduled") // scheduled | in_progress | completed | cancelled
-  scheduledAt DateTime
-  completedAt DateTime?
-  duration    Int?     // minutes
-  notes       String?
-  photos      String?  // JSON array of URLs (before/after)
-  actions     String?  // JSON array of actions performed
+  id           String    @id @default(cuid())
+  proClientId  String
+  proPoolId    String?
+  technicianId String? // User id du technicien
+  type         String    @default("maintenance") // maintenance | repair | opening | closing | emergency
+  status       String    @default("scheduled") // scheduled | in_progress | completed | cancelled
+  scheduledAt  DateTime
+  completedAt  DateTime?
+  duration     Int? // minutes
+  notes        String?
+  photos       String? // JSON array of URLs (before/after)
+  actions      String? // JSON array of actions performed
   productsUsed String? // JSON array of products used
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  client      ProClient @relation(fields: [proClientId], references: [id], onDelete: Cascade)
-  pool        ProPool?  @relation(fields: [proPoolId], references: [id], onDelete: SetNull)
+  client ProClient @relation(fields: [proClientId], references: [id], onDelete: Cascade)
+  pool   ProPool?  @relation(fields: [proPoolId], references: [id], onDelete: SetNull)
 
   @@index([proClientId])
   @@index([proPoolId])
@@ -580,15 +731,15 @@ model ProIntervention {
 
 model PoolShare {
   id           String   @id @default(cuid())
-  poolId       String   // PoolProfile id
-  sharedWithId String   // User id of the invited user
+  poolId       String // PoolProfile id
+  sharedWithId String // User id of the invited user
   role         String   @default("viewer") // owner | co_manager | viewer
-  invitedBy    String   // User id of the owner who sent the invite
+  invitedBy    String // User id of the owner who sent the invite
   createdAt    DateTime @default(now())
 
-  pool        PoolProfile @relation(fields: [poolId], references: [id], onDelete: Cascade)
-  sharedWith  User        @relation("PoolSharesSharedWith", fields: [sharedWithId], references: [id], onDelete: Cascade)
-  invitedByUser User      @relation("PoolSharesOwnedBy", fields: [invitedBy], references: [id], onDelete: Cascade)
+  pool          PoolProfile @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  sharedWith    User        @relation("PoolSharesSharedWith", fields: [sharedWithId], references: [id], onDelete: Cascade)
+  invitedByUser User        @relation("PoolSharesOwnedBy", fields: [invitedBy], references: [id], onDelete: Cascade)
 
   @@unique([poolId, sharedWithId])
   @@index([poolId])
@@ -609,17 +760,17 @@ model Product {
   sku          String   @unique
   name         String
   brand        String?
-  category     String   // green | orange | red
+  category     String // green | orange | red
   subcategory  String?
   description  String?
   price        Float
   currency     String   @default("EUR")
-  unit         String   // kg | L | ml | tablet | piece
+  unit         String // kg | L | ml | tablet | piece
   stockQty     Int      @default(0)
   imageUrl     String?
   regulated    Boolean  @default(false)
-  hazardLevel  String?  // none | low | medium | high
-  sdsUrl       String?  // Safety Data Sheet
+  hazardLevel  String? // none | low | medium | high
+  sdsUrl       String? // Safety Data Sheet
   instructions String?
   warnings     String?
   active       Boolean  @default(true)
@@ -635,7 +786,7 @@ model ProductCategory {
   name      String
   nameKey   String
   icon      String?
-  color     String?  // green | orange | red
+  color     String? // green | orange | red
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 }
@@ -643,7 +794,7 @@ model ProductCategory {
 model Cart {
   id        String   @id @default(cuid())
   userId    String
-  items     String   // JSON array
+  items     String // JSON array
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -651,7 +802,7 @@ model Cart {
 model Order {
   id        String   @id @default(cuid())
   userId    String
-  items     String   // JSON array
+  items     String // JSON array
   subtotal  Float
   tax       Float
   shipping  Float
@@ -667,18 +818,18 @@ model Order {
 }
 
 model Kit {
-  id              String   @id @default(cuid())
-  slug            String   @unique
-  name            String
-  nameKey         String
-  description     String?
-  descriptionKey  String?
-  price           Float
-  currency        String   @default("EUR")
-  imageUrl        String?
-  items           String   // JSON array of {productId, quantity}
-  active          Boolean  @default(true)
-  createdAt       DateTime @default(now())
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  nameKey        String
+  description    String?
+  descriptionKey String?
+  price          Float
+  currency       String   @default("EUR")
+  imageUrl       String?
+  items          String // JSON array of {productId, quantity}
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -689,19 +840,19 @@ model Kit {
 // and inject a WaterTest. Sensitive fields (apiKey) are kept server-side only.
 
 model IotSensor {
-  id         String   @id @default(cuid())
-  userId     String   // owner of the sensor config
-  poolId     String?  // optional linked pool (null = global)
-  provider   String   // ico | iopool | esphome | homeassistant
-  label      String   // user-facing name
-  deviceId   String?  // external id (ICO serial, iopool EcO id, HA entity id)
-  apiUrl     String?  // base URL (esphome / HA / custom)
-  apiKey     String?  // encrypted/secret token (server-side only)
-  config     String?  // JSON blob with provider-specific options (refresh interval, MQTT topic…)
-  status     String   @default("disconnected") // connected | disconnected | error
+  id         String    @id @default(cuid())
+  userId     String // owner of the sensor config
+  poolId     String? // optional linked pool (null = global)
+  provider   String // ico | iopool | esphome | homeassistant
+  label      String // user-facing name
+  deviceId   String? // external id (ICO serial, iopool EcO id, HA entity id)
+  apiUrl     String? // base URL (esphome / HA / custom)
+  apiKey     String? // encrypted/secret token (server-side only)
+  config     String? // JSON blob with provider-specific options (refresh interval, MQTT topic…)
+  status     String    @default("disconnected") // connected | disconnected | error
   lastSyncAt DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -718,17 +869,17 @@ model IotSensor {
 // captures the regulatory audit trail (IP, user agent, exact timestamp).
 
 model ConsentRecord {
-  id              String    @id @default(cuid())
-  userId          String?
-  leadId          String?
-  purpose         String   // marketing | analytics | email | sms | phone
-  channel         String   // web | app | form | widget
-  source          String?  // url or form id
-  wordingVersion  String?
-  grantedAt       DateTime?
-  withdrawnAt     DateTime?
-  proof           String?  // JSON proof (IP, user agent, timestamp)
-  createdAt       DateTime @default(now())
+  id             String    @id @default(cuid())
+  userId         String?
+  leadId         String?
+  purpose        String // marketing | analytics | email | sms | phone
+  channel        String // web | app | form | widget
+  source         String? // url or form id
+  wordingVersion String?
+  grantedAt      DateTime?
+  withdrawnAt    DateTime?
+  proof          String? // JSON proof (IP, user agent, timestamp)
+  createdAt      DateTime  @default(now())
 
   @@index([userId])
   @@index([leadId])
@@ -765,21 +916,21 @@ model Supplier {
 // markdown rendered server-side. `level` is beginner | intermediate | expert.
 
 model AcademyCourse {
-  id              String   @id @default(cuid())
-  slug            String   @unique
-  title           String
-  titleKey        String
-  description     String?
-  descriptionKey  String?
-  level           String   @default("beginner") // beginner | intermediate | expert
-  duration        Int      // minutes
-  videoUrl        String?
-  content         String?  // markdown
-  order           Int      @default(0)
-  active          Boolean  @default(true)
-  createdAt       DateTime @default(now())
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  title          String
+  titleKey       String
+  description    String?
+  descriptionKey String?
+  level          String   @default("beginner") // beginner | intermediate | expert
+  duration       Int // minutes
+  videoUrl       String?
+  content        String? // markdown
+  order          Int      @default(0)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
 
-  certifications  Certification[]
+  certifications Certification[]
 
   @@index([active])
   @@index([level])
@@ -817,28 +968,28 @@ model Certification {
 // Agent runs + actions are logged for full auditability.
 
 model Organization {
-  id          String   @id @default(cuid())
-  type        String   @default("pro") // pro | business | growth
-  name        String
-  legalName   String?
-  siret       String?
-  vatNumber   String?
-  address     String?
-  city        String?
-  zipCode     String?
-  country     String   @default("FR")
-  phone       String?
-  email       String?
-  website     String?
-  plan        String   @default("growth_starter") // growth_starter | growth_pro | performance
-  status      String   @default("trial") // trial | active | suspended | cancelled
-  ownerId     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  type      String   @default("pro") // pro | business | growth
+  name      String
+  legalName String?
+  siret     String?
+  vatNumber String?
+  address   String?
+  city      String?
+  zipCode   String?
+  country   String   @default("FR")
+  phone     String?
+  email     String?
+  website   String?
+  plan      String   @default("growth_starter") // growth_starter | growth_pro | performance
+  status    String   @default("trial") // trial | active | suspended | cancelled
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  members     OrganizationMember[]
-  leads       Lead[]
-  owner       User @relation("OwnedOrganizations", fields: [ownerId], references: [id], onDelete: Cascade)
+  members OrganizationMember[]
+  leads   Lead[]
+  owner   User                 @relation("OwnedOrganizations", fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
   @@index([status])
@@ -846,15 +997,15 @@ model Organization {
 }
 
 model OrganizationMember {
-  id              String   @id @default(cuid())
-  organizationId  String
-  userId          String
-  role            String   @default("member") // owner | admin | manager | technician | viewer
-  status          String   @default("active") // active | invited | suspended | removed
-  createdAt       DateTime @default(now())
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  role           String   @default("member") // owner | admin | manager | technician | viewer
+  status         String   @default("active") // active | invited | suspended | removed
+  createdAt      DateTime @default(now())
 
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, userId])
   @@index([organizationId])
@@ -862,38 +1013,38 @@ model OrganizationMember {
 }
 
 model Lead {
-  id              String   @id @default(cuid())
-  organizationId  String?
-  source          String   @default("website") // website | widget | b2c | qr | campaign | partner | referral
-  firstName       String
-  lastName        String
-  email           String
-  phone           String?
-  address         String?
-  city            String?
-  zipCode         String?
-  country         String   @default("FR")
-  serviceType     String?  // maintenance | repair | opening | closing | emergency | spa | renovation
-  poolType        String?
-  poolVolume      Float?
-  problem         String?
-  urgency         String   @default("normal") // low | normal | high | emergency
-  budget          String?
-  status          String   @default("NEW") // NEW | QUALIFIED | SCORED | ASSIGNED | CONTACTED | APPOINTMENT | QUOTED | WON | LOST
-  score           Int      @default(0)
-  assignedTo      String?
-  consent         Boolean  @default(false)
-  consentSource   String?
-  notes           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(cuid())
+  organizationId String?
+  source         String   @default("website") // website | widget | b2c | qr | campaign | partner | referral
+  firstName      String
+  lastName       String
+  email          String
+  phone          String?
+  address        String?
+  city           String?
+  zipCode        String?
+  country        String   @default("FR")
+  serviceType    String? // maintenance | repair | opening | closing | emergency | spa | renovation
+  poolType       String?
+  poolVolume     Float?
+  problem        String?
+  urgency        String   @default("normal") // low | normal | high | emergency
+  budget         String?
+  status         String   @default("NEW") // NEW | QUALIFIED | SCORED | ASSIGNED | CONTACTED | APPOINTMENT | QUOTED | WON | LOST
+  score          Int      @default(0)
+  assignedTo     String?
+  consent        Boolean  @default(false)
+  consentSource  String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  events          LeadEvent[]
-  appointments    Appointment[]
-  quotes          Quote[]
-  commissions     Commission[]
-  agentRuns       AgentRun[]
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  events       LeadEvent[]
+  appointments Appointment[]
+  quotes       Quote[]
+  commissions  Commission[]
+  agentRuns    AgentRun[]
 
   @@index([organizationId])
   @@index([status])
@@ -903,31 +1054,31 @@ model Lead {
 }
 
 model LeadEvent {
-  id          String   @id @default(cuid())
-  leadId      String
-  type        String   // created | qualified | scored | assigned | contacted | appointment_scheduled | quote_sent | etc
-  actor       String?  // agent type or user id
-  payload     String?  // JSON
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  leadId    String
+  type      String // created | qualified | scored | assigned | contacted | appointment_scheduled | quote_sent | etc
+  actor     String? // agent type or user id
+  payload   String? // JSON
+  createdAt DateTime @default(now())
 
-  lead        Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
   @@index([createdAt])
 }
 
 model Appointment {
-  id              String   @id @default(cuid())
-  leadId          String
-  organizationId  String?
-  assignedTo      String?
-  startTime       DateTime
-  endTime         DateTime
-  status          String   @default("proposed") // proposed | confirmed | completed | cancelled | no_show
-  notes           String?
-  createdAt       DateTime @default(now())
+  id             String   @id @default(cuid())
+  leadId         String
+  organizationId String?
+  assignedTo     String?
+  startTime      DateTime
+  endTime        DateTime
+  status         String   @default("proposed") // proposed | confirmed | completed | cancelled | no_show
+  notes          String?
+  createdAt      DateTime @default(now())
 
-  lead            Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
   @@index([organizationId])
@@ -936,19 +1087,19 @@ model Appointment {
 }
 
 model Quote {
-  id              String   @id @default(cuid())
-  leadId          String
-  organizationId  String?
-  items           String   // JSON array
-  total           Float
-  currency        String   @default("EUR")
-  status          String   @default("draft") // draft | sent | accepted | rejected | expired
-  sentAt          DateTime?
-  acceptedAt      DateTime?
-  validUntil      DateTime?
-  createdAt       DateTime @default(now())
+  id             String    @id @default(cuid())
+  leadId         String
+  organizationId String?
+  items          String // JSON array
+  total          Float
+  currency       String    @default("EUR")
+  status         String    @default("draft") // draft | sent | accepted | rejected | expired
+  sentAt         DateTime?
+  acceptedAt     DateTime?
+  validUntil     DateTime?
+  createdAt      DateTime  @default(now())
 
-  lead            Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
   @@index([organizationId])
@@ -956,20 +1107,20 @@ model Quote {
 }
 
 model Commission {
-  id              String   @id @default(cuid())
-  leadId          String
-  organizationId  String?
-  invoiceId       String?
-  rate            Float
-  amount          Float
-  minimum         Float    @default(25)
-  maximum         Float    @default(150)
-  status          String   @default("pending") // pending | due | paid | disputed | refunded
-  disputeWindow   DateTime?
-  paidAt          DateTime?
-  createdAt       DateTime @default(now())
+  id             String    @id @default(cuid())
+  leadId         String
+  organizationId String?
+  invoiceId      String?
+  rate           Float
+  amount         Float
+  minimum        Float     @default(25)
+  maximum        Float     @default(150)
+  status         String    @default("pending") // pending | due | paid | disputed | refunded
+  disputeWindow  DateTime?
+  paidAt         DateTime?
+  createdAt      DateTime  @default(now())
 
-  lead            Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
   @@index([organizationId])
@@ -977,22 +1128,22 @@ model Commission {
 }
 
 model AgentRun {
-  id              String   @id @default(cuid())
-  agentType       String   // offer_builder | lead_capture | qualification | diagnostic | matching | appointment | nurturing | quote | attribution | compliance
-  organizationId  String?
-  userId          String?
-  leadId          String?
-  objective       String
-  input           String?  // JSON
-  output          String?  // JSON
-  confidence      Float    @default(0)
-  status          String   @default("running") // running | completed | failed | escalated
-  cost            Float    @default(0)
-  startedAt       DateTime @default(now())
-  completedAt     DateTime?
+  id             String    @id @default(cuid())
+  agentType      String // offer_builder | lead_capture | qualification | diagnostic | matching | appointment | nurturing | quote | attribution | compliance
+  organizationId String?
+  userId         String?
+  leadId         String?
+  objective      String
+  input          String? // JSON
+  output         String? // JSON
+  confidence     Float     @default(0)
+  status         String    @default("running") // running | completed | failed | escalated
+  cost           Float     @default(0)
+  startedAt      DateTime  @default(now())
+  completedAt    DateTime?
 
-  lead            Lead? @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  actions         AgentAction[]
+  lead    Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  actions AgentAction[]
 
   @@index([agentType])
   @@index([organizationId])
@@ -1001,16 +1152,16 @@ model AgentRun {
 }
 
 model AgentAction {
-  id              String   @id @default(cuid())
-  agentRunId      String
-  tool            String
-  action          String
-  approvalRequired Boolean @default(true)
-  approvedBy      String?
-  result          String?  // JSON
-  createdAt       DateTime @default(now())
+  id               String   @id @default(cuid())
+  agentRunId       String
+  tool             String
+  action           String
+  approvalRequired Boolean  @default(true)
+  approvedBy       String?
+  result           String? // JSON
+  createdAt        DateTime @default(now())
 
-  agentRun        AgentRun @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
+  agentRun AgentRun @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
 
   @@index([agentRunId])
   @@index([approvedBy])
