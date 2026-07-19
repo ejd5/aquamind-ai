@@ -57,7 +57,7 @@ if [ "$PG_AVAILABLE" -eq 1 ]; then
 
   "$PRISMA_BIN" migrate diff \
     --from-migrations "$MIGRATIONS_DIR" \
-    --shadow-database-url "$DATABASE_URL" \
+    --shadow-database-url "${SHADOW_DATABASE_URL:-$DATABASE_URL}" \
     --to-schema-datamodel prisma/postgresql/schema.prisma \
     --script \
     --output "$DIFF_OUTPUT"
