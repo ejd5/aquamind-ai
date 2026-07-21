@@ -1,8 +1,22 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ArrowRight, Sparkles, ShieldCheck, Gift, Lock, ChevronDown, Droplets } from 'lucide-react'
+import {
+  ArrowRight,
+  ChevronDown,
+  Gift,
+  Lock,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react'
 import { useTranslations } from 'next-intl'
+
+import {
+  AqBadge,
+  AqButton,
+  AqCard,
+  AqMediaFrame,
+} from '@/components/design-system'
 import { AnimatedCounter, scrollToId } from '../landing-utils'
 
 interface HeroProps {
@@ -28,145 +42,198 @@ export function Hero({ hasProfile, onEnterApp }: HeroProps) {
   ]
 
   return (
-    <section id="top" className="relative isolate overflow-hidden pb-12 sm:pb-16">
-      {/* AQWELIA hero background image — complete, fills entire section, no truncation */}
-      <div
-        className="pointer-events-none absolute inset-0 -z-10 bg-no-repeat"
-        style={{
-          backgroundImage: 'url(/aqwelia-hero-bg.png)',
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'center',
-        }}
-        aria-hidden="true"
-      />
-      {/* Light overlay — minimal, only left side for text readability */}
-      <div
-        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-background/40 via-background/5 to-transparent"
-        aria-hidden="true"
-      />
+    <section id="top" className="aq-page-shell relative isolate overflow-hidden pb-14 pt-5 md:pb-20 md:pt-8">
+      <div className="mx-auto w-full max-w-[1440px] px-3 sm:px-5 lg:px-8">
+        <AqMediaFrame
+          src="/aqwelia-hero-bg.png"
+          alt={t('heroTitle')}
+          priority
+          sizes="(max-width: 768px) 100vw, 1440px"
+          className="min-h-[760px] rounded-[var(--aq-radius-hero)] shadow-[var(--aq-shadow-floating)] md:min-h-[820px]"
+          imageClassName="opacity-90"
+        >
+          <div className="grid min-h-[760px] gap-8 px-5 pb-10 pt-20 sm:px-8 md:min-h-[820px] md:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.75fr)] md:items-center md:px-14 md:py-24 lg:px-20">
+            <div className="max-w-2xl">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <AqBadge tone="dark" dot>
+                  {t('heroBadge')}
+                </AqBadge>
+              </motion.div>
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-24 sm:pt-28">
-        <div className="max-w-xl text-left">
-          {/* Eyebrow badge — signature AQWELIA */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-white/70 px-4 py-1.5 text-xs font-semibold text-foreground backdrop-blur-md dark:bg-white/5"
-          >
-            <Sparkles className="h-3.5 w-3.5 text-gold" />
-            <span className="tracking-[0.18em]">{t('heroBadge')}</span>
-          </motion.div>
+              <motion.h1
+                initial={{ opacity: 0, y: 22 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.05 }}
+                className="aq-display mt-7 max-w-[12ch]"
+              >
+                {t('heroTitle')}
+              </motion.h1>
 
-          {/* Headline — professional, sales-oriented */}
-          <motion.h1
-            initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.05 }}
-            className="mt-6 font-display text-4xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl"
-          >
-            {t('heroTitle')}
-          </motion.h1>
+              <motion.p
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.15 }}
+                className="aq-body mt-6 max-w-xl text-base font-medium text-[var(--aq-deep-teal)] sm:text-lg"
+              >
+                {t('heroSubtitle')}
+              </motion.p>
 
-          {/* Subtitle — punchy, professional */}
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.15 }}
-            className="mt-5"
-          >
-            <p className="max-w-lg text-lg font-semibold leading-relaxed text-foreground/90 sm:text-xl">
-              {t('heroSubtitle').split('.')[0]}.
-            </p>
-            <p className="mt-1 max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
-              {t('heroSubtitle').split('.').slice(1).join('.').trim()}
-            </p>
-          </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.25 }}
+                className="mt-8 flex flex-col gap-3 sm:flex-row"
+              >
+                <AqButton
+                  onClick={onEnterApp}
+                  tone="lagoon"
+                  aqSize="lg"
+                  className="group sm:w-auto"
+                >
+                  {hasProfile ? t('navMySpace') : t('heroCtaStart')}
+                  <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                </AqButton>
+                <AqButton
+                  onClick={() => scrollToId('solution')}
+                  tone="outline"
+                  aqSize="lg"
+                  className="sm:w-auto"
+                >
+                  {t('heroCtaHowItWorks')}
+                </AqButton>
+              </motion.div>
 
-          {/* Dual CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.25 }}
-            className="mt-9 flex flex-col items-start gap-3 sm:flex-row"
-          >
-            <button
-              onClick={onEnterApp}
-              className="glow-gold group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] px-7 py-3.5 text-sm font-bold text-[oklch(0.99_0.01_195)] shadow-lg transition-all hover:scale-[1.02] hover:shadow-[0_0_50px_-8px_oklch(0.65_0.11_195/0.7)] sm:w-auto"
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.7, delay: 0.4 }}
+                className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-[var(--aq-deep-teal)]/75"
+              >
+                {TRUST.map((trust) => {
+                  const Icon = trust.icon
+                  return (
+                    <span key={trust.label} className="inline-flex items-center gap-1.5">
+                      <Icon className="size-3.5 text-[var(--aq-champagne)]" />
+                      {trust.label}
+                    </span>
+                  )
+                })}
+              </motion.div>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.75, delay: 0.2 }}
+              className="self-end md:self-center"
             >
-              {hasProfile ? t('navMySpace') : t('heroCtaStart')}
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </button>
-            <button
-              onClick={() => scrollToId('solution')}
-              className="glass-pill inline-flex w-full items-center justify-center gap-2 rounded-full border-white/50 px-7 py-3.5 text-sm font-semibold text-foreground transition-all hover:border-gold/50 hover:text-gold sm:w-auto"
-            >
-              {t('heroCtaHowItWorks')}
-            </button>
-          </motion.div>
+              <AqCard
+                tone="glass"
+                className="border border-white/45 bg-white/55 p-4 shadow-[var(--aq-shadow-floating)] backdrop-blur-2xl sm:p-5"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--aq-deep-teal)]">AQWELIA</p>
+                    <p className="mt-0.5 text-xs text-[var(--aq-text-muted)]">{t('heroBadge')}</p>
+                  </div>
+                  <AqBadge tone="success" dot>
+                    92 / 100
+                  </AqBadge>
+                </div>
 
-          {/* Trust row — new arguments */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.7, delay: 0.4 }}
-            className="mt-8 flex flex-wrap items-start gap-x-5 gap-y-2 text-xs text-muted-foreground"
-          >
-            {TRUST.map((trust) => {
-              const Icon = trust.icon
-              return (
-                <span key={trust.label} className="inline-flex items-center gap-1.5">
-                  <Icon className="h-3.5 w-3.5 text-gold" />
-                  {trust.label}
-                </span>
-              )
-            })}
-          </motion.div>
-        </div>
+                <AqCard tone="dark" className="mt-4 p-5 sm:p-6">
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <p className="aq-eyebrow">AQWELIA</p>
+                      <p className="mt-2 font-display text-5xl font-semibold tracking-[-0.05em] text-white">
+                        92
+                        <span className="ml-2 font-sans text-sm font-medium tracking-normal text-white/60">
+                          /100
+                        </span>
+                      </p>
+                    </div>
+                    <span className="size-2.5 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.75)]" />
+                  </div>
+                  <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full w-[92%] rounded-full bg-gradient-to-r from-emerald-500 to-[var(--aq-lagoon)]" />
+                  </div>
+                </AqCard>
 
-        {/* Stats strip — inside the image, pushed down further */}
+                <div className="mt-3 grid grid-cols-3 gap-2.5">
+                  {[
+                    ['pH', '7,2'],
+                    ['°C', '27°'],
+                    ['Cl', '1,4'],
+                  ].map(([label, value]) => (
+                    <AqCard key={label} tone="glass" className="p-3.5">
+                      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--aq-text-muted)]">
+                        {label}
+                      </p>
+                      <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.04em] text-[var(--aq-deep-teal)]">
+                        {value}
+                      </p>
+                    </AqCard>
+                  ))}
+                </div>
+
+                <AqCard tone="dark" className="mt-3 p-5">
+                  <p className="aq-eyebrow">72 H</p>
+                  <p className="mt-2 font-display text-2xl font-semibold leading-tight text-white">
+                    {t('heroCtaHowItWorks')}
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-white/65">
+                    {t('heroSubtitle')}
+                  </p>
+                </AqCard>
+              </AqCard>
+            </motion.div>
+          </div>
+        </AqMediaFrame>
+
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.6 }}
-          className="mx-auto mt-64 grid max-w-4xl grid-cols-2 gap-3 sm:mt-72 sm:grid-cols-4 sm:gap-4"
+          className="relative z-20 mx-auto -mt-9 grid max-w-5xl grid-cols-2 gap-3 px-3 sm:grid-cols-4 sm:gap-4"
         >
-          {STATS.map((s) => (
-            <div
-              key={s.label}
-              className="rounded-2xl border border-gold/30 bg-white/80 p-4 text-center backdrop-blur-md shadow-lg"
-            >
-              <p className="font-display text-2xl font-bold gradient-text-premium sm:text-3xl">
+          {STATS.map((stat) => (
+            <AqCard key={stat.label} tone="strong" className="p-4 text-center sm:p-5">
+              <p className="font-display text-2xl font-semibold tracking-[-0.04em] text-[var(--aq-deep-teal)] sm:text-3xl">
                 <AnimatedCounter
-                  value={s.value}
-                  prefix={s.prefix}
-                  suffix={s.suffix}
-                  decimals={s.decimals}
+                  value={stat.value}
+                  prefix={stat.prefix}
+                  suffix={stat.suffix}
+                  decimals={stat.decimals}
                 />
               </p>
-              <p className="mt-1 text-[11px] uppercase tracking-wider text-muted-foreground sm:text-xs">
-                {s.label}
+              <p className="mt-1 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-[var(--aq-text-muted)] sm:text-xs">
+                {stat.label}
               </p>
-            </div>
+            </AqCard>
           ))}
         </motion.div>
 
-        {/* Scroll indicator */}
         <motion.button
           onClick={() => scrollToId('probleme')}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.2 }}
-          className="mx-auto mt-14 flex flex-col items-center gap-1 text-muted-foreground transition-colors hover:text-gold"
+          className="aq-touch-target aq-focusable mx-auto mt-8 flex flex-col items-center justify-center gap-1 rounded-full px-4 text-[var(--aq-text-muted)] transition-colors hover:text-[var(--aq-deep-teal)]"
           aria-label={t('heroScrollAria')}
         >
-          <span className="text-[10px] uppercase tracking-widest">{t('heroScroll')}</span>
+          <span className="text-[0.65rem] font-semibold uppercase tracking-[0.18em]">
+            {t('heroScroll')}
+          </span>
           <motion.span
             animate={{ y: [0, 6, 0] }}
             transition={{ duration: 1.5, repeat: Infinity }}
           >
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="size-4" />
           </motion.span>
         </motion.button>
       </div>
