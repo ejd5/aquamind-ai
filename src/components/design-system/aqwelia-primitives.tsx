@@ -218,6 +218,7 @@ function AqMediaFrame({
         alt=""
         src={src}
         fill
+        unoptimized
         priority={priority}
         sizes={sizes}
         className="aq-media-fill"
@@ -226,6 +227,7 @@ function AqMediaFrame({
         alt={alt}
         src={src}
         fill
+        unoptimized
         priority={priority}
         sizes={sizes}
         className={cn("aq-media-fit", imageClassName)}
