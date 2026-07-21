@@ -26,19 +26,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: '22'
+          bun-version: '1.3.4'
+
+      - name: Install repository dependencies
+        run: bun install --frozen-lockfile
 
       - name: Install Playwright runner
-        run: npm install --no-save --ignore-scripts playwright@1.54.2
+        run: bun add --dev --no-save playwright@1.54.2
 
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: bunx playwright install --with-deps chromium
 
       - name: Capture preview and run visual checks
-        run: node scripts/visual-qa-preview.mjs
+        run: bun scripts/visual-qa-preview.mjs
 
       - name: Upload visual QA artifact
         if: always()
