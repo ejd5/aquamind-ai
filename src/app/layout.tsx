@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import "./aqwelia-figma.css";
+import "./aqwelia-flows.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Providers } from "@/components/providers";
 import { NextIntlClientProvider } from "next-intl";
