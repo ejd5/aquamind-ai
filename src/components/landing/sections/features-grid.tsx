@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { useTranslations } from 'next-intl'
 
 import { AqBadge, AqCard, AqMediaFrame, AqSection } from '@/components/design-system'
+import { cn } from '@/lib/utils'
 import { fadeUpVariants, staggerContainer } from '../landing-utils'
 
 export function FeaturesGrid() {
@@ -46,33 +47,47 @@ export function FeaturesGrid() {
           viewport={{ once: true, margin: '-80px' }}
           className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
-          {features.map((feature, index) => (
-            <motion.div key={feature.title} variants={fadeUpVariants}>
-              <AqCard
-                tone={index === 2 || index === 7 ? 'dark' : 'glass'}
-                interactive
-                className="h-full min-h-[190px] border border-white/45 bg-white/72 p-5 backdrop-blur-2xl"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <span
-                    aria-hidden="true"
-                    className="flex size-11 shrink-0 items-center justify-center rounded-[var(--aq-radius-control)] bg-[var(--aq-lagoon)]/14 text-xl"
+          {features.map((feature, index) => {
+            const darkCard = index === 2 || index === 7
+
+            return (
+              <motion.div key={feature.title} variants={fadeUpVariants}>
+                <AqCard
+                  tone={darkCard ? 'dark' : 'glass'}
+                  interactive
+                  className={cn(
+                    'h-full min-h-[190px] border p-5 backdrop-blur-2xl',
+                    darkCard
+                      ? 'border-[var(--aq-aqua)]/20 text-white'
+                      : 'border-white/45 bg-white/[0.72]'
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <span
+                      aria-hidden="true"
+                      className="flex size-11 shrink-0 items-center justify-center rounded-[var(--aq-radius-control)] bg-[var(--aq-lagoon)]/14 text-xl"
+                    >
+                      {feature.emoji}
+                    </span>
+                    <AqBadge tone={darkCard ? 'dark' : 'champagne'}>
+                      {String(index + 1).padStart(2, '0')}
+                    </AqBadge>
+                  </div>
+                  <h3 className="mt-5 font-display text-2xl font-semibold leading-tight tracking-[-0.035em] text-inherit">
+                    {feature.title}
+                  </h3>
+                  <p
+                    className={cn(
+                      'mt-3 text-sm leading-relaxed',
+                      darkCard ? 'text-white/65' : 'text-[var(--aq-text-muted)]'
+                    )}
                   >
-                    {feature.emoji}
-                  </span>
-                  <AqBadge tone={index === 2 || index === 7 ? 'dark' : 'champagne'}>
-                    {String(index + 1).padStart(2, '0')}
-                  </AqBadge>
-                </div>
-                <h3 className="mt-5 font-display text-2xl font-semibold leading-tight tracking-[-0.035em] text-inherit">
-                  {feature.title}
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-[var(--aq-text-muted)] dark:text-white/65">
-                  {feature.text}
-                </p>
-              </AqCard>
-            </motion.div>
-          ))}
+                    {feature.text}
+                  </p>
+                </AqCard>
+              </motion.div>
+            )
+          })}
 
           <motion.div variants={fadeUpVariants}>
             <AqCard
