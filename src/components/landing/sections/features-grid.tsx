@@ -34,11 +34,12 @@ export function FeaturesGrid() {
       containerClassName="max-w-[1440px]"
     >
       <AqMediaFrame
-        src="/modules-bg.png"
+        src="/aqwelia-hero-bg.png"
         alt={t('featuresTitle')}
         sizes="(max-width: 768px) 100vw, 1440px"
+        objectPosition="center 72%"
         className="rounded-[var(--aq-radius-hero)] p-4 shadow-[var(--aq-shadow-card)] sm:p-6 md:p-8"
-        imageClassName="opacity-70"
+        imageClassName="opacity-38 scale-105 saturate-[0.75]"
       >
         <motion.div
           variants={staggerContainer}
