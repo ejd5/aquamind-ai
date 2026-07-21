@@ -5,6 +5,7 @@ Cette checklist valide l’intégration du fichier maître **AQWELIA — Product
 ## Préconditions
 
 - Utiliser une Preview Vercel liée à la PR de design.
+- Vérifier que l’environnement `Preview` contient `DATABASE_PROVIDER=postgresql`, `DATABASE_URL`, `NEXTAUTH_SECRET` et `AUTH_TRUST_HOST=true`.
 - Tester au minimum en français et dans une seconde locale.
 - Ne pas utiliser les données de production pour les parcours nécessitant un compte.
 - Vérifier les thèmes clair et sombre lorsqu’ils sont accessibles.
