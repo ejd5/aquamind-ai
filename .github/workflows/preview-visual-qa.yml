@@ -1,0 +1,50 @@
+name: Preview Visual QA
+
+on:
+  push:
+    branches:
+      - feat/figma-design-foundations
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-visual-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual-qa:
+    name: Capture AQWELIA preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PREVIEW_URL: https://aqwelia-staging-git-feat-figma-design-fou-0bc6f3-ejd5s-projects.vercel.app
+      QA_OUTPUT_DIR: artifacts/visual-qa
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Playwright runner
+        run: npm install --no-save --ignore-scripts playwright@1.54.2
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Capture preview and run visual checks
+        run: node scripts/visual-qa-preview.mjs
+
+      - name: Upload visual QA artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqwelia-preview-visual-qa
+          path: artifacts/visual-qa
+          if-no-files-found: error
+          retention-days: 14
