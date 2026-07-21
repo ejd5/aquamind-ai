@@ -40,6 +40,25 @@ jobs:
       - name: Install Chromium
         run: bunx playwright install --with-deps chromium
 
+      - name: Wait for the current Vercel preview
+        shell: bash
+        run: |
+          for attempt in $(seq 1 40); do
+            status=$(curl -L -sS -o /tmp/preview-health.json -w "%{http_code}" "$PREVIEW_URL/api/preview-health" || true)
+            if [ "$status" = "200" ] || [ "$status" = "503" ]; then
+              echo "Current preview detected with health status $status"
+              cat /tmp/preview-health.json || true
+              exit 0
+            fi
+            echo "Waiting for current preview deployment (attempt $attempt, status $status)"
+            sleep 15
+          done
+          echo "The current preview deployment was not detected in time" >&2
+          exit 1
+
+      - name: Probe preview runtime
+        run: bun scripts/probe-preview-runtime.mjs
+
       - name: Capture preview and run visual checks
         run: bun scripts/visual-qa-preview.mjs
 
