@@ -1,16 +1,16 @@
 name: Preview Visual QA
 
 on:
-  push:
+  pull_request:
     branches:
-      - feat/figma-design-foundations
+      - main
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: preview-visual-qa-${{ github.ref }}
+  group: preview-visual-qa-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
