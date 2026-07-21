@@ -21,6 +21,7 @@ jobs:
     env:
       PREVIEW_URL: https://aqwelia-staging-git-feat-figma-design-fou-0bc6f3-ejd5s-projects.vercel.app
       QA_OUTPUT_DIR: artifacts/visual-qa
+      EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
     steps:
       - name: Checkout repository
@@ -40,20 +41,22 @@ jobs:
       - name: Install Chromium
         run: bunx playwright install --with-deps chromium
 
-      - name: Wait for the current Vercel preview
+      - name: Wait for the exact Vercel preview commit
         shell: bash
         run: |
           for attempt in $(seq 1 40); do
             status=$(curl -L -sS -o /tmp/preview-health.json -w "%{http_code}" "$PREVIEW_URL/api/preview-health" || true)
-            if [ "$status" = "200" ] || [ "$status" = "503" ]; then
-              echo "Current preview detected with health status $status"
+            deployed_sha=$(jq -r '.environment.gitCommitSha // empty' /tmp/preview-health.json 2>/dev/null || true)
+            if { [ "$status" = "200" ] || [ "$status" = "503" ]; } && [ "$deployed_sha" = "$EXPECTED_SHA" ]; then
+              echo "Exact preview commit detected: $deployed_sha (health status $status)"
               cat /tmp/preview-health.json || true
               exit 0
             fi
-            echo "Waiting for current preview deployment (attempt $attempt, status $status)"
+            echo "Waiting for commit $EXPECTED_SHA (attempt $attempt, status $status, deployed $deployed_sha)"
             sleep 15
           done
-          echo "The current preview deployment was not detected in time" >&2
+          echo "The exact preview commit was not detected in time" >&2
+          cat /tmp/preview-health.json || true
           exit 1
 
       - name: Probe preview runtime
