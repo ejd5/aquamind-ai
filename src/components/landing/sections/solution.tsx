@@ -35,11 +35,12 @@ export function Solution() {
     <section id="solution" className="aq-page-shell py-16 md:py-24">
       <div className="mx-auto w-full max-w-[1440px] px-3 sm:px-5 lg:px-8">
         <AqMediaFrame
-          src="/bloc04-bg.png"
+          src="/aqwelia-hero-bg.png"
           alt={t('solutionEyebrow')}
           sizes="(max-width: 768px) 100vw, 1440px"
+          objectPosition="center 42%"
           className="min-h-[720px] rounded-[var(--aq-radius-hero)] shadow-[var(--aq-shadow-card)]"
-          imageClassName="opacity-85"
+          imageClassName="opacity-60 saturate-[0.85]"
         >
           <div className="grid min-h-[720px] gap-8 px-5 py-12 sm:px-8 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] md:items-center md:px-14 lg:px-20">
             <div className="max-w-xl">
