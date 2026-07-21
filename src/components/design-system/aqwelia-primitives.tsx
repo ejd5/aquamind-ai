@@ -204,7 +204,7 @@ function AqMediaFrame({
   alt,
   priority = false,
   sizes = "100vw",
-  objectPosition = "center",
+  objectPosition,
   overlay = "light",
   imageClassName,
   className,
@@ -229,7 +229,7 @@ function AqMediaFrame({
         priority={priority}
         sizes={sizes}
         className={cn("aq-media-fit", imageClassName)}
-        style={{ objectPosition }}
+        style={objectPosition ? { objectPosition } : undefined}
       />
       {overlay !== "none" ? (
         <div
@@ -245,7 +245,7 @@ function AqMediaFrame({
   );
 }
 
-type AqSectionProps = React.ComponentProps<"section"> & {
+type AqSectionProps = Omit<React.ComponentProps<"section">, "title"> & {
   eyebrow?: string;
   title: React.ReactNode;
   description?: React.ReactNode;
