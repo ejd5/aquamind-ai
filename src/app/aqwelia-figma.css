@@ -230,7 +230,145 @@
   min-height: 2.75rem;
 }
 
+/* Dashboard and application cockpit — visual-only overrides.
+ * The selectors deliberately target the current app-shell structure so the
+ * API, feature gates and data rendering remain untouched.
+ */
+aside.custom-scroll {
+  margin-block: 1rem;
+  height: calc(100vh - 10rem);
+  border: 1px solid rgba(114, 232, 223, 0.14);
+  border-radius: var(--aq-radius-panel);
+  background:
+    radial-gradient(circle at 18% 8%, rgba(24, 207, 195, 0.14), transparent 11rem),
+    var(--aq-night);
+  padding: 1rem;
+  color: var(--aq-text-on-dark);
+  box-shadow: var(--aq-shadow-card);
+}
+
+aside.custom-scroll nav button {
+  min-height: 2.75rem;
+  border-radius: var(--aq-radius-control);
+  color: rgba(247, 251, 250, 0.68);
+}
+
+aside.custom-scroll nav button:hover {
+  background: rgba(114, 232, 223, 0.09);
+  color: var(--aq-text-on-dark);
+}
+
+aside.custom-scroll nav button[class*="from-primary/15"] {
+  background: var(--aq-lagoon);
+  color: var(--aq-night);
+  box-shadow: 0 10px 25px rgba(24, 207, 195, 0.2);
+}
+
+aside.custom-scroll nav button > span:first-of-type {
+  border-radius: 0.65rem;
+}
+
+aside.custom-scroll + main {
+  position: relative;
+  margin-block: 1rem;
+  margin-left: 1rem;
+  border: 1px solid var(--aq-border);
+  border-radius: var(--aq-radius-panel);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(114, 232, 223, 0.16), transparent 28rem),
+    radial-gradient(circle at 92% 16%, rgba(198, 165, 107, 0.1), transparent 22rem),
+    rgba(234, 251, 248, 0.7);
+  box-shadow: var(--aq-shadow-soft);
+}
+
+.dark aside.custom-scroll + main {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(46, 224, 214, 0.12), transparent 28rem),
+    var(--aq-page);
+}
+
+aside.custom-scroll + main > .space-y-5 {
+  max-width: 76rem;
+  margin-inline: auto;
+}
+
+aside.custom-scroll + main > .space-y-5 > div:first-child h1 {
+  font-family: var(--aq-font-display);
+  color: var(--aq-deep-teal);
+  font-size: clamp(2.1rem, 4vw, 3.5rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+}
+
+.dark aside.custom-scroll + main > .space-y-5 > div:first-child h1 {
+  color: var(--aq-text);
+}
+
+aside.custom-scroll + main .section-label {
+  color: var(--aq-champagne);
+  font-weight: 700;
+}
+
+aside.custom-scroll + main .glass-card {
+  border: 1px solid var(--aq-border);
+  border-radius: var(--aq-radius-card);
+  background: var(--aq-surface);
+  box-shadow: var(--aq-shadow-soft), var(--aq-shadow-inset);
+  backdrop-filter: blur(20px) saturate(125%);
+}
+
+aside.custom-scroll + main [data-slot="card"] {
+  border-radius: var(--aq-radius-card);
+}
+
+aside.custom-scroll + main [data-slot="card-title"] {
+  font-family: var(--aq-font-display);
+  letter-spacing: -0.025em;
+}
+
+aside.custom-scroll + main button {
+  min-height: 2.75rem;
+}
+
+aside.custom-scroll + main .grid > button,
+aside.custom-scroll + main .glass-card {
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+aside.custom-scroll + main .grid > button:hover,
+aside.custom-scroll + main .glass-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--aq-border-strong);
+  box-shadow: var(--aq-shadow-card);
+}
+
+/* Mobile application frame */
 @media (max-width: 767px) {
+  aside.custom-scroll + main {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  nav.fixed.inset-x-0.bottom-0 {
+    border-color: var(--aq-border);
+    background: rgba(250, 252, 251, 0.94);
+    box-shadow: 0 -14px 35px rgba(6, 31, 43, 0.1);
+  }
+
+  .dark nav.fixed.inset-x-0.bottom-0 {
+    background: rgba(6, 31, 43, 0.94);
+  }
+
+  nav.fixed.inset-x-0.bottom-0 button {
+    min-height: 2.75rem;
+  }
+
   .aq-display {
     font-size: clamp(2.75rem, 13vw, 4.6rem);
     line-height: 0.98;
@@ -246,11 +384,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .aq-interactive {
+  .aq-interactive,
+  aside.custom-scroll + main .grid > button,
+  aside.custom-scroll + main .glass-card {
     transition: none;
   }
 
-  .aq-interactive:hover {
+  .aq-interactive:hover,
+  aside.custom-scroll + main .grid > button:hover,
+  aside.custom-scroll + main .glass-card:hover {
     transform: none;
   }
 }
