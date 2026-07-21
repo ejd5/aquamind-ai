@@ -27,6 +27,7 @@ export async function GET() {
   } = {
     environment: {
       vercelEnv: process.env.VERCEL_ENV ?? null,
+      gitCommitSha: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
       databaseProvider: process.env.DATABASE_PROVIDER ?? null,
       databaseUrlConfigured: Boolean(process.env.DATABASE_URL),
       nextAuthSecretConfigured: Boolean(
