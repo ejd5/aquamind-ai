@@ -2,12 +2,14 @@
 
 import { motion } from 'framer-motion'
 import { useTranslations } from 'next-intl'
-import { GlassCard, Reveal, SectionHeading, staggerContainer, fadeUpVariants } from '../landing-utils'
+
+import { AqBadge, AqCard, AqMediaFrame, AqSection } from '@/components/design-system'
+import { fadeUpVariants, staggerContainer } from '../landing-utils'
 
 export function FeaturesGrid() {
   const t = useTranslations('landing')
 
-  const FEATURES = [
+  const features = [
     { emoji: '🏠', title: t('featuresItem1Title'), text: t('featuresItem1Text') },
     { emoji: '📸', title: t('featuresItem2Title'), text: t('featuresItem2Text') },
     { emoji: '🧪', title: t('featuresItem3Title'), text: t('featuresItem3Text') },
@@ -22,66 +24,71 @@ export function FeaturesGrid() {
   ]
 
   return (
-    <section id="fonctionnalites" className="relative py-20 sm:py-28">
-      {/* 11MODULES background image — no opacity, no overlay */}
-      <div
-        className="pointer-events-none absolute inset-0 bg-no-repeat"
-        style={{
-          backgroundImage: 'url(/modules-bg.png)',
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'center',
-        }}
-        aria-hidden="true"
-      />
-      {/* Gradient fades top + bottom for smooth transition with white background */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white to-transparent"
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white to-transparent"
-        aria-hidden="true"
-      />
-
-      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
-        <SectionHeading
-          eyebrow={t('featuresEyebrow')}
-          title={<>{t('featuresTitle')}</>}
-        />
-
+    <AqSection
+      id="fonctionnalites"
+      eyebrow={t('featuresEyebrow')}
+      title={t('featuresTitle')}
+      align="center"
+      className="aq-page-shell relative overflow-hidden"
+      containerClassName="max-w-[1440px]"
+    >
+      <AqMediaFrame
+        src="/modules-bg.png"
+        alt={t('featuresTitle')}
+        sizes="(max-width: 768px) 100vw, 1440px"
+        className="rounded-[var(--aq-radius-hero)] p-4 shadow-[var(--aq-shadow-card)] sm:p-6 md:p-8"
+        imageClassName="opacity-70"
+      >
         <motion.div
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: '-80px' }}
-          className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
-          {FEATURES.map((f) => (
-            <motion.div key={f.title} variants={fadeUpVariants}>
-              <GlassCard className="flex h-full items-start gap-3 p-5">
-                <span className="text-2xl" aria-hidden="true">
-                  {f.emoji}
-                </span>
-                <div>
-                  <h3 className="font-display text-base font-bold leading-tight">{f.title}</h3>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    {f.text}
-                  </p>
+          {features.map((feature, index) => (
+            <motion.div key={feature.title} variants={fadeUpVariants}>
+              <AqCard
+                tone={index === 2 || index === 7 ? 'dark' : 'glass'}
+                interactive
+                className="h-full min-h-[190px] border border-white/45 bg-white/72 p-5 backdrop-blur-2xl"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <span
+                    aria-hidden="true"
+                    className="flex size-11 shrink-0 items-center justify-center rounded-[var(--aq-radius-control)] bg-[var(--aq-lagoon)]/14 text-xl"
+                  >
+                    {feature.emoji}
+                  </span>
+                  <AqBadge tone={index === 2 || index === 7 ? 'dark' : 'champagne'}>
+                    {String(index + 1).padStart(2, '0')}
+                  </AqBadge>
                 </div>
-              </GlassCard>
+                <h3 className="mt-5 font-display text-2xl font-semibold leading-tight tracking-[-0.035em] text-inherit">
+                  {feature.title}
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--aq-text-muted)] dark:text-white/65">
+                  {feature.text}
+                </p>
+              </AqCard>
             </motion.div>
           ))}
 
-          {/* 12th cell — branding accent */}
           <motion.div variants={fadeUpVariants}>
-            <div className="relative flex h-full flex-col items-center justify-center overflow-hidden rounded-2xl border border-gold/30 bg-white/10 p-5 text-center backdrop-blur-md">
-              <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
-              <p className="font-display text-3xl font-bold gradient-text-premium">+1</p>
-              <p className="mt-1 text-xs text-muted-foreground">{t('featuresMore')}</p>
-            </div>
+            <AqCard
+              tone="dark"
+              className="flex h-full min-h-[190px] flex-col items-center justify-center p-6 text-center"
+            >
+              <p className="font-display text-5xl font-semibold tracking-[-0.05em] text-[var(--aq-aqua)]">
+                +1
+              </p>
+              <p className="mt-3 max-w-[18rem] text-sm leading-relaxed text-white/65">
+                {t('featuresMore')}
+              </p>
+            </AqCard>
           </motion.div>
         </motion.div>
-      </div>
-    </section>
+      </AqMediaFrame>
+    </AqSection>
   )
 }
