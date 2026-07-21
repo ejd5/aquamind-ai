@@ -25,11 +25,12 @@ export function FinalCta({ hasProfile, onEnterApp }: FinalCtaProps) {
           transition={{ duration: 0.7 }}
         >
           <AqMediaFrame
-            src="/bloc-bas.png"
+            src="/aqwelia-hero-bg.png"
             alt={t('finalCtaTitle')}
             sizes="(max-width: 768px) 100vw, 1280px"
+            objectPosition="right center"
             className="min-h-[360px] rounded-[var(--aq-radius-hero)] shadow-[var(--aq-shadow-floating)] md:min-h-[390px]"
-            imageClassName="opacity-90 md:object-right"
+            imageClassName="opacity-92 md:object-right contrast-[1.04] saturate-[0.9]"
           >
             <div className="flex min-h-[360px] items-center px-6 py-10 sm:px-10 md:min-h-[390px] md:px-14 lg:px-16">
               <div className="max-w-2xl">
