@@ -1,0 +1,92 @@
+name: One-shot Brain sync
+
+on:
+  push:
+    branches:
+      - feat/aqwelia-brain-foundation
+    paths:
+      - docs/.brain-sync-trigger
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-shot-brain-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Brain branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/aqwelia-brain-foundation
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge current main with guarded resolution
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+
+          set +e
+          git merge --no-ff --no-commit origin/main
+          merge_status=$?
+          set -e
+
+          conflicts=$(git diff --name-only --diff-filter=U || true)
+          allowed=$'prisma/schema.prisma\nprisma/postgresql/schema.prisma'
+
+          if [ -n "$conflicts" ]; then
+            unexpected=$(comm -23 <(printf '%s\n' "$conflicts" | sort) <(printf '%s\n' "$allowed" | sort) || true)
+            if [ -n "$unexpected" ]; then
+              echo "Unexpected conflicts:" >&2
+              echo "$unexpected" >&2
+              exit 1
+            fi
+
+            for schema in prisma/schema.prisma prisma/postgresql/schema.prisma; do
+              if git diff --name-only --diff-filter=U | grep -Fxq "$schema"; then
+                git checkout --ours -- "$schema"
+                python3 - "$schema" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text()
+if "consentAt" not in text:
+    needle = "  consentSource  String?\n"
+    if needle not in text:
+        raise SystemExit(f"Cannot locate Lead.consentSource in {path}")
+    text = text.replace(needle, needle + "  consentAt      DateTime?\n", 1)
+path.write_text(text)
+PY
+                git add "$schema"
+              fi
+            done
+          elif [ "$merge_status" -ne 0 ]; then
+            echo "Merge failed without resolvable conflicts" >&2
+            exit 1
+          fi
+
+          rm -f package-lock.json docs/.brain-sync-trigger .github/workflows/brain-self-sync.yml
+          git add -A
+
+          remaining=$(git diff --name-only --diff-filter=U || true)
+          if [ -n "$remaining" ]; then
+            echo "Unresolved conflicts remain:" >&2
+            echo "$remaining" >&2
+            exit 1
+          fi
+
+          git status --short
+          git commit -m "chore(brain): sync foundation with current main"
+          git push origin HEAD:feat/aqwelia-brain-foundation
