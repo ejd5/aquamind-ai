@@ -5,9 +5,16 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      preview_url:
+        description: Optional Vercel Preview URL for a manual run
+        required: false
+        type: string
 
 permissions:
   contents: read
+  issues: read
+  pull-requests: read
 
 concurrency:
   group: preview-visual-qa-${{ github.event.pull_request.number || github.ref }}
@@ -19,9 +26,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      PREVIEW_URL: https://aqwelia-staging-git-feat-figma-design-fou-0bc6f3-ejd5s-projects.vercel.app
       QA_OUTPUT_DIR: artifacts/visual-qa
       EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+      MANUAL_PREVIEW_URL: ${{ inputs.preview_url || '' }}
 
     steps:
       - name: Checkout repository
@@ -40,6 +48,50 @@ jobs:
 
       - name: Install Chromium
         run: bunx playwright install --with-deps chromium
+
+      - name: Resolve the Vercel Preview URL
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "$MANUAL_PREVIEW_URL" ]; then
+            preview_url="${MANUAL_PREVIEW_URL%/}"
+          else
+            if [ -z "$PR_NUMBER" ]; then
+              echo "A preview_url input is required for a manual run outside a pull request" >&2
+              exit 1
+            fi
+
+            preview_url=""
+            for attempt in $(seq 1 40); do
+              comments=$(curl -fsSL \
+                -H "Authorization: Bearer $GH_TOKEN" \
+                -H "Accept: application/vnd.github+json" \
+                "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments?per_page=100")
+              preview_url=$(printf '%s' "$comments" \
+                | jq -r '[.[] | select(.user.login == "vercel[bot]")][-1].body // ""' \
+                | grep -oE 'https://[A-Za-z0-9.-]+\.vercel\.app' \
+                | head -1 || true)
+
+              if [ -n "$preview_url" ]; then
+                preview_url="${preview_url%/}"
+                break
+              fi
+
+              echo "Waiting for the Vercel PR comment (attempt $attempt)"
+              sleep 15
+            done
+          fi
+
+          if [ -z "$preview_url" ]; then
+            echo "Unable to resolve the Vercel Preview URL" >&2
+            exit 1
+          fi
+
+          echo "Resolved Vercel Preview: $preview_url"
+          echo "PREVIEW_URL=$preview_url" >> "$GITHUB_ENV"
 
       - name: Wait for the exact Vercel preview commit
         shell: bash
