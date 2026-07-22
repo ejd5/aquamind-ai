@@ -1,6 +1,11 @@
 name: Sync AQWELIA Brain with main
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/sync-aqwelia-brain.yml
   workflow_dispatch:
     inputs:
       confirmation:
@@ -17,7 +22,7 @@ concurrency:
 
 jobs:
   sync:
-    if: ${{ inputs.confirmation == 'SYNC_AQWELIA_BRAIN' }}
+    if: ${{ github.event_name == 'push' || inputs.confirmation == 'SYNC_AQWELIA_BRAIN' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -79,7 +84,6 @@ PY
             exit 1
           fi
 
-          # npm lockfile was accidentally introduced on the historical Brain branch.
           if [ -f package-lock.json ]; then
             git rm -f package-lock.json
           fi
