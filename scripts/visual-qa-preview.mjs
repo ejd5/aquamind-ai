@@ -94,37 +94,114 @@ for (const testCase of cases) {
   await page.waitForTimeout(4_000)
 
   const metrics = await page.evaluate(() => {
-    const images = [...document.images]
-    const targets = [...document.querySelectorAll('a, button, input, select, textarea, [role="button"]')]
-      .filter((element) => {
-        const style = getComputedStyle(element)
-        const rect = element.getBoundingClientRect()
-        return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0
-      })
-      .map((element) => {
-        const rect = element.getBoundingClientRect()
-        return {
-          tag: element.tagName.toLowerCase(),
-          label:
-            element.getAttribute('aria-label') ||
-            element.textContent?.trim().replace(/\s+/g, ' ').slice(0, 80) ||
-            '',
-          width: Math.round(rect.width),
-          height: Math.round(rect.height),
-        }
-      })
+    const isVisible = (element) => {
+      const style = getComputedStyle(element)
+      const rect = element.getBoundingClientRect()
+      return (
+        style.display !== 'none' &&
+        style.visibility !== 'hidden' &&
+        rect.width > 0 &&
+        rect.height > 0
+      )
+    }
 
-    const headings = [...document.querySelectorAll('h1, h2, h3')]
-      .slice(0, 30)
+    const compactText = (value, limit = 120) =>
+      (value || '').trim().replace(/\s+/g, ' ').slice(0, limit)
+
+    const getAccessibleName = (element) => {
+      const ariaLabel = element.getAttribute('aria-label')
+      if (ariaLabel?.trim()) return compactText(ariaLabel)
+
+      const labelledBy = element.getAttribute('aria-labelledby')
+      if (labelledBy) {
+        const labelledText = labelledBy
+          .split(/\s+/)
+          .map((id) => document.getElementById(id)?.textContent || '')
+          .join(' ')
+        if (labelledText.trim()) return compactText(labelledText)
+      }
+
+      if (element instanceof HTMLImageElement && element.alt.trim()) {
+        return compactText(element.alt)
+      }
+
+      if (
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLSelectElement ||
+        element instanceof HTMLTextAreaElement
+      ) {
+        if (element.id) {
+          const explicitLabel = document.querySelector(`label[for="${CSS.escape(element.id)}"]`)
+          if (explicitLabel?.textContent?.trim()) return compactText(explicitLabel.textContent)
+        }
+        const wrappingLabel = element.closest('label')
+        if (wrappingLabel?.textContent?.trim()) return compactText(wrappingLabel.textContent)
+      }
+
+      const text = compactText(element.textContent)
+      if (text) return text
+
+      const title = element.getAttribute('title')
+      if (title?.trim()) return compactText(title)
+
+      return ''
+    }
+
+    const images = [...document.images]
+    const interactiveElements = [
+      ...document.querySelectorAll(
+        'a[href], button, input:not([type="hidden"]), select, textarea, [role="button"], [role="link"], [tabindex]:not([tabindex="-1"])'
+      ),
+    ].filter(isVisible)
+
+    const targets = interactiveElements.map((element) => {
+      const rect = element.getBoundingClientRect()
+      return {
+        tag: element.tagName.toLowerCase(),
+        label: getAccessibleName(element),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      }
+    })
+
+    const headings = [...document.querySelectorAll('h1, h2, h3, h4, h5, h6')]
+      .filter(isVisible)
+      .slice(0, 60)
       .map((heading) => ({
         tag: heading.tagName.toLowerCase(),
-        text: heading.textContent?.trim().replace(/\s+/g, ' ').slice(0, 160) || '',
+        level: Number(heading.tagName.slice(1)),
+        text: compactText(heading.textContent, 160),
         fontFamily: getComputedStyle(heading).fontFamily,
       }))
+
+    const headingLevelJumps = headings
+      .map((heading, index) => ({ previous: headings[index - 1], current: heading }))
+      .filter(({ previous, current }) => previous && current.level > previous.level + 1)
+      .map(({ previous, current }) => `${previous.tag} → ${current.tag}: ${current.text}`)
+
+    const formControlsWithoutLabel = [
+      ...document.querySelectorAll(
+        'input:not([type="hidden"]), select, textarea'
+      ),
+    ]
+      .filter(isVisible)
+      .filter((element) => !getAccessibleName(element))
+      .map((element) => ({
+        tag: element.tagName.toLowerCase(),
+        type: element.getAttribute('type'),
+        id: element.id || null,
+        name: element.getAttribute('name'),
+      }))
+
+    const ids = [...document.querySelectorAll('[id]')]
+      .map((element) => element.id)
+      .filter(Boolean)
+    const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))]
 
     return {
       title: document.title,
       finalUrl: location.href,
+      documentLang: document.documentElement.lang,
       bodyTextLength: document.body.innerText.trim().length,
       viewportWidth: window.innerWidth,
       documentWidth: document.documentElement.scrollWidth,
@@ -133,14 +210,46 @@ for (const testCase of cases) {
       brokenImages: images
         .filter((image) => !image.complete || image.naturalWidth === 0)
         .map((image) => image.currentSrc || image.src),
+      imagesMissingAlt: images
+        .filter((image) => !image.hasAttribute('alt'))
+        .map((image) => image.currentSrc || image.src),
       targetCount: targets.length,
       smallTargets: targets.filter((target) => target.width < 44 || target.height < 44).slice(0, 40),
+      unnamedInteractive: targets.filter((target) => !target.label).slice(0, 40),
+      formControlsWithoutLabel,
+      duplicateIds,
       headings,
+      h1Count: headings.filter((heading) => heading.tag === 'h1').length,
+      headingLevelJumps,
       h1FontFamily: document.querySelector('h1')
         ? getComputedStyle(document.querySelector('h1')).fontFamily
         : null,
     }
   })
+
+  const keyboardFocus = []
+  for (let index = 0; index < 12; index += 1) {
+    await page.keyboard.press('Tab')
+    const focused = await page.evaluate(() => {
+      const element = document.activeElement
+      if (!element || element === document.body) return null
+      const style = getComputedStyle(element)
+      const rect = element.getBoundingClientRect()
+      return {
+        tag: element.tagName.toLowerCase(),
+        label:
+          element.getAttribute('aria-label') ||
+          element.textContent?.trim().replace(/\s+/g, ' ').slice(0, 80) ||
+          element.getAttribute('name') ||
+          '',
+        visible: rect.width > 0 && rect.height > 0,
+        outlineStyle: style.outlineStyle,
+        outlineWidth: style.outlineWidth,
+        boxShadow: style.boxShadow,
+      }
+    })
+    if (focused) keyboardFocus.push(focused)
+  }
 
   await page.screenshot({
     path: `${outputDir}/${testCase.name}-full.png`,
@@ -163,6 +272,7 @@ for (const testCase of cases) {
     requestedUrl: new URL(testCase.path, previewUrl).toString(),
     status: response?.status() ?? null,
     ...metrics,
+    keyboardFocus,
     consoleErrors: [...new Set(consoleErrors)].slice(0, 30),
     pageErrors: [...new Set(pageErrors)].slice(0, 30),
   })
@@ -182,6 +292,26 @@ const hardFailures = results.flatMap((result) => {
     failures.push(`${result.name}: ${result.brokenImages.length} broken image(s)`)
   }
   if (result.bodyTextLength < 50) failures.push(`${result.name}: suspiciously empty page`)
+  if (!result.documentLang) failures.push(`${result.name}: missing document language`)
+  if (result.imagesMissingAlt.length > 0) {
+    failures.push(`${result.name}: ${result.imagesMissingAlt.length} image(s) missing alt attribute`)
+  }
+  if (result.unnamedInteractive.length > 0) {
+    failures.push(`${result.name}: ${result.unnamedInteractive.length} unnamed interactive control(s)`)
+  }
+  if (result.formControlsWithoutLabel.length > 0) {
+    failures.push(`${result.name}: ${result.formControlsWithoutLabel.length} form control(s) without label`)
+  }
+  if (result.duplicateIds.length > 0) {
+    failures.push(`${result.name}: duplicate id(s): ${result.duplicateIds.join(', ')}`)
+  }
+  if (result.h1Count !== 1) failures.push(`${result.name}: expected 1 h1, found ${result.h1Count}`)
+  if (result.headingLevelJumps.length > 0) {
+    failures.push(`${result.name}: ${result.headingLevelJumps.length} heading level jump(s)`)
+  }
+  if (result.targetCount > 0 && result.keyboardFocus.length === 0) {
+    failures.push(`${result.name}: keyboard navigation did not reach an interactive control`)
+  }
   return failures
 })
 
@@ -195,7 +325,7 @@ const report = {
 await writeFile(`${outputDir}/qa-report.json`, JSON.stringify(report, null, 2))
 
 const summary = [
-  '# AQWELIA Preview Visual QA',
+  '# AQWELIA Preview Visual & Accessibility QA',
   '',
   `Preview: ${previewUrl}`,
   `Generated: ${report.generatedAt}`,
@@ -205,9 +335,15 @@ const summary = [
     `## ${result.name}`,
     `- HTTP: ${result.status}`,
     `- Final URL: ${result.finalUrl}`,
+    `- Document language: ${result.documentLang || 'missing'}`,
+    `- H1 count: ${result.h1Count}`,
+    `- Heading level jumps: ${result.headingLevelJumps.length}`,
     `- Horizontal overflow: ${result.horizontalOverflow}px`,
-    `- Images: ${result.imageCount}, broken: ${result.brokenImages.length}`,
-    `- Interactive targets: ${result.targetCount}, under 44 px: ${result.smallTargets.length}`,
+    `- Images: ${result.imageCount}, broken: ${result.brokenImages.length}, missing alt: ${result.imagesMissingAlt.length}`,
+    `- Interactive targets: ${result.targetCount}, under 44 px: ${result.smallTargets.length}, unnamed: ${result.unnamedInteractive.length}`,
+    `- Form controls without label: ${result.formControlsWithoutLabel.length}`,
+    `- Duplicate IDs: ${result.duplicateIds.length}`,
+    `- Keyboard focus samples: ${result.keyboardFocus.length}`,
     `- Console errors: ${result.consoleErrors.length}`,
     `- Page errors: ${result.pageErrors.length}`,
     '',
