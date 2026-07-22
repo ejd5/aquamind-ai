@@ -15,6 +15,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight, Sparkles, Check, Users, Calendar, FileText, ShoppingBag } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
+import { BrainTechnologySection } from '@/components/brain/brain-technology-section'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('pro')
@@ -175,6 +176,7 @@ export default async function ProPage() {
         </div>
       </section>
 
+      <BrainTechnologySection variant="pro" />
       {/* ===== Pricing ===== */}
       <section id="tarifs" className="relative py-20 sm:py-28">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-background via-secondary/30 to-background" />

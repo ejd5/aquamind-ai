@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { VISION_DIAGNOSTIC_PROMPT, getVisionLanguageInstruction } from '@/lib/pool/ai-context'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { trackEventServer } from '@/lib/analytics-server'
+import { findOwnedPool } from '@/lib/brain/access'
 
 export const runtime = 'nodejs'
 
@@ -17,8 +18,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
+  const poolId = new URL(req.url).searchParams.get('poolId')
 
-  const diagnostics = await db.photoDiagnostic.findMany({ where: { userId }, take: 30, orderBy: { createdAt: 'desc' } })
+  const diagnostics = await db.photoDiagnostic.findMany({ where: { userId, ...(poolId ? { OR: [{ poolId }, { poolId: null }] } : {}) }, take: 30, orderBy: { createdAt: 'desc' } })
   return NextResponse.json({ diagnostics })
 }
 
@@ -32,7 +34,9 @@ export async function POST(req: NextRequest) {
   const userId = session.user.id
 
   try {
-    const { image, typeHint } = await req.json()
+    const { image, typeHint, poolId } = await req.json()
+    const pool = poolId ? await findOwnedPool(userId, poolId) : null
+    if (poolId && !pool) return NextResponse.json({ error: 'Pool not found' }, { status: 404 })
     if (!image) return NextResponse.json({ error: 'Image base64 requise' }, { status: 400 })
 
     const langInstr = getVisionLanguageInstruction(locale)
@@ -70,6 +74,7 @@ export async function POST(req: NextRequest) {
     const saved = await db.photoDiagnostic.create({
       data: {
         userId,
+        poolId: pool?.id || null,
         type: parsed?.imageType || typeHint || 'unknown',
         imageUrl: image, // Store full base64 (for dev/MVP — use S3 in production)
         detectedIssues: JSON.stringify(parsed?.detectedIssues || []),

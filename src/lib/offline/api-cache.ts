@@ -75,6 +75,10 @@ export async function apiGetCached<T>(
   }
 }
 
+function withPool(path: string, poolId?: string | null) {
+  return poolId ? `${path}&poolId=${encodeURIComponent(poolId)}` : path
+}
+
 /**
  * Convenience methods for the most common GET endpoints.
  * Each returns a `CachedResult<T>` — never throws.
@@ -82,8 +86,13 @@ export async function apiGetCached<T>(
 export const offlineApi = {
   dashboard: () => apiGetCached('/api/dashboard?v2', 'dashboard'),
   profile: () => apiGetCached('/api/pool/profile?v2', 'profile'),
-  waterTests: () => apiGetCached('/api/pool/water-test?v2', 'waterTests'),
-  photoDiagnostic: () => apiGetCached('/api/pool/photo-diagnostic?v2', 'waterTests'),
+  waterTests: (poolId?: string | null) =>
+    apiGetCached(withPool('/api/pool/water-test?v2', poolId), 'waterTests'),
+  photoDiagnostic: (poolId?: string | null) =>
+    apiGetCached(
+      withPool('/api/pool/photo-diagnostic?v2', poolId),
+      'waterTests',
+    ),
   weather: () => apiGetCached('/api/pool/weather?v2', 'weather'),
   reminders: () => apiGetCached('/api/pool/reminders?v2', 'reminders'),
   guides: () => apiGetCached('/api/guides?v2', 'guides'),

@@ -390,6 +390,8 @@
     "shortWater": "Water",
     "shortIA": "AI",
     "shortPlan": "Plan",
+    "brain": "AQWELIA Intelligence",
+    "shortBrain": "Brain",
     "shortLog": "Log",
     "shortWeather": "Weather",
     "shortGuides": "Guides",
@@ -6982,6 +6984,7 @@
     "ctaPrimary": "Start an analysis",
     "ctaSecondary": "See catalog"
   },
+  "aqweliaBrain": {"workspace":{"eyebrow":"Evolving intelligence","title":"AQWELIA Brain","subtitle":"The intelligent memory for pool {pool} connects readings, actions and outcomes to personalize future recommendations.","refresh":"Refresh","governance":"Your data stays under your control. Published technical content is versioned and human-reviewed.","testsObserved":"Connected tests","diagnosticsObserved":"Photo diagnostics","resultsMeasured":"Measured outcomes","awaitingRetest":"Retests pending","timelineTitle":"Pool memory","empty":"Your intelligent history will begin with the next analysis.","event":{"water_test":"Water test","photo_diagnostic":"Photo diagnostic","feedback":"User feedback"}},"marketing":{"eyebrow":"AQWELIA Brain","title":"Intelligence that understands your water history","subtitle":"AQWELIA connects pool profile, readings, confirmed actions and follow-up checks to refine guidance over time.","memoryTitle":"Pool memory","memoryText":"A structured timeline for each pool, not a conversation forgotten after each session.","outcomesTitle":"Measured outcomes","outcomesText":"Every confirmed treatment can be compared with the next test.","knowledgeTitle":"Verified knowledge","knowledgeText":"Technical content is versioned, sourced and human-reviewed before publication.","personalizationTitle":"Continuous personalization","personalizationText":"Future recommendations gain context from outcomes actually observed.","trust":"AQWELIA does not replace manufacturer instructions or a professional. Safety, traceability and human control remain priorities.","discover":"Discover our technology","variant":{"home":"A copilot that becomes more relevant through your pool history.","pro":"Operational memory for every client, pool and visit.","growth":"Useful traceable signals, with human approval before action.","diagnostic":"Diagnosis starts a measure → action → verify loop."}}},
   "redirectPages": {
     "redirecting": "Redirecting…",
     "mentionsTitle": "Legal notice",

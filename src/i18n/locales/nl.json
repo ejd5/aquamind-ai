@@ -298,6 +298,8 @@
     "shortWater": "Water",
     "shortIA": "AI",
     "shortPlan": "Abonnement",
+    "brain": "AQWELIA-intelligentie",
+    "shortBrain": "Brain",
     "shortLog": "Logboek",
     "shortWeather": "Weer",
     "shortGuides": "Handleidingen",
@@ -6977,6 +6979,7 @@
     "ctaPrimary": "Start an analysis",
     "ctaSecondary": "See catalog"
   },
+  "aqweliaBrain": {"workspace":{"eyebrow":"Evolutieve intelligentie","title":"AQWELIA Brain","subtitle":"Het intelligente geheugen van het bad {pool} verbindt metingen, acties en resultaten om toekomstige aanbevelingen te personaliseren.","refresh":"Vernieuwen","governance":"Uw gegevens blijven onder uw controle. Gepubliceerde technische inhoud is versiebeheerd en door mensen beoordeeld.","testsObserved":"Verbonden analyses","diagnosticsObserved":"Foto-diagnoses","resultsMeasured":"Gemeten resultaten","awaitingRetest":"Openstaande controles","timelineTitle":"Bad-geheugen","empty":"Uw intelligente geschiedenis begint bij de volgende analyse.","event":{"water_test":"Wateranalyse","photo_diagnostic":"Foto-diagnose","feedback":"Gebruikersfeedback"}},"marketing":{"eyebrow":"AQWELIA Brain","title":"Een intelligentie die uw watergeschiedenis begrijpt","subtitle":"AQWELIA verbindt badprofiel, metingen, bevestigde acties en vervolgcontroles om de begeleiding in de tijd te verfijnen.","memoryTitle":"Bad-geheugen","memoryText":"Een gestructureerde tijdlijn per bad, niet een vergeten gesprek na elke sessie.","outcomesTitle":"Gemeten resultaten","outcomesText":"Elke bevestigde behandeling kan worden vergeleken met de volgende controle.","knowledgeTitle":"Geverifieerde kennis","knowledgeText":"Technische inhoud is versiebeheerd, met bronnen en door mensen beoordeeld voor publicatie.","personalizationTitle":"Continue personalisatie","personalizationText":"Toekomstige aanbevelingen worden verrijkt met daadwerkelijk waargenomen resultaten.","trust":"AQWELIA vervangt niet de fabrikantinstructies of een professional. Veiligheid, traceerbaarheid en menselijke controle blijven prioriteiten.","discover":"Ontdek onze technologie","variant":{"home":"Een copiloot die relevanter wordt met de echte geschiedenis van uw bad.","pro":"Operationeel geheugen voor elke klant, bad en onderhoudsbeurt.","growth":"Nuttige, traceerbare signalen met menselijke goedkeuring voor actie.","diagnostic":"De diagnose start een meten → handelen → verifiëren-cyclus."}}},
   "redirectPages": {
     "redirecting": "Redirecting…",
     "mentionsTitle": "Legal notice",

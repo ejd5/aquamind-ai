@@ -390,6 +390,8 @@
     "shortWater": "Eau",
     "shortIA": "IA",
     "shortPlan": "Plan",
+    "brain": "Intelligence AQWELIA",
+    "shortBrain": "Brain",
     "shortLog": "Carnet",
     "shortWeather": "Météo",
     "shortGuides": "Guides",
@@ -6985,6 +6987,7 @@
     "ctaPrimary": "Démarrer une analyse",
     "ctaSecondary": "Voir le catalogue"
   },
+  "aqweliaBrain": {"workspace":{"eyebrow":"Intelligence évolutive","title":"AQWELIA Brain","subtitle":"La mémoire intelligente du bassin {pool} relie mesures, actions et résultats pour personnaliser les prochaines recommandations.","refresh":"Actualiser","governance":"Vos données restent sous votre contrôle. Les contenus techniques publiés sont versionnés et validés humainement.","testsObserved":"Analyses reliées","diagnosticsObserved":"Diagnostics photo","resultsMeasured":"Résultats mesurés","awaitingRetest":"Contrôles attendus","timelineTitle":"Mémoire du bassin","empty":"Votre historique intelligent commencera avec la prochaine analyse.","event":{"water_test":"Analyse de l’eau","photo_diagnostic":"Diagnostic photo","feedback":"Retour utilisateur"}},"marketing":{"eyebrow":"AQWELIA Brain","title":"Une intelligence qui comprend l’histoire de votre eau","subtitle":"AQWELIA relie le profil du bassin, les mesures, les actions confirmées et les contrôles suivants afin d’affiner l’accompagnement au fil du temps.","memoryTitle":"Mémoire du bassin","memoryText":"Une chronologie structurée par bassin, pas une conversation oubliée après chaque session.","outcomesTitle":"Résultats mesurés","outcomesText":"Chaque traitement confirmé peut être comparé au contrôle suivant.","knowledgeTitle":"Connaissance vérifiée","knowledgeText":"Les contenus techniques sont versionnés, sourcés et validés humainement avant publication.","personalizationTitle":"Personnalisation continue","personalizationText":"Les recommandations futures s’enrichissent des résultats réellement observés.","trust":"AQWELIA ne remplace pas les consignes fabricant ou un professionnel. Sécurité, traçabilité et contrôle humain restent prioritaires.","discover":"Découvrir notre technologie","variant":{"home":"Un copilote qui gagne en pertinence avec l’histoire réelle de votre bassin.","pro":"Une mémoire opérationnelle par client, bassin et intervention.","growth":"Des signaux utiles et traçables, avec validation humaine avant toute action.","diagnostic":"Le diagnostic devient le point de départ d’une boucle mesure → action → contrôle."}}},
   "redirectPages": {
     "redirecting": "Redirection en cours…",
     "mentionsTitle": "Mentions légales",

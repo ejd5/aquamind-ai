@@ -34,6 +34,7 @@ import { StripScanner } from './strip-scanner'
 
 interface Props {
   onNavigate: (tab: TabId) => void
+  activePoolId?: string | null
 }
 
 interface WaterTestRow {
@@ -128,7 +129,7 @@ const SWIM_LABEL_KEY: Record<string, string> = {
   unknown: 'swimUnknown',
 }
 
-export function ModuleWaterTest({ onNavigate }: Props) {
+export function ModuleWaterTest({ onNavigate, activePoolId }: Props) {
   const t = useTranslations('modules.waterTest')
   const tAct = useTranslations('actionPlan')
   const tTargets = useTranslations('targets')
@@ -193,7 +194,7 @@ export function ModuleWaterTest({ onNavigate }: Props) {
   const loadHistory = useCallback(async () => {
     setLoadingHistory(true)
     try {
-      const { data, stale } = await offlineApi.waterTests()
+      const { data, stale } = await offlineApi.waterTests(activePoolId)
       const d = data as { tests?: WaterTestRow[] } | null
       setTests(d?.tests || [])
       setStale(stale)
@@ -203,7 +204,7 @@ export function ModuleWaterTest({ onNavigate }: Props) {
     } finally {
       setLoadingHistory(false)
     }
-  }, [])
+  }, [activePoolId])
 
   useEffect(() => {
     loadHistory()
@@ -221,7 +222,12 @@ export function ModuleWaterTest({ onNavigate }: Props) {
     }
     setSaving(true)
     setPlan(null)
-    const body: Record<string, unknown> = { ph, source, note: note.trim() || undefined }
+    const body: Record<string, unknown> = {
+      ph,
+      source,
+      note: note.trim() || undefined,
+      ...(activePoolId ? { poolId: activePoolId } : {}),
+    }
     for (const f of FIELDS) {
       if (f.key === 'ph') continue
       if (values[f.key] !== '') body[f.key] = values[f.key]

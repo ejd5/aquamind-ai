@@ -298,6 +298,8 @@
     "shortWater": "Wasser",
     "shortIA": "KI",
     "shortPlan": "Plan",
+    "brain": "AQWELIA Intelligenz",
+    "shortBrain": "Brain",
     "shortLog": "Verlauf",
     "shortWeather": "Wetter",
     "shortGuides": "Anleitungen",
@@ -6977,6 +6979,7 @@
     "ctaPrimary": "Start an analysis",
     "ctaSecondary": "See catalog"
   },
+  "aqweliaBrain": {"workspace":{"eyebrow":"Evolvinge Intelligenz","title":"AQWELIA Brain","subtitle":"Das intelligente Gedächtnis des Beckens {pool} verbindet Messungen, Aktionen und Ergebnisse, um zukünftige Empfehlungen zu personalisieren.","refresh":"Aktualisieren","governance":"Ihre Daten bleiben unter Ihrer Kontrolle. Veröffentlichte technische Inhalte sind versioniert und von Menschen geprüft.","testsObserved":"Verbundene Analysen","diagnosticsObserved":"Foto-Diagnosen","resultsMeasured":"Gemessene Ergebnisse","awaitingRetest":"Ausstehende Kontrollen","timelineTitle":"Becken-Gedächtnis","empty":"Ihre intelligente Historie beginnt mit der nächsten Analyse.","event":{"water_test":"Wasseranalyse","photo_diagnostic":"Foto-Diagnose","feedback":"Benutzer-Feedback"}},"marketing":{"eyebrow":"AQWELIA Brain","title":"Eine Intelligenz, die Ihre Wassergeschichte versteht","subtitle":"AQWELIA verbindet Beckenprofil, Messungen, bestätigte Aktionen und Folgekontrollen, um die Begleitung im Zeitverlauf zu verfeinern.","memoryTitle":"Becken-Gedächtnis","memoryText":"Eine strukturierte Zeitleiste pro Becken, kein vergessener Dialog nach jeder Sitzung.","outcomesTitle":"Gemessene Ergebnisse","outcomesText":"Jede bestätigte Behandlung kann mit der nächsten Kontrolle verglichen werden.","knowledgeTitle":"Verifiziertes Wissen","knowledgeText":"Technische Inhalte sind versioniert, mit Quellen und von Menschen geprüft, bevor sie veröffentlicht werden.","personalizationTitle":"Kontinuierliche Personalisierung","personalizationText":"Zukünftige Empfehlungen werden durch tatsächlich beobachtete Ergebnisse angereichert.","trust":"AQWELIA ersetzt nicht die Herstelleranweisungen oder einen Fachmann. Sicherheit, Nachverfolgbarkeit und menschliche Kontrolle bleiben Prioritäten.","discover":"Unsere Technologie entdecken","variant":{"home":"Ein Copilot, der mit der Geschichte Ihres Beckens immer relevanter wird.","pro":"Operatives Gedächtnis für jeden Kunden, jedes Becken und jeden Einsatz.","growth":"Nützliche, nachverfolgbare Signale mit menschlicher Genehmigung vor Handlungen.","diagnostic":"Die Diagnose startet einen Messen → Handeln → Prüfen-Zyklus."}}},
   "redirectPages": {
     "redirecting": "Redirecting…",
     "mentionsTitle": "Legal notice",

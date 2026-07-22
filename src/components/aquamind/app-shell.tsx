@@ -15,6 +15,7 @@ import {
   Crown,
   MoreHorizontal,
   Sparkles,
+  BrainCircuit,
 } from 'lucide-react'
 import { Header } from './header'
 import { Footer } from './footer'
@@ -30,6 +31,7 @@ import { ModuleWeather } from './module-weather'
 import { ModuleGuides } from './module-guides'
 import { ModuleReminders } from './module-reminders'
 import { ModulePaywall } from './module-paywall'
+import { ModuleBrain } from '@/components/brain/module-brain'
 import { EmergencyMode } from './emergency-mode'
 import {
   Sheet,
@@ -57,6 +59,7 @@ export type TabId =
   | 'guides'
   | 'reminders'
   | 'paywall'
+  | 'brain'
 
 interface NavItem {
   id: TabId
@@ -108,6 +111,7 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
     { id: 'weather', label: t('weather'), short: t('shortWeather'), icon: CloudSun },
     { id: 'guides', label: t('guides'), short: t('shortGuides'), icon: BookOpen },
     { id: 'reminders', label: t('reminders'), short: t('shortReminders'), icon: Bell },
+    { id: 'brain', label: t('brain'), short: t('shortBrain'), icon: BrainCircuit },
     { id: 'paywall', label: t('premium'), short: t('shortPremium'), icon: Crown },
   ]
   const PRIMARY_NAV = NAV.filter((n) => n.primary)
@@ -352,8 +356,15 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
               onAskAssistant={askAssistant}
             />
           )}
-          {activeTab === 'diagnostic' && <ModuleDiagnostic />}
-          {activeTab === 'water' && <ModuleWaterTest onNavigate={navigate} />}
+          {activeTab === 'diagnostic' && (
+            <ModuleDiagnostic activePoolId={activePoolId} />
+          )}
+          {activeTab === 'water' && (
+            <ModuleWaterTest
+              onNavigate={navigate}
+              activePoolId={activePoolId}
+            />
+          )}
           {activeTab === 'assistant' && (
             <ModuleAssistant presetQuestion={presetQuestion} onConsumePreset={() => setPresetQuestion(undefined)} />
           )}
@@ -364,6 +375,7 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
           {activeTab === 'guides' && <ModuleGuides onNavigate={navigate} />}
           {activeTab === 'reminders' && <ModuleReminders onNavigate={navigate} />}
           {activeTab === 'paywall' && <ModulePaywall />}
+          {activeTab === 'brain' && <ModuleBrain activePoolId={activePoolId} />}
         </main>
       </div>
 

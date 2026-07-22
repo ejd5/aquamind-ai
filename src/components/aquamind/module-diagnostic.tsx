@@ -129,7 +129,11 @@ function isResolvedText(text: string | null | undefined): boolean {
   return RESOLVED_PATTERNS.some((p) => lower.includes(p))
 }
 
-export function ModuleDiagnostic() {
+interface ModuleDiagnosticProps {
+  activePoolId?: string | null
+}
+
+export function ModuleDiagnostic({ activePoolId }: ModuleDiagnosticProps) {
   const t = useTranslations('diagnostic')
   const tStrip = useTranslations('stripScan')
   const locale = useLocale()
@@ -149,14 +153,14 @@ export function ModuleDiagnostic() {
   const loadHistory = useCallback(async () => {
     setLoadingHistory(true)
     try {
-      const { data } = await offlineApi.photoDiagnostic()
+      const { data } = await offlineApi.photoDiagnostic(activePoolId)
       setHistory((data as any)?.diagnostics || [])
     } catch {
       setHistory([])
     } finally {
       setLoadingHistory(false)
     }
-  }, [])
+  }, [activePoolId])
 
   useEffect(() => {
     loadHistory()
@@ -218,7 +222,10 @@ export function ModuleDiagnostic() {
         hapticError()
         return
       }
-      const data = await api.post<{ diagnostic: DiagnosticResult }>('/api/pool/photo-diagnostic', { image, typeHint })
+      const data = await api.post<{ diagnostic: DiagnosticResult }>(
+        '/api/pool/photo-diagnostic',
+        { image, typeHint, poolId: activePoolId || undefined },
+      )
       setResult(data.diagnostic || null)
       hapticSuccess()
       toast({
@@ -616,6 +623,7 @@ export function ModuleDiagnostic() {
       {result && activeTab === 'photo' && (
         <DiagnosticActionPlan
           diagnostic={result}
+          activePoolId={activePoolId}
           onRecheck={async (newImage) => {
             try {
               if (!isOnline) {
@@ -628,7 +636,11 @@ export function ModuleDiagnostic() {
               }
               const data = await api.post<{ diagnostic: DiagnosticResult }>(
                 '/api/pool/photo-diagnostic',
-                { image: newImage, typeHint },
+                {
+                  image: newImage,
+                  typeHint,
+                  poolId: activePoolId || undefined,
+                },
               )
               hapticSuccess()
               // Refresh history so the new re-check diagnostic shows up
@@ -836,7 +848,11 @@ export function ModuleDiagnostic() {
         onSave={async (values) => {
           // Persist via the existing /api/pool/water-test endpoint so a
           // WaterTest + action plan are created with source='strip_photo'.
-          const body: Record<string, unknown> = { ph: Number(values.ph), source: 'strip_photo' }
+          const body: Record<string, unknown> = {
+            ph: Number(values.ph),
+            source: 'strip_photo',
+            ...(activePoolId ? { poolId: activePoolId } : {}),
+          }
           for (const [k, v] of Object.entries(values)) {
             if (k === 'ph') continue
             if (v !== '') body[k] = v

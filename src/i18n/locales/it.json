@@ -298,6 +298,8 @@
     "shortWater": "Acqua",
     "shortIA": "IA",
     "shortPlan": "Piano",
+    "brain": "Intelligenza AQWELIA",
+    "shortBrain": "Brain",
     "shortLog": "Registro",
     "shortWeather": "Meteo",
     "shortGuides": "Guide",
@@ -6975,6 +6977,7 @@
     "ctaPrimary": "Start an analysis",
     "ctaSecondary": "See catalog"
   },
+  "aqweliaBrain": {"workspace":{"eyebrow":"Intelligenza evolutiva","title":"AQWELIA Brain","subtitle":"La memoria intelligente della piscina {pool} collega misurazioni, azioni e risultati per personalizzare i prossimi consigli.","refresh":"Aggiorna","governance":"I tuoi dati restano sotto il tuo controllo. I contenuti tecnici pubblicati sono versionati e validati da persone.","testsObserved":"Analisi collegate","diagnosticsObserved":"Diagnostica foto","resultsMeasured":"Risultati misurati","awaitingRetest":"Controlli in attesa","timelineTitle":"Memoria della piscina","empty":"La tua cronologia intelligente inizierà con la prossima analisi.","event":{"water_test":"Analisi dell'acqua","photo_diagnostic":"Diagnostica foto","feedback":"Feedback utente"}},"marketing":{"eyebrow":"AQWELIA Brain","title":"Un'intelligenza che comprende la storia della tua acqua","subtitle":"AQWELIA collega il profilo della piscina, le misurazioni, le azioni confermate e i controlli successivi per affinare l'accompagnamento nel tempo.","memoryTitle":"Memoria della piscina","memoryText":"Una cronologia strutturata per piscina, non una conversazione dimenticata dopo ogni sessione.","outcomesTitle":"Risultati misurati","outcomesText":"Ogni trattamento confermato può essere confrontato con il controllo successivo.","knowledgeTitle":"Conoscenza verificata","knowledgeText":"I contenuti tecnici sono versionati, con fonti e validati da persone prima della pubblicazione.","personalizationTitle":"Personalizzazione continua","personalizationText":"I consigli futuri si arricchiscono dei risultati effettivamente osservati.","trust":"AQWELIA non sostituisce le istruzioni del produttore o un professionista. Sicurezza, tracciabilità e controllo umano restano priorità.","discover":"Scopri la nostra tecnologia","variant":{"home":"Un copilota che diventa più rilevante con la storia reale della tua piscina.","pro":"Memoria operativa per ogni cliente, piscina e intervento.","growth":"Segnali utili e tracciabili, con validazione umana prima dell'azione.","diagnostic":"La diagnosi avvia un ciclo misurare → agire → verificare."}}},
   "redirectPages": {
     "redirecting": "Redirecting…",
     "mentionsTitle": "Legal notice",

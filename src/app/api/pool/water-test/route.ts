@@ -8,6 +8,8 @@ import { assessSwimSafety } from '@/lib/pool/safety-rules'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { trackEventServer } from '@/lib/analytics-server'
 import { requireFeatureAccess } from '@/lib/billing/gate'
+import { findOwnedPool } from '@/lib/brain/access'
+import { recordAutomaticFollowup } from '@/lib/brain/record-followup'
 
 export const runtime = 'nodejs'
 
@@ -19,6 +21,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: msg }, { status: 401 })
   }
   const userId = session.user.id
+  const poolId = new URL(req.url).searchParams.get('poolId')
 
   // P0-B: Feature gate — history_extended
   // Free plan (Découverte) gets 14 days of history, paid plans get unlimited.
@@ -28,7 +31,7 @@ export async function GET(req: Request) {
     : undefined
 
   const tests = await db.waterTest.findMany({
-    where: { userId, createdAt },
+    where: { userId, createdAt, ...(poolId ? { OR: [{ poolId }, { poolId: null }] } : {}) },
     take: historyGate.denied ? 100 : 500,
     orderBy: { createdAt: 'desc' },
     include: { actionPlans: true },
@@ -50,6 +53,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
+    const profile = await findOwnedPool(userId, body.poolId)
+    if (body.poolId && !profile) {
+      return NextResponse.json({ error: 'Pool not found' }, { status: 404 })
+    }
+
     const ph = Number(body.ph)
     if (isNaN(ph)) {
       const msg = await translate(
@@ -88,6 +96,7 @@ export async function POST(req: NextRequest) {
       data: {
         ...test,
         userId,
+        poolId: profile?.id || null,
         status,
         clearWaterIndex: cwi,
         swimSafety: swim.status,
@@ -96,7 +105,6 @@ export async function POST(req: NextRequest) {
     })
 
     // Générer plan d'action déterministe si profil existe
-    const profile = await db.poolProfile.findFirst({ where: { userId } })
     let actionPlan: Awaited<ReturnType<typeof db.actionPlan.create>> | null = null
     if (profile) {
       const plan = generateActionPlan(test as any, {
@@ -122,6 +130,7 @@ export async function POST(req: NextRequest) {
         },
       })
     }
+    const brainFollowup = profile ? await recordAutomaticFollowup(userId, profile.id, created) : null
 
     // Analytics — fire-and-forget, never blocks the response.
     void trackEventServer(
@@ -141,7 +150,7 @@ export async function POST(req: NextRequest) {
     // Pro mode (LSI detailed interpretation) is only for paid plans.
     const proGate = await requireFeatureAccess(req, 'pro_mode')
     const { lsi: _storedLsi, ...publicTest } = created
-    const response: any = { test: proGate.denied ? publicTest : created, actionPlan }
+    const response: any = { test: proGate.denied ? publicTest : created, actionPlan, brainFollowup }
     if (!proGate.denied) {
       response.lsiInfo = lsiInterpretation(lsi)
       response.lsi = lsi

@@ -298,6 +298,8 @@
     "shortWater": "Agua",
     "shortIA": "IA",
     "shortPlan": "Plan",
+    "brain": "Inteligencia AQWELIA",
+    "shortBrain": "Brain",
     "shortLog": "Registro",
     "shortWeather": "Clima",
     "shortGuides": "Guías",
@@ -6975,6 +6977,7 @@
     "ctaPrimary": "Start an analysis",
     "ctaSecondary": "See catalog"
   },
+  "aqweliaBrain": {"workspace":{"eyebrow":"Inteligencia evolutiva","title":"AQWELIA Brain","subtitle":"La memoria inteligente del pool {pool} conecta mediciones, acciones y resultados para personalizar las próximas recomendaciones.","refresh":"Actualizar","governance":"Sus datos permanecen bajo su control. Los contenidos técnicos publicados están versionados y validados por personas.","testsObserved":"Análisis conectados","diagnosticsObserved":"Diagnósticos foto","resultsMeasured":"Resultados medidos","awaitingRetest":"Controles pendientes","timelineTitle":"Memoria del pool","empty":"Su historial inteligente comenzará con el próximo análisis.","event":{"water_test":"Análisis del agua","photo_diagnostic":"Diagnóstico foto","feedback":"Comentario del usuario"}},"marketing":{"eyebrow":"AQWELIA Brain","title":"Una inteligencia que comprende el historial de su agua","subtitle":"AQWELIA conecta el perfil del pool, las mediciones, las acciones confirmadas y los controles posteriores para afinar el acompañamiento con el tiempo.","memoryTitle":"Memoria del pool","memoryText":"Una cronología estructurada por pool, no una conversación olvidada después de cada sesión.","outcomesTitle":"Resultados medidos","outcomesText":"Cada tratamiento confirmado puede compararse con el siguiente control.","knowledgeTitle":"Conocimiento verificado","knowledgeText":"Los contenidos técnicos están versionados, con fuentes y validados por personas antes de su publicación.","personalizationTitle":"Personalización continua","personalizationText":"Las recomendaciones futuras se enriquecen con los resultados realmente observados.","trust":"AQWELIA no reemplaza las instrucciones del fabricante ni a un profesional. Seguridad, trazabilidad y control humano siguen siendo prioridades.","discover":"Descubrir nuestra tecnología","variant":{"home":"Un copiloto que gana relevancia con el historial real de su pool.","pro":"Una memoria operativa por cliente, pool e intervención.","growth":"Señales útiles y trazables, con validación humana antes de actuar.","diagnostic":"El diagnóstico inicia un ciclo medir → actuar → verificar."}}},
   "redirectPages": {
     "redirecting": "Redirecting…",
     "mentionsTitle": "Legal notice",

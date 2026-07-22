@@ -9,6 +9,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { Camera, Sparkles, Activity, ListChecks, ArrowRight, Droplets, FlaskConical, AlertTriangle } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
+import { BrainTechnologySection } from '@/components/brain/brain-technology-section'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('diagnosticIaPage')
@@ -120,6 +121,7 @@ export default async function DiagnosticIaPage() {
         </div>
       </section>
 
+      <BrainTechnologySection variant="diagnostic" />
       {/* CTA bottom */}
       <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-6">
         <div className="glass-card rounded-3xl p-10 text-center sm:p-14">
