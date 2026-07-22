@@ -88,6 +88,7 @@ interface ActionStep {
 
 interface DiagnosticActionPlanProps {
   diagnostic: DiagnosticResult
+  activePoolId?: string | null
   onRecheck?: (newImage: string) => Promise<DiagnosticResult | null>
 }
 
@@ -832,6 +833,7 @@ function NewComplementarySteps({
 
 export function DiagnosticActionPlan({
   diagnostic,
+  activePoolId,
   onRecheck,
 }: DiagnosticActionPlanProps) {
   const t = useTranslations('diagnosticActionPlan')
@@ -857,7 +859,9 @@ export function DiagnosticActionPlan({
   // Fetch pool profile + latest water test on mount
   useEffect(() => {
     api
-      .get<{ profile: { volume?: number } | null }>('/api/pool/profile')
+      .get<{ profile: { volume?: number } | null }>(
+        `/api/pool/profile${activePoolId ? `?id=${encodeURIComponent(activePoolId)}` : ''}`,
+      )
       .then((d) => {
         const v = d?.profile?.volume
         if (typeof v === 'number' && v > 0) setPoolVolume(v)
@@ -868,7 +872,9 @@ export function DiagnosticActionPlan({
       .finally(() => setPoolVolumeLoaded(true))
 
     api
-      .get<{ tests: WaterTestRow[] }>('/api/pool/water-test')
+      .get<{ tests: WaterTestRow[] }>(
+        `/api/pool/water-test${activePoolId ? `?poolId=${encodeURIComponent(activePoolId)}` : ''}`,
+      )
       .then((d) => {
         const latest = d?.tests?.[0]
         if (latest) setLatestWaterTest(latest)
@@ -876,7 +882,7 @@ export function DiagnosticActionPlan({
       .catch(() => {
         /* no tests yet — that's fine */
       })
-  }, [])
+  }, [activePoolId])
 
   // Regenerate steps when diagnostic or poolVolume changes
   useEffect(() => {
@@ -999,6 +1005,7 @@ export function DiagnosticActionPlan({
 
         await api.post('/api/pool/water-test', {
           ...payload,
+          ...(activePoolId ? { poolId: activePoolId } : {}),
           source: 'action_plan',
           note: JSON.stringify({ key: 'noteActionPlan', params: { title: step.title } }),
         })
@@ -1063,7 +1070,7 @@ export function DiagnosticActionPlan({
         setSubmitting(null)
       }
     },
-    [stepForms, latestWaterTest, markStepDone, t],
+    [stepForms, latestWaterTest, markStepDone, activePoolId, t],
   )
 
   async function handleRecheck() {

@@ -356,8 +356,15 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
               onAskAssistant={askAssistant}
             />
           )}
-          {activeTab === 'diagnostic' && <ModuleDiagnostic />}
-          {activeTab === 'water' && <ModuleWaterTest onNavigate={navigate} />}
+          {activeTab === 'diagnostic' && (
+            <ModuleDiagnostic activePoolId={activePoolId} />
+          )}
+          {activeTab === 'water' && (
+            <ModuleWaterTest
+              onNavigate={navigate}
+              activePoolId={activePoolId}
+            />
+          )}
           {activeTab === 'assistant' && (
             <ModuleAssistant presetQuestion={presetQuestion} onConsumePreset={() => setPresetQuestion(undefined)} />
           )}
