@@ -1,11 +1,11 @@
 name: Sync AQWELIA Brain with main
 
 on:
-  push:
+  pull_request_target:
     branches:
       - main
-    paths:
-      - .github/workflows/sync-aqwelia-brain.yml
+    types:
+      - synchronize
   workflow_dispatch:
     inputs:
       confirmation:
@@ -22,7 +22,12 @@ concurrency:
 
 jobs:
   sync:
-    if: ${{ github.event_name == 'push' || inputs.confirmation == 'SYNC_AQWELIA_BRAIN' }}
+    if: >-
+      ${{
+        (github.event_name == 'pull_request_target' &&
+         github.event.pull_request.head.ref == 'feat/aqwelia-brain-foundation') ||
+        inputs.confirmation == 'SYNC_AQWELIA_BRAIN'
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -87,6 +92,9 @@ PY
           if [ -f package-lock.json ]; then
             git rm -f package-lock.json
           fi
+
+          rm -f docs/.brain-sync-trigger
+          git add -A
 
           remaining=$(git diff --name-only --diff-filter=U || true)
           if [ -n "$remaining" ]; then
