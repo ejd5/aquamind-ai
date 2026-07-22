@@ -1,0 +1,93 @@
+name: AQWELIA Brain staging functional QA PR
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aqwelia-brain-staging-functional-qa-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  recipe:
+    name: Validate Brain on staging from PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: staging
+    env:
+      STABLE_URL: https://aqwelia-staging.vercel.app
+      FALLBACK_URL: https://aqwelia-staging-git-feat-aqwelia-brain-fo-9dcf51-ejd5s-projects.vercel.app
+      EXPECTED_MAIN_SHA: 09254f38710a57b9c11a22a3872b0d6c320b661f
+      EXPECTED_EQUIVALENT_SHA: 1354800fd5e8e2e3b716e2846660c867ff9b760e
+      QA_EMAIL: aqwelia-brain-qa-pr-${{ github.run_id }}@example.com
+      QA_PASSWORD: Aqwelia-QA-2026!
+      QA_OUTPUT_DIR: artifacts/brain-staging-functional-qa
+      STAGING_DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+
+    steps:
+      - name: Checkout QA branch
+        uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.4'
+
+      - name: Install dependencies and Playwright
+        run: |
+          bun install --frozen-lockfile
+          bun add --dev --no-save playwright@1.54.2
+          bunx playwright install --with-deps chromium
+
+      - name: Extract and run the reviewed isolated recipe
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$QA_OUTPUT_DIR"
+          awk '
+            /cat > \/tmp\/brain-staging-qa.mjs <<.NODE./ {capture=1; next}
+            capture && /^          NODE$/ {exit}
+            capture {sub(/^          /, ""); print}
+          ' .github/workflows/brain-staging-functional-qa.yml > /tmp/brain-staging-qa.mjs
+          test -s /tmp/brain-staging-qa.mjs
+          node /tmp/brain-staging-qa.mjs
+
+      - name: Generate PostgreSQL client for cleanup
+        if: always()
+        env:
+          DATABASE_URL: ${{ env.STAGING_DIRECT_URL }}
+        run: bun run db:pg:generate
+
+      - name: Remove isolated QA account and cascaded data
+        if: always()
+        env:
+          DATABASE_URL: ${{ env.STAGING_DIRECT_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { resolve } from 'node:path'
+          import { pathToFileURL } from 'node:url'
+          const loaded = await import(pathToFileURL(resolve('generated/client-postgresql/index.js')).href)
+          const PrismaClient = loaded.PrismaClient || loaded.default?.PrismaClient
+          const prisma = new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL } } })
+          try {
+            const result = await prisma.user.deleteMany({ where: { email: process.env.QA_EMAIL } })
+            console.log(`Removed ${result.count} isolated QA account(s)`)
+          } finally {
+            await prisma.$disconnect()
+          }
+          NODE
+
+      - name: Upload QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqwelia-brain-staging-functional-qa-pr
+          path: artifacts/brain-staging-functional-qa
+          if-no-files-found: warn
+          retention-days: 14
