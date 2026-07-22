@@ -13,6 +13,13 @@ const postgresqlIndexes = read(
   'prisma/postgresql/migrations/20260722090000_aqwelia_brain_index_parity/migration.sql'
 )
 const outcomeRoute = read('src/app/api/brain/outcomes/route.ts')
+const executionRoute = read('src/app/api/brain/executions/route.ts')
+const automaticFollowup = read('src/lib/brain/record-followup.ts')
+const appShell = read('src/components/aquamind/app-shell.tsx')
+const waterTestModule = read('src/components/aquamind/module-water-test.tsx')
+const diagnosticModule = read('src/components/aquamind/module-diagnostic.tsx')
+const diagnosticPlan = read('src/components/aquamind/diagnostic-action-plan.tsx')
+const offlineCache = read('src/lib/offline/api-cache.ts')
 
 const brainModels = [
   'RecommendationExecution',
@@ -59,11 +66,51 @@ describe('AQWELIA Brain contracts', () => {
     expect(outcomeRoute).toContain('Rating must be an integer between 1 and 5')
   })
 
+  it('waits for the scheduled retest and atomically claims the outcome', () => {
+    expect(automaticFollowup).toContain("reminder?.status === 'pending'")
+    expect(automaticFollowup).toContain(
+      'reminder.nextAttemptAt.getTime() <= now.getTime()'
+    )
+    expect(automaticFollowup).toContain('recommendationOutcome.updateMany')
+    expect(automaticFollowup).toContain("status: 'processed'")
+  })
+
+  it('cancels pending outcome data when all completed actions are reversed', () => {
+    expect(executionRoute).toContain('remainingCompleted === 0')
+    expect(executionRoute).toContain("status: 'cancelled'")
+    expect(executionRoute).toContain('nextAttemptAt: null')
+  })
+
+  it('propagates the active pool through every diagnostic entry point', () => {
+    expect(appShell).toContain('<ModuleDiagnostic activePoolId={activePoolId} />')
+    expect(appShell).toContain('activePoolId={activePoolId}')
+    expect(waterTestModule).toContain('offlineApi.waterTests(activePoolId)')
+    expect(waterTestModule).toContain(
+      '...(activePoolId ? { poolId: activePoolId } : {})'
+    )
+    expect(diagnosticModule).toContain('offlineApi.photoDiagnostic(activePoolId)')
+    expect(diagnosticModule).toContain('poolId: activePoolId || undefined')
+    expect(diagnosticPlan).toContain(
+      '?poolId=${encodeURIComponent(activePoolId)}'
+    )
+    expect(diagnosticPlan).toContain(
+      '...(activePoolId ? { poolId: activePoolId } : {})'
+    )
+    expect(offlineCache).toContain('waterTests: (poolId?: string | null)')
+    expect(offlineCache).toContain('photoDiagnostic: (poolId?: string | null)')
+  })
+
   it('does not ship temporary synchronization files or an npm lockfile', () => {
     expect(existsSync(resolve(process.cwd(), 'package-lock.json'))).toBe(false)
     expect(
       existsSync(resolve(process.cwd(), '.github/workflows/brain-self-sync.yml'))
     ).toBe(false)
+    expect(
+      existsSync(resolve(process.cwd(), '.github/workflows/sync-aqwelia-brain.yml'))
+    ).toBe(false)
     expect(existsSync(resolve(process.cwd(), 'docs/.brain-sync-trigger'))).toBe(false)
+    expect(
+      existsSync(resolve(process.cwd(), 'scripts/apply-brain-review-fixes.py'))
+    ).toBe(false)
   })
 })
