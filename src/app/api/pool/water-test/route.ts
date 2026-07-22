@@ -54,6 +54,10 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const profile = await findOwnedPool(userId, body.poolId)
+    if (body.poolId && !profile) {
+      return NextResponse.json({ error: 'Pool not found' }, { status: 404 })
+    }
+
     const ph = Number(body.ph)
     if (isNaN(ph)) {
       const msg = await translate(
