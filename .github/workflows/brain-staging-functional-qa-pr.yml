@@ -17,7 +17,6 @@ jobs:
     name: Validate Brain on staging from PR
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    environment: staging
     env:
       STABLE_URL: https://aqwelia-staging.vercel.app
       FALLBACK_URL: https://aqwelia-staging-git-feat-aqwelia-brain-fo-9dcf51-ejd5s-projects.vercel.app
@@ -26,7 +25,6 @@ jobs:
       QA_EMAIL: aqwelia-brain-qa-pr-${{ github.run_id }}@example.com
       QA_PASSWORD: Aqwelia-QA-2026!
       QA_OUTPUT_DIR: artifacts/brain-staging-functional-qa
-      STAGING_DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
 
     steps:
       - name: Checkout QA branch
@@ -59,11 +57,12 @@ jobs:
           from pathlib import Path
           path = Path('.qa-runtime/brain-staging-qa.mjs')
           source = path.read_text()
-          old = """const brainButton = page.getByRole('button', { name: /brain/i }).first()
+
+          old_navigation = """const brainButton = page.getByRole('button', { name: /brain/i }).first()
             assert(await brainButton.count(), 'Authenticated application must expose a Brain navigation button')
             await brainButton.click()
             await page.waitForTimeout(2500)"""
-          new = """const brainNavigation = await page.evaluate(() => {
+          new_navigation = """const brainNavigation = await page.evaluate(() => {
               const buttons = [...document.querySelectorAll('aside nav button')]
               const labels = buttons.map((button) => (button.textContent || '').trim().replace(/\\s+/g, ' '))
               const button = buttons.find((candidate) => /brain/i.test(candidate.textContent || '')) || buttons[10]
@@ -77,9 +76,31 @@ jobs:
             })
             assert(brainNavigation.clicked, 'Authenticated application must expose a Brain navigation button', brainNavigation)
             await page.waitForTimeout(2500)"""
-          if old not in source:
+          if old_navigation not in source:
               raise SystemExit('Unable to patch Brain navigation selector in extracted recipe')
-          path.write_text(source.replace(old, new))
+          source = source.replace(old_navigation, new_navigation)
+
+          old_cleanup = """} finally {
+            await context.close()
+            await browser.close()
+          }"""
+          new_cleanup = """} finally {
+            try {
+              const cleanupResponse = await context.request.post(`${baseUrl}/api/account/delete`)
+              const cleanupBody = await cleanupResponse.json().catch(() => null)
+              console.log('QA account cleanup', cleanupResponse.status(), cleanupBody)
+              if (!cleanupResponse.ok() && cleanupResponse.status() !== 401) {
+                throw new Error(`QA account cleanup failed: ${cleanupResponse.status()}`)
+              }
+            } catch (cleanupError) {
+              console.error('QA account cleanup error', cleanupError)
+            }
+            await context.close()
+            await browser.close()
+          }"""
+          if old_cleanup not in source:
+              raise SystemExit('Unable to patch authenticated QA cleanup in extracted recipe')
+          path.write_text(source.replace(old_cleanup, new_cleanup))
           PY
 
           set +e
@@ -88,33 +109,6 @@ jobs:
           set -e
           echo "$status" > "$QA_OUTPUT_DIR/exit-code.txt"
           exit "$status"
-
-      - name: Generate PostgreSQL client for cleanup
-        if: always()
-        env:
-          DATABASE_URL: ${{ env.STAGING_DIRECT_URL }}
-        run: bun run db:pg:generate
-
-      - name: Remove isolated QA account and cascaded data
-        if: always()
-        env:
-          DATABASE_URL: ${{ env.STAGING_DIRECT_URL }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --input-type=module <<'NODE'
-          import { resolve } from 'node:path'
-          import { pathToFileURL } from 'node:url'
-          const loaded = await import(pathToFileURL(resolve('generated/client-postgresql/index.js')).href)
-          const PrismaClient = loaded.PrismaClient || loaded.default?.PrismaClient
-          const prisma = new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL } } })
-          try {
-            const result = await prisma.user.deleteMany({ where: { email: process.env.QA_EMAIL } })
-            console.log(`Removed ${result.count} isolated QA account(s)`)
-          } finally {
-            await prisma.$disconnect()
-          }
-          NODE
 
       - name: Upload QA evidence
         if: always()
