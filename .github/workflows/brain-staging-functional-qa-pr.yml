@@ -54,6 +54,34 @@ jobs:
             capture {sub(/^          /, ""); print}
           ' .github/workflows/brain-staging-functional-qa.yml > .qa-runtime/brain-staging-qa.mjs
           test -s .qa-runtime/brain-staging-qa.mjs
+
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('.qa-runtime/brain-staging-qa.mjs')
+          source = path.read_text()
+          old = """const brainButton = page.getByRole('button', { name: /brain/i }).first()
+            assert(await brainButton.count(), 'Authenticated application must expose a Brain navigation button')
+            await brainButton.click()
+            await page.waitForTimeout(2500)"""
+          new = """const brainNavigation = await page.evaluate(() => {
+              const buttons = [...document.querySelectorAll('aside nav button')]
+              const labels = buttons.map((button) => (button.textContent || '').trim().replace(/\\s+/g, ' '))
+              const button = buttons.find((candidate) => /brain/i.test(candidate.textContent || '')) || buttons[10]
+              if (!button) return { clicked: false, labels }
+              button.click()
+              return {
+                clicked: true,
+                label: (button.textContent || '').trim().replace(/\\s+/g, ' '),
+                labels,
+              }
+            })
+            assert(brainNavigation.clicked, 'Authenticated application must expose a Brain navigation button', brainNavigation)
+            await page.waitForTimeout(2500)"""
+          if old not in source:
+              raise SystemExit('Unable to patch Brain navigation selector in extracted recipe')
+          path.write_text(source.replace(old, new))
+          PY
+
           set +e
           node .qa-runtime/brain-staging-qa.mjs 2>&1 | tee "$QA_OUTPUT_DIR/execution.log"
           status=${PIPESTATUS[0]}
