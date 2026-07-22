@@ -20,6 +20,7 @@ const waterTestModule = read('src/components/aquamind/module-water-test.tsx')
 const diagnosticModule = read('src/components/aquamind/module-diagnostic.tsx')
 const diagnosticPlan = read('src/components/aquamind/diagnostic-action-plan.tsx')
 const offlineCache = read('src/lib/offline/api-cache.ts')
+const previewWorkflow = read('.github/workflows/preview-visual-qa.yml')
 
 const brainModels = [
   'RecommendationExecution',
@@ -98,6 +99,12 @@ describe('AQWELIA Brain contracts', () => {
     )
     expect(offlineCache).toContain('waterTests: (poolId?: string | null)')
     expect(offlineCache).toContain('photoDiagnostic: (poolId?: string | null)')
+  })
+
+  it('resolves the Vercel Preview URL dynamically for every pull request', () => {
+    expect(previewWorkflow).toContain('.user.login == "vercel[bot]"')
+    expect(previewWorkflow).toContain('PREVIEW_URL=$preview_url')
+    expect(previewWorkflow).not.toContain('feat-figma-design-fou')
   })
 
   it('does not ship temporary synchronization files or an npm lockfile', () => {
