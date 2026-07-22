@@ -26,7 +26,7 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Merge the current main branch
+      - name: Merge the current main branch without changing Brain behavior
         shell: bash
         run: |
           set -euo pipefail
