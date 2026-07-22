@@ -1,9 +1,10 @@
 name: Authorized production database migration
 
 on:
-  push:
+  pull_request:
+    types: [opened]
     branches:
-      - ops/production-db-migration-20260723
+      - main
     paths:
       - .github/workflows/production-database-authorized-one-shot.yml
 
