@@ -1,0 +1,379 @@
+name: AQWELIA Brain staging functional QA
+
+on:
+  push:
+    branches:
+      - qa/brain-staging-recipe-20260722
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aqwelia-brain-staging-functional-qa
+  cancel-in-progress: false
+
+jobs:
+  recipe:
+    name: Validate Brain on staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: staging
+    env:
+      STABLE_URL: https://aqwelia-staging.vercel.app
+      FALLBACK_URL: https://aqwelia-staging-git-feat-aqwelia-brain-fo-9dcf51-ejd5s-projects.vercel.app
+      EXPECTED_MAIN_SHA: 09254f38710a57b9c11a22a3872b0d6c320b661f
+      EXPECTED_EQUIVALENT_SHA: 1354800fd5e8e2e3b716e2846660c867ff9b760e
+      QA_EMAIL: aqwelia-brain-qa-${{ github.run_id }}@example.com
+      QA_PASSWORD: Aqwelia-QA-2026!
+      QA_OUTPUT_DIR: artifacts/brain-staging-functional-qa
+      STAGING_DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.4'
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright
+        run: |
+          bun add --dev --no-save playwright@1.54.2
+          bunx playwright install --with-deps chromium
+
+      - name: Run isolated staging recipe
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$QA_OUTPUT_DIR"
+          cat > /tmp/brain-staging-qa.mjs <<'NODE'
+          import { mkdir, writeFile } from 'node:fs/promises'
+          import { chromium } from 'playwright'
+
+          const outputDir = process.env.QA_OUTPUT_DIR
+          const email = process.env.QA_EMAIL
+          const password = process.env.QA_PASSWORD
+          const allowedShas = new Set([
+            process.env.EXPECTED_MAIN_SHA,
+            process.env.EXPECTED_EQUIVALENT_SHA,
+          ])
+          await mkdir(outputDir, { recursive: true })
+
+          const assertions = []
+          const checks = []
+          const assert = (condition, message, details = undefined) => {
+            assertions.push({ ok: Boolean(condition), message, details })
+            if (!condition) throw new Error(message + (details ? `: ${JSON.stringify(details)}` : ''))
+          }
+
+          async function selectStagingBase() {
+            const candidates = [process.env.STABLE_URL, process.env.FALLBACK_URL]
+            const probes = []
+            for (const candidate of candidates) {
+              try {
+                const response = await fetch(`${candidate}/api/preview-health`, { redirect: 'follow' })
+                const text = await response.text()
+                let body = null
+                try { body = JSON.parse(text) } catch {}
+                probes.push({ candidate, status: response.status, body })
+                if (
+                  response.ok &&
+                  body?.database?.status === 'ok' &&
+                  body?.environment?.databaseProvider === 'postgresql' &&
+                  allowedShas.has(body?.environment?.gitCommitSha)
+                ) return { baseUrl: candidate, health: body, probes }
+              } catch (error) {
+                probes.push({ candidate, error: error instanceof Error ? error.message : String(error) })
+              }
+            }
+            throw new Error(`No approved staging deployment is ready: ${JSON.stringify(probes)}`)
+          }
+
+          const selected = await selectStagingBase()
+          const baseUrl = selected.baseUrl
+          checks.push({ name: 'staging-health', ok: true, baseUrl, health: selected.health })
+
+          const browser = await chromium.launch({ headless: true })
+          const context = await browser.newContext({
+            viewport: { width: 1440, height: 1000 },
+            locale: 'fr-FR',
+            colorScheme: 'light',
+            reducedMotion: 'reduce',
+          })
+          const page = await context.newPage()
+          const consoleErrors = []
+          const pageErrors = []
+          page.on('console', (message) => {
+            if (message.type() === 'error') consoleErrors.push(message.text())
+          })
+          page.on('pageerror', (error) => pageErrors.push(error.message))
+
+          try {
+            // 1. Inscription réelle par l'interface, puis auto-connexion NextAuth.
+            const signupResponsePromise = page.waitForResponse(
+              (response) => response.url().includes('/api/auth/register') && response.request().method() === 'POST',
+              { timeout: 90_000 },
+            )
+            await page.goto(`${baseUrl}/auth/signin?mode=signup`, { waitUntil: 'domcontentloaded', timeout: 90_000 })
+            const signupTab = page.getByRole('button', { name: /inscription|sign up|registr|registrarse|registrar/i }).first()
+            if (await signupTab.count()) await signupTab.click()
+            await page.locator('#auth-name').fill('AQWELIA Brain QA')
+            await page.locator('#auth-email').fill(email)
+            await page.locator('#auth-password').fill(password)
+            await page.locator('form button[type="submit"]').click()
+            const signupResponse = await signupResponsePromise
+            const signupBody = await signupResponse.json().catch(() => null)
+            assert(signupResponse.status() === 201, 'Account registration must return 201', { status: signupResponse.status(), signupBody })
+
+            let session = null
+            for (let attempt = 0; attempt < 30; attempt += 1) {
+              const response = await context.request.get(`${baseUrl}/api/auth/session`)
+              session = await response.json().catch(() => null)
+              if (session?.user?.email === email) break
+              await page.waitForTimeout(1000)
+            }
+            assert(session?.user?.email === email, 'New account must be automatically authenticated', session)
+            checks.push({ name: 'signup-and-login', ok: true, user: session.user })
+
+            // 2. Création d'un bassin de recette.
+            const poolResponse = await context.request.post(`${baseUrl}/api/pool/profile`, {
+              data: {
+                name: 'Piscine QA Brain',
+                waterBodyType: 'pool',
+                volume: 42,
+                unit: 'm3',
+                shape: 'rectangular',
+                surfaceType: 'liner',
+                treatmentType: 'chlorine',
+                saltSystem: false,
+                filterType: 'sand',
+                region: 'Marseille',
+                sunExposure: 'high',
+                covered: false,
+                usageLevel: 'medium',
+              },
+            })
+            const poolBody = await poolResponse.json().catch(() => null)
+            assert(poolResponse.status() === 201 && poolBody?.profile?.id, 'First pool must be created', { status: poolResponse.status(), poolBody })
+            const poolId = poolBody.profile.id
+            checks.push({ name: 'create-pool', ok: true, poolId })
+
+            // 3. Contrôle de la règle commerciale canonique : formule Découverte = 1 bassin.
+            const secondPoolResponse = await context.request.post(`${baseUrl}/api/pool/profile`, {
+              data: { name: 'Piscine QA interdite', volume: 20, unit: 'm3' },
+            })
+            const secondPoolBody = await secondPoolResponse.json().catch(() => null)
+            assert(
+              secondPoolResponse.status() === 403 && secondPoolBody?.code === 'POOL_LIMIT_REACHED' && Number(secondPoolBody?.maxPools) === 1,
+              'Free plan must block a second pool with maxPools=1',
+              { status: secondPoolResponse.status(), secondPoolBody },
+            )
+            checks.push({ name: 'single-pool-commercial-rule', ok: true, response: secondPoolBody })
+
+            // 4. Analyse d'eau réelle et génération déterministe d'un plan d'action.
+            const waterResponse = await context.request.post(`${baseUrl}/api/pool/water-test`, {
+              data: {
+                poolId,
+                ph: 8.1,
+                freeChlorine: 0.4,
+                totalChlorine: 0.8,
+                alkalinity: 70,
+                calciumHardness: 180,
+                cyanuricAcid: 25,
+                temperature: 28,
+                source: 'manual',
+                note: 'Recette automatique AQWELIA Brain',
+              },
+            })
+            const waterBody = await waterResponse.json().catch(() => null)
+            assert(waterResponse.ok() && waterBody?.test?.id, 'Water test must be stored', { status: waterResponse.status(), waterBody })
+            assert(waterBody?.actionPlan?.id, 'Water test must generate an action plan', waterBody)
+            assert(waterBody?.test?.poolId === poolId, 'Water test must remain attached to selected pool', waterBody?.test)
+            const actionPlan = waterBody.actionPlan
+            let actions = []
+            try { actions = JSON.parse(actionPlan.immediateActions || '[]') } catch {}
+            const firstAction = actions[0] || 'Corriger les paramètres de l’eau'
+            const actionLabel = typeof firstAction === 'string'
+              ? firstAction
+              : firstAction.title || firstAction.label || firstAction.action || JSON.stringify(firstAction)
+            checks.push({ name: 'water-test-and-plan', ok: true, test: waterBody.test, actionPlan })
+
+            // 5. Validation d'une recommandation comme exécutée.
+            const executionResponse = await context.request.post(`${baseUrl}/api/brain/executions`, {
+              data: {
+                poolId,
+                actionPlanId: actionPlan.id,
+                actionIndex: 0,
+                actionLabel: String(actionLabel).slice(0, 500),
+                status: 'completed',
+                actualDosage: 0.25,
+                actualUnit: 'kg',
+                note: 'Action validée pendant la recette staging',
+              },
+            })
+            const executionBody = await executionResponse.json().catch(() => null)
+            assert(executionResponse.ok() && executionBody?.execution?.status === 'completed', 'Recommendation execution must be completed', { status: executionResponse.status(), executionBody })
+            assert(executionBody?.outcome?.status === 'awaiting_retest', 'Completed action must create an awaiting-retest outcome', executionBody)
+            checks.push({ name: 'complete-recommendation', ok: true, execution: executionBody })
+
+            // 6. Timeline Brain et boucle de suivi.
+            const timelineResponse = await context.request.get(`${baseUrl}/api/brain/timeline?poolId=${encodeURIComponent(poolId)}`)
+            const timelineBody = await timelineResponse.json().catch(() => null)
+            assert(timelineResponse.ok(), 'Brain timeline must be readable', { status: timelineResponse.status(), timelineBody })
+            assert(timelineBody?.intelligence?.testsObserved >= 1, 'Brain must observe the water test', timelineBody?.intelligence)
+            assert(timelineBody?.intelligence?.outcomesObserved >= 1, 'Brain must observe the action outcome', timelineBody?.intelligence)
+            assert(timelineBody?.intelligence?.awaitingRetest >= 1, 'Brain must expose the pending retest', timelineBody?.intelligence)
+            checks.push({ name: 'brain-timeline-before-feedback', ok: true, intelligence: timelineBody.intelligence })
+
+            // 7. Feedback utilisateur réel.
+            const feedbackResponse = await context.request.post(`${baseUrl}/api/brain/feedback`, {
+              data: {
+                poolId,
+                contextType: 'recommendation',
+                contextId: actionPlan.id,
+                rating: 5,
+                helpful: true,
+                message: 'Recommandation claire et utile — recette staging.',
+              },
+            })
+            const feedbackBody = await feedbackResponse.json().catch(() => null)
+            assert(feedbackResponse.status() === 201 && feedbackBody?.feedback?.rating === 5, 'Brain feedback must be recorded', { status: feedbackResponse.status(), feedbackBody })
+
+            const timelineAfterResponse = await context.request.get(`${baseUrl}/api/brain/timeline?poolId=${encodeURIComponent(poolId)}`)
+            const timelineAfter = await timelineAfterResponse.json().catch(() => null)
+            assert(timelineAfter?.timeline?.some((item) => item.type === 'feedback'), 'Brain timeline must include feedback', timelineAfter)
+            checks.push({ name: 'brain-feedback', ok: true, feedback: feedbackBody.feedback })
+
+            // 8. Vérification de l'espace Brain dans l'interface authentifiée.
+            await page.evaluate(() => localStorage.setItem('aqwelia_view', 'app'))
+            await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 90_000 })
+            await page.waitForTimeout(4000)
+            const brainButton = page.getByRole('button', { name: /brain/i }).first()
+            assert(await brainButton.count(), 'Authenticated application must expose a Brain navigation button')
+            await brainButton.click()
+            await page.waitForTimeout(2500)
+            const brainText = (await page.locator('main').innerText()).trim()
+            assert(/brain/i.test(brainText) && brainText.length > 100, 'Brain module must render meaningful content', { excerpt: brainText.slice(0, 300) })
+            await page.screenshot({ path: `${outputDir}/brain-authenticated.png`, fullPage: true })
+            checks.push({ name: 'brain-authenticated-ui', ok: true, textLength: brainText.length })
+
+            // 9. Pages publiques majeures en français.
+            const publicRoutes = ['/', '/fonctionnalites', '/diagnostic-ia', '/technologie', '/pro', '/growth']
+            const publicResults = []
+            for (const route of publicRoutes) {
+              const publicContext = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'fr-FR', reducedMotion: 'reduce' })
+              await publicContext.addCookies([{ name: 'NEXT_LOCALE', value: 'fr', url: baseUrl }])
+              const publicPage = await publicContext.newPage()
+              const response = await publicPage.goto(`${baseUrl}${route}`, { waitUntil: 'domcontentloaded', timeout: 90_000 })
+              await publicPage.waitForTimeout(1200)
+              const result = await publicPage.evaluate(() => ({
+                lang: document.documentElement.lang,
+                h1: document.querySelectorAll('h1').length,
+                textLength: document.body.innerText.trim().length,
+                overflow: Math.max(0, document.documentElement.scrollWidth - window.innerWidth),
+                title: document.title,
+              }))
+              publicResults.push({ route, status: response?.status(), ...result })
+              assert(response && response.status() < 400, `Public route ${route} must return success`, publicResults.at(-1))
+              assert(result.h1 === 1 && result.textLength > 100 && result.overflow <= 2, `Public route ${route} must be structurally valid`, publicResults.at(-1))
+              await publicContext.close()
+            }
+            checks.push({ name: 'public-pages-fr', ok: true, results: publicResults })
+
+            // 10. Détection des sept langues sur la page d'accueil.
+            const localeMap = {
+              fr: 'fr-FR', en: 'en-US', es: 'es-ES', pt: 'pt-PT', de: 'de-DE', it: 'it-IT', nl: 'nl-NL',
+            }
+            const localeResults = []
+            for (const [locale, browserLocale] of Object.entries(localeMap)) {
+              const localeContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: browserLocale, reducedMotion: 'reduce' })
+              await localeContext.addCookies([{ name: 'NEXT_LOCALE', value: locale, url: baseUrl }])
+              const localePage = await localeContext.newPage()
+              const response = await localePage.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 90_000 })
+              await localePage.waitForTimeout(800)
+              const result = await localePage.evaluate(() => ({
+                lang: document.documentElement.lang,
+                h1: document.querySelectorAll('h1').length,
+                textLength: document.body.innerText.trim().length,
+                text: document.body.innerText.slice(0, 2000),
+              }))
+              const leakedKey = /\b(?:landing|nav|auth|brain|common|onboarding)\.[a-zA-Z0-9_.-]+\b/.test(result.text)
+              localeResults.push({ locale, status: response?.status(), lang: result.lang, h1: result.h1, textLength: result.textLength, leakedKey })
+              assert(response && response.status() < 400, `Locale ${locale} must load`, localeResults.at(-1))
+              assert(result.lang === locale && result.h1 === 1 && result.textLength > 100 && !leakedKey, `Locale ${locale} must render translated content`, localeResults.at(-1))
+              await localeContext.close()
+            }
+            checks.push({ name: 'seven-locales', ok: true, results: localeResults })
+
+            assert(pageErrors.length === 0, 'Authenticated QA must not produce page errors', pageErrors)
+          } finally {
+            await context.close()
+            await browser.close()
+          }
+
+          const report = {
+            generatedAt: new Date().toISOString(),
+            baseUrl,
+            health: selected.health,
+            email,
+            checks,
+            assertions,
+            consoleErrors: [...new Set(consoleErrors)].slice(0, 50),
+            pageErrors: [...new Set(pageErrors)].slice(0, 50),
+          }
+          await writeFile(`${outputDir}/report.json`, JSON.stringify(report, null, 2))
+          const summary = [
+            '# AQWELIA Brain — recette staging',
+            '',
+            `- Déploiement testé : ${baseUrl}`,
+            `- SHA : ${selected.health.environment.gitCommitSha}`,
+            `- Base : ${selected.health.environment.databaseProvider} / ${selected.health.database.status}`,
+            `- Contrôles réussis : ${checks.length}`,
+            `- Erreurs console non bloquantes : ${report.consoleErrors.length}`,
+            '',
+            ...checks.map((check) => `- ✅ ${check.name}`),
+          ].join('\n')
+          await writeFile(`${outputDir}/summary.md`, summary)
+          console.log(summary)
+          NODE
+          node /tmp/brain-staging-qa.mjs
+
+      - name: Generate PostgreSQL client for cleanup
+        if: always()
+        env:
+          DATABASE_URL: ${{ env.STAGING_DIRECT_URL }}
+        run: bun run db:pg:generate
+
+      - name: Remove isolated QA account and all cascaded data
+        if: always()
+        env:
+          DATABASE_URL: ${{ env.STAGING_DIRECT_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { resolve } from 'node:path'
+          import { pathToFileURL } from 'node:url'
+          const loaded = await import(pathToFileURL(resolve('generated/client-postgresql/index.js')).href)
+          const PrismaClient = loaded.PrismaClient || loaded.default?.PrismaClient
+          const prisma = new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL } } })
+          try {
+            const result = await prisma.user.deleteMany({ where: { email: process.env.QA_EMAIL } })
+            console.log(`Removed ${result.count} isolated QA account(s)`)
+          } finally {
+            await prisma.$disconnect()
+          }
+          NODE
+
+      - name: Upload QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqwelia-brain-staging-functional-qa
+          path: artifacts/brain-staging-functional-qa
+          if-no-files-found: warn
+          retention-days: 14
