@@ -1,19 +1,21 @@
-name: Sync AQWELIA Brain with main
+name: Apply AQWELIA Brain review fixes
 
 on:
-  workflow_dispatch: {}
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: write
 
 concurrency:
-  group: sync-aqwelia-brain
+  group: apply-aqwelia-brain-review-fixes
   cancel-in-progress: false
 
 jobs:
-  sync:
+  apply:
+    if: github.event.issue.pull_request && github.event.issue.number == 20 && github.event.comment.body == '/apply-brain-review-fixes'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - name: Checkout Brain branch
         uses: actions/checkout@v4
@@ -27,60 +29,160 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Merge main with guarded conflict resolution
+      - name: Propagate active pool through diagnostic flows
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin main
+          python3 - <<'PY'
+          from pathlib import Path
 
-          set +e
-          git merge --no-ff --no-commit origin/main
-          merge_status=$?
-          set -e
+          def replace_once(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"Expected one match in {path}, found {count}: {old[:80]!r}")
+              file.write_text(text.replace(old, new, 1))
 
-          conflicts=$(git diff --name-only --diff-filter=U || true)
-          allowed=$'prisma/schema.prisma\nprisma/postgresql/schema.prisma'
+          replace_once(
+              'src/components/aquamind/app-shell.tsx',
+              "          {activeTab === 'diagnostic' && <ModuleDiagnostic />}",
+              "          {activeTab === 'diagnostic' && (\n            <ModuleDiagnostic activePoolId={activePoolId} />\n          )}",
+          )
+          replace_once(
+              'src/components/aquamind/app-shell.tsx',
+              "          {activeTab === 'water' && <ModuleWaterTest onNavigate={navigate} />}",
+              "          {activeTab === 'water' && (\n            <ModuleWaterTest onNavigate={navigate} activePoolId={activePoolId} />\n          )}",
+          )
 
-          if [ -n "$conflicts" ]; then
-            unexpected=$(comm -23 <(printf '%s\n' "$conflicts" | sort) <(printf '%s\n' "$allowed" | sort) || true)
-            if [ -n "$unexpected" ]; then
-              echo "Unexpected conflicts:" >&2
-              echo "$unexpected" >&2
-              exit 1
-            fi
+          replace_once(
+              'src/components/aquamind/module-water-test.tsx',
+              "interface Props {\n  onNavigate: (tab: TabId) => void\n}",
+              "interface Props {\n  onNavigate: (tab: TabId) => void\n  activePoolId?: string | null\n}",
+          )
+          replace_once(
+              'src/components/aquamind/module-water-test.tsx',
+              "export function ModuleWaterTest({ onNavigate }: Props) {",
+              "export function ModuleWaterTest({ onNavigate, activePoolId }: Props) {",
+          )
+          replace_once(
+              'src/components/aquamind/module-water-test.tsx',
+              "      const { data, stale } = await offlineApi.waterTests()",
+              "      const { data, stale } = await offlineApi.waterTests(activePoolId)",
+          )
+          replace_once(
+              'src/components/aquamind/module-water-test.tsx',
+              "  }, [])\n\n  useEffect(() => {\n    loadHistory()",
+              "  }, [activePoolId])\n\n  useEffect(() => {\n    loadHistory()",
+          )
+          replace_once(
+              'src/components/aquamind/module-water-test.tsx',
+              "    const body: Record<string, unknown> = { ph, source, note: note.trim() || undefined }",
+              "    const body: Record<string, unknown> = {\n      ph,\n      source,\n      note: note.trim() || undefined,\n      ...(activePoolId ? { poolId: activePoolId } : {}),\n    }",
+          )
 
-            for schema in prisma/schema.prisma prisma/postgresql/schema.prisma; do
-              if git diff --name-only --diff-filter=U | grep -Fxq "$schema"; then
-                git checkout --ours -- "$schema"
+          replace_once(
+              'src/components/aquamind/module-diagnostic.tsx',
+              "export function ModuleDiagnostic() {",
+              "interface ModuleDiagnosticProps {\n  activePoolId?: string | null\n}\n\nexport function ModuleDiagnostic({ activePoolId }: ModuleDiagnosticProps) {",
+          )
+          replace_once(
+              'src/components/aquamind/module-diagnostic.tsx',
+              "      const { data } = await offlineApi.photoDiagnostic()",
+              "      const { data } = await offlineApi.photoDiagnostic(activePoolId)",
+          )
+          replace_once(
+              'src/components/aquamind/module-diagnostic.tsx',
+              "  }, [])\n\n  useEffect(() => {\n    loadHistory()",
+              "  }, [activePoolId])\n\n  useEffect(() => {\n    loadHistory()",
+          )
+          replace_once(
+              'src/components/aquamind/module-diagnostic.tsx',
+              "      const data = await api.post<{ diagnostic: DiagnosticResult }>('/api/pool/photo-diagnostic', { image, typeHint })",
+              "      const data = await api.post<{ diagnostic: DiagnosticResult }>(\n        '/api/pool/photo-diagnostic',\n        { image, typeHint, poolId: activePoolId || undefined },\n      )",
+          )
+          replace_once(
+              'src/components/aquamind/module-diagnostic.tsx',
+              "        <DiagnosticActionPlan\n          diagnostic={result}",
+              "        <DiagnosticActionPlan\n          diagnostic={result}\n          activePoolId={activePoolId}",
+          )
+          replace_once(
+              'src/components/aquamind/module-diagnostic.tsx',
+              "                { image: newImage, typeHint },",
+              "                { image: newImage, typeHint, poolId: activePoolId || undefined },",
+          )
+          replace_once(
+              'src/components/aquamind/module-diagnostic.tsx',
+              "          const body: Record<string, unknown> = { ph: Number(values.ph), source: 'strip_photo' }",
+              "          const body: Record<string, unknown> = {\n            ph: Number(values.ph),\n            source: 'strip_photo',\n            ...(activePoolId ? { poolId: activePoolId } : {}),\n          }",
+          )
 
-                if ! grep -q '^  consentAt' "$schema"; then
-                  if ! grep -q '^  consentSource  String?$' "$schema"; then
-                    echo "Cannot locate Lead.consentSource in $schema" >&2
-                    exit 1
-                  fi
-                  sed -i '/^  consentSource  String?$/a\  consentAt      DateTime?' "$schema"
-                fi
+          replace_once(
+              'src/components/aquamind/diagnostic-action-plan.tsx',
+              "interface DiagnosticActionPlanProps {\n  diagnostic: DiagnosticResult\n  onRecheck?: (newImage: string) => Promise<DiagnosticResult | null>\n}",
+              "interface DiagnosticActionPlanProps {\n  diagnostic: DiagnosticResult\n  activePoolId?: string | null\n  onRecheck?: (newImage: string) => Promise<DiagnosticResult | null>\n}",
+          )
+          replace_once(
+              'src/components/aquamind/diagnostic-action-plan.tsx',
+              "export function DiagnosticActionPlan({\n  diagnostic,\n  onRecheck,\n}: DiagnosticActionPlanProps) {",
+              "export function DiagnosticActionPlan({\n  diagnostic,\n  activePoolId,\n  onRecheck,\n}: DiagnosticActionPlanProps) {",
+          )
+          replace_once(
+              'src/components/aquamind/diagnostic-action-plan.tsx',
+              "      .get<{ profile: { volume?: number } | null }>('/api/pool/profile')",
+              "      .get<{ profile: { volume?: number } | null }>(\n        `/api/pool/profile${activePoolId ? `?id=${encodeURIComponent(activePoolId)}` : ''}`,\n      )",
+          )
+          replace_once(
+              'src/components/aquamind/diagnostic-action-plan.tsx',
+              "      .get<{ tests: WaterTestRow[] }>('/api/pool/water-test')",
+              "      .get<{ tests: WaterTestRow[] }>(\n        `/api/pool/water-test${activePoolId ? `?poolId=${encodeURIComponent(activePoolId)}` : ''}`,\n      )",
+          )
+          replace_once(
+              'src/components/aquamind/diagnostic-action-plan.tsx',
+              "  }, [])\n\n  // Regenerate steps when diagnostic or poolVolume changes",
+              "  }, [activePoolId])\n\n  // Regenerate steps when diagnostic or poolVolume changes",
+          )
+          replace_once(
+              'src/components/aquamind/diagnostic-action-plan.tsx',
+              "          await api.post('/api/pool/water-test', {\n          ...payload,",
+              "          await api.post('/api/pool/water-test', {\n          ...payload,\n          ...(activePoolId ? { poolId: activePoolId } : {}),",
+          )
+          replace_once(
+              'src/components/aquamind/diagnostic-action-plan.tsx',
+              "    [stepForms, latestWaterTest, markStepDone, t],",
+              "    [stepForms, latestWaterTest, markStepDone, activePoolId, t],",
+          )
 
-                git add "$schema"
-              fi
-            done
-          elif [ "$merge_status" -ne 0 ]; then
-            echo "Merge failed without resolvable conflicts" >&2
-            exit 1
-          fi
+          assertions = {
+              'src/components/aquamind/app-shell.tsx': [
+                  '<ModuleDiagnostic activePoolId={activePoolId} />',
+                  '<ModuleWaterTest onNavigate={navigate} activePoolId={activePoolId} />',
+              ],
+              'src/components/aquamind/module-water-test.tsx': [
+                  'offlineApi.waterTests(activePoolId)',
+                  'poolId: activePoolId',
+              ],
+              'src/components/aquamind/module-diagnostic.tsx': [
+                  'offlineApi.photoDiagnostic(activePoolId)',
+                  'activePoolId={activePoolId}',
+                  'poolId: activePoolId || undefined',
+              ],
+              'src/components/aquamind/diagnostic-action-plan.tsx': [
+                  '?poolId=${encodeURIComponent(activePoolId)}',
+                  '...(activePoolId ? { poolId: activePoolId } : {})',
+              ],
+          }
+          for path, needles in assertions.items():
+              text = Path(path).read_text()
+              for needle in needles:
+                  if needle not in text:
+                      raise SystemExit(f'Missing expected pool propagation in {path}: {needle}')
+          PY
 
-          rm -f package-lock.json docs/.brain-sync-trigger
-          rm -f .github/workflows/brain-self-sync.yml
-          rm -f .github/workflows/sync-aqwelia-brain.yml
-          git add -A
-
-          remaining=$(git diff --name-only --diff-filter=U || true)
-          if [ -n "$remaining" ]; then
-            echo "Unresolved conflicts remain:" >&2
-            echo "$remaining" >&2
-            exit 1
-          fi
-
-          git status --short
-          git commit -m "chore(brain): sync foundation with current main"
+          git add src/components/aquamind/app-shell.tsx \
+            src/components/aquamind/module-water-test.tsx \
+            src/components/aquamind/module-diagnostic.tsx \
+            src/components/aquamind/diagnostic-action-plan.tsx
+          git diff --cached --check
+          git commit -m "fix(pool): bind Brain diagnostics to active pool"
           git push origin HEAD:feat/aqwelia-brain-foundation
