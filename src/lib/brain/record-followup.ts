@@ -41,16 +41,17 @@ export async function recordAutomaticFollowup(
   }
 
   if (!pending) return null
+  const selected = pending
 
   const result = assessRecommendationOutcome(
-    pending.clearWaterIndexBefore,
+    selected.clearWaterIndexBefore,
     test.clearWaterIndex,
   )
 
   return db.$transaction(async (tx) => {
     const claimed = await tx.recommendationOutcome.updateMany({
       where: {
-        id: pending.id,
+        id: selected.id,
         status: 'awaiting_retest',
         followupWaterTestId: null,
       },
@@ -66,20 +67,20 @@ export async function recordAutomaticFollowup(
 
     await tx.brainEventOutbox.updateMany({
       where: {
-        idempotencyKey: `retest:${pending.actionPlanId}`,
+        idempotencyKey: `retest:${selected.actionPlanId}`,
         status: 'pending',
       },
       data: { status: 'processed', processedAt: now },
     })
 
     await tx.brainEventOutbox.upsert({
-      where: { idempotencyKey: `outcome:${pending.id}:${test.id}` },
+      where: { idempotencyKey: `outcome:${selected.id}:${test.id}` },
       update: {},
       create: {
-        idempotencyKey: `outcome:${pending.id}:${test.id}`,
+        idempotencyKey: `outcome:${selected.id}:${test.id}`,
         type: 'outcome_measured',
         aggregateType: 'recommendation_outcome',
-        aggregateId: pending.id,
+        aggregateId: selected.id,
         payload: JSON.stringify({
           userId,
           poolId,
@@ -89,6 +90,8 @@ export async function recordAutomaticFollowup(
       },
     })
 
-    return tx.recommendationOutcome.findUnique({ where: { id: pending.id } })
+    return tx.recommendationOutcome.findUnique({
+      where: { id: selected.id },
+    })
   })
 }
