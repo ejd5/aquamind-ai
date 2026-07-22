@@ -1,8 +1,7 @@
 name: Sync AQWELIA Brain with main
 
 on:
-  issue_comment:
-    types: [created]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -13,7 +12,6 @@ concurrency:
 
 jobs:
   sync:
-    if: github.event.issue.pull_request && github.event.issue.number == 20 && github.event.comment.body == '/sync-brain'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -75,11 +73,9 @@ PY
             exit 1
           fi
 
-          if [ -f package-lock.json ]; then
-            git rm -f package-lock.json
-          fi
-
-          rm -f docs/.brain-sync-trigger
+          rm -f package-lock.json docs/.brain-sync-trigger
+          rm -f .github/workflows/brain-self-sync.yml
+          rm -f .github/workflows/sync-aqwelia-brain.yml
           git add -A
 
           remaining=$(git diff --name-only --diff-filter=U || true)
