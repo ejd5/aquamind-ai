@@ -1,0 +1,398 @@
+/*
+ * AQWELIA — Figma 2026 visual foundations
+ *
+ * This layer is intentionally loaded after globals.css. It adds the semantic
+ * tokens and reusable visual treatments validated in the Figma master file
+ * without replacing the existing shadcn/ui contract.
+ */
+
+:root {
+  /* Typography */
+  --aq-font-display: var(--font-playfair-display), Georgia, "Times New Roman", serif;
+  --aq-font-body: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* Brand palette */
+  --aq-lagoon: #18cfc3;
+  --aq-aqua: #72e8df;
+  --aq-deep-teal: #073c45;
+  --aq-night: #061f2b;
+  --aq-mist: #eafbf8;
+  --aq-silver: #a8bdc1;
+  --aq-ivory: #fafcfb;
+  --aq-champagne: #c6a56b;
+
+  /* Semantic surfaces */
+  --aq-page: #eafbf8;
+  --aq-surface: rgba(250, 252, 251, 0.94);
+  --aq-surface-strong: #fafcfb;
+  --aq-surface-dark: #061f2b;
+  --aq-text: #073c45;
+  --aq-text-muted: #5f777d;
+  --aq-text-on-dark: #f7fbfa;
+  --aq-border: rgba(7, 60, 69, 0.16);
+  --aq-border-strong: rgba(7, 60, 69, 0.28);
+  --aq-focus: rgba(24, 207, 195, 0.42);
+
+  /* 4 px spacing grid */
+  --aq-space-1: 0.25rem;
+  --aq-space-2: 0.5rem;
+  --aq-space-3: 0.75rem;
+  --aq-space-4: 1rem;
+  --aq-space-5: 1.25rem;
+  --aq-space-6: 1.5rem;
+  --aq-space-8: 2rem;
+  --aq-space-10: 2.5rem;
+  --aq-space-12: 3rem;
+  --aq-space-16: 4rem;
+  --aq-space-20: 5rem;
+  --aq-space-24: 6rem;
+
+  /* Radius scale */
+  --aq-radius-control: 0.75rem;
+  --aq-radius-card: 1.25rem;
+  --aq-radius-panel: 1.75rem;
+  --aq-radius-hero: 2rem;
+  --aq-radius-pill: 999px;
+
+  /* Premium elevation */
+  --aq-shadow-soft: 0 8px 30px rgba(6, 31, 43, 0.08);
+  --aq-shadow-card: 0 18px 55px rgba(6, 31, 43, 0.12);
+  --aq-shadow-floating: 0 28px 80px rgba(6, 31, 43, 0.18);
+  --aq-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+
+  /* Image treatments */
+  --aq-image-overlay-light: linear-gradient(
+    90deg,
+    rgba(234, 251, 248, 0.98) 0%,
+    rgba(234, 251, 248, 0.88) 46%,
+    rgba(234, 251, 248, 0.28) 76%,
+    rgba(234, 251, 248, 0.06) 100%
+  );
+  --aq-image-overlay-dark: linear-gradient(
+    90deg,
+    rgba(6, 31, 43, 0.96) 0%,
+    rgba(6, 31, 43, 0.78) 52%,
+    rgba(6, 31, 43, 0.28) 100%
+  );
+}
+
+.dark {
+  --aq-page: #071b24;
+  --aq-surface: rgba(15, 42, 54, 0.9);
+  --aq-surface-strong: #0f2a36;
+  --aq-surface-dark: #03131a;
+  --aq-text: #f1faf8;
+  --aq-text-muted: #a8bdc1;
+  --aq-text-on-dark: #f7fbfa;
+  --aq-border: rgba(143, 238, 222, 0.15);
+  --aq-border-strong: rgba(143, 238, 222, 0.28);
+  --aq-focus: rgba(46, 224, 214, 0.5);
+  --aq-lagoon: #2ee0d6;
+  --aq-aqua: #8feede;
+  --aq-champagne: #d8b97a;
+}
+
+/* Typography primitives */
+.aq-display,
+.aq-heading {
+  font-family: var(--aq-font-display);
+  color: var(--aq-text);
+  text-wrap: balance;
+}
+
+.aq-display {
+  font-size: clamp(3rem, 7vw, 6.25rem);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 0.96;
+}
+
+.aq-heading {
+  font-size: clamp(2rem, 4.5vw, 4rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+}
+
+.aq-body {
+  font-family: var(--aq-font-body);
+  color: var(--aq-text-muted);
+  line-height: 1.65;
+}
+
+.aq-eyebrow {
+  font-family: var(--aq-font-body);
+  color: var(--aq-champagne);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* Page and surface primitives */
+.aq-page-shell {
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(114, 232, 223, 0.18), transparent 30rem),
+    radial-gradient(circle at 88% 18%, rgba(198, 165, 107, 0.12), transparent 24rem),
+    var(--aq-page);
+  color: var(--aq-text);
+}
+
+.aq-surface {
+  border: 1px solid var(--aq-border);
+  border-radius: var(--aq-radius-card);
+  background: var(--aq-surface);
+  box-shadow: var(--aq-shadow-soft), var(--aq-shadow-inset);
+  backdrop-filter: blur(18px) saturate(130%);
+}
+
+.aq-surface-strong {
+  border: 1px solid var(--aq-border);
+  border-radius: var(--aq-radius-panel);
+  background: var(--aq-surface-strong);
+  box-shadow: var(--aq-shadow-card);
+}
+
+.aq-surface-dark {
+  border: 1px solid rgba(114, 232, 223, 0.18);
+  border-radius: var(--aq-radius-panel);
+  background: var(--aq-surface-dark);
+  color: var(--aq-text-on-dark);
+  box-shadow: var(--aq-shadow-card);
+}
+
+/* Full-bleed media system: diffuse FILL + complete FIT + readability veil. */
+.aq-media-shell {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: inherit;
+  background: var(--aq-night);
+}
+
+.aq-media-fill,
+.aq-media-fit,
+.aq-media-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.aq-media-fill {
+  z-index: -3;
+  object-fit: cover;
+  opacity: 0.34;
+  filter: blur(18px) saturate(0.9);
+  transform: scale(1.08);
+}
+
+.aq-media-fit {
+  z-index: -2;
+  object-fit: contain;
+  object-position: center;
+}
+
+.aq-media-overlay {
+  z-index: -1;
+  background: var(--aq-image-overlay-light);
+  pointer-events: none;
+}
+
+.aq-media-overlay-dark {
+  background: var(--aq-image-overlay-dark);
+}
+
+/* Interaction and accessibility */
+.aq-interactive {
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.aq-interactive:hover {
+  transform: translateY(-2px);
+  border-color: var(--aq-border-strong);
+  box-shadow: var(--aq-shadow-card);
+}
+
+.aq-focusable:focus-visible {
+  outline: 3px solid var(--aq-focus);
+  outline-offset: 3px;
+}
+
+.aq-touch-target {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
+/* Dashboard and application cockpit — visual-only overrides.
+ * The selectors deliberately target the current app-shell structure so the
+ * API, feature gates and data rendering remain untouched.
+ */
+aside.custom-scroll {
+  margin-block: 1rem;
+  height: calc(100vh - 10rem);
+  border: 1px solid rgba(114, 232, 223, 0.14);
+  border-radius: var(--aq-radius-panel);
+  background:
+    radial-gradient(circle at 18% 8%, rgba(24, 207, 195, 0.14), transparent 11rem),
+    var(--aq-night);
+  padding: 1rem;
+  color: var(--aq-text-on-dark);
+  box-shadow: var(--aq-shadow-card);
+}
+
+aside.custom-scroll nav button {
+  min-height: 2.75rem;
+  border-radius: var(--aq-radius-control);
+  color: rgba(247, 251, 250, 0.68);
+}
+
+aside.custom-scroll nav button:hover {
+  background: rgba(114, 232, 223, 0.09);
+  color: var(--aq-text-on-dark);
+}
+
+aside.custom-scroll nav button[class*="from-primary/15"] {
+  background: var(--aq-lagoon);
+  color: var(--aq-night);
+  box-shadow: 0 10px 25px rgba(24, 207, 195, 0.2);
+}
+
+aside.custom-scroll nav button > span:first-of-type {
+  border-radius: 0.65rem;
+}
+
+aside.custom-scroll + main {
+  position: relative;
+  margin-block: 1rem;
+  margin-left: 1rem;
+  border: 1px solid var(--aq-border);
+  border-radius: var(--aq-radius-panel);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(114, 232, 223, 0.16), transparent 28rem),
+    radial-gradient(circle at 92% 16%, rgba(198, 165, 107, 0.1), transparent 22rem),
+    rgba(234, 251, 248, 0.7);
+  box-shadow: var(--aq-shadow-soft);
+}
+
+.dark aside.custom-scroll + main {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(46, 224, 214, 0.12), transparent 28rem),
+    var(--aq-page);
+}
+
+aside.custom-scroll + main > .space-y-5 {
+  max-width: 76rem;
+  margin-inline: auto;
+}
+
+aside.custom-scroll + main > .space-y-5 > div:first-child h1 {
+  font-family: var(--aq-font-display);
+  color: var(--aq-deep-teal);
+  font-size: clamp(2.1rem, 4vw, 3.5rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+}
+
+.dark aside.custom-scroll + main > .space-y-5 > div:first-child h1 {
+  color: var(--aq-text);
+}
+
+aside.custom-scroll + main .section-label {
+  color: var(--aq-champagne);
+  font-weight: 700;
+}
+
+aside.custom-scroll + main .glass-card {
+  border: 1px solid var(--aq-border);
+  border-radius: var(--aq-radius-card);
+  background: var(--aq-surface);
+  box-shadow: var(--aq-shadow-soft), var(--aq-shadow-inset);
+  backdrop-filter: blur(20px) saturate(125%);
+}
+
+aside.custom-scroll + main [data-slot="card"] {
+  border-radius: var(--aq-radius-card);
+}
+
+aside.custom-scroll + main [data-slot="card-title"] {
+  font-family: var(--aq-font-display);
+  letter-spacing: -0.025em;
+}
+
+aside.custom-scroll + main button {
+  min-height: 2.75rem;
+}
+
+aside.custom-scroll + main .grid > button,
+aside.custom-scroll + main .glass-card {
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+aside.custom-scroll + main .grid > button:hover,
+aside.custom-scroll + main .glass-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--aq-border-strong);
+  box-shadow: var(--aq-shadow-card);
+}
+
+/* Mobile application frame */
+@media (max-width: 767px) {
+  aside.custom-scroll + main {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  nav.fixed.inset-x-0.bottom-0 {
+    border-color: var(--aq-border);
+    background: rgba(250, 252, 251, 0.94);
+    box-shadow: 0 -14px 35px rgba(6, 31, 43, 0.1);
+  }
+
+  .dark nav.fixed.inset-x-0.bottom-0 {
+    background: rgba(6, 31, 43, 0.94);
+  }
+
+  nav.fixed.inset-x-0.bottom-0 button {
+    min-height: 2.75rem;
+  }
+
+  .aq-display {
+    font-size: clamp(2.75rem, 13vw, 4.6rem);
+    line-height: 0.98;
+  }
+
+  .aq-heading {
+    font-size: clamp(2rem, 9vw, 3.25rem);
+  }
+
+  .aq-media-fit {
+    object-position: center top;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aq-interactive,
+  aside.custom-scroll + main .grid > button,
+  aside.custom-scroll + main .glass-card {
+    transition: none;
+  }
+
+  .aq-interactive:hover,
+  aside.custom-scroll + main .grid > button:hover,
+  aside.custom-scroll + main .glass-card:hover {
+    transform: none;
+  }
+}

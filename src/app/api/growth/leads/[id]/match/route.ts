@@ -15,25 +15,12 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { getGrowthOrganization } from '@/lib/growth/access'
 import { matching, type MatchingInput } from '@/lib/growth/agents'
 
 export const runtime = 'nodejs'
 
 type Ctx = { params: Promise<{ id: string }> }
-
-async function getUserOrganization(userId: string) {
-  const owned = await db.organization.findFirst({
-    where: { ownerId: userId },
-    orderBy: { createdAt: 'asc' },
-  })
-  if (owned) return owned
-  const membership = await db.organizationMember.findFirst({
-    where: { userId, status: 'active' },
-    orderBy: { createdAt: 'asc' },
-    include: { organization: true },
-  })
-  return membership?.organization ?? null
-}
 
 export async function POST(req: NextRequest, ctx: Ctx) {
   const locale = pickLocale(req)
@@ -44,7 +31,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   }
 
   const { id } = await ctx.params
-  const org = await getUserOrganization(session.user.id)
+  const org = await getGrowthOrganization(session.user.id)
   if (!org) return NextResponse.json({ error: 'Organisation requise' }, { status: 409 })
 
   const lead = await db.lead.findFirst({
@@ -77,11 +64,13 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     : []
 
   // Auto-discover organizations in the same country if none provided.
+  // Exclude the caller's own organization to prevent self-matching.
   if (organizations.length === 0) {
     const candidates = await db.organization.findMany({
       where: {
         status: 'active',
         country: lead.country,
+        id: { not: org.id },
       },
       take: 20,
       orderBy: { createdAt: 'asc' },

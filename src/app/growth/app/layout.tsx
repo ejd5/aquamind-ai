@@ -29,7 +29,7 @@ import {
 } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import { authOptions } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { getGrowthOrganization } from '@/lib/growth/access'
 import { Footer } from '@/components/aquamind/footer'
 
 export const dynamic = 'force-dynamic'
@@ -49,20 +49,8 @@ export default async function GrowthAppLayout({
   // Resolve user's primary organization (owned or first membership).
   let orgName = (session.user as any).name ?? session.user.email ?? ''
   try {
-    const owned = await db.organization.findFirst({
-      where: { ownerId: session.user.id },
-      orderBy: { createdAt: 'asc' },
-    })
-    if (owned) {
-      orgName = owned.name
-    } else {
-      const membership = await db.organizationMember.findFirst({
-        where: { userId: session.user.id, status: 'active' },
-        orderBy: { createdAt: 'asc' },
-        include: { organization: true },
-      })
-      if (membership?.organization) orgName = membership.organization.name
-    }
+    const org = await getGrowthOrganization(session.user.id, { id: true, name: true })
+    if (org) orgName = org.name
   } catch (err) {
     // ignore — keep session-based fallback
   }

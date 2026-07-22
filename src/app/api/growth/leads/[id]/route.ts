@@ -16,6 +16,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
+import { getGrowthOrganization } from '@/lib/growth/access'
 import { toolWorkspaceText } from '@/i18n/locales/tool-workspaces'
 
 export const runtime = 'nodejs'
@@ -34,20 +35,6 @@ const VALID_STATUSES = [
   'LOST',
 ]
 
-async function getUserOrganization(userId: string) {
-  const owned = await db.organization.findFirst({
-    where: { ownerId: userId },
-    orderBy: { createdAt: 'asc' },
-  })
-  if (owned) return owned
-  const membership = await db.organizationMember.findFirst({
-    where: { userId, status: 'active' },
-    orderBy: { createdAt: 'asc' },
-    include: { organization: true },
-  })
-  return membership?.organization ?? null
-}
-
 export async function GET(req: NextRequest, ctx: Ctx) {
   const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
@@ -57,7 +44,7 @@ export async function GET(req: NextRequest, ctx: Ctx) {
   }
 
   const { id } = await ctx.params
-  const org = await getUserOrganization(session.user.id)
+  const org = await getGrowthOrganization(session.user.id)
   if (!org) {
     const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
     return NextResponse.json({ error: msg }, { status: 404 })
@@ -96,7 +83,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   }
 
   const { id } = await ctx.params
-  const org = await getUserOrganization(session.user.id)
+  const org = await getGrowthOrganization(session.user.id)
   if (!org) {
     const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
     return NextResponse.json({ error: msg }, { status: 404 })
@@ -186,6 +173,51 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     return NextResponse.json({ lead })
   } catch (err) {
     console.error('[growth/leads/[id]] PATCH error:', err)
+    const msg = await translate(
+      locale,
+      'growth.errors.generic',
+      'Une erreur est survenue.'
+    )
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: NextRequest, ctx: Ctx) {
+  const locale = pickLocale(req)
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
+    return NextResponse.json({ error: msg }, { status: 401 })
+  }
+
+  const { id } = await ctx.params
+  const org = await getGrowthOrganization(session.user.id)
+  if (!org) {
+    const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
+    return NextResponse.json({ error: msg }, { status: 404 })
+  }
+
+  const lead = await db.lead.findFirst({
+    where: { id, organizationId: org.id },
+    select: { id: true },
+  })
+  if (!lead) {
+    const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
+    return NextResponse.json({ error: msg }, { status: 404 })
+  }
+
+  try {
+    await db.$transaction([
+      db.leadEvent.deleteMany({ where: { leadId: id } }),
+      db.appointment.deleteMany({ where: { leadId: id } }),
+      db.quote.deleteMany({ where: { leadId: id } }),
+      db.commission.deleteMany({ where: { leadId: id } }),
+      db.agentRun.deleteMany({ where: { leadId: id } }),
+      db.lead.delete({ where: { id } }),
+    ])
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    console.error('[growth/leads/[id]] DELETE error:', err)
     const msg = await translate(
       locale,
       'growth.errors.generic',

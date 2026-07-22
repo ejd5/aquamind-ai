@@ -1,0 +1,75 @@
+name: Preview Visual QA
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-visual-qa-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual-qa:
+    name: Capture AQWELIA preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PREVIEW_URL: https://aqwelia-staging-git-feat-figma-design-fou-0bc6f3-ejd5s-projects.vercel.app
+      QA_OUTPUT_DIR: artifacts/visual-qa
+      EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.4'
+
+      - name: Install repository dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright runner
+        run: bun add --dev --no-save playwright@1.54.2
+
+      - name: Install Chromium
+        run: bunx playwright install --with-deps chromium
+
+      - name: Wait for the exact Vercel preview commit
+        shell: bash
+        run: |
+          for attempt in $(seq 1 40); do
+            status=$(curl -L -sS -o /tmp/preview-health.json -w "%{http_code}" "$PREVIEW_URL/api/preview-health" || true)
+            deployed_sha=$(jq -r '.environment.gitCommitSha // empty' /tmp/preview-health.json 2>/dev/null || true)
+            if { [ "$status" = "200" ] || [ "$status" = "503" ]; } && [ "$deployed_sha" = "$EXPECTED_SHA" ]; then
+              echo "Exact preview commit detected: $deployed_sha (health status $status)"
+              cat /tmp/preview-health.json || true
+              exit 0
+            fi
+            echo "Waiting for commit $EXPECTED_SHA (attempt $attempt, status $status, deployed $deployed_sha)"
+            sleep 15
+          done
+          echo "The exact preview commit was not detected in time" >&2
+          cat /tmp/preview-health.json || true
+          exit 1
+
+      - name: Probe preview runtime
+        run: bun scripts/probe-preview-runtime.mjs
+
+      - name: Capture preview and run visual checks
+        run: bun scripts/visual-qa-preview.mjs
+
+      - name: Upload visual QA artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqwelia-preview-visual-qa
+          path: artifacts/visual-qa
+          if-no-files-found: error
+          retention-days: 14

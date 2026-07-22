@@ -1031,6 +1031,7 @@ model Lead {
   assignedTo     String?
   consent        Boolean  @default(false)
   consentSource  String?
+  consentAt      DateTime?
   notes          String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
