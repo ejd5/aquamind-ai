@@ -54,7 +54,12 @@ jobs:
             capture {sub(/^          /, ""); print}
           ' .github/workflows/brain-staging-functional-qa.yml > /tmp/brain-staging-qa.mjs
           test -s /tmp/brain-staging-qa.mjs
-          node /tmp/brain-staging-qa.mjs
+          set +e
+          node /tmp/brain-staging-qa.mjs 2>&1 | tee "$QA_OUTPUT_DIR/execution.log"
+          status=${PIPESTATUS[0]}
+          set -e
+          echo "$status" > "$QA_OUTPUT_DIR/exit-code.txt"
+          exit "$status"
 
       - name: Generate PostgreSQL client for cleanup
         if: always()
