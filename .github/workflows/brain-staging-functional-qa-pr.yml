@@ -18,10 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      STABLE_URL: https://aqwelia-staging-git-fix-brain-technologie-h1-ejd5s-projects.vercel.app
-      FALLBACK_URL: https://aqwelia-staging-git-fix-brain-technologie-h1-ejd5s-projects.vercel.app
-      EXPECTED_MAIN_SHA: 7e8a6a2a7c726c4bbb932a7b47f51ddd52beaffc
-      EXPECTED_EQUIVALENT_SHA: 7e8a6a2a7c726c4bbb932a7b47f51ddd52beaffc
+      STABLE_URL: https://aqwelia-staging.vercel.app
+      FALLBACK_URL: https://aqwelia-staging.vercel.app
+      EXPECTED_MAIN_SHA: 1d126376910eda09feb424ed51aca2f3ce815553
+      EXPECTED_EQUIVALENT_SHA: 1d126376910eda09feb424ed51aca2f3ce815553
       QA_EMAIL: aqwelia-brain-qa-pr-${{ github.run_id }}@example.com
       QA_PASSWORD: Aqwelia-QA-2026!
       QA_OUTPUT_DIR: artifacts/brain-staging-functional-qa
