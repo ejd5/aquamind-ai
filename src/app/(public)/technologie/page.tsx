@@ -1,1 +1,13 @@
-import type{Metadata}from'next';import{BrainTechnologySection}from'@/components/brain/brain-technology-section';export const metadata:Metadata={title:'AQWELIA Brain',description:'AQWELIA Brain connects pool history, confirmed actions and follow-up checks with human governance.',alternates:{canonical:'/technologie'}};export default function Page(){return <BrainTechnologySection variant="home"/>}
+import type { Metadata } from 'next'
+import { BrainTechnologySection } from '@/components/brain/brain-technology-section'
+
+export const metadata: Metadata = {
+  title: 'AQWELIA Brain',
+  description:
+    'AQWELIA Brain connects pool history, confirmed actions and follow-up checks with human governance.',
+  alternates: { canonical: '/technologie' },
+}
+
+export default function Page() {
+  return <BrainTechnologySection variant="home" headingLevel="h1" />
+}
