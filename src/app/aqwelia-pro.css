@@ -1,0 +1,175 @@
+/* AQWELIA Pro — Figma cockpit styling
+ * Scoped by .aq-pro-app. No client, planning or intervention logic changes.
+ */
+
+.aq-pro-app {
+  background:
+    radial-gradient(circle at 75% 0%, rgba(198, 165, 107, 0.13), transparent 25rem),
+    radial-gradient(circle at 22% 12%, rgba(114, 232, 223, 0.14), transparent 30rem),
+    var(--aq-page);
+  color: var(--aq-text);
+}
+
+.aq-pro-header {
+  border-color: var(--aq-border);
+  background: rgba(250, 252, 251, 0.88);
+  box-shadow: 0 10px 35px rgba(6, 31, 43, 0.07);
+}
+
+.dark .aq-pro-header {
+  background: rgba(6, 31, 43, 0.9);
+}
+
+.aq-pro-header img {
+  max-width: 8.5rem;
+}
+
+.aq-pro-sidebar {
+  top: 5rem;
+  height: calc(100vh - 6rem);
+  margin-block: 1rem;
+  border: 1px solid rgba(114, 232, 223, 0.14);
+  border-radius: var(--aq-radius-panel);
+  background:
+    radial-gradient(circle at 18% 8%, rgba(198, 165, 107, 0.13), transparent 12rem),
+    var(--aq-night);
+  padding: 1rem;
+  box-shadow: var(--aq-shadow-card);
+}
+
+.aq-pro-sidebar nav a {
+  color: rgba(247, 251, 250, 0.68);
+}
+
+.aq-pro-sidebar nav a:hover {
+  background: rgba(24, 207, 195, 0.11);
+  color: var(--aq-text-on-dark);
+}
+
+.aq-pro-sidebar nav a > span:first-of-type {
+  background: rgba(114, 232, 223, 0.08);
+  color: var(--aq-aqua);
+}
+
+.aq-pro-sidebar > div:last-child {
+  border-color: rgba(198, 165, 107, 0.36);
+  background: rgba(198, 165, 107, 0.09);
+}
+
+.aq-pro-main {
+  margin-block: 1rem;
+  margin-left: 1rem;
+  min-height: calc(100vh - 7rem);
+  border: 1px solid var(--aq-border);
+  border-radius: var(--aq-radius-panel);
+  background: rgba(234, 251, 248, 0.74);
+  box-shadow: var(--aq-shadow-soft);
+}
+
+.dark .aq-pro-main {
+  background: rgba(7, 27, 36, 0.84);
+}
+
+.aq-pro-main > .space-y-6 > div:first-child h1 {
+  font-family: var(--aq-font-display);
+  color: var(--aq-deep-teal);
+  font-size: clamp(2.25rem, 4vw, 3.75rem);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.dark .aq-pro-main > .space-y-6 > div:first-child h1 {
+  color: var(--aq-text);
+}
+
+.aq-pro-main .section-label {
+  color: var(--aq-champagne);
+  font-weight: 700;
+}
+
+.aq-pro-main > .space-y-6 > .grid.grid-cols-2 > div {
+  min-height: 10rem;
+  border: 1px solid var(--aq-border);
+  border-radius: var(--aq-radius-card);
+  background: var(--aq-surface);
+  box-shadow: var(--aq-shadow-soft), var(--aq-shadow-inset);
+}
+
+.aq-pro-main > .space-y-6 > .grid.grid-cols-2 > div:nth-child(3) {
+  border-color: rgba(198, 165, 107, 0.48);
+}
+
+.aq-pro-main > .space-y-6 > .grid.grid-cols-2 > div:hover {
+  transform: translateY(-3px);
+  border-color: var(--aq-border-strong);
+  box-shadow: var(--aq-shadow-card);
+}
+
+.aq-pro-main section {
+  border: 1px solid var(--aq-border) !important;
+  border-radius: var(--aq-radius-panel) !important;
+  background: var(--aq-surface) !important;
+  box-shadow: var(--aq-shadow-soft), var(--aq-shadow-inset);
+}
+
+.aq-pro-main section h2 {
+  font-family: var(--aq-font-display);
+  color: var(--aq-deep-teal);
+  font-size: 1.45rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.dark .aq-pro-main section h2 {
+  color: var(--aq-text);
+}
+
+.aq-pro-main section li {
+  border-color: var(--aq-border);
+  border-radius: var(--aq-radius-control);
+  background: rgba(250, 252, 251, 0.68);
+}
+
+.dark .aq-pro-main section li {
+  background: rgba(15, 42, 54, 0.68);
+}
+
+.aq-pro-main button,
+.aq-pro-main a {
+  min-height: 2.75rem;
+}
+
+.aq-pro-mobile-nav {
+  border-color: var(--aq-border);
+  background: rgba(250, 252, 251, 0.94);
+}
+
+.dark .aq-pro-mobile-nav {
+  background: rgba(6, 31, 43, 0.94);
+}
+
+@media (max-width: 767px) {
+  .aq-pro-main {
+    margin: 0;
+    min-height: auto;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .aq-pro-main > .space-y-6 > .grid.grid-cols-2 > div {
+    min-height: 8.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aq-pro-main > .space-y-6 > .grid.grid-cols-2 > div {
+    transition: none;
+  }
+
+  .aq-pro-main > .space-y-6 > .grid.grid-cols-2 > div:hover {
+    transform: none;
+  }
+}

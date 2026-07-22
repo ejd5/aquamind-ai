@@ -9,7 +9,13 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aqwelia.app
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  /* config options here */
+  // The approved campaign PNG files are served directly. Vercel's image
+  // optimizer rejects three of these large exported assets even though the
+  // original static files are valid PNGs. They will be converted to WebP/AVIF
+  // in the dedicated asset-optimization pass before production launch.
+  images: {
+    unoptimized: true,
+  },
   typescript: {
     // P0-FIX Bug 1: do not silently swallow TS errors — they mask real bugs
     // (e.g. the missing ./local-notifications module that crashed the native

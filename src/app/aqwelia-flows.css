@@ -1,0 +1,198 @@
+/* AQWELIA — Figma onboarding and diagnostic flows
+ * Visual overrides only: no API, validation or dosage logic is changed.
+ */
+
+/* Onboarding canvas */
+.aurora-bg {
+  background:
+    linear-gradient(rgba(234, 251, 248, 0.86), rgba(234, 251, 248, 0.96)),
+    url('/aqwelia-hero-bg.png') center / cover no-repeat;
+}
+
+.dark .aurora-bg {
+  background:
+    linear-gradient(rgba(6, 31, 43, 0.82), rgba(6, 31, 43, 0.96)),
+    url('/aqwelia-hero-bg.png') center / cover no-repeat;
+}
+
+.aurora-bg ~ .relative.z-10[class*="max-w-2xl"] {
+  max-width: 58rem;
+  padding-block: clamp(2rem, 6vw, 5rem);
+}
+
+.aurora-bg ~ .relative.z-10[class*="max-w-2xl"] > .text-center h1 {
+  font-family: var(--aq-font-display);
+  color: var(--aq-deep-teal);
+  font-size: clamp(2.5rem, 6vw, 4.75rem);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.dark .aurora-bg ~ .relative.z-10[class*="max-w-2xl"] > .text-center h1 {
+  color: var(--aq-text);
+}
+
+.aurora-bg ~ .relative.z-10[class*="max-w-2xl"] > .glass-card {
+  border: 1px solid var(--aq-border);
+  border-radius: var(--aq-radius-hero);
+  background: rgba(250, 252, 251, 0.9);
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+  box-shadow: var(--aq-shadow-floating), var(--aq-shadow-inset);
+  backdrop-filter: blur(26px) saturate(130%);
+}
+
+.dark .aurora-bg ~ .relative.z-10[class*="max-w-2xl"] > .glass-card {
+  background: rgba(15, 42, 54, 0.9);
+}
+
+.aurora-bg ~ .relative.z-10[class*="max-w-2xl"] input,
+.aurora-bg ~ .relative.z-10[class*="max-w-2xl"] [role="combobox"] {
+  min-height: 3rem;
+  border-color: var(--aq-border-strong);
+  border-radius: var(--aq-radius-control);
+  background: rgba(250, 252, 251, 0.86);
+  color: var(--aq-deep-teal);
+  box-shadow: var(--aq-shadow-inset);
+}
+
+.dark .aurora-bg ~ .relative.z-10[class*="max-w-2xl"] input,
+.dark .aurora-bg ~ .relative.z-10[class*="max-w-2xl"] [role="combobox"] {
+  background: rgba(6, 31, 43, 0.62);
+  color: var(--aq-text);
+}
+
+.aurora-bg ~ .relative.z-10[class*="max-w-2xl"] button {
+  min-height: 2.75rem;
+  border-radius: var(--aq-radius-control);
+}
+
+.aurora-bg ~ .relative.z-10[class*="max-w-2xl"] button[class*="border-gold/60"] {
+  border-color: var(--aq-lagoon);
+  background: rgba(24, 207, 195, 0.12);
+  color: var(--aq-deep-teal);
+  box-shadow: 0 10px 24px rgba(24, 207, 195, 0.12);
+}
+
+.dark .aurora-bg ~ .relative.z-10[class*="max-w-2xl"] button[class*="border-gold/60"] {
+  color: var(--aq-aqua);
+}
+
+.aurora-bg ~ .relative.z-10[class*="max-w-2xl"] [data-slot="progress"] {
+  overflow: hidden;
+  border-radius: var(--aq-radius-pill);
+  background: rgba(7, 60, 69, 0.1);
+}
+
+.aurora-bg ~ .relative.z-10[class*="max-w-2xl"] label {
+  color: var(--aq-deep-teal);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dark .aurora-bg ~ .relative.z-10[class*="max-w-2xl"] label {
+  color: var(--aq-aqua);
+}
+
+/* Diagnostic cockpit */
+aside.custom-scroll + main > .space-y-5 > .flex:first-child h1 {
+  font-family: var(--aq-font-display);
+  color: var(--aq-deep-teal);
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+.dark aside.custom-scroll + main > .space-y-5 > .flex:first-child h1 {
+  color: var(--aq-text);
+}
+
+aside.custom-scroll + main > .space-y-5 > .flex.gap-2.rounded-xl {
+  width: min(100%, 32rem);
+  min-height: 3rem;
+  border: 1px solid var(--aq-border);
+  border-radius: var(--aq-radius-pill);
+  background: var(--aq-surface);
+  padding: 0.25rem;
+  box-shadow: var(--aq-shadow-soft);
+}
+
+aside.custom-scroll + main > .space-y-5 > .flex.gap-2.rounded-xl button {
+  min-height: 2.5rem;
+  border-radius: var(--aq-radius-pill);
+}
+
+aside.custom-scroll + main > .space-y-5 > .flex.gap-2.rounded-xl button[class*="border-gold/60"] {
+  border-color: transparent;
+  background: var(--aq-lagoon);
+  color: var(--aq-night);
+  box-shadow: 0 8px 22px rgba(24, 207, 195, 0.2);
+}
+
+aside.custom-scroll + main label[for="diag-upload"] {
+  min-height: 19rem;
+  border-color: rgba(24, 207, 195, 0.42);
+  border-radius: var(--aq-radius-panel);
+  background:
+    radial-gradient(circle at 50% 25%, rgba(114, 232, 223, 0.2), transparent 15rem),
+    rgba(250, 252, 251, 0.72);
+  box-shadow: var(--aq-shadow-inset);
+}
+
+.dark aside.custom-scroll + main label[for="diag-upload"] {
+  background:
+    radial-gradient(circle at 50% 25%, rgba(46, 224, 214, 0.14), transparent 15rem),
+    rgba(6, 31, 43, 0.72);
+}
+
+aside.custom-scroll + main label[for="diag-upload"]:hover {
+  border-color: var(--aq-lagoon);
+  background-color: rgba(24, 207, 195, 0.08);
+}
+
+aside.custom-scroll + main img[class*="object-cover"] {
+  object-fit: contain;
+  background: var(--aq-night);
+}
+
+aside.custom-scroll + main .border-dashed {
+  border-color: rgba(24, 207, 195, 0.38);
+}
+
+aside.custom-scroll + main [data-slot="card"] {
+  border-color: var(--aq-border);
+  background: var(--aq-surface);
+  box-shadow: var(--aq-shadow-soft), var(--aq-shadow-inset);
+}
+
+aside.custom-scroll + main [data-slot="card"] [class*="bg-gold/5"] {
+  background: rgba(198, 165, 107, 0.09);
+}
+
+aside.custom-scroll + main [data-slot="card"] [class*="from-primary"][class*="to-gold"] {
+  background: linear-gradient(135deg, var(--aq-lagoon), var(--aq-deep-teal));
+}
+
+aside.custom-scroll + main [data-slot="card"] button,
+aside.custom-scroll + main label[for="diag-upload"] {
+  min-height: 2.75rem;
+}
+
+@media (max-width: 767px) {
+  .aurora-bg ~ .relative.z-10[class*="max-w-2xl"] {
+    padding-inline: 0.75rem;
+  }
+
+  .aurora-bg ~ .relative.z-10[class*="max-w-2xl"] > .glass-card {
+    border-radius: 1.5rem;
+  }
+
+  aside.custom-scroll + main label[for="diag-upload"] {
+    min-height: 15rem;
+  }
+}

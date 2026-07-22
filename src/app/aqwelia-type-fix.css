@@ -1,0 +1,13 @@
+/* AQWELIA — Display typography lock
+ * Explicit family names avoid a browser fallback observed on the Vercel
+ * landing preview while preserving Geist for body copy and controls.
+ */
+
+.aq-display,
+.aq-heading,
+.aq-pro-main h1,
+.aq-pro-main h2,
+aside.custom-scroll + main h1,
+aside.custom-scroll + main [data-slot="card-title"] {
+  font-family: "Playfair Display", "Playfair Display Fallback", Georgia, "Times New Roman", serif !important;
+}
