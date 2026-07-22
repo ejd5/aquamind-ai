@@ -1,0 +1,46 @@
+name: Finalize AQWELIA Brain synchronization
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/finalize-brain-sync.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: finalize-aqwelia-brain-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Brain branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/aqwelia-brain-foundation
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge the current main branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge --no-ff --no-commit origin/main
+          rm -f .github/workflows/finalize-brain-sync.yml
+          git add -A
+          if [ -n "$(git diff --name-only --diff-filter=U)" ]; then
+            echo "Unresolved merge conflicts remain" >&2
+            git diff --name-only --diff-filter=U >&2
+            exit 1
+          fi
+          git diff --cached --check
+          git commit -m "chore(brain): align with current main"
+          git push origin HEAD:feat/aqwelia-brain-foundation
