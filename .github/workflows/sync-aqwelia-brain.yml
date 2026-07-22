@@ -1,9 +1,11 @@
 name: Sync AQWELIA Brain with main
 
 on:
-  issue_comment:
+  workflow_run:
+    workflows:
+      - P0 Quality
     types:
-      - created
+      - completed
   workflow_dispatch:
     inputs:
       confirmation:
@@ -22,10 +24,9 @@ jobs:
   sync:
     if: >-
       ${{
-        (github.event_name == 'issue_comment' &&
-         github.event.issue.pull_request &&
-         github.event.issue.number == 20 &&
-         github.event.comment.body == '/sync-brain') ||
+        (github.event_name == 'workflow_run' &&
+         github.event.workflow_run.conclusion == 'success' &&
+         github.event.workflow_run.head_branch == 'feat/aqwelia-brain-foundation') ||
         inputs.confirmation == 'SYNC_AQWELIA_BRAIN'
       }}
     runs-on: ubuntu-latest
