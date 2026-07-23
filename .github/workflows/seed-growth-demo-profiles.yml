@@ -1,0 +1,42 @@
+name: Seed Growth demo profiles
+
+on:
+  push:
+    branches:
+      - ops/seed-growth-demo-profiles
+    paths:
+      - scripts/seed-growth-demo-profiles.mjs
+      - .github/workflows/seed-growth-demo-profiles.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aqwelia-growth-demo-seed
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    name: Seed three Growth demo workspaces
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.4'
+      - run: bun install --frozen-lockfile
+      - name: Validate direct production connection shape
+        run: |
+          node - <<'NODE'
+          const url = process.env.DATABASE_URL || ''
+          if (!/^postgres(ql)?:\/\//.test(url)) throw new Error('PRODUCTION_DIRECT_URL is required')
+          if (new URL(url).hostname.includes('-pooler')) throw new Error('Demo seed must use the direct Neon connection')
+          NODE
+      - name: Generate PostgreSQL client
+        run: bun run db:pg:generate
+      - name: Seed Growth demo profiles
+        run: node scripts/seed-growth-demo-profiles.mjs
