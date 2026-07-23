@@ -621,53 +621,76 @@ model ContactMessage {
 // qu'un pro ne puisse jamais accéder aux données d'un autre pro.
 
 // Un client du pisciniste (pas un utilisateur AQWELIA — un client IRL)
+
 model ProClient {
-  id        String   @id @default(cuid())
-  proUserId String // l'utilisateur AQWELIA Pro qui gère ce client
-  firstName String
-  lastName  String
-  email     String?
-  phone     String?
-  address   String?
-  city      String?
-  zipCode   String?
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String    @id @default(cuid())
+  proUserId        String
+  firstName        String
+  lastName         String
+  companyName      String?
+  email            String?
+  phone            String?
+  address          String?
+  city             String?
+  zipCode          String?
+  status           String    @default("active") // prospect | active | paused | archived
+  source           String?
+  preferredContact String    @default("email") // email | phone | sms | whatsapp
+  tags             String?   // JSON array of short labels
+  lastContactAt    DateTime?
+  nextFollowUpAt   DateTime?
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   pools         ProPool[]
   interventions ProIntervention[]
+  activities    ProClientActivity[]
 
   user User @relation(fields: [proUserId], references: [id], onDelete: Cascade)
 
   @@index([proUserId])
+  @@index([status])
+  @@index([nextFollowUpAt])
   @@index([lastName])
   @@index([firstName])
 }
 
 // Un bassin géré par le pro pour un client
+
 model ProPool {
-  id            String   @id @default(cuid())
-  proClientId   String
-  name          String // "Piscine principale", "Spa"
-  type          String   @default("pool") // pool | spa | both
-  volume        Float?
-  unit          String   @default("m3")
-  shape         String?
-  surface       String? // liner, tile, concrete, etc.
-  treatmentType String? // chlorine, salt, bromine, etc.
-  saltSystem    Boolean  @default(false)
-  filterType    String? // sand, cartridge, etc.
-  address       String?
-  notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                 String    @id @default(cuid())
+  proClientId        String
+  name               String
+  type               String    @default("pool") // pool | spa | both
+  status             String    @default("active") // active | seasonal | inactive
+  volume             Float?
+  unit               String    @default("m3")
+  shape              String?
+  surface            String?
+  treatmentType      String?
+  saltSystem         Boolean   @default(false)
+  filterType         String?
+  brand              String?
+  model              String?
+  serialNumber       String?
+  installedAt        DateTime?
+  address            String?
+  accessInstructions String?
+  equipmentNotes     String?
+  lastServiceAt      DateTime?
+  nextServiceAt      DateTime?
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   client        ProClient         @relation(fields: [proClientId], references: [id], onDelete: Cascade)
   interventions ProIntervention[]
   waterTests    ProWaterTest[]
 
   @@index([proClientId])
+  @@index([status])
+  @@index([nextServiceAt])
 }
 
 // Un test d'eau effectué par le pro sur un bassin
@@ -695,22 +718,31 @@ model ProWaterTest {
 }
 
 // Une intervention du pro sur un bassin
+
 model ProIntervention {
-  id           String    @id @default(cuid())
-  proClientId  String
-  proPoolId    String?
-  technicianId String? // User id du technicien
-  type         String    @default("maintenance") // maintenance | repair | opening | closing | emergency
-  status       String    @default("scheduled") // scheduled | in_progress | completed | cancelled
-  scheduledAt  DateTime
-  completedAt  DateTime?
-  duration     Int? // minutes
-  notes        String?
-  photos       String? // JSON array of URLs (before/after)
-  actions      String? // JSON array of actions performed
-  productsUsed String? // JSON array of products used
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  proClientId   String
+  proPoolId     String?
+  technicianId  String?
+  type          String    @default("maintenance") // maintenance | repair | opening | closing | emergency
+  status        String    @default("scheduled") // scheduled | in_progress | completed | cancelled
+  priority      String    @default("normal") // low | normal | high | urgent
+  scheduledAt   DateTime
+  startedAt     DateTime?
+  completedAt   DateTime?
+  duration      Int?
+  summary       String?
+  customerNotes String?
+  internalNotes String?
+  notes         String?
+  photos        String?
+  actions       String?
+  productsUsed  String?
+  billable      Boolean   @default(true)
+  amount        Float?
+  currency      String    @default("EUR")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   client ProClient @relation(fields: [proClientId], references: [id], onDelete: Cascade)
   pool   ProPool?  @relation(fields: [proPoolId], references: [id], onDelete: SetNull)
@@ -718,8 +750,26 @@ model ProIntervention {
   @@index([proClientId])
   @@index([proPoolId])
   @@index([status])
+  @@index([priority])
   @@index([scheduledAt])
   @@index([technicianId])
+}
+
+
+model ProClientActivity {
+  id           String   @id @default(cuid())
+  proClientId  String
+  actorUserId  String?
+  type         String   @default("note") // note | call | email | sms | visit | follow_up | status_change | system
+  title        String
+  details      String?
+  occurredAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  client ProClient @relation(fields: [proClientId], references: [id], onDelete: Cascade)
+
+  @@index([proClientId, occurredAt])
+  @@index([type])
 }
 
 // ───────────────────────────────────────────────────────────────────────────
