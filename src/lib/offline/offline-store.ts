@@ -1,21 +1,10 @@
 /**
  * AQWELIA — Offline state store (Zustand + persist).
  *
- * Tracks three pieces of state used by the offline layer:
- *
- *   - `isOnline`         — current connectivity (mirrored from the network
- *                          hook so any component can read it without
- *                          subscribing to browser events).
- *   - `lastOnlineAt`     — timestamp of the last moment we were online.
- *   - `pendingActions`   — write operations (POST/PATCH/DELETE) that were
- *                          queued while offline. They get replayed by
- *                          `flushPending()` as soon as connectivity
- *                          returns.
- *
- * The store is persisted to `localStorage` under the `aqwelia-offline` key,
- * so queued actions survive a page reload. On native (Capacitor), the
- * storage adapter falls back to no-op SSR-safe stubs — a future task can
- * swap in `@capacitor/preferences` here.
+ * Queued writes survive page reloads and are replayed when connectivity
+ * returns. Every action receives a stable idempotency key that is reused for
+ * every retry, so the server can return the original result instead of
+ * creating a duplicate record when a response is lost.
  */
 
 import { create } from 'zustand'
@@ -24,33 +13,32 @@ import { api } from '@/lib/api-client'
 
 export interface PendingAction {
   id: string
+  idempotencyKey: string
   method: 'POST' | 'PATCH' | 'DELETE'
   path: string
   body?: unknown
   createdAt: number
+  attempts: number
+  lastAttemptAt?: number
 }
 
 export interface OfflineState {
   isOnline: boolean
   lastOnlineAt: number | null
   pendingActions: PendingAction[]
+  isFlushing: boolean
   setOnline: (online: boolean) => void
-  queueAction: (action: Omit<PendingAction, 'id' | 'createdAt'>) => void
+  queueAction: (
+    action: Omit<PendingAction, 'id' | 'idempotencyKey' | 'createdAt' | 'attempts' | 'lastAttemptAt'>,
+  ) => string
   flushPending: () => Promise<void>
   clearPending: () => void
 }
 
-/**
- * SSR-safe storage adapter. On the server, returns no-op stubs so the
- * persist middleware does not crash during hydration. On the client (web),
- * uses `localStorage`. On Capacitor native, a future task can replace this
- * with `@capacitor/preferences`.
- */
 function createSafeStorage(): Storage {
   if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
     return window.localStorage
   }
-  // SSR / non-browser fallback (no-op)
   return {
     getItem: () => null,
     setItem: () => {},
@@ -61,12 +49,20 @@ function createSafeStorage(): Storage {
   }
 }
 
+function createMutationId(): string {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID()
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`
+}
+
 export const useOfflineStore = create<OfflineState>()(
   persist(
     (set, get) => ({
       isOnline: true,
       lastOnlineAt: Date.now(),
       pendingActions: [],
+      isFlushing: false,
 
       setOnline: (online) =>
         set((state) => ({
@@ -74,38 +70,62 @@ export const useOfflineStore = create<OfflineState>()(
           lastOnlineAt: online ? Date.now() : state.lastOnlineAt,
         })),
 
-      queueAction: (action) =>
-        set((state) => ({
-          pendingActions: [
-            ...state.pendingActions,
-            {
-              ...action,
-              id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-              createdAt: Date.now(),
-            },
-          ],
-        })),
+      queueAction: (action) => {
+        const id = createMutationId()
+        const queued: PendingAction = {
+          ...action,
+          id,
+          idempotencyKey: id,
+          createdAt: Date.now(),
+          attempts: 0,
+        }
+        set((state) => ({ pendingActions: [...state.pendingActions, queued] }))
+        return id
+      },
 
       flushPending: async () => {
-        const { pendingActions } = get()
-        if (pendingActions.length === 0) return
+        if (get().isFlushing) return
+        set({ isFlushing: true })
 
-        const failed: PendingAction[] = []
-        for (const action of pendingActions) {
-          try {
-            if (action.method === 'POST') {
-              await api.post(action.path, action.body)
-            } else if (action.method === 'PATCH') {
-              await api.patch(action.path, action.body)
-            } else if (action.method === 'DELETE') {
-              await api.delete(action.path)
+        try {
+          // Work from a snapshot. Successful actions are removed individually,
+          // preserving actions that may be queued while a flush is running.
+          const snapshot = [...get().pendingActions]
+          for (const action of snapshot) {
+            const idempotencyKey = action.idempotencyKey || action.id
+            set((state) => ({
+              pendingActions: state.pendingActions.map((pending) =>
+                pending.id === action.id
+                  ? {
+                      ...pending,
+                      idempotencyKey,
+                      attempts: (pending.attempts || 0) + 1,
+                      lastAttemptAt: Date.now(),
+                    }
+                  : pending,
+              ),
+            }))
+
+            const options = { headers: { 'Idempotency-Key': idempotencyKey } }
+            try {
+              await api.post(
+                '/api/offline/replay',
+                { method: action.method, path: action.path, body: action.body },
+                options,
+              )
+
+              set((state) => ({
+                pendingActions: state.pendingActions.filter((pending) => pending.id !== action.id),
+              }))
+            } catch {
+              // Keep the exact same key for the next retry. This covers both a
+              // genuine server failure and the case where the mutation succeeded
+              // but its response was lost during reconnection.
             }
-          } catch {
-            // Keep the failed action in the queue for the next retry.
-            failed.push(action)
           }
+        } finally {
+          set({ isFlushing: false })
         }
-        set({ pendingActions: failed })
       },
 
       clearPending: () => set({ pendingActions: [] }),
@@ -113,6 +133,24 @@ export const useOfflineStore = create<OfflineState>()(
     {
       name: 'aqwelia-offline',
       storage: createJSONStorage(() => createSafeStorage()),
+      partialize: (state) => ({
+        isOnline: state.isOnline,
+        lastOnlineAt: state.lastOnlineAt,
+        pendingActions: state.pendingActions,
+      }),
+      merge: (persisted, current) => {
+        const stored = persisted as Partial<OfflineState> | undefined
+        return {
+          ...current,
+          ...stored,
+          isFlushing: false,
+          pendingActions: (stored?.pendingActions || []).map((action) => ({
+            ...action,
+            idempotencyKey: action.idempotencyKey || action.id,
+            attempts: action.attempts || 0,
+          })),
+        }
+      },
     },
   ),
 )
