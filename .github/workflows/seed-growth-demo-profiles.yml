@@ -3,7 +3,7 @@ name: Seed Growth demo profiles
 on:
   push:
     branches:
-      - ops/seed-growth-demo-profiles
+      - main
     paths:
       - scripts/seed-growth-demo-profiles.mjs
       - .github/workflows/seed-growth-demo-profiles.yml
