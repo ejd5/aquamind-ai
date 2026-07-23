@@ -64,9 +64,9 @@ export default async function GrowthPage() {
 
   const STATS = [
     { value: '10', label: t('statAgents') },
-    { value: '+38%', label: t('statConversion') },
-    { value: '< 2min', label: t('statResponseTime') },
-    { value: '24/7', label: t('statAvailability') },
+    { value: '0–100', label: t('statConversion') },
+    { value: '6', label: t('statResponseTime') },
+    { value: '100%', label: t('statAvailability') },
   ]
 
   const PLANS = [
