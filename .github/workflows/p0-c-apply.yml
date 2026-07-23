@@ -1,0 +1,47 @@
+name: P0-C Apply Dosing Unification
+
+on:
+  push:
+    branches:
+      - fix/p0-c-unify-dosing-engine
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/p0-c-unify-dosing-engine
+          fetch-depth: 1
+
+      - name: Apply component migration
+        run: python3 scripts/p0-c-apply.py
+
+      - name: Verify local coefficients are gone
+        shell: bash
+        run: |
+          set -euo pipefail
+          file=src/components/aquamind/diagnostic-action-plan.tsx
+          ! grep -q 'phMinusGramsPer01' "$file"
+          ! grep -q 'phPlusGramsPer01' "$file"
+          ! grep -q 'chlorineShockGrams' "$file"
+          ! grep -q 'antiAlgaeMl' "$file"
+          ! grep -q 'flocculantMl' "$file"
+          grep -q "from '@/lib/pool/diagnostic-dosage'" "$file"
+
+      - name: Remove one-shot tooling and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f scripts/p0-c-apply.py
+          rm -f .github/workflows/p0-c-apply.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(p0-c): route diagnostic dosages through central engine'
+          git push origin HEAD:fix/p0-c-unify-dosing-engine
