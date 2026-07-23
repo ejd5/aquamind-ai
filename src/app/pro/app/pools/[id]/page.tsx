@@ -7,7 +7,6 @@ import Link from 'next/link'
 import {
   ArrowLeft,
   Calendar,
-  Download,
   FlaskConical,
   KeyRound,
   Loader2,
@@ -118,7 +117,7 @@ export default function ProPoolDetailPage() {
   if (!pool) return <div className="rounded-xl border border-red-400/40 bg-red-500/10 p-4">{t('crmPoolNotFound')}</div>
 
   return <div className="space-y-6">
-    <div className="flex flex-wrap items-center justify-between gap-3"><Link href="/pro/app/pools" className="inline-flex items-center gap-1 text-xs text-muted-foreground"><ArrowLeft className="h-3.5 w-3.5" />{t('crmBackPools')}</Link><a href={`/api/pro/pools/${pool.id}/report`} className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/5 px-4 py-2 text-xs font-semibold text-gold"><Download className="h-4 w-4" />{t('crmPoolReport')}</a></div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><Link href="/pro/app/pools" className="inline-flex items-center gap-1 text-xs text-muted-foreground"><ArrowLeft className="h-3.5 w-3.5" />{t('crmBackPools')}</Link></div>
 
     <section className="rounded-2xl border border-white/40 bg-white/60 p-6 dark:border-white/10 dark:bg-white/[0.04]">
       <div className="flex flex-wrap items-start justify-between gap-4"><div><span className="section-label">{t(`poolType${cap(pool.type)}` as never)}</span><h1 className="mt-2 font-display text-3xl font-bold">{pool.name}</h1><Link href={`/pro/app/clients/${pool.client.id}`} className="text-sm text-gold hover:underline">{pool.client.firstName} {pool.client.lastName}{pool.client.companyName ? ` · ${pool.client.companyName}` : ''}</Link></div><StatusBadge status={pool.status} label={t(`crmPoolStatus${cap(pool.status)}` as never)} /></div>
