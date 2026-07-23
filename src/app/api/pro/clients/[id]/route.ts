@@ -1,33 +1,31 @@
-/**
- * AQWELIA Pro — Client detail API (MVP).
- *
- * URL: /api/pro/clients/[id]
- *
- * GET    — full client record + their pools (each with `_count` of
- *          interventions and waterTests) + recent interventions.
- * PATCH  — update client fields (firstName, lastName, email, phone,
- *          address, city, zipCode, notes).
- * DELETE — remove the client (cascade: pools → waterTests, and
- *          interventions are owned directly by the client so they're
- *          cascade-deleted too).
- *
- * Auth: session required. Every operation verifies that the client's
- * `proUserId` matches `session.user.id` (404 otherwise, never leaks
- * existence to other pros).
- */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { getProAccess } from '@/lib/pro/access'
+import {
+  cleanOptionalText,
+  isOneOf,
+  parseOptionalDate,
+  parseStoredStringArray,
+  PRO_CLIENT_STATUSES,
+  PRO_CONTACT_CHANNELS,
+  serializeShortStringArray,
+} from '@/lib/pro/crm'
 import { toolWorkspaceText } from '@/i18n/locales/tool-workspaces'
 
 export const runtime = 'nodejs'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
 type Ctx = { params: Promise<{ id: string }> }
+
+async function getOwnedClient(id: string, ownerUserId: string) {
+  return db.proClient.findFirst({
+    where: { id, proUserId: ownerUserId },
+    select: { id: true, status: true },
+  })
+}
 
 export async function GET(req: NextRequest, ctx: Ctx) {
   const locale = pickLocale(req)
@@ -36,29 +34,38 @@ export async function GET(req: NextRequest, ctx: Ctx) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
+
   const { id } = await ctx.params
   const access = await getProAccess(session.user.id)
-
   const client = await db.proClient.findFirst({
     where: { id, proUserId: access.ownerUserId },
     include: {
       pools: {
-        orderBy: { createdAt: 'asc' },
+        orderBy: [{ status: 'asc' }, { createdAt: 'asc' }],
         include: { _count: { select: { interventions: true, waterTests: true } } },
       },
       interventions: {
         orderBy: { scheduledAt: 'desc' },
-        take: 10,
+        take: 20,
         include: { pool: { select: { id: true, name: true } } },
       },
-      _count: { select: { pools: true, interventions: true } },
+      activities: {
+        orderBy: { occurredAt: 'desc' },
+        take: 50,
+      },
+      _count: { select: { pools: true, interventions: true, activities: true } },
     },
   })
+
   if (!client) {
     const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
     return NextResponse.json({ error: msg }, { status: 404 })
   }
-  return NextResponse.json({ client })
+
+  return NextResponse.json({
+    client: { ...client, tags: parseStoredStringArray(client.tags) },
+    access: { role: access.role, canWrite: access.canWrite, canManage: access.canManage },
+  })
 }
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
@@ -68,61 +75,92 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
+
   const { id } = await ctx.params
   const access = await getProAccess(session.user.id)
-  if (!access.canWrite) return NextResponse.json({ error: toolWorkspaceText(locale, 'readonly') }, { status: 403 })
+  if (!access.canWrite) {
+    return NextResponse.json({ error: toolWorkspaceText(locale, 'readonly') }, { status: 403 })
+  }
 
-  // Verify ownership before any write.
-  const existing = await db.proClient.findFirst({
-    where: { id, proUserId: access.ownerUserId },
-    select: { id: true },
-  })
+  const existing = await getOwnedClient(id, access.ownerUserId)
   if (!existing) {
     const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
     return NextResponse.json({ error: msg }, { status: 404 })
   }
 
-  let body: any
+  let body: Record<string, unknown>
   try {
-    body = await req.json()
+    body = (await req.json()) as Record<string, unknown>
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
   const data: Record<string, unknown> = {}
-  if (typeof body?.firstName === 'string' && body.firstName.trim())
-    data.firstName = body.firstName.trim()
-  if (typeof body?.lastName === 'string' && body.lastName.trim())
-    data.lastName = body.lastName.trim()
-  if (typeof body?.email === 'string') {
-    const email = body.email.trim().toLowerCase()
+  if (typeof body.firstName === 'string' && body.firstName.trim()) {
+    data.firstName = body.firstName.trim().slice(0, 120)
+  }
+  if (typeof body.lastName === 'string' && body.lastName.trim()) {
+    data.lastName = body.lastName.trim().slice(0, 120)
+  }
+  if (body.companyName !== undefined) data.companyName = cleanOptionalText(body.companyName, 200)
+  if (body.email !== undefined) {
+    const email = cleanOptionalText(body.email, 320)?.toLowerCase() ?? null
     if (email && !EMAIL_RE.test(email)) {
       const msg = await translate(locale, 'pro.errors.emailInvalid', 'Email invalide')
       return NextResponse.json({ error: msg }, { status: 400 })
     }
-    data.email = email || null
+    data.email = email
   }
-  if (typeof body?.phone === 'string') data.phone = body.phone.trim() || null
-  if (typeof body?.address === 'string') data.address = body.address.trim() || null
-  if (typeof body?.city === 'string') data.city = body.city.trim() || null
-  if (typeof body?.zipCode === 'string') data.zipCode = body.zipCode.trim() || null
-  if (typeof body?.notes === 'string')
-    data.notes = body.notes.trim().slice(0, 10000) || null
+  if (body.phone !== undefined) data.phone = cleanOptionalText(body.phone, 80)
+  if (body.address !== undefined) data.address = cleanOptionalText(body.address, 500)
+  if (body.city !== undefined) data.city = cleanOptionalText(body.city, 160)
+  if (body.zipCode !== undefined) data.zipCode = cleanOptionalText(body.zipCode, 30)
+  if (body.source !== undefined) data.source = cleanOptionalText(body.source, 120)
+  if (body.notes !== undefined) data.notes = cleanOptionalText(body.notes)
+  if (body.tags !== undefined) data.tags = serializeShortStringArray(body.tags)
+  if (body.status !== undefined) {
+    if (!isOneOf(PRO_CLIENT_STATUSES, body.status)) {
+      return NextResponse.json({ error: 'Invalid client status' }, { status: 400 })
+    }
+    data.status = body.status
+  }
+  if (body.preferredContact !== undefined) {
+    if (!isOneOf(PRO_CONTACT_CHANNELS, body.preferredContact)) {
+      return NextResponse.json({ error: 'Invalid contact channel' }, { status: 400 })
+    }
+    data.preferredContact = body.preferredContact
+  }
+
+  for (const field of ['lastContactAt', 'nextFollowUpAt'] as const) {
+    const parsed = parseOptionalDate(body[field])
+    if (!parsed.provided) continue
+    if (!parsed.valid) return NextResponse.json({ error: `Invalid ${field}` }, { status: 400 })
+    data[field] = parsed.value
+  }
 
   if (Object.keys(data).length === 0) {
-    const msg = await translate(
-      locale,
-      'common.errors.noFields',
-      'Aucun champ à mettre à jour'
-    )
+    const msg = await translate(locale, 'common.errors.noFields', 'Aucun champ à mettre à jour')
     return NextResponse.json({ error: msg }, { status: 400 })
   }
 
   try {
-    const client = await db.proClient.update({ where: { id }, data })
-    return NextResponse.json({ client })
-  } catch (err) {
-    console.error('[pro/clients/[id]] PATCH error:', err)
+    const client = await db.$transaction(async (tx) => {
+      const updated = await tx.proClient.update({ where: { id }, data })
+      if (typeof data.status === 'string' && data.status !== existing.status) {
+        await tx.proClientActivity.create({
+          data: {
+            proClientId: id,
+            actorUserId: session.user.id,
+            type: 'status_change',
+            title: `Statut : ${existing.status} → ${data.status}`,
+          },
+        })
+      }
+      return updated
+    })
+    return NextResponse.json({ client: { ...client, tags: parseStoredStringArray(client.tags) } })
+  } catch (error) {
+    console.error('[pro/clients/[id]] PATCH error:', error)
     const msg = await translate(locale, 'pro.errors.generic', 'Une erreur est survenue.')
     return NextResponse.json({ error: msg }, { status: 500 })
   }
@@ -135,27 +173,24 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
+
   const { id } = await ctx.params
   const access = await getProAccess(session.user.id)
-  if (!access.canManage) return NextResponse.json({ error: 'Droits insuffisants' }, { status: 403 })
+  if (!access.canManage) {
+    return NextResponse.json({ error: 'Droits insuffisants' }, { status: 403 })
+  }
 
-  const existing = await db.proClient.findFirst({
-    where: { id, proUserId: access.ownerUserId },
-    select: { id: true },
-  })
+  const existing = await getOwnedClient(id, access.ownerUserId)
   if (!existing) {
     const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
     return NextResponse.json({ error: msg }, { status: 404 })
   }
 
   try {
-    // Cascade: deleting the client cascade-deletes its pools, which in turn
-    // cascade-delete ProWaterTest and SetNull ProIntervention.proPoolId
-    // (interventions themselves are cascade-deleted from ProClient).
     await db.proClient.delete({ where: { id } })
     return NextResponse.json({ ok: true, id })
-  } catch (err) {
-    console.error('[pro/clients/[id]] DELETE error:', err)
+  } catch (error) {
+    console.error('[pro/clients/[id]] DELETE error:', error)
     const msg = await translate(locale, 'pro.errors.generic', 'Une erreur est survenue.')
     return NextResponse.json({ error: msg }, { status: 500 })
   }
