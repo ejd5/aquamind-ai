@@ -13,6 +13,7 @@ import {
   PRO_INTERVENTION_PRIORITIES,
 } from '@/lib/pro/crm'
 import { toolWorkspaceText } from '@/i18n/locales/tool-workspaces'
+import { DispatchAssignmentError, validateTechnicianAssignment } from '@/lib/pro/dispatch-server'
 
 export const runtime = 'nodejs'
 
@@ -71,6 +72,9 @@ async function getOwnedIntervention(id: string, ownerUserId: string) {
       proClientId: true,
       proPoolId: true,
       status: true,
+      technicianId: true,
+      scheduledAt: true,
+      duration: true,
       startedAt: true,
       completedAt: true,
     },
@@ -183,28 +187,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
   if (body.technicianId !== undefined) {
     const technicianId = typeof body.technicianId === 'string' ? body.technicianId.trim() : ''
-    if (!technicianId) data.technicianId = null
-    else if (technicianId === access.ownerUserId) data.technicianId = technicianId
-    else {
-      const member = access.organizationId
-        ? await db.organizationMember.findFirst({
-            where: {
-              organizationId: access.organizationId,
-              userId: technicianId,
-              status: 'active',
-              role: { in: ['owner', 'admin', 'manager', 'technician'] },
-            },
-            select: { id: true },
-          })
-        : null
-      if (!member) {
-        return NextResponse.json(
-          { error: toolWorkspaceText(locale, 'technicianUnauthorized') },
-          { status: 400 },
-        )
-      }
-      data.technicianId = technicianId
-    }
+    data.technicianId = technicianId || null
   }
 
   if (body.duration !== undefined) {
@@ -272,6 +255,31 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
         return NextResponse.json({ error: msg }, { status: 400 })
       }
       data.proPoolId = body.proPoolId
+    }
+  }
+
+  const nextTechnicianId = data.technicianId === undefined
+    ? existing.technicianId
+    : data.technicianId as string | null
+  const nextScheduledAt = data.scheduledAt instanceof Date ? data.scheduledAt : existing.scheduledAt
+  const nextDuration = typeof data.duration === 'number' ? data.duration : existing.duration || 60
+  if (nextTechnicianId && ['scheduled', 'in_progress'].includes(nextStatus)) {
+    try {
+      await validateTechnicianAssignment({
+        access,
+        technicianId: nextTechnicianId,
+        scheduledAt: nextScheduledAt,
+        durationMinutes: nextDuration,
+        excludeInterventionId: id,
+      })
+    } catch (error) {
+      if (error instanceof DispatchAssignmentError) {
+        return NextResponse.json(
+          { error: `dispatch.${error.code}`, code: error.code, details: error.details },
+          { status: error.statusCode },
+        )
+      }
+      throw error
     }
   }
 

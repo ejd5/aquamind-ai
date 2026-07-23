@@ -14,6 +14,7 @@ import {
   PRO_INTERVENTION_PRIORITIES,
 } from '@/lib/pro/crm'
 import { toolWorkspaceText } from '@/i18n/locales/tool-workspaces'
+import { DispatchAssignmentError, validateTechnicianAssignment } from '@/lib/pro/dispatch-server'
 
 export const runtime = 'nodejs'
 
@@ -219,24 +220,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid intervention date' }, { status: 400 })
   }
 
-  let technicianId = typeof body.technicianId === 'string' && body.technicianId
-    ? body.technicianId
+  let technicianId = typeof body.technicianId === 'string' && body.technicianId.trim()
+    ? body.technicianId.trim()
     : null
   if (!technicianId && access.role === 'technician') technicianId = session.user.id
-  if (technicianId && technicianId !== access.ownerUserId) {
-    const member = access.organizationId
-      ? await db.organizationMember.findFirst({
-          where: {
-            organizationId: access.organizationId,
-            userId: technicianId,
-            status: 'active',
-            role: { in: ['owner', 'admin', 'manager', 'technician'] },
-          },
-          select: { id: true },
-        })
-      : null
-    if (!member) technicianId = null
-  }
 
   const status = isOneOf(ALLOWED_STATUSES, body.status) ? body.status : 'scheduled'
   const amount = parseOptionalAmount(body.amount)
@@ -256,6 +243,27 @@ export async function POST(req: NextRequest) {
   const actualStartedAt = startedAt.value ?? (
     status === 'in_progress' || status === 'completed' ? new Date() : null
   )
+
+  if (technicianId && ['scheduled', 'in_progress'].includes(status)) {
+    try {
+      for (let index = 0; index < occurrences; index += 1) {
+        await validateTechnicianAssignment({
+          access,
+          technicianId,
+          scheduledAt: addRecurrence(scheduledAt.value, recurrence, index),
+          durationMinutes: duration || 60,
+        })
+      }
+    } catch (error) {
+      if (error instanceof DispatchAssignmentError) {
+        return NextResponse.json(
+          { error: `dispatch.${error.code}`, code: error.code, details: error.details },
+          { status: error.statusCode },
+        )
+      }
+      throw error
+    }
+  }
 
   try {
     const result = await db.$transaction(async (tx) => {
