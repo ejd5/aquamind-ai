@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   scan:
-    if: ${{ !contains(github.event.head_commit.message || '', '[skip p0-d-scan]') }}
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
@@ -19,25 +19,20 @@ jobs:
           ref: fix/p0-d-offline-idempotency
           fetch-depth: 1
 
-      - name: Locate offline queue producers and target routes
+      - name: Locate queue producers
         shell: bash
         run: |
           set -euo pipefail
-          {
-            echo '=== QUEUE ACTION USAGES ==='
-            git grep -n -E 'queueAction|pendingActions|flushPending' -- 'src/**' || true
-            echo '=== OFFLINE WRAPPERS ==='
-            git grep -n -E 'offline|queue.*POST|method:[[:space:]]*["'"']POST' -- 'src/lib/**' 'src/hooks/**' 'src/components/**' || true
-            echo '=== API ROUTE MUTATIONS ==='
-            git grep -n -E 'export async function (POST|PATCH|DELETE)' -- 'src/app/api/**/route.ts' || true
-          } > P0D_SCAN.txt
+          git grep -n 'queueAction' -- src > P0D_SCAN.txt || true
+          git grep -n 'flushPending' -- src >> P0D_SCAN.txt || true
+          git grep -n 'pendingActions' -- src >> P0D_SCAN.txt || true
 
-      - name: Commit focused scan
+      - name: Commit route map
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add P0D_SCAN.txt
-          git commit -m 'chore(p0-d): capture offline write map [skip p0-d-scan]'
+          git commit -m 'chore(p0-d): capture offline queue targets'
           git push origin HEAD:fix/p0-d-offline-idempotency
