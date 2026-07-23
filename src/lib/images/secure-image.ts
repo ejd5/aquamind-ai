@@ -6,6 +6,7 @@ const MAX_INPUT_PIXELS = 40_000_000
 const MAX_OUTPUT_SIDE = 1600
 const JPEG_QUALITY = 82
 const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+const BASE64_PATTERN = /^[A-Za-z0-9+/]+={0,2}$/
 
 export class SecureImageError extends Error {
   constructor(
@@ -37,12 +38,12 @@ function decodeImageData(input: string): { buffer: Buffer; mimeType: string } {
     throw new SecureImageError('Format d’image non pris en charge. Utilisez JPEG, PNG ou WebP.', 415)
   }
 
-  let buffer: Buffer
-  try {
-    buffer = Buffer.from(encoded.replace(/\s/g, ''), 'base64')
-  } catch {
+  const compactBase64 = encoded.replace(/\s/g, '')
+  if (!compactBase64 || compactBase64.length % 4 !== 0 || !BASE64_PATTERN.test(compactBase64)) {
     throw new SecureImageError('Image encodée invalide.', 400)
   }
+
+  const buffer = Buffer.from(compactBase64, 'base64')
 
   if (buffer.length === 0) {
     throw new SecureImageError('Image vide ou invalide.', 400)
