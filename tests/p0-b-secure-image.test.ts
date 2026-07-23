@@ -6,7 +6,6 @@ import {
   normalizeImageForAi,
   privateImageReference,
   publicImageUrl,
-  SecureImageError,
 } from '@/lib/images/secure-image'
 
 describe('P0-B secure image normalization', () => {
@@ -38,18 +37,18 @@ describe('P0-B secure image normalization', () => {
   it('rejects unsupported formats before any AI call', async () => {
     await expect(
       normalizeImageForAi('data:image/svg+xml;base64,PHN2Zz48L3N2Zz4='),
-    ).rejects.toMatchObject<Partial<SecureImageError>>({ statusCode: 415 })
+    ).rejects.toMatchObject({ statusCode: 415 })
   })
 
   it('rejects malformed base64 payloads', async () => {
-    await expect(normalizeImageForAi('%%%not-base64%%%')).rejects.toMatchObject<
-      Partial<SecureImageError>
-    >({ statusCode: 400 })
+    await expect(normalizeImageForAi('%%%not-base64%%%')).rejects.toMatchObject({
+      statusCode: 400,
+    })
   })
 
   it('rejects images above the server limit', async () => {
     const oversized = Buffer.alloc(6 * 1024 * 1024 + 1, 1).toString('base64')
-    await expect(normalizeImageForAi(oversized)).rejects.toMatchObject<Partial<SecureImageError>>({
+    await expect(normalizeImageForAi(oversized)).rejects.toMatchObject({
       statusCode: 413,
     })
   })
