@@ -1,0 +1,52 @@
+name: P1-A Test Diagnostic
+
+on:
+  push:
+    branches:
+      - feat/p1-a-pro-crm-foundation
+    paths:
+      - .github/workflows/p1-a-test-diagnostic.yml
+      - P1A_TEST_TRIGGER.txt
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: file:/tmp/aqwelia-ci.db
+      NEXTAUTH_SECRET: test-secret-for-ci-only-do-not-use-in-production
+      NEXTAUTH_URL: http://localhost:3099
+      AUTH_TRUST_HOST: true
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_test_ci_placeholder
+      REVENUECAT_WEBHOOK_SECRET: rc_wh_test_ci_only
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: feat/p1-a-pro-crm-foundation
+          fetch-depth: 1
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.4'
+      - run: bun install --frozen-lockfile
+      - run: bun run db:generate:all
+      - name: Capture failing test tail
+        shell: bash
+        run: |
+          set +e
+          bun run test > /tmp/p1-a-tests.log 2>&1
+          CODE=$?
+          tail -n 300 /tmp/p1-a-tests.log > P1A_TEST_FAILURE.txt
+          echo "exit_code=${CODE}" >> P1A_TEST_FAILURE.txt
+          exit 0
+      - name: Commit diagnostic
+        run: |
+          rm -f P1A_TEST_TRIGGER.txt
+          rm -f .github/workflows/p1-a-test-diagnostic.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'chore(p1-a): capture test failure [skip diagnostic]'
+          git push origin HEAD:feat/p1-a-pro-crm-foundation
