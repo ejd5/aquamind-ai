@@ -31,6 +31,12 @@ import { Input } from '@/components/ui/input'
 import { toast } from '@/hooks/use-toast'
 import { api, ApiError } from '@/lib/api-client'
 import { useTranslations } from 'next-intl'
+import {
+  calculateDiagnosticProtocolDose,
+  calculatePhCorrection,
+  dosageInMillilitres,
+  formatDosageQuantity,
+} from '@/lib/pool/diagnostic-dosage'
 
 // Type alias for the translation function returned by useTranslations.
 type TFunc = ReturnType<typeof useTranslations>
@@ -108,43 +114,9 @@ interface WaterTestRow {
 }
 
 // ───────────────────────────────────────────────────────────────────────────
-// Dosage helpers — user-friendly approximations for the action plan.
-// These are pedagogical ballparks, NOT a substitute for the product label.
-// (Deterministic precise engine lives in src/lib/pool/dosing-engine.ts)
+// Dosage display — all quantities come from the central deterministic engine.
 // ───────────────────────────────────────────────────────────────────────────
 
-function fmtQty(n: number, unit: 'g' | 'mL' | 'L'): string {
-  if (unit === 'L') return `${(n / 1000).toFixed(2)} L`
-  if (n >= 1000) return `${(n / 1000).toFixed(2)} kg`
-  return `${Math.round(n)} ${unit}`
-}
-
-/** pH- (poudre) : ~10 g/m³ pour abaisser de 0.1 unité */
-function phMinusGramsPer01(poolVolume: number): number {
-  return Math.round(poolVolume * 10)
-}
-/** pH+ (carbonate) : ~15 g/m³ pour remonter de 0.1 unité */
-function phPlusGramsPer01(poolVolume: number): number {
-  return Math.round(poolVolume * 15)
-}
-/** Chlore choc curatif : ~10 g/m³ */
-function chlorineShockGrams(poolVolume: number): number {
-  return Math.round(poolVolume * 10)
-}
-/** Anti-algues curatif : ~20 mL/m³ */
-function antiAlgaeMl(poolVolume: number): number {
-  return Math.round(poolVolume * 20)
-}
-/** Floculant : ~5 mL/m³ */
-function flocculantMl(poolVolume: number): number {
-  return Math.round(poolVolume * 5)
-}
-
-/**
- * Compute a precise dosage recommendation for the user's measured pH.
- * Uses the deterministic engine from src/lib/pool/dosing-engine.ts.
- * Returns null if pH is already in the ideal range.
- */
 function computePhRecommendation(
   ph: number,
   poolVolume: number,
@@ -152,7 +124,7 @@ function computePhRecommendation(
 ): {
   product: string
   quantity: number
-  unit: 'g' | 'mL' | 'L'
+  unit: string
   message: string
   warning?: string
 } | null {
@@ -168,34 +140,32 @@ function computePhRecommendation(
     }
   }
 
+  const dosage = calculatePhCorrection(ph, poolVolume)
+  if (!dosage) return null
+  const qty = formatDosageQuantity(dosage)
+
   if (ph > IDEAL_HIGH) {
-    // pH too high → pH-
-    const drop = Math.min(ph - IDEAL_HIGH, 0.3) // safe delta cap
-    const grams = (drop / 0.1) * phMinusGramsPer01(poolVolume)
     return {
       product: t('productPhMinus'),
-      quantity: grams,
-      unit: 'g',
+      quantity: dosage.quantity,
+      unit: dosage.unit,
       message: t('phHigh', {
         ph: ph.toFixed(2),
-        qty: fmtQty(grams, 'g'),
-        delta: drop.toFixed(1),
+        qty,
+        delta: Math.min(ph - IDEAL_HIGH, 0.3).toFixed(1),
       }),
       warning: t('phHighWarning'),
     }
   }
 
-  // pH too low → pH+
-  const rise = Math.min(IDEAL_LOW - ph, 0.3)
-  const grams = (rise / 0.1) * phPlusGramsPer01(poolVolume)
   return {
     product: t('productPhPlus'),
-    quantity: grams,
-    unit: 'g',
+    quantity: dosage.quantity,
+    unit: dosage.unit,
     message: t('phLow', {
       ph: ph.toFixed(2),
-      qty: fmtQty(grams, 'g'),
-      delta: rise.toFixed(1),
+      qty,
+      delta: Math.min(IDEAL_LOW - ph, 0.3).toFixed(1),
     }),
     warning: t('phLowWarning'),
   }
@@ -269,6 +239,19 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number, t: TFun
     max: 300,
   }
 
+  const shockDose = calculateDiagnosticProtocolDose(
+    'green_water_chlorine_shock',
+    poolVolume,
+  )
+  const shockGrams = shockDose?.unit === 'g' ? Math.round(shockDose.quantity) : 0
+  const antiAlgaeDose = calculateDiagnosticProtocolDose('anti_algae_curative', poolVolume)
+  const antiAlgaeMillilitres = Math.round(dosageInMillilitres(antiAlgaeDose))
+  const flocculantDose = calculateDiagnosticProtocolDose(
+    'flocculant_clarification',
+    poolVolume,
+  )
+  const flocculantMillilitres = Math.round(dosageInMillilitres(flocculantDose))
+
   if (hasGreenWater || hasAlgae) {
     return [
       {
@@ -280,14 +263,11 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number, t: TFun
           t('greenS1I2'),
           t('greenS1I3'),
           t('greenS1I4'),
-          t('greenS1I5', { qty: phMinusGramsPer01(poolVolume), volume: poolVolume }),
           t('greenS1I6'),
           t('greenS1I7'),
           t('greenS1I8'),
         ],
         productType: t('greenS1Product'),
-        dosageText: (v) =>
-          t('greenS1Dosage', { qty: phMinusGramsPer01(v), volume: v }),
         waitTime: '2h',
         inputFields: [phField],
         urgency: 'critical',
@@ -305,8 +285,6 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number, t: TFun
           t('greenS2I5'),
         ],
         productType: t('greenS2Product'),
-        dosageText: (v) =>
-          t('greenS2Dosage', { qty: Math.round(phMinusGramsPer01(v) / 2), volume: v }),
         waitTime: '0',
         inputFields: [phField],
         urgency: 'critical',
@@ -321,8 +299,8 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number, t: TFun
           t('greenS3I2'),
           t('greenS3I3', {
             volume: poolVolume,
-            qty: chlorineShockGrams(poolVolume),
-            tablets: (chlorineShockGrams(poolVolume) / 20).toFixed(0),
+            qty: shockGrams,
+            tablets: Math.max(1, Math.round(shockGrams / 20)),
           }),
           t('greenS3I4'),
           t('greenS3I5'),
@@ -330,7 +308,10 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number, t: TFun
           t('greenS3I7'),
         ],
         productType: t('greenS3Product'),
-        dosageText: (v) => t('greenS3Dosage', { qty: chlorineShockGrams(v), volume: v }),
+        dosageText: (v) => {
+          const dose = calculateDiagnosticProtocolDose('green_water_chlorine_shock', v)
+          return dose ? formatDosageQuantity(dose) : '—'
+        },
         waitTime: '8h',
         inputFields: [{ ...chlorineField, required: false }],
         urgency: 'critical',
@@ -345,14 +326,17 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number, t: TFun
           t('greenS4I2'),
           t('greenS4I3', {
             volume: poolVolume,
-            qty: antiAlgaeMl(poolVolume),
-            liters: (antiAlgaeMl(poolVolume) / 1000).toFixed(2),
+            qty: antiAlgaeMillilitres,
+            liters: (antiAlgaeMillilitres / 1000).toFixed(2),
           }),
           t('greenS4I4'),
           t('greenS4I5'),
         ],
         productType: t('greenS4Product'),
-        dosageText: (v) => t('greenS4Dosage', { qty: antiAlgaeMl(v), volume: v }),
+        dosageText: (v) => {
+          const dose = calculateDiagnosticProtocolDose('anti_algae_curative', v)
+          return dose ? formatDosageQuantity(dose) : '—'
+        },
         waitTime: '2h',
         urgency: 'important',
         done: false,
@@ -434,12 +418,10 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number, t: TFun
         instructions: [
           t('cloudyS2I1'),
           t('cloudyS2I2'),
-          t('cloudyS2I3', { qty: phMinusGramsPer01(poolVolume), volume: poolVolume }),
           t('cloudyS2I4'),
           t('cloudyS2I5'),
         ],
         productType: t('cloudyS2Product'),
-        dosageText: (v) => t('cloudyS2Dosage', { qty: phMinusGramsPer01(v), volume: v }),
         waitTime: '2h',
         inputFields: [phField],
         urgency: 'critical',
@@ -452,13 +434,16 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number, t: TFun
         instructions: [
           t('cloudyS3I1'),
           t('cloudyS3I2'),
-          t('cloudyS3I3', { volume: poolVolume, qty: flocculantMl(poolVolume) }),
+          t('cloudyS3I3', { volume: poolVolume, qty: flocculantMillilitres }),
           t('cloudyS3I4'),
           t('cloudyS3I5'),
           t('cloudyS3I6'),
         ],
         productType: t('cloudyS3Product'),
-        dosageText: (v) => t('cloudyS3Dosage', { qty: flocculantMl(v), volume: v }),
+        dosageText: (v) => {
+          const dose = calculateDiagnosticProtocolDose('flocculant_clarification', v)
+          return dose ? formatDosageQuantity(dose) : '—'
+        },
         waitTime: '12h',
         urgency: 'moderate',
         done: false,
