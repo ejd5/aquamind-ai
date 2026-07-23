@@ -87,7 +87,10 @@ export default function ProPoolDetailPage() {
     setLoading(false)
   }, [id])
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void load() }, 0)
+    return () => window.clearTimeout(timer)
+  }, [load])
 
   async function saveService(event: React.FormEvent) {
     event.preventDefault(); setSaving(true); setMessage('')
