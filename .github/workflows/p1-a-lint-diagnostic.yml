@@ -1,0 +1,41 @@
+name: P1-A Lint Diagnostic
+
+on:
+  push:
+    branches:
+      - feat/p1-a-pro-crm-foundation
+    paths:
+      - .github/workflows/p1-a-lint-diagnostic.yml
+      - P1A_LINT_TRIGGER.txt
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: feat/p1-a-pro-crm-foundation
+          fetch-depth: 1
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.4'
+      - run: bun install --frozen-lockfile
+      - name: Capture lint output
+        shell: bash
+        run: |
+          set +e
+          bun run lint > P1A_LINT.txt 2>&1
+          echo "exit_code=$?" >> P1A_LINT.txt
+          exit 0
+      - name: Commit diagnostic
+        run: |
+          rm -f P1A_LINT_TRIGGER.txt
+          rm -f .github/workflows/p1-a-lint-diagnostic.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'chore(p1-a): capture lint diagnostic [skip diagnostic]'
+          git push origin HEAD:feat/p1-a-pro-crm-foundation
