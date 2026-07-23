@@ -17,6 +17,7 @@ import {
   calculateLSI,
 } from '@/lib/pool/water-balance'
 import { assessSwimSafety } from '@/lib/pool/safety-rules'
+import { normalizeImageForAi, SecureImageError } from '@/lib/images/secure-image'
 
 export const runtime = 'nodejs'
 
@@ -28,22 +29,17 @@ export const runtime = 'nodejs'
  *
  * Pipeline:
  *   1. Auth + plan gate (canAccess('photo_scan') with monthly quota)
- *   2. NVIDIA VLM (nemotron-nano-12b-v2-vl) analyzes the strip
- *   3. Parameter names are normalized to WaterTest fields (ph, freeChlorine, …)
- *   4. If `save: true`, persists a WaterTest (source='strip_photo') + action plan
- *
- * Response: {
- *   analysis: StripScanAnalysis,
- *   raw?: string,                       // VLM raw output (debug)
- *   saved: boolean,
- *   waterTest?: WaterTest,              // only when save=true
- *   actionPlan?: ActionPlan,            // only when save=true + profile exists
- *   quota?: { used, limit },            // monthly scan quota info
- * }
+ *   2. Server-side image normalization removes metadata and bounds dimensions
+ *   3. NVIDIA VLM (nemotron-nano-12b-v2-vl) analyzes the normalized strip
+ *   4. Parameter names are normalized to WaterTest fields (ph, freeChlorine, …)
+ *   5. If `save: true`, persists a WaterTest (source='strip_photo') + action plan
  */
 
-// ── Plan helper ──────────────────────────────────────────────────────────────
-async function getUserPlanInfo(userId: string): Promise<{ planId: PlanId; status: import('@/lib/billing/plans').SubscriptionStatus; expiresAt: Date | null }> {
+async function getUserPlanInfo(userId: string): Promise<{
+  planId: PlanId
+  status: import('@/lib/billing/plans').SubscriptionStatus
+  expiresAt: Date | null
+}> {
   const sub = await db.subscription.findFirst({
     where: { userId, active: true },
     orderBy: { startedAt: 'desc' },
@@ -71,7 +67,6 @@ async function getPhotoScansThisMonth(userId: string): Promise<number> {
   return photoCount + stripCount
 }
 
-// ── VLM prompt ───────────────────────────────────────────────────────────────
 const STRIP_SCAN_PROMPT = `Analyze this pool/spa test strip image. For each pad on the strip, identify:
   1. Which parameter it tests (pH, Free Chlorine, Total Chlorine, Total Alkalinity, Cyanuric Acid, Hardness, Bromine, Salt, Phosphates, Temperature)
   2. The color match value based on standard pool test strip color charts
@@ -96,7 +91,6 @@ Rules:
 - "imageQuality" reflects overall photo quality, not the strip itself.
 - Never invent values you cannot see. Omit pads you cannot read rather than guessing.`
 
-// ── VLM response types ───────────────────────────────────────────────────────
 interface StripParameter {
   name: string
   value: number | null
@@ -112,12 +106,8 @@ interface StripScanAnalysis {
   qualityNotes?: string
 }
 
-// ── Parameter name normalization ─────────────────────────────────────────────
-// Multilingual parameter synonyms — imported from the single source of truth.
 import { normalizeParamName } from '@/lib/pool/strip-scan-synonyms'
 
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
 function numOrNull(v: unknown): number | null {
   if (v === '' || v === null || v === undefined) return null
   const n = Number(v)
@@ -126,7 +116,6 @@ function numOrNull(v: unknown): number | null {
 
 function parseAnalysis(content: string): StripScanAnalysis | null {
   if (!content) return null
-  // Try to extract a JSON object from the response
   const m = content.match(/\{[\s\S]*\}/)
   if (!m) return null
   try {
@@ -134,11 +123,14 @@ function parseAnalysis(content: string): StripScanAnalysis | null {
     return {
       parameters: Array.isArray(parsed.parameters) ? parsed.parameters : [],
       stripBrand: typeof parsed.stripBrand === 'string' ? parsed.stripBrand : 'unknown',
-      overallConfidence: typeof parsed.overallConfidence === 'number'
-        ? Math.max(0, Math.min(100, parsed.overallConfidence))
-        : 0,
+      overallConfidence:
+        typeof parsed.overallConfidence === 'number'
+          ? Math.max(0, Math.min(100, parsed.overallConfidence))
+          : 0,
       imageQuality:
-        parsed.imageQuality === 'good' || parsed.imageQuality === 'fair' || parsed.imageQuality === 'poor'
+        parsed.imageQuality === 'good' ||
+        parsed.imageQuality === 'fair' ||
+        parsed.imageQuality === 'poor'
           ? parsed.imageQuality
           : 'fair',
       qualityNotes: typeof parsed.qualityNotes === 'string' ? parsed.qualityNotes : undefined,
@@ -148,7 +140,6 @@ function parseAnalysis(content: string): StripScanAnalysis | null {
   }
 }
 
-/** Build a WaterTest payload from normalized scan parameters. */
 function buildTestPayload(analysis: StripScanAnalysis) {
   const mapped: Record<string, number | null> = {}
   for (const p of analysis.parameters) {
@@ -157,7 +148,6 @@ function buildTestPayload(analysis: StripScanAnalysis) {
     const v = numOrNull(p.value)
     if (v != null) mapped[key] = v
   }
-  // pH is required to save a WaterTest. If missing, return null to signal caller.
   if (mapped.ph == null) return null
   return {
     ph: mapped.ph,
@@ -174,7 +164,6 @@ function buildTestPayload(analysis: StripScanAnalysis) {
   }
 }
 
-// ── Route handler ────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
@@ -188,16 +177,21 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const image: string | undefined = body?.image
     const save: boolean = Boolean(body?.save)
-    if (!image) {
+    if (!image || typeof image !== 'string') {
       const msg = await translate(locale, 'stripScan.noImage', 'Image base64 requise')
       return NextResponse.json({ error: msg }, { status: 400 })
     }
 
-    // ── Plan gate (monthly photo scan quota) ──────────────────────────────
     const { planId, status, expiresAt } = await getUserPlanInfo(userId)
     const plan = PLANS.find((p) => p.id === planId) || PLANS[0]
     const used = await getPhotoScansThisMonth(userId)
-    const gate = canAccess(planId, status, 'photo_scan', { photoScansThisMonth: used }, expiresAt)
+    const gate = canAccess(
+      planId,
+      status,
+      'photo_scan',
+      { photoScansThisMonth: used },
+      expiresAt,
+    )
     if (!gate.allowed) {
       const fallback = gate.reason || 'Quota de scans atteint'
       const msg = await translate(locale, gate.reasonKey || 'gates.photo_scan_limit', fallback)
@@ -208,20 +202,20 @@ export async function POST(req: NextRequest) {
           quota: { used, limit: plan.limits.maxPhotoScansPerMonth },
           ctaPlan: gate.ctaPlan,
         },
-        { status: 403 }
+        { status: 403 },
       )
     }
 
-    // ── VLM call ──────────────────────────────────────────────────────────
-    const vlm = await nvidiaVision(STRIP_SCAN_PROMPT, image, {
+    // Security boundary: the provider only receives a normalized JPEG without
+    // EXIF/GPS metadata, bounded to 1600 px and 6 MB input.
+    const normalized = await normalizeImageForAi(image)
+    const vlm = await nvidiaVision(STRIP_SCAN_PROMPT, normalized.dataUrl, {
       maxTokens: 1200,
       temperature: 0.2,
     })
     const content = vlm.content || ''
     let analysis = parseAnalysis(content)
 
-    // Fallback if VLM returned garbage — surface a "no strip detected" result
-    // so the client always gets a structured object.
     if (!analysis) {
       analysis = {
         parameters: [],
@@ -232,14 +226,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── Optional: persist as WaterTest ────────────────────────────────────
     let waterTest: Awaited<ReturnType<typeof db.waterTest.create>> | null = null
     let actionPlan: Awaited<ReturnType<typeof db.actionPlan.create>> | null = null
     if (save) {
       const payload = buildTestPayload(analysis)
       if (!payload) {
-        // pH missing → cannot save. Return analysis + a flag so the client
-        // can show a friendly message and let the user input values manually.
         return NextResponse.json({
           analysis,
           raw: content,
@@ -251,23 +242,22 @@ export async function POST(req: NextRequest) {
       const cwi = calculateClearWaterIndex(payload as any)
       const swim = assessSwimSafety(payload as any)
       const lsi = calculateLSI(payload as any)
-      let status = 'ok'
-      if (swim.status === 'forbidden' || cwi < 40) status = 'critical'
-      else if (cwi < 85 || swim.status === 'avoid') status = 'warning'
+      let testStatus = 'ok'
+      if (swim.status === 'forbidden' || cwi < 40) testStatus = 'critical'
+      else if (cwi < 85 || swim.status === 'avoid') testStatus = 'warning'
 
       waterTest = await db.waterTest.create({
         data: {
           ...payload,
           userId,
           source: 'strip_photo',
-          status,
+          status: testStatus,
           clearWaterIndex: cwi,
           swimSafety: swim.status,
           lsi,
         },
       })
 
-      // Action plan (deterministic) — only if user has a pool profile
       const profile = await db.poolProfile.findFirst({ where: { userId } })
       if (profile) {
         const plan2 = generateActionPlan(payload as any, {
@@ -295,7 +285,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── Analytics (fire-and-forget) ───────────────────────────────────────
     void trackEventServer(
       'strip_scan_run',
       {
@@ -305,8 +294,12 @@ export async function POST(req: NextRequest) {
         imageQuality: analysis.imageQuality,
         saved: save,
         plan: planId,
+        imageInputBytes: normalized.inputBytes,
+        imageOutputBytes: normalized.outputBytes,
+        imageWidth: normalized.width,
+        imageHeight: normalized.height,
       },
-      userId
+      userId,
     )
 
     return NextResponse.json({
@@ -318,6 +311,12 @@ export async function POST(req: NextRequest) {
       quota: { used: used + 1, limit: plan.limits.maxPhotoScansPerMonth },
     })
   } catch (e) {
+    if (e instanceof SecureImageError) {
+      return NextResponse.json(
+        { error: e.message, code: 'invalid_image' },
+        { status: e.statusCode },
+      )
+    }
     const msg = e instanceof Error ? e.message : 'Erreur'
     return NextResponse.json({ error: msg }, { status: 500 })
   }
