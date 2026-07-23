@@ -142,9 +142,11 @@
 | **Tables** | `WaterTest.lsi` |
 | **Tests** | **Aucun test unitaire dédié** |
 | **Dépendances** | Aucune (fonctions pures) |
-| **Preuve** | Formule LSI simplifiée: pH + tempFactor + calciumFactor + alkalinityFactor - 12.1. Interprétation en 5 niveaux. |
-| **Risques** | Approximation step-function au lieu de formules continues. Aucun test. CWI est un index custom (pas standard industrie). |
-| **Travail restant** | Tests unitaires, validation contre calculateurs LSI standards |
+| **Preuve** | Formule LSI **simplifiée/approximée** : `pH + tempFactor + calciumFactor + alkalinityFactor - 12.1`. Les 3 facteurs sont des step-functions (lookup tables 8 paliers) au lieu des formules logarithmiques standard. Omets TDS. Constante -12.1 remplace la formule combinée standard. Interprétation en 5 niveaux (-0.3 à +0.3 = équilibré). |
+| **Formule standard** | `LSI = pH - (9.3 + A + B - C - D)` avec A=log10(TDS)/10, B=-13.12×log10(T+273)+34.55, C=log10(TH)-0.4, D=log10(TAC) |
+| **Différences** | (1) Pas de TDS dans la version simplifiée, (2) tempFactor = 8 paliers discrets vs formule continue, (3) calciumFactor = 8 paliers discrets vs log, (4) alkalinityFactor = log10(TAC)×0.1+1.0, (5) constante -12.1 vs combinée |
+| **Risques** | Approximation acceptable pour usage grand public. Valeurs imprécises aux frontières des paliers. Le gate `pro_mode` existe mais n'est JAMAIS vérifié — le LSI est calculé pour TOUS les utilisateurs quel que soit le plan. |
+| **Travail restant** | (1) Documenter que c'est une approximation dans le code, (2) Valider contre 3 cas de test LSI standard, (3) Ajouter tests unitaires, (4) Vérifier si le gate `pro_mode` doit être appliqué |
 
 ---
 
@@ -237,10 +239,11 @@
 | **Routes** | `GET/POST/DELETE /api/pool/photo-diagnostic` |
 | **Tables** | `PhotoDiagnostic` |
 | **Tests** | **Aucun test** |
-| **Dépendances** | NVIDIA VLM (Nemotron Nano 12B VL), Prisma |
-| **Preuve** | Upload photo → VLM analyse → JSON structuré (detectedIssues, probableIssues, confidence) → plan d'action par pattern matching |
-| **Risques** | **CRITIQUE** : Images stockées en base64 dans la DB (pas S3). EXIF non strippé (GPS, device). Pas de DPA documenté avec NVIDIA. Pas de TTL de suppression. |
-| **Travail restant** | S3 pour photos, strippage EXIF, DPA NVIDIA, tests, TTL suppression |
+| **Dépendances** | `z-ai-web-dev-sdk` (provider IA inconnu), Prisma, sharp (installé mais inutilisé) |
+| **Preuve** | Upload photo → base64 → VLM analyse → JSON structuré → plan d'action par pattern matching |
+| **Flow complet** | (1) Client : `FileReader.readAsDataURL(file)` → base64 avec EXIF intact, (2) POST JSON avec base64 complet (jusqu'à 6 Mo), (3) API route reçoit base64, l'envoie tel quel au provider IA, (4) DB : `imageUrl: image.substring(0, 500)` (tronqué, inutilisable) |
+| **Risques** | **CRITIQUE** : (1) Images tronquées en DB (500 chars = thumbnails non fonctionnels), (2) EXIF non strippé (GPS, device envoyés au provider IA), (3) Provider IA inconnu (SDK masque le backend), (4) Pas de DPA, (5) Pas de TTL de suppression, (6) `sharp` installé mais jamais utilisé, (7) `capture="environment"` déclenche l'appareil photo avec EXIF complet |
+| **Travail restant** | (1) Stockage objet (S3/R2), (2) Strippage EXIF, (3) DPA, (4) Tests, (5) TTL, (6) Utiliser sharp |
 
 ---
 
@@ -399,8 +402,10 @@
 | **Tests** | **Aucun test** |
 | **Dépendances** | Auth, Prisma |
 | **Preuve** | CRUD complet clients/piscines/interventions, rapports PDF, export CSV, dashboard agrégé |
-| **Risques** | **Zéro tests**. Pas de facturation Pro. Pas de QuickBooks/Xero. Pas de routage optimisé. |
-| **Travail restant** | Tests, facturation, intégrations comptables |
+| **Ce qui existe** | (1) CRM clients/piscines/interventions, (2) Planning semaine (UI_ONLY, pas de drag-and-drop), (3) Rapports PDF interventions, (4) Export CSV |
+| **Ce qui N'EXISTE PAS** | (1) **Devis** : aucun module, aucune API, aucun composant — PUREMENT MARKETING, (2) **Facturation** : aucun module — PUREMENT MARKETING, (3) **Routage optimisé** : aucun algorithme — PUREMENT MARKETING, (4) **QuickBooks/Xero** : aucune intégration — PUREMENT MARKETING, (5) **Synchronisation comptable** : aucune — PUREMENT MARKETING |
+| **Risques** | **Zéro tests**. Les features marketing (devis, facturation, routage) n'ont AUCUNE implémentation. Le `canAccess()` dans `freemium.ts` n'est JAMAIS appelé par les composants Pro. |
+| **Travail restant** | (1) Tests CRITIQUES, (2) Devis → P1, (3) Planning avancé (drag-and-drop) → P1, (4) Routage → P1/P2, (5) Facturation → P1/P2, (6) Intégrations comptables → P2/P3 |
 
 ---
 

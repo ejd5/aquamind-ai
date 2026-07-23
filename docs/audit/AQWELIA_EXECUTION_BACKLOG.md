@@ -45,18 +45,25 @@
 | **Risque** | Tromperie commerciale |
 | **Ordre recommandé** | 2 |
 
-### AUDIT-003 : Migrer les images de diagnostic vers S3
+### AUDIT-003 : Choisir et implémenter le stockage objet pour les photos
 
 | Champ | Détail |
 |-------|--------|
-| **Problème** | Images stockées en base64 dans la DB (2-10 Mo par diagnostic) |
-| **Preuve** | `src/app/api/pool/photo-diagnostic/route.ts:79` — commentaire « use S3 in production » |
-| **Fichiers probables** | `src/app/api/pool/photo-diagnostic/route.ts`, nouveau service S3, migrations DB |
-| **Dépendances** | Service S3 (AWS/Cloudflare R2/autre) |
-| **Tests attendus** | Upload S3, retrieval, TTL de suppression |
-| **Critères d'acceptation** | Plus aucune image base64 en DB. Images servies depuis S3 avec URL signée. TTL de suppression. |
-| **Risque** | Bombardement de la DB, coût de stockage, RGPD |
+| **Problème** | Les images sont tronquées à 500 chars en DB (inutilisables). Le base64 complet est envoyé au provider IA mais pas persisté. Pas de récupération possible des photos. |
+| **Preuve** | `src/app/api/pool/photo-diagnostic/route.ts:48` — `image.substring(0, 500)` |
+| **Fichiers probables** | `src/app/api/pool/photo-diagnostic/route.ts`, nouveau service stockage, schéma DB |
+| **Dépendances** | Choix du provider de stockage (S3/R2/Blob/EU — voir matrice ci-dessous) |
+| **Tests attendus** | Upload, retrieval, TTL suppression |
+| **Critères d'acceptation** | Photos persistées, thumbnails fonctionnels, TTL automatique |
+| **Risque** | Photos perdues, RGPD, coût de stockage |
 | **Ordre recommandé** | 3 |
+| **Note** | **Choix du provider requis avant d'écrire du code** |
+| | |
+| **Matrice de comparaison** | |
+| | **AWS S3** : Mature, écosystème riche, coûteux (0.023$/GB), compliance EU possible (eu-west-1), egress fees |
+| | **Cloudflare R2** : S3-compatible, pas de egress fees, moins cher, compliance EU, moins d'écosystème |
+| | **Vercel Blob** : Intégré si Vercel, limité, pas de TTL natif, pas de EU region |
+| | **Europa (OVH)** : EU-only, compliance stricte, moins documenté, coût compétitif |
 
 ### AUDIT-004 : Strpper les métadonnées EXIF des photos
 
@@ -71,35 +78,58 @@
 | **Risque** | RGPD — données de localisation envoyées à un tiers |
 | **Ordre recommandé** | 4 |
 
-### AUDIT-005 : Documenter le DPA NVIDIA
+### AUDIT-005 : Documenter le DPA (technique + juridique)
 
 | Champ | Détail |
 |-------|--------|
-| **Problème** | Pas de Data Processing Agreement documenté avec NVIDIA |
+| **Problème** | Pas de Data Processing Agreement documenté avec le provider IA. Le provider est inconnu (le SDK `z-ai-web-dev-sdk` masque le backend). |
 | **Preuve** | Aucune mention dans le code ou la documentation |
-| **Fichiers probables** | Documentation, politique de confidentialité |
-| **Dépendances** | Contact NVIDIA |
-| **Tests attendus** | Document signé ou confirmation de l'existence du DPA |
-| **Critères d'acceptation** | DPA existant et référencé dans la politique de confidentialité |
+| **Fichiers probables** | Documentation architecture, politique de confidentialité |
+| **Dépendances** | Identification du provider réel derrière `z-ai-web-dev-sdk` |
+| **Tests attendus** | Document technique + document juridique |
+| **Critères d'acceptation** | Les deux aspects documentés |
 | **Risque** | RGPD — transfert illégal de données |
 | **Ordre recommandé** | 5 |
+| | |
+| **Aspect technique (dans le code)** | |
+| - Action | Documenter quelles données sont envoyées, où, comment, combien de temps |
+| - Données envoyées | (1) Photos : base64 complet + typeHint, (2) Chat : profil pool + mesure eau + 10 messages + system prompt |
+| - Fichier cible | README technique ou section dans ARCHITECTURE.md |
+| | |
+| **Aspect juridique (hors code)** | |
+| - Action | Signer un DPA avec le provider identifié, créer la politique de confidentialité |
+| - Délai | Avant tout lancement commercial |
+| - Fichier cible | docs/legal/privacy-policy.md (à créer) |
 
 ---
 
 ## P0 HIGH
 
-### AUDIT-006 : Aligner les limites du plan Free avec le marketing
+### AUDIT-006 : Résoudre l'incohérence limites Free (Options A / B)
 
 | Champ | Détail |
 |-------|--------|
-| **Problème** | `maxPhotoScansPerMonth: 999999` et `maxTestsPerMonth: 999999` alors que le marketing dit « 2/mois » |
-| **Preuve** | `src/lib/billing/plans.ts` |
-| **Fichiers probables** | `src/lib/billing/plans.ts` |
-| **Dépendances** | Décision business : enforce 2/mois ou changer le marketing |
-| **Tests attendus** | Test que le gate bloque au-delà de la limite |
-| **Critères d'acceptation** | Les limites côté serveur correspondent au marketing |
-| **Risque** | Perte de revenue ou incohérence |
+| **Problème** | `maxPhotoScansPerMonth: 999999` et `maxTestsPerMonth: 999999` (illimité) alors que le marketing dit « 2 scans/mois, 2 tests/mois » |
+| **Preuve** | `src/lib/billing/plans.ts` — limites 999999 vs marketing « 2/mois » |
+| **Fichiers probables** | `src/lib/billing/plans.ts` (code), pages marketing (copy) |
+| **Dépendances** | Décision business requise |
+| **Tests attendus** | Selon l'option choisie |
+| **Critères d'acceptation** | Alignement entre code et marketing |
+| **Risque** | Perte de revenue (Option B) ou expérience dégradée (Option A) |
 | **Ordre recommandé** | 6 |
+| **Note** | **DECISION BUSINESS REQUISE — Pas de code tant que l'option n'est pas validée** |
+| | |
+| **Option A : Enforce 2/mois côté serveur** | |
+| - Action | Modifier `plans.ts` : `maxPhotoScansPerMonth: 2`, `maxTestsPerMonth: 2` |
+| - Impact | Les utilisateurs Free seront limités à 2 scans et 2 tests par mois |
+| - Risque | frustration utilisateur si le free trial est trop restrictif |
+| - Tests | Vérifier que le gate bloque au-delà de la limite |
+| | |
+| **Option B : Modifier le marketing** | |
+| - Action | Mettre à jour les pages marketing pour refléter l'illimité |
+| - Impact | Le free plan devient plus attractif, moins d'incitation à upgrader |
+| - Risque | Perte de conversion Free → Payant |
+| - Tests | Vérifier la cohérence du copy marketing |
 
 ### AUDIT-007 : Reformuler « 10 agents autonomes »
 
@@ -127,35 +157,35 @@
 | **Risque** | Attentes utilisateur non satisfaites |
 | **Ordre recommandé** | 8 |
 
----
-
-## P1
-
 ### AUDIT-009 : Ajouter des clés d'idempotence aux écritures offline
 
 | Champ | Détail |
 |-------|--------|
-| **Problème** | Les retries de flushPending() peuvent créer des doublons |
-| **Preuve** | `src/lib/offline/offline-store.ts` — pas de clé envoyée au serveur |
-| **Fichiers probables** | `src/lib/offline/offline-store.ts`, routes API concernées |
-| **Dépendances** | Coopération côté serveur (header idempotency-key) |
+| **Problème** | Les retries de flushPending() peuvent créer des doublons — risque de données corrompues en production |
+| **Preuve** | `src/lib/offline/offline-store.ts` — `Date.now() + random` comme ID de queue, pas envoyé au serveur |
+| **Fichiers probables** | `src/lib/offline/offline-store.ts`, routes API concernées (7 modules) |
+| **Dépendances** | Coopération côté serveur (header `idempotency-key`) |
 | **Tests attendus** | Test de double POST avec même clé → 1 seul enregistrement |
-| **Critères d'acceptation** | Chaque écriture offline porteur d'une clé unique, le serveur rejette les doublons |
-| **Risque** | Données dupliquées |
+| **Critères d'acceptation** | Chaque écriture offline porte une clé unique, le serveur rejette les doublons |
+| **Risque** | Données dupliquées en production, corruption de données utilisateur |
 | **Ordre recommandé** | 9 |
 
 ### AUDIT-010 : Unifier la logique dosage (diagnostic vs dosing-engine)
 
 | Champ | Détail |
 |-------|--------|
-| **Problème** | diagnostic-action-plan.tsx duplique avec coefficients différents |
-| **Preuve** | `phMinusGramsPer01 = 10` vs `ph_minus_per_01_per_m3 = 7.5` |
+| **Problème** | `diagnostic-action-plan.tsx` duplique la logique dosage avec coefficients différents — risque de surdosage/underdosage |
+| **Preuve** | `phMinusGramsPer01 = 10` (diagnostic) vs `ph_minus_per_01_per_m3 = 7.5` (dosing-engine) |
 | **Fichiers probables** | `src/components/aquamind/diagnostic-action-plan.tsx` |
-| **Dépendances** | dosing-engine.ts |
+| **Dépendances** | `src/lib/pool/dosing-engine.ts` |
 | **Tests attendus** | Même entrée → même recommandation dans les deux flows |
 | **Critères d'acceptation** | Plus de code dupliqué, import depuis dosing-engine |
-| **Risque** | Incohérence de dosage |
+| **Risque** | Incohérence de dosage = risque pour la sécurité baignade |
 | **Ordre recommandé** | 10 |
+
+---
+
+## P1
 
 ### AUDIT-011 : Rendre la confidence dynamique dans les action plans
 
@@ -170,18 +200,22 @@
 | **Risque** | Surévaluation de la fiabilité |
 | **Ordre recommandé** | 11 |
 
-### AUDIT-012 : Implémenter les formules LSI standard
+### AUDIT-012 : Documenter et valider le LSI simplifié
 
 | Champ | Détail |
 |-------|--------|
-| **Problème** | Step-functions au lieu de formules continues |
-| **Preuve** | `src/lib/pool/water-balance.ts:10-34` |
-| **Fichiers probables** | `src/lib/pool/water-balance.ts` |
-| **Dépendances** | Validations contre calculateur LSI standard |
-| **Tests attendus** | Comparaison avec un calculateur LSI reconnu (erreur < 0.05) |
-| **Critères d'acceptation** | LSI calculé avec formules continues, validé |
-| **Risque** | Valeurs imprécises |
+| **Problème** | Le LSI utilise des step-functions (lookup tables) au lieu des formules logarithmiques standard. La documentation ne précise pas que c'est une approximation. |
+| **Preuve** | `src/lib/pool/water-balance.ts:5-44` — `tempFactor`, `calciumFactor`, `alkalinityFactor` sont des paliers discrets |
+| **Formule implémentée** | `LSI = pH + tempFactor(temp) + calciumFactor(TH) + alkalinityFactor(TAC) - 12.1` |
+| **Formule standard** | `LSI = pH - (9.3 + A + B - C - D)` avec A=log10(TDS), B=f(temp), C=log10(TH), D=log10(TAC) |
+| **Différences clés** | (1) Pas de TDS, (2) tempFactor = step-function 8 paliers vs formule continue, (3) calciumFactor = step-function 8 paliers vs log, (4) alkalinityFactor = `log10(TAC)*0.1+1.0` (approximation), (5) constante -12.1 vs combinée |
+| **Fichiers probables** | `src/lib/pool/water-balance.ts` (documentation uniquement) |
+| **Dépendances** | Validation contre un calculateur LSI reconnu |
+| **Tests attendus** | Comparaison avec un calculateur LSI standard (erreur < 0.1) |
+| **Critères d'acceptation** | (1) Commentaire en haut de fichier documentant que c'est une approximation simplifiée pour propriétaires de piscines, (2) Thresholds documentés (-0.3 à +0.3 = équilibré), (3) Comparaison avec 3 cas de test standard |
+| **Risque** | Valeurs imprécises aux frontières des paliers — acceptable pour un usage piscine grand public |
 | **Ordre recommandé** | 12 |
+| **Note** | Ne PAS remplacer par les formules standard — le simplifié est adapté au cas d'usage (pas de TDS disponible côté utilisateur) |
 
 ### AUDIT-013 : Ajouter tests unitaires pour LSI, CWI, predict-engine, reminders
 
@@ -342,50 +376,77 @@
 
 ---
 
-## RÉSUMÉ PAR PRIORITÉ
+## RÉSUMÉ PAR PHASE
 
-| Priorité | Nombre | Tickets |
-|----------|--------|---------|
-| **P0 BLOCKER** | 5 | AUDIT-001 à AUDIT-005 |
-| **P0 HIGH** | 3 | AUDIT-006 à AUDIT-008 |
-| **P1** | 7 | AUDIT-009 à AUDIT-015 |
-| **P2** | 5 | AUDIT-016 à AUDIT-020 |
-| **P3** | 5 | AUDIT-021 à AUDIT-025 |
-| **Total** | **25** | |
+| Phase | Objectif | Tickets | Durée estimée |
+|-------|----------|---------|---------------|
+| **P0-A** | Conformité RGPD et claims | AUDIT-001, 002, 004, 005 | 1 semaine |
+| **P0-B** | Stockage et données | AUDIT-003, 006, 009, 010 | 1-2 semaines |
+| **P0-C** | Claims et positionnement | AUDIT-007, 008 | 2-3 jours |
+| **P1** | Fiabilité et qualité | AUDIT-011, 012, 013, 014, 015 | 2-3 semaines |
+| **P2** | Améliorations et features | AUDIT-016 à 025 | Mois 2+ |
+| **Total** | | **25 tickets** | |
 
 ---
 
-## ORDRE D'EXÉCUTION RECOMMANDÉ
+## ORDRE D'EXÉCUTION DÉTAILLÉ
 
-### Semaine 1 : P0 BLOCKER (AUDIT-001 à 005)
-- Supprimer les claims fausses (QuickBooks, Xero, routage, facturation, sync)
-- Sourcer ou supprimer « +38% »
-- Migrier images vers S3
-- Strpper EXIF
-- Documenter DPA NVIDIA
+### P0-A : Conformité RGPD et claims (Semaine 1)
 
-### Semaine 2 : P0 HIGH + début P1 (AUDIT-006 à 010)
-- Aligner limites Free
-- Reformuler agents / offline
-- Idempotence offline
-- Unifier dosage
-- Confidence dynamique
+**Objectif** : Éliminer les risques juridiques immédiats.
 
-### Semaine 3-4 : P1 restant (AUDIT-011 à 015)
-- LSI standard
-- Tests unitaires
-- Stripe portal
-- OAuth linking
+| Ticket | Action | Dépendances | Critère de sortie |
+|--------|--------|-------------|-------------------|
+| AUDIT-001 | Supprimer QuickBooks, Xero, routage, facturation, sync | Aucune | 0 mention dans les pages publiques |
+| AUDIT-002 | Supprimer ou sourcer « +38% » | Aucune | Affirmation supprimée ou sourcée |
+| AUDIT-004 | Strpper EXIF avec sharp avant envoi IA | sharp déjà installé | 0 métadonnées EXIF dans les images envoyées |
+| AUDIT-005 | Documenter DPA (technique + juridique) | Identification du provider IA | Document technique + juridique créés |
 
-### Mois 2 : P2 (AUDIT-016 à 020)
-- PWA
-- i18n
-- Webhook retry
-- Growth VLM
+### P0-B : Stockage et données (Semaines 1-2)
 
-### Mois 3+ : P3 (AUDIT-021 à 025)
-- Email nurturing
-- Facturation Pro
-- Routage tournées
-- Devis Pro
-- CAPTCHA
+**Objectif** : Corriger les problèmes de stockage de données critiques.
+
+| Ticket | Action | Dépendances | Critère de sortie |
+|--------|--------|-------------|-------------------|
+| AUDIT-003 | Choisir provider stockage objet (S3/R2/Blob/EU), implémenter upload | Décision business | Photos servies depuis stockage objet, thumbnails fonctionnels |
+| AUDIT-006 | Résoudre incohérence limites Free (Option A ou B) | **Décision business requise** | Limites code = marketing |
+| AUDIT-009 | Ajouter clés d'idempotence aux écritures offline | Coopération serveur | 0 doublon après retry |
+| AUDIT-010 | Unifier logique dosage (diagnostic vs dosing-engine) | Aucune | Même entrée = même recommandation |
+
+### P0-C : Claims et positionnement (Semaine 2)
+
+**Objectif** : Corriger le positionnement marketing.
+
+| Ticket | Action | Dépendances | Critère de sortie |
+|--------|--------|-------------|-------------------|
+| AUDIT-007 | Reformuler « 10 agents autonomes » | Aucune | Terme « agent autonome » absent du marketing |
+| AUDIT-008 | Qualifier l'offline | Aucune | Copy = « mode déconnecté pour les données de base » |
+
+### P1 : Fiabilité et qualité (Semaines 2-4)
+
+**Objectif** : Améliorer la fiabilité technique.
+
+| Ticket | Action | Dépendances | Critère de sortie |
+|--------|--------|-------------|-------------------|
+| AUDIT-011 | Confidence dynamique dans les action plans | Aucune | Confidence proportionnelle aux paramètres mesurés |
+| AUDIT-012 | Documenter LSI simplifié + 3 cas de test | Aucune | Commentaire en haut de fichier + tests |
+| AUDIT-013 | Tests unitaires LSI, CWI, predict, reminders | Aucune | 5+ tests par fonction pure |
+| AUDIT-014 | Utiliser stripeCustomerId pour Portal | Aucune | Résolution par ID, pas email |
+| AUDIT-015 | Renforcer liaison OAuth | UX vérification email | allowDangerousEmailAccountLinking désactivé |
+
+### P2 : Améliorations et features (Mois 2+)
+
+**Objectif** : Fonctionnalités avancées et améliorations UX.
+
+| Ticket | Action | Dépendances | Critère de sortie |
+|--------|--------|-------------|-------------------|
+| AUDIT-016 | Service worker + manifest PWA | Aucune | PWA installable |
+| AUDIT-017 | Complétude EN vs FR | Crowdin | Parité de clés |
+| AUDIT-018 | Internationaliser page Growth | Aucune | Page i18n |
+| AUDIT-019 | Cron retry webhooks | Vercel Cron ou worker | Webhooks retentés automatiquement |
+| AUDIT-020 | Intégrer VLM dans flow Growth | Aucune | Diagnostic Growth avec photo |
+| AUDIT-021 | Email nurturing | Provider email | Emails envoyés |
+| AUDIT-022 | Facturation Pro | Décision business tarifs | Module fonctionnel |
+| AUDIT-023 | Routage tournées | API géoloc, TSP/VRP | Itinéraire optimisé |
+| AUDIT-024 | Devis Pro PDF | PDF generation | Devis téléchargeable |
+| AUDIT-025 | CAPTCHA inscription | reCAPTCHA | Inscription protégée |

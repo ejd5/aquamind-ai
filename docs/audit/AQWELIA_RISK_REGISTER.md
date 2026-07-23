@@ -23,35 +23,41 @@
 | Champ | Détail |
 |-------|--------|
 | **Zone** | Diagnostic Photo |
-| **Fichier** | `src/app/api/pool/photo-diagnostic/route.ts` (ligne 79) |
-| **Description** | Les images de diagnostic sont stockées en base64 complet dans la colonne `PhotoDiagnostic.imageUrl`. Un seul diagnostic peut générer 2-10 Mo de base64 en ligne de DB. |
-| **Impact** | Bombardement de la DB (croissance linéaire), lenteur des requêtes, coût de stockage, impossibilité de purger efficacement. |
-| **Preuve** | `imageUrl: image // Store full base64 (for dev/MVP — use S3 in production)` — commentaire dans le code |
-| **Résolution** | Migrer vers S3 (ou équivalent) avec TTL de suppression automatique |
+| **Fichiers** | `src/app/api/pool/photo-diagnostic/route.ts` (ligne 48) |
+| **Description** | Les images de diagnostic sont tronquées à 500 caractères avant stockage en DB (`imageUrl: image.substring(0, 500)`). Le stockage tronqué est inutilisable (image corrompue). Le base64 complet est envoyé au provider IA mais pas persisté. |
+| **Impact** | (1) Thumbnails d'historique non fonctionnels (500 chars = image tronquée), (2) Pas de récupération possible des photos, (3) Croissance de la DB même avec le tronquage. |
+| **Preuve** | `imageUrl: image.substring(0, 500)` — commentaire dans le code |
+| **Options de stockage objet** | (1) **AWS S3** : mature, coûteux, compliance EU possible, (2) **Cloudflare R2** : moins cher, S3-compatible, compliance EU, (3) **Vercel Blob** : intégré si hébergement Vercel, limité, (4) **Europa** (OVH) : compliance EU stricte, moins documenté. **Ne pas verrouiller S3 sans évaluation** — R2 est souvent préférable pour les petits projets (pas de egress fee). |
+| **Résolution** | (1) Choisir un provider de stockage objet, (2) Migrer l'upload vers ce provider, (3) Servir les images via URL signée, (4) TTL de suppression automatique, (5) Mettre à jour le schéma DB |
 | **Délai** | Avant tout lancement commercial |
 
-### R-CRIT-02 : EXIF non strippé — données personnelles envoyées à NVIDIA
+### R-CRIT-02 : EXIF non strippé — données personnelles envoyées au provider IA
 
 | Champ | Détail |
 |-------|--------|
 | **Zone** | Diagnostic Photo + Strip Scan |
 | **Fichiers** | `src/app/api/pool/photo-diagnostic/route.ts`, `src/app/api/pool/strip-scan/route.ts` |
-| **Description** | Les photos envoyées à NVIDIA NIM contiennent les métadonnées EXIF (coordonnées GPS, appareil photo, date/heure). Aucun strippage n'est effectué. |
-| **Impact** | Risque RGPD : données de localisation envoyées à un tiers sans consentement explicite pour cette finalité. |
-| **Preuve** | Aucun import de sharp/piexif/jimp dans les routes photo. Le package sharp est dans package.json mais pas utilisé. |
-| **Résolution** | Installer sharp, stripper EXIF avant envoi à NVIDIA. Documenter dans la politique de confidentialité. |
+| **Description** | **Certitude : DÉFINITIVE.** Aucun handling EXIF n'existe nulle part dans le codebase. Zéro import de sharp, piexif, jimp, ou tout autre lib EXIF. Le flow photo complet est : (1) Client : `FileReader.readAsDataURL(file)` → base64 avec EXIF intact, (2) POST JSON avec base64 complet (jusqu'au service de diagnostic), (3) API route reçoit base64, l'envoie tel quel au provider IA via `zai.chat.completions.createVision()`, (4) DB : `imageUrl: image.substring(0, 500)` (tronqué, mais l'EXIF a déjà été envoyé). |
+| **Flux inspectés** | (1) Photo diagnostic (`module-diagnostic.tsx` → `/api/pool/photo-diagnostic`), (2) Strip scan (`/api/pool/strip-scan`), (3) Equipment photo (champ `photoUrl` existe mais pas d'upload UI), (4) PoolDesign (modèle existe mais jamais utilisé), (5) Health log (affiche les thumbnails tronqués). Seuls les flux 1 et 2 envoient des données au provider IA. |
+| **Métadonnées à risque** | GPS (coordonnées piscine), timestamps, appareil photo (make/model), paramètres caméra, thumbnail intégré, commentaires utilisateur |
+| **Impact** | Risque RGPD : données de localisation envoyées à un tiers sans consentement explicite pour cette finalité. Le `capture="environment"` sur l'input file déclenche directement l'appareil photo, qui produit des photos avec EXIF complet par défaut. |
+| **Preuve** | Aucun import sharp/piexif/jimp dans les routes photo. `sharp` est dans `package.json` mais JAMAIS importé/utilisé dans `src/`. |
+| **Résolution** | (1) Utiliser `sharp` pour stripper EXIF côté serveur avant envoi au provider IA, (2) Documenter dans la politique de confidentialité, (3) Ajouter un consentement explicite pour l'envoi de métadonnées. |
 | **Délai** | Avant tout lancement commercial |
 
-### R-CRIT-03 : Pas de DPA documenté avec NVIDIA
+### R-CRIT-03 : Pas de DPA documenté avec le provider IA
 
 | Champ | Détail |
 |-------|--------|
 | **Zone** | AI Integration |
-| **Fichiers** | `src/lib/ai/nvidia.ts` |
-| **Description** | Les photos et données pool sont envoyées à NVIDIA NIM (API cloud). Aucun Data Processing Agreement (DPA) n'est documenté ou référencé dans le code. |
-| **Impact** | Risque RGPD : transfert de données personnelles vers un tiers sans base légale documentée. |
-| **Preuve** | Aucune mention de DPA dans le code, la documentation, ou les fichiers de config. |
-| **Résolution** | Vérifier/exécuter un DPA avec NVIDIA. Ajouter la mention dans la politique de confidentialité. |
+| **Fichiers** | `src/app/api/pool/photo-diagnostic/route.ts`, `src/app/api/chat/route.ts` |
+| **Description** | Les photos et données pool sont envoyées au provider IA via `z-ai-web-dev-sdk@0.0.18` (SDK non-documenté, pas NVIDIA NIM directement). Aucun Data Processing Agreement n'est documenté. |
+| **Données envoyées au provider IA** | (1) Photo diagnostic : base64 complet (jusqu'à 6 Mo) + typeHint, (2) Chat : profil piscine complet (nom, volume, type traitement, filtre, sel, ensoleillement, couverture, usage) + dernière mesure d'eau (pH, chlore, alcalinité, TH, CYA, sel, température) + 10 derniers messages + prompt système |
+| **PII transmise** | Nom de la piscine (potentiellement identifiable), région/localisation implicite. Pas de noms, emails, ni données de paiement envoyés au provider IA. |
+| **Aspect technique (code)** | (1) Données envoyées : base64 images + contexte pool + chat history, (2) Aucun chiffrement spécifique avant envoi (HTTPS), (3) Aucune rétention côté serveur documentée, (4) Aucune politique de suppression, (5) Le SDK `z-ai-web-dev-sdk` est une boîte noire — le backend réel n'est pas documenté dans le projet |
+| **Aspect juridique (hors code)** | (1) Aucun DPA signé ou référencé, (2) Aucune politique de confidentialité créée, (3) Aucune base légale RGPD documentée pour le transfert, (4) Le provider IA est inconnu (le SDK masque le backend), (5) TODO list dans `STORE_READINESS.md` mentionne "politique de confidentialité" comme à créer |
+| **Impact** | Risque RGPD : transfert de données personnelles vers un tiers sans base légale documentée. Le provider étant inconnu, impossible de vérifier la conformité. |
+| **Résolution** | **Technique** : (1) Documenter exactement quelles données sont envoyées et où, (2) Identifier le provider réel derrière `z-ai-web-dev-sdk`, (3) Évaluer si des données PII sont nécessaires. **Juridique** : (1) Signer un DPA avec le provider identifié, (2) Créer la politique de confidentialité, (3) Ajouter la mention dans les CGU. |
 | **Délai** | Avant tout lancement commercial |
 
 ### R-CRIT-04 : Affirmations commerciales fausses
@@ -116,16 +122,16 @@
 | **Résolution** | Calculer la confiance en fonction du nombre de paramètres mesurés vs requis |
 | **Délai** | Phase 2 |
 
-### R-MAJ-05 : LSI utilise des approximations step-function
+### R-MAJ-05 : LSI simplifié — documentation et validation manquantes
 
 | Champ | Détail |
 |-------|--------|
 | **Zone** | Chimie |
-| **Fichiers** | `src/lib/pool/water-balance.ts` (lignes 10-34) |
-| **Description** | Les facteurs température et calcium sont des step-functions discrètes au lieu de formules logarithmiques continues (standard Langelier). |
-| **Impact** | Valeurs LSI potentiellement imprécises aux frontières des paliers. |
-| **Preuve** | `tempFactor`: 0.3 à 2.0 en 8 paliers discrets. `calciumFactor`: 1.5 à 3.1 en 8 paliers. |
-| **Résolution** | Implémenter les formules LSI standard continues, valider contre un calculateur reconnu |
+| **Fichiers** | `src/lib/pool/water-balance.ts` (lignes 5-44) |
+| **Description** | Le LSI utilise des step-functions (lookup tables 8 paliers) au lieu des formules logarithmiques standard. La formule est `pH + tempFactor + calciumFactor + alkalinityFactor - 12.1`. Omet TDS. Le code ne documente pas que c'est une approximation. |
+| **Impact** | Valeurs potentiellement imprécises aux frontières des paliers. Les utilisateurs avancés pourraient s'attendre à la formule standard. |
+| **Preuve** | `tempFactor`: 0.3 à 2.0 en 8 paliers discrets. `calciumFactor`: 1.5 à 3.1 en 8 paliers. `alkalinityFactor`: log10(TAC)×0.1+1.0. Constante -12.1. |
+| **Résolution** | (1) Documenter l'approximation en haut de fichier, (2) Valider contre 3 cas de test LSI standard, (3) Ajouter tests unitaires. Ne PAS remplacer par les formules standard — le simplifié est adapté au cas d'usage (pas de TDS disponible). |
 | **Délai** | Phase 2 |
 
 ### R-MAJ-06 : Limite decouverte incohérente
@@ -256,6 +262,16 @@
 | **Description** | L'inscription n'a que le rate limiting (10/h) comme protection anti-bot. |
 | **Résolution** | Ajouter reCAPTCHA ou équivalent |
 
+### R-MIN-05 : Hébergement non documenté — pas de Vercel
+
+| Champ | Détail |
+|-------|--------|
+| **Zone** | Infrastructure |
+| **Description** | Le projet utilise un modèle d'hébergement auto-géré (Caddy reverse proxy + Next.js standalone + bun + SQLite). Aucun `vercel.json`, aucune config Vercel, aucune variable `NEXT_PUBLIC_*` ou `VERCEL_*`. Le `next.config.ts` utilise `output: "standalone"` (typique Docker/self-hosted, pas Vercel). La PR #31 a échoué au check Vercel car le projet n'est pas configuré pour Vercel. |
+| **Impact** | Le check Vercel sur la PR est un faux négatif — le projet n'est pas déployé sur Vercel. |
+| **Résolution** | (1) Documenter le modèle d'hébergement dans les docs d'architecture, (2) Désactiver les checks Vercel sur les PR si le projet n'utilise pas Vercel, ou (3) Configurer Vercel si c'est l'hébergement cible. |
+| **Délai** | Phase 2 |
+
 ---
 
 ## MATRICE DE RISQUE
@@ -283,3 +299,4 @@
 | R-MIN-02 | MINEUR | Growth i18n | Phase 3 |
 | R-MIN-03 | MINEUR | Webhook retry | Phase 2 |
 | R-MIN-04 | MINEUR | CAPTCHA | Phase 3 |
+| R-MIN-05 | MINEUR | Infrastructure | Phase 2 |

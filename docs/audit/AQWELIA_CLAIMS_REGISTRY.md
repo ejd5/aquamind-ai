@@ -38,10 +38,11 @@
 | **Emplacement** | `src/app/growth/page.tsx`, sections features |
 | **Langue** | FR, EN |
 | **Texte exact** | « Disponible 24h/24, 7j/7 » |
-| **Preuve technique** | L'application web est accessible 24/7 (Vercel). L'assistant chat est accessible 24/7 (NVIDIA NIM API). |
-| **Preuve commerciale** | Serveur Vercel = uptime ~99.9%. NVIDIA NIM = pas de SLA public. |
-| **Réalité** | Techniquement vrai pour l'application web. L'assistant chat dépend de NVIDIA NIM (pas de SLA garanti). |
-| **Décision** | **KEEP** — mais ajouter « * » avec mention « sauf maintenance planifiée » |
+| **Preuve technique** | L'application web est accessible 24/7. L'assistant chat est accessible via `z-ai-web-dev-sdk` (provider inconnu, pas de SLA public). |
+| **Preuve commerciale** | L'uptime dépend de l'hébergement et du provider IA. |
+| **Réalité** | L'application web est techniquement disponible 24/7. **Mais** : (1) le provider IA (`z-ai-web-dev-sdk`) n'a pas de SLA public, (2) le chat peut être indisponible sans notification, (3) aucun monitoring de disponibilité n'est documenté. |
+| **Décision** | **REWRITE** — « Application accessible en ligne. L'assistant IA nécessite une connexion internet. » |
+| **Risque** | « 24/7 » implique une garantie d'uptime que le projet ne peut pas offrir sans monitoring et SLA |
 
 ---
 
@@ -244,8 +245,8 @@
 
 | Décision | Nombre | Affirmations |
 |----------|--------|-------------|
-| **KEEP** | 6 | 24/7, Commission, Leads qualifiés, Moteur déterministe, Diagnostic IA, Brain |
-| **REWRITE** | 3 | 10 agents, Offline complet, Moins de 2 minutes |
+| **KEEP** | 5 | Commission, Leads qualifiés, Moteur déterministe, Diagnostic IA, Brain |
+| **REWRITE** | 4 | 10 agents, Offline complet, Moins de 2 minutes, 24/7 |
 | **REMOVE** | 5 | +38%, QuickBooks, Xero, Routage optimisé, Facturation conforme, Synchronisation comptable |
 | **MARK_AS_BETA** | 2 | Moins de 2 minutes, Économies -550€/-1300€ |
 
