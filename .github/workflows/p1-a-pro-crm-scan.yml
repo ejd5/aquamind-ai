@@ -1,0 +1,59 @@
+name: P1-A Pro CRM Scan
+
+on:
+  push:
+    branches:
+      - feat/p1-a-pro-crm-foundation
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    if: ${{ !contains(github.event.head_commit.message || '', '[skip p1-a-scan]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: feat/p1-a-pro-crm-foundation
+          fetch-depth: 1
+
+      - name: Map current Pro and CRM foundations
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo '=== RELEVANT FILES ==='
+            find src prisma tests -type f | sort | grep -Ei '/(pro|crm|client|customer|technician|intervention|service|pool|organization|growth)' | head -n 500 || true
+            echo
+            echo '=== PRISMA MODELS ==='
+            grep -nE '^model ' prisma/schema.prisma || true
+            echo
+            echo '=== PRISMA RELATIONS AND CRM TERMS ==='
+            grep -nE -C 10 'Organization|OrganizationMember|Pool|Technician|Intervention|Customer|Client|ServiceVisit|WorkOrder|Appointment|Lead' prisma/schema.prisma | head -n 1200 || true
+            echo
+            echo '=== POSTGRES MODELS ==='
+            grep -nE '^model ' prisma/postgresql/schema.prisma || true
+            echo
+            echo '=== ROUTES AND PAGES ==='
+            find src/app -type f | sort | head -n 1200
+            echo
+            echo '=== PRO/CRM SYMBOLS ==='
+            git grep -n -Ei 'organizationId|technician|intervention|customer|client|crm|service visit|work order|pro dashboard|pro_mode' -- 'src/**' 'tests/**' | head -n 1600 || true
+            echo
+            echo '=== NAVIGATION ==='
+            git grep -n -Ei 'sidebar|navigation|navItems|dashboard.*pro|/pro/' -- 'src/**' | head -n 800 || true
+            echo
+            echo '=== TRANSLATION NAMESPACES ==='
+            git grep -n -Ei '"(pro|crm|clients|customers|interventions|technicians)"' -- 'messages/*.json' | head -n 800 || true
+          } > P1A_SCAN.txt
+
+      - name: Commit focused scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add P1A_SCAN.txt
+          git commit -m 'chore(p1-a): capture pro CRM map [skip p1-a-scan]'
+          git push origin HEAD:feat/p1-a-pro-crm-foundation
