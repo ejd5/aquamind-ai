@@ -1,6 +1,9 @@
 name: P0-A Claim Scan
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - fix/p0-a-marketing-truth
