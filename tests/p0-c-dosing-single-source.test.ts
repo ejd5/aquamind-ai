@@ -1,3 +1,4 @@
+// P0-C contract: diagnostic UI must never own chemical coefficients.
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
