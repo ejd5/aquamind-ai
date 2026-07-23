@@ -1,0 +1,31 @@
+name: Apply P1-B dispatch translations
+
+on:
+  push:
+    branches:
+      - feat/p1-b-team-dispatch
+    paths:
+      - scripts/apply-p1-b-dispatch-translations.py
+      - .github/workflows/apply-p1-b-dispatch-translations.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: feat/p1-b-team-dispatch
+          fetch-depth: 1
+      - run: python scripts/apply-p1-b-dispatch-translations.py
+      - run: |
+          rm scripts/apply-p1-b-dispatch-translations.py
+          rm .github/workflows/apply-p1-b-dispatch-translations.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat(p1-b): translate team dispatch workflows'
+          git push origin HEAD:feat/p1-b-team-dispatch
