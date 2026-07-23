@@ -9,27 +9,45 @@ on:
       - fix/p0-a-marketing-truth
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   scan:
+    if: ${{ !contains(github.event.head_commit.message || '', '[skip p0-a scan]') }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout implementation branch
         uses: actions/checkout@v4
         with:
+          ref: fix/p0-a-marketing-truth
           fetch-depth: 1
 
       - name: Locate claims and plan limits
         shell: bash
         run: |
           set -euo pipefail
-          echo '=== P0-A CLAIM OCCURRENCES ==='
-          rg -n -i \
-            --glob '!docs/audit/**' \
-            --glob '!.next/**' \
-            --glob '!node_modules/**' \
-            --glob '!package-lock.json' \
-            'QuickBooks|Xero|routage optimis|route optim|facturation conforme|synchronisation comptable|\+38\s*%|38\s*%|10 agents|agents? autonomes?|agents? dédiés?|24h/24|24/7|hors[- ]ligne|offline complet|full offline|2 scans|2 tests|maxPhotoScansPerMonth|maxTestsPerMonth' \
-            src tests prisma docs 2>/dev/null || true
-          echo '=== END P0-A CLAIM OCCURRENCES ==='
+          {
+            echo '=== P0-A CLAIM OCCURRENCES ==='
+            rg -n -i \
+              --glob '!docs/audit/**' \
+              --glob '!.next/**' \
+              --glob '!node_modules/**' \
+              --glob '!package-lock.json' \
+              --glob '!P0_A_SCAN.txt' \
+              'QuickBooks|Xero|routage optimis|route optim|facturation conforme|synchronisation comptable|\+38\s*%|38\s*%|10 agents|agents? autonomes?|agents? dédiés?|24h/24|24/7|hors[- ]ligne|offline complet|full offline|2 scans|2 tests|maxPhotoScansPerMonth|maxTestsPerMonth' \
+              src tests prisma docs 2>/dev/null || true
+            echo '=== END P0-A CLAIM OCCURRENCES ==='
+          } > P0_A_SCAN.txt
+
+      - name: Commit temporary scan report
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add P0_A_SCAN.txt
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'chore(p0-a): save claim occurrences [skip p0-a scan]'
+          git push origin HEAD:fix/p0-a-marketing-truth
