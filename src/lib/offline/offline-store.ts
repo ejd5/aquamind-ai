@@ -108,13 +108,11 @@ export const useOfflineStore = create<OfflineState>()(
 
             const options = { headers: { 'Idempotency-Key': idempotencyKey } }
             try {
-              if (action.method === 'POST') {
-                await api.post(action.path, action.body, options)
-              } else if (action.method === 'PATCH') {
-                await api.patch(action.path, action.body, options)
-              } else if (action.method === 'DELETE') {
-                await api.delete(action.path, options)
-              }
+              await api.post(
+                '/api/offline/replay',
+                { method: action.method, path: action.path, body: action.body },
+                options,
+              )
 
               set((state) => ({
                 pendingActions: state.pendingActions.filter((pending) => pending.id !== action.id),
