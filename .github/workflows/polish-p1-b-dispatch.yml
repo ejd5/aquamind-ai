@@ -1,0 +1,31 @@
+name: Polish P1-B dispatch
+
+on:
+  push:
+    branches:
+      - feat/p1-b-team-dispatch
+    paths:
+      - scripts/polish-p1-b-dispatch.py
+      - .github/workflows/polish-p1-b-dispatch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: feat/p1-b-team-dispatch
+          fetch-depth: 1
+      - run: python scripts/polish-p1-b-dispatch.py
+      - run: |
+          rm scripts/polish-p1-b-dispatch.py
+          rm .github/workflows/polish-p1-b-dispatch.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(p1-b): align dispatch workload and urgency metrics'
+          git push origin HEAD:feat/p1-b-team-dispatch
