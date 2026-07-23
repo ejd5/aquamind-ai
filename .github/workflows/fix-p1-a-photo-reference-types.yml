@@ -1,0 +1,31 @@
+name: Fix P1-A photo reference types
+
+on:
+  push:
+    branches:
+      - feat/p1-a-pro-crm-foundation
+    paths:
+      - scripts/fix-p1-a-photo-reference-types.py
+      - .github/workflows/fix-p1-a-photo-reference-types.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: feat/p1-a-pro-crm-foundation
+          fetch-depth: 1
+      - run: python scripts/fix-p1-a-photo-reference-types.py
+      - run: |
+          rm scripts/fix-p1-a-photo-reference-types.py
+          rm .github/workflows/fix-p1-a-photo-reference-types.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(p1-a): type safe service photo references'
+          git push origin HEAD:feat/p1-a-pro-crm-foundation
