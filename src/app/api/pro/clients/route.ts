@@ -193,7 +193,7 @@ export async function POST(req: NextRequest) {
           proClientId: created.id,
           actorUserId: session.user.id,
           type: 'client_created',
-          title: 'Client créé',
+          title: 'crm.client_created',
           details: created.companyName || null,
         },
       })

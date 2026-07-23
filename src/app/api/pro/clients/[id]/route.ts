@@ -152,7 +152,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
             proClientId: id,
             actorUserId: session.user.id,
             type: 'status_change',
-            title: `Statut : ${existing.status} → ${data.status}`,
+            title: `crm.status_change:${existing.status}:${data.status}` ,
           },
         })
       }
