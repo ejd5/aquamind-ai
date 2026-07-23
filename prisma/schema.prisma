@@ -1047,12 +1047,22 @@ model Organization {
 }
 
 model OrganizationMember {
-  id             String   @id @default(cuid())
-  organizationId String
-  userId         String
-  role           String   @default("member") // owner | admin | manager | technician | viewer
-  status         String   @default("active") // active | invited | suspended | removed
-  createdAt      DateTime @default(now())
+  id                   String   @id @default(cuid())
+  organizationId       String
+  userId               String
+  role                 String   @default("member") // owner | admin | manager | technician | viewer
+  status               String   @default("active") // active | invited | suspended | removed
+  dispatchEnabled      Boolean  @default(true)
+  skills               String?  // JSON array
+  serviceZones         String?  // JSON array
+  workingDays          String?  // JSON array, JavaScript days 0..6
+  dayStart              String   @default("08:00")
+  dayEnd                String   @default("18:00")
+  dailyCapacityMinutes Int      @default(480)
+  dispatchColor        String?
+  phone                String?
+  vehicle              String?
+  createdAt            DateTime @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1060,6 +1070,7 @@ model OrganizationMember {
   @@unique([organizationId, userId])
   @@index([organizationId])
   @@index([userId])
+  @@index([organizationId, dispatchEnabled])
 }
 
 model Lead {
