@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - main
+  push:
+    branches:
+      - fix/p0-b-photo-privacy
 
 permissions:
   contents: write
