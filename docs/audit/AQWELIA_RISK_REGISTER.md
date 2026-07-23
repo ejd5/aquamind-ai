@@ -24,9 +24,9 @@
 |-------|--------|
 | **Zone** | Diagnostic Photo |
 | **Fichiers** | `src/app/api/pool/photo-diagnostic/route.ts` (ligne 48) |
-| **Description** | Les images de diagnostic sont tronquées à 500 caractères avant stockage en DB (`imageUrl: image.substring(0, 500)`). Le stockage tronqué est inutilisable (image corrompue). Le base64 complet est envoyé au provider IA mais pas persisté. |
-| **Impact** | (1) Thumbnails d'historique non fonctionnels (500 chars = image tronquée), (2) Pas de récupération possible des photos, (3) Croissance de la DB même avec le tronquage. |
-| **Preuve** | `imageUrl: image.substring(0, 500)` — commentaire dans le code |
+| **Description** | Les images de diagnostic sont stockées en base64 complet dans la DB (`imageUrl: image`). Le stockage fonctionne mais croît rapidement (chaque photo ~1-6 Mo en base64). Le commentaire dans le code note : `// Store full base64 (for dev/MVP — use S3 in production)`. |
+| **Impact** | (1) Croissance rapide de la DB (chaque photo ~1-6 Mo), (2) Pas de TTL de suppression, (3) Pas de récupération via URL signée (images inline en DB), (4) Performance dégradée avec beaucoup de photos. |
+| **Preuve** | `imageUrl: image` — `src/app/api/pool/photo-diagnostic/route.ts` ligne 79 |
 | **Options de stockage objet** | (1) **AWS S3** : mature, coûteux, compliance EU possible, (2) **Cloudflare R2** : moins cher, S3-compatible, compliance EU, (3) **Vercel Blob** : intégré si hébergement Vercel, limité, (4) **Europa** (OVH) : compliance EU stricte, moins documenté. **Ne pas verrouiller S3 sans évaluation** — R2 est souvent préférable pour les petits projets (pas de egress fee). |
 | **Résolution** | (1) Choisir un provider de stockage objet, (2) Migrer l'upload vers ce provider, (3) Servir les images via URL signée, (4) TTL de suppression automatique, (5) Mettre à jour le schéma DB |
 | **Délai** | Avant tout lancement commercial |
@@ -37,10 +37,10 @@
 |-------|--------|
 | **Zone** | Diagnostic Photo + Strip Scan |
 | **Fichiers** | `src/app/api/pool/photo-diagnostic/route.ts`, `src/app/api/pool/strip-scan/route.ts` |
-| **Description** | **Certitude : DÉFINITIVE.** Aucun handling EXIF n'existe nulle part dans le codebase. Zéro import de sharp, piexif, jimp, ou tout autre lib EXIF. Le flow photo complet est : (1) Client : `FileReader.readAsDataURL(file)` → base64 avec EXIF intact, (2) POST JSON avec base64 complet (jusqu'au service de diagnostic), (3) API route reçoit base64, l'envoie tel quel au provider IA via `zai.chat.completions.createVision()`, (4) DB : `imageUrl: image.substring(0, 500)` (tronqué, mais l'EXIF a déjà été envoyé). |
-| **Flux inspectés** | (1) Photo diagnostic (`module-diagnostic.tsx` → `/api/pool/photo-diagnostic`), (2) Strip scan (`/api/pool/strip-scan`), (3) Equipment photo (champ `photoUrl` existe mais pas d'upload UI), (4) PoolDesign (modèle existe mais jamais utilisé), (5) Health log (affiche les thumbnails tronqués). Seuls les flux 1 et 2 envoient des données au provider IA. |
+| **Description** | Aucun handling EXIF n'existe nulle part dans le codebase. Zéro import de sharp/piexif/jimp dans les routes photo. `sharp` est dans `package.json` mais jamais utilisé. Le flow photo complet est : (1) Client : `FileReader.readAsDataURL(file)` → base64 avec EXIF intact, (2) POST JSON avec base64 complet, (3) API route reçoit base64, appelle `nvidiaVision(prompt, image)` depuis `@/lib/ai/nvidia` — l'image est envoyée telle quelle, (4) DB : `imageUrl: image` (base64 complet stocké). L'attribut `capture="environment"` sur l'input file déclenche l'appareil photo, qui produit des photos avec EXIF complet par défaut. |
+| **Flux inspectés** | (1) Photo diagnostic (`module-diagnostic.tsx` → `/api/pool/photo-diagnostic`), (2) Strip scan (`/api/pool/strip-scan`), (3) Equipment photo (champ `photoUrl` existe mais pas d'upload UI), (4) PoolDesign (modèle existe mais jamais utilisé), (5) Health log (affiche les photos stockées). Seuls les flux 1 et 2 envoient des données au provider IA. |
 | **Métadonnées à risque** | GPS (coordonnées piscine), timestamps, appareil photo (make/model), paramètres caméra, thumbnail intégré, commentaires utilisateur |
-| **Impact** | Risque RGPD : données de localisation envoyées à un tiers sans consentement explicite pour cette finalité. Le `capture="environment"` sur l'input file déclenche directement l'appareil photo, qui produit des photos avec EXIF complet par défaut. |
+| **Impact** | Risque RGPD : données de localisation envoyées à un tiers sans consentement explicite pour cette finalité. |
 | **Preuve** | Aucun import sharp/piexif/jimp dans les routes photo. `sharp` est dans `package.json` mais JAMAIS importé/utilisé dans `src/`. |
 | **Résolution** | (1) Utiliser `sharp` pour stripper EXIF côté serveur avant envoi au provider IA, (2) Documenter dans la politique de confidentialité, (3) Ajouter un consentement explicite pour l'envoi de métadonnées. |
 | **Délai** | Avant tout lancement commercial |
@@ -51,13 +51,13 @@
 |-------|--------|
 | **Zone** | AI Integration |
 | **Fichiers** | `src/app/api/pool/photo-diagnostic/route.ts`, `src/app/api/chat/route.ts` |
-| **Description** | Les photos et données pool sont envoyées au provider IA via `z-ai-web-dev-sdk@0.0.18` (SDK non-documenté, pas NVIDIA NIM directement). Aucun Data Processing Agreement n'est documenté. |
-| **Données envoyées au provider IA** | (1) Photo diagnostic : base64 complet (jusqu'à 6 Mo) + typeHint, (2) Chat : profil piscine complet (nom, volume, type traitement, filtre, sel, ensoleillement, couverture, usage) + dernière mesure d'eau (pH, chlore, alcalinité, TH, CYA, sel, température) + 10 derniers messages + prompt système |
-| **PII transmise** | Nom de la piscine (potentiellement identifiable), région/localisation implicite. Pas de noms, emails, ni données de paiement envoyés au provider IA. |
-| **Aspect technique (code)** | (1) Données envoyées : base64 images + contexte pool + chat history, (2) Aucun chiffrement spécifique avant envoi (HTTPS), (3) Aucune rétention côté serveur documentée, (4) Aucune politique de suppression, (5) Le SDK `z-ai-web-dev-sdk` est une boîte noire — le backend réel n'est pas documenté dans le projet |
-| **Aspect juridique (hors code)** | (1) Aucun DPA signé ou référencé, (2) Aucune politique de confidentialité créée, (3) Aucune base légale RGPD documentée pour le transfert, (4) Le provider IA est inconnu (le SDK masque le backend), (5) TODO list dans `STORE_READINESS.md` mentionne "politique de confidentialité" comme à créer |
-| **Impact** | Risque RGPD : transfert de données personnelles vers un tiers sans base légale documentée. Le provider étant inconnu, impossible de vérifier la conformité. |
-| **Résolution** | **Technique** : (1) Documenter exactement quelles données sont envoyées et où, (2) Identifier le provider réel derrière `z-ai-web-dev-sdk`, (3) Évaluer si des données PII sont nécessaires. **Juridique** : (1) Signer un DPA avec le provider identifié, (2) Créer la politique de confidentialité, (3) Ajouter la mention dans les CGU. |
+| **Description** | Les photos et données pool sont envoyées à NVIDIA NIM via `@/lib/ai/nvidia` (client NVIDIA NIM, base URL `https://integrate.api.nvidia.com/v1`). Les modèles utilisés : vision `nvidia/nemotron-nano-12b-v2-vl`, chat `z-ai/glm-5.2` (servi via NVIDIA NIM). Aucun Data Processing Agreement n'est documenté avec NVIDIA. |
+| **Données envoyées au provider IA** | (1) Photo diagnostic : base64 complet (jusqu'à 6 Mo) envoyé à NVIDIA NIM vision model, (2) Strip scan : base64 complet envoyé à NVIDIA NIM vision model, (3) Chat : profil piscine complet + dernière mesure d'eau + 10 derniers messages + prompt système envoyés à NVIDIA NIM chat model |
+| **PII transmise** | Nom de la piscine (potentiellement identifiable), région/localisation implicite via EXIF. Pas de noms, emails, ni données de paiement envoyés au provider IA. |
+| **Aspect technique (code)** | (1) Données envoyées : base64 images + contexte pool + chat history, (2) Chiffrement HTTPS pour tous les appels, (3) Aucune rétention côté serveur documentée, (4) Aucune politique de suppression, (5) Le npm dep `z-ai-web-dev-sdk` existe mais n'est PAS utilisé par les routes AI (photo-diagnostic, strip-scan, chat) — celles-ci utilisent directement `@/lib/ai/nvidia` |
+| **Aspect juridique (hors code)** | (1) Aucun DPA signé ou référencé avec NVIDIA, (2) Aucune politique de confidentialité créée, (3) Aucune base légale RGPD documentée pour le transfert, (4) TODO list dans `STORE_READINESS.md` mentionne "politique de confidentialité" comme à créer |
+| **Impact** | Risque RGPD : transfert de données personnelles vers NVIDIA sans base légale documentée. Le npm dep `z-ai-web-dev-sdk` doit être audité séparément (il n'est pas utilisé par les routes AI actuelles). |
+| **Résolution** | **Technique** : (1) Documenter exactement quelles données sont envoyées à NVIDIA NIM et où, (2) Évaluer si des données PII sont nécessaires, (3) Auditer le npm dep `z-ai-web-dev-sdk` séparément. **Juridique** : (1) Signer un DPA avec NVIDIA, (2) Créer la politique de confidentialité, (3) Ajouter la mention dans les CGU. |
 | **Délai** | Avant tout lancement commercial |
 
 ### R-CRIT-04 : Affirmations commerciales fausses
@@ -75,16 +75,16 @@
 
 ## RISQUES MAJEURS
 
-### R-MAJ-01 : 62 tests échouent (intégration)
+### R-MAJ-01 : Tests d'intégration nécessitent serveur lancé
 
 | Champ | Détail |
 |-------|--------|
 | **Zone** | Tests |
-| **Description** | 62 tests sur 735 échouent car ils nécessitent un serveur lancé ou une DB PostgreSQL. |
-| **Impact** | Impossibilité de valider les fonctionnalités critiques sans environnement complet. |
-| **Preuve** | `npx vitest run` → 9 failed, 22 passed |
-| **Résolution** | Lancer le serveur avant les tests, ou isoler les tests unitaires des tests d'intégration |
-| **Délai** | Phase 1 |
+| **Description** | 50 tests d'intégration (3 fichiers) nécessitent un serveur lancé sur port 3099. 77 tests DB utilisent SQLite locale. Les 295 tests unitaires tournent sans serveur. Au total 422/422 passent quand l'environnement est correctement configuré. |
+| **Impact** | Les tests d'intégration ne peuvent pas tourner sans serveur — pas automatisable sur CI sans setup supplémentaire. |
+| **Preuve** | Campagne complète : 19 fichiers, 422 tests, tous passent avec serveur |
+| **Résolution** | Documenter le setup de test, ajouter un script CI avec serveur, ou isoler les tests |
+| **Délai** | Phase 2 |
 
 ### R-MAJ-02 : Pas d'idempotence sur les écritures offline
 
@@ -278,11 +278,11 @@
 
 | ID | Gravité | Zone | Délai cible |
 |----|---------|------|-------------|
-| R-CRIT-01 | CRITIQUE | Photo storage | Avant lancement |
+| R-CRIT-01 | CRITIQUE | Photo storage (base64 complet en DB) | Avant lancement |
 | R-CRIT-02 | CRITIQUE | Photo EXIF | Avant lancement |
 | R-CRIT-03 | CRITIQUE | NVIDIA DPA | Avant lancement |
 | R-CRIT-04 | CRITIQUE | Marketing claims | Immédiat |
-| R-MAJ-01 | MAJEUR | Tests | Phase 1 |
+| R-MAJ-01 | MAJEUR | Tests intégration | Phase 2 |
 | R-MAJ-02 | MAJEUR | Offline idempotence | Phase 2 |
 | R-MAJ-03 | MAJEUR | Dosage duplication | Phase 2 |
 | R-MAJ-04 | MAJEUR | Confidence hardcoded | Phase 2 |

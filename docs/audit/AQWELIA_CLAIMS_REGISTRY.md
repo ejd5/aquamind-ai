@@ -38,9 +38,9 @@
 | **Emplacement** | `src/app/growth/page.tsx`, sections features |
 | **Langue** | FR, EN |
 | **Texte exact** | « Disponible 24h/24, 7j/7 » |
-| **Preuve technique** | L'application web est accessible 24/7. L'assistant chat est accessible via `z-ai-web-dev-sdk` (provider inconnu, pas de SLA public). |
-| **Preuve commerciale** | L'uptime dépend de l'hébergement et du provider IA. |
-| **Réalité** | L'application web est techniquement disponible 24/7. **Mais** : (1) le provider IA (`z-ai-web-dev-sdk`) n'a pas de SLA public, (2) le chat peut être indisponible sans notification, (3) aucun monitoring de disponibilité n'est documenté. |
+| **Preuve technique** | L'application web est accessible 24/7. L'assistant chat utilise NVIDIA NIM API (`@/lib/ai/nvidia`) — le modèle chat est `z-ai/glm-5.2` servi via NVIDIA NIM. |
+| **Preuve commerciale** | L'uptime dépend de l'hébergement et de NVIDIA NIM. |
+| **Réalité** | L'application web est techniquement disponible 24/7. **Mais** : (1) NVIDIA NIM n'a pas de SLA public documenté, (2) le chat peut être indisponible sans notification, (3) aucun monitoring de disponibilité n'est documenté. |
 | **Décision** | **REWRITE** — « Application accessible en ligne. L'assistant IA nécessite une connexion internet. » |
 | **Risque** | « 24/7 » implique une garantie d'uptime que le projet ne peut pas offrir sans monitoring et SLA |
 

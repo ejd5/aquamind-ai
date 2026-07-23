@@ -49,12 +49,12 @@
 
 | Champ | Détail |
 |-------|--------|
-| **Problème** | Les images sont tronquées à 500 chars en DB (inutilisables). Le base64 complet est envoyé au provider IA mais pas persisté. Pas de récupération possible des photos. |
-| **Preuve** | `src/app/api/pool/photo-diagnostic/route.ts:48` — `image.substring(0, 500)` |
+| **Problème** | Les images sont stockées en base64 complet en DB (1-6 Mo par photo). Le commentaire dans le code note `// Store full base64 (for dev/MVP — use S3 in production)`. Pas de TTL, pas de URL signée, croissance rapide de la DB. |
+| **Preuve** | `src/app/api/pool/photo-diagnostic/route.ts:79` — `imageUrl: image` |
 | **Fichiers probables** | `src/app/api/pool/photo-diagnostic/route.ts`, nouveau service stockage, schéma DB |
 | **Dépendances** | Choix du provider de stockage (S3/R2/Blob/EU — voir matrice ci-dessous) |
-| **Tests attendus** | Upload, retrieval, TTL suppression |
-| **Critères d'acceptation** | Photos persistées, thumbnails fonctionnels, TTL automatique |
+| **Tests attendus** | Upload vers stockage objet, retrieval via URL signée, TTL suppression automatique |
+| **Critères d'acceptation** | Photos servies depuis stockage objet, thumbnails fonctionnels, TTL automatique |
 | **Risque** | Photos perdues, RGPD, coût de stockage |
 | **Ordre recommandé** | 3 |
 | **Note** | **Choix du provider requis avant d'écrire du code** |
@@ -82,10 +82,10 @@
 
 | Champ | Détail |
 |-------|--------|
-| **Problème** | Pas de Data Processing Agreement documenté avec le provider IA. Le provider est inconnu (le SDK `z-ai-web-dev-sdk` masque le backend). |
+| **Problème** | Pas de Data Processing Agreement documenté avec NVIDIA NIM. Le provider IA est identifié : NVIDIA NIM (`@/lib/ai/nvidia`, base URL `https://integrate.api.nvidia.com/v1`). Le npm dep `z-ai-web-dev-sdk` existe mais n'est pas utilisé par les routes AI actuelles — audit séparé requis. |
 | **Preuve** | Aucune mention dans le code ou la documentation |
 | **Fichiers probables** | Documentation architecture, politique de confidentialité |
-| **Dépendances** | Identification du provider réel derrière `z-ai-web-dev-sdk` |
+| **Dépendances** | Aucune (provider identifié = NVIDIA NIM) |
 | **Tests attendus** | Document technique + document juridique |
 | **Critères d'acceptation** | Les deux aspects documentés |
 | **Risque** | RGPD — transfert illégal de données |

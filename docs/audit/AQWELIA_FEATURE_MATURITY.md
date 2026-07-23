@@ -239,11 +239,11 @@
 | **Routes** | `GET/POST/DELETE /api/pool/photo-diagnostic` |
 | **Tables** | `PhotoDiagnostic` |
 | **Tests** | **Aucun test** |
-| **Dépendances** | `z-ai-web-dev-sdk` (provider IA inconnu), Prisma, sharp (installé mais inutilisé) |
-| **Preuve** | Upload photo → base64 → VLM analyse → JSON structuré → plan d'action par pattern matching |
-| **Flow complet** | (1) Client : `FileReader.readAsDataURL(file)` → base64 avec EXIF intact, (2) POST JSON avec base64 complet (jusqu'à 6 Mo), (3) API route reçoit base64, l'envoie tel quel au provider IA, (4) DB : `imageUrl: image.substring(0, 500)` (tronqué, inutilisable) |
-| **Risques** | **CRITIQUE** : (1) Images tronquées en DB (500 chars = thumbnails non fonctionnels), (2) EXIF non strippé (GPS, device envoyés au provider IA), (3) Provider IA inconnu (SDK masque le backend), (4) Pas de DPA, (5) Pas de TTL de suppression, (6) `sharp` installé mais jamais utilisé, (7) `capture="environment"` déclenche l'appareil photo avec EXIF complet |
-| **Travail restant** | (1) Stockage objet (S3/R2), (2) Strippage EXIF, (3) DPA, (4) Tests, (5) TTL, (6) Utiliser sharp |
+| **Dépendances** | NVIDIA NIM API (`@/lib/ai/nvidia`, modèle vision `nvidia/nemotron-nano-12b-v2-vl`), Prisma, sharp (installé mais inutilisé) |
+| **Preuve** | Upload photo → base64 → NVIDIA NIM VLM analyse → JSON structuré → plan d'action par pattern matching |
+| **Flow complet** | (1) Client : `FileReader.readAsDataURL(file)` → base64 avec EXIF intact, (2) POST JSON avec base64 complet (jusqu'à 6 Mo), (3) API route reçoit base64, appelle `nvidiaVision(prompt, image)` depuis `@/lib/ai/nvidia`, (4) DB : `imageUrl: image` (base64 complet stocké — pas tronqué) |
+| **Risques** | **CRITIQUE** : (1) Base64 complet stocké en DB (croissance rapide), (2) EXIF non strippé (GPS, device envoyés au provider IA), (3) Pas de DPA avec NVIDIA NIM, (4) Pas de TTL de suppression, (5) `sharp` installé mais jamais utilisé, (6) `capture="environment"` déclenche l'appareil photo qui inclut EXIF complet par défaut |
+| **Travail restant** | (1) Stockage objet (S3/R2/Blob), (2) Strippage EXIF, (3) DPA NVIDIA, (4) Tests, (5) TTL, (6) Utiliser sharp |
 
 ---
 

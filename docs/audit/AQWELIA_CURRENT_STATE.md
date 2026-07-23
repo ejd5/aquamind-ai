@@ -194,7 +194,27 @@ Middleware : Proxy (middleware.ts)
 
 ---
 
-## 9. SYNTHÈSE DE L'ÉTAT DU DÉPÔT
+## 10. NOTES DE VÉRIFICATION
+
+### Vercel
+
+Le check Vercel sur les PR échoue — le projet n'est pas configuré pour Vercel. Le `next.config.ts` utilise `output: "standalone"` (typique Docker/self-hosted). Voir R-MIN-05 dans le Risk Register.
+
+### Provider IA
+
+Le provider IA est identifié : **NVIDIA NIM** (`@/lib/ai/nvidia`).
+- Base URL : `https://integrate.api.nvidia.com/v1`
+- Vision model : `nvidia/nemotron-nano-12b-v2-vl`
+- Chat model : `z-ai/glm-5.2` (servi via NVIDIA NIM)
+- Le npm dep `z-ai-web-dev-sdk` existe mais n'est PAS utilisé par les routes AI (photo-diagnostic, strip-scan, chat). Audit séparé requis.
+
+### Stockage photos
+
+Les photos sont stockées en base64 complet en DB (`imageUrl: image`). Commentaire dans le code : `// Store full base64 (for dev/MVP — use S3 in production)`. Le stockage objet (S3/R2/Blob) est requis avant le lancement.
+
+---
+
+## 11. SYNTHÈSE DE L'ÉTAT DU DÉPÔT
 
 | Vérification | Résultat |
 |--------------|----------|
@@ -209,4 +229,4 @@ Middleware : Proxy (middleware.ts)
 | Tests (avec serveur) | 422/422 passent ✅ |
 | Build | Réussi (76 routes) ✅ |
 
-**Conclusion** : Le dépôt est dans un état sain. Tous les tests passent avec un environnement correctement configuré. L'infrastructure de test fonctionne mais nécessite un lancement manuel (pas de CI automatisé).
+**Conclusion** : Le dépôt est dans un état sain. Tous les 422 tests passent avec un environnement correctement configuré (295 unitaires + 77 DB + 50 intégration). L'infrastructure de test fonctionne mais nécessite un lancement manuel. Le provider IA est NVIDIA NIM (pas z-ai-web-dev-sdk). Les photos sont stockées en base64 complet (pas tronqué) — stockage objet requis avant lancement.
