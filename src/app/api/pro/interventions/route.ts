@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client'
+import { Prisma, type ProIntervention } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -218,7 +218,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = await db.$transaction(async (tx) => {
-      const interventions = []
+      const interventions: ProIntervention[] = []
       for (let index = 0; index < occurrences; index += 1) {
         interventions.push(
           await tx.proIntervention.create({
