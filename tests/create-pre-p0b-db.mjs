@@ -19,8 +19,8 @@ db.exec(`
   CREATE INDEX "Subscription_userId_idx" ON "Subscription"("userId");
 
   -- This fixture represents the pre-P0-B baseline while remaining intentionally
-  -- minimal. Later Brain migrations alter these two baseline tables, so they
-  -- must exist even though this legacy scenario only asserts billing data.
+  -- minimal. Later migrations alter these baseline tables, so they must exist
+  -- even when the legacy scenario only asserts billing data.
   CREATE TABLE "WaterTest" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -29,6 +29,69 @@ db.exec(`
   CREATE TABLE "PhotoDiagnostic" (
     "id" TEXT NOT NULL PRIMARY KEY
   );
+
+  -- P1-A upgrades the original AQWELIA Pro MVP tables. The legacy fixture keeps
+  -- their pre-CRM shape so the migration test proves that existing Pro records
+  -- are upgraded in place rather than recreated or discarded.
+  CREATE TABLE "ProClient" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "proUserId" TEXT NOT NULL,
+    "firstName" TEXT NOT NULL,
+    "lastName" TEXT NOT NULL,
+    "email" TEXT,
+    "phone" TEXT,
+    "address" TEXT,
+    "city" TEXT,
+    "zipCode" TEXT,
+    "notes" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+  );
+  CREATE INDEX "ProClient_proUserId_idx" ON "ProClient"("proUserId");
+  CREATE INDEX "ProClient_lastName_idx" ON "ProClient"("lastName");
+  CREATE INDEX "ProClient_firstName_idx" ON "ProClient"("firstName");
+
+  CREATE TABLE "ProPool" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "proClientId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "type" TEXT NOT NULL DEFAULT 'pool',
+    "volume" REAL,
+    "unit" TEXT NOT NULL DEFAULT 'm3',
+    "shape" TEXT,
+    "surface" TEXT,
+    "treatmentType" TEXT,
+    "saltSystem" BOOLEAN NOT NULL DEFAULT false,
+    "filterType" TEXT,
+    "address" TEXT,
+    "notes" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+  );
+  CREATE INDEX "ProPool_proClientId_idx" ON "ProPool"("proClientId");
+
+  CREATE TABLE "ProIntervention" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "proClientId" TEXT NOT NULL,
+    "proPoolId" TEXT,
+    "technicianId" TEXT,
+    "type" TEXT NOT NULL DEFAULT 'maintenance',
+    "status" TEXT NOT NULL DEFAULT 'scheduled',
+    "scheduledAt" DATETIME NOT NULL,
+    "completedAt" DATETIME,
+    "duration" INTEGER,
+    "notes" TEXT,
+    "photos" TEXT,
+    "actions" TEXT,
+    "productsUsed" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+  );
+  CREATE INDEX "ProIntervention_proClientId_idx" ON "ProIntervention"("proClientId");
+  CREATE INDEX "ProIntervention_proPoolId_idx" ON "ProIntervention"("proPoolId");
+  CREATE INDEX "ProIntervention_status_idx" ON "ProIntervention"("status");
+  CREATE INDEX "ProIntervention_scheduledAt_idx" ON "ProIntervention"("scheduledAt");
+  CREATE INDEX "ProIntervention_technicianId_idx" ON "ProIntervention"("technicianId");
 `)
 
 const insert = db.prepare(
