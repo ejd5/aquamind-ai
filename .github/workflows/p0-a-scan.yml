@@ -1,19 +1,15 @@
-name: P0-A Claim Scan
+name: P0-A Apply
 
 on:
   pull_request:
     branches:
       - main
-  push:
-    branches:
-      - fix/p0-a-marketing-truth
 
 permissions:
   contents: write
 
 jobs:
-  scan:
-    if: ${{ !contains(github.event.head_commit.message || '', '[skip p0-a scan]') }}
+  apply:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout implementation branch
@@ -22,28 +18,31 @@ jobs:
           ref: fix/p0-a-marketing-truth
           fetch-depth: 1
 
-      - name: Locate claims and plan limits
-        shell: bash
-        run: |
-          set -euo pipefail
-          {
-            echo '=== P0-A CLAIM OCCURRENCES ==='
-            git grep -n -i -E \
-              'QuickBooks|Xero|routage optimis|route optim|facturation conforme|synchronisation comptable|\+38[[:space:]]*%|38[[:space:]]*%|10 agents|agents? autonomes?|agents? dédiés?|24h/24|24/7|hors[- ]ligne|offline complet|full offline|2 scans|2 tests|maxPhotoScansPerMonth|maxTestsPerMonth' \
-              -- 'src/**' 'tests/**' 'prisma/**' 'docs/**' \
-              ':!docs/audit/**' ':!P0_A_SCAN.txt' || true
-            echo '=== END P0-A CLAIM OCCURRENCES ==='
-          } > P0_A_SCAN.txt
+      - name: Apply truthful marketing and plan limits
+        run: python3 scripts/p0-a-apply.py
 
-      - name: Commit temporary scan report
+      - name: Validate targeted changes
         shell: bash
         run: |
           set -euo pipefail
+          for file in src/i18n/locales/{fr,en,es,de,it,pt,nl}.json; do
+            python3 -m json.tool "$file" >/dev/null
+          done
+          grep -q "maxPhotoScansPerMonth: 2" src/lib/billing/plans.ts
+          grep -q "maxTestsPerMonth: 2" src/lib/billing/plans.ts
+          ! grep -q "value: '+38%'" src/app/growth/page.tsx
+          ! grep -q "value: '24/7'" src/app/growth/page.tsx
+
+      - name: Remove one-shot tooling and commit implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f P0_A_SCAN.txt
+          rm -f scripts/p0-a-apply.py
+          rm -f .github/workflows/p0-a-scan.yml
+          rm -f .github/workflows/p0-a-apply.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add P0_A_SCAN.txt
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit -m 'chore(p0-a): save claim occurrences [skip p0-a scan]'
+          git add -A
+          git commit -m 'fix(p0-a): align public claims and Discovery limits [skip p0-a apply]'
           git push origin HEAD:fix/p0-a-marketing-truth
