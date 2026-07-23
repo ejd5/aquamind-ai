@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import sharp from 'sharp'
 import { describe, expect, it } from 'vitest'
 import {
@@ -39,6 +41,12 @@ describe('P0-B secure image normalization', () => {
     ).rejects.toMatchObject<Partial<SecureImageError>>({ statusCode: 415 })
   })
 
+  it('rejects malformed base64 payloads', async () => {
+    await expect(normalizeImageForAi('%%%not-base64%%%')).rejects.toMatchObject<
+      Partial<SecureImageError>
+    >({ statusCode: 400 })
+  })
+
   it('rejects images above the server limit', async () => {
     const oversized = Buffer.alloc(6 * 1024 * 1024 + 1, 1).toString('base64')
     await expect(normalizeImageForAi(oversized)).rejects.toMatchObject<Partial<SecureImageError>>({
@@ -54,5 +62,22 @@ describe('P0-B secure image normalization', () => {
     expect(publicImageUrl('https://private-storage.example/signed')).toBe(
       'https://private-storage.example/signed',
     )
+  })
+
+  it('routes never persist or forward the original image bytes', () => {
+    const photoRoute = readFileSync(
+      join(process.cwd(), 'src/app/api/pool/photo-diagnostic/route.ts'),
+      'utf8',
+    )
+    const stripRoute = readFileSync(
+      join(process.cwd(), 'src/app/api/pool/strip-scan/route.ts'),
+      'utf8',
+    )
+
+    expect(photoRoute).not.toContain('imageUrl: image')
+    expect(photoRoute).toContain('nvidiaVision(prompt, normalized.dataUrl)')
+    expect(photoRoute).toContain('privateImageReference(normalized.sha256)')
+    expect(stripRoute).toContain('nvidiaVision(STRIP_SCAN_PROMPT, normalized.dataUrl')
+    expect(stripRoute).not.toContain('nvidiaVision(STRIP_SCAN_PROMPT, image,')
   })
 })
