@@ -1,4 +1,4 @@
-export const DEFAULT_WORKING_DAYS = [1, 2, 3, 4, 5] as const
+export const DEFAULT_WORKING_DAYS = [1, 2, 3, 4, 5, 6] as const
 export const DEFAULT_DAY_START = '08:00'
 export const DEFAULT_DAY_END = '18:00'
 export const DEFAULT_TIME_ZONE = 'Europe/Paris'

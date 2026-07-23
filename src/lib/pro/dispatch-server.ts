@@ -213,7 +213,7 @@ function virtualOwner(user: { id: string; name: string | null; email: string }):
     dispatchEnabled: true,
     skills: [],
     serviceZones: [],
-    workingDays: [1, 2, 3, 4, 5],
+    workingDays: [1, 2, 3, 4, 5, 6],
     dayStart: DEFAULT_DAY_START,
     dayEnd: DEFAULT_DAY_END,
     timeZone: DEFAULT_TIME_ZONE,

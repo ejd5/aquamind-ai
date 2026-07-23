@@ -263,7 +263,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     : data.technicianId as string | null
   const nextScheduledAt = data.scheduledAt instanceof Date ? data.scheduledAt : existing.scheduledAt
   const nextDuration = typeof data.duration === 'number' ? data.duration : existing.duration || 60
-  if (nextTechnicianId && ['scheduled', 'in_progress'].includes(nextStatus)) {
+  const scheduleChanged = ['technicianId', 'scheduledAt', 'duration', 'status']
+    .some((field) => body[field] !== undefined)
+  if (scheduleChanged && nextTechnicianId && ['scheduled', 'in_progress'].includes(nextStatus)) {
     try {
       await validateTechnicianAssignment({
         access,

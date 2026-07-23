@@ -107,14 +107,18 @@ export default function ProInterventionDetailPage() {
         summary: summary.trim() || null,
         customerNotes: customerNotes.trim() || null,
         internalNotes: internalNotes.trim() || null,
-        duration: duration ? Number(duration) : null,
+        duration: Number(duration || 0) !== Number(intervention?.duration || 0)
+          ? (duration ? Number(duration) : null)
+          : undefined,
         priority,
         actions: lines(actions),
         productsUsed: lines(products),
         billable,
         amount: billable && amount ? Number(amount) : null,
         currency: 'EUR',
-        technicianId: technicianId || null,
+        technicianId: technicianId !== (intervention?.technicianId || '')
+          ? (technicianId || null)
+          : undefined,
         ...extra,
       }),
     })
