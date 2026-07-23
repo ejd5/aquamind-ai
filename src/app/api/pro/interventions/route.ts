@@ -1,56 +1,38 @@
-/**
- * AQWELIA Pro — Interventions API (MVP).
- *
- * URL: /api/pro/interventions
- *
- * GET  — list the authenticated pro's interventions with optional filters:
- *          ?clientId=xxx      restrict to a client
- *          ?poolId=xxx        restrict to a pool
- *          ?status=scheduled  restrict to a status
- *          ?type=maintenance  restrict to a type
- *          ?technicianId=xxx  restrict to a technician (User id)
- *          ?from=2025-01-01   scheduledAt >= from (ISO)
- *          ?to=2025-12-31     scheduledAt <= to (ISO)
- *          ?page=1&page=20    pagination
- *        Returns `{ interventions, total, page, pageSize }`.
- *
- * POST — create a new intervention. `proClientId` required; `proPoolId`
- *        optional (must belong to the same client). `scheduledAt` required
- *        (ISO 8601). `photos`, `actions`, `productsUsed` are JSON-stringified
- *        server-side from arrays supplied in the body.
- *
- * Auth: NextAuth session required. All filters AND create are scoped to
- * `client.proUserId = session.user.id`.
- */
+import { Prisma } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { getProAccess } from '@/lib/pro/access'
+import {
+  cleanOptionalText,
+  isOneOf,
+  normalizeCurrency,
+  parseOptionalAmount,
+  parseOptionalDate,
+  PRO_INTERVENTION_PRIORITIES,
+} from '@/lib/pro/crm'
 import { toolWorkspaceText } from '@/i18n/locales/tool-workspaces'
 
 export const runtime = 'nodejs'
 
-const ALLOWED_TYPES = new Set([
-  'maintenance',
-  'repair',
-  'opening',
-  'closing',
-  'emergency',
-])
-const ALLOWED_STATUSES = new Set([
-  'scheduled',
-  'in_progress',
-  'completed',
-  'cancelled',
-])
+const ALLOWED_TYPES = ['maintenance', 'repair', 'opening', 'closing', 'emergency'] as const
+const ALLOWED_STATUSES = ['scheduled', 'in_progress', 'completed', 'cancelled'] as const
+const RECURRENCES = ['none', 'weekly', 'biweekly', 'monthly'] as const
 
-/** Stringify an array field for JSON-string columns (photos/actions/productsUsed). */
-function toJsonArray(v: unknown): string | null {
-  if (Array.isArray(v)) return JSON.stringify(v)
-  if (typeof v === 'string' && v.trim()) return v
+function toJsonArray(value: unknown): string | null {
+  if (Array.isArray(value)) return JSON.stringify(value.slice(0, 100))
+  if (typeof value === 'string' && value.trim()) return value.slice(0, 100_000)
   return null
+}
+
+function addRecurrence(date: Date, recurrence: (typeof RECURRENCES)[number], index: number): Date {
+  const occurrence = new Date(date)
+  if (recurrence === 'weekly') occurrence.setDate(occurrence.getDate() + 7 * index)
+  if (recurrence === 'biweekly') occurrence.setDate(occurrence.getDate() + 14 * index)
+  if (recurrence === 'monthly') occurrence.setMonth(occurrence.getMonth() + index)
+  return occurrence
 }
 
 export async function GET(req: NextRequest) {
@@ -67,55 +49,71 @@ export async function GET(req: NextRequest) {
   const poolId = url.searchParams.get('poolId')
   const status = url.searchParams.get('status')
   const type = url.searchParams.get('type')
+  const priority = url.searchParams.get('priority')
   const technicianId = url.searchParams.get('technicianId')
   const from = url.searchParams.get('from')
   const to = url.searchParams.get('to')
   const page = Math.max(1, Number(url.searchParams.get('page')) || 1)
-  const pageSize = Math.min(
-    100,
-    Math.max(1, Number(url.searchParams.get('pageSize')) || 20)
-  )
+  const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get('pageSize')) || 20))
 
-  // Build WHERE clause scoped to the pro's clients.
-  const where: Record<string, unknown> = {
+  const where: Prisma.ProInterventionWhereInput = {
     client: { proUserId: access.ownerUserId },
   }
   if (clientId) where.proClientId = clientId
   if (poolId) where.proPoolId = poolId
-  if (status && ALLOWED_STATUSES.has(status)) where.status = status
-  if (type && ALLOWED_TYPES.has(type)) where.type = type
+  if (isOneOf(ALLOWED_STATUSES, status)) where.status = status
+  if (isOneOf(ALLOWED_TYPES, type)) where.type = type
+  if (isOneOf(PRO_INTERVENTION_PRIORITIES, priority)) where.priority = priority
   if (technicianId) where.technicianId = technicianId
 
-  const scheduledRange: Record<string, Date> = {}
+  const scheduledRange: Prisma.DateTimeFilter = {}
   if (from) {
-    const d = new Date(from)
-    if (!Number.isNaN(d.getTime())) scheduledRange.gte = d
+    const date = new Date(from)
+    if (!Number.isNaN(date.getTime())) scheduledRange.gte = date
   }
   if (to) {
-    const d = new Date(to)
-    if (!Number.isNaN(d.getTime())) scheduledRange.lte = d
+    const date = new Date(to)
+    if (!Number.isNaN(date.getTime())) scheduledRange.lte = date
   }
-  if (Object.keys(scheduledRange).length > 0) {
-    where.scheduledAt = scheduledRange
-  }
+  if (Object.keys(scheduledRange).length > 0) where.scheduledAt = scheduledRange
 
-  const [total, interventions] = await Promise.all([
+  const [total, interventions, urgentOpen] = await Promise.all([
     db.proIntervention.count({ where }),
     db.proIntervention.findMany({
       where,
-      orderBy: { scheduledAt: 'desc' },
+      orderBy: [{ scheduledAt: 'desc' }, { priority: 'desc' }],
       skip: (page - 1) * pageSize,
       take: pageSize,
       include: {
         client: {
-          select: { id: true, firstName: true, lastName: true, phone: true, city: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            companyName: true,
+            phone: true,
+            city: true,
+          },
         },
-        pool: { select: { id: true, name: true, type: true } },
+        pool: { select: { id: true, name: true, type: true, status: true } },
+      },
+    }),
+    db.proIntervention.count({
+      where: {
+        client: { proUserId: access.ownerUserId },
+        priority: 'urgent',
+        status: { in: ['scheduled', 'in_progress'] },
       },
     }),
   ])
 
-  return NextResponse.json({ interventions, total, page, pageSize })
+  return NextResponse.json({
+    interventions,
+    total,
+    page,
+    pageSize,
+    summary: { urgentOpen },
+  })
 }
 
 export async function POST(req: NextRequest) {
@@ -125,28 +123,25 @@ export async function POST(req: NextRequest) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
-  const access = await getProAccess(session.user.id)
-  if (!access.canWrite) return NextResponse.json({ error: toolWorkspaceText(locale, 'readonly') }, { status: 403 })
 
-  let body: any
+  const access = await getProAccess(session.user.id)
+  if (!access.canWrite) {
+    return NextResponse.json({ error: toolWorkspaceText(locale, 'readonly') }, { status: 403 })
+  }
+
+  let body: Record<string, unknown>
   try {
-    body = await req.json()
+    body = (await req.json()) as Record<string, unknown>
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const proClientId =
-    typeof body?.proClientId === 'string' ? body.proClientId : ''
+  const proClientId = typeof body.proClientId === 'string' ? body.proClientId : ''
   if (!proClientId) {
-    const msg = await translate(
-      locale,
-      'pro.errors.clientIdRequired',
-      'Client requis'
-    )
+    const msg = await translate(locale, 'pro.errors.clientIdRequired', 'Client requis')
     return NextResponse.json({ error: msg }, { status: 400 })
   }
 
-  // Verify the client belongs to the authenticated pro.
   const client = await db.proClient.findFirst({
     where: { id: proClientId, proUserId: access.ownerUserId },
     select: { id: true },
@@ -156,9 +151,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 404 })
   }
 
-  // Optional pool: if provided, it must belong to the same client.
-  const proPoolId =
-    typeof body?.proPoolId === 'string' && body.proPoolId ? body.proPoolId : null
+  const proPoolId = typeof body.proPoolId === 'string' && body.proPoolId ? body.proPoolId : null
   if (proPoolId) {
     const pool = await db.proPool.findFirst({
       where: { id: proPoolId, proClientId },
@@ -168,43 +161,26 @@ export async function POST(req: NextRequest) {
       const msg = await translate(
         locale,
         'pro.errors.poolNotOwnedByClient',
-        'Ce bassin n\'appartient pas à ce client'
+        "Ce bassin n'appartient pas à ce client",
       )
       return NextResponse.json({ error: msg }, { status: 400 })
     }
   }
 
-  // scheduledAt is required (an intervention without a date is meaningless).
-  if (!body?.scheduledAt) {
-    const msg = await translate(
-      locale,
-      'pro.errors.scheduledAtRequired',
-      'Date planifiée requise'
-    )
+  const scheduledAt = parseOptionalDate(body.scheduledAt)
+  if (!scheduledAt.provided || !scheduledAt.valid || !scheduledAt.value) {
+    const msg = await translate(locale, 'pro.errors.scheduledAtRequired', 'Date planifiée requise')
     return NextResponse.json({ error: msg }, { status: 400 })
   }
-  const scheduledAt = new Date(body.scheduledAt)
-  if (Number.isNaN(scheduledAt.getTime())) {
-    const msg = await translate(
-      locale,
-      'pro.errors.scheduledAtInvalid',
-      'Date planifiée invalide'
-    )
-    return NextResponse.json({ error: msg }, { status: 400 })
+  const startedAt = parseOptionalDate(body.startedAt)
+  const completedAtInput = parseOptionalDate(body.completedAt)
+  if (!startedAt.valid || !completedAtInput.valid) {
+    return NextResponse.json({ error: 'Invalid intervention date' }, { status: 400 })
   }
 
-  const type =
-    typeof body?.type === 'string' && ALLOWED_TYPES.has(body.type)
-      ? body.type
-      : 'maintenance'
-  const status =
-    typeof body?.status === 'string' && ALLOWED_STATUSES.has(body.status)
-      ? body.status
-      : 'scheduled'
-  let technicianId =
-    typeof body?.technicianId === 'string' && body.technicianId
-      ? body.technicianId
-      : null
+  let technicianId = typeof body.technicianId === 'string' && body.technicianId
+    ? body.technicianId
+    : null
   if (!technicianId && access.role === 'technician') technicianId = session.user.id
   if (technicianId && technicianId !== access.ownerUserId) {
     const member = access.organizationId
@@ -220,56 +196,84 @@ export async function POST(req: NextRequest) {
       : null
     if (!member) technicianId = null
   }
-  const duration =
-    body?.duration != null && Number.isFinite(Number(body.duration))
+
+  const status = isOneOf(ALLOWED_STATUSES, body.status) ? body.status : 'scheduled'
+  const amount = parseOptionalAmount(body.amount)
+  if (body.amount !== undefined && amount === undefined) {
+    return NextResponse.json({ error: 'Invalid intervention amount' }, { status: 400 })
+  }
+  const duration = body.duration === null || body.duration === ''
+    ? null
+    : Number.isFinite(Number(body.duration))
       ? Math.max(0, Math.round(Number(body.duration)))
       : null
-  const notes =
-    typeof body?.notes === 'string' && body.notes.trim()
-      ? body.notes.trim().slice(0, 10000)
-      : null
-  // completedAt: if status === 'completed' and not provided, use now.
-  let completedAt: Date | null = null
-  if (body?.completedAt) {
-    const d = new Date(body.completedAt)
-    if (!Number.isNaN(d.getTime())) completedAt = d
-  } else if (status === 'completed') {
-    completedAt = new Date()
-  }
-
-  const recurrence = ['weekly', 'biweekly', 'monthly'].includes(body?.recurrence)
-    ? String(body.recurrence)
-    : 'none'
+  const recurrence = isOneOf(RECURRENCES, body.recurrence) ? body.recurrence : 'none'
   const occurrences = recurrence === 'none'
     ? 1
-    : Math.min(52, Math.max(2, Math.round(Number(body?.occurrences) || 4)))
+    : Math.min(52, Math.max(2, Math.round(Number(body.occurrences) || 4)))
+  const completedAt = completedAtInput.value ?? (status === 'completed' ? new Date() : null)
+  const actualStartedAt = startedAt.value ?? (
+    status === 'in_progress' || status === 'completed' ? new Date() : null
+  )
 
   try {
-    const interventions = await db.$transaction(
-      Array.from({ length: occurrences }, (_, index) => {
-        const occurrenceDate = new Date(scheduledAt)
-        if (recurrence === 'weekly') occurrenceDate.setDate(occurrenceDate.getDate() + 7 * index)
-        if (recurrence === 'biweekly') occurrenceDate.setDate(occurrenceDate.getDate() + 14 * index)
-        if (recurrence === 'monthly') occurrenceDate.setMonth(occurrenceDate.getMonth() + index)
-        return db.proIntervention.create({ data: {
-        proClientId,
-        proPoolId,
-        technicianId,
-        type,
-        status,
-        scheduledAt: occurrenceDate,
-        completedAt,
-        duration,
-        notes,
-        photos: toJsonArray(body?.photos),
-        actions: toJsonArray(body?.actions),
-        productsUsed: toJsonArray(body?.productsUsed),
-        } })
+    const result = await db.$transaction(async (tx) => {
+      const interventions = []
+      for (let index = 0; index < occurrences; index += 1) {
+        interventions.push(
+          await tx.proIntervention.create({
+            data: {
+              proClientId,
+              proPoolId,
+              technicianId,
+              type: isOneOf(ALLOWED_TYPES, body.type) ? body.type : 'maintenance',
+              status,
+              priority: isOneOf(PRO_INTERVENTION_PRIORITIES, body.priority)
+                ? body.priority
+                : 'normal',
+              scheduledAt: addRecurrence(scheduledAt.value!, recurrence, index),
+              startedAt: actualStartedAt,
+              completedAt,
+              duration,
+              summary: cleanOptionalText(body.summary, 500),
+              customerNotes: cleanOptionalText(body.customerNotes),
+              internalNotes: cleanOptionalText(body.internalNotes),
+              notes: cleanOptionalText(body.notes),
+              photos: toJsonArray(body.photos),
+              actions: toJsonArray(body.actions),
+              productsUsed: toJsonArray(body.productsUsed),
+              billable: body.billable !== false,
+              amount: amount ?? null,
+              currency: normalizeCurrency(body.currency),
+            },
+          }),
+        )
+      }
+
+      await tx.proClientActivity.create({
+        data: {
+          proClientId,
+          actorUserId: session.user.id,
+          type: 'intervention_scheduled',
+          title: 'crm.intervention_scheduled',
+          details: JSON.stringify({
+            interventionId: interventions[0].id,
+            count: interventions.length,
+            type: interventions[0].type,
+            scheduledAt: interventions[0].scheduledAt,
+          }),
+          occurredAt: new Date(),
+        },
       })
+      return interventions
+    })
+
+    return NextResponse.json(
+      { intervention: result[0], interventions: result, recurrence },
+      { status: 201 },
     )
-    return NextResponse.json({ intervention: interventions[0], interventions, recurrence }, { status: 201 })
-  } catch (err) {
-    console.error('[pro/interventions] POST error:', err)
+  } catch (error) {
+    console.error('[pro/interventions] POST error:', error)
     const msg = await translate(locale, 'pro.errors.generic', 'Une erreur est survenue.')
     return NextResponse.json({ error: msg }, { status: 500 })
   }
