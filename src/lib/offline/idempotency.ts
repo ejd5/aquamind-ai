@@ -94,6 +94,11 @@ export function hashOfflineMutation(
     .digest('hex')
 }
 
-export function isRetryableReplayStatus(status: number): boolean {
-  return status >= 500
+/**
+ * Only successful target mutations are cached in the idempotency ledger.
+ * Authentication, validation and transient server failures must be retryable
+ * after the user or network state changes.
+ */
+export function shouldReleaseReplayReservation(status: number): boolean {
+  return status < 200 || status >= 300
 }
