@@ -150,7 +150,11 @@ export async function POST(req: NextRequest) {
     // Pro mode (LSI detailed interpretation) is only for paid plans.
     const proGate = await requireFeatureAccess(req, 'pro_mode')
     const { lsi: _storedLsi, ...publicTest } = created
-    const response: any = { test: proGate.denied ? publicTest : created, actionPlan, brainFollowup }
+    const response: any = {
+      test: proGate.denied ? publicTest : created,
+      actionPlan: normalizeStoredActionPlan(actionPlan),
+      brainFollowup,
+    }
     if (!proGate.denied) {
       response.lsiInfo = lsiInterpretation(lsi)
       response.lsi = lsi
@@ -185,6 +189,31 @@ export async function DELETE(req: NextRequest) {
     }
   }
   return NextResponse.json({ success: true })
+}
+
+function normalizeStoredActionPlan(
+  plan: Awaited<ReturnType<typeof db.actionPlan.create>> | null
+) {
+  if (!plan) return null
+
+  return {
+    ...plan,
+    immediateActions: parseJsonArray(plan.immediateActions),
+    chemicalDosages: parseJsonArray(plan.chemicalDosages),
+    doNotDo: parseJsonArray(plan.doNotDo),
+  }
+}
+
+function parseJsonArray(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value
+  if (typeof value !== 'string' || value.trim() === '') return []
+
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
 }
 
 function numOrNull(v: any): number | null {
