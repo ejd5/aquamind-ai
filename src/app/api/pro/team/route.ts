@@ -78,8 +78,10 @@ export async function GET(req: NextRequest) {
   let unassignedUrgentCount = 0
   for (const intervention of interventions) {
     if (!intervention.technicianId) {
-      unassignedCount += 1
-      if (intervention.priority === 'urgent') unassignedUrgentCount += 1
+      if (['scheduled', 'in_progress'].includes(intervention.status)) {
+        unassignedCount += 1
+        if (intervention.priority === 'urgent') unassignedUrgentCount += 1
+      }
       continue
     }
     const current = workload.get(intervention.technicianId) ?? {
@@ -90,7 +92,7 @@ export async function GET(req: NextRequest) {
     }
     current.interventionCount += 1
     current.scheduledMinutes += intervention.duration || 60
-    if (intervention.priority === 'urgent') current.urgentCount += 1
+    if (intervention.priority === 'urgent' && ['scheduled', 'in_progress'].includes(intervention.status)) current.urgentCount += 1
     if (intervention.status === 'in_progress') current.inProgressCount += 1
     workload.set(intervention.technicianId, current)
   }

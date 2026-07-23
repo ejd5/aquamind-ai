@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import {
   AlertTriangle,
-  Check,
   Clock3,
   Gauge,
   Loader2,

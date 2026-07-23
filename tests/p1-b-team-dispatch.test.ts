@@ -121,8 +121,9 @@ describe('P1-B technician dispatch', () => {
     const updateRoute = source('src/app/api/pro/interventions/[id]/route.ts')
     expect(createRoute).toContain('validateTechnicianAssignment')
     expect(updateRoute).toContain('validateTechnicianAssignment')
-    expect(createRoute).toContain('schedule_conflict')
+    expect(createRoute).toContain('error.code')
     expect(updateRoute).toContain('excludeInterventionId')
+    expect(source('src/lib/pro/dispatch.ts')).toContain("'schedule_conflict'")
   })
 
   it('does not claim geolocation or route optimization in the dispatch UI', () => {
@@ -131,4 +132,17 @@ describe('P1-B technician dispatch', () => {
     expect(planning).not.toMatch(/optimi[sz].*route|geolocat/i)
     expect(team).not.toMatch(/optimi[sz].*route|geolocat/i)
   })
+
+  it('ships the dispatch vocabulary in all seven locales', () => {
+    for (const locale of ['de', 'en', 'es', 'fr', 'it', 'nl', 'pt']) {
+      const messages = JSON.parse(source(`src/i18n/locales/${locale}.json`)) as {
+        proApp?: Record<string, string>
+      }
+      expect(messages.proApp?.navTeam).toBeTruthy()
+      expect(messages.proApp?.dispatchTeamTitle).toBeTruthy()
+      expect(messages.proApp?.dispatchErrorConflict).toBeTruthy()
+      expect(messages.proApp?.dispatchLeaveUnassigned).toBeTruthy()
+    }
+  })
+
 })
