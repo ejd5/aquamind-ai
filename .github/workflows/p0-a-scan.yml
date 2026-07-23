@@ -28,14 +28,10 @@ jobs:
           set -euo pipefail
           {
             echo '=== P0-A CLAIM OCCURRENCES ==='
-            rg -n -i \
-              --glob '!docs/audit/**' \
-              --glob '!.next/**' \
-              --glob '!node_modules/**' \
-              --glob '!package-lock.json' \
-              --glob '!P0_A_SCAN.txt' \
-              'QuickBooks|Xero|routage optimis|route optim|facturation conforme|synchronisation comptable|\+38\s*%|38\s*%|10 agents|agents? autonomes?|agents? dédiés?|24h/24|24/7|hors[- ]ligne|offline complet|full offline|2 scans|2 tests|maxPhotoScansPerMonth|maxTestsPerMonth' \
-              src tests prisma docs 2>/dev/null || true
+            git grep -n -i -E \
+              'QuickBooks|Xero|routage optimis|route optim|facturation conforme|synchronisation comptable|\+38[[:space:]]*%|38[[:space:]]*%|10 agents|agents? autonomes?|agents? dédiés?|24h/24|24/7|hors[- ]ligne|offline complet|full offline|2 scans|2 tests|maxPhotoScansPerMonth|maxTestsPerMonth' \
+              -- 'src/**' 'tests/**' 'prisma/**' 'docs/**' \
+              ':!docs/audit/**' ':!P0_A_SCAN.txt' || true
             echo '=== END P0-A CLAIM OCCURRENCES ==='
           } > P0_A_SCAN.txt
 
