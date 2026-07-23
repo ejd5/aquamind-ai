@@ -27,6 +27,36 @@ function toJsonArray(value: unknown): string | null {
   return null
 }
 
+function containsEmbeddedPhoto(value: unknown): boolean {
+  try {
+    return JSON.stringify(value).includes('data:image/')
+  } catch {
+    return true
+  }
+}
+
+function toSafePhotoReferences(value: unknown): string | null {
+  if (!Array.isArray(value)) return null
+  const safe = value.slice(0, 20).flatMap((item) => {
+    if (typeof item === 'string' && /^(https:\/\/|redacted:\/\/)/.test(item)) {
+      return [item.slice(0, 2_000)]
+    }
+    if (item && typeof item === 'object') {
+      const record = item as Record<string, unknown>
+      const url = typeof record.url === 'string' ? record.url.trim() : ''
+      if (/^(https:\/\/|redacted:\/\/)/.test(url)) {
+        return [{
+          url: url.slice(0, 2_000),
+          capturedAt: typeof record.capturedAt === 'string' ? record.capturedAt.slice(0, 80) : undefined,
+          label: typeof record.label === 'string' ? record.label.slice(0, 120) : undefined,
+        }]
+      }
+    }
+    return []
+  })
+  return safe.length ? JSON.stringify(safe) : null
+}
+
 function addRecurrence(date: Date, recurrence: (typeof RECURRENCES)[number], index: number): Date {
   const occurrence = new Date(date)
   if (recurrence === 'weekly') occurrence.setDate(occurrence.getDate() + 7 * index)
@@ -167,6 +197,10 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  if (body.photos !== undefined && containsEmbeddedPhoto(body.photos)) {
+    return NextResponse.json({ error: 'Embedded service photos are not accepted' }, { status: 400 })
+  }
+
   const scheduledAt = parseOptionalDate(body.scheduledAt)
   if (!scheduledAt.provided || !scheduledAt.valid || !scheduledAt.value) {
     const msg = await translate(locale, 'pro.errors.scheduledAtRequired', 'Date planifiée requise')
@@ -239,7 +273,7 @@ export async function POST(req: NextRequest) {
               customerNotes: cleanOptionalText(body.customerNotes),
               internalNotes: cleanOptionalText(body.internalNotes),
               notes: cleanOptionalText(body.notes),
-              photos: toJsonArray(body.photos),
+              photos: toSafePhotoReferences(body.photos),
               actions: toJsonArray(body.actions),
               productsUsed: toJsonArray(body.productsUsed),
               billable: body.billable !== false,

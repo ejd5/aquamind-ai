@@ -6,19 +6,16 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft,
-  Camera,
   CheckCircle2,
   Download,
   FlaskConical,
   Loader2,
   Play,
   Save,
-  Trash2,
 } from 'lucide-react'
 
 const PRIORITIES = ['low', 'normal', 'high', 'urgent'] as const
 
-type Photo = { url: string; capturedAt: string; label?: string }
 type Intervention = {
   id: string
   type: string
@@ -59,7 +56,6 @@ export default function ProInterventionDetailPage() {
   const [products, setProducts] = useState('')
   const [billable, setBillable] = useState(true)
   const [amount, setAmount] = useState('')
-  const [photos, setPhotos] = useState<Photo[]>([])
   const [test, setTest] = useState({ ph: '', freeChlorine: '', alkalinity: '', temperature: '' })
 
   const load = useCallback(async () => {
@@ -77,7 +73,6 @@ export default function ProInterventionDetailPage() {
       setProducts(parseLabels(value.productsUsed).join('\n'))
       setBillable(value.billable !== false)
       setAmount(value.amount != null ? String(value.amount) : '')
-      setPhotos(parsePhotos(value.photos))
     } else setIntervention(null)
     setLoading(false)
   }, [id])
@@ -99,7 +94,6 @@ export default function ProInterventionDetailPage() {
         priority,
         actions: lines(actions),
         productsUsed: lines(products),
-        photos,
         billable,
         amount: billable && amount ? Number(amount) : null,
         currency: 'EUR',
@@ -123,14 +117,6 @@ export default function ProInterventionDetailPage() {
     if (response.ok) setTest({ ph: '', freeChlorine: '', alkalinity: '', temperature: '' })
   }
 
-  async function addPhotos(files: FileList | null) {
-    if (!files) return
-    const additions: Photo[] = []
-    for (const file of Array.from(files).slice(0, Math.max(0, 6 - photos.length))) {
-      additions.push({ url: await compressPhoto(file), capturedAt: new Date().toISOString(), label: 'field' })
-    }
-    setPhotos((current) => [...current, ...additions])
-  }
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" /></div>
   if (!intervention) return <div className="rounded-xl border border-red-400/40 bg-red-500/10 p-4">{t('crmInterventionNotFound')}</div>
@@ -177,11 +163,6 @@ export default function ProInterventionDetailPage() {
       </section>
 
       <div className="space-y-6">
-        <section className="rounded-2xl border border-white/40 bg-white/60 p-5 dark:border-white/10 dark:bg-white/[0.04]">
-          <h2 className="flex items-center gap-2 font-display text-lg font-bold"><Camera className="h-5 w-5 text-gold" />{t('crmPhotos')}</h2><p className="mt-1 text-xs text-muted-foreground">{t('crmPhotosHint')}</p>
-          <label className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-full border border-gold/40 bg-gold/5 px-4 py-2 text-xs font-semibold text-gold"><Camera className="h-4 w-4" />{t('crmAddPhoto')}<input type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={(event) => void addPhotos(event.target.files)} /></label>
-          <div className="mt-4 grid grid-cols-2 gap-3">{photos.map((photo, index) => <div key={`${photo.capturedAt}-${index}`} className="relative overflow-hidden rounded-xl border border-border"><img src={photo.url} alt={t('crmPhotoAlt', { number: index + 1 })} className="aspect-video w-full object-cover" /><div className="flex items-center justify-between gap-2 p-2 text-[10px] text-muted-foreground"><span>{new Date(photo.capturedAt).toLocaleString()}</span><button onClick={() => setPhotos(photos.filter((_, itemIndex) => itemIndex !== index))} aria-label={t('crmDeletePhoto')}><Trash2 className="h-3.5 w-3.5" /></button></div></div>)}</div>
-        </section>
         {intervention.pool ? <section className="rounded-2xl border border-white/40 bg-white/60 p-5 dark:border-white/10 dark:bg-white/[0.04]">
           <h2 className="flex items-center gap-2 font-display text-lg font-bold"><FlaskConical className="h-5 w-5 text-primary" />{t('crmWaterTest')}</h2>
           <div className="mt-4 grid grid-cols-2 gap-3"><TestField label="pH" value={test.ph} onChange={(value) => setTest({ ...test, ph: value })} /><TestField label={t('crmFreeChlorine')} value={test.freeChlorine} onChange={(value) => setTest({ ...test, freeChlorine: value })} /><TestField label="TAC" value={test.alkalinity} onChange={(value) => setTest({ ...test, alkalinity: value })} /><TestField label={t('crmTemperature')} value={test.temperature} onChange={(value) => setTest({ ...test, temperature: value })} /></div>
@@ -194,19 +175,9 @@ export default function ProInterventionDetailPage() {
 
 function lines(value: string) { return value.split('\n').map((item) => item.trim()).filter(Boolean) }
 function parseLabels(value?: string | null): string[] { if (!value) return []; try { const parsed = JSON.parse(value); return Array.isArray(parsed) ? parsed.map((item) => typeof item === 'string' ? item : item.label || item.name || JSON.stringify(item)) : [] } catch { return [] } }
-function parsePhotos(value?: string | null): Photo[] { if (!value) return []; try { const parsed = JSON.parse(value); return Array.isArray(parsed) ? parsed.map((item) => typeof item === 'string' ? { url: item, capturedAt: new Date().toISOString() } : item).filter((item) => item.url) : [] } catch { return [] } }
 function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="block text-xs font-semibold"><span className="mb-1 block">{label}</span>{children}</label> }
 function TestField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) { return <label className="text-xs font-semibold text-muted-foreground">{label}<input type="number" step="any" value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 w-full rounded-xl border border-border bg-background p-2 text-sm text-foreground" /></label> }
 function Metric({ label, value }: { label: string; value: string }) { return <div className="rounded-xl bg-secondary/50 p-3"><p className="text-[10px] uppercase text-muted-foreground">{label}</p><p className="mt-1 text-sm font-semibold">{value}</p></div> }
 function PriorityBadge({ priority, label }: { priority: string; label: string }) { return <span className={`rounded-full px-3 py-2 text-xs font-bold ${priority === 'urgent' ? 'bg-red-500/10 text-red-700 dark:text-red-300' : priority === 'high' ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300' : 'bg-secondary text-muted-foreground'}`}>{label}</span> }
 function cap(value: string) { return value.split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join('') }
 function statusKey(value: string) { return value === 'in_progress' ? 'InProgress' : cap(value) }
-
-async function compressPhoto(file: File): Promise<string> {
-  const source = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = reject; reader.readAsDataURL(file) })
-  const image = await new Promise<HTMLImageElement>((resolve, reject) => { const item = new Image(); item.onload = () => resolve(item); item.onerror = reject; item.src = source })
-  const scale = Math.min(1, 1280 / Math.max(image.width, image.height))
-  const canvas = document.createElement('canvas'); canvas.width = Math.round(image.width * scale); canvas.height = Math.round(image.height * scale)
-  canvas.getContext('2d')?.drawImage(image, 0, 0, canvas.width, canvas.height)
-  return canvas.toDataURL('image/jpeg', 0.72)
-}

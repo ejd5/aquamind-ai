@@ -182,4 +182,25 @@ describe('P1-A Pro CRM foundation', () => {
     expect(activityRoute).toContain('proUserId: ownerUserId')
     expect(activityRoute).toContain('if (!access.canWrite)')
   })
+
+  it('never stores embedded service photos in the CRM database', () => {
+    const createRoute = readFileSync(
+      join(process.cwd(), 'src/app/api/pro/interventions/route.ts'),
+      'utf8',
+    )
+    const updateRoute = readFileSync(
+      join(process.cwd(), 'src/app/api/pro/interventions/[id]/route.ts'),
+      'utf8',
+    )
+    const page = readFileSync(
+      join(process.cwd(), 'src/app/pro/app/interventions/[id]/page.tsx'),
+      'utf8',
+    )
+    expect(createRoute).toContain('containsEmbeddedPhoto')
+    expect(updateRoute).toContain('toSafePhotoReferences')
+    expect(createRoute).not.toContain('photos: toJsonArray(body.photos)')
+    expect(page).not.toContain('canvas.toDataURL')
+    expect(page).not.toContain('accept="image/*"')
+  })
+
 })

@@ -26,6 +26,36 @@ function toJsonArray(value: unknown): string | null {
   return null
 }
 
+function containsEmbeddedPhoto(value: unknown): boolean {
+  try {
+    return JSON.stringify(value).includes('data:image/')
+  } catch {
+    return true
+  }
+}
+
+function toSafePhotoReferences(value: unknown): string | null {
+  if (!Array.isArray(value)) return null
+  const safe = value.slice(0, 20).flatMap((item) => {
+    if (typeof item === 'string' && /^(https:\/\/|redacted:\/\/)/.test(item)) {
+      return [item.slice(0, 2_000)]
+    }
+    if (item && typeof item === 'object') {
+      const record = item as Record<string, unknown>
+      const url = typeof record.url === 'string' ? record.url.trim() : ''
+      if (/^(https:\/\/|redacted:\/\/)/.test(url)) {
+        return [{
+          url: url.slice(0, 2_000),
+          capturedAt: typeof record.capturedAt === 'string' ? record.capturedAt.slice(0, 80) : undefined,
+          label: typeof record.label === 'string' ? record.label.slice(0, 120) : undefined,
+        }]
+      }
+    }
+    return []
+  })
+  return safe.length ? JSON.stringify(safe) : null
+}
+
 async function getOwnedIntervention(id: string, ownerUserId: string) {
   return db.proIntervention.findFirst({
     where: { id, client: { proUserId: ownerUserId } },
@@ -180,7 +210,12 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   for (const field of ['summary', 'customerNotes', 'internalNotes', 'notes'] as const) {
     if (body[field] !== undefined) data[field] = cleanOptionalText(body[field])
   }
-  if (body.photos !== undefined) data.photos = toJsonArray(body.photos)
+  if (body.photos !== undefined) {
+    if (containsEmbeddedPhoto(body.photos)) {
+      return NextResponse.json({ error: 'Embedded service photos are not accepted' }, { status: 400 })
+    }
+    data.photos = toSafePhotoReferences(body.photos)
+  }
   if (body.actions !== undefined) data.actions = toJsonArray(body.actions)
   if (body.productsUsed !== undefined) data.productsUsed = toJsonArray(body.productsUsed)
   if (body.billable !== undefined && typeof body.billable === 'boolean') data.billable = body.billable
