@@ -1,6 +1,0 @@
-$ tsc --noEmit
-src/app/api/pro/interventions/route.ts(224,11): error TS2345: Argument of type '{ priority: string; status: string; type: string; summary: string | null; id: string; createdAt: Date; updatedAt: Date; notes: string | null; duration: number | null; startedAt: Date | null; ... 12 more ...; currency: string; }' is not assignable to parameter of type 'never'.
-src/app/api/pro/interventions/route.ts(260,46): error TS2339: Property 'id' does not exist on type 'never'.
-src/app/api/pro/interventions/route.ts(262,36): error TS2339: Property 'type' does not exist on type 'never'.
-src/app/api/pro/interventions/route.ts(263,43): error TS2339: Property 'scheduledAt' does not exist on type 'never'.
-exit_code=2
