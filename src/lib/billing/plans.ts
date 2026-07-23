@@ -138,8 +138,8 @@ export const PLANS: PlanDefinition[] = [
     limits: {
       maxPools: 1,
       maxSpas: 0,
-      maxPhotoScansPerMonth: 999999, // Scans illimités (P0-A decision)
-      maxTestsPerMonth: 999999,      // Tests illimités (P0-A decision)
+      maxPhotoScansPerMonth: 2, // 2 scans photo / mois — offre Découverte
+      maxTestsPerMonth: 2,           // 2 tests manuels / mois — offre Découverte
       weatherEnabled: true,
       smartReminders: false,
       guidesAccess: 'basic',
