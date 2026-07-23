@@ -5,9 +5,9 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import {
   hashOfflineMutation,
-  isRetryableReplayStatus,
   normalizeOfflineTarget,
   OfflineReplayValidationError,
+  shouldReleaseReplayReservation,
   validateIdempotencyKey,
 } from '@/lib/offline/idempotency'
 
@@ -32,6 +32,7 @@ function replayedResponse(record: {
     headers: {
       'Content-Type': record.contentType || 'application/json',
       'Idempotency-Replayed': 'true',
+      'Idempotency-Body-Cached': record.responseBody === null ? 'false' : 'true',
     },
   })
 }
@@ -66,6 +67,8 @@ export async function POST(req: NextRequest) {
   const userId = session.user.id
 
   let reservationId: string | null = null
+  let targetMutationSucceeded = false
+
   try {
     const idempotencyKey = validateIdempotencyKey(req.headers.get('idempotency-key'))
     const payload = (await req.json()) as ReplayBody
@@ -116,46 +119,49 @@ export async function POST(req: NextRequest) {
       cache: 'no-store',
     })
     const responseBody = await targetResponse.text()
+    const contentType = targetResponse.headers.get('content-type') || 'application/json'
 
-    if (isRetryableReplayStatus(targetResponse.status)) {
+    if (shouldReleaseReplayReservation(targetResponse.status)) {
       await db.offlineMutation.delete({ where: { id: reservationId } }).catch(() => undefined)
       reservationId = null
       return new NextResponse(responseBody, {
         status: targetResponse.status,
-        headers: { 'Content-Type': targetResponse.headers.get('content-type') || 'application/json' },
+        headers: { 'Content-Type': contentType },
       })
     }
 
-    if (Buffer.byteLength(responseBody, 'utf8') > MAX_CACHED_RESPONSE_BYTES) {
-      await db.offlineMutation.delete({ where: { id: reservationId } }).catch(() => undefined)
-      reservationId = null
-      return NextResponse.json({ error: 'Replay response too large' }, { status: 502 })
-    }
+    // The target has accepted the mutation. From this point onward the
+    // reservation must never be deleted: reopening the key could duplicate a
+    // water test, reminder or inventory movement if the ledger update fails.
+    targetMutationSucceeded = true
 
-    const contentType = targetResponse.headers.get('content-type') || 'application/json'
+    const responseBodyBytes = Buffer.byteLength(responseBody, 'utf8')
+    const cachedBody = responseBodyBytes <= MAX_CACHED_RESPONSE_BYTES ? responseBody : null
+
     await db.offlineMutation.update({
       where: { id: reservationId },
       data: {
         state: 'completed',
         statusCode: targetResponse.status,
         contentType,
-        responseBody,
+        responseBody: cachedBody,
       },
     })
 
-    void db.offlineMutation.deleteMany({
-      where: { expiresAt: { lt: new Date() } },
-    }).catch(() => undefined)
+    void db.offlineMutation
+      .deleteMany({ where: { expiresAt: { lt: new Date() } } })
+      .catch(() => undefined)
 
     return new NextResponse(responseBody, {
       status: targetResponse.status,
       headers: {
         'Content-Type': contentType,
         'Idempotency-Replayed': 'false',
+        'Idempotency-Body-Cached': cachedBody === null ? 'false' : 'true',
       },
     })
   } catch (error) {
-    if (reservationId) {
+    if (reservationId && !targetMutationSucceeded) {
       await db.offlineMutation.delete({ where: { id: reservationId } }).catch(() => undefined)
     }
     if (error instanceof OfflineReplayValidationError) {
