@@ -1054,6 +1054,7 @@ model OrganizationMember {
   workingDays          String?  // JSON array, JavaScript days 0..6
   dayStart              String   @default("08:00")
   dayEnd                String   @default("18:00")
+  timeZone              String   @default("Europe/Paris")
   dailyCapacityMinutes Int      @default(480)
   dispatchColor        String?
   phone                String?

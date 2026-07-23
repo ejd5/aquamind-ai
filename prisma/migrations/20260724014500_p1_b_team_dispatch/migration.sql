@@ -5,6 +5,7 @@ ALTER TABLE "OrganizationMember" ADD COLUMN "serviceZones" TEXT;
 ALTER TABLE "OrganizationMember" ADD COLUMN "workingDays" TEXT;
 ALTER TABLE "OrganizationMember" ADD COLUMN "dayStart" TEXT NOT NULL DEFAULT '08:00';
 ALTER TABLE "OrganizationMember" ADD COLUMN "dayEnd" TEXT NOT NULL DEFAULT '18:00';
+ALTER TABLE "OrganizationMember" ADD COLUMN "timeZone" TEXT NOT NULL DEFAULT 'Europe/Paris';
 ALTER TABLE "OrganizationMember" ADD COLUMN "dailyCapacityMinutes" INTEGER NOT NULL DEFAULT 480;
 ALTER TABLE "OrganizationMember" ADD COLUMN "dispatchColor" TEXT;
 ALTER TABLE "OrganizationMember" ADD COLUMN "phone" TEXT;
