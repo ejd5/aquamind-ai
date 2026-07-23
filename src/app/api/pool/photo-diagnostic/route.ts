@@ -7,6 +7,12 @@ import { VISION_DIAGNOSTIC_PROMPT, getVisionLanguageInstruction } from '@/lib/po
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { trackEventServer } from '@/lib/analytics-server'
 import { findOwnedPool } from '@/lib/brain/access'
+import {
+  normalizeImageForAi,
+  privateImageReference,
+  publicImageUrl,
+  SecureImageError,
+} from '@/lib/images/secure-image'
 
 export const runtime = 'nodejs'
 
@@ -20,8 +26,20 @@ export async function GET(req: Request) {
   const userId = session.user.id
   const poolId = new URL(req.url).searchParams.get('poolId')
 
-  const diagnostics = await db.photoDiagnostic.findMany({ where: { userId, ...(poolId ? { OR: [{ poolId }, { poolId: null }] } : {}) }, take: 30, orderBy: { createdAt: 'desc' } })
-  return NextResponse.json({ diagnostics })
+  const diagnostics = await db.photoDiagnostic.findMany({
+    where: { userId, ...(poolId ? { OR: [{ poolId }, { poolId: null }] } : {}) },
+    take: 30,
+    orderBy: { createdAt: 'desc' },
+  })
+
+  return NextResponse.json({
+    diagnostics: diagnostics.map((diagnostic) => ({
+      ...diagnostic,
+      // Never return legacy base64 payloads through the history API.
+      imageUrl: publicImageUrl(diagnostic.imageUrl),
+      imageAvailable: Boolean(publicImageUrl(diagnostic.imageUrl)),
+    })),
+  })
 }
 
 export async function POST(req: NextRequest) {
@@ -37,26 +55,29 @@ export async function POST(req: NextRequest) {
     const { image, typeHint, poolId } = await req.json()
     const pool = poolId ? await findOwnedPool(userId, poolId) : null
     if (poolId && !pool) return NextResponse.json({ error: 'Pool not found' }, { status: 404 })
-    if (!image) return NextResponse.json({ error: 'Image base64 requise' }, { status: 400 })
+    if (!image || typeof image !== 'string') {
+      return NextResponse.json({ error: 'Image base64 requise' }, { status: 400 })
+    }
+
+    // Security boundary: validate, orient, resize and strip all metadata before
+    // sending the image to NVIDIA NIM or storing any reference.
+    const normalized = await normalizeImageForAi(image)
 
     const langInstr = getVisionLanguageInstruction(locale)
     const prompt = typeHint
       ? `${langInstr}\n\n${VISION_DIAGNOSTIC_PROMPT}\n\nUser hint: this photo probably shows "${typeHint}".`
       : `${langInstr}\n\n${VISION_DIAGNOSTIC_PROMPT}`
 
-    const zai = await nvidiaVision(prompt, image)
+    const zai = await nvidiaVision(prompt, normalized.dataUrl)
     const content = zai.content || ''
     let parsed: any = null
     try {
-      // Try to extract JSON from the response
       const m = content.match(/\{[\s\S]*\}/)
       parsed = m ? JSON.parse(m[0]) : null
     } catch {
       parsed = null
     }
 
-    // If parsing failed, build a fallback diagnostic from the raw text
-    // so the user always sees something useful
     if (!parsed && content.trim()) {
       parsed = {
         imageType: typeHint || 'unknown',
@@ -76,7 +97,9 @@ export async function POST(req: NextRequest) {
         userId,
         poolId: pool?.id || null,
         type: parsed?.imageType || typeHint || 'unknown',
-        imageUrl: image, // Store full base64 (for dev/MVP — use S3 in production)
+        // P0-B: never persist image bytes in PostgreSQL. This reference proves
+        // which normalized image was processed without allowing reconstruction.
+        imageUrl: privateImageReference(normalized.sha256),
         detectedIssues: JSON.stringify(parsed?.detectedIssues || []),
         probableIssues: JSON.stringify(parsed?.probableIssues || []),
         confidence: Number(parsed?.confidence) || 0,
@@ -87,7 +110,6 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // Analytics — fire-and-forget.
     void trackEventServer(
       'photo_diagnostic_run',
       {
@@ -95,12 +117,25 @@ export async function POST(req: NextRequest) {
         confidence: Number(parsed?.confidence) || 0,
         hadTypeHint: Boolean(typeHint),
         fallbackRaw: Boolean(parsed?._raw),
+        imageInputBytes: normalized.inputBytes,
+        imageOutputBytes: normalized.outputBytes,
+        imageWidth: normalized.width,
+        imageHeight: normalized.height,
+        imagePersisted: false,
       },
       userId
     )
 
-    return NextResponse.json({ diagnostic: parsed, raw: content, id: saved.id })
+    return NextResponse.json({
+      diagnostic: parsed,
+      raw: content,
+      id: saved.id,
+      imagePersisted: false,
+    })
   } catch (e) {
+    if (e instanceof SecureImageError) {
+      return NextResponse.json({ error: e.message, code: 'invalid_image' }, { status: e.statusCode })
+    }
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Erreur' }, { status: 500 })
   }
 }
@@ -120,7 +155,6 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 400 })
   }
 
-  // Verify ownership before deleting
   const diag = await db.photoDiagnostic.findFirst({ where: { id, userId } })
   if (!diag) {
     const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
