@@ -74,6 +74,19 @@ function isValidRegion(region: string): boolean {
   return false
 }
 
+const WINTER_GUARDIAN_NAMESPACE = 'winterGuardian.'
+
+/**
+ * The client uses useTranslations('winterGuardian'), so API translation keys
+ * must be relative to that namespace. The engine deliberately exposes fully
+ * qualified keys because it can be consumed outside this widget as well.
+ */
+function toClientTranslationKey(key: string): string {
+  return key.startsWith(WINTER_GUARDIAN_NAMESPACE)
+    ? key.slice(WINTER_GUARDIAN_NAMESPACE.length)
+    : key
+}
+
 /**
  * GET /api/pool/winter-guardian
  * GET /api/pool/winter-guardian?poolId=xxx   (multi-pool scoping)
@@ -153,6 +166,18 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     ...status,
+    modeLabelKey: toClientTranslationKey(status.modeLabelKey),
+    modeDescKey: toClientTranslationKey(status.modeDescKey),
+    alerts: status.alerts.map((alert) => ({
+      ...alert,
+      titleKey: toClientTranslationKey(alert.titleKey),
+      descriptionKey: toClientTranslationKey(alert.descriptionKey),
+    })),
+    checklist: status.checklist.map((task) => ({
+      ...task,
+      labelKey: toClientTranslationKey(task.labelKey),
+    })),
+    nextActionKeys: status.nextActionKeys.map(toClientTranslationKey),
     profileName: profile?.name || null,
     weatherLocation: weather?.location || null,
   })
