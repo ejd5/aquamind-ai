@@ -1,0 +1,137 @@
+name: P0-B Apply Photo Privacy
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout implementation branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/p0-b-photo-privacy
+          fetch-depth: 1
+
+      - name: Apply remaining P0-B changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          strip_path = Path('src/app/api/pool/strip-scan/route.ts')
+          strip = strip_path.read_text(encoding='utf-8')
+
+          old_import = "import { assessSwimSafety } from '@/lib/pool/safety-rules'\n"
+          new_import = old_import + "import { normalizeImageForAi, SecureImageError } from '@/lib/images/secure-image'\n"
+          if old_import not in strip:
+              raise SystemExit('strip-scan safety import not found')
+          if "@/lib/images/secure-image" not in strip:
+              strip = strip.replace(old_import, new_import, 1)
+
+          old_vlm = """    // ── VLM call ──────────────────────────────────────────────────────────
+    const vlm = await nvidiaVision(STRIP_SCAN_PROMPT, image, {
+      maxTokens: 1200,
+      temperature: 0.2,
+    })"""
+          new_vlm = """    // ── VLM call ──────────────────────────────────────────────────────────
+    // Validate, resize and strip EXIF/GPS metadata before sending the image
+    // to the external vision provider.
+    const normalized = await normalizeImageForAi(image)
+    const vlm = await nvidiaVision(STRIP_SCAN_PROMPT, normalized.dataUrl, {
+      maxTokens: 1200,
+      temperature: 0.2,
+    })"""
+          if old_vlm not in strip:
+              raise SystemExit('strip-scan VLM block not found')
+          strip = strip.replace(old_vlm, new_vlm, 1)
+
+          old_analytics = """        saved: save,
+        plan: planId,"""
+          new_analytics = """        saved: save,
+        plan: planId,
+        imageInputBytes: normalized.inputBytes,
+        imageOutputBytes: normalized.outputBytes,
+        imageWidth: normalized.width,
+        imageHeight: normalized.height,"""
+          if old_analytics not in strip:
+              raise SystemExit('strip-scan analytics block not found')
+          strip = strip.replace(old_analytics, new_analytics, 1)
+
+          old_catch = """  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erreur'
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
+}"""
+          new_catch = """  } catch (e) {
+    if (e instanceof SecureImageError) {
+      return NextResponse.json({ error: e.message, code: 'invalid_image' }, { status: e.statusCode })
+    }
+    const msg = e instanceof Error ? e.message : 'Erreur'
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
+}"""
+          if old_catch not in strip:
+              raise SystemExit('strip-scan catch block not found')
+          strip = strip.replace(old_catch, new_catch, 1)
+          strip_path.write_text(strip, encoding='utf-8')
+
+          component_path = Path('src/components/aquamind/module-diagnostic.tsx')
+          component = component_path.read_text(encoding='utf-8')
+          old_type = '  imageUrl: string\n'
+          if old_type not in component:
+              raise SystemExit('SavedDiagnostic imageUrl type not found')
+          component = component.replace(old_type, '  imageUrl: string | null\n', 1)
+          component_path.write_text(component, encoding='utf-8')
+
+          test_path = Path('tests/p0-b-secure-image.test.ts')
+          test = test_path.read_text(encoding='utf-8')
+          if "readFileSync" not in test:
+              test = test.replace(
+                  "import sharp from 'sharp'\n",
+                  "import { readFileSync } from 'node:fs'\nimport { join } from 'node:path'\nimport sharp from 'sharp'\n",
+                  1,
+              )
+              insertion = """
+
+  it('routes never persist or forward the original image bytes', () => {
+    const photoRoute = readFileSync(
+      join(process.cwd(), 'src/app/api/pool/photo-diagnostic/route.ts'),
+      'utf8',
+    )
+    const stripRoute = readFileSync(
+      join(process.cwd(), 'src/app/api/pool/strip-scan/route.ts'),
+      'utf8',
+    )
+
+    expect(photoRoute).not.toContain('imageUrl: image')
+    expect(photoRoute).toContain('nvidiaVision(prompt, normalized.dataUrl)')
+    expect(photoRoute).toContain('privateImageReference(normalized.sha256)')
+    expect(stripRoute).toContain('nvidiaVision(STRIP_SCAN_PROMPT, normalized.dataUrl')
+    expect(stripRoute).not.toContain('nvidiaVision(STRIP_SCAN_PROMPT, image,')
+  })
+"""
+              test = test.replace('\n})\n', insertion + '\n})\n')
+              test_path.write_text(test, encoding='utf-8')
+          PY
+
+      - name: Remove one-shot workflow and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/p0-b-apply.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'fix(p0-b): secure strip scan and diagnostic history [skip p0-b apply]'
+          git push origin HEAD:fix/p0-b-photo-privacy
