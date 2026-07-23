@@ -1,0 +1,31 @@
+name: Add P1-B technician timezone
+
+on:
+  push:
+    branches:
+      - feat/p1-b-team-dispatch
+    paths:
+      - scripts/add-p1-b-technician-timezone.py
+      - .github/workflows/add-p1-b-technician-timezone.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: feat/p1-b-team-dispatch
+          fetch-depth: 1
+      - run: python scripts/add-p1-b-technician-timezone.py
+      - run: |
+          rm scripts/add-p1-b-technician-timezone.py
+          rm .github/workflows/add-p1-b-technician-timezone.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat(p1-b): make dispatch availability timezone-aware'
+          git push origin HEAD:feat/p1-b-team-dispatch
