@@ -1,0 +1,31 @@
+name: Apply P1-A detail translations
+
+on:
+  push:
+    branches:
+      - feat/p1-a-pro-crm-foundation
+    paths:
+      - scripts/apply-p1-a-detail-translations.py
+      - .github/workflows/apply-p1-a-detail-translations.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: feat/p1-a-pro-crm-foundation
+          fetch-depth: 1
+      - run: python scripts/apply-p1-a-detail-translations.py
+      - run: |
+          rm scripts/apply-p1-a-detail-translations.py
+          rm .github/workflows/apply-p1-a-detail-translations.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat(p1-a): translate Pro service records in seven locales'
+          git push origin HEAD:feat/p1-a-pro-crm-foundation
