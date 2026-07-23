@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const ROOT = process.cwd()
-const locales = ['fr', 'en', 'es', 'de', 'it', 'pt', 'nl']
+const locales = ['fr', 'en', 'es', 'de', 'it', 'pt', 'nl'] as const
 
 describe('P0-A marketing truth', () => {
   it('removes unsupported Growth performance claims', () => {
@@ -29,6 +29,7 @@ describe('P0-A marketing truth', () => {
     const pro = JSON.stringify(data.pro)
     expect(pro).not.toMatch(/QuickBooks|Xero|SLA 99[,.]9|synchronisation comptable/i)
     expect(pro).not.toMatch(/tournées optimisées par géolocalisation/i)
+    expect(pro).not.toMatch(/route optimization and automatic reminders/i)
   })
 
   it('enforces the advertised Discovery limits', () => {
