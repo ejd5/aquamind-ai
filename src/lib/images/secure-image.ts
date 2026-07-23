@@ -35,21 +35,21 @@ function decodeImageData(input: string): { buffer: Buffer; mimeType: string } {
   const encoded = dataUrlMatch?.[2] || input
 
   if (!ALLOWED_MIME_TYPES.has(mimeType)) {
-    throw new SecureImageError('Format d’image non pris en charge. Utilisez JPEG, PNG ou WebP.', 415)
+    throw new SecureImageError('Unsupported image format', 415)
   }
 
   const compactBase64 = encoded.replace(/\s/g, '')
   if (!compactBase64 || compactBase64.length % 4 !== 0 || !BASE64_PATTERN.test(compactBase64)) {
-    throw new SecureImageError('Image encodée invalide.', 400)
+    throw new SecureImageError('Invalid base64 image', 400)
   }
 
   const buffer = Buffer.from(compactBase64, 'base64')
 
   if (buffer.length === 0) {
-    throw new SecureImageError('Image vide ou invalide.', 400)
+    throw new SecureImageError('Empty or invalid image', 400)
   }
   if (buffer.length > MAX_INPUT_BYTES) {
-    throw new SecureImageError('Image trop volumineuse. Taille maximale : 6 Mo.', 413)
+    throw new SecureImageError('Image too large', 413)
   }
 
   return { buffer, mimeType }
@@ -85,7 +85,7 @@ export async function normalizeImageForAi(input: string): Promise<NormalizedImag
     const height = result.info.height || 0
 
     if (!width || !height) {
-      throw new SecureImageError('Dimensions de l’image non valides.', 400)
+      throw new SecureImageError('Invalid image dimensions', 400)
     }
 
     const sha256 = createHash('sha256').update(result.data).digest('hex')
@@ -102,7 +102,7 @@ export async function normalizeImageForAi(input: string): Promise<NormalizedImag
     }
   } catch (error) {
     if (error instanceof SecureImageError) throw error
-    throw new SecureImageError('Image illisible ou corrompue.', 400)
+    throw new SecureImageError('Unreadable or corrupted image', 400)
   }
 }
 
