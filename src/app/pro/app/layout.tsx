@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import { authOptions } from '@/lib/auth'
+import { ProMobileShell } from '@/components/pro/pro-mobile-shell'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,21 +52,21 @@ export default async function ProAppLayout({
   return (
     <div className="aq-pro-app relative flex min-h-screen flex-col bg-background">
       <header className="aq-pro-header safe-area-top sticky top-0 z-40 border-b border-gold/20 bg-background/90 backdrop-blur-2xl">
-        <div className="mx-auto flex h-16 w-full max-w-[1760px] items-center justify-between gap-3 px-3 sm:px-4 lg:px-6 2xl:px-8">
+        <div className="mx-auto flex h-14 w-full max-w-[1760px] items-center justify-between gap-3 px-3 sm:h-16 sm:px-4 lg:px-6 2xl:px-8">
           <div className="flex items-center gap-3">
             <Link
               href="/pro"
-              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              className="hidden items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground md:inline-flex"
               aria-label={t('backToDashboard')}
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{t('backToDashboard')}</span>
+              <span>{t('backToDashboard')}</span>
             </Link>
           </div>
 
           <Link
             href="/pro/app"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 md:absolute md:left-1/2 md:-translate-x-1/2"
             aria-label="AQWELIA Pro"
           >
             <img
@@ -85,7 +86,7 @@ export default async function ProAppLayout({
             <Sparkles className="hidden h-3.5 w-3.5 text-gold sm:block" />
           </Link>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <div className="hidden text-right leading-tight md:block">
               <div className="max-w-[220px] truncate text-xs font-semibold text-foreground">
                 {companyName}
@@ -98,28 +99,11 @@ export default async function ProAppLayout({
                 {t('signout')}
               </Link>
             </div>
-            <span className="inline-flex items-center rounded-full bg-gradient-to-r from-gold to-[oklch(0.55_0.10_195)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-[oklch(0.99_0.01_195)] shadow-md">
+            <span className="hidden items-center rounded-full bg-gradient-to-r from-gold to-[oklch(0.55_0.10_195)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-[oklch(0.99_0.01_195)] shadow-md md:inline-flex">
               {t('badgePro')}
             </span>
+            <ProMobileShell companyName={companyName} />
           </div>
-        </div>
-
-        <div className="aq-pro-mobile-nav border-t border-border/40 bg-background/70 backdrop-blur md:hidden">
-          <nav className="custom-scroll mx-auto flex w-full max-w-[1760px] items-center gap-1 overflow-x-auto px-3 py-2 sm:px-4">
-            {NAV.map((link) => {
-              const Icon = link.icon
-              return (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className="flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {link.label}
-                </Link>
-              )
-            })}
-          </nav>
         </div>
       </header>
 
@@ -154,7 +138,7 @@ export default async function ProAppLayout({
           </div>
         </aside>
 
-        <main className="aq-pro-main min-w-0 flex-1 px-3 py-4 pb-24 sm:px-4 sm:py-5 md:pb-8 lg:px-5 xl:px-6 2xl:px-8">
+        <main className="aq-pro-main min-w-0 flex-1 px-3 py-4 pb-28 sm:px-4 sm:py-5 md:pb-8 lg:px-5 xl:px-6 2xl:px-8">
           {children}
         </main>
       </div>

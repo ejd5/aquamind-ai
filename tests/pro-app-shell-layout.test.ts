@@ -14,6 +14,10 @@ const appLayout = readFileSync(
   join(process.cwd(), 'src/app/pro/app/layout.tsx'),
   'utf8',
 )
+const mobileShell = readFileSync(
+  join(process.cwd(), 'src/components/pro/pro-mobile-shell.tsx'),
+  'utf8',
+)
 const proCss = readFileSync(
   join(process.cwd(), 'src/app/aqwelia-pro.css'),
   'utf8',
@@ -31,17 +35,28 @@ describe('AQWELIA Pro authenticated workspace shell', () => {
   })
 
   it('uses the available desktop width for operational screens', () => {
-    expect(appLayout.match(/max-w-\[1760px\]/g)?.length).toBeGreaterThanOrEqual(3)
+    expect(appLayout.match(/max-w-\[1760px\]/g)?.length).toBeGreaterThanOrEqual(2)
     expect(appLayout).toContain('min-w-0 flex-1')
     expect(appLayout).toContain('xl:w-64')
   })
 
-  it('keeps a dedicated responsive navigation and full-width mobile content', () => {
-    expect(appLayout).toContain('aq-pro-mobile-nav')
-    expect(appLayout).toContain('md:hidden')
+  it('uses a native-style mobile shell instead of a horizontally scrolling web menu', () => {
+    expect(appLayout).toContain('ProMobileShell')
+    expect(appLayout).not.toContain('aq-pro-mobile-nav')
+    expect(mobileShell).toContain('aq-pro-bottom-tabs')
+    expect(mobileShell).toContain('grid-cols-5')
+    expect(mobileShell).toContain('aq-pro-mobile-sheet')
+    expect(mobileShell).toContain('Capacitor.isNativePlatform()')
+    expect(mobileShell).toContain('Haptics.impact')
+  })
+
+  it('keeps mobile content full-width and safe-area aware', () => {
+    expect(mobileShell).toContain('md:hidden')
     expect(appLayout).toContain('hidden h-[calc(100vh-4rem)]')
     expect(appLayout).toContain('md:block')
     expect(proCss).toContain('@media (max-width: 767px)')
+    expect(proCss).toContain('100dvh')
+    expect(proCss).toContain('env(safe-area-inset-bottom)')
     expect(proCss).toContain('border-radius: 0')
   })
 })
