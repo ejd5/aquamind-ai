@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { getProAccess } from '@/lib/pro/access'
+import { proNestedInterventionWhere, proPoolAccessWhere } from '@/lib/pro/intervention-scope'
 import {
   cleanOptionalText,
   isOneOf,
@@ -33,8 +34,9 @@ export async function GET(req: NextRequest) {
   const status = url.searchParams.get('status')
   const service = url.searchParams.get('service')
   const now = new Date()
+  const interventionWhere = proNestedInterventionWhere(access, session.user.id)
 
-  const where: Prisma.ProPoolWhereInput = { client: { proUserId: access.ownerUserId } }
+  const where: Prisma.ProPoolWhereInput = proPoolAccessWhere(access, session.user.id)
   if (isOneOf(ALLOWED_TYPES, type)) where.type = type
   if (isOneOf(PRO_POOL_STATUSES, status)) where.status = status
   if (q) {
@@ -55,6 +57,12 @@ export async function GET(req: NextRequest) {
     if (service === 'none') where.nextServiceAt = null
   }
 
+  const overdueScope: Prisma.ProPoolWhereInput = {
+    ...proPoolAccessWhere(access, session.user.id),
+    status: { not: 'inactive' },
+    nextServiceAt: { lte: now },
+  }
+
   const [pools, overdueServices] = await Promise.all([
     db.proPool.findMany({
       where,
@@ -73,20 +81,20 @@ export async function GET(req: NextRequest) {
         },
         waterTests: { orderBy: { testedAt: 'desc' }, take: 1 },
         interventions: {
+          where: interventionWhere,
           orderBy: { scheduledAt: 'desc' },
           take: 1,
           select: { id: true, scheduledAt: true, completedAt: true, status: true, type: true },
         },
-        _count: { select: { interventions: true, waterTests: true } },
+        _count: {
+          select: {
+            interventions: interventionWhere ? { where: interventionWhere } : true,
+            waterTests: true,
+          },
+        },
       },
     }),
-    db.proPool.count({
-      where: {
-        client: { proUserId: access.ownerUserId },
-        status: { not: 'inactive' },
-        nextServiceAt: { lte: now },
-      },
-    }),
+    db.proPool.count({ where: overdueScope }),
   ])
 
   return NextResponse.json({ pools, total: pools.length, summary: { overdueServices } })
