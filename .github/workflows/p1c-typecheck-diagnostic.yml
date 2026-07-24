@@ -1,0 +1,31 @@
+name: P1-C GPS connector typecheck diagnostic
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: file:/tmp/aqwelia-ci.db
+      NEXTAUTH_SECRET: test-secret-for-ci-only-do-not-use-in-production
+      NEXTAUTH_URL: http://localhost:3099
+      AUTH_TRUST_HOST: "true"
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_test_ci_placeholder
+      REVENUECAT_WEBHOOK_SECRET: rc_wh_test_ci_only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.4"
+      - run: bun install --frozen-lockfile >/dev/null
+      - run: bun run db:generate:all >/dev/null
+      - name: Typecheck only
+        run: bun run typecheck
