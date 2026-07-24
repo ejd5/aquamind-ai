@@ -72,11 +72,19 @@ function routeIsActive(pathname: string, href: string, exact = false) {
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
+function itemLabel(
+  item: Pick<MobileNavItem, 'key' | 'label'>,
+  translate: (key: ProNavKey) => string,
+): string {
+  if (item.key) return translate(item.key)
+  return item.label ?? ''
+}
+
 export function ProMobileShell({ companyName, canManage }: { companyName: string; canManage: boolean }) {
   const pathname = usePathname()
   const t = useTranslations('proApp')
   const [open, setOpen] = useState(false)
-  const secondaryItems = canManage
+  const secondaryItems: readonly MobileNavItem[] = canManage
     ? [...SECONDARY_ITEMS, { href: '/pro/app/dispatch', label: 'Dispatch Live', icon: MapPinned }]
     : SECONDARY_ITEMS
   const isClient = useSyncExternalStore(subscribeToClient, () => true, () => false)
@@ -120,7 +128,7 @@ export function ProMobileShell({ companyName, canManage }: { companyName: string
               <span className={`flex h-7 w-9 items-center justify-center rounded-xl ${active ? 'bg-primary/10' : ''}`}>
                 <Icon className="h-[18px] w-[18px]" />
               </span>
-              <span className="max-w-full truncate">{item.key ? t(item.key) : item.label}</span>
+              <span className="max-w-full truncate">{itemLabel(item, t)}</span>
             </Link>
           )
         })}
@@ -171,7 +179,7 @@ export function ProMobileShell({ companyName, canManage }: { companyName: string
                     <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
                       <Icon className="h-5 w-5" />
                     </span>
-                    {t(item.key)}
+                    {itemLabel(item, t)}
                   </Link>
                 )
               })}
