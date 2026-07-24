@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { getProAccess } from '@/lib/pro/access'
+import { proInterventionAccessWhere } from '@/lib/pro/intervention-scope'
 import {
   cleanOptionalText,
   isOneOf,
@@ -94,15 +95,16 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, Number(url.searchParams.get('page')) || 1)
   const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get('pageSize')) || 20))
 
-  const where: Prisma.ProInterventionWhereInput = {
-    client: { proUserId: access.ownerUserId },
-  }
+  const where: Prisma.ProInterventionWhereInput = proInterventionAccessWhere(
+    access,
+    session.user.id,
+  )
   if (clientId) where.proClientId = clientId
   if (poolId) where.proPoolId = poolId
   if (isOneOf(ALLOWED_STATUSES, status)) where.status = status
   if (isOneOf(ALLOWED_TYPES, type)) where.type = type
   if (isOneOf(PRO_INTERVENTION_PRIORITIES, priority)) where.priority = priority
-  if (technicianId) where.technicianId = technicianId
+  if (technicianId && access.role !== 'technician') where.technicianId = technicianId
 
   const scheduledRange: Prisma.DateTimeFilter = {}
   if (from) {
@@ -114,6 +116,12 @@ export async function GET(req: NextRequest) {
     if (!Number.isNaN(date.getTime())) scheduledRange.lte = date
   }
   if (Object.keys(scheduledRange).length > 0) where.scheduledAt = scheduledRange
+
+  const urgentWhere: Prisma.ProInterventionWhereInput = {
+    ...proInterventionAccessWhere(access, session.user.id),
+    priority: 'urgent',
+    status: { in: ['scheduled', 'in_progress'] },
+  }
 
   const [total, interventions, urgentOpen] = await Promise.all([
     db.proIntervention.count({ where }),
@@ -136,13 +144,7 @@ export async function GET(req: NextRequest) {
         pool: { select: { id: true, name: true, type: true, status: true } },
       },
     }),
-    db.proIntervention.count({
-      where: {
-        client: { proUserId: access.ownerUserId },
-        priority: 'urgent',
-        status: { in: ['scheduled', 'in_progress'] },
-      },
-    }),
+    db.proIntervention.count({ where: urgentWhere }),
   ])
 
   return NextResponse.json({
@@ -220,10 +222,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid intervention date' }, { status: 400 })
   }
 
-  let technicianId = typeof body.technicianId === 'string' && body.technicianId.trim()
-    ? body.technicianId.trim()
-    : null
-  if (!technicianId && access.role === 'technician') technicianId = session.user.id
+  const technicianId = access.role === 'technician'
+    ? session.user.id
+    : typeof body.technicianId === 'string' && body.technicianId.trim()
+      ? body.technicianId.trim()
+      : null
 
   const status = isOneOf(ALLOWED_STATUSES, body.status) ? body.status : 'scheduled'
   const amount = parseOptionalAmount(body.amount)
