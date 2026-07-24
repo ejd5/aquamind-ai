@@ -7,7 +7,7 @@ Dispatch Live sert exclusivement à organiser les interventions terrain, visuali
 ## Sources de position
 
 1. **Application professionnelle AQWELIA** — source recommandée. Le technicien démarre et arrête une session visible.
-2. **Boîtier GPS du véhicule professionnel** — connecteur premium futur utilisant la même API d'ingestion.
+2. **Boîtier GPS du véhicule professionnel** — connecteur premium disponible, utilisant la même API d’ingestion et la même carte Dispatch Live.
 3. Les balises Bluetooth grand public de type AirTag ne sont pas une source métier supportée.
 
 ## Garde-fous intégrés
@@ -51,4 +51,3 @@ Le composant de partage fourni dans ce lot transmet la position lorsque l’appl
 Les balises utilisent les mêmes finalités et restrictions que le suivi smartphone. AQWELIA refuse côté serveur toute position reçue en dehors des jours et horaires de travail configurés, même si le matériel continue à transmettre.
 
 Chaque boîtier dispose d’un jeton révocable affiché une seule fois. Seule son empreinte SHA-256 est conservée. Son attribution à un technicien, sa révocation et les consultations de la carte sont journalisées.
-
