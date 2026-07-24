@@ -1,0 +1,35 @@
+name: Finalize P1-C GPS connector types
+
+on:
+  push:
+    branches:
+      - feat/pro-gps-device-connector
+    paths:
+      - scripts/finalize-p1c-gps-types.py
+      - .github/workflows/finalize-p1c-gps-types.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: ${{ !contains(github.event.head_commit.message || '', '[skip gps-types-finalize]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: feat/pro-gps-device-connector
+          fetch-depth: 1
+      - run: python3 scripts/finalize-p1c-gps-types.py
+      - name: Remove temporary diagnostics and finalizer
+        run: |
+          rm -f scripts/finalize-p1c-gps-types.py
+          rm -f .github/workflows/finalize-p1c-gps-types.yml
+          rm -f .github/workflows/p1c-typecheck-diagnostic.yml
+      - name: Commit finalized branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(p1-c): finalize GPS connector TypeScript narrowing [skip gps-types-finalize]'
+          git push origin HEAD:feat/pro-gps-device-connector
