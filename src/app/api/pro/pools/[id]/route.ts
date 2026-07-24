@@ -3,7 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
-import { getProAccess } from '@/lib/pro/access'
+import { getProAccess, type ProAccess } from '@/lib/pro/access'
+import { proNestedInterventionWhere, proPoolAccessWhere } from '@/lib/pro/intervention-scope'
 import {
   cleanOptionalText,
   isOneOf,
@@ -17,9 +18,9 @@ export const runtime = 'nodejs'
 const ALLOWED_TYPES = ['pool', 'spa', 'both'] as const
 type Ctx = { params: Promise<{ id: string }> }
 
-async function getOwnedPool(id: string, ownerUserId: string) {
+async function getAccessiblePool(id: string, access: ProAccess, actorUserId: string) {
   return db.proPool.findFirst({
-    where: { id, client: { proUserId: ownerUserId } },
+    where: { id, ...proPoolAccessWhere(access, actorUserId) },
     select: { id: true },
   })
 }
@@ -34,14 +35,9 @@ export async function GET(req: NextRequest, ctx: Ctx) {
 
   const { id } = await ctx.params
   const access = await getProAccess(session.user.id)
-  const owned = await getOwnedPool(id, access.ownerUserId)
-  if (!owned) {
-    const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
-    return NextResponse.json({ error: msg }, { status: 404 })
-  }
-
-  const pool = await db.proPool.findUnique({
-    where: { id },
+  const interventionWhere = proNestedInterventionWhere(access, session.user.id)
+  const pool = await db.proPool.findFirst({
+    where: { id, ...proPoolAccessWhere(access, session.user.id) },
     include: {
       client: {
         select: {
@@ -58,6 +54,7 @@ export async function GET(req: NextRequest, ctx: Ctx) {
       },
       waterTests: { orderBy: { testedAt: 'desc' }, take: 30 },
       interventions: {
+        where: interventionWhere,
         orderBy: { scheduledAt: 'desc' },
         take: 30,
         select: {
@@ -74,9 +71,18 @@ export async function GET(req: NextRequest, ctx: Ctx) {
           currency: true,
         },
       },
-      _count: { select: { waterTests: true, interventions: true } },
+      _count: {
+        select: {
+          waterTests: true,
+          interventions: interventionWhere ? { where: interventionWhere } : true,
+        },
+      },
     },
   })
+  if (!pool) {
+    const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
+    return NextResponse.json({ error: msg }, { status: 404 })
+  }
   return NextResponse.json({
     pool,
     access: { role: access.role, canWrite: access.canWrite, canManage: access.canManage },
@@ -97,7 +103,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: toolWorkspaceText(locale, 'readonly') }, { status: 403 })
   }
 
-  const owned = await getOwnedPool(id, access.ownerUserId)
+  const owned = await getAccessiblePool(id, access, session.user.id)
   if (!owned) {
     const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
     return NextResponse.json({ error: msg }, { status: 404 })
@@ -186,7 +192,7 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: 'Droits insuffisants' }, { status: 403 })
   }
 
-  const owned = await getOwnedPool(id, access.ownerUserId)
+  const owned = await getAccessiblePool(id, access, session.user.id)
   if (!owned) {
     const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
     return NextResponse.json({ error: msg }, { status: 404 })

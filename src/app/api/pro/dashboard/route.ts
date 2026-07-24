@@ -1,25 +1,9 @@
 /**
- * AQWELIA Pro — Dashboard statistics (MVP).
+ * AQWELIA Pro — Dashboard statistics.
  *
- * URL: /api/pro/dashboard
- *
- * GET — aggregated stats for the authenticated pro's homepage / dashboard:
- *   - clientsCount       total ProClient owned
- *   - poolsCount         total ProPool across all clients
- *   - interventionsCount total ProIntervention (all statuses, all time)
- *   - waterTestsCount    total ProWaterTest (all time)
- *   - interventionsThisWeek  count + sum of completed durations this week
- *   - interventionsUpcoming  next 5 scheduled (status=scheduled,
- *                            scheduledAt >= now, ordered asc)
- *   - interventionsOverdue   count of scheduled with scheduledAt < now
- *   - recentInterventions    last 10 (any status, newest first)
- *   - recentWaterTests       last 10 across all pools (newest first)
- *   - poolsWithoutRecentTest pools with no water test in the last 14 days
- *
- * "This week" is the ISO week (Monday → Sunday) containing `now`, in the
- * server's local timezone. Good enough for a pro MVP.
- *
- * Auth: NextAuth session required.
+ * Every metric is scoped to the authenticated workspace. Technicians are
+ * further restricted to the clients, pools and interventions assigned to
+ * their own account.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
@@ -27,13 +11,17 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { getProAccess } from '@/lib/pro/access'
+import {
+  proClientAccessWhere,
+  proInterventionAccessWhere,
+  proPoolAccessWhere,
+} from '@/lib/pro/intervention-scope'
 
 export const runtime = 'nodejs'
 
-/** Returns the start (Mon 00:00) and end (Sun 23:59:59.999) of the current ISO week. */
 function getWeekBounds(now: Date): { start: Date; end: Date } {
-  const day = now.getDay() // 0 = Sunday, 1 = Monday, …
-  const diffToMonday = (day + 6) % 7 // Mon=0, Tue=1, …, Sun=6
+  const day = now.getDay()
+  const diffToMonday = (day + 6) % 7
   const start = new Date(now)
   start.setHours(0, 0, 0, 0)
   start.setDate(start.getDate() - diffToMonday)
@@ -50,16 +38,17 @@ export async function GET(req: NextRequest) {
     const msg = await translate(locale, 'common.errors.unauthorized', 'Non autorisé')
     return NextResponse.json({ error: msg }, { status: 401 })
   }
-  const userId = (await getProAccess(session.user.id)).ownerUserId
+
+  const access = await getProAccess(session.user.id)
+  const actorUserId = session.user.id
+  const clientScope = proClientAccessWhere(access, actorUserId)
+  const poolScope = proPoolAccessWhere(access, actorUserId)
+  const interventionScope = proInterventionAccessWhere(access, actorUserId)
 
   const now = new Date()
   const { start: weekStart, end: weekEnd } = getWeekBounds(now)
   const fourteenDaysAgo = new Date(now)
   fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
-
-  // The "pro scope" predicate: any ProClient whose proUserId = userId.
-  // We reuse it across queries via the relation path `client.proUserId`.
-  const clientScope = { proUserId: userId }
 
   const [
     clientsCount,
@@ -73,24 +62,22 @@ export async function GET(req: NextRequest) {
     recentWaterTests,
     poolsWithoutRecentTest,
   ] = await Promise.all([
-    db.proClient.count({ where: { proUserId: userId } }),
-    db.proPool.count({ where: { client: clientScope } }),
-    db.proIntervention.count({ where: { client: clientScope } }),
-    db.proWaterTest.count({ where: { pool: { client: clientScope } } }),
+    db.proClient.count({ where: clientScope }),
+    db.proPool.count({ where: poolScope }),
+    db.proIntervention.count({ where: interventionScope }),
+    db.proWaterTest.count({ where: { pool: poolScope } }),
 
-    // This week's interventions (any status) + their completed durations.
     db.proIntervention.findMany({
       where: {
-        client: clientScope,
+        ...interventionScope,
         scheduledAt: { gte: weekStart, lte: weekEnd },
       },
       select: { status: true, duration: true },
     }),
 
-    // Upcoming: scheduled in the future, status=scheduled, ordered asc.
     db.proIntervention.findMany({
       where: {
-        client: clientScope,
+        ...interventionScope,
         status: 'scheduled',
         scheduledAt: { gte: now },
       },
@@ -104,18 +91,16 @@ export async function GET(req: NextRequest) {
       },
     }),
 
-    // Overdue: scheduled in the past, still status=scheduled.
     db.proIntervention.count({
       where: {
-        client: clientScope,
+        ...interventionScope,
         status: 'scheduled',
         scheduledAt: { lt: now },
       },
     }),
 
-    // Recent interventions (last 10, any status).
     db.proIntervention.findMany({
-      where: { client: clientScope },
+      where: interventionScope,
       orderBy: { scheduledAt: 'desc' },
       take: 10,
       include: {
@@ -126,49 +111,46 @@ export async function GET(req: NextRequest) {
       },
     }),
 
-    // Recent water tests across all the pro's pools (last 10).
     db.proWaterTest.findMany({
-      where: { pool: { client: clientScope } },
+      where: { pool: poolScope },
       orderBy: { testedAt: 'desc' },
       take: 10,
       include: {
         pool: {
-          select: { id: true, name: true, client: { select: { id: true, firstName: true, lastName: true } } },
+          select: {
+            id: true,
+            name: true,
+            client: { select: { id: true, firstName: true, lastName: true } },
+          },
         },
       },
     }),
 
-    // Pools with NO water test in the last 14 days.
-    // Strategy: list all pool ids, then count pools that DO have a recent
-    // test, and subtract. (Prisma doesn't have a "not exists" operator on
-    // a relation filtered by date out of the box; this two-step is simple
-    // and fast for the expected MVP scale of hundreds of pools.)
     (async () => {
       const allPools = await db.proPool.findMany({
-        where: { client: clientScope },
+        where: poolScope,
         select: { id: true, name: true },
       })
       if (allPools.length === 0) return []
       const poolsWithRecentTest = await db.proWaterTest.findMany({
         where: {
           testedAt: { gte: fourteenDaysAgo },
-          pool: { client: clientScope },
+          pool: poolScope,
         },
         select: { proPoolId: true },
         distinct: ['proPoolId'],
       })
-      const recentIds = new Set(poolsWithRecentTest.map((t) => t.proPoolId))
-      return allPools.filter((p) => !recentIds.has(p.id))
+      const recentIds = new Set(poolsWithRecentTest.map((test) => test.proPoolId))
+      return allPools.filter((pool) => !recentIds.has(pool.id))
     })(),
   ])
 
-  // Aggregate the week's stats from the raw rows.
   const thisWeekCompleted = interventionsThisWeek.filter(
-    (i) => i.status === 'completed'
+    (intervention) => intervention.status === 'completed',
   )
   const thisWeekTotalDuration = thisWeekCompleted.reduce(
-    (sum, i) => sum + (i.duration || 0),
-    0
+    (sum, intervention) => sum + (intervention.duration || 0),
+    0,
   )
 
   return NextResponse.json({
