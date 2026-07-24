@@ -1,0 +1,35 @@
+name: Finalize P1-C GPS device connector
+
+on:
+  push:
+    branches:
+      - feat/pro-gps-device-connector
+    paths:
+      - scripts/finalize-p1c-gps-device.py
+      - .github/workflows/finalize-p1c-gps-device.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: ${{ !contains(github.event.head_commit.message || '', '[skip gps-device-finalize]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: feat/pro-gps-device-connector
+          fetch-depth: 1
+      - name: Apply GPS device schema and workspace changes
+        run: python3 scripts/finalize-p1c-gps-device.py
+      - name: Remove one-time finalizer
+        run: |
+          rm -f scripts/finalize-p1c-gps-device.py
+          rm -f .github/workflows/finalize-p1c-gps-device.yml
+      - name: Commit finalized branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat(p1-c): finalize GPS vehicle device integration [skip gps-device-finalize]'
+          git push origin HEAD:feat/pro-gps-device-connector
