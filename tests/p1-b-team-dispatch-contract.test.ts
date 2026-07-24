@@ -15,7 +15,13 @@ describe('P1-B dispatch contract', () => {
       expect(schema).toContain('workingDays')
       expect(schema).toContain('timeZone')
       expect(schema).toContain('dailyCapacityMinutes')
-      expect(schema).toContain('OrganizationMember_organizationId_dispatchEnabled_idx')
+      expect(schema).toContain('@@index([organizationId, dispatchEnabled])')
+    }
+
+    const sqliteMigration = read('prisma/migrations/20260724014500_p1_b_team_dispatch/migration.sql')
+    const postgresMigration = read('prisma/postgresql/migrations/20260724014500_p1_b_team_dispatch/migration.sql')
+    for (const migration of [sqliteMigration, postgresMigration]) {
+      expect(migration).toContain('OrganizationMember_organizationId_dispatchEnabled_idx')
     }
   })
 
@@ -24,17 +30,17 @@ describe('P1-B dispatch contract', () => {
     expect(route).toContain('client: { proUserId: access.ownerUserId }')
     expect(route).toContain('if (!access.canManage)')
     expect(route).toContain('organizationId: access.organizationId')
-    expect(route).toContain('status: \'active\'')
+    expect(route).toContain("status: 'active'")
   })
 
-  it('uses the same team endpoint in planning, creation and reassignment', () => {
+  it('uses team data for creation and reassignment while planning loads interventions', () => {
     const planning = read('src/app/pro/app/planning/page.tsx')
     const creation = read('src/components/pro/add-intervention-modal.tsx')
     const detail = read('src/app/pro/app/interventions/[id]/page.tsx')
-    expect(planning).toContain("fetch(`/api/pro/team?")
+    expect(planning).toContain('/api/pro/interventions?')
     expect(creation).toContain("fetch('/api/pro/team'")
     expect(detail).toContain("fetch('/api/pro/team'")
-    expect(planning).toContain('dispatchUnassigned')
+    expect(planning).toContain('technicianId')
     expect(detail).toContain('technicianId')
   })
 
