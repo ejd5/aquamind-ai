@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { getProAccess } from '@/lib/pro/access'
+import { proClientAccessWhere, proNestedInterventionWhere } from '@/lib/pro/intervention-scope'
 import {
   cleanOptionalText,
   isOneOf,
@@ -44,8 +45,9 @@ export async function GET(req: NextRequest) {
   const page = parsePositiveInt(url.searchParams.get('page'), 1, 100_000)
   const pageSize = parsePositiveInt(url.searchParams.get('pageSize'), 20, 100)
   const now = new Date()
+  const interventionWhere = proNestedInterventionWhere(access, session.user.id)
 
-  const where: Prisma.ProClientWhereInput = { proUserId: access.ownerUserId }
+  const where: Prisma.ProClientWhereInput = proClientAccessWhere(access, session.user.id)
   if (q) {
     where.OR = [
       { firstName: { contains: q } },
@@ -64,6 +66,7 @@ export async function GET(req: NextRequest) {
     if (followUp === 'none') where.nextFollowUpAt = null
   }
 
+  const summaryScope = proClientAccessWhere(access, session.user.id)
   const [total, clients, statusRows, overdueFollowUps] = await Promise.all([
     db.proClient.count({ where }),
     db.proClient.findMany({
@@ -72,8 +75,15 @@ export async function GET(req: NextRequest) {
       skip: (page - 1) * pageSize,
       take: pageSize,
       include: {
-        _count: { select: { pools: true, interventions: true, activities: true } },
+        _count: {
+          select: {
+            pools: true,
+            interventions: interventionWhere ? { where: interventionWhere } : true,
+            activities: true,
+          },
+        },
         interventions: {
+          where: interventionWhere,
           orderBy: { scheduledAt: 'desc' },
           take: 1,
           select: { id: true, scheduledAt: true, status: true, type: true },
@@ -87,12 +97,12 @@ export async function GET(req: NextRequest) {
     }),
     db.proClient.groupBy({
       by: ['status'],
-      where: { proUserId: access.ownerUserId },
+      where: summaryScope,
       _count: { _all: true },
     }),
     db.proClient.count({
       where: {
-        proUserId: access.ownerUserId,
+        ...summaryScope,
         status: { not: 'archived' },
         nextFollowUpAt: { lte: now },
       },
@@ -179,13 +189,13 @@ export async function POST(req: NextRequest) {
           address: cleanOptionalText(body.address, 500),
           city: cleanOptionalText(body.city, 160),
           zipCode: cleanOptionalText(body.zipCode, 30),
-          status,
           source: cleanOptionalText(body.source, 120),
           preferredContact,
+          status,
           tags: serializeShortStringArray(body.tags),
+          notes: cleanOptionalText(body.notes),
           lastContactAt: lastContactAt.value,
           nextFollowUpAt: nextFollowUpAt.value,
-          notes: cleanOptionalText(body.notes),
         },
       })
       await tx.proClientActivity.create({
@@ -194,16 +204,11 @@ export async function POST(req: NextRequest) {
           actorUserId: session.user.id,
           type: 'client_created',
           title: 'crm.client_created',
-          details: created.companyName || null,
         },
       })
       return created
     })
-
-    return NextResponse.json(
-      { client: { ...client, tags: parseStoredStringArray(client.tags) } },
-      { status: 201 },
-    )
+    return NextResponse.json({ client: { ...client, tags: parseStoredStringArray(client.tags) } }, { status: 201 })
   } catch (error) {
     console.error('[pro/clients] POST error:', error)
     const msg = await translate(locale, 'pro.errors.generic', 'Une erreur est survenue.')
