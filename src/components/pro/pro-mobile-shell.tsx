@@ -71,10 +71,6 @@ export function ProMobileShell({ companyName }: { companyName: string }) {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    setOpen(false)
-  }, [pathname])
-
-  useEffect(() => {
     if (!open) return
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -82,6 +78,11 @@ export function ProMobileShell({ companyName }: { companyName: string }) {
       document.body.style.overflow = previousOverflow
     }
   }, [open])
+
+  function closeWithFeedback() {
+    void tapFeedback()
+    setOpen(false)
+  }
 
   return (
     <>
@@ -162,7 +163,7 @@ export function ProMobileShell({ companyName }: { companyName: string }) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={() => { void tapFeedback() }}
+                    onClick={closeWithFeedback}
                     className={`flex min-h-14 items-center gap-3 rounded-2xl border px-4 text-sm font-bold ${
                       active
                         ? 'border-primary/40 bg-primary/10 text-primary'
@@ -180,7 +181,7 @@ export function ProMobileShell({ companyName }: { companyName: string }) {
 
             <Link
               href="/auth/signin"
-              onClick={() => { void tapFeedback() }}
+              onClick={closeWithFeedback}
               className="flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-red-300/50 bg-red-500/5 text-sm font-bold text-red-600"
             >
               <LogOut className="h-4 w-4" />
