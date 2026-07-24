@@ -16,7 +16,6 @@ import {
 } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import { authOptions } from '@/lib/auth'
-import { Footer } from '@/components/aquamind/footer'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,8 +50,8 @@ export default async function ProAppLayout({
 
   return (
     <div className="aq-pro-app relative flex min-h-screen flex-col bg-background">
-      <header className="aq-pro-header safe-area-top sticky top-0 z-40 border-b border-gold/20 bg-background/85 backdrop-blur-2xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+      <header className="aq-pro-header safe-area-top sticky top-0 z-40 border-b border-gold/20 bg-background/90 backdrop-blur-2xl">
+        <div className="mx-auto flex h-16 w-full max-w-[1760px] items-center justify-between gap-3 px-3 sm:px-4 lg:px-6 2xl:px-8">
           <div className="flex items-center gap-3">
             <Link
               href="/pro"
@@ -74,7 +73,7 @@ export default async function ProAppLayout({
               alt="AQWELIA"
               className="h-9 w-auto object-contain"
             />
-            <div className="leading-tight">
+            <div className="hidden leading-tight sm:block">
               <div className="font-display text-base font-bold tracking-tight">
                 <span className="aqua-text-gradient">AQWELIA</span>{' '}
                 <span className="text-gold">Pro</span>
@@ -83,12 +82,12 @@ export default async function ProAppLayout({
                 {t('brandTagline')}
               </div>
             </div>
-            <Sparkles className="h-3.5 w-3.5 text-gold" />
+            <Sparkles className="hidden h-3.5 w-3.5 text-gold sm:block" />
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="hidden text-right leading-tight md:block">
-              <div className="max-w-[200px] truncate text-xs font-semibold text-foreground">
+              <div className="max-w-[220px] truncate text-xs font-semibold text-foreground">
                 {companyName}
               </div>
               <Link
@@ -105,8 +104,8 @@ export default async function ProAppLayout({
           </div>
         </div>
 
-        <div className="aq-pro-mobile-nav border-t border-border/40 bg-background/60 backdrop-blur md:hidden">
-          <nav className="custom-scroll mx-auto flex max-w-7xl items-center gap-1 overflow-x-auto px-4 py-2">
+        <div className="aq-pro-mobile-nav border-t border-border/40 bg-background/70 backdrop-blur md:hidden">
+          <nav className="custom-scroll mx-auto flex w-full max-w-[1760px] items-center gap-1 overflow-x-auto px-3 py-2 sm:px-4">
             {NAV.map((link) => {
               const Icon = link.icon
               return (
@@ -124,8 +123,8 @@ export default async function ProAppLayout({
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-7xl flex-1 gap-0 px-0 sm:px-6">
-        <aside className="aq-pro-sidebar custom-scroll sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 overflow-y-auto border-r border-border/40 py-6 pr-4 md:block">
+      <div className="mx-auto flex w-full max-w-[1760px] flex-1 gap-0 px-0 sm:px-4 lg:px-6 2xl:px-8">
+        <aside className="aq-pro-sidebar custom-scroll sticky top-16 hidden h-[calc(100vh-4rem)] w-56 shrink-0 overflow-y-auto border-r border-border/40 py-5 pr-3 md:block lg:w-60 lg:py-6 lg:pr-4 xl:w-64">
           <nav className="space-y-1">
             {NAV.map((link) => {
               const Icon = link.icon
@@ -155,12 +154,10 @@ export default async function ProAppLayout({
           </div>
         </aside>
 
-        <main className="aq-pro-main min-w-0 flex-1 px-4 py-6 pb-28 sm:px-6 md:pb-10">
+        <main className="aq-pro-main min-w-0 flex-1 px-3 py-4 pb-24 sm:px-4 sm:py-5 md:pb-8 lg:px-5 xl:px-6 2xl:px-8">
           {children}
         </main>
       </div>
-
-      <Footer />
     </div>
   )
 }
