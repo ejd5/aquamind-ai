@@ -41,9 +41,11 @@ describe('AQWELIA Pro Dispatch Live contract', () => {
     expect(locationControl).toContain('foreground')
   })
 
-  it('reserves vehicle GPS sources for a dedicated signed connector', () => {
+  it('keeps the user-facing controls restricted to smartphone sessions', () => {
     expect(sessionRoute).toContain("source: 'mobile'")
     expect(sessionRoute).not.toContain("body?.source === 'vehicle'")
+    expect(pointsRoute).toContain("source: 'mobile'")
+    expect(pointsRoute).toContain('Active smartphone tracking session not found')
   })
 
   it('only lets the authenticated user upload points to their active opted-in session', () => {
@@ -68,11 +70,11 @@ describe('AQWELIA Pro Dispatch Live contract', () => {
     expect(liveRoute).toContain("action: 'view_live_dispatch'")
   })
 
-  it('never exposes a point outside the current active session and sharing consent', () => {
-    expect(liveRoute).toContain("status: 'active'")
-    expect(liveRoute).toContain('activeSessionByUser')
-    expect(liveRoute).toContain('activeSession.id !== point.sessionId')
-    expect(liveRoute).toContain('member.locationSharingEnabled && activeSession')
+  it('selects the freshest point across active phone and vehicle sessions', () => {
+    expect(liveRoute).toContain('activeSessionById')
+    expect(liveRoute).toContain('trackingSession.userId !== point.userId')
+    expect(liveRoute).toContain('selectedSessionByUser')
+    expect(liveRoute).toContain('member.locationSharingEnabled && selectedSession')
     expect(liveRoute).toContain("data: { status: 'stopped', endedAt: now }")
   })
 
@@ -80,7 +82,7 @@ describe('AQWELIA Pro Dispatch Live contract', () => {
     expect(recommendRoute).toContain('advisoryOnly: true')
     expect(recommendRoute).not.toContain('proIntervention.update')
     expect(recommendRoute).toContain('no_active_tracking_sessions')
-    expect(recommendRoute).toContain('trackingSession.id !== point.sessionId')
+    expect(recommendRoute).toContain('trackingSession.userId !== point.userId')
     expect(recommendRoute).toContain('locationTrackingEnabled')
     expect(workspace).toContain('/api/pro/interventions/')
     expect(privacy).toContain('validation humaine')

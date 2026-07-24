@@ -45,3 +45,10 @@ Les deux clés doivent être séparées et restreintes dans Google Cloud : restr
 ## Limite du premier lot
 
 Le composant de partage fourni dans ce lot transmet la position lorsque l’application est ouverte. La collecte fiable en arrière-plan, les notifications permanentes Android et les autorisations iOS seront implémentées dans le client mobile natif. Le serveur, les sessions, la rétention, les droits et la carte web sont conçus pour recevoir cette seconde étape sans migration conceptuelle.
+
+## Balises GPS véhicules
+
+Les balises utilisent les mêmes finalités et restrictions que le suivi smartphone. AQWELIA refuse côté serveur toute position reçue en dehors des jours et horaires de travail configurés, même si le matériel continue à transmettre.
+
+Chaque boîtier dispose d’un jeton révocable affiché une seule fois. Seule son empreinte SHA-256 est conservée. Son attribution à un technicien, sa révocation et les consultations de la carte sont journalisées.
+
