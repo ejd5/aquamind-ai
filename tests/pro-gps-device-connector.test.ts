@@ -10,6 +10,8 @@ const postgresMigration = readFileSync(join(root, 'prisma/postgresql/migrations/
 const helper = readFileSync(join(root, 'src/lib/pro/gps-device.ts'), 'utf8')
 const management = readFileSync(join(root, 'src/app/api/pro/dispatch/devices/route.ts'), 'utf8')
 const revocation = readFileSync(join(root, 'src/app/api/pro/dispatch/devices/[id]/route.ts'), 'utf8')
+const phoneSession = readFileSync(join(root, 'src/app/api/pro/location/session/route.ts'), 'utf8')
+const phonePoints = readFileSync(join(root, 'src/app/api/pro/location/points/route.ts'), 'utf8')
 const ingestion = readFileSync(join(root, 'src/app/api/pro/location/device/route.ts'), 'utf8')
 const component = readFileSync(join(root, 'src/components/pro/gps-device-settings.tsx'), 'utf8')
 const workspace = readFileSync(join(root, 'src/components/pro/dispatch-live-workspace.tsx'), 'utf8')
@@ -53,13 +55,27 @@ describe('AQWELIA Pro vehicle GPS connector', () => {
     expect(management).toContain('register_tracking_device')
   })
 
+  it('strictly separates browser smartphone sessions from vehicle device sessions', () => {
+    expect(phoneSession).toContain("source: 'mobile'")
+    expect(phonePoints).toContain("source: 'mobile'")
+    expect(ingestion).toContain("source: 'vehicle'")
+    expect(phonePoints).toContain('Active smartphone tracking session not found')
+  })
+
   it('ingests signed device points without a user browser session', () => {
     expect(ingestion).toContain("req.headers.get('authorization')")
     expect(ingestion).toContain('hashDeviceToken(token)')
     expect(ingestion).not.toContain('getServerSession')
-    expect(ingestion).toContain("source: 'vehicle'")
     expect(ingestion).toContain('externalEventId')
     expect(ingestion).toContain('duplicate: true')
+  })
+
+  it('limits public payload type, size, frequency and concurrent replay', () => {
+    expect(ingestion).toContain("includes('application/json')")
+    expect(ingestion).toContain('MAX_DEVICE_BODY_BYTES')
+    expect(ingestion).toContain('MIN_DEVICE_INTERVAL_MS')
+    expect(ingestion).toContain("'Retry-After': '5'")
+    expect(ingestion).toContain("code === 'P2002'")
   })
 
   it('rejects vehicle positions outside configured work windows', () => {
