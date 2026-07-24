@@ -3,16 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocale } from 'next-intl'
 import { Check, Clipboard, Loader2, RadioTower, Trash2 } from 'lucide-react'
-
-const COPY = {
-  fr: { title: 'Balises GPS véhicules', subtitle: 'Connectez un boîtier GPS ou un serveur Traccar à la carte Dispatch Live.', add: 'Ajouter une balise', technician: 'Technicien', label: 'Nom de la balise', vehicle: 'Véhicule', provider: 'Fournisseur', external: 'Identifiant du boîtier', token: 'Jeton secret — affiché une seule fois', copy: 'Copier', copied: 'Copié', revoke: 'Révoquer', noDevice: 'Aucune balise enregistrée.', lastSeen: 'Dernier signal', never: 'Jamais', endpoint: 'URL de réception', privacy: 'Les points sont refusés hors jours et horaires de travail configurés.' },
-  en: { title: 'Vehicle GPS devices', subtitle: 'Connect a GPS tracker or Traccar server to the Live Dispatch map.', add: 'Add device', technician: 'Technician', label: 'Device label', vehicle: 'Vehicle', provider: 'Provider', external: 'External device ID', token: 'Secret token — shown once', copy: 'Copy', copied: 'Copied', revoke: 'Revoke', noDevice: 'No device registered.', lastSeen: 'Last signal', never: 'Never', endpoint: 'Ingestion URL', privacy: 'Points are rejected outside configured working days and hours.' },
-  es: { title: 'Balizas GPS de vehículos', subtitle: 'Conecte un GPS o servidor Traccar al mapa Dispatch Live.', add: 'Añadir baliza', technician: 'Técnico', label: 'Nombre', vehicle: 'Vehículo', provider: 'Proveedor', external: 'ID externo', token: 'Token secreto — se muestra una vez', copy: 'Copiar', copied: 'Copiado', revoke: 'Revocar', noDevice: 'Ninguna baliza registrada.', lastSeen: 'Última señal', never: 'Nunca', endpoint: 'URL de recepción', privacy: 'Los puntos se rechazan fuera de los días y horarios configurados.' },
-  de: { title: 'GPS-Fahrzeuggeräte', subtitle: 'GPS-Tracker oder Traccar mit Dispatch Live verbinden.', add: 'Gerät hinzufügen', technician: 'Techniker', label: 'Gerätename', vehicle: 'Fahrzeug', provider: 'Anbieter', external: 'Externe Geräte-ID', token: 'Geheimer Token — einmalig sichtbar', copy: 'Kopieren', copied: 'Kopiert', revoke: 'Widerrufen', noDevice: 'Kein Gerät registriert.', lastSeen: 'Letztes Signal', never: 'Nie', endpoint: 'Empfangs-URL', privacy: 'Punkte außerhalb der Arbeitszeiten werden abgelehnt.' },
-  it: { title: 'Dispositivi GPS veicoli', subtitle: 'Collega un GPS o server Traccar a Dispatch Live.', add: 'Aggiungi dispositivo', technician: 'Tecnico', label: 'Nome dispositivo', vehicle: 'Veicolo', provider: 'Fornitore', external: 'ID esterno', token: 'Token segreto — mostrato una volta', copy: 'Copia', copied: 'Copiato', revoke: 'Revoca', noDevice: 'Nessun dispositivo registrato.', lastSeen: 'Ultimo segnale', never: 'Mai', endpoint: 'URL di ricezione', privacy: 'I punti fuori dall’orario di lavoro vengono rifiutati.' },
-  pt: { title: 'Dispositivos GPS de veículos', subtitle: 'Ligue um GPS ou servidor Traccar ao Dispatch Live.', add: 'Adicionar dispositivo', technician: 'Técnico', label: 'Nome', vehicle: 'Veículo', provider: 'Fornecedor', external: 'ID externo', token: 'Token secreto — mostrado uma vez', copy: 'Copiar', copied: 'Copiado', revoke: 'Revogar', noDevice: 'Nenhum dispositivo registado.', lastSeen: 'Último sinal', never: 'Nunca', endpoint: 'URL de receção', privacy: 'Pontos fora do horário configurado são recusados.' },
-  nl: { title: 'GPS-apparaten voor voertuigen', subtitle: 'Koppel een GPS-tracker of Traccar-server aan Dispatch Live.', add: 'Apparaat toevoegen', technician: 'Technicus', label: 'Naam', vehicle: 'Voertuig', provider: 'Provider', external: 'Extern apparaat-ID', token: 'Geheim token — één keer zichtbaar', copy: 'Kopiëren', copied: 'Gekopieerd', revoke: 'Intrekken', noDevice: 'Geen apparaat geregistreerd.', lastSeen: 'Laatste signaal', never: 'Nooit', endpoint: 'Ontvangst-URL', privacy: 'Punten buiten de ingestelde werktijden worden geweigerd.' },
-} as const
+import { PRO_GPS_DEVICE_COPY } from '@/i18n/locales/pro-gps-device-copy'
 
 type Member = {
   id: string
@@ -35,8 +26,8 @@ type Device = {
 }
 
 export function GpsDeviceSettings({ members }: { members: Member[] }) {
-  const locale = useLocale() as keyof typeof COPY
-  const copy = COPY[locale] ?? COPY.en
+  const locale = useLocale() as keyof typeof PRO_GPS_DEVICE_COPY
+  const copy = PRO_GPS_DEVICE_COPY[locale] ?? PRO_GPS_DEVICE_COPY.en
   const [devices, setDevices] = useState<Device[]>([])
   const [ingestPath, setIngestPath] = useState('/api/pro/location/device')
   const [busy, setBusy] = useState(false)
