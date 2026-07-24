@@ -27,18 +27,28 @@ export async function POST(req: NextRequest) {
   const interventionId = typeof body?.interventionId === 'string' ? body.interventionId : ''
   if (!interventionId) return NextResponse.json({ error: 'interventionId is required' }, { status: 400 })
 
-  const urgent = await db.proIntervention.findFirst({
-    where: { id: interventionId, client: { proUserId: access.ownerUserId } },
-    select: {
-      id: true,
-      scheduledAt: true,
-      duration: true,
-      priority: true,
-      status: true,
-      client: { select: { latitude: true, longitude: true, city: true } },
-      pool: { select: { latitude: true, longitude: true, name: true } },
-    },
-  })
+  const [organization, urgent] = await Promise.all([
+    db.organization.findUnique({
+      where: { id: access.organizationId },
+      select: { locationTrackingEnabled: true },
+    }),
+    db.proIntervention.findFirst({
+      where: { id: interventionId, client: { proUserId: access.ownerUserId } },
+      select: {
+        id: true,
+        scheduledAt: true,
+        duration: true,
+        priority: true,
+        status: true,
+        client: { select: { latitude: true, longitude: true, city: true } },
+        pool: { select: { latitude: true, longitude: true, name: true } },
+      },
+    }),
+  ])
+  if (!organization) return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+  if (!organization.locationTrackingEnabled) {
+    return NextResponse.json({ error: 'Location tracking is disabled by the organization' }, { status: 409 })
+  }
   if (!urgent) return NextResponse.json({ error: 'Intervention not found' }, { status: 404 })
 
   const targetLatitude = urgent.pool?.latitude ?? urgent.client.latitude
@@ -54,7 +64,16 @@ export async function POST(req: NextRequest) {
   const dayEnd = new Date(dayStart)
   dayEnd.setDate(dayEnd.getDate() + 1)
 
-  const [members, recentPoints, dayInterventions] = await Promise.all([
+  await db.proTrackingSession.updateMany({
+    where: {
+      organizationId: access.organizationId,
+      status: { in: ['active', 'paused'] },
+      autoStopAt: { lte: now },
+    },
+    data: { status: 'stopped', endedAt: now },
+  })
+
+  const [members, activeSessions, dayInterventions] = await Promise.all([
     db.organizationMember.findMany({
       where: {
         organizationId: access.organizationId,
@@ -72,13 +91,14 @@ export async function POST(req: NextRequest) {
         user: { select: { name: true, email: true } },
       },
     }),
-    db.proLocationPoint.findMany({
+    db.proTrackingSession.findMany({
       where: {
         organizationId: access.organizationId,
-        recordedAt: { gte: new Date(now.getTime() - 15 * 60 * 1000) },
+        status: 'active',
+        autoStopAt: { gt: now },
       },
-      orderBy: { recordedAt: 'desc' },
-      take: 1000,
+      orderBy: { startedAt: 'desc' },
+      select: { id: true, userId: true },
     }),
     db.proIntervention.findMany({
       where: {
@@ -91,18 +111,42 @@ export async function POST(req: NextRequest) {
     }),
   ])
 
+  const activeSessionByUser = new Map<string, (typeof activeSessions)[number]>()
+  for (const trackingSession of activeSessions) {
+    if (!activeSessionByUser.has(trackingSession.userId)) {
+      activeSessionByUser.set(trackingSession.userId, trackingSession)
+    }
+  }
+  const activeSessionIds = [...activeSessionByUser.values()].map((trackingSession) => trackingSession.id)
+  if (activeSessionIds.length === 0) {
+    return NextResponse.json({ candidates: [], source: 'no_active_tracking_sessions', advisoryOnly: true })
+  }
+
+  const recentPoints = await db.proLocationPoint.findMany({
+    where: {
+      organizationId: access.organizationId,
+      sessionId: { in: activeSessionIds },
+      recordedAt: { gte: new Date(now.getTime() - 15 * 60 * 1000) },
+    },
+    orderBy: { recordedAt: 'desc' },
+    take: 1000,
+  })
+
   const latest = new Map<string, (typeof recentPoints)[number]>()
   for (const point of recentPoints) {
+    const trackingSession = activeSessionByUser.get(point.userId)
+    if (!trackingSession || trackingSession.id !== point.sessionId) continue
     if (!latest.has(point.userId)) latest.set(point.userId, point)
   }
 
   const eligible = members.flatMap((member) => {
+    if (!activeSessionByUser.has(member.userId)) return []
     const point = latest.get(member.userId)
     if (!point) return []
     return [{ member, point }]
   })
   if (eligible.length === 0) {
-    return NextResponse.json({ candidates: [], source: 'no_live_locations' })
+    return NextResponse.json({ candidates: [], source: 'no_live_locations', advisoryOnly: true })
   }
 
   const matrix = await computeDriveMatrix(
