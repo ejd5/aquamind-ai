@@ -44,4 +44,4 @@ Les deux clés doivent être séparées et restreintes dans Google Cloud : restr
 
 ## Limite du premier lot
 
-Le composant de partage fourni dans ce lot transmet la position lorsque l'application est ouverte. La collecte fiable en arrière-plan, les notifications permanentes Android et les autorisations iOS seront implémentées dans le client mobile natif. Le serveur, les sessions, la rétention, les droits et la carte web sont conçus pour recevoir cette seconde étape sans migration conceptuelle.
+Le composant de partage fourni dans ce lot transmet la position lorsque l’application est ouverte. La collecte fiable en arrière-plan, les notifications permanentes Android et les autorisations iOS seront implémentées dans le client mobile natif. Le serveur, les sessions, la rétention, les droits et la carte web sont conçus pour recevoir cette seconde étape sans migration conceptuelle.
