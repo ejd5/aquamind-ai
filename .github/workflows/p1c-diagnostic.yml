@@ -1,9 +1,9 @@
 name: P1-C concise diagnostic
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/pro-live-dispatch-active-session-privacy
+      - main
 
 permissions:
   contents: read
