@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ComponentType } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -20,19 +20,36 @@ import {
   X,
 } from 'lucide-react'
 
+type ProNavKey =
+  | 'navDashboard'
+  | 'navPlanning'
+  | 'navInterventions'
+  | 'navClients'
+  | 'navTeam'
+  | 'navPools'
+  | 'navReports'
+  | 'navSettings'
+
+type MobileNavItem = {
+  href: string
+  key: ProNavKey
+  icon: ComponentType<{ className?: string }>
+  exact?: boolean
+}
+
 const PRIMARY_ITEMS = [
   { href: '/pro/app', key: 'navDashboard', icon: LayoutDashboard, exact: true },
   { href: '/pro/app/planning', key: 'navPlanning', icon: CalendarDays },
   { href: '/pro/app/interventions', key: 'navInterventions', icon: Wrench },
   { href: '/pro/app/clients', key: 'navClients', icon: Users },
   { href: '/pro/app/team', key: 'navTeam', icon: UsersRound },
-] as const
+] satisfies readonly MobileNavItem[]
 
 const SECONDARY_ITEMS = [
   { href: '/pro/app/pools', key: 'navPools', icon: Waves },
   { href: '/pro/app/reports', key: 'navReports', icon: FileText },
   { href: '/pro/app/settings', key: 'navSettings', icon: Settings },
-] as const
+] satisfies readonly MobileNavItem[]
 
 async function tapFeedback() {
   if (!Capacitor.isNativePlatform()) return
