@@ -45,10 +45,11 @@ export async function POST(req: NextRequest) {
       id: sessionId,
       organizationId: access.organizationId,
       userId: session.user.id,
+      source: 'mobile',
       status: 'active',
     },
   })
-  if (!trackingSession) return NextResponse.json({ error: 'Active tracking session not found' }, { status: 404 })
+  if (!trackingSession) return NextResponse.json({ error: 'Active smartphone tracking session not found' }, { status: 404 })
 
   const now = new Date()
   if (trackingSession.autoStopAt <= now) {
@@ -107,7 +108,7 @@ export async function POST(req: NextRequest) {
       speed: optionalNumber(point.speed, 0, 150),
       heading: optionalNumber(point.heading, 0, 360),
       battery: optionalNumber(point.battery, 0, 1),
-      source: trackingSession.source,
+      source: 'mobile',
       recordedAt,
       receivedAt: now,
     }]
