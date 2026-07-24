@@ -27,5 +27,23 @@ jobs:
           bun-version: "1.3.4"
       - run: bun install --frozen-lockfile >/dev/null
       - run: bun run db:generate:all >/dev/null
-      - name: Typecheck only
-        run: bun run typecheck
+      - name: Capture typecheck output
+        id: typecheck
+        shell: bash
+        run: |
+          set +e
+          bun run typecheck > /tmp/p1c-typecheck.txt 2>&1
+          status=$?
+          set -e
+          cat /tmp/p1c-typecheck.txt
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+      - name: Upload typecheck diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1c-typecheck-diagnostic
+          path: /tmp/p1c-typecheck.txt
+          retention-days: 1
+      - name: Fail when typecheck failed
+        if: steps.typecheck.outputs.status != '0'
+        run: exit 1
