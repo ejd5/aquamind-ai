@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { ProInterventionPdf } from '@/lib/pro/pdf-reports'
 import { getProAccess } from '@/lib/pro/access'
+import { proInterventionAccessWhere } from '@/lib/pro/intervention-scope'
 import { toolWorkspaceText } from '@/i18n/locales/tool-workspaces'
 
 export const runtime = 'nodejs'
@@ -18,7 +19,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params
   const access = await getProAccess(session.user.id)
   const intervention = await db.proIntervention.findFirst({
-    where: { id, client: { proUserId: access.ownerUserId } },
+    where: {
+      id,
+      ...proInterventionAccessWhere(access, session.user.id),
+    },
     include: { client: true, pool: true },
   })
   if (!intervention) return NextResponse.json({ error: 'Intervention introuvable' }, { status: 404 })

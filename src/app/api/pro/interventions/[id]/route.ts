@@ -3,7 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
-import { getProAccess } from '@/lib/pro/access'
+import { getProAccess, type ProAccess } from '@/lib/pro/access'
+import { proInterventionAccessWhere } from '@/lib/pro/intervention-scope'
 import {
   cleanOptionalText,
   isOneOf,
@@ -64,9 +65,16 @@ function toSafePhotoReferences(value: unknown): string | null {
   return safe.length ? JSON.stringify(safe) : null
 }
 
-async function getOwnedIntervention(id: string, ownerUserId: string) {
+async function getAccessibleIntervention(
+  id: string,
+  access: ProAccess,
+  actorUserId: string,
+) {
   return db.proIntervention.findFirst({
-    where: { id, client: { proUserId: ownerUserId } },
+    where: {
+      id,
+      ...proInterventionAccessWhere(access, actorUserId),
+    },
     select: {
       id: true,
       proClientId: true,
@@ -91,14 +99,11 @@ export async function GET(req: NextRequest, ctx: Ctx) {
 
   const { id } = await ctx.params
   const access = await getProAccess(session.user.id)
-  const owned = await getOwnedIntervention(id, access.ownerUserId)
-  if (!owned) {
-    const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
-    return NextResponse.json({ error: msg }, { status: 404 })
-  }
-
-  const intervention = await db.proIntervention.findUnique({
-    where: { id },
+  const intervention = await db.proIntervention.findFirst({
+    where: {
+      id,
+      ...proInterventionAccessWhere(access, session.user.id),
+    },
     include: {
       client: {
         select: {
@@ -128,6 +133,10 @@ export async function GET(req: NextRequest, ctx: Ctx) {
       },
     },
   })
+  if (!intervention) {
+    const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
+    return NextResponse.json({ error: msg }, { status: 404 })
+  }
 
   return NextResponse.json({
     intervention,
@@ -149,7 +158,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: toolWorkspaceText(locale, 'readonly') }, { status: 403 })
   }
 
-  const existing = await getOwnedIntervention(id, access.ownerUserId)
+  const existing = await getAccessibleIntervention(id, access, session.user.id)
   if (!existing) {
     const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
     return NextResponse.json({ error: msg }, { status: 404 })
@@ -186,6 +195,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   }
 
   if (body.technicianId !== undefined) {
+    if (!access.canManage) {
+      return NextResponse.json({ error: 'Droits insuffisants' }, { status: 403 })
+    }
     const technicianId = typeof body.technicianId === 'string' ? body.technicianId.trim() : ''
     data.technicianId = technicianId || null
   }
@@ -350,7 +362,7 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: 'Droits insuffisants' }, { status: 403 })
   }
 
-  const existing = await getOwnedIntervention(id, access.ownerUserId)
+  const existing = await getAccessibleIntervention(id, access, session.user.id)
   if (!existing) {
     const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
     return NextResponse.json({ error: msg }, { status: 404 })
