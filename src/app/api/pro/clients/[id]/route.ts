@@ -3,7 +3,11 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
-import { getProAccess } from '@/lib/pro/access'
+import { getProAccess, type ProAccess } from '@/lib/pro/access'
+import {
+  proClientAccessWhere,
+  proNestedInterventionWhere,
+} from '@/lib/pro/intervention-scope'
 import {
   cleanOptionalText,
   isOneOf,
@@ -20,9 +24,9 @@ export const runtime = 'nodejs'
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 type Ctx = { params: Promise<{ id: string }> }
 
-async function getOwnedClient(id: string, ownerUserId: string) {
+async function getAccessibleClient(id: string, access: ProAccess, actorUserId: string) {
   return db.proClient.findFirst({
-    where: { id, proUserId: ownerUserId },
+    where: { id, ...proClientAccessWhere(access, actorUserId) },
     select: { id: true, status: true },
   })
 }
@@ -37,14 +41,27 @@ export async function GET(req: NextRequest, ctx: Ctx) {
 
   const { id } = await ctx.params
   const access = await getProAccess(session.user.id)
+  const interventionWhere = proNestedInterventionWhere(access, session.user.id)
+  const assignedPoolWhere = interventionWhere
+    ? { interventions: { some: interventionWhere } }
+    : undefined
   const client = await db.proClient.findFirst({
-    where: { id, proUserId: access.ownerUserId },
+    where: { id, ...proClientAccessWhere(access, session.user.id) },
     include: {
       pools: {
+        where: assignedPoolWhere,
         orderBy: [{ status: 'asc' }, { createdAt: 'asc' }],
-        include: { _count: { select: { interventions: true, waterTests: true } } },
+        include: {
+          _count: {
+            select: {
+              interventions: interventionWhere ? { where: interventionWhere } : true,
+              waterTests: true,
+            },
+          },
+        },
       },
       interventions: {
+        where: interventionWhere,
         orderBy: { scheduledAt: 'desc' },
         take: 20,
         include: { pool: { select: { id: true, name: true } } },
@@ -53,7 +70,13 @@ export async function GET(req: NextRequest, ctx: Ctx) {
         orderBy: { occurredAt: 'desc' },
         take: 50,
       },
-      _count: { select: { pools: true, interventions: true, activities: true } },
+      _count: {
+        select: {
+          pools: assignedPoolWhere ? { where: assignedPoolWhere } : true,
+          interventions: interventionWhere ? { where: interventionWhere } : true,
+          activities: true,
+        },
+      },
     },
   })
 
@@ -82,7 +105,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: toolWorkspaceText(locale, 'readonly') }, { status: 403 })
   }
 
-  const existing = await getOwnedClient(id, access.ownerUserId)
+  const existing = await getAccessibleClient(id, access, session.user.id)
   if (!existing) {
     const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
     return NextResponse.json({ error: msg }, { status: 404 })
@@ -152,7 +175,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
             proClientId: id,
             actorUserId: session.user.id,
             type: 'status_change',
-            title: `crm.status_change:${existing.status}:${data.status}` ,
+            title: `crm.status_change:${existing.status}:${data.status}`,
           },
         })
       }
@@ -180,7 +203,7 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: 'Droits insuffisants' }, { status: 403 })
   }
 
-  const existing = await getOwnedClient(id, access.ownerUserId)
+  const existing = await getAccessibleClient(id, access, session.user.id)
   if (!existing) {
     const msg = await translate(locale, 'common.errors.notFound', 'Non trouvé')
     return NextResponse.json({ error: msg }, { status: 404 })
