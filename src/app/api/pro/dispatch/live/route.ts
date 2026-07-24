@@ -99,7 +99,14 @@ export async function GET(req: NextRequest) {
             autoStopAt: { gt: now },
           },
           orderBy: { startedAt: 'desc' },
-          select: { id: true, userId: true, startedAt: true, lastHeartbeatAt: true, autoStopAt: true },
+          select: {
+            id: true,
+            userId: true,
+            source: true,
+            startedAt: true,
+            lastHeartbeatAt: true,
+            autoStopAt: true,
+          },
         })
       : Promise.resolve([]),
     db.proIntervention.findMany({
@@ -146,14 +153,15 @@ export async function GET(req: NextRequest) {
     }),
   ])
 
-  const activeSessionByUser = new Map<string, (typeof activeSessions)[number]>()
+  const activeSessionById = new Map(activeSessions.map((trackingSession) => [trackingSession.id, trackingSession]))
+  const sessionsByUser = new Map<string, typeof activeSessions>()
   for (const trackingSession of activeSessions) {
-    if (!activeSessionByUser.has(trackingSession.userId)) {
-      activeSessionByUser.set(trackingSession.userId, trackingSession)
-    }
+    const current = sessionsByUser.get(trackingSession.userId) ?? []
+    current.push(trackingSession)
+    sessionsByUser.set(trackingSession.userId, current)
   }
 
-  const activeSessionIds = [...activeSessionByUser.values()].map((trackingSession) => trackingSession.id)
+  const activeSessionIds = activeSessions.map((trackingSession) => trackingSession.id)
   const points = activeSessionIds.length > 0
     ? await db.proLocationPoint.findMany({
         where: {
@@ -167,10 +175,14 @@ export async function GET(req: NextRequest) {
     : []
 
   const latestPointByUser = new Map<string, (typeof points)[number]>()
+  const selectedSessionByUser = new Map<string, (typeof activeSessions)[number]>()
   for (const point of points) {
-    const activeSession = activeSessionByUser.get(point.userId)
-    if (!activeSession || activeSession.id !== point.sessionId) continue
-    if (!latestPointByUser.has(point.userId)) latestPointByUser.set(point.userId, point)
+    const trackingSession = activeSessionById.get(point.sessionId)
+    if (!trackingSession || trackingSession.userId !== point.userId) continue
+    if (!latestPointByUser.has(point.userId)) {
+      latestPointByUser.set(point.userId, point)
+      selectedSessionByUser.set(point.userId, trackingSession)
+    }
   }
 
   const routesByUser = new Map<string, typeof interventions>()
@@ -186,8 +198,9 @@ export async function GET(req: NextRequest) {
   }
 
   const technicians = members.map((member) => {
-    const activeSession = activeSessionByUser.get(member.userId)
-    const point = organization.locationTrackingEnabled && member.locationSharingEnabled && activeSession
+    const userSessions = sessionsByUser.get(member.userId) ?? []
+    const selectedSession = selectedSessionByUser.get(member.userId) ?? userSessions[0]
+    const point = organization.locationTrackingEnabled && member.locationSharingEnabled && selectedSession
       ? latestPointByUser.get(member.userId)
       : undefined
     const route = routeSequence(routesByUser.get(member.userId) ?? []).map((intervention, index) => {
@@ -211,11 +224,11 @@ export async function GET(req: NextRequest) {
       dayStart: member.dayStart,
       dayEnd: member.dayEnd,
       sharingEnabled: member.locationSharingEnabled,
-      source: member.locationSource,
+      source: point?.source ?? selectedSession?.source ?? member.locationSource,
       noticeAcknowledged: Boolean(member.locationNoticeAcknowledgedAt),
-      trackingActive: Boolean(activeSession),
-      trackingStartedAt: activeSession?.startedAt ?? null,
-      trackingAutoStopAt: activeSession?.autoStopAt ?? null,
+      trackingActive: userSessions.length > 0,
+      trackingStartedAt: selectedSession?.startedAt ?? null,
+      trackingAutoStopAt: selectedSession?.autoStopAt ?? null,
       location: point ? {
         latitude: point.latitude,
         longitude: point.longitude,
