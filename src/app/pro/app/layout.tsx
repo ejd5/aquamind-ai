@@ -4,6 +4,7 @@ import Link from 'next/link'
 import {
   LayoutDashboard,
   Users,
+  UsersRound,
   Waves,
   Calendar,
   Wrench,
@@ -36,6 +37,7 @@ export default async function ProAppLayout({
   const NAV = [
     { href: '/pro/app', label: t('navDashboard'), icon: LayoutDashboard },
     { href: '/pro/app/clients', label: t('navClients'), icon: Users },
+    { href: '/pro/app/team', label: t('navTeam'), icon: UsersRound },
     { href: '/pro/app/planning', label: t('navPlanning'), icon: Calendar },
     {
       href: '/pro/app/interventions',
