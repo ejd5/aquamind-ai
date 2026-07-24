@@ -13,6 +13,7 @@ const settingsRoute = readFileSync(join(root, 'src/app/api/pro/dispatch/settings
 const workspace = readFileSync(join(root, 'src/components/pro/dispatch-live-workspace.tsx'), 'utf8')
 const locationControl = readFileSync(join(root, 'src/components/pro/location-sharing-control.tsx'), 'utf8')
 const privacy = readFileSync(join(root, 'docs/pro/DISPATCH_LIVE_PRIVACY.md'), 'utf8')
+const migrationScenario = readFileSync(join(root, 'tests/test-consent-migration.mjs'), 'utf8')
 
 function expectSchema(source: string) {
   expect(source).toContain('model ProTrackingSession')
@@ -64,5 +65,10 @@ describe('AQWELIA Pro Dispatch Live contract', () => {
     expect(privacy).toContain('suivi désactivé par défaut')
     expect(privacy).toContain('arrêt automatique après 14 heures')
     expect(privacy).toContain('lorsque l’application est ouverte')
+  })
+
+  it('keeps the historical PostgreSQL fixture independent of future Organization fields', () => {
+    expect(migrationScenario).toContain('INSERT INTO "Organization"')
+    expect(migrationScenario).not.toContain('const org = await c.organization.create')
   })
 })
