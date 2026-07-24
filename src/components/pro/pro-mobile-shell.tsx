@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, type ComponentType } from 'react'
+import { useEffect, useState, useSyncExternalStore, type ComponentType } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -51,6 +52,8 @@ const SECONDARY_ITEMS = [
   { href: '/pro/app/settings', key: 'navSettings', icon: Settings },
 ] satisfies readonly MobileNavItem[]
 
+const subscribeToClient = () => () => undefined
+
 async function tapFeedback() {
   if (!Capacitor.isNativePlatform()) return
   try {
@@ -69,6 +72,7 @@ export function ProMobileShell({ companyName }: { companyName: string }) {
   const pathname = usePathname()
   const t = useTranslations('proApp')
   const [open, setOpen] = useState(false)
+  const isClient = useSyncExternalStore(subscribeToClient, () => true, () => false)
 
   useEffect(() => {
     if (!open) return
@@ -84,21 +88,8 @@ export function ProMobileShell({ companyName }: { companyName: string }) {
     setOpen(false)
   }
 
-  return (
+  const viewportLayers = (
     <>
-      <button
-        type="button"
-        onClick={() => {
-          void tapFeedback()
-          setOpen(true)
-        }}
-        className="aq-pro-mobile-menu-trigger flex h-11 w-11 items-center justify-center rounded-full border border-border/60 bg-background/85 text-foreground shadow-sm md:hidden"
-        aria-label={t('navSettings')}
-        aria-expanded={open}
-      >
-        <Menu className="h-5 w-5" />
-      </button>
-
       <nav
         className="aq-pro-bottom-tabs fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-border/70 bg-background/95 px-1 pt-1 shadow-[0_-12px_32px_rgba(2,52,60,0.12)] backdrop-blur-2xl md:hidden"
         aria-label="AQWELIA Pro"
@@ -190,6 +181,25 @@ export function ProMobileShell({ companyName }: { companyName: string }) {
           </section>
         </div>
       ) : null}
+    </>
+  )
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          void tapFeedback()
+          setOpen(true)
+        }}
+        className="aq-pro-mobile-menu-trigger flex h-11 w-11 items-center justify-center rounded-full border border-border/60 bg-background/85 text-foreground shadow-sm md:hidden"
+        aria-label={t('navSettings')}
+        aria-expanded={open}
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      {isClient ? createPortal(viewportLayers, document.body) : null}
     </>
   )
 }
