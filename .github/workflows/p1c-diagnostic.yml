@@ -27,17 +27,14 @@ jobs:
           bun-version: "1.3.4"
       - run: bun install --frozen-lockfile >/dev/null
       - run: bun run db:generate:all >/dev/null
-      - name: Run smoke suite and print only failure blocks
+      - name: Run smoke suite and extract failure blocks
+        id: smoke
         shell: bash
         run: |
           set +e
           bash tests/run-smoke-tests.sh > /tmp/p1c-smoke.log 2>&1
           status=$?
           set -e
-          if [ "$status" -eq 0 ]; then
-            echo "All smoke tests passed"
-            exit 0
-          fi
           python3 - <<'PY'
           from pathlib import Path
           lines = Path('/tmp/p1c-smoke.log').read_text(errors='replace').splitlines()
@@ -45,14 +42,27 @@ jobs:
           hits = [i for i, line in enumerate(lines) if any(marker in line for marker in markers)]
           selected = set()
           for hit in hits:
-              selected.update(range(max(0, hit - 5), min(len(lines), hit + 24)))
+              selected.update(range(max(0, hit - 6), min(len(lines), hit + 30)))
           if not selected:
-              selected.update(range(max(0, len(lines) - 100), len(lines)))
+              selected.update(range(max(0, len(lines) - 150), len(lines)))
+          output = []
           previous = None
           for index in sorted(selected):
               if previous is not None and index > previous + 1:
-                  print('\n--- omitted ---\n')
-              print(lines[index])
+                  output.append('\n--- omitted ---\n')
+              output.append(lines[index])
               previous = index
+          Path('/tmp/p1c-failure.txt').write_text('\n'.join(output) + '\n')
+          print('\n'.join(output))
           PY
-          exit "$status"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+      - name: Upload concise diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1c-smoke-diagnostic
+          path: /tmp/p1c-failure.txt
+          retention-days: 1
+      - name: Fail when smoke suite failed
+        if: steps.smoke.outputs.status != '0'
+        run: exit 1
