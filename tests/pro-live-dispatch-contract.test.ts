@@ -67,8 +67,8 @@ describe('AQWELIA Pro Dispatch Live contract', () => {
     expect(privacy).toContain('lorsque l’application est ouverte')
   })
 
-  it('keeps the historical PostgreSQL fixture independent of future Organization fields', () => {
+  it('keeps the historical PostgreSQL fixture compatible with baseline Organization columns', () => {
     expect(migrationScenario).toContain('INSERT INTO "Organization"')
-    expect(migrationScenario).not.toContain('const org = await c.organization.create')
+    expect(migrationScenario).toContain('const organizationId = `org-${randomUUID()}`')
   })
 })
