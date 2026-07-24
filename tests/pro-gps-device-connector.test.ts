@@ -14,6 +14,7 @@ const phoneSession = readFileSync(join(root, 'src/app/api/pro/location/session/r
 const phonePoints = readFileSync(join(root, 'src/app/api/pro/location/points/route.ts'), 'utf8')
 const ingestion = readFileSync(join(root, 'src/app/api/pro/location/device/route.ts'), 'utf8')
 const component = readFileSync(join(root, 'src/components/pro/gps-device-settings.tsx'), 'utf8')
+const localeCopy = readFileSync(join(root, 'src/i18n/locales/pro-gps-device-copy.ts'), 'utf8')
 const workspace = readFileSync(join(root, 'src/components/pro/dispatch-live-workspace.tsx'), 'utf8')
 const privacy = readFileSync(join(root, 'docs/pro/DISPATCH_LIVE_PRIVACY.md'), 'utf8')
 const connectorDocs = readFileSync(join(root, 'docs/pro/GPS_DEVICE_CONNECTOR.md'), 'utf8')
@@ -91,6 +92,13 @@ describe('AQWELIA Pro vehicle GPS connector', () => {
     expect(helper).toContain('candidate.fixTime')
     expect(helper).toContain('attributes.batteryLevel')
     expect(connectorDocs).toContain('format normalisé AQWELIA')
+  })
+
+  it('keeps visible device settings copy in the canonical seven-language source', () => {
+    expect(component).toContain('PRO_GPS_DEVICE_COPY')
+    for (const locale of ['fr', 'en', 'es', 'de', 'it', 'pt', 'nl']) {
+      expect(localeCopy).toContain(`  ${locale}: {`)
+    }
   })
 
   it('lets managers view, copy once and revoke device access from Dispatch Live', () => {
