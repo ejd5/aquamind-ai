@@ -1,0 +1,51 @@
+name: Capture auth routing smoke failure
+
+on:
+  push:
+    branches:
+      - fix/pro-technician-login-routing
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    if: ${{ !contains(github.event.head_commit.message || '', '[skip auth-smoke-capture]') }}
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: file:/tmp/aqwelia-ci.db
+      NEXTAUTH_SECRET: test-secret-for-ci-only-do-not-use-in-production
+      NEXTAUTH_URL: http://localhost:3099
+      AUTH_TRUST_HOST: 'true'
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_test_ci_placeholder
+      REVENUECAT_WEBHOOK_SECRET: rc_wh_test_ci_only
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: fix/pro-technician-login-routing
+          fetch-depth: 1
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.4'
+      - run: bun install --frozen-lockfile
+      - run: bun run db:generate:all
+      - name: Capture smoke output
+        run: |
+          set +e
+          bash tests/run-smoke-tests.sh > /tmp/auth-smoke.log 2>&1
+          EXIT_CODE=$?
+          tail -220 /tmp/auth-smoke.log > AUTH_SMOKE_RESULT.txt
+          echo "exit_code=${EXIT_CODE}" >> AUTH_SMOKE_RESULT.txt
+          exit 0
+      - name: Remove one-time workflow and trigger
+        run: |
+          rm -f .github/workflows/capture-auth-routing-smoke.yml
+          rm -f AUTH_SMOKE_TRIGGER.txt
+      - name: Commit diagnostic output
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'chore(auth): capture smoke failure [skip auth-smoke-capture]'
+          git push origin HEAD:fix/pro-technician-login-routing
