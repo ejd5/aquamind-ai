@@ -33,13 +33,14 @@ describe('P1-B dispatch contract', () => {
     expect(route).toContain("status: 'active'")
   })
 
-  it('uses team data for creation and reassignment while planning loads interventions', () => {
+  it('uses organization members for creation and dispatch data for reassignment', () => {
     const planning = read('src/app/pro/app/planning/page.tsx')
     const creation = read('src/components/pro/add-intervention-modal.tsx')
     const detail = read('src/app/pro/app/interventions/[id]/page.tsx')
     expect(planning).toContain('/api/pro/interventions?')
-    expect(creation).toContain("fetch('/api/pro/team'")
+    expect(creation).toContain("fetch('/api/pro/settings'")
     expect(detail).toContain("fetch('/api/pro/team'")
+    expect(creation).toContain('technicianId')
     expect(planning).toContain('technicianId')
     expect(detail).toContain('technicianId')
   })
