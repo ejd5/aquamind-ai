@@ -56,6 +56,8 @@ Content-Type: application/json
 
 `externalEventId` est conseillé pour rendre les appels idempotents. Deux événements portant le même identifiant dans une même session ne créent pas deux points.
 
+L’endpoint accepte un corps JSON de 32 Ko maximum et au plus un nouvel événement toutes les cinq secondes par boîtier. Un doublon identifié par `externalEventId` reste reconnu comme tel même lors d’un nouvel essai rapide.
+
 ### Format Traccar accepté
 
 AQWELIA reconnaît notamment :
@@ -90,7 +92,8 @@ Ainsi, un boîtier qui continue physiquement à transmettre le soir ou le week-e
 - révocation par responsable ;
 - séparation stricte par organisation ;
 - limitation à un événement connu sur les dernières 24 heures ;
-- déduplication des événements ;
+- contrôle du type, de la taille et de la fréquence des requêtes ;
+- déduplication des événements, y compris en cas de requêtes concurrentes ;
 - rétention des positions limitée à la durée de l’entreprise, avec un maximum de 60 jours ;
 - journalisation de l’enregistrement et de la révocation.
 
