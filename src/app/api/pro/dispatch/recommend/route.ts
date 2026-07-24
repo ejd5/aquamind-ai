@@ -97,8 +97,7 @@ export async function POST(req: NextRequest) {
         status: 'active',
         autoStopAt: { gt: now },
       },
-      orderBy: { startedAt: 'desc' },
-      select: { id: true, userId: true },
+      select: { id: true, userId: true, source: true },
     }),
     db.proIntervention.findMany({
       where: {
@@ -111,13 +110,8 @@ export async function POST(req: NextRequest) {
     }),
   ])
 
-  const activeSessionByUser = new Map<string, (typeof activeSessions)[number]>()
-  for (const trackingSession of activeSessions) {
-    if (!activeSessionByUser.has(trackingSession.userId)) {
-      activeSessionByUser.set(trackingSession.userId, trackingSession)
-    }
-  }
-  const activeSessionIds = [...activeSessionByUser.values()].map((trackingSession) => trackingSession.id)
+  const activeSessionById = new Map(activeSessions.map((trackingSession) => [trackingSession.id, trackingSession]))
+  const activeSessionIds = activeSessions.map((trackingSession) => trackingSession.id)
   if (activeSessionIds.length === 0) {
     return NextResponse.json({ candidates: [], source: 'no_active_tracking_sessions', advisoryOnly: true })
   }
@@ -134,13 +128,12 @@ export async function POST(req: NextRequest) {
 
   const latest = new Map<string, (typeof recentPoints)[number]>()
   for (const point of recentPoints) {
-    const trackingSession = activeSessionByUser.get(point.userId)
-    if (!trackingSession || trackingSession.id !== point.sessionId) continue
+    const trackingSession = activeSessionById.get(point.sessionId)
+    if (!trackingSession || trackingSession.userId !== point.userId) continue
     if (!latest.has(point.userId)) latest.set(point.userId, point)
   }
 
   const eligible = members.flatMap((member) => {
-    if (!activeSessionByUser.has(member.userId)) return []
     const point = latest.get(member.userId)
     if (!point) return []
     return [{ member, point }]
@@ -180,6 +173,7 @@ export async function POST(req: NextRequest) {
       role: member.role,
       color: member.dispatchColor || '#0f8b8d',
       vehicle: member.vehicle,
+      locationSource: point.source,
       distanceKm: Math.round(distanceKm * 10) / 10,
       driveMinutes,
       distanceSource: road ? 'google_routes' : 'straight_line_estimate',
