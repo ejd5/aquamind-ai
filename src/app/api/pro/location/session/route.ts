@@ -50,6 +50,7 @@ export async function GET() {
         where: {
           organizationId: access.organizationId,
           userId: session.user.id,
+          source: 'mobile',
           status: { in: ['active', 'paused'] },
         },
         orderBy: { startedAt: 'desc' },
@@ -87,6 +88,7 @@ export async function POST(req: NextRequest) {
     where: {
       organizationId: access.organizationId,
       userId: session.user.id,
+      source: 'mobile',
       status: { in: ['active', 'paused'] },
     },
     orderBy: { startedAt: 'desc' },
@@ -102,7 +104,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === 'pause' || action === 'resume') {
-    if (!existing) return NextResponse.json({ error: 'No active tracking session' }, { status: 404 })
+    if (!existing) return NextResponse.json({ error: 'No active smartphone tracking session' }, { status: 404 })
     const updated = await db.proTrackingSession.update({
       where: { id: existing.id },
       data: action === 'pause'
@@ -152,8 +154,6 @@ export async function POST(req: NextRequest) {
     data: {
       organizationId: access.organizationId,
       userId: session.user.id,
-      // The user-facing endpoint only creates smartphone sessions. Vehicle GPS
-      // sources will be accepted later through a dedicated signed connector.
       source: 'mobile',
       status: 'active',
       purpose: 'dispatch_and_emergency_reassignment',
