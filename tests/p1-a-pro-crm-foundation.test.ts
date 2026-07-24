@@ -169,7 +169,7 @@ describe('P1-A Pro CRM foundation', () => {
     expect(postgresqlMigration).toContain('CREATE TABLE "ProClientActivity"')
   })
 
-  it('scopes every client timeline route through the Pro owner', () => {
+  it('scopes every client timeline route through the Pro access boundary', () => {
     const detailRoute = readFileSync(
       join(process.cwd(), 'src/app/api/pro/clients/[id]/route.ts'),
       'utf8',
@@ -178,7 +178,8 @@ describe('P1-A Pro CRM foundation', () => {
       join(process.cwd(), 'src/app/api/pro/clients/[id]/activities/route.ts'),
       'utf8',
     )
-    expect(detailRoute).toContain('proUserId: access.ownerUserId')
+    expect(detailRoute).toContain('proClientAccessWhere')
+    expect(detailRoute).toContain('proNestedInterventionWhere')
     expect(activityRoute).toContain('proUserId: ownerUserId')
     expect(activityRoute).toContain('if (!access.canWrite)')
   })
@@ -202,5 +203,4 @@ describe('P1-A Pro CRM foundation', () => {
     expect(page).not.toContain('canvas.toDataURL')
     expect(page).not.toContain('accept="image/*"')
   })
-
 })
