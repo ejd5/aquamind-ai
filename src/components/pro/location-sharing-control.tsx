@@ -73,7 +73,17 @@ export function LocationSharingControl({ copy }: { copy: Copy }) {
         }],
       }),
     })
-    if (response.ok) setLastSentAt(new Date().toISOString())
+    if (response.ok) {
+      setLastSentAt(new Date().toISOString())
+      return
+    }
+
+    const payload = await response.json().catch(() => null) as { error?: string } | null
+    if ([404, 409, 410].includes(response.status)) {
+      sessionIdRef.current = null
+      setState((current) => current ? { ...current, activeSession: null } : current)
+    }
+    setError(payload?.error || 'Location upload stopped')
   }, [])
 
   const clearWatch = useCallback(async () => {
