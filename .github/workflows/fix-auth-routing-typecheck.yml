@@ -1,0 +1,33 @@
+name: Fix auth routing typecheck
+
+on:
+  push:
+    branches:
+      - fix/pro-technician-login-routing
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: ${{ !contains(github.event.head_commit.message || '', '[skip auth-routing-typefix]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: fix/pro-technician-login-routing
+          fetch-depth: 1
+      - run: python scripts/fix-auth-routing-typecheck.py
+      - name: Remove temporary files
+        run: |
+          rm -f scripts/fix-auth-routing-typecheck.py
+          rm -f .github/workflows/fix-auth-routing-typecheck.yml
+          rm -f AUTH_TYPECHECK_RESULT.txt
+          rm -f AUTH_TYPEFIX_TRIGGER.txt
+      - name: Commit correction
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(pro): type virtual owner in dispatch list [skip auth-routing-typefix]'
+          git push origin HEAD:fix/pro-technician-login-routing
