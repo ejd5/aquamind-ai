@@ -26,6 +26,7 @@ import {
   X,
 } from 'lucide-react'
 import { AddInterventionModal } from '@/components/pro/add-intervention-modal'
+import { PRO_PLANNING_COPY, type PlanningCopy } from '@/i18n/locales/pro-planning-copy'
 
 type PlanningView = 'agenda' | 'team'
 type Density = 'compact' | 'comfortable' | 'spacious'
@@ -89,333 +90,27 @@ interface TeamResponse {
   access: { role: string; canManage: boolean }
 }
 
-interface PlanningCopy {
-  agenda: string
-  team: string
-  agendaHelp: string
-  teamHelp: string
-  filters: string
-  technicians: string
-  allTechnicians: string
-  selectedTechnicians: string
-  selectAll: string
-  clear: string
-  unassigned: string
-  search: string
-  allTypes: string
-  allStatuses: string
-  settings: string
-  showWeekend: string
-  fullDay: string
-  workingDay: string
-  density: string
-  compact: string
-  comfortable: string
-  spacious: string
-  interventions: string
-  urgent: string
-  plannedHours: string
-  visibleTeam: string
-  noInterventions: string
-  noTechnicians: string
-  jumpMorning: string
-  now: string
-  occupancy: string
-  workingHours: string
-  reset: string
-  close: string
-  display: string
-  legend: string
-}
-
-const COPY: Record<string, PlanningCopy> = {
-  fr: {
-    agenda: 'Agenda semaine 24 h',
-    team: 'Équipe · semaine',
-    agendaHelp: 'Chaque journée complète, avec défilement vertical de 00 h à 24 h.',
-    teamHelp: 'Les techniciens à gauche et leur semaine complète sur une seule ligne.',
-    filters: 'Filtres',
-    technicians: 'Techniciens',
-    allTechnicians: 'Tous les techniciens',
-    selectedTechnicians: 'technicien(s) sélectionné(s)',
-    selectAll: 'Tout sélectionner',
-    clear: 'Effacer',
-    unassigned: 'Non affectées',
-    search: 'Client, bassin, ville…',
-    allTypes: 'Tous les types',
-    allStatuses: 'Tous les statuts',
-    settings: 'Affichage',
-    showWeekend: 'Afficher le week-end',
-    fullDay: 'Plage 24 h',
-    workingDay: 'Plage 06 h–22 h',
-    density: 'Densité',
-    compact: 'Compacte',
-    comfortable: 'Confort',
-    spacious: 'Détaillée',
-    interventions: 'Interventions',
-    urgent: 'Urgences',
-    plannedHours: 'Heures planifiées',
-    visibleTeam: 'Équipe visible',
-    noInterventions: 'Aucune intervention avec ces filtres.',
-    noTechnicians: 'Aucun technicien sélectionné.',
-    jumpMorning: 'Aller à 7 h',
-    now: 'Maintenant',
-    occupancy: 'occupation',
-    workingHours: 'Horaires',
-    reset: 'Réinitialiser',
-    close: 'Fermer',
-    display: 'Personnaliser la vue',
-    legend: 'Légende',
-  },
-  en: {
-    agenda: '24-hour week agenda',
-    team: 'Team · week',
-    agendaHelp: 'Every full day, vertically scrollable from midnight to midnight.',
-    teamHelp: 'Technicians on the left and their complete week on one line.',
-    filters: 'Filters',
-    technicians: 'Technicians',
-    allTechnicians: 'All technicians',
-    selectedTechnicians: 'technician(s) selected',
-    selectAll: 'Select all',
-    clear: 'Clear',
-    unassigned: 'Unassigned',
-    search: 'Client, pool, city…',
-    allTypes: 'All types',
-    allStatuses: 'All statuses',
-    settings: 'Display',
-    showWeekend: 'Show weekend',
-    fullDay: '24-hour range',
-    workingDay: '06:00–22:00 range',
-    density: 'Density',
-    compact: 'Compact',
-    comfortable: 'Comfortable',
-    spacious: 'Detailed',
-    interventions: 'Interventions',
-    urgent: 'Urgent',
-    plannedHours: 'Planned hours',
-    visibleTeam: 'Visible team',
-    noInterventions: 'No intervention matches these filters.',
-    noTechnicians: 'No technician selected.',
-    jumpMorning: 'Go to 7:00',
-    now: 'Now',
-    occupancy: 'utilization',
-    workingHours: 'Hours',
-    reset: 'Reset',
-    close: 'Close',
-    display: 'Customize view',
-    legend: 'Legend',
-  },
-  es: {
-    agenda: 'Agenda semanal 24 h',
-    team: 'Equipo · semana',
-    agendaHelp: 'Cada día completo, con desplazamiento vertical de 00 h a 24 h.',
-    teamHelp: 'Los técnicos a la izquierda y su semana completa en una sola línea.',
-    filters: 'Filtros',
-    technicians: 'Técnicos',
-    allTechnicians: 'Todos los técnicos',
-    selectedTechnicians: 'técnico(s) seleccionado(s)',
-    selectAll: 'Seleccionar todo',
-    clear: 'Borrar',
-    unassigned: 'Sin asignar',
-    search: 'Cliente, piscina, ciudad…',
-    allTypes: 'Todos los tipos',
-    allStatuses: 'Todos los estados',
-    settings: 'Vista',
-    showWeekend: 'Mostrar fin de semana',
-    fullDay: 'Rango 24 h',
-    workingDay: 'Rango 06 h–22 h',
-    density: 'Densidad',
-    compact: 'Compacta',
-    comfortable: 'Cómoda',
-    spacious: 'Detallada',
-    interventions: 'Intervenciones',
-    urgent: 'Urgencias',
-    plannedHours: 'Horas planificadas',
-    visibleTeam: 'Equipo visible',
-    noInterventions: 'Ninguna intervención coincide con los filtros.',
-    noTechnicians: 'Ningún técnico seleccionado.',
-    jumpMorning: 'Ir a las 7 h',
-    now: 'Ahora',
-    occupancy: 'ocupación',
-    workingHours: 'Horarios',
-    reset: 'Restablecer',
-    close: 'Cerrar',
-    display: 'Personalizar vista',
-    legend: 'Leyenda',
-  },
-  pt: {
-    agenda: 'Agenda semanal 24 h',
-    team: 'Equipa · semana',
-    agendaHelp: 'Cada dia completo, com deslocamento vertical das 00 h às 24 h.',
-    teamHelp: 'Técnicos à esquerda e a semana completa numa única linha.',
-    filters: 'Filtros',
-    technicians: 'Técnicos',
-    allTechnicians: 'Todos os técnicos',
-    selectedTechnicians: 'técnico(s) selecionado(s)',
-    selectAll: 'Selecionar tudo',
-    clear: 'Limpar',
-    unassigned: 'Não atribuídas',
-    search: 'Cliente, piscina, cidade…',
-    allTypes: 'Todos os tipos',
-    allStatuses: 'Todos os estados',
-    settings: 'Visualização',
-    showWeekend: 'Mostrar fim de semana',
-    fullDay: 'Faixa 24 h',
-    workingDay: 'Faixa 06 h–22 h',
-    density: 'Densidade',
-    compact: 'Compacta',
-    comfortable: 'Confortável',
-    spacious: 'Detalhada',
-    interventions: 'Intervenções',
-    urgent: 'Urgências',
-    plannedHours: 'Horas planeadas',
-    visibleTeam: 'Equipa visível',
-    noInterventions: 'Nenhuma intervenção corresponde aos filtros.',
-    noTechnicians: 'Nenhum técnico selecionado.',
-    jumpMorning: 'Ir para as 7 h',
-    now: 'Agora',
-    occupancy: 'ocupação',
-    workingHours: 'Horários',
-    reset: 'Repor',
-    close: 'Fechar',
-    display: 'Personalizar vista',
-    legend: 'Legenda',
-  },
-  de: {
-    agenda: '24-Stunden-Wochenkalender',
-    team: 'Team · Woche',
-    agendaHelp: 'Jeder vollständige Tag, vertikal von 00 bis 24 Uhr scrollbar.',
-    teamHelp: 'Techniker links und ihre komplette Woche in einer Zeile.',
-    filters: 'Filter',
-    technicians: 'Techniker',
-    allTechnicians: 'Alle Techniker',
-    selectedTechnicians: 'Techniker ausgewählt',
-    selectAll: 'Alle auswählen',
-    clear: 'Leeren',
-    unassigned: 'Nicht zugewiesen',
-    search: 'Kunde, Pool, Stadt…',
-    allTypes: 'Alle Typen',
-    allStatuses: 'Alle Status',
-    settings: 'Anzeige',
-    showWeekend: 'Wochenende anzeigen',
-    fullDay: '24-Stunden-Bereich',
-    workingDay: 'Bereich 06–22 Uhr',
-    density: 'Dichte',
-    compact: 'Kompakt',
-    comfortable: 'Komfortabel',
-    spacious: 'Detailliert',
-    interventions: 'Einsätze',
-    urgent: 'Dringend',
-    plannedHours: 'Geplante Stunden',
-    visibleTeam: 'Sichtbares Team',
-    noInterventions: 'Keine Einsätze entsprechen den Filtern.',
-    noTechnicians: 'Kein Techniker ausgewählt.',
-    jumpMorning: 'Zu 7 Uhr',
-    now: 'Jetzt',
-    occupancy: 'Auslastung',
-    workingHours: 'Arbeitszeiten',
-    reset: 'Zurücksetzen',
-    close: 'Schließen',
-    display: 'Ansicht anpassen',
-    legend: 'Legende',
-  },
-  it: {
-    agenda: 'Agenda settimanale 24 h',
-    team: 'Squadra · settimana',
-    agendaHelp: 'Ogni giornata completa, scorrevole verticalmente dalle 00 alle 24.',
-    teamHelp: 'Tecnici a sinistra e settimana completa su una sola riga.',
-    filters: 'Filtri',
-    technicians: 'Tecnici',
-    allTechnicians: 'Tutti i tecnici',
-    selectedTechnicians: 'tecnico/i selezionato/i',
-    selectAll: 'Seleziona tutti',
-    clear: 'Cancella',
-    unassigned: 'Non assegnati',
-    search: 'Cliente, piscina, città…',
-    allTypes: 'Tutti i tipi',
-    allStatuses: 'Tutti gli stati',
-    settings: 'Vista',
-    showWeekend: 'Mostra weekend',
-    fullDay: 'Fascia 24 h',
-    workingDay: 'Fascia 06–22',
-    density: 'Densità',
-    compact: 'Compatta',
-    comfortable: 'Comoda',
-    spacious: 'Dettagliata',
-    interventions: 'Interventi',
-    urgent: 'Urgenze',
-    plannedHours: 'Ore pianificate',
-    visibleTeam: 'Squadra visibile',
-    noInterventions: 'Nessun intervento corrisponde ai filtri.',
-    noTechnicians: 'Nessun tecnico selezionato.',
-    jumpMorning: 'Vai alle 7',
-    now: 'Ora',
-    occupancy: 'occupazione',
-    workingHours: 'Orari',
-    reset: 'Reimposta',
-    close: 'Chiudi',
-    display: 'Personalizza vista',
-    legend: 'Legenda',
-  },
-  nl: {
-    agenda: '24-uurs weekagenda',
-    team: 'Team · week',
-    agendaHelp: 'Elke volledige dag, verticaal scrollbaar van 00 tot 24 uur.',
-    teamHelp: 'Technici links en hun volledige week op één regel.',
-    filters: 'Filters',
-    technicians: 'Technici',
-    allTechnicians: 'Alle technici',
-    selectedTechnicians: 'technicus/technici geselecteerd',
-    selectAll: 'Alles selecteren',
-    clear: 'Wissen',
-    unassigned: 'Niet toegewezen',
-    search: 'Klant, zwembad, plaats…',
-    allTypes: 'Alle types',
-    allStatuses: 'Alle statussen',
-    settings: 'Weergave',
-    showWeekend: 'Weekend tonen',
-    fullDay: '24-uurs bereik',
-    workingDay: 'Bereik 06–22 uur',
-    density: 'Dichtheid',
-    compact: 'Compact',
-    comfortable: 'Comfortabel',
-    spacious: 'Gedetailleerd',
-    interventions: 'Interventies',
-    urgent: 'Urgent',
-    plannedHours: 'Geplande uren',
-    visibleTeam: 'Zichtbaar team',
-    noInterventions: 'Geen interventie voldoet aan de filters.',
-    noTechnicians: 'Geen technicus geselecteerd.',
-    jumpMorning: 'Ga naar 7 uur',
-    now: 'Nu',
-    occupancy: 'bezetting',
-    workingHours: 'Werkuren',
-    reset: 'Herstellen',
-    close: 'Sluiten',
-    display: 'Weergave aanpassen',
-    legend: 'Legenda',
-  },
-}
+const COPY = PRO_PLANNING_COPY
 
 const TYPE_COLORS: Record<string, { card: string; solid: string }> = {
   maintenance: {
-    card: 'border-teal-500/60 bg-teal-500/12 text-teal-950 dark:text-teal-100',
+    card: 'border-teal-500/60 bg-teal-500/[0.12] text-teal-950 dark:text-teal-100',
     solid: '#0f8b8d',
   },
   repair: {
-    card: 'border-amber-500/70 bg-amber-500/15 text-amber-950 dark:text-amber-100',
+    card: 'border-amber-500/70 bg-amber-500/[0.15] text-amber-950 dark:text-amber-100',
     solid: '#d97706',
   },
   opening: {
-    card: 'border-emerald-500/70 bg-emerald-500/15 text-emerald-950 dark:text-emerald-100',
+    card: 'border-emerald-500/70 bg-emerald-500/[0.15] text-emerald-950 dark:text-emerald-100',
     solid: '#059669',
   },
   closing: {
-    card: 'border-orange-500/70 bg-orange-500/15 text-orange-950 dark:text-orange-100',
+    card: 'border-orange-500/70 bg-orange-500/[0.15] text-orange-950 dark:text-orange-100',
     solid: '#ea580c',
   },
   emergency: {
-    card: 'border-red-500/75 bg-red-500/15 text-red-950 dark:text-red-100',
+    card: 'border-red-500/75 bg-red-500/[0.15] text-red-950 dark:text-red-100',
     solid: '#dc2626',
   },
 }
@@ -897,7 +592,7 @@ export default function ProPlanningPage() {
               </span>
               <ChevronDown className="h-3.5 w-3.5 transition group-open:rotate-180" />
             </summary>
-            <div className="absolute right-0 z-40 mt-2 w-[320px] rounded-2xl border border-border/70 bg-background/98 p-3 shadow-2xl backdrop-blur-xl">
+            <div className="absolute right-0 z-40 mt-2 w-[320px] rounded-2xl border border-border/70 bg-background/[0.98] p-3 shadow-2xl backdrop-blur-xl">
               <div className="mb-3 flex items-center justify-between gap-2">
                 <div>
                   <p className="text-xs font-bold">{copy.allTechnicians}</p>
@@ -982,7 +677,7 @@ export default function ProPlanningPage() {
               {copy.settings}
               <ChevronDown className="h-3.5 w-3.5 transition group-open:rotate-180" />
             </summary>
-            <div className="absolute right-0 z-40 mt-2 w-[300px] rounded-2xl border border-border/70 bg-background/98 p-4 shadow-2xl backdrop-blur-xl">
+            <div className="absolute right-0 z-40 mt-2 w-[300px] rounded-2xl border border-border/70 bg-background/[0.98] p-4 shadow-2xl backdrop-blur-xl">
               <div className="mb-3 flex items-center gap-2">
                 <Settings2 className="h-4 w-4 text-primary" />
                 <p className="text-xs font-bold">{copy.display}</p>
@@ -1121,12 +816,12 @@ function PlanningMetric({
   return (
     <article className={`rounded-2xl border p-4 backdrop-blur-xl ${
       emphasis
-        ? 'border-red-400/40 bg-red-500/8'
+        ? 'border-red-400/40 bg-red-500/[0.08]'
         : 'border-white/40 bg-white/60 dark:border-white/10 dark:bg-white/[0.04]'
     }`}>
       <div className="flex items-center justify-between gap-3">
         <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${
-          emphasis ? 'bg-red-500/12 text-red-600' : 'bg-primary/10 text-primary'
+          emphasis ? 'bg-red-500/[0.12] text-red-600' : 'bg-primary/10 text-primary'
         }`}>
           {icon}
         </span>
@@ -1253,7 +948,7 @@ function AgendaWeekView({
               <div
                 key={day.toISOString()}
                 className={`relative overflow-hidden border-r border-border/50 last:border-r-0 ${
-                  isToday ? 'bg-primary/[0.035]' : 'bg-background/35'
+                  isToday ? 'bg-primary/[0.035]' : 'bg-background/[0.35]'
                 }`}
                 style={{
                   backgroundImage: 'linear-gradient(to bottom, color-mix(in oklch, var(--border) 58%, transparent) 1px, transparent 1px), linear-gradient(to bottom, transparent 50%, color-mix(in oklch, var(--border) 28%, transparent) 50%, transparent calc(50% + 1px))',
@@ -1408,10 +1103,10 @@ function TeamWeekView({
       <div className="max-h-[720px] overflow-auto overscroll-contain">
         <div style={{ minWidth }}>
           <div
-            className="sticky top-0 z-30 grid border-b border-border/60 bg-background/97 shadow-sm"
+            className="sticky top-0 z-30 grid border-b border-border/60 bg-background/[0.97] shadow-sm"
             style={{ gridTemplateColumns: `${leftWidth}px ${timelineWidth}px` }}
           >
-            <div className="sticky left-0 z-40 flex items-center gap-2 border-r border-border/60 bg-background/97 px-4 py-3">
+            <div className="sticky left-0 z-40 flex items-center gap-2 border-r border-border/60 bg-background/[0.97] px-4 py-3">
               <UsersRound className="h-4 w-4 text-primary" />
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.14em]">
@@ -1475,7 +1170,7 @@ function TeamWeekView({
                   minHeight: rowHeight,
                 }}
               >
-                <div className="sticky left-0 z-20 border-r border-border/60 bg-background/97 px-4 py-3">
+                <div className="sticky left-0 z-20 border-r border-border/60 bg-background/[0.97] px-4 py-3">
                   {member ? (
                     <div className="flex h-full flex-col justify-between gap-2">
                       <div className="flex min-w-0 items-center gap-3">
@@ -1640,7 +1335,7 @@ function timeTicks(start: number, end: number): number[] {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="border-t border-dashed border-border/60 bg-secondary/15 px-6 py-12 text-center">
+    <div className="border-t border-dashed border-border/60 bg-secondary/[0.15] px-6 py-12 text-center">
       <Sparkles className="mx-auto h-5 w-5 text-gold" />
       <p className="mt-3 text-sm font-semibold text-muted-foreground">{message}</p>
     </div>
@@ -1649,7 +1344,7 @@ function EmptyState({ message }: { message: string }) {
 
 function LoadingOverlay() {
   return (
-    <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-background/35 backdrop-blur-[1px]">
+    <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-background/[0.35] backdrop-blur-[1px]">
       <div className="flex items-center gap-2 rounded-full border border-border/60 bg-background/95 px-4 py-2 text-xs font-bold shadow-lg">
         <Loader2 className="h-4 w-4 animate-spin text-primary" />
         AQWELIA
