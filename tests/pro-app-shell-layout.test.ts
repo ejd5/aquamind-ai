@@ -50,6 +50,13 @@ describe('AQWELIA Pro authenticated workspace shell', () => {
     expect(mobileShell).toContain('Haptics.impact')
   })
 
+  it('portals viewport-fixed mobile layers outside the sticky blurred header', () => {
+    expect(appLayout).toContain('backdrop-blur-2xl')
+    expect(mobileShell).toContain("import { createPortal } from 'react-dom'")
+    expect(mobileShell).toContain('createPortal(viewportLayers, document.body)')
+    expect(mobileShell).toContain('useSyncExternalStore')
+  })
+
   it('keeps mobile content full-width and safe-area aware', () => {
     expect(mobileShell).toContain('md:hidden')
     expect(appLayout).toContain('hidden h-[calc(100vh-4rem)]')
