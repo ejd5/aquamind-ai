@@ -64,7 +64,7 @@ export async function listDispatchMembers(access: ProAccess): Promise<DispatchMe
     include: { user: { select: { id: true, name: true, email: true } } },
   })
 
-  const mapped = members.map((member) => ({
+  const mapped: DispatchMember[] = members.map((member) => ({
     memberId: member.id,
     userId: member.userId,
     role: member.role,

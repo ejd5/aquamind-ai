@@ -92,6 +92,24 @@ db.exec(`
   CREATE INDEX "ProIntervention_status_idx" ON "ProIntervention"("status");
   CREATE INDEX "ProIntervention_scheduledAt_idx" ON "ProIntervention"("scheduledAt");
   CREATE INDEX "ProIntervention_technicianId_idx" ON "ProIntervention"("technicianId");
+
+  -- P1-B enriches the existing organization membership table with dispatch
+  -- availability. The historical fixture must therefore contain its pre-P1-B
+  -- shape so ALTER TABLE is exercised against a realistic installed database.
+  CREATE TABLE "OrganizationMember" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "organizationId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "role" TEXT NOT NULL DEFAULT 'member',
+    "status" TEXT NOT NULL DEFAULT 'active',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE UNIQUE INDEX "OrganizationMember_organizationId_userId_key"
+    ON "OrganizationMember"("organizationId", "userId");
+  CREATE INDEX "OrganizationMember_organizationId_idx"
+    ON "OrganizationMember"("organizationId");
+  CREATE INDEX "OrganizationMember_userId_idx"
+    ON "OrganizationMember"("userId");
 `)
 
 const insert = db.prepare(

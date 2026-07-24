@@ -38,7 +38,7 @@ export default function AuthPage() {
   const callbackUrl =
     requestedCallbackUrl?.startsWith('/') && !requestedCallbackUrl.startsWith('//')
       ? requestedCallbackUrl
-      : '/'
+      : '/auth/entry'
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
