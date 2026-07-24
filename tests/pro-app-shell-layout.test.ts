@@ -51,7 +51,7 @@ describe('AQWELIA Pro authenticated workspace shell', () => {
   })
 
   it('keeps mobile content full-width and safe-area aware', () => {
-    expect(appLayout).toContain('md:hidden')
+    expect(mobileShell).toContain('md:hidden')
     expect(appLayout).toContain('hidden h-[calc(100vh-4rem)]')
     expect(appLayout).toContain('md:block')
     expect(proCss).toContain('@media (max-width: 767px)')
