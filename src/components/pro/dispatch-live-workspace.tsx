@@ -18,6 +18,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { LiveDispatchMap } from '@/components/pro/live-dispatch-map'
+import { GpsDeviceSettings } from '@/components/pro/gps-device-settings'
 import { PRO_LIVE_DISPATCH_COPY, type ProLiveDispatchLocale } from '@/i18n/locales/pro-live-dispatch-copy'
 
 type Stop = {
@@ -317,6 +318,8 @@ export function DispatchLiveWorkspace() {
           </div>
         </div>
       </section>
+
+      <GpsDeviceSettings members={settings?.members ?? []} />
 
       <section className="rounded-[1.75rem] border border-border/60 bg-card/80 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-3"><Settings2 className="h-5 w-5 text-primary" /><div><h2 className="font-display text-xl font-bold">Paramètres de suivi</h2><p className="text-xs text-muted-foreground">{copy.retention}: {settings?.organization.locationRetentionDays ?? 60} {copy.days}</p></div></div><button type="button" onClick={() => { void updateOrganization(!settings?.organization.locationTrackingEnabled) }} className={`min-h-11 rounded-xl px-4 text-sm font-bold ${settings?.organization.locationTrackingEnabled ? 'border border-red-300 bg-red-50 text-red-700' : 'bg-primary text-primary-foreground'}`}>{settings?.organization.locationTrackingEnabled ? copy.disableTracking : copy.enableTracking}</button></div>

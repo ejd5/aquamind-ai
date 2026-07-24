@@ -786,24 +786,47 @@ model ProTrackingSession {
 }
 
 model ProLocationPoint {
-  id             String   @id @default(cuid())
-  sessionId      String
-  organizationId String
-  userId         String
-  latitude       Float
-  longitude      Float
-  accuracy       Float?
-  altitude       Float?
-  speed          Float?
-  heading        Float?
-  battery        Float?
-  source         String   @default("mobile")
-  recordedAt     DateTime
-  receivedAt     DateTime @default(now())
+  id              String   @id @default(cuid())
+  sessionId       String
+  organizationId  String
+  userId          String
+  deviceId        String?
+  externalEventId String?
+  latitude        Float
+  longitude       Float
+  accuracy        Float?
+  altitude        Float?
+  speed           Float?
+  heading         Float?
+  battery         Float?
+  source          String   @default("mobile")
+  recordedAt      DateTime
+  receivedAt      DateTime @default(now())
 
+  @@unique([sessionId, externalEventId])
   @@index([organizationId, recordedAt])
   @@index([userId, recordedAt])
   @@index([sessionId, recordedAt])
+  @@index([deviceId, recordedAt])
+}
+
+model ProTrackingDevice {
+  id               String   @id @default(cuid())
+  organizationId   String
+  assignedUserId   String
+  provider         String   @default("generic") // generic | traccar | samsara | geotab | webfleet
+  externalDeviceId String
+  label            String
+  vehicle          String?
+  tokenHash        String   @unique
+  status           String   @default("active") // active | revoked
+  lastSeenAt       DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([organizationId, provider, externalDeviceId])
+  @@index([organizationId, status])
+  @@index([assignedUserId, status])
 }
 
 model ProLocationAccessLog {
