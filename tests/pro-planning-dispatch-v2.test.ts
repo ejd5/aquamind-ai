@@ -6,6 +6,10 @@ const source = readFileSync(
   join(process.cwd(), 'src/app/pro/app/planning/page.tsx'),
   'utf8',
 )
+const copySource = readFileSync(
+  join(process.cwd(), 'src/i18n/locales/pro-planning-copy.ts'),
+  'utf8',
+)
 
 describe('AQWELIA Pro dispatch planning V2', () => {
   it('provides a full 24-hour vertically scrollable weekly agenda', () => {
@@ -37,8 +41,9 @@ describe('AQWELIA Pro dispatch planning V2', () => {
   })
 
   it('keeps the new planning controls available in every supported locale', () => {
+    expect(source).toContain("from '@/i18n/locales/pro-planning-copy'")
     for (const locale of ['fr', 'en', 'es', 'pt', 'de', 'it', 'nl']) {
-      expect(source).toContain(`  ${locale}: {`)
+      expect(copySource).toContain(`  ${locale}: {`)
     }
   })
 })
