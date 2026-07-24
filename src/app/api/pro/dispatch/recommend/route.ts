@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
     }),
   ])
 
-  const activeSessionById = new Map(activeSessions.map((trackingSession) => [trackingSession.id, trackingSession]))
+  const activeSessionById = new Map(activeSessions.map((trackingSession) => [trackingSession.id, trackingSession] as const))
   const activeSessionIds = activeSessions.map((trackingSession) => trackingSession.id)
   if (activeSessionIds.length === 0) {
     return NextResponse.json({ candidates: [], source: 'no_active_tracking_sessions', advisoryOnly: true })

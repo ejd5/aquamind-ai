@@ -153,7 +153,7 @@ export async function GET(req: NextRequest) {
     }),
   ])
 
-  const activeSessionById = new Map(activeSessions.map((trackingSession) => [trackingSession.id, trackingSession]))
+  const activeSessionById = new Map(activeSessions.map((trackingSession) => [trackingSession.id, trackingSession] as const))
   const sessionsByUser = new Map<string, typeof activeSessions>()
   for (const trackingSession of activeSessions) {
     const current = sessionsByUser.get(trackingSession.userId) ?? []
