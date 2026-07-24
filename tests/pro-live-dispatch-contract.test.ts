@@ -41,6 +41,11 @@ describe('AQWELIA Pro Dispatch Live contract', () => {
     expect(locationControl).toContain('foreground')
   })
 
+  it('reserves vehicle GPS sources for a dedicated signed connector', () => {
+    expect(sessionRoute).toContain("source: 'mobile'")
+    expect(sessionRoute).not.toContain("body?.source === 'vehicle'")
+  })
+
   it('only lets the authenticated user upload points to their active session', () => {
     expect(pointsRoute).toContain('userId: session.user.id')
     expect(pointsRoute).toContain("status: 'active'")
