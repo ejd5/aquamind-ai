@@ -13,9 +13,12 @@ import {
   LogOut,
   Sparkles,
   ArrowLeft,
+  LocateFixed,
+  MapPinned,
 } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import { authOptions } from '@/lib/auth'
+import { getProAccess } from '@/lib/pro/access'
 import { ProMobileShell } from '@/components/pro/pro-mobile-shell'
 
 export const dynamic = 'force-dynamic'
@@ -33,6 +36,7 @@ export default async function ProAppLayout({
   }
 
   const companyName = (session.user as any).name ?? session.user.email ?? ''
+  const access = await getProAccess(session.user.id)
 
   const NAV = [
     { href: '/pro/app', label: t('navDashboard'), icon: LayoutDashboard },
@@ -46,6 +50,8 @@ export default async function ProAppLayout({
     },
     { href: '/pro/app/pools', label: t('navPools'), icon: Waves },
     { href: '/pro/app/reports', label: t('navReports'), icon: FileText },
+    { href: '/pro/app/location', label: 'Terrain GPS', icon: LocateFixed },
+    ...(access.canManage ? [{ href: '/pro/app/dispatch', label: 'Dispatch Live', icon: MapPinned }] : []),
     { href: '/pro/app/settings', label: t('navSettings'), icon: Settings },
   ]
 
@@ -102,7 +108,7 @@ export default async function ProAppLayout({
             <span className="hidden items-center rounded-full bg-gradient-to-r from-gold to-[oklch(0.55_0.10_195)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-[oklch(0.99_0.01_195)] shadow-md md:inline-flex">
               {t('badgePro')}
             </span>
-            <ProMobileShell companyName={companyName} />
+            <ProMobileShell companyName={companyName} canManage={access.canManage} />
           </div>
         </div>
       </header>
