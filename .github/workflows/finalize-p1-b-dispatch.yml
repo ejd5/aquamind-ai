@@ -1,0 +1,33 @@
+name: Finalize P1-B dispatch
+
+on:
+  push:
+    branches:
+      - feat/p1-b-team-dispatch
+    paths:
+      - scripts/finalize-p1-b-dispatch.py
+      - .github/workflows/finalize-p1-b-dispatch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: feat/p1-b-team-dispatch
+          fetch-depth: 1
+      - run: python scripts/finalize-p1-b-dispatch.py
+      - name: Remove temporary P1-B helpers
+        run: |
+          rm -f scripts/*p1-b*.py
+          rm -f .github/workflows/*p1-b*.yml
+      - name: Commit final branch state
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(p1-b): finalize technician dispatch implementation'
+          git push origin HEAD:feat/p1-b-team-dispatch
