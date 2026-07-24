@@ -59,6 +59,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Tracking session expired and was stopped' }, { status: 410 })
   }
 
+  const [organization, member] = await Promise.all([
+    db.organization.findUnique({
+      where: { id: access.organizationId },
+      select: { locationTrackingEnabled: true, locationRetentionDays: true },
+    }),
+    access.role === 'owner'
+      ? Promise.resolve(null)
+      : db.organizationMember.findFirst({
+          where: {
+            organizationId: access.organizationId,
+            userId: session.user.id,
+            status: 'active',
+          },
+          select: { locationSharingEnabled: true },
+        }),
+  ])
+
+  const sharingAllowed = access.role === 'owner' || Boolean(member?.locationSharingEnabled)
+  if (!organization?.locationTrackingEnabled || !sharingAllowed) {
+    await db.proTrackingSession.update({
+      where: { id: trackingSession.id },
+      data: { status: 'stopped', endedAt: now },
+    })
+    return NextResponse.json(
+      { error: 'Location sharing was disabled and the tracking session was stopped' },
+      { status: 409 },
+    )
+  }
+
   const futureLimit = now.getTime() + 5 * 60 * 1000
   const historyLimit = now.getTime() - 24 * 60 * 60 * 1000
   const normalized = incoming.flatMap((point) => {
@@ -86,11 +115,6 @@ export async function POST(req: NextRequest) {
 
   if (normalized.length === 0) return NextResponse.json({ error: 'No valid location points' }, { status: 400 })
 
-  const organization = await db.organization.findUnique({
-    where: { id: access.organizationId },
-    select: { locationRetentionDays: true },
-  })
-
   const result = await db.$transaction(async (tx) => {
     const created = await tx.proLocationPoint.createMany({ data: normalized })
     await tx.proTrackingSession.update({
@@ -100,7 +124,7 @@ export async function POST(req: NextRequest) {
     await tx.proLocationPoint.deleteMany({
       where: {
         organizationId: access.organizationId as string,
-        recordedAt: { lt: retentionCutoff(organization?.locationRetentionDays ?? 60, now) },
+        recordedAt: { lt: retentionCutoff(organization.locationRetentionDays, now) },
       },
     })
     return created.count

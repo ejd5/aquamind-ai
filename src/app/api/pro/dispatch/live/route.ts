@@ -50,14 +50,24 @@ export async function GET(req: NextRequest) {
   })
   if (!organization) return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
 
-  await db.proLocationPoint.deleteMany({
-    where: {
-      organizationId: access.organizationId,
-      recordedAt: { lt: retentionCutoff(organization.locationRetentionDays, now) },
-    },
-  })
+  await Promise.all([
+    db.proTrackingSession.updateMany({
+      where: {
+        organizationId: access.organizationId,
+        status: { in: ['active', 'paused'] },
+        autoStopAt: { lte: now },
+      },
+      data: { status: 'stopped', endedAt: now },
+    }),
+    db.proLocationPoint.deleteMany({
+      where: {
+        organizationId: access.organizationId,
+        recordedAt: { lt: retentionCutoff(organization.locationRetentionDays, now) },
+      },
+    }),
+  ])
 
-  const [members, points, interventions] = await Promise.all([
+  const [members, activeSessions, interventions] = await Promise.all([
     db.organizationMember.findMany({
       where: {
         organizationId: access.organizationId,
@@ -81,14 +91,17 @@ export async function GET(req: NextRequest) {
         user: { select: { name: true, email: true } },
       },
     }),
-    db.proLocationPoint.findMany({
-      where: {
-        organizationId: access.organizationId,
-        recordedAt: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) },
-      },
-      orderBy: { recordedAt: 'desc' },
-      take: 3000,
-    }),
+    organization.locationTrackingEnabled
+      ? db.proTrackingSession.findMany({
+          where: {
+            organizationId: access.organizationId,
+            status: 'active',
+            autoStopAt: { gt: now },
+          },
+          orderBy: { startedAt: 'desc' },
+          select: { id: true, userId: true, startedAt: true, lastHeartbeatAt: true, autoStopAt: true },
+        })
+      : Promise.resolve([]),
     db.proIntervention.findMany({
       where: {
         client: { proUserId: access.ownerUserId },
@@ -133,8 +146,30 @@ export async function GET(req: NextRequest) {
     }),
   ])
 
+  const activeSessionByUser = new Map<string, (typeof activeSessions)[number]>()
+  for (const trackingSession of activeSessions) {
+    if (!activeSessionByUser.has(trackingSession.userId)) {
+      activeSessionByUser.set(trackingSession.userId, trackingSession)
+    }
+  }
+
+  const activeSessionIds = [...activeSessionByUser.values()].map((trackingSession) => trackingSession.id)
+  const points = activeSessionIds.length > 0
+    ? await db.proLocationPoint.findMany({
+        where: {
+          organizationId: access.organizationId,
+          sessionId: { in: activeSessionIds },
+          recordedAt: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) },
+        },
+        orderBy: { recordedAt: 'desc' },
+        take: 3000,
+      })
+    : []
+
   const latestPointByUser = new Map<string, (typeof points)[number]>()
   for (const point of points) {
+    const activeSession = activeSessionByUser.get(point.userId)
+    if (!activeSession || activeSession.id !== point.sessionId) continue
     if (!latestPointByUser.has(point.userId)) latestPointByUser.set(point.userId, point)
   }
 
@@ -151,7 +186,10 @@ export async function GET(req: NextRequest) {
   }
 
   const technicians = members.map((member) => {
-    const point = latestPointByUser.get(member.userId)
+    const activeSession = activeSessionByUser.get(member.userId)
+    const point = organization.locationTrackingEnabled && member.locationSharingEnabled && activeSession
+      ? latestPointByUser.get(member.userId)
+      : undefined
     const route = routeSequence(routesByUser.get(member.userId) ?? []).map((intervention, index) => {
       const latitude = intervention.pool?.latitude ?? intervention.client.latitude
       const longitude = intervention.pool?.longitude ?? intervention.client.longitude
@@ -175,6 +213,9 @@ export async function GET(req: NextRequest) {
       sharingEnabled: member.locationSharingEnabled,
       source: member.locationSource,
       noticeAcknowledged: Boolean(member.locationNoticeAcknowledgedAt),
+      trackingActive: Boolean(activeSession),
+      trackingStartedAt: activeSession?.startedAt ?? null,
+      trackingAutoStopAt: activeSession?.autoStopAt ?? null,
       location: point ? {
         latitude: point.latitude,
         longitude: point.longitude,

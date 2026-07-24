@@ -46,11 +46,20 @@ describe('AQWELIA Pro Dispatch Live contract', () => {
     expect(sessionRoute).not.toContain("body?.source === 'vehicle'")
   })
 
-  it('only lets the authenticated user upload points to their active session', () => {
+  it('only lets the authenticated user upload points to their active opted-in session', () => {
     expect(pointsRoute).toContain('userId: session.user.id')
     expect(pointsRoute).toContain("status: 'active'")
     expect(pointsRoute).toContain('sessionId: trackingSession.id')
+    expect(pointsRoute).toContain('locationTrackingEnabled')
+    expect(pointsRoute).toContain('locationSharingEnabled')
+    expect(pointsRoute).toContain('Location sharing was disabled and the tracking session was stopped')
     expect(pointsRoute).toContain('retentionCutoff')
+  })
+
+  it('stops the phone watcher when the server revokes or expires the session', () => {
+    expect(locationControl).toContain('[404, 409, 410].includes(response.status)')
+    expect(locationControl).toContain('sessionIdRef.current = null')
+    expect(locationControl).toContain('activeSession: null')
   })
 
   it('limits exact team locations and configuration to managers', () => {
@@ -59,9 +68,20 @@ describe('AQWELIA Pro Dispatch Live contract', () => {
     expect(liveRoute).toContain("action: 'view_live_dispatch'")
   })
 
-  it('keeps emergency dispatch advisory and human-approved', () => {
+  it('never exposes a point outside the current active session and sharing consent', () => {
+    expect(liveRoute).toContain("status: 'active'")
+    expect(liveRoute).toContain('activeSessionByUser')
+    expect(liveRoute).toContain('activeSession.id !== point.sessionId')
+    expect(liveRoute).toContain('member.locationSharingEnabled && activeSession')
+    expect(liveRoute).toContain("data: { status: 'stopped', endedAt: now }")
+  })
+
+  it('keeps emergency dispatch advisory, live-session-only and human-approved', () => {
     expect(recommendRoute).toContain('advisoryOnly: true')
     expect(recommendRoute).not.toContain('proIntervention.update')
+    expect(recommendRoute).toContain('no_active_tracking_sessions')
+    expect(recommendRoute).toContain('trackingSession.id !== point.sessionId')
+    expect(recommendRoute).toContain('locationTrackingEnabled')
     expect(workspace).toContain('/api/pro/interventions/')
     expect(privacy).toContain('validation humaine')
   })
