@@ -80,7 +80,7 @@ describe('AQWELIA Pro Dispatch Live contract', () => {
     expect(recommendRoute).toContain('advisoryOnly: true')
     expect(recommendRoute).not.toContain('proIntervention.update')
     expect(recommendRoute).toContain('no_active_tracking_sessions')
-    expect(recommendRoute).toContain('activeSession.id !== point.sessionId')
+    expect(recommendRoute).toContain('trackingSession.id !== point.sessionId')
     expect(recommendRoute).toContain('locationTrackingEnabled')
     expect(workspace).toContain('/api/pro/interventions/')
     expect(privacy).toContain('validation humaine')
