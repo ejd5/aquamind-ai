@@ -2,18 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { getProAccess } from '@/lib/pro/access'
+import { getProAccess, type ProAccess } from '@/lib/pro/access'
 import { createDeviceToken, GPS_DEVICE_PROVIDERS } from '@/lib/pro/gps-device'
 
 export const runtime = 'nodejs'
+type ManagerAccess = ProAccess & { organizationId: string }
 
 function clean(value: unknown, maximum: number): string {
   return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').slice(0, maximum) : ''
 }
 
-async function requireManager(userId: string) {
+async function requireManager(userId: string): Promise<ManagerAccess | null> {
   const access = await getProAccess(userId)
-  return access.canManage && access.organizationId ? access : null
+  if (!access.canManage || !access.organizationId) return null
+  return { ...access, organizationId: access.organizationId }
 }
 
 export async function GET() {
@@ -52,7 +54,7 @@ export async function GET() {
       },
     }),
   ])
-  const memberByUser = new Map(members.map((member) => [member.userId, member]))
+  const memberByUser = new Map(members.map((member) => [member.userId, member] as const))
   return NextResponse.json({
     devices: devices.map((device) => ({ ...device, member: memberByUser.get(device.assignedUserId) ?? null })),
     members,
@@ -98,7 +100,7 @@ export async function POST(req: NextRequest) {
     const device = await db.$transaction(async (tx) => {
       const created = await tx.proTrackingDevice.create({
         data: {
-          organizationId: access.organizationId as string,
+          organizationId: access.organizationId,
           assignedUserId,
           provider,
           externalDeviceId,
@@ -124,7 +126,7 @@ export async function POST(req: NextRequest) {
       })
       await tx.proLocationAccessLog.create({
         data: {
-          organizationId: access.organizationId as string,
+          organizationId: access.organizationId,
           actorUserId: session.user.id,
           action: 'register_tracking_device',
           targetId: created.id,
