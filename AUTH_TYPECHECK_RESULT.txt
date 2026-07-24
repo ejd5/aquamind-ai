@@ -1,6 +1,0 @@
-$ tsc --noEmit
-src/lib/pro/dispatch-server.ts(91,31): error TS2345: Argument of type 'DispatchMember' is not assignable to parameter of type '{ memberId: string; userId: string; role: string; name: string | null; email: string; dispatchEnabled: boolean; skills: string[]; serviceZones: string[]; workingDays: number[]; dayStart: string; dayEnd: string; ... 4 more ...; vehicle: string | null; }'.
-  Types of property 'memberId' are incompatible.
-    Type 'string | null' is not assignable to type 'string'.
-      Type 'null' is not assignable to type 'string'.
-exit_code=2
