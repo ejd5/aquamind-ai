@@ -152,7 +152,9 @@ export async function POST(req: NextRequest) {
     data: {
       organizationId: access.organizationId,
       userId: session.user.id,
-      source: typeof body?.source === 'string' && body.source === 'vehicle' ? 'vehicle' : 'mobile',
+      // The user-facing endpoint only creates smartphone sessions. Vehicle GPS
+      // sources will be accepted later through a dedicated signed connector.
+      source: 'mobile',
       status: 'active',
       purpose: 'dispatch_and_emergency_reassignment',
       noticeVersion,
