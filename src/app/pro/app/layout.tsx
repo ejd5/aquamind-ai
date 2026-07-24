@@ -73,7 +73,7 @@ export default async function ProAppLayout({
               alt="AQWELIA"
               className="h-9 w-auto object-contain"
             />
-            <div className="hidden leading-tight xs:block">
+            <div className="hidden leading-tight sm:block">
               <div className="font-display text-base font-bold tracking-tight">
                 <span className="aqua-text-gradient">AQWELIA</span>{' '}
                 <span className="text-gold">Pro</span>
