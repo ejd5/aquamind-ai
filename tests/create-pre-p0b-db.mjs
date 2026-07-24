@@ -93,6 +93,29 @@ db.exec(`
   CREATE INDEX "ProIntervention_scheduledAt_idx" ON "ProIntervention"("scheduledAt");
   CREATE INDEX "ProIntervention_technicianId_idx" ON "ProIntervention"("technicianId");
 
+  -- P1-C adds organization-level tracking policy. Keep the original organization
+  -- shape in the legacy fixture so ALTER TABLE is validated on installed bases.
+  CREATE TABLE "Organization" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "type" TEXT NOT NULL DEFAULT 'pro',
+    "name" TEXT NOT NULL,
+    "legalName" TEXT,
+    "siret" TEXT,
+    "vatNumber" TEXT,
+    "address" TEXT,
+    "city" TEXT,
+    "zipCode" TEXT,
+    "country" TEXT NOT NULL DEFAULT 'FR',
+    "phone" TEXT,
+    "email" TEXT,
+    "website" TEXT,
+    "plan" TEXT NOT NULL DEFAULT 'growth_starter',
+    "status" TEXT NOT NULL DEFAULT 'trial',
+    "ownerId" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+  );
+
   -- P1-B enriches the existing organization membership table with dispatch
   -- availability. The historical fixture must therefore contain its pre-P1-B
   -- shape so ALTER TABLE is exercised against a realistic installed database.
