@@ -86,13 +86,14 @@ describe('Pro technician data scopes', () => {
       'src/app/api/pro/clients/[id]/route.ts',
       'src/app/api/pro/pools/route.ts',
       'src/app/api/pro/pools/[id]/route.ts',
-      'src/app/api/pro/pools/[id]/report/route.tsx',
       'src/app/api/pro/export/route.ts',
     ]
 
     for (const route of nestedRoutes) {
       expect(read(route)).toContain('where: interventionWhere')
     }
+    expect(read('src/app/api/pro/pools/[id]/report/route.tsx'))
+      .toContain('where: proNestedInterventionWhere')
   })
 
   it('prevents technicians from selecting or changing another assignee', () => {
