@@ -1,0 +1,56 @@
+name: Diagnose P1-C PostgreSQL migration
+
+on:
+  push:
+    branches:
+      - feat/pro-live-dispatch-foundation
+    paths:
+      - P1C_POSTGRES_DIAG_TRIGGER.md
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: aqwelia_ci
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: aqwelia_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aqwelia_ci -d aqwelia_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      POSTGRES_TEST_DATABASE_URL: postgresql://aqwelia_ci:ci-only-password@127.0.0.1:5432/aqwelia_ci
+      DATABASE_URL: file:/tmp/aqwelia-migration-fixture.db
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/pro-live-dispatch-foundation
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.4'
+      - run: bun install --frozen-lockfile
+      - run: |
+          bun run db:generate
+          bun run db:pg:generate
+          printf '# P1-C PostgreSQL diagnostic\n\n```text\n' > docs/pro/P1C_POSTGRES_DIAGNOSTIC.md
+          node tests/test-consent-migration.mjs >> docs/pro/P1C_POSTGRES_DIAGNOSTIC.md 2>&1 || true
+          printf '\n```\n' >> docs/pro/P1C_POSTGRES_DIAGNOSTIC.md
+      - name: Commit diagnostic output
+        run: |
+          rm -f P1C_POSTGRES_DIAG_TRIGGER.md
+          rm -f .github/workflows/diagnose-p1-c-postgres.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f docs/pro/P1C_POSTGRES_DIAGNOSTIC.md
+          git add -A
+          git commit -m 'chore(p1-c): capture PostgreSQL migration diagnostic [skip ci]'
+          git push origin HEAD:feat/pro-live-dispatch-foundation
