@@ -56,6 +56,12 @@ describe('AQWELIA Pro Dispatch Live contract', () => {
     expect(pointsRoute).toContain('retentionCutoff')
   })
 
+  it('stops the phone watcher when the server revokes or expires the session', () => {
+    expect(locationControl).toContain('[404, 409, 410].includes(response.status)')
+    expect(locationControl).toContain('sessionIdRef.current = null')
+    expect(locationControl).toContain('activeSession: null')
+  })
+
   it('limits exact team locations and configuration to managers', () => {
     expect(liveRoute).toContain('!access.canManage')
     expect(settingsRoute).toContain('!access.canManage')
