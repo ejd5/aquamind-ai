@@ -629,6 +629,9 @@ model ProClient {
   address          String?
   city             String?
   zipCode          String?
+  latitude         Float?
+  longitude        Float?
+  geocodedAt       DateTime?
   status           String    @default("active") // prospect | active | paused | archived
   source           String?
   preferredContact String    @default("email") // email | phone | sms | whatsapp
@@ -672,6 +675,9 @@ model ProPool {
   serialNumber       String?
   installedAt        DateTime?
   address            String?
+  latitude           Float?
+  longitude          Float?
+  geocodedAt         DateTime?
   accessInstructions String?
   equipmentNotes     String?
   lastServiceAt      DateTime?
@@ -720,6 +726,7 @@ model ProIntervention {
   proClientId   String
   proPoolId     String?
   technicianId  String?
+  routeOrder    Int?
   type          String    @default("maintenance") // maintenance | repair | opening | closing | emergency
   status        String    @default("scheduled") // scheduled | in_progress | completed | cancelled
   priority      String    @default("normal") // low | normal | high | urgent
@@ -749,8 +756,64 @@ model ProIntervention {
   @@index([priority])
   @@index([scheduledAt])
   @@index([technicianId])
+  @@index([technicianId, routeOrder])
 }
 
+model ProTrackingSession {
+  id              String   @id @default(cuid())
+  organizationId  String
+  userId          String
+  source          String   @default("mobile") // mobile | vehicle
+  status          String   @default("active") // active | paused | stopped
+  purpose         String   @default("dispatch_and_emergency_reassignment")
+  noticeVersion   String
+  startedAt       DateTime @default(now())
+  pausedAt        DateTime?
+  endedAt         DateTime?
+  lastHeartbeatAt DateTime?
+  autoStopAt      DateTime
+  retentionUntil  DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([userId, status])
+  @@index([retentionUntil])
+}
+
+model ProLocationPoint {
+  id             String   @id @default(cuid())
+  sessionId      String
+  organizationId String
+  userId         String
+  latitude       Float
+  longitude      Float
+  accuracy       Float?
+  altitude       Float?
+  speed          Float?
+  heading        Float?
+  battery        Float?
+  source         String   @default("mobile")
+  recordedAt     DateTime
+  receivedAt     DateTime @default(now())
+
+  @@index([organizationId, recordedAt])
+  @@index([userId, recordedAt])
+  @@index([sessionId, recordedAt])
+}
+
+model ProLocationAccessLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  actorUserId    String
+  action         String
+  targetId       String?
+  metadata       String?
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([actorUserId, createdAt])
+}
 
 model ProClientActivity {
   id           String   @id @default(cuid())
@@ -1028,8 +1091,11 @@ model Organization {
   email     String?
   website   String?
   plan      String   @default("growth_starter") // growth_starter | growth_pro | performance
-  status    String   @default("trial") // trial | active | suspended | cancelled
-  ownerId   String
+  status                    String   @default("trial") // trial | active | suspended | cancelled
+  locationTrackingEnabled   Boolean  @default(false)
+  locationRetentionDays     Int      @default(60)
+  locationNoticeVersion     String   @default("2026-07-dispatch-live-v1")
+  ownerId                   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1058,8 +1124,12 @@ model OrganizationMember {
   dailyCapacityMinutes Int      @default(480)
   dispatchColor        String?
   phone                String?
-  vehicle              String?
-  createdAt            DateTime @default(now())
+  vehicle                       String?
+  locationSharingEnabled        Boolean  @default(false)
+  locationSource                String   @default("mobile") // mobile | vehicle
+  locationNoticeVersion         String?
+  locationNoticeAcknowledgedAt  DateTime?
+  createdAt                     DateTime @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1068,6 +1138,7 @@ model OrganizationMember {
   @@index([organizationId])
   @@index([userId])
   @@index([organizationId, dispatchEnabled])
+  @@index([organizationId, locationSharingEnabled])
 }
 
 model Lead {

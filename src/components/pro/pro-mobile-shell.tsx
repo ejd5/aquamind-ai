@@ -13,6 +13,8 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MapPin,
+  MapPinned,
   Settings,
   Users,
   UsersRound,
@@ -33,7 +35,8 @@ type ProNavKey =
 
 type MobileNavItem = {
   href: string
-  key: ProNavKey
+  key?: ProNavKey
+  label?: string
   icon: ComponentType<{ className?: string }>
   exact?: boolean
 }
@@ -47,6 +50,7 @@ const PRIMARY_ITEMS = [
 ] satisfies readonly MobileNavItem[]
 
 const SECONDARY_ITEMS = [
+  { href: '/pro/app/location', label: 'Terrain GPS', icon: MapPin },
   { href: '/pro/app/pools', key: 'navPools', icon: Waves },
   { href: '/pro/app/reports', key: 'navReports', icon: FileText },
   { href: '/pro/app/settings', key: 'navSettings', icon: Settings },
@@ -68,10 +72,21 @@ function routeIsActive(pathname: string, href: string, exact = false) {
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
-export function ProMobileShell({ companyName }: { companyName: string }) {
+function itemLabel(
+  item: Pick<MobileNavItem, 'key' | 'label'>,
+  translate: (key: ProNavKey) => string,
+): string {
+  if (item.key) return translate(item.key)
+  return item.label ?? ''
+}
+
+export function ProMobileShell({ companyName, canManage }: { companyName: string; canManage: boolean }) {
   const pathname = usePathname()
   const t = useTranslations('proApp')
   const [open, setOpen] = useState(false)
+  const secondaryItems: readonly MobileNavItem[] = canManage
+    ? [...SECONDARY_ITEMS, { href: '/pro/app/dispatch', label: 'Dispatch Live', icon: MapPinned }]
+    : SECONDARY_ITEMS
   const isClient = useSyncExternalStore(subscribeToClient, () => true, () => false)
 
   useEffect(() => {
@@ -113,7 +128,7 @@ export function ProMobileShell({ companyName }: { companyName: string }) {
               <span className={`flex h-7 w-9 items-center justify-center rounded-xl ${active ? 'bg-primary/10' : ''}`}>
                 <Icon className="h-[18px] w-[18px]" />
               </span>
-              <span className="max-w-full truncate">{t(item.key)}</span>
+              <span className="max-w-full truncate">{itemLabel(item, t)}</span>
             </Link>
           )
         })}
@@ -147,7 +162,7 @@ export function ProMobileShell({ companyName }: { companyName: string }) {
             </div>
 
             <div className="grid gap-2 py-4">
-              {SECONDARY_ITEMS.map((item) => {
+              {secondaryItems.map((item) => {
                 const Icon = item.icon
                 const active = routeIsActive(pathname, item.href)
                 return (
@@ -164,7 +179,7 @@ export function ProMobileShell({ companyName }: { companyName: string }) {
                     <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
                       <Icon className="h-5 w-5" />
                     </span>
-                    {t(item.key)}
+                    {itemLabel(item, t)}
                   </Link>
                 )
               })}

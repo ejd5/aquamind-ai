@@ -165,7 +165,12 @@ async function scenarioB() {
     const c = await getClient(dbUrl)
     try {
       const owner = await c.user.create({ data: { email: `owner-${db}@test.com`, name: 'Owner', role: 'admin', passwordHash: 'test' } })
-      const org = await c.organization.create({ data: { name: `OB-${db}`, type: 'growth', ownerId: owner.id } })
+      const organizationId = `org-${randomUUID()}`
+      await c.$executeRawUnsafe(
+        `INSERT INTO "Organization" ("id", "type", "name", "ownerId", "updatedAt")
+         VALUES ('${organizationId}', 'growth', 'OB-${db}', '${owner.id}', NOW())`
+      )
+      const org = { id: organizationId }
       await c.$executeRawUnsafe(
         `INSERT INTO "Lead" ("id", "organizationId", "firstName", "lastName", "email", "source", "status", "consent", "score", "createdAt", "updatedAt")
          VALUES ('pre-mig-${db}', '${org.id}', 'H', 'B', 'h-${db}@test.com', 'test', 'new', false, 0, NOW(), NOW())`
