@@ -1,0 +1,28 @@
+name: Export P0-L2 worktree
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 1
+      - name: Capture tree metadata
+        run: git rev-parse 'HEAD^{tree}' > .p0l2-base-tree-sha
+      - name: Archive worktree
+        run: tar --exclude=.git --exclude=node_modules --exclude=.next -czf /tmp/aquamind-p0l2-worktree.tar.gz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aquamind-p0l2-worktree
+          path: /tmp/aquamind-p0l2-worktree.tar.gz
+          retention-days: 1
