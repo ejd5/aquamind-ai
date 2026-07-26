@@ -31,7 +31,7 @@ describe('P1 Mobile technician journey', () => {
 
   it('uses the mobile API abstraction and a locally cached daily route', () => {
     expect(todayPage).toContain("import { api } from '@/lib/api-client'")
-    expect(todayPage).toContain('NEXT_PUBLIC_API_BASE_URL').toBe(false)
+    expect(todayPage).not.toContain('NEXT_PUBLIC_API_BASE_URL')
     expect(todayPage).toContain('TODAY_CACHE_KEY')
     expect(todayPage).toContain('window.localStorage')
     expect(todayPage).toContain("Network.addListener('networkStatusChange'")
