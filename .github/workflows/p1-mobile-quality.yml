@@ -14,6 +14,7 @@ on:
       - "src/components/**"
       - "src/lib/api-client.ts"
       - "src/lib/offline/**"
+      - "src/mobile-app/**"
       - "tests/p1-mobile-*.test.ts"
 
 permissions:
@@ -50,6 +51,21 @@ jobs:
       - name: Generate Prisma clients
         run: bun run db:generate:all
 
+      - name: Lint repository
+        shell: bash
+        run: |
+          set -o pipefail
+          bun run lint 2>&1 | tee /tmp/aqwelia-lint.log
+
+      - name: Upload failed lint log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1-mobile-lint-log
+          path: /tmp/aqwelia-lint.log
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Build Capacitor static export
         shell: bash
         run: |
@@ -62,7 +78,7 @@ jobs:
         with:
           name: p1-mobile-build-log
           path: /tmp/aqwelia-mobile-build.log
-          if-no-files-found: error
+          if-no-files-found: ignore
           retention-days: 7
 
       - name: Assert mobile output
