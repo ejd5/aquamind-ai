@@ -5,6 +5,10 @@ import { db } from '@/lib/db'
 import { generateScientificallyQualifiedActionPlan } from '@/lib/pool/scientific-action-plan'
 import { resolveContextualOperatingTargets } from '@/lib/pool/contextual-targets'
 import { assessContextualSwimSafety } from '@/lib/pool/contextual-swim-safety'
+import {
+  MeasurementProvenanceError,
+  normalizeMeasurementProvenance,
+} from '@/lib/pool/measurement-provenance'
 import { calculateClearWaterIndex, calculateLsiAssessment, lsiInterpretation } from '@/lib/pool/water-balance'
 import { assessScientificQuality } from '@/lib/pool/scientific-quality'
 import { pickLocale, translate } from '@/lib/i18n-api'
@@ -39,7 +43,9 @@ export async function GET(req: Request) {
     include: { actionPlans: true },
   })
   return NextResponse.json({
-    tests: historyGate.denied ? tests.map(({ lsi: _lsi, ...test }) => test) : tests,
+    tests: historyGate.denied
+      ? tests.map(({ lsi: _lsi, lsiMethodVersion: _lsiMethodVersion, ...test }) => test)
+      : tests,
     historyLimited: historyGate.denied,
   })
 }
@@ -70,8 +76,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: msg }, { status: 400 })
     }
 
-    // Persisted WaterTest fields. TDS is accepted for the scientific calculation
-    // below but is not persisted until the dedicated scientific schema migration.
+    const source = typeof body.source === 'string' && body.source.trim()
+      ? body.source.trim().slice(0, 80)
+      : 'manual'
+    const provenance = normalizeMeasurementProvenance({
+      measuredAt: body.measuredAt,
+      measurementMethod: body.measurementMethod,
+      measurementMetadata: body.measurementMetadata,
+      source,
+    })
+
     const test = {
       ph,
       freeChlorine: numOrNull(body.freeChlorine),
@@ -84,8 +98,10 @@ export async function POST(req: NextRequest) {
       bromine: numOrNull(body.bromine),
       phosphates: numOrNull(body.phosphates),
       temperature: numOrNull(body.temperature),
-      source: body.source || 'manual',
-      note: body.note || null,
+      source,
+      note: typeof body.note === 'string' && body.note.trim()
+        ? body.note.trim().slice(0, 2_000)
+        : null,
     }
     const scientificTest = {
       ...test,
@@ -98,9 +114,9 @@ export async function POST(req: NextRequest) {
       saltSystem: profile?.saltSystem ?? false,
       waterBodyType: profile?.waterBodyType ?? null,
       filterType: profile?.filterType ?? null,
-      manufacturerSaltMin: numOrNull(body.manufacturerSaltMin),
-      manufacturerSaltMax: numOrNull(body.manufacturerSaltMax),
-      manufacturerChlorineMax: numOrNull(body.manufacturerChlorineMax),
+      manufacturerSaltMin: profile?.manufacturerSaltMin ?? null,
+      manufacturerSaltMax: profile?.manufacturerSaltMax ?? null,
+      manufacturerChlorineMax: profile?.manufacturerChlorineMax ?? null,
     }
     const contextualTargets = resolveContextualOperatingTargets({
       treatmentType: scientificProfile.treatmentType,
@@ -136,6 +152,14 @@ export async function POST(req: NextRequest) {
     const created = await db.waterTest.create({
       data: {
         ...test,
+        totalDissolvedSolids: scientificTest.totalDissolvedSolids,
+        measuredAt: provenance.measuredAt,
+        measurementMethod: provenance.measurementMethod,
+        measurementMetadata: provenance.measurementMetadata,
+        scientificQualityScore: standaloneQuality.score,
+        scientificMethodVersion: standaloneQuality.methodVersion,
+        scientificLimitations: JSON.stringify(standaloneQuality.limitations),
+        lsiMethodVersion: lsiCalculation.methodVersion,
         userId,
         poolId: profile?.id || null,
         status,
@@ -160,6 +184,9 @@ export async function POST(req: NextRequest) {
           diagnosis: qualifiedPlan.diagnosis,
           severity: qualifiedPlan.severity,
           confidence: qualifiedPlan.confidence,
+          scientificMethodVersion: qualifiedPlan.scientificQuality.methodVersion,
+          dosageMethodVersion: qualifiedPlan.dosageMethodVersion,
+          swimSafetyMethodVersion: qualifiedPlan.contextualSwimSafety.methodVersion,
           immediateActions: JSON.stringify(qualifiedPlan.immediateActions),
           chemicalDosages: JSON.stringify(qualifiedPlan.chemicalDosages),
           filtrationHours: qualifiedPlan.filtrationHours,
@@ -181,6 +208,7 @@ export async function POST(req: NextRequest) {
         hasChlorine: test.freeChlorine != null,
         hasBromine: test.bromine != null,
         source: test.source,
+        measurementMethod: provenance.measurementMethod,
         treatmentType: scientificProfile.treatmentType,
         waterBodyType: scientificProfile.waterBodyType,
         clearWaterIndex: cwi,
@@ -196,7 +224,11 @@ export async function POST(req: NextRequest) {
     // All users get contextual targets, safety and data quality.
     // Pro mode additionally receives the LSI value, interpretation and provenance.
     const proGate = await requireFeatureAccess(req, 'pro_mode')
-    const { lsi: _storedLsi, ...publicTest } = created
+    const {
+      lsi: _storedLsi,
+      lsiMethodVersion: _storedLsiMethodVersion,
+      ...publicTest
+    } = created
     const normalizedPlan = normalizeStoredActionPlan(actionPlan)
     const response: any = {
       test: proGate.denied ? publicTest : created,
@@ -213,6 +245,14 @@ export async function POST(req: NextRequest) {
       scientificQuality: qualifiedPlan?.scientificQuality ?? standaloneQuality,
       contextualTargets,
       contextualSwimSafety,
+      measurementProvenance: {
+        measuredAt: provenance.measuredAt,
+        measurementMethod: provenance.measurementMethod,
+        measurementMetadata: provenance.measurementMetadata
+          ? JSON.parse(provenance.measurementMetadata)
+          : null,
+        methodVersion: provenance.methodVersion,
+      },
       brainFollowup,
     }
     if (!proGate.denied) {
@@ -226,6 +266,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(response)
   } catch (e) {
+    if (e instanceof MeasurementProvenanceError) {
+      return NextResponse.json({ error: e.message, code: e.code }, { status: 400 })
+    }
     const msg = e instanceof Error ? e.message : 'Erreur'
     return NextResponse.json({ error: msg }, { status: 500 })
   }
