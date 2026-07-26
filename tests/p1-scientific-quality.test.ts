@@ -106,7 +106,13 @@ describe('P1 Scientific Quality', () => {
 
   it('replaces fixed action-plan confidence and labels dosages as estimates', () => {
     const plan = generateScientificallyQualifiedActionPlan(
-      { ...completeTest, ph: 7.8, freeChlorine: 0.2 },
+      {
+        ...completeTest,
+        ph: 7.8,
+        freeChlorine: 0.2,
+        totalChlorine: 0.4,
+        combinedChlorine: 0.2,
+      },
       profile,
     )
     expect(plan.confidence).toBe(1)
