@@ -1,5 +1,6 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next'
 import createNextIntlPlugin from 'next-intl/plugin'
+import mobileNextConfig from './next.config.mobile'
 
 // P8-INFRA: the canonical site URL (env-driven so preview deploys can override
 // it via NEXT_PUBLIC_SITE_URL). Used by the Next.js Metadata API in
@@ -7,8 +8,9 @@ import createNextIntlPlugin from 'next-intl/plugin'
 // `src/lib/seo.ts`.
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aqwelia.app'
 
-const nextConfig: NextConfig = {
-  output: "standalone",
+const isMobileBuild = process.env.MOBILE_BUILD === 'true'
+
+const sharedConfig = {
   // The approved campaign PNG files are served directly. Vercel's image
   // optimizer rejects three of these large exported assets even though the
   // original static files are valid PNGs. They will be converted to WebP/AVIF
@@ -23,6 +25,11 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
   reactStrictMode: true,
+} satisfies NextConfig
+
+const webConfig: NextConfig = {
+  ...sharedConfig,
+  output: 'standalone',
   allowedDevOrigins: ['*.space-z.ai', 'localhost', '127.0.0.1', '21.0.8.23'],
   async headers() {
     return [
@@ -37,8 +44,12 @@ const nextConfig: NextConfig = {
       },
     ]
   },
-};
+}
+
+const nextConfig: NextConfig = isMobileBuild
+  ? { ...sharedConfig, ...mobileNextConfig }
+  : webConfig
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
-export default withNextIntl(nextConfig);
+export default withNextIntl(nextConfig)
