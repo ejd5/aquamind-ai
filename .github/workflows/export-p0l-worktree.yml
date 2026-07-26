@@ -1,0 +1,25 @@
+name: Export P0-L worktree
+
+on:
+  push:
+    branches:
+      - fix/p0-l-launch-security-baseline
+    paths:
+      - .github/workflows/export-p0l-worktree.yml
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Archive worktree
+        run: tar --exclude=.git -czf /tmp/aquamind-p0l-worktree.tar.gz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aquamind-p0l-worktree
+          path: /tmp/aquamind-p0l-worktree.tar.gz
+          retention-days: 1
