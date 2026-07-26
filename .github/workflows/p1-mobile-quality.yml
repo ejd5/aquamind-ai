@@ -66,6 +66,21 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Run smoke tests
+        shell: bash
+        run: |
+          set -o pipefail
+          bash tests/run-smoke-tests.sh 2>&1 | tee /tmp/aqwelia-smoke-tests.log
+
+      - name: Upload failed smoke-test log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1-mobile-smoke-test-log
+          path: /tmp/aqwelia-smoke-tests.log
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Build Capacitor static export
         shell: bash
         run: |
