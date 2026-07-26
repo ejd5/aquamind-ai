@@ -1,35 +1,16 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next'
 
 /**
- * Next.js config for MOBILE build (Capacitor).
+ * Mobile-only Next.js overrides.
  *
- * This config is used when building the static export that gets bundled into
- * the iOS/Android app via Capacitor. It produces a `out/` directory with
- * fully static HTML/JS/CSS that Capacitor wraps in a native WebView.
- *
- * Usage:
- *   MOBILE_BUILD=true next build -c next.config.mobile.ts
- *
- * Key differences from the web config (next.config.ts):
- *   - output: "export"  (static HTML, no Node server)
- *   - images.unoptimized: true  (no server-side image optimization)
- *   - No standalone output
- *
- * API routes are NOT included in this build — the mobile app calls the
- * deployed backend via NEXT_PUBLIC_API_BASE_URL.
+ * Next.js 16 does not expose a `next build -c <config>` option. The canonical
+ * `next.config.ts` imports these overrides when `MOBILE_BUILD=true`, so web and
+ * Capacitor builds share the same plugins and type-safety settings while using
+ * different output modes.
  */
-const nextConfig: NextConfig = {
-  output: "export",
-  images: {
-    unoptimized: true,
-  },
-  typescript: {
-    ignoreBuildErrors: false,
-  },
-  reactStrictMode: true,
-  // Disable trailing slash for cleaner Capacitor routing
+const mobileNextConfig = {
+  output: 'export',
   trailingSlash: false,
-  // Static export doesn't support rewrites/redirects
-};
+} satisfies NextConfig
 
-export default nextConfig;
+export default mobileNextConfig
