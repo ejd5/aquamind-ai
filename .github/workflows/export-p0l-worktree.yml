@@ -1,11 +1,9 @@
 name: Export P0-L worktree
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/p0-l-launch-security-baseline
-    paths:
-      - .github/workflows/export-p0l-worktree.yml
+      - main
 
 permissions:
   contents: read
