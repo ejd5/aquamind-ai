@@ -1,4 +1,4 @@
-name: P1 Scientific Quality
+name: P1 Product Quality
 
 on:
   pull_request:
@@ -9,38 +9,43 @@ on:
       - feat/p1-scientific-contextual-targets
       - feat/p1-scientific-safety-readiness
       - feat/p1-scientific-persistence
+      - feat/p1-scientific-confidence-provenance
     paths:
       - '.github/workflows/p1-scientific-quality.yml'
       - 'docs/release/P1_SCIENTIFIC_*.md'
+      - 'docs/release/P1_COMMERCIAL_*.md'
       - 'prisma/**'
       - 'src/app/api/pool/profile/route.ts'
       - 'src/app/api/pool/water-test/route.ts'
+      - 'src/app/api/pro/commercial/**'
       - 'src/lib/pool/**'
+      - 'src/lib/pro/commercial.ts'
       - 'tests/check-postgresql-schema.sh'
       - 'tests/check-scientific-sqlite-migration.py'
       - 'tests/p1-scientific-*.test.ts'
+      - 'tests/p1-commercial-pro.test.ts'
 
 permissions:
   contents: read
 
 concurrency:
-  group: p1-scientific-quality-${{ github.event.pull_request.number || github.ref }}
+  group: p1-product-quality-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  scientific-quality:
-    name: Validate scientific contracts
+  product-quality:
+    name: Validate P1 product contracts
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
     env:
-      DATABASE_URL: file:/tmp/aqwelia-scientific-ci.db
-      NEXTAUTH_SECRET: test-secret-for-scientific-ci-only
+      DATABASE_URL: file:/tmp/aqwelia-p1-ci.db
+      NEXTAUTH_SECRET: test-secret-for-p1-ci-only
       NEXTAUTH_URL: http://localhost:3099
       AUTH_TRUST_HOST: 'true'
-      STRIPE_SECRET_KEY: sk_test_scientific_ci_placeholder
-      STRIPE_WEBHOOK_SECRET: whsec_scientific_ci_placeholder
-      REVENUECAT_WEBHOOK_SECRET: rc_wh_scientific_ci_only
+      STRIPE_SECRET_KEY: sk_test_p1_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_p1_ci_placeholder
+      REVENUECAT_WEBHOOK_SECRET: rc_wh_p1_ci_only
 
     steps:
       - name: Checkout repository
@@ -69,18 +74,18 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
-      - name: Run scientific contracts
+      - name: Run P1 contracts
         shell: bash
         run: |
           set -o pipefail
-          bunx vitest run tests/p1-scientific-*.test.ts 2>&1 | tee /tmp/aqwelia-scientific-contracts.log
+          bunx vitest run tests/p1-scientific-*.test.ts tests/p1-commercial-pro.test.ts 2>&1 | tee /tmp/aqwelia-p1-contracts.log
 
-      - name: Upload failed scientific contract log
+      - name: Upload failed P1 contract log
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: p1-scientific-contract-log
-          path: /tmp/aqwelia-scientific-contracts.log
+          name: p1-contract-log
+          path: /tmp/aqwelia-p1-contracts.log
           if-no-files-found: error
           retention-days: 7
 
@@ -88,14 +93,14 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          bash tests/run-smoke-tests.sh 2>&1 | tee /tmp/aqwelia-scientific-smoke.log
+          bash tests/run-smoke-tests.sh 2>&1 | tee /tmp/aqwelia-p1-smoke.log
 
       - name: Upload failed smoke log
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: p1-scientific-smoke-log
-          path: /tmp/aqwelia-scientific-smoke.log
+          name: p1-smoke-log
+          path: /tmp/aqwelia-p1-smoke.log
           if-no-files-found: warn
           retention-days: 7
 
