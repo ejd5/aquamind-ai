@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mail, Lock, User as UserIcon, ArrowRight, ArrowLeft, Loader2, ShieldCheck, Gift } from 'lucide-react'
+import { TurnstileWidget } from '@/components/security/turnstile-widget'
+import { AUTH_SECURITY_COPY, type AuthSecurityLocale } from '@/i18n/locales/auth-security-copy'
 
 type Mode = 'signin' | 'signup'
 
@@ -32,6 +34,8 @@ function AppleIcon({ className = '' }: { className?: string }) {
 
 export default function AuthPage() {
   const t = useTranslations('auth')
+  const locale = useLocale() as AuthSecurityLocale
+  const securityCopy = AUTH_SECURITY_COPY[locale] ?? AUTH_SECURITY_COPY.en
   const router = useRouter()
   const params = useSearchParams()
   const requestedCallbackUrl = params.get('callbackUrl')
@@ -46,11 +50,16 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [turnstileVersion, setTurnstileVersion] = useState(0)
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ''
   // Available OAuth providers (populated from /api/auth/providers — server-driven
   // so we only render buttons for providers that have their env vars configured).
   const [oauthProviders, setOauthProviders] = useState<{ google?: boolean; apple?: boolean }>({})
 
   useEffect(() => {
+    const authError = params.get('error')
+    if (authError === 'OAuthAccountNotLinked') setError(securityCopy.oauthAccountNotLinked)
     const m = params.get('mode')
     if (m === 'signup' || m === 'signin') setMode(m)
     // Discover which OAuth providers are configured server-side.
@@ -63,7 +72,14 @@ export default function AuthPage() {
         })
       })
       .catch(() => setOauthProviders({}))
-  }, [params])
+  }, [params, securityCopy.oauthAccountNotLinked])
+
+  function selectMode(nextMode: Mode) {
+    setMode(nextMode)
+    setError(null)
+    setTurnstileToken(null)
+    setTurnstileVersion((value) => value + 1)
+  }
 
   async function handleOAuth(provider: 'google' | 'apple') {
     setError(null)
@@ -87,7 +103,7 @@ export default function AuthPage() {
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, name: name || undefined }),
+          body: JSON.stringify({ email, password, name: name || undefined, turnstileToken }),
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || t('errorSignup'))
@@ -106,6 +122,10 @@ export default function AuthPage() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('errorGeneric'))
+      if (mode === 'signup' && turnstileSiteKey) {
+        setTurnstileToken(null)
+        setTurnstileVersion((value) => value + 1)
+      }
     } finally {
       setLoading(false)
     }
@@ -157,7 +177,7 @@ export default function AuthPage() {
             <button
               type="button"
               aria-pressed={mode === 'signin'}
-              onClick={() => { setMode('signin'); setError(null) }}
+              onClick={() => selectMode('signin')}
               className={`min-h-11 flex-1 rounded-full px-3 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 ${
                 mode === 'signin' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
@@ -167,7 +187,7 @@ export default function AuthPage() {
             <button
               type="button"
               aria-pressed={mode === 'signup'}
-              onClick={() => { setMode('signup'); setError(null) }}
+              onClick={() => selectMode('signup')}
               className={`min-h-11 flex-1 rounded-full px-3 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 ${
                 mode === 'signup' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
@@ -249,6 +269,16 @@ export default function AuthPage() {
               </div>
             </div>
 
+
+            {mode === 'signup' && turnstileSiteKey ? (
+              <TurnstileWidget
+                key={`${mode}-${turnstileVersion}`}
+                siteKey={turnstileSiteKey}
+                onToken={setTurnstileToken}
+                onError={() => setError(securityCopy.turnstileUnavailable)}
+              />
+            ) : null}
+
             {error && (
               <motion.div
                 id="auth-error"
@@ -264,7 +294,7 @@ export default function AuthPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (mode === 'signup' && Boolean(turnstileSiteKey) && !turnstileToken)}
               className="group flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold via-[oklch(0.65_0.11_195)] to-[oklch(0.55_0.10_195)] px-6 py-3 text-sm font-bold text-[oklch(0.99_0.01_195)] shadow-lg transition-all hover:scale-[1.01] hover:shadow-[0_0_40px_-8px_oklch(0.65_0.11_195/0.7)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? (

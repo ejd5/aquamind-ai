@@ -50,7 +50,6 @@ const PRIMARY_ITEMS = [
 ] satisfies readonly MobileNavItem[]
 
 const SECONDARY_ITEMS = [
-  { href: '/pro/app/location', label: 'Terrain GPS', icon: MapPin },
   { href: '/pro/app/pools', key: 'navPools', icon: Waves },
   { href: '/pro/app/reports', key: 'navReports', icon: FileText },
   { href: '/pro/app/settings', key: 'navSettings', icon: Settings },
@@ -80,13 +79,17 @@ function itemLabel(
   return item.label ?? ''
 }
 
-export function ProMobileShell({ companyName, canManage }: { companyName: string; canManage: boolean }) {
+export function ProMobileShell({ companyName, canManage, gpsEnabled }: { companyName: string; canManage: boolean; gpsEnabled: boolean }) {
   const pathname = usePathname()
   const t = useTranslations('proApp')
   const [open, setOpen] = useState(false)
-  const secondaryItems: readonly MobileNavItem[] = canManage
-    ? [...SECONDARY_ITEMS, { href: '/pro/app/dispatch', label: 'Dispatch Live', icon: MapPinned }]
-    : SECONDARY_ITEMS
+  const gpsItems: readonly MobileNavItem[] = gpsEnabled
+    ? [
+        { href: '/pro/app/location', label: 'Terrain GPS', icon: MapPin },
+        ...(canManage ? [{ href: '/pro/app/dispatch', label: 'Dispatch Live', icon: MapPinned }] : []),
+      ]
+    : []
+  const secondaryItems: readonly MobileNavItem[] = [...gpsItems, ...SECONDARY_ITEMS]
   const isClient = useSyncExternalStore(subscribeToClient, () => true, () => false)
 
   useEffect(() => {

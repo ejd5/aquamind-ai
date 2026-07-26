@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { db } from '@/lib/db'
 import { getStripe } from '@/lib/stripe'
 import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
 
-// Creates a Stripe Customer Portal session so the user can manage their
-// subscription (update card, cancel, view invoices) directly on Stripe.
-// Auth: requires NextAuth session. The customer is resolved by email.
 export async function POST(req: NextRequest) {
   const locale = pickLocale(req)
   const session = await getServerSession(authOptions)
@@ -17,32 +15,30 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const stripe = getStripe()
-
-    // Find customer by email
-    const customers = await stripe.customers.list({
-      email: session.user.email || undefined,
-      limit: 1,
+    const subscription = await db.subscription.findFirst({
+      where: {
+        userId: session.user.id,
+        stripeCustomerId: { not: null },
+      },
+      orderBy: { startedAt: 'desc' },
+      select: { stripeCustomerId: true },
     })
-
-    if (customers.data.length === 0) {
+    const stripeCustomerId = subscription?.stripeCustomerId
+    if (!stripeCustomerId) {
       const msg = await translate(locale, 'common.errors.noStripeCustomer', 'Aucun client Stripe trouvé')
       return NextResponse.json({ error: msg }, { status: 404 })
     }
 
-    // Use the request origin (dynamic) instead of process.env.NEXTAUTH_URL,
-    // which is often missing or scoped to Production only on Vercel Preview.
     const origin = req.nextUrl.origin
     if (!origin.startsWith('http')) {
       const msg = await translate(locale, 'common.errors.stripeError', 'Erreur Stripe')
       return NextResponse.json({ error: msg }, { status: 500 })
     }
 
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: customers.data[0].id,
-      return_url: `${origin}/`,
+    const portalSession = await getStripe().billingPortal.sessions.create({
+      customer: stripeCustomerId,
+      return_url: `${origin}/settings`,
     })
-
     return NextResponse.json({ url: portalSession.url })
   } catch (err) {
     console.error('Stripe portal error:', err)

@@ -4,6 +4,8 @@ import { hashPassword } from '@/lib/password'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { trackEventServer } from '@/lib/analytics-server'
 import { checkRateLimit, rateLimitedResponse } from '@/lib/rate-limit'
+import { verifyTurnstileToken } from '@/lib/security/turnstile'
+import { AUTH_SECURITY_COPY } from '@/i18n/locales/auth-security-copy'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -30,7 +32,14 @@ export async function POST(req: Request) {
   const email = typeof body?.email === 'string' ? body.email.toLowerCase().trim() : ''
   const password = typeof body?.password === 'string' ? body.password : ''
   const name = typeof body?.name === 'string' && body.name.trim() ? body.name.trim() : null
+  const turnstileToken = typeof body?.turnstileToken === 'string' ? body.turnstileToken : ''
 
+  const forwardedFor = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null
+  const turnstile = await verifyTurnstileToken({ token: turnstileToken, remoteIp: forwardedFor, expectedAction: 'signup' })
+  if (!turnstile.success) {
+    const securityCopy = AUTH_SECURITY_COPY[locale] ?? AUTH_SECURITY_COPY.en
+    return NextResponse.json({ error: securityCopy.botVerificationFailed }, { status: 403 })
+  }
 
   if (!EMAIL_RE.test(email)) {
     const msg = await translate(locale, 'common.errors.emailInvalid', 'Email invalide')
