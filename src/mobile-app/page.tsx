@@ -41,7 +41,10 @@ export default function MobileEntryPage() {
   }, [router])
 
   useEffect(() => {
-    void resolveEntry()
+    const timer = window.setTimeout(() => {
+      void resolveEntry()
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [resolveEntry])
 
   return (
