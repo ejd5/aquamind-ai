@@ -14,8 +14,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Archive worktree
-        run: tar --exclude=.git -czf /tmp/aquamind-p0l-worktree.tar.gz .
+        with:
+          fetch-depth: 1
+      - name: Archive worktree with Git metadata
+        run: tar -czf /tmp/aquamind-p0l-worktree.tar.gz .
       - uses: actions/upload-artifact@v4
         with:
           name: aquamind-p0l-worktree
