@@ -13,6 +13,11 @@ if (mode !== '--fresh') {
   if (rows.legacy_future?.status !== 'active' || rows.legacy_future?.active !== 1) throw new Error('Future active backfill failed')
   if (rows.legacy_past?.status !== 'expired' || rows.legacy_past?.active !== 0) throw new Error('Past active backfill failed')
   if (rows.legacy_inactive?.status !== 'inactive') throw new Error('Inactive backfill failed')
+
+  const users = db.prepare('SELECT id,consentAnalytics FROM "User" ORDER BY id').all()
+  if (users.length !== 3 || users.some(user => user.consentAnalytics !== 0)) {
+    throw new Error('Legacy analytics consent reset failed')
+  }
 }
 db.close()
-console.log('P0-B migration and legacy backfill verified')
+console.log('P0-B migration, legacy backfill, and analytics consent reset verified')

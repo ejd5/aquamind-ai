@@ -40,6 +40,7 @@ import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
 import { hapticSuccess, hapticError } from '@/lib/native/haptics'
 import { DiagnosticActionPlan } from './diagnostic-action-plan'
+import { AITransparencyNotice } from '@/components/ai/ai-transparency-notice'
 import { StripScanner } from './strip-scanner'
 
 interface DiagnosticResult {
@@ -504,7 +505,7 @@ export function ModuleDiagnostic({ activePoolId }: ModuleDiagnosticProps) {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-4" data-ai-generated="true">
                 {/* Confidence */}
                 {typeof result.confidence === 'number' && (
                   <div>
@@ -618,6 +619,8 @@ export function ModuleDiagnostic({ activePoolId }: ModuleDiagnosticProps) {
         </Card>
       </div>
       )}
+
+      {result && activeTab === 'photo' && <AITransparencyNotice compact />}
 
       {/* Action Plan — appears after a diagnostic is produced */}
       {result && activeTab === 'photo' && (

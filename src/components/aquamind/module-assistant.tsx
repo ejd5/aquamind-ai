@@ -21,6 +21,7 @@ import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
 import { isMobile } from '@/lib/platform'
 import { evaluateParam } from '@/lib/pool/targets'
+import { AITransparencyNotice } from '@/components/ai/ai-transparency-notice'
 
 interface Msg {
   role: 'user' | 'assistant'
@@ -347,6 +348,8 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
         )}
       </div>
 
+      <AITransparencyNotice compact />
+
       {/* Context chip */}
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <span className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/5 px-3 py-1 font-medium text-gold">
@@ -435,6 +438,7 @@ export function ModuleAssistant({ presetQuestion, onConsumePreset }: Props) {
                   )}
                 </div>
                 <div
+                  data-ai-generated={m.role === 'assistant' ? 'true' : undefined}
                   className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
                     m.role === 'user'
                       ? 'bg-primary text-primary-foreground'

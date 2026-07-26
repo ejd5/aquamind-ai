@@ -33,7 +33,7 @@ model User {
   country          String   @default("FR")
   timezone         String   @default("Europe/Paris")
   consentMarketing Boolean  @default(false)
-  consentAnalytics Boolean  @default(true)
+  consentAnalytics Boolean  @default(false)
   consentEmail     Boolean  @default(true)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

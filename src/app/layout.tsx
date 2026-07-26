@@ -10,6 +10,7 @@ import { Providers } from "@/components/providers";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { PostHogProvider } from "@/app/posthog-provider";
+import { CookieConsent } from "@/components/privacy/cookie-consent";
 import {
   OrganizationSchema,
   SoftwareApplicationSchema,
@@ -116,6 +117,7 @@ export default async function RootLayout({
             <Providers>
               {children}
               <Toaster />
+              <CookieConsent />
             </Providers>
           </PostHogProvider>
         </NextIntlClientProvider>

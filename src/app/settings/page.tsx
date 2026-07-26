@@ -26,7 +26,9 @@ import { useEffect, useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { CookiePreferencesButton } from '@/components/privacy/cookie-preferences-button'
+import { getComplianceCopy } from '@/i18n/locales/compliance-copy'
 import { billing } from '@/lib/billing'
 import type { PlanId } from '@/lib/billing'
 import {
@@ -101,6 +103,8 @@ const APP_BUILD = 'build 1'
 
 export default function SettingsPage() {
   const t = useTranslations('settings')
+  const locale = useLocale()
+  const compliance = getComplianceCopy(locale)
   const { data: session, status } = useSession()
   const router = useRouter()
 
@@ -297,7 +301,8 @@ export default function SettingsPage() {
         method: 'POST',
         credentials: 'include',
       })
-      if (!res.ok) throw new Error(t('deleteFailedDesc'))
+      const data = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(data?.error || t('deleteFailedDesc'))
       toast({ title: t('accountDeleted'), description: t('redirecting') })
       await signOut({ callbackUrl: '/' })
     } catch (err) {
@@ -486,6 +491,10 @@ export default function SettingsPage() {
                   <Trash2 className="h-3 w-3" />
                   {t('delete')}
                 </a>
+                <CookiePreferencesButton className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-xs font-semibold text-gold transition-colors hover:bg-gold/20">
+                  <Shield className="h-3 w-3" />
+                  {compliance.common.manageCookies}
+                </CookiePreferencesButton>
               </div>
             </SettingsCard>
 
@@ -540,8 +549,9 @@ export default function SettingsPage() {
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>{t('deleteConfirmTitle')}</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {t('deleteDialogDesc')}
+                      <AlertDialogDescription className="space-y-2">
+                        <span className="block">{t('deleteDialogDesc')}</span>
+                        <span className="block font-semibold text-amber-700 dark:text-amber-300">{compliance.deletion.steps[1]}</span>
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

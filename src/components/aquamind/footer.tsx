@@ -1,11 +1,17 @@
+'use client'
+
 import Link from 'next/link'
 import { ShieldAlert } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { CookiePreferencesButton } from '@/components/privacy/cookie-preferences-button'
+import { getComplianceCopy } from '@/i18n/locales/compliance-copy'
 
 const TEXT_OUTLINE = '[text-shadow:_0_1px_2px_rgb(0_0_0),_0_-1px_2px_rgb(0_0_0),_1px_0_2px_rgb(0_0_0),_-1px_0_2px_rgb(0_0_0)]'
 
 export function Footer() {
   const t = useTranslations('landing')
+  const locale = useLocale()
+  const compliance = getComplianceCopy(locale)
   return (
     <footer className="relative mt-auto overflow-hidden border-t border-gold/20 bg-transparent text-white">
       {/* AQWELIA app footer background image — COMPLETE, not cut, no effect */}
@@ -42,6 +48,18 @@ export function Footer() {
             </Link>
             <Link href="/legal/privacy" className={`text-white font-bold ${TEXT_OUTLINE} transition-colors hover:text-gold`}>
               {t('footerPrivacy')}
+            </Link>
+            <Link href="/legal/mentions-legales" className={`text-white font-bold ${TEXT_OUTLINE} transition-colors hover:text-gold`}>
+              {compliance.mentions.title}
+            </Link>
+            <Link href="/legal/cookies" className={`text-white font-bold ${TEXT_OUTLINE} transition-colors hover:text-gold`}>
+              {compliance.cookies.title}
+            </Link>
+            <CookiePreferencesButton className={`text-white font-bold ${TEXT_OUTLINE} transition-colors hover:text-gold`}>
+              {compliance.common.manageCookies}
+            </CookiePreferencesButton>
+            <Link href="/legal/suppression-compte" className={`text-white font-bold ${TEXT_OUTLINE} transition-colors hover:text-gold`}>
+              {compliance.deletion.title}
             </Link>
             <Link href="/legal/support" className={`text-white font-bold ${TEXT_OUTLINE} transition-colors hover:text-gold`}>
               {t('footerSupport')}

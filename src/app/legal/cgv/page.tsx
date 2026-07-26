@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-const LAST_UPDATED_ISO = '2026-01-15'
+const LAST_UPDATED_ISO = '2026-07-26'
 
 export default async function CGVPage() {
   const t = await getTranslations('legal.cgv')
