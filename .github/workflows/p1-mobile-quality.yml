@@ -51,7 +51,19 @@ jobs:
         run: bun run db:generate:all
 
       - name: Build Capacitor static export
-        run: bun run mobile:build
+        shell: bash
+        run: |
+          set -o pipefail
+          bun run mobile:build 2>&1 | tee /tmp/aqwelia-mobile-build.log
+
+      - name: Upload failed mobile build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1-mobile-build-log
+          path: /tmp/aqwelia-mobile-build.log
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Assert mobile output
         run: test -f out/index.html
