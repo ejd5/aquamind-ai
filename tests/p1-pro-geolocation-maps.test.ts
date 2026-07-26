@@ -105,7 +105,8 @@ describe('P1 Pro geolocation and Google Maps', () => {
     const geocode = readFileSync(join(root, 'src/app/api/pro/maps/geocode/route.ts'), 'utf8')
     const routePlan = readFileSync(join(root, 'src/app/api/pro/maps/route-plan/route.ts'), 'utf8')
 
-    expect(helper).toContain("import 'server-only'")
+    expect(helper).toContain("typeof window !== 'undefined'")
+    expect(helper).toContain('cannot run in the browser')
     expect(helper).toContain("'X-Goog-Api-Key': key")
     expect(helper).toContain("'X-Goog-FieldMask': fieldMask")
     expect(helper).toContain('https://geocode.googleapis.com/v4/geocode/address/')
