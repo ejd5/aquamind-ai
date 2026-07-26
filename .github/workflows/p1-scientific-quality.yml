@@ -11,11 +11,14 @@ on:
       - feat/p1-scientific-persistence
       - feat/p1-scientific-confidence-provenance
       - feat/p1-commercial-pro
+      - feat/p1-pro-geolocation-maps
     paths:
       - '.github/workflows/p1-scientific-quality.yml'
       - 'docs/release/P1_SCIENTIFIC_*.md'
       - 'docs/release/P1_COMMERCIAL_*.md'
       - 'docs/release/P1_PRO_GEOLOCATION_*.md'
+      - 'docs/release/P1_FUNCTIONAL_READINESS.md'
+      - 'scripts/check-p1-functional-readiness.mjs'
       - 'prisma/**'
       - 'src/app/api/pool/profile/route.ts'
       - 'src/app/api/pool/water-test/route.ts'
@@ -26,9 +29,11 @@ on:
       - 'src/lib/pro/google-maps.ts'
       - 'tests/check-postgresql-schema.sh'
       - 'tests/check-scientific-sqlite-migration.py'
+      - 'tests/p1-mobile-technician-journey.test.ts'
       - 'tests/p1-scientific-*.test.ts'
       - 'tests/p1-commercial-pro.test.ts'
       - 'tests/p1-pro-geolocation-maps.test.ts'
+      - 'tests/p1-functional-readiness.test.ts'
 
 permissions:
   contents: read
@@ -41,7 +46,7 @@ jobs:
   product-quality:
     name: Validate P1 product contracts
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
 
     env:
       DATABASE_URL: file:/tmp/aqwelia-p1-ci.db
@@ -52,6 +57,7 @@ jobs:
       STRIPE_WEBHOOK_SECRET: whsec_p1_ci_placeholder
       REVENUECAT_WEBHOOK_SECRET: rc_wh_p1_ci_only
       GOOGLE_MAPS_SERVER_API_KEY: ''
+      P1_READINESS_REPORT: artifacts/p1-functional-readiness.json
 
     steps:
       - name: Checkout repository
@@ -96,7 +102,13 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          bunx vitest run tests/p1-scientific-*.test.ts tests/p1-commercial-pro.test.ts tests/p1-pro-geolocation-maps.test.ts 2>&1 | tee /tmp/aqwelia-p1-contracts.log
+          bunx vitest run \
+            tests/p1-mobile-technician-journey.test.ts \
+            tests/p1-scientific-*.test.ts \
+            tests/p1-commercial-pro.test.ts \
+            tests/p1-pro-geolocation-maps.test.ts \
+            tests/p1-functional-readiness.test.ts \
+            2>&1 | tee /tmp/aqwelia-p1-contracts.log
 
       - name: Upload failed P1 contract log
         if: failure()
@@ -106,6 +118,18 @@ jobs:
           path: /tmp/aqwelia-p1-contracts.log
           if-no-files-found: warn
           retention-days: 7
+
+      - name: Generate final P1 readiness report
+        run: node scripts/check-p1-functional-readiness.mjs
+
+      - name: Upload P1 readiness report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1-functional-readiness
+          path: artifacts/p1-functional-readiness.json
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Run complete smoke suite
         shell: bash
