@@ -38,8 +38,9 @@ export default async function ProAppLayout({
 
   const companyName = (session.user as any).name ?? session.user.email ?? ''
   const access = await getProAccess(session.user.id)
+  const isTechnician = access.role === 'technician'
 
-  const NAV = [
+  const managerNav = [
     { href: '/pro/app', label: t('navDashboard'), icon: LayoutDashboard },
     { href: '/pro/app/clients', label: t('navClients'), icon: Users },
     { href: '/pro/app/team', label: t('navTeam'), icon: UsersRound },
@@ -55,6 +56,22 @@ export default async function ProAppLayout({
     ...(PRO_GPS_ENABLED && access.canManage ? [{ href: '/pro/app/dispatch', label: 'Dispatch Live', icon: MapPinned }] : []),
     { href: '/pro/app/settings', label: t('navSettings'), icon: Settings },
   ]
+
+  const technicianNav = [
+    { href: '/pro/app/today', label: t('navDashboard'), icon: LayoutDashboard },
+    {
+      href: '/pro/app/interventions',
+      label: t('navInterventions'),
+      icon: Wrench,
+    },
+    { href: '/pro/app/clients', label: t('navClients'), icon: Users },
+    { href: '/pro/app/pools', label: t('navPools'), icon: Waves },
+    { href: '/pro/app/reports', label: t('navReports'), icon: FileText },
+    ...(PRO_GPS_ENABLED ? [{ href: '/pro/app/location', label: 'Terrain GPS', icon: LocateFixed }] : []),
+    { href: '/pro/app/settings', label: t('navSettings'), icon: Settings },
+  ]
+
+  const NAV = isTechnician ? technicianNav : managerNav
 
   return (
     <div className="aq-pro-app relative flex min-h-screen flex-col bg-background">
@@ -72,7 +89,7 @@ export default async function ProAppLayout({
           </div>
 
           <Link
-            href="/pro/app"
+            href={isTechnician ? '/pro/app/today' : '/pro/app'}
             className="flex items-center gap-2 md:absolute md:left-1/2 md:-translate-x-1/2"
             aria-label="AQWELIA Pro"
           >
@@ -109,7 +126,12 @@ export default async function ProAppLayout({
             <span className="hidden items-center rounded-full bg-gradient-to-r from-gold to-[oklch(0.55_0.10_195)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-[oklch(0.99_0.01_195)] shadow-md md:inline-flex">
               {t('badgePro')}
             </span>
-            <ProMobileShell companyName={companyName} canManage={access.canManage} gpsEnabled={PRO_GPS_ENABLED} />
+            <ProMobileShell
+              companyName={companyName}
+              canManage={access.canManage}
+              gpsEnabled={PRO_GPS_ENABLED}
+              role={access.role}
+            />
           </div>
         </div>
       </header>
@@ -121,7 +143,7 @@ export default async function ProAppLayout({
               const Icon = link.icon
               return (
                 <Link
-                  key={link.label}
+                  key={link.href}
                   href={link.href}
                   className="group flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-secondary/60 hover:text-foreground"
                 >
