@@ -15,6 +15,7 @@ import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { locales, defaultLocale, normalizeLocale } from '@/i18n/config'
 import { isAdminEmail } from '@/lib/admin'
+import { PRO_GPS_ENABLED } from '@/lib/features'
 
 /**
  * Detect the user's preferred locale.
@@ -53,6 +54,11 @@ function detectLocale(req: NextRequest): string {
 }
 
 // Protected API routes that require NextAuth session
+const PAUSED_GPS_API_PATTERNS = [
+  /^\/api\/pro\/dispatch(?:\/|$)/,
+  /^\/api\/pro\/location(?:\/|$)/,
+]
+
 const PROTECTED_PATTERNS = [
   /^\/api\/pool\//,
   /^\/api\/dashboard\//,
@@ -72,6 +78,12 @@ const PROTECTED_PATTERNS = [
 
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
+
+  // P0-L: preserve the GPS implementation while making every API surface
+  // indistinguishable from an unavailable route until the feature is resumed.
+  if (!PRO_GPS_ENABLED && PAUSED_GPS_API_PATTERNS.some((pattern) => pattern.test(pathname))) {
+    return NextResponse.json({ error: 'not_found' }, { status: 404 })
+  }
 
   // --- Locale detection (runs on ALL routes) ---
   const detected = detectLocale(req)

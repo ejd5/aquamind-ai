@@ -99,7 +99,6 @@ function buildProviders(): AnyProvider[] {
       GoogleProvider({
         clientId: process.env.GOOGLE_CLIENT_ID as string,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-        allowDangerousEmailAccountLinking: true,
       })
     )
   }
@@ -118,8 +117,7 @@ function buildProviders(): AnyProvider[] {
         AppleProvider({
           clientId: process.env.APPLE_CLIENT_ID as string,
           clientSecret: appleClientSecret,
-          allowDangerousEmailAccountLinking: true,
-        })
+          })
       )
     }
   }
@@ -139,30 +137,9 @@ export const authOptions: NextAuthOptions = {
      * adapter (we still want JWT sessions for the Capacitor mobile client).
      */
     async signIn({ user, account }) {
-      if (!user?.email) return true
-      // Only run the upsert for OAuth providers (Google/Apple) — credentials
-      // already validated the user inside `authorize`.
       if (!account || account.provider === 'credentials') return true
+
       try {
-        const email = user.email.toLowerCase().trim()
-        const existing = await (db as any).user.findUnique({ where: { email } })
-        let userId: string
-        if (!existing) {
-          const created = await (db as any).user.create({
-            data: {
-              email,
-              // Random opaque password hash — credentials login is impossible
-              // for OAuth-only accounts. scrypt output is non-empty & safe.
-              passwordHash: '!oauth:' + (account.providerAccountId || ''),
-              name: user.name ?? null,
-            },
-            select: { id: true },
-          })
-          userId = created.id
-        } else {
-          userId = existing.id
-        }
-        // Persist the OAuth Account link (idempotent on provider+providerAccountId).
         const existingAccount = await (db as any).account.findUnique({
           where: {
             provider_providerAccountId: {
@@ -170,11 +147,54 @@ export const authOptions: NextAuthOptions = {
               providerAccountId: account.providerAccountId,
             },
           },
+          select: { userId: true },
         })
-        if (!existingAccount) {
-          await (db as any).account.create({
+
+        // Apple may omit the e-mail after the first authorization. A stable,
+        // already-linked provider account remains sufficient to resolve the
+        // internal AQWELIA user without relying on an e-mail match.
+        if (existingAccount) {
+          ;(user as any).id = existingAccount.userId
+          void trackEventServer('user_signed_in', { provider: account.provider, oauth: true }, existingAccount.userId)
+          return true
+        }
+
+        if (!user?.email) {
+          console.warn('[auth.signIn] OAuth provider did not return an e-mail for an unlinked identity', {
+            provider: account.provider,
+          })
+          return false
+        }
+
+        const email = user.email.toLowerCase().trim()
+        const existingUser = await (db as any).user.findUnique({
+          where: { email },
+          select: { id: true },
+        })
+
+        // Never link a new OAuth identity solely because the e-mail matches.
+        // The user must first authenticate with the existing method; an explicit
+        // account-linking flow can then be offered from authenticated settings.
+        if (existingUser) {
+          console.warn('[auth.signIn] Blocked automatic OAuth account linking', {
+            provider: account.provider,
+            userId: existingUser.id,
+          })
+          return '/auth/signin?error=OAuthAccountNotLinked'
+        }
+
+        const created = await (db as any).$transaction(async (tx: any) => {
+          const createdUser = await tx.user.create({
             data: {
-              userId,
+              email,
+              passwordHash: '!oauth:' + (account.providerAccountId || ''),
+              name: user.name ?? null,
+            },
+            select: { id: true },
+          })
+          await tx.account.create({
+            data: {
+              userId: createdUser.id,
               type: account.type,
               provider: account.provider,
               providerAccountId: account.providerAccountId,
@@ -186,23 +206,16 @@ export const authOptions: NextAuthOptions = {
               id_token: account.id_token ?? null,
             },
           })
-        }
-        // Analytics — OAuth sign-in (fire-and-forget).
-        void trackEventServer(
-          'user_signed_in',
-          { provider: account.provider, oauth: true, email: user.email },
-          userId
-        )
-        // Stash the resolved userId on the user object so the jwt callback
-        // can pick it up below.
-        ;(user as any).id = userId
+          return createdUser
+        })
+
+        ;(user as any).id = created.id
+        void trackEventServer('user_signed_in', { provider: account.provider, oauth: true }, created.id)
+        return true
       } catch (err) {
-        // Log + fail safe: never leak details, but allow sign-in to proceed
-        // (the JWT will lack an id; the user will be prompted to complete
-        // their profile on the next protected route).
-        console.error('[auth.signIn] OAuth upsert failed:', err)
+        console.error('[auth.signIn] OAuth persistence failed:', err)
+        return false
       }
-      return true
     },
     async jwt({ token, user }) {
       if (user) token.id = (user as any).id ?? token.id ?? token.sub

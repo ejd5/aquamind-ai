@@ -19,7 +19,8 @@ import { randomUUID } from 'crypto'
 export type EventSource = 'stripe' | 'revenuecat'
 export type EventResult = 'processing' | 'processed' | 'failed' | 'ignored'
 
-const MAX_RETRIES = 3
+export const MAX_BILLING_RETRIES = 3
+const MAX_STORED_BILLING_PAYLOAD_LENGTH = 100_000
 const PROCESSING_LEASE_MS = 5 * 60 * 1000 // 5 minutes
 
 export interface ProcessEventParams {
@@ -72,9 +73,9 @@ export function redactPayload(payload: string): string {
       }
       return value
     })
-    return JSON.stringify(redacted).slice(0, 10000)
+    return JSON.stringify(redacted).slice(0, MAX_STORED_BILLING_PAYLOAD_LENGTH)
   } catch {
-    return payload.slice(0, 10000)
+    return payload.slice(0, MAX_STORED_BILLING_PAYLOAD_LENGTH)
   }
 }
 
@@ -126,14 +127,14 @@ export async function processEventIdempotently(
           // Failed event with nextRetryAt in the past
           {
             result: 'failed',
-            attemptCount: { lt: MAX_RETRIES },
+            attemptCount: { lt: MAX_BILLING_RETRIES },
             nextRetryAt: { lte: now },
           },
           // Processing event with expired lease
           {
             result: 'processing',
             processingStartedAt: { lt: leaseExpiry },
-            attemptCount: { lt: MAX_RETRIES },
+            attemptCount: { lt: MAX_BILLING_RETRIES },
           },
         ],
       },
@@ -191,7 +192,7 @@ export async function processEventIdempotently(
     const attemptCount = await getAttemptCount(params.source, params.eventId)
 
     // 3b. Mark as failed (with nextRetryAt if retries remaining)
-    const nextRetryAt = attemptCount < MAX_RETRIES
+    const nextRetryAt = attemptCount < MAX_BILLING_RETRIES
       ? new Date(Date.now() + 60 * 1000) // Retry in 1 minute
       : null
 
