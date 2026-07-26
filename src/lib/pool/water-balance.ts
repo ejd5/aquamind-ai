@@ -1,51 +1,117 @@
 // Équilibre de l'eau : indice de saturation de Langelier (LSI) + indice eau claire
 //
+// P1 Scientific Quality: LSI now follows the US EPA pHs equation and is only
+// emitted when every required measurement is present and plausible. No silent
+// 25 °C or TDS assumption is used.
+//
 // i18n: parallel `*Key` fields are exposed alongside the legacy French
-// literals so consumers (module-dashboard.tsx, module-action-plan.tsx via
-// action-plan.ts) can translate them via next-intl. French literals are
-// kept for backward compat.
+// literals so consumers can translate them via next-intl.
 
 import { evaluateParam } from './targets'
+import {
+  isScientificallyValidMeasurement,
+  type ScientificMeasurementKey,
+} from './scientific-quality'
 
-function tempFactor(tempC: number): number {
-  if (tempC <= 0) return 0.0
-  if (tempC <= 10) return 0.3
-  if (tempC <= 20) return 0.7
-  if (tempC <= 25) return 1.0
-  if (tempC <= 30) return 1.3
-  if (tempC <= 40) return 1.7
-  return 2.0
-}
+export const LSI_METHOD_VERSION = 'epa-phs-9.3-v1' as const
 
-function calciumFactor(th: number): number {
-  if (th <= 50) return 1.5
-  if (th <= 75) return 1.7
-  if (th <= 100) return 1.9
-  if (th <= 150) return 2.1
-  if (th <= 200) return 2.3
-  if (th <= 300) return 2.5
-  if (th <= 400) return 2.6
-  if (th <= 800) return 2.9
-  return 3.1
-}
-
-function alkalinityFactor(tac: number): number {
-  return Math.log10(tac) * 0.1 + 1.0
-}
-
-export function calculateLSI(test: {
+export interface LsiInput {
   ph: number
   temperature?: number | null
   calciumHardness?: number | null
   alkalinity?: number | null
-}): number | null {
-  if (test.calciumHardness == null || test.alkalinity == null) return null
-  const temp = test.temperature ?? 25
-  const tf = tempFactor(temp)
-  const cf = calciumFactor(test.calciumHardness)
-  const af = alkalinityFactor(test.alkalinity)
-  const lsi = test.ph + tf + cf + af - 12.1
-  return Math.round(lsi * 100) / 100
+  /** Total dissolved solids in mg/L. */
+  totalDissolvedSolids?: number | null
+}
+
+export interface LsiCalculation {
+  value: number | null
+  saturationPh: number | null
+  missingInputs: ScientificMeasurementKey[]
+  invalidInputs: ScientificMeasurementKey[]
+  methodVersion: typeof LSI_METHOD_VERSION
+  estimated: false
+}
+
+/**
+ * US EPA pHs relationship:
+ *   LSI = pH - pHs
+ *   pHs = (9.3 + A + B) - (C + D)
+ *   A = (log10(TDS) - 1) / 10
+ *   B = -13.12 × log10(temperature °C + 273) + 34.55
+ *   C = log10(calcium hardness as CaCO3) - 0.4
+ *   D = log10(total alkalinity as CaCO3)
+ */
+export function calculateLsiAssessment(test: LsiInput): LsiCalculation {
+  const required: Array<[ScientificMeasurementKey, number | null | undefined]> = [
+    ['ph', test.ph],
+    ['temperature', test.temperature],
+    ['calciumHardness', test.calciumHardness],
+    ['alkalinity', test.alkalinity],
+    ['totalDissolvedSolids', test.totalDissolvedSolids],
+  ]
+
+  const missingInputs = required
+    .filter(([, value]) => value == null)
+    .map(([key]) => key)
+  const invalidInputs = required
+    .filter(([, value]) => value != null)
+    .filter(([key, value]) => !isScientificallyValidMeasurement(key, value))
+    .map(([key]) => key)
+
+  if (missingInputs.length > 0 || invalidInputs.length > 0) {
+    return {
+      value: null,
+      saturationPh: null,
+      missingInputs,
+      invalidInputs,
+      methodVersion: LSI_METHOD_VERSION,
+      estimated: false,
+    }
+  }
+
+  const temperature = test.temperature as number
+  const calcium = test.calciumHardness as number
+  const alkalinity = test.alkalinity as number
+  const tds = test.totalDissolvedSolids as number
+
+  // Logarithmic terms require positive concentrations. Zero can be physically
+  // represented by a test result, but cannot yield a valid pHs calculation.
+  if (calcium <= 0 || alkalinity <= 0 || tds <= 0 || temperature <= -273) {
+    const logarithmicInvalid: ScientificMeasurementKey[] = []
+    if (calcium <= 0) logarithmicInvalid.push('calciumHardness')
+    if (alkalinity <= 0) logarithmicInvalid.push('alkalinity')
+    if (tds <= 0) logarithmicInvalid.push('totalDissolvedSolids')
+    if (temperature <= -273) logarithmicInvalid.push('temperature')
+    return {
+      value: null,
+      saturationPh: null,
+      missingInputs: [],
+      invalidInputs: logarithmicInvalid,
+      methodVersion: LSI_METHOD_VERSION,
+      estimated: false,
+    }
+  }
+
+  const a = (Math.log10(tds) - 1) / 10
+  const b = -13.12 * Math.log10(temperature + 273) + 34.55
+  const c = Math.log10(calcium) - 0.4
+  const d = Math.log10(alkalinity)
+  const saturationPh = (9.3 + a + b) - (c + d)
+  const value = test.ph - saturationPh
+
+  return {
+    value: Math.round(value * 100) / 100,
+    saturationPh: Math.round(saturationPh * 100) / 100,
+    missingInputs: [],
+    invalidInputs: [],
+    methodVersion: LSI_METHOD_VERSION,
+    estimated: false,
+  }
+}
+
+export function calculateLSI(test: LsiInput): number | null {
+  return calculateLsiAssessment(test).value
 }
 
 export interface LsiInterpretation {
@@ -62,7 +128,7 @@ export function lsiInterpretation(lsi: number | null): LsiInterpretation {
       label: '—',
       labelKey: 'lsiMissingLabel',
       status: 'unknown',
-      advice: 'Manque de données (TH, TAC, température).',
+      advice: 'Mesures requises manquantes ou invalides (TH, TAC, température, TDS).',
       adviceKey: 'lsiMissing',
     }
   }

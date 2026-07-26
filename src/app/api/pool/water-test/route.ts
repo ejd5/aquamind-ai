@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { generateActionPlan } from '@/lib/pool/action-plan'
-import { calculateClearWaterIndex, calculateLSI, lsiInterpretation } from '@/lib/pool/water-balance'
+import { generateScientificallyQualifiedActionPlan } from '@/lib/pool/scientific-action-plan'
+import { calculateClearWaterIndex, calculateLsiAssessment, lsiInterpretation } from '@/lib/pool/water-balance'
+import { assessScientificQuality } from '@/lib/pool/scientific-quality'
 import { assessSwimSafety } from '@/lib/pool/safety-rules'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { trackEventServer } from '@/lib/analytics-server'
@@ -68,6 +69,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: msg }, { status: 400 })
     }
 
+    // Persisted WaterTest fields. TDS is accepted for the scientific calculation
+    // below but is not persisted until the dedicated scientific schema migration.
     const test = {
       ph,
       freeChlorine: numOrNull(body.freeChlorine),
@@ -83,11 +86,23 @@ export async function POST(req: NextRequest) {
       source: body.source || 'manual',
       note: body.note || null,
     }
+    const scientificTest = {
+      ...test,
+      totalDissolvedSolids: numOrNull(body.totalDissolvedSolids),
+    }
+    const scientificProfile = {
+      volume: profile?.volume ?? 0,
+      unit: (profile?.unit ?? 'm3') as any,
+      treatmentType: profile?.treatmentType ?? 'unknown',
+      saltSystem: profile?.saltSystem ?? false,
+    }
 
-    // Statut + indices
-    const cwi = calculateClearWaterIndex(test as any)
-    const swim = assessSwimSafety(test as any)
-    const lsi = calculateLSI(test as any)
+    // Statut + indices. LSI is strict: no temperature or TDS default.
+    const cwi = calculateClearWaterIndex(scientificTest)
+    const swim = assessSwimSafety(scientificTest)
+    const lsiCalculation = calculateLsiAssessment(scientificTest)
+    const lsi = lsiCalculation.value
+    const standaloneQuality = assessScientificQuality(scientificTest, scientificProfile)
     let status = 'ok'
     if (swim.status === 'forbidden' || cwi < 40) status = 'critical'
     else if (cwi < 85 || swim.status === 'avoid') status = 'warning'
@@ -104,29 +119,25 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // Générer plan d'action déterministe si profil existe
+    // Générer plan d'action déterministe et scientifiquement qualifié si profil existe.
     let actionPlan: Awaited<ReturnType<typeof db.actionPlan.create>> | null = null
+    let qualifiedPlan: ReturnType<typeof generateScientificallyQualifiedActionPlan> | null = null
     if (profile) {
-      const plan = generateActionPlan(test as any, {
-        volume: profile.volume,
-        unit: profile.unit as any,
-        treatmentType: profile.treatmentType,
-        saltSystem: profile.saltSystem,
-      })
+      qualifiedPlan = generateScientificallyQualifiedActionPlan(scientificTest, scientificProfile)
       actionPlan = await db.actionPlan.create({
         data: {
           waterTestId: created.id,
-          diagnosis: plan.diagnosis,
-          severity: plan.severity,
-          confidence: plan.confidence,
-          immediateActions: JSON.stringify(plan.immediateActions),
-          chemicalDosages: JSON.stringify(plan.chemicalDosages),
-          filtrationHours: plan.filtrationHours,
-          retestInHours: plan.retestInHours,
-          swimSafety: plan.swimSafety,
-          doNotDo: JSON.stringify(plan.doNotDo),
-          estimatedCost: plan.estimatedCost,
-          whenToCallProfessional: plan.whenToCallProfessional,
+          diagnosis: qualifiedPlan.diagnosis,
+          severity: qualifiedPlan.severity,
+          confidence: qualifiedPlan.confidence,
+          immediateActions: JSON.stringify(qualifiedPlan.immediateActions),
+          chemicalDosages: JSON.stringify(qualifiedPlan.chemicalDosages),
+          filtrationHours: qualifiedPlan.filtrationHours,
+          retestInHours: qualifiedPlan.retestInHours,
+          swimSafety: qualifiedPlan.swimSafety,
+          doNotDo: JSON.stringify(qualifiedPlan.doNotDo),
+          estimatedCost: qualifiedPlan.estimatedCost,
+          whenToCallProfessional: qualifiedPlan.whenToCallProfessional,
         },
       })
     }
@@ -141,23 +152,36 @@ export async function POST(req: NextRequest) {
         source: test.source,
         clearWaterIndex: cwi,
         status,
+        scientificQuality: qualifiedPlan?.confidence ?? standaloneQuality.score,
+        lsiEligible: lsiCalculation.value != null,
       },
       userId
     )
 
     // P0-B: Feature gate — pro_mode (LSI interpretation is a "pro" feature)
-    // All users get the water test result + action plan.
-    // Pro mode (LSI detailed interpretation) is only for paid plans.
+    // All users get the water test result + action plan and data-quality score.
+    // Pro mode additionally receives the LSI value, interpretation and provenance.
     const proGate = await requireFeatureAccess(req, 'pro_mode')
     const { lsi: _storedLsi, ...publicTest } = created
+    const normalizedPlan = normalizeStoredActionPlan(actionPlan)
     const response: any = {
       test: proGate.denied ? publicTest : created,
-      actionPlan: normalizeStoredActionPlan(actionPlan),
+      actionPlan: normalizedPlan && qualifiedPlan
+        ? {
+            ...normalizedPlan,
+            scientificQuality: qualifiedPlan.scientificQuality,
+            confidenceLevel: qualifiedPlan.confidenceLevel,
+            dosageMethodVersion: qualifiedPlan.dosageMethodVersion,
+            dosageLabelVerificationRequired: qualifiedPlan.dosageLabelVerificationRequired,
+          }
+        : normalizedPlan,
+      scientificQuality: qualifiedPlan?.scientificQuality ?? standaloneQuality,
       brainFollowup,
     }
     if (!proGate.denied) {
       response.lsiInfo = lsiInterpretation(lsi)
       response.lsi = lsi
+      response.lsiCalculation = lsiCalculation
     } else {
       response.lsiInfo = null
       response.proModeRequired = true
