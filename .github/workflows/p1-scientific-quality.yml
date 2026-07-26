@@ -8,6 +8,7 @@ on:
       - feat/p1-scientific-quality
       - feat/p1-scientific-contextual-targets
       - feat/p1-scientific-safety-readiness
+      - feat/p1-scientific-persistence
     paths:
       - '.github/workflows/p1-scientific-quality.yml'
       - 'docs/release/P1_SCIENTIFIC_*.md'
