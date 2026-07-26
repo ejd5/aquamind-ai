@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { generateScientificallyQualifiedActionPlan } from '@/lib/pool/scientific-action-plan'
 import { resolveContextualOperatingTargets } from '@/lib/pool/contextual-targets'
 import { assessContextualSwimSafety } from '@/lib/pool/contextual-swim-safety'
+import { assessMeasurementConfidence } from '@/lib/pool/measurement-confidence'
 import {
   MeasurementProvenanceError,
   normalizeMeasurementProvenance,
@@ -76,6 +77,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: msg }, { status: 400 })
     }
 
+    const analysisTime = new Date()
     const source = typeof body.source === 'string' && body.source.trim()
       ? body.source.trim().slice(0, 80)
       : 'manual'
@@ -84,7 +86,7 @@ export async function POST(req: NextRequest) {
       measurementMethod: body.measurementMethod,
       measurementMetadata: body.measurementMetadata,
       source,
-    })
+    }, analysisTime)
 
     const test = {
       ph,
@@ -145,6 +147,15 @@ export async function POST(req: NextRequest) {
     const lsiCalculation = calculateLsiAssessment(scientificTest)
     const lsi = lsiCalculation.value
     const standaloneQuality = assessScientificQuality(scientificTest, scientificProfile)
+    const standaloneConfidence = assessMeasurementConfidence(
+      standaloneQuality,
+      provenance,
+      analysisTime,
+    )
+    const persistedLimitations = [
+      ...standaloneQuality.limitations,
+      ...standaloneConfidence.limitations,
+    ]
     let status = 'ok'
     if (contextualSwimSafety.status === 'forbidden' || cwi < 40) status = 'critical'
     else if (cwi < 85 || contextualSwimSafety.status === 'avoid') status = 'warning'
@@ -156,9 +167,9 @@ export async function POST(req: NextRequest) {
         measuredAt: provenance.measuredAt,
         measurementMethod: provenance.measurementMethod,
         measurementMetadata: provenance.measurementMetadata,
-        scientificQualityScore: standaloneQuality.score,
-        scientificMethodVersion: standaloneQuality.methodVersion,
-        scientificLimitations: JSON.stringify(standaloneQuality.limitations),
+        scientificQualityScore: standaloneConfidence.score,
+        scientificMethodVersion: standaloneConfidence.methodVersion,
+        scientificLimitations: JSON.stringify(persistedLimitations),
         lsiMethodVersion: lsiCalculation.methodVersion,
         userId,
         poolId: profile?.id || null,
@@ -177,6 +188,8 @@ export async function POST(req: NextRequest) {
         scientificTest,
         scientificProfile,
         locale,
+        provenance,
+        analysisTime,
       )
       actionPlan = await db.actionPlan.create({
         data: {
@@ -184,7 +197,7 @@ export async function POST(req: NextRequest) {
           diagnosis: qualifiedPlan.diagnosis,
           severity: qualifiedPlan.severity,
           confidence: qualifiedPlan.confidence,
-          scientificMethodVersion: qualifiedPlan.scientificQuality.methodVersion,
+          scientificMethodVersion: qualifiedPlan.scientificConfidence.methodVersion,
           dosageMethodVersion: qualifiedPlan.dosageMethodVersion,
           swimSafetyMethodVersion: qualifiedPlan.contextualSwimSafety.methodVersion,
           immediateActions: JSON.stringify(qualifiedPlan.immediateActions),
@@ -209,11 +222,13 @@ export async function POST(req: NextRequest) {
         hasBromine: test.bromine != null,
         source: test.source,
         measurementMethod: provenance.measurementMethod,
+        measurementAgeHours: standaloneConfidence.ageHours,
         treatmentType: scientificProfile.treatmentType,
         waterBodyType: scientificProfile.waterBodyType,
         clearWaterIndex: cwi,
         status,
-        scientificQuality: qualifiedPlan?.confidence ?? standaloneQuality.score,
+        scientificQuality: standaloneQuality.score,
+        scientificConfidence: qualifiedPlan?.confidence ?? standaloneConfidence.score,
         lsiEligible: lsiCalculation.value != null,
         swimSafetyMethod: contextualSwimSafety.methodVersion,
       },
@@ -221,7 +236,7 @@ export async function POST(req: NextRequest) {
     )
 
     // P0-B: Feature gate — pro_mode (LSI interpretation is a "pro" feature)
-    // All users get contextual targets, safety and data quality.
+    // All users get contextual targets, safety and explainable confidence.
     // Pro mode additionally receives the LSI value, interpretation and provenance.
     const proGate = await requireFeatureAccess(req, 'pro_mode')
     const {
@@ -236,6 +251,7 @@ export async function POST(req: NextRequest) {
         ? {
             ...normalizedPlan,
             scientificQuality: qualifiedPlan.scientificQuality,
+            scientificConfidence: qualifiedPlan.scientificConfidence,
             confidenceLevel: qualifiedPlan.confidenceLevel,
             contextualSwimSafety: qualifiedPlan.contextualSwimSafety,
             dosageMethodVersion: qualifiedPlan.dosageMethodVersion,
@@ -243,6 +259,7 @@ export async function POST(req: NextRequest) {
           }
         : normalizedPlan,
       scientificQuality: qualifiedPlan?.scientificQuality ?? standaloneQuality,
+      scientificConfidence: qualifiedPlan?.scientificConfidence ?? standaloneConfidence,
       contextualTargets,
       contextualSwimSafety,
       measurementProvenance: {

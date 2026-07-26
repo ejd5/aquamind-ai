@@ -15,6 +15,12 @@ import {
   type DosageReadinessProfile,
 } from './dosage-readiness'
 import {
+  assessMeasurementConfidence,
+  createUnadjustedMeasurementConfidence,
+  type MeasurementConfidenceAssessment,
+  type MeasurementConfidenceInput,
+} from './measurement-confidence'
+import {
   assessScientificQuality,
   type ScientificQualityAssessment,
   type ScientificTestInput,
@@ -42,7 +48,8 @@ export interface QualifiedChemicalDosage {
 
 export interface ScientificallyQualifiedActionPlan extends GeneratedActionPlan {
   scientificQuality: ScientificQualityAssessment
-  confidenceLevel: ScientificQualityAssessment['level']
+  scientificConfidence: MeasurementConfidenceAssessment
+  confidenceLevel: MeasurementConfidenceAssessment['level']
   lsiCalculation: LsiCalculation
   contextualSwimSafety: ContextualSwimAssessment
   dosageMethodVersion: typeof DOSAGE_METHOD_VERSION
@@ -86,17 +93,22 @@ function numericEstimatedCost(value: string): number {
  * Compatibility wrapper around the deterministic action-plan engine.
  *
  * The legacy engine still generates the ordered candidate plan. This wrapper
- * qualifies it before exposure: dynamic measurement confidence, strict LSI,
- * contextual swimming safety and dosage readiness. A deferred or non-
- * calculable dosage never exposes an actionable quantity or cost.
+ * qualifies it before exposure: measurement completeness, provenance-adjusted
+ * confidence, strict LSI, contextual swimming safety and dosage readiness.
+ * A deferred or non-calculable dosage never exposes an actionable quantity.
  */
 export function generateScientificallyQualifiedActionPlan(
   test: QualifiedWaterTestInput,
   profile: QualifiedPoolProfileInput,
   locale: Locale = 'fr',
+  measurementConfidenceInput?: MeasurementConfidenceInput,
+  now = new Date(),
 ): ScientificallyQualifiedActionPlan {
   const plan = generateActionPlan(test, profile)
   const scientificQuality = assessScientificQuality(test, profile)
+  const scientificConfidence = measurementConfidenceInput
+    ? assessMeasurementConfidence(scientificQuality, measurementConfidenceInput, now)
+    : createUnadjustedMeasurementConfidence(scientificQuality)
   const lsiCalculation = calculateLsiAssessment(test)
   const lsiInfo = lsiInterpretation(lsiCalculation.value)
   const contextualSwimSafety = assessContextualSwimSafety(
@@ -161,9 +173,10 @@ export function generateScientificallyQualifiedActionPlan(
       swim: diagnosisSwimParam(contextualSwimSafety.status),
     },
     severity: severityForContextualSafety(plan.severity, contextualSwimSafety.status),
-    confidence: scientificQuality.score,
-    confidenceLevel: scientificQuality.level,
+    confidence: scientificConfidence.score,
+    confidenceLevel: scientificConfidence.level,
     scientificQuality,
+    scientificConfidence,
     immediateActions,
     swimSafety: contextualSwimSafety.status,
     swimReasons: contextualSwimSafety.reasons.map((reason) => reason.message),
