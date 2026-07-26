@@ -10,15 +10,16 @@ export type WorkspaceEntryContext = {
 /**
  * Resolve the first screen shown after a login without an explicit callback.
  *
- * Technicians are sent to their operational intervention list instead of the
- * consumer pool onboarding. Managers and owners land on the Pro dashboard.
+ * Technicians are sent to their mobile-first daily route instead of the
+ * consumer pool onboarding or the manager dashboard. Managers and owners land
+ * on the Pro dashboard.
  */
 export function workspaceEntryTarget(context: WorkspaceEntryContext): string {
   if (context.ownsProOrganization) return '/pro/app'
 
   if (context.proMembershipRole) {
     return context.proMembershipRole === 'technician'
-      ? '/pro/app/interventions'
+      ? '/pro/app/today'
       : '/pro/app'
   }
 

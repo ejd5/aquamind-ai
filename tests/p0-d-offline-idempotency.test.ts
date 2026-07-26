@@ -16,13 +16,30 @@ afterAll(async () => {
 })
 
 describe('P0-D offline idempotency', () => {
-  it('allows only the six offline mutation APIs', () => {
+  it('allows only explicitly approved offline mutation APIs', () => {
     expect(
       normalizeOfflineTarget('https://aqwelia.test', '/api/pool/water-test', 'POST').url.pathname,
     ).toBe('/api/pool/water-test')
     expect(
       normalizeOfflineTarget('https://aqwelia.test', '/api/pool/equipment?id=1', 'DELETE').method,
     ).toBe('DELETE')
+    expect(
+      normalizeOfflineTarget(
+        'https://aqwelia.test',
+        '/api/pro/interventions/intervention-1',
+        'PATCH',
+      ).url.pathname,
+    ).toBe('/api/pro/interventions/intervention-1')
+    expect(
+      normalizeOfflineTarget('https://aqwelia.test', '/api/pro/water-tests', 'POST').method,
+    ).toBe('POST')
+    expect(() =>
+      normalizeOfflineTarget(
+        'https://aqwelia.test',
+        '/api/pro/interventions/intervention-1',
+        'DELETE',
+      ),
+    ).toThrow('not allowlisted')
     expect(() => normalizeOfflineTarget('https://aqwelia.test', '/api/admin/users', 'POST')).toThrow(
       'not allowlisted',
     )

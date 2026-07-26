@@ -9,9 +9,9 @@ const base = {
 }
 
 describe('workspaceEntryTarget', () => {
-  it('routes a Pro technician to the operational intervention list', () => {
+  it('routes a Pro technician to the mobile-first daily workspace', () => {
     expect(workspaceEntryTarget({ ...base, proMembershipRole: 'technician' }))
-      .toBe('/pro/app/interventions')
+      .toBe('/pro/app/today')
   })
 
   it('routes Pro owners and managers to the Pro dashboard', () => {

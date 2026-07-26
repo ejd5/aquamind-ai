@@ -1,14 +1,14 @@
-// API client abstraction — single entry point for both web (relative URLs) and
-// mobile (absolute URLs via Capacitor HTTP bridge).
+// API client abstraction — single entry point for both web and Capacitor.
 //
 // Configure via NEXT_PUBLIC_API_BASE_URL:
-//   - Empty string (default, web)  → relative URLs e.g. "/api/dashboard"
-//   - Full URL (mobile / Capacitor) → e.g. "https://api.aqwelia.app"
+//   - Empty string (web)             → relative URLs such as "/api/dashboard"
+//   - Full HTTPS URL (native mobile) → such as "https://api.aqwelia.app"
 //
-// Auth is cookie-based (`credentials: 'include'`) so the same Next.js session
-// cookie works on web and is attached by Capacitor's HTTP bridge on mobile.
+// Authentication is cookie-based. CapacitorHttp and CapacitorCookies are
+// enabled in capacitor.config.ts so native fetch requests and session cookies
+// use the platform networking stack on iOS and Android.
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || ''
+const BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/$/, '')
 
 export class ApiError extends Error {
   constructor(
@@ -25,20 +25,25 @@ export interface ApiRequestOptions {
   headers?: Record<string, string>
 }
 
+export function apiUrl(path: string): string {
+  if (!path.startsWith('/')) throw new Error('API paths must start with /')
+  return `${BASE}${path}`
+}
+
 async function request<T>(
   method: string,
   path: string,
   body?: unknown,
   options: ApiRequestOptions = {},
 ): Promise<T> {
-  const url = `${BASE}${path}`
-  const res = await fetch(url, {
+  const res = await fetch(apiUrl(path), {
     method,
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
     },
     credentials: 'include',
+    cache: 'no-store',
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
 
@@ -62,14 +67,14 @@ async function request<T>(
 }
 
 export const api = {
-  get: <T>(path: string, options?: ApiRequestOptions) => request<T>('GET', path, undefined, options),
-  post: <T>(path: string, body?: unknown, options?: ApiRequestOptions) =>
+  get: <T = unknown>(path: string, options?: ApiRequestOptions) =>
+    request<T>('GET', path, undefined, options),
+  post: <T = unknown>(path: string, body?: unknown, options?: ApiRequestOptions) =>
     request<T>('POST', path, body, options),
-  patch: <T>(path: string, body?: unknown, options?: ApiRequestOptions) =>
+  patch: <T = unknown>(path: string, body?: unknown, options?: ApiRequestOptions) =>
     request<T>('PATCH', path, body, options),
-  delete: <T>(path: string, options?: ApiRequestOptions) =>
+  delete: <T = unknown>(path: string, options?: ApiRequestOptions) =>
     request<T>('DELETE', path, undefined, options),
 }
 
-// Convenience re-exports
 export type { PlanId } from './pool/freemium'
