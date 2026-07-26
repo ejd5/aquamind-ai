@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { generateScientificallyQualifiedActionPlan } from '@/lib/pool/scientific-action-plan'
+import { resolveContextualOperatingTargets } from '@/lib/pool/contextual-targets'
 import { calculateClearWaterIndex, calculateLsiAssessment, lsiInterpretation } from '@/lib/pool/water-balance'
 import { assessScientificQuality } from '@/lib/pool/scientific-quality'
 import { assessSwimSafety } from '@/lib/pool/safety-rules'
@@ -95,7 +96,16 @@ export async function POST(req: NextRequest) {
       unit: (profile?.unit ?? 'm3') as any,
       treatmentType: profile?.treatmentType ?? 'unknown',
       saltSystem: profile?.saltSystem ?? false,
+      waterBodyType: profile?.waterBodyType ?? null,
     }
+    const contextualTargets = resolveContextualOperatingTargets({
+      treatmentType: scientificProfile.treatmentType,
+      saltSystem: scientificProfile.saltSystem,
+      waterBodyType: scientificProfile.waterBodyType,
+      cyanuricAcid: scientificTest.cyanuricAcid,
+      manufacturerSaltMin: numOrNull(body.manufacturerSaltMin),
+      manufacturerSaltMax: numOrNull(body.manufacturerSaltMax),
+    })
 
     // Statut + indices. LSI is strict: no temperature or TDS default.
     const cwi = calculateClearWaterIndex(scientificTest)
@@ -149,7 +159,10 @@ export async function POST(req: NextRequest) {
       {
         ph,
         hasChlorine: test.freeChlorine != null,
+        hasBromine: test.bromine != null,
         source: test.source,
+        treatmentType: scientificProfile.treatmentType,
+        waterBodyType: scientificProfile.waterBodyType,
         clearWaterIndex: cwi,
         status,
         scientificQuality: qualifiedPlan?.confidence ?? standaloneQuality.score,
@@ -159,7 +172,7 @@ export async function POST(req: NextRequest) {
     )
 
     // P0-B: Feature gate — pro_mode (LSI interpretation is a "pro" feature)
-    // All users get the water test result + action plan and data-quality score.
+    // All users get the water test result, contextual targets and data quality.
     // Pro mode additionally receives the LSI value, interpretation and provenance.
     const proGate = await requireFeatureAccess(req, 'pro_mode')
     const { lsi: _storedLsi, ...publicTest } = created
@@ -176,6 +189,7 @@ export async function POST(req: NextRequest) {
           }
         : normalizedPlan,
       scientificQuality: qualifiedPlan?.scientificQuality ?? standaloneQuality,
+      contextualTargets,
       brainFollowup,
     }
     if (!proGate.denied) {
