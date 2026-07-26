@@ -40,9 +40,9 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
       try {
         // Privacy by design: the analytics SDK is not downloaded before the
         // user has explicitly accepted audience measurement.
-        const module = await import('posthog-js')
+        const postHogPackage = await import('posthog-js')
         if (cancelled || !analyticsConsentGranted()) return
-        client = module.default
+        client = postHogPackage.default
         client.init(process.env.NEXT_PUBLIC_POSTHOG_KEY as string, {
           api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST as string,
           capture_pageview: true,
