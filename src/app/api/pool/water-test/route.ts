@@ -4,9 +4,9 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { generateScientificallyQualifiedActionPlan } from '@/lib/pool/scientific-action-plan'
 import { resolveContextualOperatingTargets } from '@/lib/pool/contextual-targets'
+import { assessContextualSwimSafety } from '@/lib/pool/contextual-swim-safety'
 import { calculateClearWaterIndex, calculateLsiAssessment, lsiInterpretation } from '@/lib/pool/water-balance'
 import { assessScientificQuality } from '@/lib/pool/scientific-quality'
-import { assessSwimSafety } from '@/lib/pool/safety-rules'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { trackEventServer } from '@/lib/analytics-server'
 import { requireFeatureAccess } from '@/lib/billing/gate'
@@ -97,25 +97,41 @@ export async function POST(req: NextRequest) {
       treatmentType: profile?.treatmentType ?? 'unknown',
       saltSystem: profile?.saltSystem ?? false,
       waterBodyType: profile?.waterBodyType ?? null,
+      filterType: profile?.filterType ?? null,
+      manufacturerSaltMin: numOrNull(body.manufacturerSaltMin),
+      manufacturerSaltMax: numOrNull(body.manufacturerSaltMax),
+      manufacturerChlorineMax: numOrNull(body.manufacturerChlorineMax),
     }
     const contextualTargets = resolveContextualOperatingTargets({
       treatmentType: scientificProfile.treatmentType,
       saltSystem: scientificProfile.saltSystem,
       waterBodyType: scientificProfile.waterBodyType,
       cyanuricAcid: scientificTest.cyanuricAcid,
-      manufacturerSaltMin: numOrNull(body.manufacturerSaltMin),
-      manufacturerSaltMax: numOrNull(body.manufacturerSaltMax),
+      manufacturerSaltMin: scientificProfile.manufacturerSaltMin,
+      manufacturerSaltMax: scientificProfile.manufacturerSaltMax,
     })
+    const contextualSwimSafety = assessContextualSwimSafety(
+      scientificTest,
+      {
+        treatmentType: scientificProfile.treatmentType,
+        saltSystem: scientificProfile.saltSystem,
+        waterBodyType: scientificProfile.waterBodyType,
+        cyanuricAcid: scientificTest.cyanuricAcid,
+        manufacturerSaltMin: scientificProfile.manufacturerSaltMin,
+        manufacturerSaltMax: scientificProfile.manufacturerSaltMax,
+        manufacturerChlorineMax: scientificProfile.manufacturerChlorineMax,
+      },
+      locale,
+    )
 
-    // Statut + indices. LSI is strict: no temperature or TDS default.
+    // Status + indices. LSI is strict and swimming safety is treatment-aware.
     const cwi = calculateClearWaterIndex(scientificTest)
-    const swim = assessSwimSafety(scientificTest)
     const lsiCalculation = calculateLsiAssessment(scientificTest)
     const lsi = lsiCalculation.value
     const standaloneQuality = assessScientificQuality(scientificTest, scientificProfile)
     let status = 'ok'
-    if (swim.status === 'forbidden' || cwi < 40) status = 'critical'
-    else if (cwi < 85 || swim.status === 'avoid') status = 'warning'
+    if (contextualSwimSafety.status === 'forbidden' || cwi < 40) status = 'critical'
+    else if (cwi < 85 || contextualSwimSafety.status === 'avoid') status = 'warning'
 
     const created = await db.waterTest.create({
       data: {
@@ -124,16 +140,20 @@ export async function POST(req: NextRequest) {
         poolId: profile?.id || null,
         status,
         clearWaterIndex: cwi,
-        swimSafety: swim.status,
+        swimSafety: contextualSwimSafety.status,
         lsi,
       },
     })
 
-    // Générer plan d'action déterministe et scientifiquement qualifié si profil existe.
+    // Generate a deterministic plan, then qualify every conclusion and dosage.
     let actionPlan: Awaited<ReturnType<typeof db.actionPlan.create>> | null = null
     let qualifiedPlan: ReturnType<typeof generateScientificallyQualifiedActionPlan> | null = null
     if (profile) {
-      qualifiedPlan = generateScientificallyQualifiedActionPlan(scientificTest, scientificProfile)
+      qualifiedPlan = generateScientificallyQualifiedActionPlan(
+        scientificTest,
+        scientificProfile,
+        locale,
+      )
       actionPlan = await db.actionPlan.create({
         data: {
           waterTestId: created.id,
@@ -167,12 +187,13 @@ export async function POST(req: NextRequest) {
         status,
         scientificQuality: qualifiedPlan?.confidence ?? standaloneQuality.score,
         lsiEligible: lsiCalculation.value != null,
+        swimSafetyMethod: contextualSwimSafety.methodVersion,
       },
       userId
     )
 
     // P0-B: Feature gate — pro_mode (LSI interpretation is a "pro" feature)
-    // All users get the water test result, contextual targets and data quality.
+    // All users get contextual targets, safety and data quality.
     // Pro mode additionally receives the LSI value, interpretation and provenance.
     const proGate = await requireFeatureAccess(req, 'pro_mode')
     const { lsi: _storedLsi, ...publicTest } = created
@@ -184,12 +205,14 @@ export async function POST(req: NextRequest) {
             ...normalizedPlan,
             scientificQuality: qualifiedPlan.scientificQuality,
             confidenceLevel: qualifiedPlan.confidenceLevel,
+            contextualSwimSafety: qualifiedPlan.contextualSwimSafety,
             dosageMethodVersion: qualifiedPlan.dosageMethodVersion,
             dosageLabelVerificationRequired: qualifiedPlan.dosageLabelVerificationRequired,
           }
         : normalizedPlan,
       scientificQuality: qualifiedPlan?.scientificQuality ?? standaloneQuality,
       contextualTargets,
+      contextualSwimSafety,
       brainFollowup,
     }
     if (!proGate.denied) {
