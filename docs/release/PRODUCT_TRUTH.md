@@ -180,12 +180,14 @@ Les valeurs secrètes ne doivent jamais être placées dans une variable `NEXT_P
 
 ## 9. Prochain ordre de travail
 
-1. P0-L3 : documentation, vérité produit et nettoyage du dépôt.
-2. P1 Design System B2C : sécuriser les maquettes puis reproduire les six écrans prioritaires.
-3. P1 Mobile : parcours natifs, offline, notifications et achats sandbox.
-4. P1 Scientific Quality : confiance dynamique, LSI et validation des dosages.
-5. P1 Commercial Pro : devis, catalogue, facturation et relances.
-6. Reprise ultérieure de la géolocalisation.
+1. P0-L3 : documentation, vérité produit et nettoyage du dépôt — terminé et fusionné.
+2. P1 Mobile : véritable parcours mobile et technicien, offline, notifications et achats sandbox — chantier actif.
+3. P1 Scientific Quality : confiance dynamique, LSI et validation des dosages.
+4. P1 Commercial Pro : devis, catalogue, facturation et relances.
+5. Reprise ultérieure de la géolocalisation Google Maps.
+6. Design system et refonte visuelle : mis de côté jusqu’à une décision ultérieure.
+
+Le cadrage détaillé du chantier mobile est maintenu dans [`P1_MOBILE_TECHNICIAN.md`](./P1_MOBILE_TECHNICIAN.md).
 
 ## 10. Références internes
 
