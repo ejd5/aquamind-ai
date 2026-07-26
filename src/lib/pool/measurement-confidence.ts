@@ -38,6 +38,7 @@ export interface MeasurementConfidenceAssessment {
   methodVersion: typeof MEASUREMENT_CONFIDENCE_METHOD_VERSION
   policyBasis: 'aqwelia_operational_policy'
   manufacturerCalibrationIntervalVerified: false
+  provenanceApplied: boolean
 }
 
 function level(score: number): ScientificQualityLevel {
@@ -135,6 +136,23 @@ function calibrationFactor(
   return 1
 }
 
+export function createUnadjustedMeasurementConfidence(
+  baseQuality: ScientificQualityAssessment,
+): MeasurementConfidenceAssessment {
+  return {
+    score: baseQuality.score,
+    level: baseQuality.level,
+    baseQualityScore: baseQuality.score,
+    ageHours: 0,
+    factors: { freshness: 1, method: 1, calibration: 1 },
+    limitations: [],
+    methodVersion: MEASUREMENT_CONFIDENCE_METHOD_VERSION,
+    policyBasis: 'aqwelia_operational_policy',
+    manufacturerCalibrationIntervalVerified: false,
+    provenanceApplied: false,
+  }
+}
+
 /**
  * Applies transparent operational factors to the deterministic measurement-
  * completeness score. The result is a product confidence score, not a
@@ -168,5 +186,6 @@ export function assessMeasurementConfidence(
     methodVersion: MEASUREMENT_CONFIDENCE_METHOD_VERSION,
     policyBasis: 'aqwelia_operational_policy',
     manufacturerCalibrationIntervalVerified: false,
+    provenanceApplied: true,
   }
 }
