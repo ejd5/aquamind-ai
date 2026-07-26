@@ -7,6 +7,7 @@ export type ScientificMeasurementKey =
   | 'freeChlorine'
   | 'totalChlorine'
   | 'combinedChlorine'
+  | 'bromine'
   | 'alkalinity'
   | 'calciumHardness'
   | 'cyanuricAcid'
@@ -33,6 +34,7 @@ export interface ScientificTestInput {
   freeChlorine?: number | null
   totalChlorine?: number | null
   combinedChlorine?: number | null
+  bromine?: number | null
   alkalinity?: number | null
   calciumHardness?: number | null
   cyanuricAcid?: number | null
@@ -46,12 +48,14 @@ export interface ScientificProfileInput {
   volume: number
   treatmentType?: string | null
   saltSystem?: boolean
+  waterBodyType?: string | null
 }
 
 export interface ScientificQualityAssessment {
   /** 0..1 deterministic data-quality score, not a statistical probability. */
   score: number
   level: ScientificQualityLevel
+  disinfectantField: 'freeChlorine' | 'bromine'
   measuredFields: ScientificMeasurementKey[]
   missingFields: ScientificMeasurementKey[]
   invalidFields: ScientificMeasurementKey[]
@@ -73,6 +77,7 @@ const PLAUSIBLE_RANGES: Record<ScientificMeasurementKey, PlausibleRange> = {
   freeChlorine: { min: 0, max: 50 },
   totalChlorine: { min: 0, max: 50 },
   combinedChlorine: { min: 0, max: 50 },
+  bromine: { min: 0, max: 50 },
   alkalinity: { min: 0, max: 1000 },
   calciumHardness: { min: 0, max: 2000 },
   cyanuricAcid: { min: 0, max: 500 },
@@ -80,17 +85,6 @@ const PLAUSIBLE_RANGES: Record<ScientificMeasurementKey, PlausibleRange> = {
   phosphates: { min: 0, max: 20 },
   temperature: { min: 0, max: 60 },
   totalDissolvedSolids: { min: 1, max: 50_000 },
-}
-
-const QUALITY_WEIGHTS: Partial<Record<ScientificMeasurementKey, number>> = {
-  ph: 0.25,
-  freeChlorine: 0.2,
-  alkalinity: 0.15,
-  temperature: 0.1,
-  calciumHardness: 0.1,
-  cyanuricAcid: 0.1,
-  combinedChlorine: 0.05,
-  totalDissolvedSolids: 0.05,
 }
 
 export function isScientificallyValidMeasurement(
@@ -109,6 +103,30 @@ function qualityLevel(score: number): ScientificQualityLevel {
   return 'insufficient'
 }
 
+function disinfectantField(profile: ScientificProfileInput): 'freeChlorine' | 'bromine' {
+  return profile.treatmentType === 'bromine' && !profile.saltSystem
+    ? 'bromine'
+    : 'freeChlorine'
+}
+
+function qualityWeights(
+  profile: ScientificProfileInput,
+  disinfectant: 'freeChlorine' | 'bromine',
+): Partial<Record<ScientificMeasurementKey, number>> {
+  const chlorineBased = disinfectant === 'freeChlorine'
+  const spaOnly = profile.waterBodyType === 'spa'
+  return {
+    ph: 0.25,
+    [disinfectant]: 0.25,
+    alkalinity: 0.15,
+    temperature: 0.1,
+    calciumHardness: 0.1,
+    totalDissolvedSolids: 0.05,
+    ...(chlorineBased ? { combinedChlorine: 0.05 } : {}),
+    ...(chlorineBased && !spaOnly ? { cyanuricAcid: 0.05 } : {}),
+  }
+}
+
 export function assessScientificQuality(
   test: ScientificTestInput,
   profile: ScientificProfileInput,
@@ -117,12 +135,15 @@ export function assessScientificQuality(
   const missingFields: ScientificMeasurementKey[] = []
   const invalidFields: ScientificMeasurementKey[] = []
   const limitations = new Set<ScientificLimitationCode>()
+  const requiredDisinfectant = disinfectantField(profile)
+  const weights = qualityWeights(profile, requiredDisinfectant)
 
   const values: Record<ScientificMeasurementKey, number | null | undefined> = {
     ph: test.ph,
     freeChlorine: test.freeChlorine,
     totalChlorine: test.totalChlorine,
     combinedChlorine: test.combinedChlorine,
+    bromine: test.bromine,
     alkalinity: test.alkalinity,
     calciumHardness: test.calciumHardness,
     cyanuricAcid: test.cyanuricAcid,
@@ -135,19 +156,19 @@ export function assessScientificQuality(
   for (const key of Object.keys(values) as ScientificMeasurementKey[]) {
     const value = values[key]
     if (value == null) {
-      if (QUALITY_WEIGHTS[key]) missingFields.push(key)
+      if (weights[key]) missingFields.push(key)
       continue
     }
     if (isScientificallyValidMeasurement(key, value)) measuredFields.push(key)
     else invalidFields.push(key)
   }
 
-  if (test.freeChlorine == null) limitations.add('missing_disinfectant_measurement')
+  if (values[requiredDisinfectant] == null) limitations.add('missing_disinfectant_measurement')
   if (test.temperature == null) limitations.add('missing_temperature')
   if (test.alkalinity == null) limitations.add('missing_alkalinity')
   if (test.calciumHardness == null) limitations.add('missing_calcium_hardness')
   if (test.totalDissolvedSolids == null) limitations.add('missing_total_dissolved_solids')
-  if (test.cyanuricAcid == null) limitations.add('missing_cyanuric_acid')
+  if (weights.cyanuricAcid && test.cyanuricAcid == null) limitations.add('missing_cyanuric_acid')
   if (invalidFields.length > 0) limitations.add('invalid_measurement')
 
   const validVolume = Number.isFinite(profile.volume) && profile.volume > 0
@@ -158,26 +179,33 @@ export function assessScientificQuality(
   const validCombined = isScientificallyValidMeasurement('combinedChlorine', test.combinedChlorine)
   let chlorineInconsistent = false
 
-  if (validFree && validTotal && test.totalChlorine! + 0.05 < test.freeChlorine!) {
-    chlorineInconsistent = true
+  if (requiredDisinfectant === 'freeChlorine') {
+    if (validFree && validTotal && test.totalChlorine! + 0.05 < test.freeChlorine!) {
+      chlorineInconsistent = true
+    }
+    if (validCombined && validTotal && test.combinedChlorine! > test.totalChlorine! + 0.05) {
+      chlorineInconsistent = true
+    }
+    if (validFree && validTotal && validCombined) {
+      const calculatedCombined = Math.max(0, test.totalChlorine! - test.freeChlorine!)
+      if (Math.abs(calculatedCombined - test.combinedChlorine!) > 0.5) chlorineInconsistent = true
+    }
+    if (chlorineInconsistent) limitations.add('chlorine_measurements_inconsistent')
   }
-  if (validCombined && validTotal && test.combinedChlorine! > test.totalChlorine! + 0.05) {
-    chlorineInconsistent = true
-  }
-  if (validFree && validTotal && validCombined) {
-    const calculatedCombined = Math.max(0, test.totalChlorine! - test.freeChlorine!)
-    if (Math.abs(calculatedCombined - test.combinedChlorine!) > 0.5) chlorineInconsistent = true
-  }
-  if (chlorineInconsistent) limitations.add('chlorine_measurements_inconsistent')
 
-  let score = 0
-  for (const [key, weight] of Object.entries(QUALITY_WEIGHTS) as [ScientificMeasurementKey, number][]) {
-    if (isScientificallyValidMeasurement(key, values[key])) score += weight
+  const weightEntries = Object.entries(weights) as [ScientificMeasurementKey, number][]
+  const totalWeight = weightEntries.reduce((sum, [, weight]) => sum + weight, 0)
+  let earnedWeight = 0
+  for (const [key, weight] of weightEntries) {
+    if (isScientificallyValidMeasurement(key, values[key])) earnedWeight += weight
   }
+  let score = totalWeight > 0 ? earnedWeight / totalWeight : 0
 
   if (!validVolume) score = Math.min(score, 0.35)
   if (!isScientificallyValidMeasurement('ph', test.ph)) score = 0
-  if (!validFree) score = Math.min(score, 0.55)
+  if (!isScientificallyValidMeasurement(requiredDisinfectant, values[requiredDisinfectant])) {
+    score = Math.min(score, 0.55)
+  }
   if (chlorineInconsistent) score = Math.max(0, score - 0.15)
   if (invalidFields.length > 0) score = Math.max(0, score - Math.min(0.2, invalidFields.length * 0.05))
 
@@ -193,6 +221,7 @@ export function assessScientificQuality(
   return {
     score,
     level: qualityLevel(score),
+    disinfectantField: requiredDisinfectant,
     measuredFields,
     missingFields,
     invalidFields,
