@@ -5,6 +5,16 @@ if (!path) throw new Error('Database path required')
 
 const db = new DatabaseSync(path)
 db.exec(`
+  -- The historical fixture represents an installed pre-P0-B database. Keep the
+  -- user table because later privacy migrations must update existing consent.
+  CREATE TABLE "User" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "email" TEXT NOT NULL,
+    "passwordHash" TEXT NOT NULL,
+    "consentAnalytics" BOOLEAN NOT NULL DEFAULT true
+  );
+  CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
   CREATE TABLE "Subscription" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
@@ -134,6 +144,13 @@ db.exec(`
   CREATE INDEX "OrganizationMember_userId_idx"
     ON "OrganizationMember"("userId");
 `)
+
+const insertUser = db.prepare(
+  'INSERT INTO "User" (id,email,passwordHash,consentAnalytics) VALUES (?,?,?,?)'
+)
+for (const id of ['u1', 'u2', 'u3']) {
+  insertUser.run(id, `${id}@legacy.aqwelia.test`, '!legacy-test-only', 1)
+}
 
 const insert = db.prepare(
   'INSERT INTO Subscription (id,userId,plan,active,expiresAt) VALUES (?,?,?,?,?)'
