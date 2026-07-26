@@ -6,6 +6,7 @@ on:
       - main
       - feat/p1-mobile-technician-journey
       - feat/p1-scientific-quality
+      - feat/p1-scientific-contextual-targets
     paths:
       - '.github/workflows/p1-scientific-quality.yml'
       - 'docs/release/P1_SCIENTIFIC_*.md'
