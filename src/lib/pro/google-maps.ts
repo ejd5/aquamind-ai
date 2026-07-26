@@ -259,7 +259,7 @@ export async function computeGoogleRouteMatrix(
   }
   const body = {
     origins: origins.map((location) => ({ waypoint: { location: { latLng: normalizeLatLng(location) } } })),
-    destinations: destinations.map((location) => ({ waypoint: { location: { latLng: normalizeLatLng(location) } })),
+    destinations: destinations.map((location) => ({ waypoint: { location: { latLng: normalizeLatLng(location) } } })),
     travelMode: 'DRIVE',
     routingPreference: 'TRAFFIC_AWARE',
     departureTime: (options.departureTime ?? new Date()).toISOString(),
