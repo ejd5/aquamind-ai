@@ -1,0 +1,49 @@
+name: P0-L2 typecheck diagnostic
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: file:/tmp/aqwelia-ci.db
+      NEXTAUTH_SECRET: test-secret-for-ci-only-do-not-use-in-production
+      NEXTAUTH_URL: http://localhost:3099
+      AUTH_TRUST_HOST: "true"
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_test_ci_placeholder
+      REVENUECAT_WEBHOOK_SECRET: rc_wh_test_ci_only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.4"
+      - run: bun install --frozen-lockfile >/dev/null
+      - run: bun run db:generate:all >/dev/null
+      - name: Capture typecheck output
+        id: typecheck
+        shell: bash
+        run: |
+          set +e
+          bun run typecheck > /tmp/p0l2-typecheck.txt 2>&1
+          status=$?
+          set -e
+          cat /tmp/p0l2-typecheck.txt
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+      - name: Upload typecheck diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p0l2-typecheck-diagnostic
+          path: /tmp/p0l2-typecheck.txt
+          retention-days: 1
+      - name: Fail when typecheck failed
+        if: steps.typecheck.outputs.status != '0'
+        run: exit 1
