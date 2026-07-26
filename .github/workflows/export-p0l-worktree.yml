@@ -1,4 +1,4 @@
-name: Export P0-L worktree
+name: Apply P0-L consolidated bundle
 
 on:
   pull_request:
@@ -6,20 +6,29 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  export:
+  apply:
+    if: ${{ !contains(github.event.pull_request.head.sha || '', 'skip-p0l-bundle') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
+          ref: ${{ github.head_ref }}
           fetch-depth: 1
-      - name: Archive worktree with Git metadata
-        run: tar -czf /tmp/aquamind-p0l-worktree.tar.gz .
-      - uses: actions/upload-artifact@v4
-        with:
-          name: aquamind-p0l-worktree
-          path: /tmp/aquamind-p0l-worktree.tar.gz
-          retention-days: 1
+      - name: Apply consolidated P0-L files
+        run: tar -xzf .tmp/p0l-bundle.tar.gz -C .
+      - name: Remove temporary delivery files
+        run: |
+          rm -f .tmp/p0l-bundle.tar.gz
+          rm -f .github/workflows/apply-p0l-bundle.yml
+          rm -f .github/workflows/export-p0l-worktree.yml
+      - name: Commit P0-L baseline
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(p0-l): apply launch security baseline [skip p0l-bundle]'
+          git push origin HEAD:${{ github.head_ref }}
