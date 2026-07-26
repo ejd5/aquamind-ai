@@ -17,8 +17,6 @@ import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
 
-type GeocodeTargetType = 'client' | 'pool'
-
 function text(value: unknown, maximum: number): string {
   return typeof value === 'string' ? value.trim().slice(0, maximum) : ''
 }
