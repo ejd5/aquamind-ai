@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { workspaceEntryTarget } from '@/lib/auth-entry-target'
 import { normalizeOfflineTarget } from '@/lib/offline/idempotency'
 
-const todayPage = readFileSync(
-  join(process.cwd(), 'src/app/pro/app/today/page.tsx'),
+const todayWorkspace = readFileSync(
+  join(process.cwd(), 'src/components/pro/technician-today-workspace.tsx'),
   'utf8',
 )
 const appLayout = readFileSync(
@@ -16,6 +16,28 @@ const mobileShell = readFileSync(
   join(process.cwd(), 'src/components/pro/pro-mobile-shell.tsx'),
   'utf8',
 )
+const mobileAppLayout = readFileSync(
+  join(process.cwd(), 'src/mobile-app/layout.tsx'),
+  'utf8',
+)
+const mobileAppEntry = readFileSync(
+  join(process.cwd(), 'src/mobile-app/page.tsx'),
+  'utf8',
+)
+const mobileSignin = readFileSync(
+  join(process.cwd(), 'src/mobile-app/auth/signin/page.tsx'),
+  'utf8',
+)
+const mobileReport = readFileSync(
+  join(process.cwd(), 'src/mobile-app/pro/app/report/page.tsx'),
+  'utf8',
+)
+const apiClient = readFileSync(join(process.cwd(), 'src/lib/api-client.ts'), 'utf8')
+const authMeRoute = readFileSync(
+  join(process.cwd(), 'src/app/api/auth/me/route.ts'),
+  'utf8',
+)
+const capacitorConfig = readFileSync(join(process.cwd(), 'capacitor.config.ts'), 'utf8')
 const packageJson = JSON.parse(
   readFileSync(join(process.cwd(), 'package.json'), 'utf8'),
 ) as { scripts: Record<string, string> }
@@ -36,16 +58,19 @@ describe('P1 Mobile technician journey', () => {
   })
 
   it('uses the mobile API abstraction and a locally cached daily route', () => {
-    expect(todayPage).toContain("import { api } from '@/lib/api-client'")
-    expect(todayPage).not.toContain('NEXT_PUBLIC_API_BASE_URL')
-    expect(todayPage).toContain('TODAY_CACHE_KEY')
-    expect(todayPage).toContain('window.localStorage')
-    expect(todayPage).toContain("Network.addListener('networkStatusChange'")
+    expect(todayWorkspace).toContain("import { api } from '@/lib/api-client'")
+    expect(todayWorkspace).not.toContain('NEXT_PUBLIC_API_BASE_URL')
+    expect(todayWorkspace).toContain('TODAY_CACHE_KEY')
+    expect(todayWorkspace).toContain('window.localStorage')
+    expect(todayWorkspace).toContain("Network.addListener('networkStatusChange'")
+    expect(todayWorkspace).toContain("mobileMode ?")
+    expect(todayWorkspace).toContain("/pro/app/report?id=")
   })
 
   it('queues field status changes through the idempotent offline ledger', () => {
-    expect(todayPage).toContain("queueAction({ method: 'PATCH', path, body })")
-    expect(todayPage).toContain('flushPending().then(load)')
+    expect(todayWorkspace).toContain("queueAction({ method: 'PATCH', path, body })")
+    expect(todayWorkspace).toContain('flushPending().then(load)')
+    expect(mobileReport).toContain("queueAction({ method: 'PATCH', path, body })")
     expect(
       normalizeOfflineTarget(
         'https://aqwelia.test',
@@ -55,7 +80,7 @@ describe('P1 Mobile technician journey', () => {
     ).toBe('PATCH')
   })
 
-  it('keeps manager and technician navigation separate', () => {
+  it('keeps manager and technician navigation separate on the web app', () => {
     expect(appLayout).toContain("access.role === 'technician'")
     expect(appLayout).toContain("href: '/pro/app/today'")
     expect(appLayout).toContain('role={access.role}')
@@ -64,18 +89,34 @@ describe('P1 Mobile technician journey', () => {
     expect(mobileShell).toContain("role === 'technician'")
   })
 
-  it('selects the Capacitor export through the canonical Next 16 config', () => {
+  it('builds a dedicated static native route tree instead of exporting the website', () => {
     expect(packageJson.scripts['mobile:build']).toBe('node scripts/build-mobile.mjs')
     expect(Object.values(packageJson.scripts).join('\n')).not.toContain('next build -c')
     expect(nextConfig).toContain("process.env.MOBILE_BUILD === 'true'")
     expect(nextConfig).toContain("import mobileNextConfig from './next.config.mobile'")
     expect(mobileNextConfig).toContain("output: 'export'")
+    expect(mobileBuildScript).toContain("join(root, 'src', 'mobile-app')")
+    expect(mobileBuildScript).toContain('await rename(appDirectory, stashedAppDirectory)')
+    expect(mobileBuildScript).toContain('await cp(mobileAppSource, appDirectory, { recursive: true })')
+    expect(mobileBuildScript).toContain('await rename(stashedAppDirectory, appDirectory)')
+    expect(mobileBuildScript).toContain('stashedMiddlewarePath')
   })
 
-  it('removes backend route handlers only while the static export is running', () => {
-    expect(mobileBuildScript).toContain("join(root, 'src', 'app', 'api')")
-    expect(mobileBuildScript).toContain('await rename(apiDirectory, stashedApiDirectory)')
-    expect(mobileBuildScript).toContain('await rename(stashedApiDirectory, apiDirectory)')
-    expect(mobileBuildScript).toContain("MOBILE_BUILD: 'true'")
+  it('keeps authentication and role selection on the HTTPS backend', () => {
+    expect(mobileAppLayout).toContain('MobileIntlProvider')
+    expect(mobileAppEntry).toContain("api.get<MobileSessionResponse>('/api/auth/me')")
+    expect(mobileAppEntry).toContain("router.replace('/pro/app/today')")
+    expect(mobileSignin).toContain("apiUrl('/api/auth/csrf')")
+    expect(mobileSignin).toContain("apiUrl('/api/auth/callback/credentials')")
+    expect(mobileSignin).toContain("await api.get('/api/auth/me')")
+    expect(apiClient).toContain('export function apiUrl')
+    expect(authMeRoute).toContain('resolveWorkspaceEntryTarget')
+    expect(authMeRoute).toContain('entryTarget')
+  })
+
+  it('uses native HTTP and cookie bridges for Capacitor sessions', () => {
+    expect(capacitorConfig).toContain('CapacitorHttp')
+    expect(capacitorConfig).toContain('CapacitorCookies')
+    expect(capacitorConfig.match(/enabled: true/g)?.length).toBeGreaterThanOrEqual(2)
   })
 })

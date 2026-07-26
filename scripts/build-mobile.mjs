@@ -1,14 +1,19 @@
 #!/usr/bin/env node
 
-import { access, mkdir, rename, rm } from 'node:fs/promises'
+import { access, cp, mkdir, rename, rm } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-const apiDirectory = join(root, 'src', 'app', 'api')
+const appDirectory = join(root, 'src', 'app')
+const mobileAppSource = join(root, 'src', 'mobile-app')
+const middlewarePath = join(root, 'src', 'middleware.ts')
 const stashRoot = join(root, '.mobile-build-stash')
-const stashedApiDirectory = join(stashRoot, 'api')
+const stashedAppDirectory = join(stashRoot, 'app')
+const stashedMiddlewarePath = join(stashRoot, 'middleware.ts')
+const stashedGlobals = join(stashedAppDirectory, 'globals.css')
+const generatedGlobals = join(appDirectory, 'globals.css')
 
 async function pathExists(path) {
   try {
@@ -19,16 +24,49 @@ async function pathExists(path) {
   }
 }
 
-async function recoverInterruptedBuild() {
-  const apiExists = await pathExists(apiDirectory)
-  const stashExists = await pathExists(stashedApiDirectory)
+async function restoreStash() {
+  if (await pathExists(stashedAppDirectory)) {
+    await rm(appDirectory, { recursive: true, force: true })
+    await mkdir(dirname(appDirectory), { recursive: true })
+    await rename(stashedAppDirectory, appDirectory)
+  }
 
-  if (!apiExists && stashExists) {
-    await mkdir(dirname(apiDirectory), { recursive: true })
-    await rename(stashedApiDirectory, apiDirectory)
+  if (await pathExists(stashedMiddlewarePath)) {
+    await rm(middlewarePath, { force: true })
+    await rename(stashedMiddlewarePath, middlewarePath)
   }
 
   await rm(stashRoot, { recursive: true, force: true })
+}
+
+async function recoverInterruptedBuild() {
+  if (
+    (await pathExists(stashedAppDirectory)) ||
+    (await pathExists(stashedMiddlewarePath))
+  ) {
+    await restoreStash()
+  } else {
+    await rm(stashRoot, { recursive: true, force: true })
+  }
+}
+
+async function prepareMobileApp() {
+  if (!(await pathExists(mobileAppSource))) {
+    throw new Error('Missing src/mobile-app source tree')
+  }
+
+  await mkdir(stashRoot, { recursive: true })
+  await rename(appDirectory, stashedAppDirectory)
+
+  if (await pathExists(middlewarePath)) {
+    await rename(middlewarePath, stashedMiddlewarePath)
+  }
+
+  await cp(mobileAppSource, appDirectory, { recursive: true })
+
+  if (await pathExists(stashedGlobals)) {
+    await cp(stashedGlobals, generatedGlobals)
+  }
 }
 
 async function runNextBuild() {
@@ -53,28 +91,17 @@ async function runNextBuild() {
   })
 }
 
-let apiStashed = false
 let exitCode = 1
 
 try {
   await recoverInterruptedBuild()
-
-  if (await pathExists(apiDirectory)) {
-    await mkdir(stashRoot, { recursive: true })
-    await rename(apiDirectory, stashedApiDirectory)
-    apiStashed = true
-  }
-
+  await prepareMobileApp()
   exitCode = await runNextBuild()
 } catch (error) {
   console.error('[mobile-build] failed:', error)
   exitCode = 1
 } finally {
-  if (apiStashed && (await pathExists(stashedApiDirectory))) {
-    await mkdir(dirname(apiDirectory), { recursive: true })
-    await rename(stashedApiDirectory, apiDirectory)
-  }
-  await rm(stashRoot, { recursive: true, force: true })
+  await restoreStash()
 }
 
 process.exit(exitCode)
