@@ -49,7 +49,21 @@ jobs:
         run: node scripts/check-p1-production-activation.mjs --mode=repository --strict --output=artifacts/p1-production-activation-repository.json
       - name: Run activation contract tests
         run: bunx vitest run tests/p1-production-activation.test.ts
+      - name: Check hardcoded translations
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/i18n/check-hardcoded-strings.py 2>&1 | tee /tmp/p1-production-translation-check.log
+      - name: Upload failed translation diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1-production-translation-log
+          path: /tmp/p1-production-translation-check.log
+          if-no-files-found: warn
+          retention-days: 7
       - name: Upload repository activation report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: p1-production-activation-repository
