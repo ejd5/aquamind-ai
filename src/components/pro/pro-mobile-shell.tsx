@@ -22,6 +22,7 @@ import {
   Wrench,
   X,
 } from 'lucide-react'
+import type { ProRole } from '@/lib/pro/access'
 
 type ProNavKey =
   | 'navDashboard'
@@ -41,7 +42,7 @@ type MobileNavItem = {
   exact?: boolean
 }
 
-const PRIMARY_ITEMS = [
+const MANAGER_PRIMARY_ITEMS = [
   { href: '/pro/app', key: 'navDashboard', icon: LayoutDashboard, exact: true },
   { href: '/pro/app/planning', key: 'navPlanning', icon: CalendarDays },
   { href: '/pro/app/interventions', key: 'navInterventions', icon: Wrench },
@@ -49,10 +50,22 @@ const PRIMARY_ITEMS = [
   { href: '/pro/app/team', key: 'navTeam', icon: UsersRound },
 ] satisfies readonly MobileNavItem[]
 
-const SECONDARY_ITEMS = [
+const TECHNICIAN_PRIMARY_ITEMS = [
+  { href: '/pro/app/today', key: 'navDashboard', icon: LayoutDashboard, exact: true },
+  { href: '/pro/app/interventions', key: 'navInterventions', icon: Wrench },
+  { href: '/pro/app/clients', key: 'navClients', icon: Users },
+  { href: '/pro/app/pools', key: 'navPools', icon: Waves },
+  { href: '/pro/app/settings', key: 'navSettings', icon: Settings },
+] satisfies readonly MobileNavItem[]
+
+const MANAGER_SECONDARY_ITEMS = [
   { href: '/pro/app/pools', key: 'navPools', icon: Waves },
   { href: '/pro/app/reports', key: 'navReports', icon: FileText },
   { href: '/pro/app/settings', key: 'navSettings', icon: Settings },
+] satisfies readonly MobileNavItem[]
+
+const TECHNICIAN_SECONDARY_ITEMS = [
+  { href: '/pro/app/reports', key: 'navReports', icon: FileText },
 ] satisfies readonly MobileNavItem[]
 
 const subscribeToClient = () => () => undefined
@@ -79,17 +92,32 @@ function itemLabel(
   return item.label ?? ''
 }
 
-export function ProMobileShell({ companyName, canManage, gpsEnabled }: { companyName: string; canManage: boolean; gpsEnabled: boolean }) {
+export function ProMobileShell({
+  companyName,
+  canManage,
+  gpsEnabled,
+  role,
+}: {
+  companyName: string
+  canManage: boolean
+  gpsEnabled: boolean
+  role: ProRole
+}) {
   const pathname = usePathname()
   const t = useTranslations('proApp')
   const [open, setOpen] = useState(false)
+  const isTechnician = role === 'technician'
+  const primaryItems = isTechnician ? TECHNICIAN_PRIMARY_ITEMS : MANAGER_PRIMARY_ITEMS
   const gpsItems: readonly MobileNavItem[] = gpsEnabled
     ? [
         { href: '/pro/app/location', label: 'Terrain GPS', icon: MapPin },
         ...(canManage ? [{ href: '/pro/app/dispatch', label: 'Dispatch Live', icon: MapPinned }] : []),
       ]
     : []
-  const secondaryItems: readonly MobileNavItem[] = [...gpsItems, ...SECONDARY_ITEMS]
+  const baseSecondaryItems = isTechnician
+    ? TECHNICIAN_SECONDARY_ITEMS
+    : MANAGER_SECONDARY_ITEMS
+  const secondaryItems: readonly MobileNavItem[] = [...gpsItems, ...baseSecondaryItems]
   const isClient = useSyncExternalStore(subscribeToClient, () => true, () => false)
 
   useEffect(() => {
@@ -112,7 +140,7 @@ export function ProMobileShell({ companyName, canManage, gpsEnabled }: { company
         className="aq-pro-bottom-tabs fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-border/70 bg-background/95 px-1 pt-1 shadow-[0_-12px_32px_rgba(2,52,60,0.12)] backdrop-blur-2xl md:hidden"
         aria-label="AQWELIA Pro"
       >
-        {PRIMARY_ITEMS.map((item) => {
+        {primaryItems.map((item) => {
           const Icon = item.icon
           const active = routeIsActive(pathname, item.href, item.exact)
           return (
