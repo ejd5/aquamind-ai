@@ -189,6 +189,8 @@ export const authOptions: NextAuthOptions = {
               email,
               passwordHash: '!oauth:' + (account.providerAccountId || ''),
               name: user.name ?? null,
+              consentAnalytics: false,
+              consentMarketing: false,
             },
             select: { id: true },
           })

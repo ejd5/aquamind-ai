@@ -100,13 +100,15 @@ const STATIC_ENTRIES: SitemapEntry[] = [
   { path: '/legal/support', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/legal/accessibilite', changeFrequency: 'monthly', priority: 0.3 },
   { path: '/legal/securite', changeFrequency: 'monthly', priority: 0.3 },
+  { path: '/legal/mentions-legales', changeFrequency: 'monthly', priority: 0.5 },
+  { path: '/legal/sous-traitants', changeFrequency: 'monthly', priority: 0.4 },
+  { path: '/legal/ia', changeFrequency: 'monthly', priority: 0.5 },
+  { path: '/legal/suppression-compte', changeFrequency: 'monthly', priority: 0.5 },
 
   // ── RGPD data management (standalone, complements /legal/privacy) ─────
   { path: '/gestion-donnees', changeFrequency: 'monthly', priority: 0.5 },
 
-  // NOTE: /mentions-legales, /confidentialite, /conditions-utilisation are
-  // legacy redirects (308 → /legal/cgu or /legal/privacy). They are NOT
-  // listed here because the sitemap must point to canonical URLs only.
+  // Legacy privacy/terms aliases are excluded; canonical legal URLs are listed above.
 ]
 
 /**
