@@ -98,13 +98,13 @@ export function CookieConsent() {
           </div>
         ) : (
           <div className="mt-5 grid gap-2 sm:grid-cols-3">
-            <button type="button" disabled={saving} onClick={() => void save(false, 'cookie_banner_reject')} className="min-h-12 rounded-full border border-gold/40 bg-background px-4 text-sm font-bold text-foreground hover:bg-secondary disabled:opacity-60">
+            <button type="button" disabled={saving} onClick={() => void save(false, 'cookie_banner_reject')} className="min-h-12 rounded-full border border-border bg-background px-4 text-sm font-bold text-foreground hover:bg-secondary disabled:opacity-60">
               {copy.reject}
             </button>
             <button type="button" disabled={saving} onClick={() => setCustomizing(true)} className="min-h-12 rounded-full border border-border bg-secondary/40 px-4 text-sm font-bold text-foreground hover:bg-secondary disabled:opacity-60">
               <SlidersHorizontal className="mr-2 inline h-4 w-4" />{copy.customize}
             </button>
-            <button type="button" disabled={saving} onClick={() => void save(true, 'cookie_banner_accept')} className="min-h-12 rounded-full border border-gold/40 bg-background px-4 text-sm font-bold text-foreground hover:bg-secondary disabled:opacity-60">
+            <button type="button" disabled={saving} onClick={() => void save(true, 'cookie_banner_accept')} className="min-h-12 rounded-full border border-border bg-background px-4 text-sm font-bold text-foreground hover:bg-secondary disabled:opacity-60">
               {copy.accept}
             </button>
           </div>
