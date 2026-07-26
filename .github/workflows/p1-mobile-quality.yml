@@ -1,0 +1,57 @@
+name: P1 Mobile Quality
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/p1-mobile-quality.yml"
+      - "capacitor.config.ts"
+      - "next.config.mobile.ts"
+      - "package.json"
+      - "bun.lock"
+      - "src/app/**"
+      - "src/components/**"
+      - "src/lib/api-client.ts"
+      - "src/lib/offline/**"
+      - "tests/p1-mobile-*.test.ts"
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-build:
+    name: Validate Capacitor static export
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      DATABASE_URL: file:/tmp/aqwelia-mobile-ci.db
+      NEXTAUTH_SECRET: test-secret-for-mobile-ci-only
+      NEXTAUTH_URL: https://mobile-ci.aqwelia.invalid
+      AUTH_TRUST_HOST: "true"
+      NEXT_PUBLIC_API_BASE_URL: https://mobile-api-ci.aqwelia.invalid
+      STRIPE_SECRET_KEY: sk_test_mobile_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_mobile_ci_placeholder
+      REVENUECAT_WEBHOOK_SECRET: rc_wh_mobile_ci_only
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.4"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Generate Prisma clients
+        run: bun run db:generate:all
+
+      - name: Build Capacitor static export
+        run: bun run mobile:build
+
+      - name: Assert mobile output
+        run: test -f out/index.html
