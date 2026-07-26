@@ -15,6 +15,7 @@ export type DosageReadinessReason =
   | 'rebalance_ph_first'
   | 'spa_cya_not_recommended'
   | 'equipment_salt_range_required'
+  | 'manufacturer_target_recalculation_required'
   | 'salt_already_within_range'
   | 'filter_type_required'
   | 'incompatible_filter_type'
@@ -121,7 +122,10 @@ export function assessDosageReadiness(
       if (test.salt >= targets.salt.minimum && test.salt <= targets.salt.maximum) {
         return result('not_calculable', ['salt_already_within_range'], false)
       }
-      return result('ready', ['manufacturer_label_verification_required'], false)
+      // The legacy engine still targets a generic 5 g/L. Even with a documented
+      // equipment range, that quantity must be recomputed from the actual target
+      // before it can be exposed.
+      return result('not_calculable', ['manufacturer_target_recalculation_required'])
     }
 
     case 'anti_algae':
