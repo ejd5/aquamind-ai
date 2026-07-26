@@ -7210,5 +7210,202 @@
     "dataCta": "See full policy",
     "redirectCta": "Continue to the page",
     "redirectNow": "Redirect now"
+  },
+  "arqwelia": {
+    "metaTitle": "ARQWELIA — Your pool, before it exists",
+    "metaDescription": "Scan your yard, explore two personalized directions, and prepare a clear brief before talking to a pool builder.",
+    "tagline": "Your pool, before it exists.",
+    "subtitle": "Scan your yard, explore two personalized directions and prepare a clear brief before talking to a pool builder.",
+    "ctaPrimary": "Imagine my pool",
+    "ctaSecondary": "See the demo",
+    "trustStrip": "Two concepts · Private project by default · No unsolicited calls",
+    "privacyPromise": "Your contact details are never shared automatically. You choose who may contact you.",
+    "warning": "Conceptual visualization for inspiration only. Dimensions, feasibility, budget and placement must be confirmed by a professional.",
+    "demoBadge": "Demo — simulated analysis",
+    "stepsTitle": "Your 4-step journey",
+    "steps": {
+      "1": {
+        "title": "Photos",
+        "desc": "Capture your yard from home."
+      },
+      "2": {
+        "title": "Questionnaire",
+        "desc": "Project type, timeline, budget, style."
+      },
+      "3": {
+        "title": "Analysis",
+        "desc": "A simulation, clearly identified as such."
+      },
+      "4": {
+        "title": "Concepts",
+        "desc": "Two directions, one brief — that's it."
+      }
+    },
+    "diffTitle": "What we state, and what we don't",
+    "diff": {
+      "declared": "Declared: the budget, timeline and style you provide",
+      "detected": "Detected: a main zone estimated from a photo",
+      "estimated": "Estimated: indicative conceptual dimensions",
+      "toConfirm": "To confirm: everything — by a professional on site"
+    },
+    "passportTitle": "Your Project Passport",
+    "passportDesc": "A private project id, a downloadable summary, and the choice of when — and whether — you share.",
+    "partnerTitle": "Are you a pool builder?",
+    "partnerSubtitle": "Join the ARQWELIA pilot list. Early access to opportunities when the program opens.",
+    "faqTitle": "Frequently asked questions",
+    "faq": {
+      "q1": "Does ARQWELIA use real AI?",
+      "a1": "Not in Lot 1. The analysis is a simulation, clearly identified as such. AI vision comes in a later lot.",
+      "q2": "Are my photos sent to a server?",
+      "a2": "No. In Lot 1, photos stay in your browser for local previews. They are deleted when you leave the session.",
+      "q3": "Will I be contacted automatically?",
+      "a3": "Never without your explicit consent. Your dossier stays private by default."
+    },
+    "finalCtaTitle": "Ready to visualize your pool?",
+    "finalCtaSubtitle": "No card, no commitment, no sharing of your details.",
+    "wizard": {
+      "back": "Back",
+      "next": "Continue",
+      "submit": "Create my Project Passport",
+      "demo": "Demo mode",
+      "errors": {
+        "required": "Required",
+        "firstName": "First name required (2 characters min)",
+        "email": "Invalid email",
+        "postalCode": "Invalid postal code (5 digits)",
+        "consentRequired": "You must accept processing to continue",
+        "conceptRequired": "Select a concept",
+        "photoTooBig": "Image too large (10 MB max)",
+        "photoType": "Unsupported format (JPG, PNG or WebP)",
+        "photoCount": "Maximum 4 photos"
+      },
+      "photos": {
+        "title": "Add your photos",
+        "desc": "1 photo minimum, 2 to 4 recommended, 4 maximum.",
+        "accepted": "JPG, PNG, WebP · 10 MB max per file",
+        "tipsTitle": "Photo tips",
+        "tip1": "Take the yard head-on at shoulder height.",
+        "tip2": "Avoid shooting into the sun (backlit).",
+        "tip3": "Include the presumed pool location.",
+        "tip4": "One wide shot is enough to start.",
+        "privacy": "Your photos stay on your device. They are not sent to a server in this lot.",
+        "demoBtn": "Start with demo photos",
+        "add": "Add a photo",
+        "remove": "Remove",
+        "preview": "Preview"
+      },
+      "questionnaire": {
+        "title": "Your project",
+        "projectType": "Project type",
+        "projectTypes": {
+          "piscine_enterrée": "In-ground pool",
+          "mini_piscine": "Mini-pool",
+          "spa_swim_spa": "Spa / Swim spa"
+        },
+        "timeline": "Timeline",
+        "timelines": {
+          "<6m": "Less than 6 months",
+          "6-12m": "6 to 12 months",
+          ">12m": "More than 12 months",
+          "undecided": "Undecided"
+        },
+        "budget": "Budget",
+        "budgets": {
+          "<25k": "Under 25k€",
+          "25-40k": "25 to 40k€",
+          "40-60k": "40 to 60k€",
+          ">60k": "60k€ and above",
+          "undefined": "Undefined"
+        },
+        "style": "Style",
+        "styles": {
+          "mediterranean": "Mediterranean",
+          "contemporary": "Contemporary",
+          "natural": "Natural",
+          "familial": "Family"
+        },
+        "knownMeasureTitle": "Known measurement (optional)",
+        "knownMeasureLabel": "Label (e.g. plot width)",
+        "knownMeasureValue": "Value",
+        "knownMeasureUnit": "Unit",
+        "measureUnitM": "meter"
+      },
+      "analysis": {
+        "title": "Analyzing your data",
+        "desc": "You are watching a simulation. No real AI analysis runs in this lot.",
+        "preparing": "Preparing…",
+        "done": "Done",
+        "resultTitle": "Here is your simulated analysis",
+        "realityScore": "Reality Score (demo)"
+      },
+      "concepts": {
+        "title": "Compare two concepts",
+        "desc": "Warning: conceptual inspirational rendering, non-contractual, non-technical, to be confirmed by a professional.",
+        "selectBtn": "Select",
+        "selected": "Selected concept",
+        "selectPrompt": "Choose a concept to continue",
+        "badgeSun": "Sunlight",
+        "badgeAccess": "Access to confirm",
+        "badgeBudget": "Stated budget"
+      },
+      "contact": {
+        "title": "Create your Project Passport",
+        "firstName": "First name",
+        "email": "Email",
+        "phone": "Phone",
+        "postalCode": "Project postal code",
+        "consentText": "I agree to receive my dossier and to choose later which professionals may contact me.",
+        "consentHint": "Not pre-checked. No automatic sharing of your details."
+      },
+      "success": {
+        "title": "Your Project Passport is ready",
+        "idLabel": "Project ID",
+        "realityScoreLabel": "Demo Reality Score",
+        "actions": {
+          "keepPrivate": "Keep dossier private",
+          "shareLater": "Share later",
+          "findPros": "Find professionals soon"
+        },
+        "soon": "Coming soon",
+        "summary": "Your project summary"
+      }
+    },
+    "partner": {
+      "form": {
+        "companyName": "Company",
+        "contactName": "Your name",
+        "email": "Professional email",
+        "phone": "Phone",
+        "postalCode": "Postal code",
+        "radiusKm": "Service radius (km)",
+        "consent": "I agree to be contacted for the ARQWELIA pilot phase.",
+        "consentHint": "No payment, no sale, no automatic access.",
+        "submit": "Join the pilot list",
+        "success": "Thank you! Your request has been recorded.",
+        "already": "You're already on the list — thank you!"
+      },
+      "errors": {
+        "companyName": "Company required",
+        "contactName": "Name required",
+        "email": "Invalid professional email",
+        "consentRequired": "Consent required"
+      }
+    },
+    "pro": {
+      "title": "Pro Preview — demo",
+      "subtitle": "Protected demo page. No real lead is distributed in this lot.",
+      "column": {
+        "type": "Project type",
+        "zone": "Approximate zone",
+        "budget": "Budget",
+        "timeline": "Timeline",
+        "completeness": "Completeness",
+        "score": "Maturity score",
+        "contact": "Contact",
+        "interest": "Express interest"
+      },
+      "contactHidden": "Contact not revealed",
+      "interestDisabled": "Coming soon"
+    }
   }
 }

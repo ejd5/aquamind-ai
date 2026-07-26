@@ -64,6 +64,13 @@ const config: Config = {
                         silver: 'var(--aqwelia-silver)',
                         ivory: 'var(--aqwelia-ivory)',
                         champagne: 'var(--aqwelia-champagne)',
+                        /* ARQWELIA — namespaced Lot 1 tokens (additive, additive only) */
+                        'arq-navy': 'var(--arqwelia-navy)',
+                        'arq-aqua': 'var(--arqwelia-aqua)',
+                        'arq-cyan': 'var(--arqwelia-cyan)',
+                        'arq-sand': 'var(--arqwelia-sand)',
+                        'arq-mist': 'var(--arqwelia-mist)',
+                        'arq-ink': 'var(--arqwelia-ink)',
                 },
                 borderRadius: {
                         lg: 'var(--radius)',

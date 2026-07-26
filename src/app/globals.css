@@ -149,6 +149,21 @@
   /* Typography — display serif for hero headlines, body sans for UI */
   --aqwelia-font-display: 'Cormorant Garamond', serif;
   --aqwelia-font-body: -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* ===========================================================
+     ARQWELIA — namespaced tokens for the Lot 1 visual prototype.
+     These are ADDITIVE to the AQWELIA brand tokens above and never
+     replace them. ARQWELIA is a sub-product with a slightly cooler,
+     more "tech blueprint" palette (navy + aqua + cyan + sand) used
+     only by /arqwelia/* and /pro/arqwelia/* routes. See:
+     docs/ARQWELIA_LOT1.md
+     =========================================================== */
+  --arqwelia-navy: #061826;
+  --arqwelia-aqua: #00D6C5;
+  --arqwelia-cyan: #43CFF5;
+  --arqwelia-sand: #E8D8B7;
+  --arqwelia-mist: #F1F7F8;
+  --arqwelia-ink: #0C2533;
 }
 
 .dark {
