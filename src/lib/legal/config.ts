@@ -1,4 +1,4 @@
-export type LegalFieldKey = 'publisherName' | 'legalForm' | 'capital' | 'registeredAddress' | 'siren' | 'register' | 'vat' | 'email' | 'phone' | 'hostName' | 'hostAddress' | 'hostContact' | 'mediatorName' | 'mediatorUrl'
+export type LegalFieldKey = 'publisherName' | 'legalForm' | 'capital' | 'registeredAddress' | 'siren' | 'register' | 'vat' | 'email' | 'phone' | 'publicationDirector' | 'hostName' | 'hostAddress' | 'hostContact' | 'mediatorName' | 'mediatorUrl'
 type LegalField = { key: LegalFieldKey; value: string | null; required?: boolean }
 
 function value(name: string): string | null {
@@ -31,7 +31,7 @@ export const LEGAL_CONFIG = {
 }
 
 export function missingLegalFields(): string[] {
-  const missing = [
+  const missing: LegalFieldKey[] = [
     ...LEGAL_CONFIG.publisher.filter((f) => f.required && !f.value).map((f) => f.key),
     ...LEGAL_CONFIG.host.filter((f) => f.required && !f.value).map((f) => f.key),
     ...LEGAL_CONFIG.mediator.filter((f) => f.required && !f.value).map((f) => f.key),
