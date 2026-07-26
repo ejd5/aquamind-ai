@@ -30,6 +30,7 @@ jobs:
       EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       PR_NUMBER: ${{ github.event.pull_request.number || '' }}
       MANUAL_PREVIEW_URL: ${{ inputs.preview_url || '' }}
+      VISUAL_QA_SKIPPED: 'false'
 
     steps:
       - name: Checkout repository
@@ -80,6 +81,36 @@ jobs:
                 break
               fi
 
+              commit_status=$(curl -fsSL \
+                -H "Authorization: Bearer $GH_TOKEN" \
+                -H "Accept: application/vnd.github+json" \
+                "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/commits/$EXPECTED_SHA/status")
+              rate_limited=$(printf '%s' "$commit_status" | jq -r '[
+                .statuses[]
+                | select((.context | startswith("Vercel"))
+                  and .state == "failure"
+                  and ((.target_url // "") | contains("upgradeToPro=build-rate-limit")))
+              ] | length')
+
+              if [ "$rate_limited" -gt 0 ]; then
+                mkdir -p "$QA_OUTPUT_DIR"
+                cat > "$QA_OUTPUT_DIR/VERCEL_PREVIEW_UNAVAILABLE.md" <<EOF
+          # Preview visual QA not executed
+
+          The AQWELIA application checks passed, but Vercel did not create a preview for commit \`$EXPECTED_SHA\` because the project reached its external build-rate limit.
+
+          This is not a visual approval. Re-run this workflow with a manual preview URL or after Vercel can build the same commit.
+          EOF
+                echo "VISUAL_QA_SKIPPED=true" >> "$GITHUB_ENV"
+                echo "::warning::Vercel preview unavailable because of the external build-rate limit; visual QA remains unverified."
+                {
+                  echo "### Preview Visual QA not executed"
+                  echo "Vercel reported its external build-rate limit for commit \`$EXPECTED_SHA\`."
+                  echo "The workflow is successful because this is an infrastructure limitation, not a code failure. Visual approval is still required before release."
+                } >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+
               echo "Waiting for the Vercel PR comment (attempt $attempt)"
               sleep 15
             done
@@ -94,6 +125,7 @@ jobs:
           echo "PREVIEW_URL=$preview_url" >> "$GITHUB_ENV"
 
       - name: Wait for the exact Vercel preview commit
+        if: env.VISUAL_QA_SKIPPED != 'true'
         shell: bash
         run: |
           for attempt in $(seq 1 40); do
@@ -112,9 +144,11 @@ jobs:
           exit 1
 
       - name: Probe preview runtime
+        if: env.VISUAL_QA_SKIPPED != 'true'
         run: bun scripts/probe-preview-runtime.mjs
 
       - name: Capture preview and run visual checks
+        if: env.VISUAL_QA_SKIPPED != 'true'
         run: bun scripts/visual-qa-preview.mjs
 
       - name: Upload visual QA artifact
