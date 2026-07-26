@@ -9,7 +9,18 @@ const ALLOWED_MUTATIONS: Readonly<Record<string, ReadonlySet<OfflineMutationMeth
   '/api/pool/equipment': new Set(['POST', 'PATCH', 'DELETE']),
   '/api/pool/inventory': new Set(['POST', 'DELETE']),
   '/api/pool/reminders': new Set(['POST', 'PATCH', 'DELETE']),
+  '/api/pro/water-tests': new Set(['POST']),
 }
+
+const ALLOWED_MUTATION_PATTERNS: readonly {
+  pattern: RegExp
+  methods: ReadonlySet<OfflineMutationMethod>
+}[] = [
+  {
+    pattern: /^\/api\/pro\/interventions\/[^/]+$/,
+    methods: new Set(['PATCH']),
+  },
+]
 
 const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/
 
@@ -36,6 +47,12 @@ export function validateIdempotencyKey(value: string | null): string {
   return key
 }
 
+function allowedMethodsForPath(pathname: string): ReadonlySet<OfflineMutationMethod> | undefined {
+  const exact = ALLOWED_MUTATIONS[pathname]
+  if (exact) return exact
+  return ALLOWED_MUTATION_PATTERNS.find(({ pattern }) => pattern.test(pathname))?.methods
+}
+
 export function normalizeOfflineTarget(
   origin: string,
   path: string,
@@ -57,7 +74,7 @@ export function normalizeOfflineTarget(
     throw new OfflineReplayValidationError('External replay target denied', 403, 'target_denied')
   }
 
-  const allowedMethods = ALLOWED_MUTATIONS[url.pathname]
+  const allowedMethods = allowedMethodsForPath(url.pathname)
   if (!allowedMethods?.has(normalizedMethod)) {
     throw new OfflineReplayValidationError(
       'Replay target is not allowlisted',
