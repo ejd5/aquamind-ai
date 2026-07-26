@@ -10,20 +10,25 @@ on:
       - feat/p1-scientific-safety-readiness
       - feat/p1-scientific-persistence
       - feat/p1-scientific-confidence-provenance
+      - feat/p1-commercial-pro
     paths:
       - '.github/workflows/p1-scientific-quality.yml'
       - 'docs/release/P1_SCIENTIFIC_*.md'
       - 'docs/release/P1_COMMERCIAL_*.md'
+      - 'docs/release/P1_PRO_GEOLOCATION_*.md'
       - 'prisma/**'
       - 'src/app/api/pool/profile/route.ts'
       - 'src/app/api/pool/water-test/route.ts'
       - 'src/app/api/pro/commercial/**'
+      - 'src/app/api/pro/maps/**'
       - 'src/lib/pool/**'
       - 'src/lib/pro/commercial.ts'
+      - 'src/lib/pro/google-maps.ts'
       - 'tests/check-postgresql-schema.sh'
       - 'tests/check-scientific-sqlite-migration.py'
       - 'tests/p1-scientific-*.test.ts'
       - 'tests/p1-commercial-pro.test.ts'
+      - 'tests/p1-pro-geolocation-maps.test.ts'
 
 permissions:
   contents: read
@@ -46,6 +51,7 @@ jobs:
       STRIPE_SECRET_KEY: sk_test_p1_ci_placeholder
       STRIPE_WEBHOOK_SECRET: whsec_p1_ci_placeholder
       REVENUECAT_WEBHOOK_SECRET: rc_wh_p1_ci_only
+      GOOGLE_MAPS_SERVER_API_KEY: ''
 
     steps:
       - name: Checkout repository
@@ -78,7 +84,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          bunx vitest run tests/p1-scientific-*.test.ts tests/p1-commercial-pro.test.ts 2>&1 | tee /tmp/aqwelia-p1-contracts.log
+          bunx vitest run tests/p1-scientific-*.test.ts tests/p1-commercial-pro.test.ts tests/p1-pro-geolocation-maps.test.ts 2>&1 | tee /tmp/aqwelia-p1-contracts.log
 
       - name: Upload failed P1 contract log
         if: failure()
