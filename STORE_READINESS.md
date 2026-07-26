@@ -1,186 +1,368 @@
-# AQWELIA — Store Readiness (iOS / Android)
+# AQWELIA — Préparation App Store et Google Play
 
-> Préparation au lancement App Store + Google Play. L'app web actuelle sert de MVP produit ; la future app native reprendra l'architecture ci-dessous.
+Ce document décrit la stratégie mobile réellement implémentée dans le dépôt. Les exigences exactes des stores évoluent : elles doivent être revérifiées dans App Store Connect et Google Play Console au moment de chaque soumission.
 
-## 1. Architecture cross-platform recommandée
+## 1. Décision d’architecture
 
-### Option recommandée : **React Native + Expo** (ou Flutter)
-- **Codebase partagée** : 85% du code entre iOS et Android
-- **Accès natif** : caméra, notifications push, paiements in-app, géoloc
-- **Performance** : proche du natif (RN New Architecture / Hermes)
-- **Écosystème** : Expo EAS pour build + submit automatisés
+AQWELIA utilise actuellement **Capacitor 8** autour d’un export statique Next.js.
 
-### Pourquoi pas Next.js PWA seule ?
-- Les PWA ont des limitations sur iOS (push limité, stockage, background tasks)
-- L'App Store n'accepte pas facilement les wrappers web purs (guideline 4.2)
-- L'expérience caméra native est supérieure
+Références du dépôt :
 
-### Structure monorepo proposée
-```
-aquamind/
-├── apps/
-│   ├── web/              # Next.js (actuel) — site + dashboard
-│   ├── mobile/           # Expo (RN) — iOS + Android
-│   └── api/              # API partagée (ou tRPC)
-├── packages/
-│   ├── pool-engine/      # lib/pool/* (dosing, safety, LSI) — code partagé !
-│   ├── guides-data/      # catalogue de guides partagé
-│   ├── freemium/         # logique plans partagée
-│   └── ui/               # design system partagé (NativeWind)
-└── assets/               # logos, icônes, captures
+- [`capacitor.config.ts`](./capacitor.config.ts) ;
+- [`next.config.mobile.ts`](./next.config.mobile.ts) ;
+- scripts `mobile:*` dans [`package.json`](./package.json) ;
+- dépendances `@capacitor/ios`, `@capacitor/android` et plugins natifs ;
+- `@revenuecat/purchases-capacitor` pour les achats intégrés.
+
+Identité actuelle :
+
+```text
+App ID : com.aqwelia.app
+Nom : Aqwelia
+Web directory : out
 ```
 
-**Le moteur déterministe `lib/pool/*` est déjà du TypeScript pur** → 100% réutilisable en RN. C'est l'avantage clé de l'architecture actuelle.
+Expo ou Flutter ne sont pas l’architecture active. Une réévaluation technologique ne doit être envisagée qu’après avoir identifié une limitation concrète et bloquante de Capacitor.
 
-## 2. Modules natifs à prévoir
+## 2. Fonctionnement du client mobile
 
-| Fonction | Web (actuel) | Natif (futur) |
-|---|---|---|
-| Caméra photo | `<input type=file>` | `expo-camera` (live preview, focus, flash) |
-| Galerie | File picker | `expo-image-picker` |
-| Notifications push | — | `expo-notifications` + APNs/FCM |
-| Géoloc / météo | wttr.in | `expo-location` + wttr.in ou API météo native |
-| Paiements in-app | (stripe web) | `react-native-iap` (StoreKit / Billing) |
-| Stockage photos | FS serveur | `expo-file-system` + Cloud sync |
-| Offline | — | SQLite local + sync |
-| Analytics | Postgres | Mixpanel / Amplitude (RN SDK) |
-| Partage PDF | API route | `expo-sharing` + `react-native-pdf` |
+Le build mobile utilise :
 
-## 3. Assets stores à produire
-
-### App Store (iOS)
-- [ ] **App icon** 1024×1024 (PNG, sans alpha, sans coins arrondis — Apple les ajoute)
-- [ ] **Screenshots** : 6.7" (iPhone 15 Pro Max) + 6.5" + 5.5" (au minimum)
-  - Format : 1290×2796 px (6.7")
-  - Storyboard recommandé :
-    1. Dashboard santé piscine (indice eau claire 95/100)
-    2. Diagnostic photo eau (VLM en action)
-    3. Scan bandelette (lecture + confiance)
-    4. Alerte météo orage (push notification)
-    5. Plan d'action ordonné (1. TAC → 2. pH → 3. Chlore)
-    6. Analyse filtre / électrolyseur
-    7. Ressources & vidéos
-    8. Rappels intelligents
-- [ ] **App Preview video** (optionnel mais recommandé) : 15-30s, in-app footage only, sans voix off
-- [ ] **Description** FR + EN (4000 char max)
-- [ ] **Mots-clés** (100 char) : piscine, eau, chlore, ph, spa, entretien, analyse
-- [ ] **URL support** + **URL politique confidentialité**
-- [ ] **Classification** : 4+ (pas de contenu sensible)
-
-### Google Play (Android)
-- [ ] **App icon** 512×512 PNG (avec transparence OK)
-- [ ] **Feature graphic** 1024×500 (bannière store)
-- [ ] **Screenshots** : min 2, max 8, format 16:9 ou 9:16
-  - Même storyboard qu'iOS
-- [ ] **Phone screenshot** 1080×1920 min
-  - [ ] **Tablet screenshots** (optionnel) 7" + 10"
-- [ ] **App preview video** (YouTube URL) : 30s-2min
-- [ ] **Description courte** (80 char) + **longue** (4000 char)
-- [ ] **Data safety form** (obligatoire)
-- [ ] **Target audience** : 13+
-- [ ] **News** : app signing par Google
-
-## 4. Configuration requise
-
-### iOS
-- **Minimum** : iOS 15.0 (couvre 99% des devices)
-- **Devices** : iPhone (obligatoire), iPad (optionnel stage 2)
-- **Orientations** : portrait (principal), paysage (plans d'action)
-- **Permissions** :
-  - `NSCameraUsageDescription` : "Pour diagnostiquer votre eau et vos équipements"
-  - `NSPhotoLibraryUsageDescription` : "Pour importer des photos de test"
-  - `NSLocationWhenInUseUsageDescription` : "Pour la météo locale de votre piscine"
-
-### Android
-- **Minimum** : Android 8.0 (API 26)
-- **Target** : Android 14 (API 34)
-- **Permissions** :
-  - `CAMERA`, `READ_MEDIA_IMAGES`, `ACCESS_COARSE_LOCATION`, `POST_NOTIFICATIONS`
-- **Architecture** : arm64-v8a, armeabi-v7a, x86_64
-
-## 5. Modèle freemium + paiements
-
-### Implémentation paiements
-- **iOS** : StoreKit 2 (subscriptions auto-renouvelables)
-- **Android** : Google Play Billing Library 6
-- **Server-side** : webhook pour valider reçus → activer en DB
-
-### Product IDs suggérés
-```
-com.aquamind.limpide.week
-com.aquamind.limpide.month
-com.aquamind.limpide.quarter
-com.aquamind.limpide.halfyear
-com.aquamind.cristal.week
-com.aquamind.cristal.month
-... (12 SKUs total)
+```bash
+MOBILE_BUILD=true next build -c next.config.mobile.ts
 ```
 
-### Pricing tiers (à valider avec Apple/Google pricing matrix)
-- Limpide : 2,99€/semaine · 7,99€/mois · 19,99€/3mois · 34,99€/6mois
-- Cristal : 4,99€/semaine · 12,99€/mois · 32,99€/3mois · 57,99€/6mois
-- Gardien : 9,99€/semaine · 24,99€/mois · 59,99€/3mois · 109,99€/6mois
+Il produit un répertoire `out/` contenant l’interface statique embarquée dans la WebView native.
 
-**Note** : Apple/Google prennent 15-30% de commission. Penser à ajuster les prix.
+Les routes API Next.js ne sont pas incluses. L’application mobile doit appeler le backend déployé via :
 
-## 6. ASO (App Store Optimization)
+```env
+NEXT_PUBLIC_API_BASE_URL=https://backend-aqwelia.example
+```
 
-### Mots-clés cibles
-- Primaire : "assistant piscine", "pool care", "entretien piscine"
-- Secondaire : "ph piscine", "chlore", "eau verte", "spa", "électrolyseur", "bandelette test"
-- Long tail : "que faire eau verte piscine", "dosage chlore", "après orage piscine"
+Cette URL doit être :
 
-### Stratégie de notation
-- Demander un avis après un "win moment" (eau revenue à 90+ après plan d'action)
-- Répondre à tous les avis (positifs et négatifs)
-- Cible : 4,5★ minimum
+- HTTPS ;
+- compatible avec la version mobile publiée ;
+- accessible sans redirection vers un domaine de preview ;
+- configurée avant la compilation de release ;
+- testée pour l’authentification, les cookies/tokens et les erreurs réseau.
 
-## 7. Checklist de soumission
+## 3. Capacités natives présentes
 
-### Pré-lancement
-- [ ] Tests beta via TestFlight (iOS) + Internal testing (Play)
-- [ ] Crash-free rate > 99,5%
-- [ ] Onboarding fluide (complétion > 70%)
-- [ ] Plans payants testés bout en bout (sandbox)
-- [ ] Politique de confidentialité rédigée + URL
-- [ ] CGU + mentions légales
-- [ ] Disclaimer responsabilité professionnel (déjà en place)
-- [ ] Support email + FAQ in-app
+Les plugins installés couvrent notamment :
 
-### Soumission
-- [ ] Build de release signé
-- [ ] App Store Connect : nouvelle app + metadata + screenshots + build
-- [ ] Google Play Console : nouvelle app + listing + APK/AAB
-- [ ] Review time : 24-48h (Apple), 1-3j (Google)
+- caméra ;
+- géolocalisation ;
+- fichiers ;
+- préférences ;
+- partage ;
+- réseau ;
+- haptique ;
+- clavier ;
+- splash screen ;
+- barre de statut ;
+- notifications locales ;
+- navigateur intégré ;
+- RevenueCat.
 
-### Post-lancement
-- [ ] Monitoring crash (Sentry / Crashlytics)
-- [ ] Analytics funnel (Mixpanel)
-- [ ] Support tickets (Zendesk / in-app chat)
-- [ ] Mises à jour toutes les 2-4 semaines
+La présence d’un plugin ne signifie pas que son parcours est entièrement prêt pour les stores. Chaque capacité doit être testée sur appareils réels, avec autorisation acceptée, refusée, retirée et réaccordée.
 
-## 8. Roadmap native suggérée
+## 4. État actuel
 
-| Semaine | Livrable |
-|---|---|
-| 1-2 | Setup monorepo + Expo + portage du moteur `lib/pool/*` |
-| 3-4 | Navigation + onboarding + profil piscine (reprendre les composants) |
-| 5-6 | Caméra native + diagnostic photo + scan bandelette |
-| 7 | Météo + notifications push |
-| 8 | Paiements in-app (StoreKit + Billing) |
-| 9 | Rappels + guides + carnet |
-| 10 | Beta TestFlight + Internal testing |
-| 11 | Polish + assets stores |
-| 12 | Soumission App Store + Google Play |
-| 13-14 | Review + fixes |
-| 15 | 🚀 Lancement |
+### Fondations disponibles
 
-## 9. Risques & mitigations
+- configuration Capacitor ;
+- scripts de build, synchronisation et ouverture des projets natifs ;
+- identifiant d’application stable ;
+- export statique mobile ;
+- intégration RevenueCat côté client et backend ;
+- webhooks de facturation idempotents ;
+- export et suppression de compte ;
+- politique de confidentialité et pages légales accessibles ;
+- transparence IA et consentement analytics opt-in.
 
-| Risque | Mitigation |
-|---|---|
-| Rejet App Store (guideline 4.2 minimum functionality) | S'assurer que l'app native a des fonctionnalités au-delà du web (push, caméra live, offline) |
-| Rejet pour "health claims" | Disclaimer clair : "ne remplace pas un professionnel" (déjà en place) |
-| Coûts commission 30% | Proposer paiement web pour plan annuel (règle Apple : OK si pas de lien in-app) |
-| Concurrency native | Tests approfondis sur devices réels (pas seulement simulateur) |
-| Taille de l'app | Optimiser images, utiliser App Thinning |
+### À finaliser avant une bêta externe
+
+- vérifier ou générer les projets natifs iOS et Android depuis le HEAD actuel ;
+- configurer le backend mobile de Staging ;
+- tester connexion, déconnexion et restauration de session ;
+- tester caméra et import de photos ;
+- tester le refus des permissions ;
+- tester le mode hors connexion et la reprise réseau ;
+- tester les notifications ;
+- configurer les produits et entitlements RevenueCat sandbox ;
+- valider les liens profonds et retours OAuth ;
+- préparer icônes, splash screens et captures ;
+- ajouter une surveillance des erreurs mobiles ;
+- effectuer une recette sur plusieurs appareils et tailles d’écran.
+
+### À finaliser avant Production
+
+- comptes Apple Developer et Google Play opérationnels ;
+- contrats, fiscalité et coordonnées bancaires configurés ;
+- certificats, profils et signatures de release ;
+- produits d’abonnement approuvés ou prêts à être soumis ;
+- URLs publiques de support, confidentialité et suppression de compte ;
+- fiche Data Safety / App Privacy cohérente avec les traitements réels ;
+- compte de revue temporaire lorsque nécessaire ;
+- tests sandbox complets ;
+- plan de support et de rollback ;
+- validation juridique des textes et informations de l’éditeur.
+
+## 5. Build et synchronisation
+
+### Build statique
+
+```bash
+bun run mobile:build
+```
+
+### Synchronisation iOS et Android
+
+```bash
+bun run mobile:sync
+```
+
+### Ouvrir iOS
+
+```bash
+bun run mobile:ios
+```
+
+ou :
+
+```bash
+bun run mobile:open:ios
+```
+
+### Ouvrir Android
+
+```bash
+bun run mobile:android
+```
+
+ou :
+
+```bash
+bun run mobile:open:android
+```
+
+Avant chaque synchronisation, exécuter les validations du dépôt et vérifier que `NEXT_PUBLIC_API_BASE_URL` pointe vers l’environnement attendu.
+
+## 6. Environnements mobiles
+
+### Développement local
+
+- backend local ou tunnel HTTPS contrôlé ;
+- produits RevenueCat de test ;
+- aucune donnée réelle ;
+- logs détaillés autorisés sans secrets.
+
+### Staging
+
+- backend `aqwelia-staging` ;
+- base PostgreSQL Staging ;
+- comptes de test ;
+- Stripe et RevenueCat sandbox ;
+- OAuth avec URLs Staging ;
+- TestFlight interne et Google Play Internal Testing.
+
+### Production
+
+- backend `aqwelia-production` ;
+- base Neon Production ;
+- produits et entitlements Production ;
+- secrets séparés de Staging ;
+- aucune clé de test ;
+- logs sans données sensibles ;
+- monitoring actif.
+
+Une application Staging ne doit jamais utiliser la base ou les clés de Production.
+
+## 7. Abonnements mobiles
+
+La source de vérité des plans est [`src/lib/billing/plans.ts`](./src/lib/billing/plans.ts).
+
+Plans actifs :
+
+| Identifiant | Nom | Prix mensuel canonique |
+|---|---:|---:|
+| `decouverte` | Free / Découverte | 0 € |
+| `oasis` | Pool | 6,99 € |
+| `wellness` | Complete | 10,99 € |
+| `spa365` | Spa | 4,99 € |
+
+Les Product IDs RevenueCat, entitlements, offres App Store et abonnements Google Play doivent correspondre exactement à cette source.
+
+Parcours à tester :
+
+1. nouvel achat ;
+2. période d’essai lorsqu’elle est réellement configurée ;
+3. restauration des achats ;
+4. renouvellement ;
+5. annulation avec accès jusqu’à expiration ;
+6. paiement échoué et période de grâce ;
+7. changement de plan ;
+8. achat sur un autre appareil ;
+9. webhook reçu plusieurs fois ;
+10. événement reçu dans le désordre ;
+11. reprise automatique d’un webhook échoué ;
+12. suppression de compte avec abonnement encore actif.
+
+Aucun prix ne doit être écrit en dur dans une seconde source documentaire ou applicative.
+
+## 8. Permissions et confidentialité
+
+Chaque permission doit avoir :
+
+- une finalité réelle ;
+- une explication claire avant la demande système lorsque nécessaire ;
+- un texte localisé ;
+- un comportement fonctionnel en cas de refus ;
+- un accès aux réglages pour la réactiver ;
+- aucune collecte en arrière-plan non documentée.
+
+### Caméra et photos
+
+- diagnostic et scan ;
+- suppression des métadonnées lorsque prévu ;
+- aucune promesse d’historique photo durable sans stockage objet privé ;
+- traitement IA signalé avant envoi.
+
+### Géolocalisation
+
+La météo locale peut utiliser la position lorsque l’utilisateur l’autorise. Le suivi GPS professionnel reste suspendu par défaut :
+
+```env
+NEXT_PUBLIC_PRO_GPS_ENABLED=false
+```
+
+Il ne doit pas être présenté dans la fiche Store comme disponible tant qu’il n’a pas été réactivé, configuré et recetté.
+
+### Analytics
+
+- refus par défaut ;
+- aucun chargement PostHog avant consentement ;
+- choix modifiable ;
+- déclaration Store cohérente avec les événements réellement collectés.
+
+## 9. Suppression de compte
+
+La suppression doit être accessible depuis l’application et depuis une page publique.
+
+La recette doit vérifier :
+
+- authentification ou vérification de la demande ;
+- avertissement sur les conséquences ;
+- suppression des données personnelles et professionnelles concernées ;
+- absence de données orphelines ;
+- traitement distinct de l’abonnement du store ;
+- confirmation compréhensible ;
+- conservation légale éventuelle clairement expliquée.
+
+Supprimer un compte AQWELIA ne résilie pas nécessairement automatiquement l’abonnement Apple ou Google : l’interface doit orienter clairement l’utilisateur vers la gestion de son abonnement lorsque requis.
+
+## 10. Assets et fiche Store
+
+Préparer au minimum :
+
+- icône iOS ;
+- icône Android adaptative ;
+- splash screen ;
+- captures des formats demandés dans les consoles au moment de la soumission ;
+- visuel promotionnel Google Play lorsqu’il est requis ;
+- description courte et longue ;
+- mots-clés et catégories ;
+- URL support ;
+- URL confidentialité ;
+- URL suppression de compte ;
+- coordonnées de contact pour la revue ;
+- notes de revue expliquant l’IA, les abonnements et les permissions.
+
+Storyboard recommandé pour les captures :
+
+1. état de l’eau et action prioritaire ;
+2. diagnostic photo avec transparence IA ;
+3. lecture de bandelette ;
+4. plan d’action déterministe ;
+5. historique et évolution ;
+6. offre payante après démonstration de valeur.
+
+Ne pas utiliser un score global précis tant que sa formule, sa fraîcheur et son niveau de confiance ne sont pas documentés et testés.
+
+## 11. Matrice de recette minimale
+
+### Appareils
+
+- iPhone récent ;
+- iPhone plus ancien encore supporté ;
+- au moins deux tailles Android ;
+- appareil avec réseau lent ;
+- appareil avec espace de stockage faible ;
+- modes clair et sombre ;
+- taille de texte augmentée.
+
+### Scénarios
+
+- première installation ;
+- mise à jour depuis une version précédente ;
+- création de compte ;
+- Google/Apple Login lorsqu’activés ;
+- déconnexion/reconnexion ;
+- onboarding ;
+- ajout d’un bassin ;
+- saisie d’un test ;
+- diagnostic photo ;
+- plan d’action ;
+- perte et retour réseau ;
+- achat et restauration ;
+- export ;
+- suppression du compte ;
+- ouverture des liens juridiques ;
+- refus de chaque permission.
+
+## 12. Critères de passage en bêta
+
+- build signé installé sur appareils réels ;
+- aucune erreur bloquante sur authentification et navigation ;
+- backend Staging stable ;
+- crash monitoring actif ;
+- achats sandbox validés ;
+- export et suppression validés ;
+- textes et liens publics accessibles ;
+- aucune fonction suspendue présentée comme disponible ;
+- procédure de support établie.
+
+## 13. Critères de soumission
+
+- CI complète verte sur le commit publié ;
+- version et numéro de build cohérents ;
+- secrets et environnements contrôlés ;
+- politique de confidentialité et déclarations Store alignées ;
+- contenus localisés relus ;
+- assets conformes aux consoles ;
+- compte de revue fonctionnel et temporaire ;
+- abonnement sandbox testé de bout en bout ;
+- plan de surveillance après publication ;
+- validation finale sur le binaire exact soumis.
+
+## 14. Prochain ordre recommandé
+
+1. stabiliser le design system B2C sur les six écrans prioritaires ;
+2. finaliser les parcours Capacitor ;
+3. renforcer offline et reprise réseau ;
+4. terminer les notifications ;
+5. valider RevenueCat sandbox ;
+6. produire les assets Store ;
+7. lancer TestFlight interne et Google Play Internal Testing ;
+8. corriger les retours ;
+9. soumettre uniquement lorsque la checklist est entièrement vérifiée.
+
+## 15. Documents liés
+
+- [`docs/release/PRODUCT_TRUTH.md`](./docs/release/PRODUCT_TRUTH.md) ;
+- [`README.md`](./README.md) ;
+- [`.env.example`](./.env.example) ;
+- [`docs/legal/P0-L2-LAUNCH-COMPLIANCE.md`](./docs/legal/P0-L2-LAUNCH-COMPLIANCE.md) ;
+- [`src/lib/billing/plans.ts`](./src/lib/billing/plans.ts).

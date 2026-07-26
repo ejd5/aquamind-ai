@@ -1,112 +1,92 @@
-# AquaMind AI — Étude de naming
+# AQWELIA — Décision de naming
 
-## AQWELIA (nouveau nom — juillet 2026)
+> Document consolidé dans P0-L3 — 26 juillet 2026.
 
-**Étymologie :** AQ (aqua, l'eau) + WEL (well, le bien-être anglais) + IA (intelligence artificielle).
+## Décision canonique
 
-**Promesse :** "L'eau qui va bien, par l'intelligence."
+Le nom officiel du produit est **AQWELIA**.
 
-**Raison du changement :** 
-- Plus mémorable et différenciant (5 lettres + suffixe IA)
-- Multilingue (aqua/well fonctionnent en FR et EN)
-- Signal clair de l'IA sans jargon
-- Sonorité douce et aquatique (fluidité, douceur)
+Il doit être utilisé dans :
 
-**Logo :** Q cerclé de doré avec vague + étoiles (eau pure + clarté) + A final avec lignes dorées (structure technique + IA).
+- le produit web ;
+- les applications iOS et Android ;
+- les espaces Particuliers et Pros ;
+- les documents juridiques ;
+- les fiches App Store et Google Play ;
+- les communications commerciales ;
+- les noms d’environnement et la documentation technique.
 
-**Couleurs marque :**
-- Bleu-vert foncé #004D5A (profondeur, confiance)
-- Bleu-vert clair #00A8B0 (eau vive, dynamisme)
-- Bleu-vert très clair #00C2D1 (clarté, transparence)
-- Doré #FFD700 (premium, excellence)
-- Fond nuit #003B4A (sérénité, profondeur)
+Les anciennes références à AquaMind AI, PoolPilot, Aqura, Lumiaqua ou d’autres propositions correspondent à une exploration historique. Elles ne constituent plus une recommandation de renommage active.
 
-**Taglines possibles :**
-- "L'eau qui va bien, par l'intelligence."
-- "Aqua. Well. IA."
-- "L'intelligence de l'eau claire."
+## Construction du nom
 
----
+- **AQ** : aqua, l’eau ;
+- **WEL** : well, le bien-être et le bon état ;
+- **IA** : intelligence artificielle.
 
-## Contexte
-Nom actuel : **AquaMind AI**. Fonctionnel mais générique ("Aqua" + "Mind" = combinatoire usuelle). Pour un produit leader,Distinctif, international, mémorable.
+Promesse de marque :
 
-## Critères
-- Original et disponible (vérifier商标 + domaines + stores)
-- Facile à mémoriser et prononcer (FR/EN/ES)
-- Premium, pas gadget
-- Compatible univers piscine + IA + météo + expertise
-- Évocation de l'eau, de la clarté, du copilote
+> Trois racines, une promesse : une eau qui va bien, pilotée par l’intelligence.
 
-## 20+ propositions par catégorie
+Formulation produit courte :
 
-### 🥂 Premium (sobre, haut de gamme)
-1. **Lumiaqua** — "Lumière de l'eau" — tagline: *Votre eau, limpide.* Tonalité: élégant, lumineux. Direction visuelle: dégradés aube/turquoise, sérigraphie fine.
-2. **Claréa** — "Clarté + area" — *L'eau claire, sans effort.* Tonalité: raffiné, apaisant. Visuel: perle nacrée + teal.
-3. **Aqualent** — "Aqua + silent/intelligent" — *Le copilote silencieux de votre piscine.* Tonalité: discret, pro. Visuel: minimalisme nordique.
-4. **Piscinea** — latinisant — *L'art de l'eau équilibrée.* Tonalité: classique, méditerranéen. Visuel: mosaïque bleu/or.
-5. **Mireille** (miroir + eau) — *Le miroir de votre piscine.* Tonalité: féminin, premium FR. Visuel: reflets, glassmorphism.
+> AQWELIA est le copilote intelligent qui veille sur votre piscine et votre spa.
 
-### 👨‍👩‍👧 Grand public (chaleureux, accessible)
-6. **Poolio** — "Pool + io" — *Votre piscine, simplifiée.* Tonalité: amical, app mobile. Visuel: emoji vague, pastel.
-7. **Baignade** (FR direct) — *Baignade sans souci.* Tonalité: estival, familial. Visuel: soleil + eau.
-8. **EauClair** — *Eau claire, esprit tranquille.* Tonality: direct, rassurant. Visuel: goutte cristalline.
-9. **MaPiscine** — *Le carnet de santé de ma piscine.* Tonalité: possessif, simple. Visuel: note + vague.
-10. **Plouf!** — *Plouf, l'eau est parfaite.* Tonalité: ludique, jeune. Visuel: splash coloré.
+## Positionnement
 
-### 🤖 Tech (moderne, IA)
-11. **Aqura** — "Aqua + aura/cura" — *L'IA qui prend soin de votre eau.* Tonalité: tech, sain. Visuel: aurore boréale aquatique.
-12. **HydroMind** — *L'intelligence de l'eau.* Tonalité: expert, data. Visuel: réseau neuronal aquatique.
-13. **NemoAI** — "Nemo + AI" — *Trouvez toujours le bon équilibre.* Tonalité: tech + clin d'œil. Visuel: poisson minimaliste.
-14. **PoolPilot** — *Votre copilote piscine.* Tonalité: action, guidage. Visuel: volant + vague.
-15. **AquaSync** — *Synchronisez votre eau.* Tonalité: connecté, temps réel. Visuel: sync + eau.
+AQWELIA doit évoquer :
 
-### 😏 Jeu de mot / espiègle
-16. **pHinement** — "pH + enfin" — *Enfin, le bon pH.* Tonalité: malin, expert. Visuel: formule pH stylisée.
-17. **ChloRémi** — "Chlore + Rémi" (prénom) — *Votre copain chlore.* Tonalité: friendly FR. Visuel: mascotte.
-18. **EauTop** — "Eau + top" / "Haut" — *L'eau au top.* Tonalité: positif, simple. Visuel: thumb up + vague.
-19. **Skimmer** — double sens (skimmer piscine + skimmer cuisine) — *On écume les problèmes.* Tonalité: pro, culotté. Visuel: skimmer stylisé.
-20. **Balnéa** — "balnéaire + néa (nouveau)" — *Le nouveau balnéaire.* Tonalité: spa, premium. Visuel: vapeur + eau.
+- la clarté de l’eau ;
+- la confiance ;
+- la précision ;
+- l’assistance plutôt que le remplacement de l’humain ;
+- une technologie premium mais accessible ;
+- une marque internationale prononçable en français, anglais, espagnol et portugais.
 
-### 🌊 Mixte / distinctif
-21. **Wavely** — *Ridez la vague de la simplicité.* Tonalité: moderne, doux. Visuel: vague minimaliste.
-22. **Claro** — *Clarté, tout simplement.* Tonalité: hispano/international. Visuel: cercle clair.
-23. **Viv'eau** — "Vivre + eau" — *Vivez l'eau.* Tonalité: vivant, FR. Visuel: goutte animée.
+## Architecture de marque
 
-## Shortlist finale (5)
+Noms recommandés :
 
-| # | Nom | Force | Faiblesse |
-|---|---|---|---|
-| 1 | **PoolPilot** | Copilote clair, action, international | Un peu "pilot" générique |
-| 2 | **Lumiaqua** | Premium, lumineux, évocateur | Moins tech |
-| 3 | **Aqura** | Court, moderne, double sens cura/aura | Prononciation à confirmer |
-| 4 | **Claréa** | Élégant, clarté évidente | Trop proche "Clara" |
-| 5 | **EauClair** | Direct, FR, rassurant | Moins premium |
+- **AQWELIA Pool** — offre piscine ;
+- **AQWELIA Complete** — piscine et spa ;
+- **AQWELIA Spa** — offre spa ;
+- **AQWELIA Pro** — piscinistes et équipes techniques ;
+- **AQWELIA Care** — recommandations produits et services lorsque le module est activé ;
+- **AQWELIA Brain** — intelligence et boucle d’apprentissage du produit.
 
-## 🏆 Recommandation finale : **PoolPilot**
+Les noms commerciaux doivent rester alignés avec les identifiants canoniques de [`src/lib/billing/plans.ts`](./src/lib/billing/plans.ts).
 
-**Pourquoi :**
-- ✅ Promesse produit claire : un copilote (pas juste une app)
-- ✅ International, facile à prononcer (FR/EN/ES/DE)
-- ✅ Évoque l'action (guidage, plan d'action) — cohérent avec le positionnement "exactement quoi faire"
-- ✅ Domaines probablement libres en `.app` / `.ai`
-- ✅ Store ASO friendly : "PoolPilot — Assistant piscine IA"
-- ✅ Extensible : PoolPilot Spa, PoolPilot Pro (piscinistes)
-- ✅ Mascotte possible (un petit pilote/capitaine)
+## Principes visuels
 
-**Tagline :** *Votre copilote piscine. Diagnostiquez. Dosez. Filtrez. Profitez.*
+La direction actuelle repose sur :
 
-**Direction visuelle :**
-- Logo : vague stylisée formant un "P" ou un volant minimaliste
-- Palette : teal océan profond + or champagne (déjà en place)
-- Typographie : Playfair Display (titres) + Geist Sans (corps) — déjà en place
-- Icon app : "P" turquois sur fond verre dépoli, anneau doré
+- bleu profond / bleu nuit pour la confiance ;
+- turquoise ou lagon pour l’eau et l’action ;
+- champagne / or doux pour le premium ;
+- lisibilité forte en extérieur ;
+- équilibre entre interfaces sombres premium et mode clair haute lisibilité ;
+- aucune promesse visuelle qui masque le niveau de confiance ou les données manquantes.
 
-**Alternative si PoolPilot pris :** Aqura (même positionnement tech + soin).
+Les valeurs exactes des tokens doivent être lues depuis le design system du code, pas dupliquées dans ce document.
 
-## Prochaines étapes
-1. Vérifier disponibilité .com / .app / .ai
-2. Réserver商标 INPI (FR) + EUIPO (EU) + USPTO (US)
-3. Réserver handles sociaux (@poolpilot_app)
-4. Vérifier App Store / Google Play name availability
-5. Produire logo définitif + déclinaisons
+## Règles d’usage
+
+- écrire **AQWELIA** en capitales dans les titres de marque ;
+- ne pas réintroduire AquaMind AI dans les écrans publics ;
+- ne pas utiliser PoolPilot comme recommandation finale ;
+- ne pas créer de nouvelle variante de nom sans décision explicite ;
+- vérifier les marques, domaines et noms de stores avec un professionnel avant le lancement commercial ;
+- conserver le même nom entre le web, iOS et Android autant que les disponibilités le permettent.
+
+## Historique de l’exploration
+
+Des propositions telles que PoolPilot, Lumiaqua, Aqura, Claréa, EauClair, Wavely et d’autres ont été étudiées. Elles ont aidé à préciser les critères de marque : mémorisation, dimension internationale, univers aquatique, technologie et positionnement premium.
+
+La décision finale est désormais figée : **AQWELIA**.
+
+## Documents liés
+
+- [`README.md`](./README.md) ;
+- [`docs/release/PRODUCT_TRUTH.md`](./docs/release/PRODUCT_TRUTH.md) ;
+- [`src/lib/billing/plans.ts`](./src/lib/billing/plans.ts) ;
+- [`STORE_READINESS.md`](./STORE_READINESS.md).

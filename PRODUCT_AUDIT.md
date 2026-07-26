@@ -1,102 +1,181 @@
-# AQWELIA — Product Audit
+# AQWELIA — Audit produit synthétique
 
-> Audit honnête de l'état du produit après les itérations successives.
+> Mise à jour P0-L3 — 26 juillet 2026.
 
-## ✅ Ce qui est déjà bon (fondation solide)
+Ce document remplace l’ancien audit historique qui mentionnait encore les offres Surface/Limpide/Cristal/Gardien, une application native non commencée, l’absence du mode Pro et un éventuel renommage PoolPilot. Ces affirmations ne correspondent plus à l’état actuel du dépôt.
 
-### Architecture
-- **Moteur déterministe `src/lib/pool/*`** : l'IP critique est en place et séparée de l'IA
-  - `dosing-engine.ts` : calculs de dosage précis par volume
-  - `water-balance.ts` : LSI + indice eau claire 0-100
-  - `safety-rules.ts` : sécurité baignade + interdictions
-  - `action-plan.ts` : génération ordonnée (TAC→pH→chlore)
-  - `targets.ts`, `units.ts`, `ai-context.ts`
-- **Schéma Prisma complet** : PoolProfile, WaterTest, PhotoDiagnostic, ActionPlan, Equipment, ProductInventory, ChatMessage, MaintenanceTask, PoolDesign, Reminder, GuideView, Subscription, AnalyticsEvent
-- **APIs REST** : profile, water-test, action-plan, photo-diagnostic, equipment, inventory, chat, dashboard, weather, reminders, guides, subscription, analytics
+La source canonique détaillée est : [`docs/release/PRODUCT_TRUTH.md`](./docs/release/PRODUCT_TRUTH.md).
 
-### Modules produit (11 modules sur la route `/`)
-1. Dashboard Aujourd'hui — indice eau claire + swim safety + cartes météo/rappels
-2. Diagnostic Photo — VLM prudent avec niveau de confiance
-3. Analyse Eau — formulaire complet + plan d'action auto
-4. Assistant IA — chat contextuel (profil + dernier test injectés)
-5. Plan d'Action — actions ordonnées + dosages + doNotDo
-6. Carnet de Santé — historique + graphiques
-7. Maintenance — équipements + inventaire + rappels
-8. **Météo Intelligente** — wttr.in réel + risk engine + filtration
-9. **Guides & Ressources** — 20 guides structurés + recommandation
-10. **Rappels Intelligents** — générés depuis météo + historique + inventaire
-11. **Premium / Paywall** — 4 plans freemium (Surface/Limpide/Cristal/Gardien)
+## 1. Fondations solides
 
-### UX
-- Onboarding profil piscine en 4 étapes
-- Emergency mode (14 parcours)
-- Design premium Oceanic Luxury (glassmorphism, or, Playfair)
-- Responsive mobile-first + sticky footer
-- Navigation tabbed (desktop sidebar + mobile bottom-nav avec "Plus")
+### Moteur métier
 
-### Sécurité
-- Pas de dosage sans volume
-- pH avant chlore, TAC avant pH
-- Aucun mélange de produits
-- Délais baignade affichés
-- "Quand appeler un professionnel" sur valeurs critiques
-- Disclaimer permanent
+- moteur déterministe séparé de l’IA ;
+- calculs de dosage par volume ;
+- règles de sécurité ;
+- ordre des traitements ;
+- équilibre de l’eau et LSI ;
+- génération de plans d’action ;
+- contexte structuré pour l’assistant IA.
 
-## ⚠️ Ce qui restait "vitrine IA" — maintenant traité
+### Produit grand public
 
-| Avant | Maintenant |
-|---|---|
-| Météo absente | ✅ Météo réelle wttr.in + risk engine déterministe |
-| Rappels calendrier fixe | ✅ Rappels intelligents (météo + historique + inventaire) |
-| Aucun guide | ✅ 20 guides structurés + moteur de recommandation |
-| Pas de business model | ✅ Freemium 4 plans + 4 durées + gating |
-| Dashboard sans risque météo | ✅ Carte risque météo + prochain rappel |
+- profil piscine et spa ;
+- tests d’eau et historique ;
+- diagnostic photo ;
+- assistant contextuel ;
+- météo et risques ;
+- rappels ;
+- guides ;
+- équipements et inventaire ;
+- rapports selon les droits ;
+- export et suppression de compte.
 
-## 🔧 Trous fonctionnels restants (priorités futures)
+### Produit professionnel
 
-### Priorité 1 (prochaine itération)
-- [ ] **Scan bandelette amélioré** : calibration couleur + correction manuelle + aide visuelle "comment prendre la photo"
-- [ ] **Rapport PDF** : export du carnet de santé (gated Cristal+)
-- [ ] **Notifications push** : nécessite app native (voir STORE_READINESS.md)
-- [ ] **Mode pro pisciniste** : multi-clients, devis, planning (gated Gardien)
-- [ ] **Vidéos tutoriels** : hébergement + miniatures (infrastructure en place via `videoTitle` dans guides)
+- organisations ;
+- clients et bassins ;
+- techniciens ;
+- interventions ;
+- planning ;
+- fondations de dispatch ;
+- isolation des données par organisation.
 
-### Priorité 2
-- [ ] **Pool Memory** : détection de patterns (pH qui remonte, chlore qui chute après chaleur)
-- [ ] **Multi-piscines** (gated Cristal) — UI à ajouter
-- [ ] **Saisonnier intelligent** : détection automatique remise en route / hivernage
-- [ ] **Intégration sondes connectées** : pH/chlore/temp IoT (future API)
-- [ ] **Support in-app** : chat aide + FAQ contextuelle
+### Infrastructure
 
-### Priorité 3
-- [ ] **App native iOS/Android** (voir STORE_READINESS.md)
-- [ ] **Analytics dashboard** (KPIs déjà trackés en DB)
-- [ ] **A/B testing** onboarding
-- [ ] **Internationalisation** (ES, EN, DE, IT)
+- Next.js 16 et React 19 ;
+- Prisma SQLite pour le développement ;
+- Prisma PostgreSQL pour Staging et Production ;
+- CI couvrant génération, schémas, lint, TypeScript, i18n, tests et build ;
+- Vercel Staging et Production ;
+- Stripe pour le web ;
+- RevenueCat pour iOS et Android ;
+- Capacitor 8 pour le mobile.
 
-## 📊 Métriques produit (analytics en place)
+## 2. Plans canoniques
 
-Le tracking est prêt via `/api/analytics`. Événements à instrumenter côté frontend :
-- `first_scan` — premier diagnostic photo
-- `first_test` — premier test d'eau
-- `first_plan` — premier plan d'action généré
-- `paywall_viewed` — vue du paywall
-- `subscription_activated` — conversion
-- `guide_opened` — (déjà tracké via GuideView)
-- `emergency_launched` — usage mode urgence
-- `weather_alert_dismissed` / `weather_alert_acted`
+La seule source de vérité est [`src/lib/billing/plans.ts`](./src/lib/billing/plans.ts).
 
-KPIs cibles :
-- Onboarding completion > 70%
-- Test J1 retention > 40%
-- Scan photo J7 > 25%
-- Paywall conversion > 3%
-- Guide open rate > 50% (utilisateurs actifs)
+| Identifiant | Nom | Mensuel |
+|---|---:|---:|
+| `decouverte` | Free / Découverte | 0 € |
+| `oasis` | Pool | 6,99 € |
+| `wellness` | Complete | 10,99 € |
+| `spa365` | Spa | 4,99 € |
 
-## 🎯 Recommandation stratégique
+Aucun document ne doit réintroduire les anciens noms ou dupliquer les prix.
 
-Le produit est **prêt pour une beta privée web**. Les fondations (moteur déterministe, modules, freemium, contenu éducatif, météo, rappels) sont solides.
+## 3. Sécurité et conformité technique
 
-**Prochain jalon critique** : l'app native iOS/Android (cf. STORE_READINESS.md) pour débloquer notifications push, caméra native et soumission stores.
+Le socle actuel comprend :
 
-**Renommage recommandé** : PoolPilot (cf. BRAND_NAMING.md) pour le lancement public.
+- absence de dosage sans volume ;
+- ordre TAC, pH et désinfection ;
+- interdictions de mélange ;
+- délais de baignade et re-tests ;
+- authentification OAuth sans liaison implicite dangereuse ;
+- Stripe basé sur le `stripeCustomerId` stocké ;
+- reprise automatique des webhooks échoués ;
+- Turnstile prêt à être activé ;
+- analytics refusés par défaut ;
+- PostHog après consentement uniquement ;
+- transparence IA ;
+- export et suppression des données ;
+- pages juridiques et formulaire public de suppression.
+
+Les textes doivent encore être complétés avec l’identité réelle de l’éditeur et relus par un professionnel avant commercialisation.
+
+## 4. Mobile
+
+Le dépôt possède une base Capacitor 8 avec :
+
+- identifiant `com.aqwelia.app` ;
+- export statique Next.js ;
+- backend distant ;
+- plugins caméra, géolocalisation, fichiers, préférences, réseau, partage, haptique et notifications locales ;
+- RevenueCat Capacitor.
+
+Le produit n’est pas encore déclaré prêt pour les stores. Il reste à finaliser les parcours sur appareils réels, l’offline, les notifications, les achats sandbox, les builds signés, les assets et la recette TestFlight/Google Play.
+
+Voir [`STORE_READINESS.md`](./STORE_READINESS.md).
+
+## 5. Fonctions suspendues
+
+`Dispatch Live` et `Terrain GPS` restent volontairement désactivés par défaut.
+
+Leur reprise exige :
+
+- clés Google Maps ;
+- validation des coûts et quotas ;
+- conformité et consentement ;
+- recette réelle manager/technicien ;
+- activation explicite de `NEXT_PUBLIC_PRO_GPS_ENABLED`.
+
+## 6. Points de qualité encore ouverts
+
+### Produit et design
+
+- sécuriser la vision graphique des six écrans B2C prioritaires ;
+- décliner un design system cohérent ;
+- gérer tous les états : vide, chargement, erreur, données insuffisantes ;
+- ne pas afficher un score global précis sans formule et confiance documentées.
+
+### Scientifique
+
+- confiance dynamique selon la quantité, la fraîcheur et la qualité des données ;
+- validation comparative du LSI ;
+- recette exhaustive des dosages et unités ;
+- clarification entre interprétation IA et calcul déterministe.
+
+### Mobile
+
+- authentification persistante ;
+- offline et reprise réseau ;
+- notifications ;
+- achats RevenueCat sandbox ;
+- recette sur appareils ;
+- préparation des stores.
+
+### Professionnels
+
+- devis ;
+- catalogue de produits et prestations ;
+- facturation ;
+- emails et relances ;
+- parcours terrain finalisé ;
+- recette multi-rôles.
+
+## 7. Mesures produit recommandées
+
+Les métriques doivent respecter le consentement analytics.
+
+Moments utiles à suivre :
+
+- onboarding terminé ;
+- premier bassin ;
+- premier test ;
+- premier diagnostic ;
+- premier plan d’action ;
+- action réellement exécutée ;
+- amélioration mesurée après re-test ;
+- paywall vu après démonstration de valeur ;
+- abonnement activé ;
+- restauration d’achat ;
+- rétention et fréquence d’usage.
+
+Les objectifs chiffrés restent des hypothèses commerciales tant qu’ils ne sont pas validés sur un échantillon réel.
+
+## 8. Recommandation actuelle
+
+AQWELIA possède une fondation web, métier, Pro, mobile et conformité beaucoup plus avancée que lors du premier audit.
+
+L’ordre recommandé est :
+
+1. terminer P0-L3 et nettoyer le dépôt ;
+2. reproduire les six écrans B2C prioritaires dans un design system durable ;
+3. finaliser le parcours mobile Capacitor ;
+4. renforcer la qualité scientifique ;
+5. compléter les fonctions commerciales Pro ;
+6. reprendre ultérieurement la géolocalisation.
+
+Le nom produit canonique est **AQWELIA**. Le document historique `BRAND_NAMING.md` ne constitue pas une décision de renommage active.

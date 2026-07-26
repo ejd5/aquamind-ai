@@ -1,143 +1,214 @@
-# AQWELIA — Assistant IA Piscine
+# AQWELIA
 
-> Le copilote piscine qui vous dit exactement quoi faire pour garder une eau claire, saine et équilibrée, sans surdoser ni perdre du temps.
+> Le copilote intelligent pour la piscine et le spa : mesures, diagnostic, météo, historique et profil du bassin deviennent un plan d’action prudent, compréhensible et traçable.
 
-## 🎯 Promesse
+## État du produit
 
-**Photo + mesures + météo + historique + profil piscine + inventaire = diagnostic prudent + plan d'action exact + rappels intelligents.**
+AQWELIA est une application web Next.js avec une base mobile Capacitor et un espace professionnel pour les piscinistes. Le produit combine :
 
-L'utilisateur sait en moins de 30 secondes : quoi tester, quoi ajouter, combien, dans quel ordre, combien de temps filtrer, quand se baigner, quand re-tester, quand appeler un professionnel.
+- un moteur déterministe pour les calculs critiques ;
+- une assistance IA pour l’interprétation et l’explication ;
+- des parcours piscine et spa ;
+- des abonnements web Stripe et mobiles RevenueCat ;
+- un backend PostgreSQL en Staging et Production ;
+- une base SQLite pour le développement local ;
+- sept langues ;
+- un socle de confidentialité opt-in et de transparence IA.
 
-## 🏗️ Architecture
+La fiche canonique de l’état réel est : [`docs/release/PRODUCT_TRUTH.md`](./docs/release/PRODUCT_TRUTH.md).
 
+## Principes de sécurité
+
+Les dosages critiques ne sont pas confiés à un modèle de langage. Le moteur déterministe applique les règles de calcul et de sécurité ; l’IA aide à expliquer, contextualiser et interpréter.
+
+Règles intégrées notamment :
+
+- aucun dosage sans volume de bassin ;
+- TAC avant correction du pH lorsque nécessaire ;
+- pH équilibré avant désinfection ;
+- interdiction de mélanger des produits incompatibles ;
+- délais de filtration, de re-test et de baignade ;
+- recommandation de faire intervenir un professionnel sur les valeurs critiques.
+
+AQWELIA assiste l’utilisateur mais ne remplace ni les notices des fabricants ni un professionnel qualifié.
+
+## Architecture
+
+### Application
+
+- Next.js 16 ;
+- React 19 ;
+- TypeScript ;
+- Tailwind CSS et composants Radix/shadcn ;
+- NextAuth ;
+- Prisma 6 ;
+- Vitest ;
+- Vercel pour Staging et Production.
+
+### Données
+
+- SQLite pour le développement local ;
+- PostgreSQL pour Staging et Production ;
+- deux clients Prisma générés et vérifiés dans la CI ;
+- migrations Production exécutées par workflows ponctuels contrôlés.
+
+### Mobile
+
+La stratégie actuellement implémentée est **Capacitor 8** :
+
+- identifiant : `com.aqwelia.app` ;
+- export statique Next.js dans `out/` ;
+- wrapper iOS et Android ;
+- backend distant via `NEXT_PUBLIC_API_BASE_URL` ;
+- caméra, géolocalisation, fichiers, préférences, partage, haptique, réseau, notifications locales et RevenueCat.
+
+Expo n’est pas l’architecture active du dépôt.
+
+## Sources de vérité
+
+### Plans et prix
+
+La seule source autorisée est [`src/lib/billing/plans.ts`](./src/lib/billing/plans.ts).
+
+| Identifiant | Nom | Prix mensuel | Périmètre |
+|---|---:|---:|---|
+| `decouverte` | Free / Découverte | 0 € | 1 piscine, limites d’usage |
+| `oasis` | Pool | 6,99 € | 1 piscine, fonctions avancées |
+| `wellness` | Complete | 10,99 € | 2 piscines + 1 spa |
+| `spa365` | Spa | 4,99 € | 1 spa |
+
+Les anciennes appellations Surface, Limpide, Cristal et Gardien ne correspondent plus aux offres canoniques.
+
+### Configuration
+
+Toutes les variables attendues sont documentées dans [`.env.example`](./.env.example). Ne jamais publier de secret dans GitHub, les journaux ou une variable `NEXT_PUBLIC_*` non prévue comme publique.
+
+## Modules principaux
+
+### Particuliers
+
+- profil piscine et spa ;
+- mesures et historique ;
+- plan d’action et calculs de dosage ;
+- diagnostic photo ;
+- assistant contextuel ;
+- météo et alertes ;
+- rappels ;
+- guides et vidéos ;
+- équipements et inventaire ;
+- rapports selon le plan ;
+- export et suppression du compte.
+
+### Professionnels
+
+- clients et bassins ;
+- interventions ;
+- techniciens et organisations ;
+- planning et dispatch ;
+- fondations des parcours terrain ;
+- historique et contrôles d’accès par organisation.
+
+`Dispatch Live` et `Terrain GPS` sont volontairement désactivés par défaut. Leur réactivation exige les clés Google Maps, une validation des coûts, une recette complète et le flag :
+
+```env
+NEXT_PUBLIC_PRO_GPS_ENABLED=true
 ```
-src/
-├── app/
-│   ├── api/
-│   │   ├── chat/              # Assistant IA contextuel (LLM)
-│   │   ├── dashboard/         # Agrège profil + dernier test + plan + météo + rappels
-│   │   ├── analytics/         # Events funnel
-│   │   ├── guides/            # Catalogue + recommandation
-│   │   ├── subscription/      # Freemium
-│   │   └── pool/
-│   │       ├── profile/       # Profil piscine (onboarding)
-│   │       ├── water-test/    # Mesures + auto-génération plan
-│   │       ├── action-plan/   # Régénère un plan
-│   │       ├── photo-diagnostic/ # VLM analyse photo
-│   │       ├── equipment/     # Équipements
-│   │       ├── inventory/     # Produits
-│   │       ├── weather/       # Météo wttr.in + risk engine
-│   │       └── reminders/     # Rappels intelligents
-│   ├── page.tsx               # Route unique (app tabbed)
-│   ├── layout.tsx
-│   └── globals.css            # Design system Oceanic Luxury
-│
-├── components/aquamind/
-│   ├── app-shell.tsx          # Shell + tabs + onboarding gate
-│   ├── onboarding.tsx         # Création profil 4 étapes
-│   ├── header.tsx / footer.tsx
-│   ├── module-dashboard.tsx   # "Aujourd'hui"
-│   ├── module-diagnostic.tsx  # Photo VLM
-│   ├── module-water-test.tsx  # Mesures + plan auto
-│   ├── module-assistant.tsx   # Chat IA contextuel
-│   ├── module-action-plan.tsx
-│   ├── module-health-log.tsx  # Carnet de santé
-│   ├── module-maintenance.tsx # Équipements + inventaire
-│   ├── module-weather.tsx     # Météo intelligente
-│   ├── module-guides.tsx      # Ressources & guides
-│   ├── module-reminders.tsx   # Rappels intelligents
-│   ├── module-paywall.tsx     # Freemium
-│   └── emergency-mode.tsx     # 14 parcours urgents
-│
-└── lib/pool/                  # ⭐ IP CRITIQUE (déterministe, non-IA)
-    ├── targets.ts             # Plages idéales par paramètre
-    ├── units.ts               # Conversions volumes/quantités
-    ├── dosing-engine.ts       # Calcul dosage par volume
-    ├── water-balance.ts       # LSI + indice eau claire
-    ├── safety-rules.ts        # Sécurité baignade + interdictions
-    ├── action-plan.ts         # Génération plan ordonné
-    ├── ai-context.ts          # Prompts IA structurés
-    ├── weather-engine.ts      # Risk engine météo
-    ├── reminders.ts           # Génération rappels
-    ├── guides-data.ts         # Catalogue 20 guides
-    └── freemium.ts            # Plans + gating
-```
 
-## 🧠 Le moteur déterministe (non-IA)
+## Confidentialité et conformité technique
 
-**Pourquoi séparer l'IA du calcul ?** On ne confie pas la sécurité à un LLM. Les dosages critiques sont calculés par `lib/pool/dosing-engine.ts` (TypeScript pur, testable, déterministe). L'IA explique, le moteur calcule.
+Le socle actuel comprend :
 
-Exemple : pour pH 7.8 + chlore 0.3 + TAC 70 sur 40 m³ →
-1. TAC+ : 2040 g (avant le pH)
-2. pH- : 900 ml (limité à -0.3, warning)
-3. Chlore choc (après pH équilibré)
-4. Filtration 4h, re-test 3h, baignade interdite
+- analytics refusés par défaut ;
+- PostHog chargé uniquement après consentement ;
+- refus aussi accessible que l’acceptation ;
+- consentement modifiable ;
+- transparence avant l’envoi de données à l’IA ;
+- export des données ;
+- suppression du compte et des données Pro ;
+- pages légales et formulaire public de suppression.
 
-## 🔒 Sécurité (règles intégrées)
+Les informations juridiques de l’éditeur, de l’hébergeur et du médiateur doivent être renseignées avant commercialisation. Les textes doivent être relus par un professionnel compétent.
 
-- Pas de dosage sans volume de bassin
-- pH équilibré AVANT tout chlore
-- TAC ajusté AVANT le pH
-- Aucun mélange de produits (chlore + acide = gaz toxique)
-- Délais de baignade affichés après chaque traitement
-- "Quand appeler un professionnel" sur valeurs critiques
-- Disclaimer permanent : ne remplace pas un professionnel
-
-## 💎 Plans freemium
-
-| Plan | Prix/mois | Cible |
-|---|---|---|
-| Surface | Gratuit | Découverte |
-| Limpide | 7,99€ | Essentiel |
-| Cristal | 12,99€ | Familles (populaire) |
-| Gardien | 24,99€ | Piscinistes / pros |
-
-Durées : 7j / 1 mois / 3 mois (-10%) / 6 mois (-20%).
-
-## 🚀 Démarrage dev
+## Démarrage local
 
 ```bash
 bun install
-bun run db:push        # Crée la base SQLite
-bun run dev            # http://localhost:3000
-bun run lint           # Vérification code
+cp .env.example .env
+bun run db:generate:all
+bun run db:push
+bun run dev
 ```
 
-Au premier chargement : onboarding profil piscine → dashboard.
+Application locale : `http://localhost:3000`.
 
-## 🧪 Tester le produit
+## Commandes de qualité
 
-1. Créer un profil (volume 40 m³, traitement chlore)
-2. Aller dans "Eau", entrer pH 7.8 + chlore 0.3 + TAC 70
-3. Voir le plan d'action se générer avec dosages exacts
-4. Aller dans "Photo", tester un diagnostic (eau, filtre, bandelette)
-5. Aller dans "Météo", voir les alertes contextuelles
-6. Aller dans "Guides", lire "Eau verte : diagnostic"
-7. Aller dans "Premium", voir les plans
+```bash
+bun run db:generate:all
+bun run test:postgresql
+bun run lint
+bun run typecheck
+python3 scripts/i18n/check-hardcoded-strings.py
+bash tests/run-smoke-tests.sh
+bun run build
+```
 
-## 📚 Docs associés
+Une PR applicative ne doit pas être fusionnée avant le passage de ces contrôles. Les changements visuels doivent aussi passer la recette Playwright prévue par le dépôt.
 
-- [`PRODUCT_AUDIT.md`](./PRODUCT_AUDIT.md) — Audit produit + trous restants
-- [`BRAND_NAMING.md`](./BRAND_NAMING.md) — Étude naming (reco: PoolPilot)
-- [`STORE_READINESS.md`](./STORE_READINESS.md) — Préparation iOS/Android + stores
+## Commandes mobiles
 
-## 🛣️ Roadmap
+```bash
+bun run mobile:build
+bun run mobile:sync
+bun run mobile:ios
+bun run mobile:android
+```
 
-- ✅ MVP web complet (11 modules + moteur + freemium)
-- ⏳ App native iOS/Android (React Native + Expo, cf. STORE_READINESS.md)
-- ⏳ Notifications push
-- ⏳ Rapport PDF (gated Cristal)
-- ⏳ Mode pro pisciniste (gated Gardien)
-- ⏳ Intégration sondes IoT
+Le build mobile ne contient pas les routes API Next.js. Il doit appeler un backend déployé en HTTPS.
 
-## ⚠️ Limites actuelles
+## Abonnements
 
-- Pas de notifications push (nécéssite app native)
-- Pas de rapport PDF (UI à finaliser)
-- Météo via wttr.in (gratuit mais parfois lent)
-- Pas de multi-piscines UI (backend prêt)
-- Tracking analytics en DB (à connecter à Mixpanel/Amplitude pour scaling)
+- Web : Stripe ;
+- iOS et Android : RevenueCat ;
+- synchronisation serveur par webhooks idempotents ;
+- reprise automatique des événements échoués lorsque le secret du cron est configuré.
 
-## 📝 Licence & responsabilité
+Les IDs Stripe, produits RevenueCat et droits doivent rester alignés avec `src/lib/billing/plans.ts`.
 
-AQWELIA aide au diagnostic et à l'entretien mais **ne remplace pas un professionnel**. Les dosages doivent respecter les notices produits. En cas de doute, danger électrique, fuite ou irritation, contacter un professionnel.
+## Services externes
+
+Selon les fonctionnalités activées :
+
+- Neon/PostgreSQL ;
+- Vercel ;
+- Stripe ;
+- RevenueCat ;
+- NVIDIA NIM ;
+- Google et Apple OAuth ;
+- PostHog ;
+- Cloudflare Turnstile ;
+- SMTP ;
+- Google Maps.
+
+L’absence d’une configuration externe doit produire un comportement désactivé ou explicite, jamais une fausse disponibilité.
+
+## État des prochains chantiers
+
+1. P0-L3 — documentation, vérité produit et nettoyage du dépôt ;
+2. design system B2C et reproduction des six écrans prioritaires ;
+3. parcours mobile Capacitor, offline, notifications et achats sandbox ;
+4. confiance dynamique, LSI et validation scientifique ;
+5. devis, catalogue, facturation et relances Pro ;
+6. reprise ultérieure de la géolocalisation.
+
+## Documentation utile
+
+- [`docs/release/PRODUCT_TRUTH.md`](./docs/release/PRODUCT_TRUTH.md) — vérité produit et état de lancement ;
+- [`STORE_READINESS.md`](./STORE_READINESS.md) — préparation iOS et Android ;
+- [`docs/legal/P0-L2-LAUNCH-COMPLIANCE.md`](./docs/legal/P0-L2-LAUNCH-COMPLIANCE.md) — conformité technique de lancement ;
+- [`PRODUCT_AUDIT.md`](./PRODUCT_AUDIT.md) — audit historique, à lire avec la fiche de vérité actuelle ;
+- [`src/lib/billing/plans.ts`](./src/lib/billing/plans.ts) — plans et prix canoniques.
+
+## Licence et responsabilité
+
+AQWELIA fournit une aide au diagnostic et à l’entretien. Les dosages doivent respecter les notices des produits, les équipements installés et la réglementation applicable. En cas de danger électrique, fuite, irritation, exposition chimique ou doute sur la sécurité, interrompre l’action et contacter un professionnel.
