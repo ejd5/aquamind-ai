@@ -16,6 +16,11 @@ const mobileShell = readFileSync(
   join(process.cwd(), 'src/components/pro/pro-mobile-shell.tsx'),
   'utf8',
 )
+const packageJson = JSON.parse(
+  readFileSync(join(process.cwd(), 'package.json'), 'utf8'),
+) as { scripts: Record<string, string> }
+const nextConfig = readFileSync(join(process.cwd(), 'next.config.ts'), 'utf8')
+const mobileNextConfig = readFileSync(join(process.cwd(), 'next.config.mobile.ts'), 'utf8')
 
 describe('P1 Mobile technician journey', () => {
   it('lands technicians on the daily field workspace', () => {
@@ -56,5 +61,13 @@ describe('P1 Mobile technician journey', () => {
     expect(mobileShell).toContain('TECHNICIAN_PRIMARY_ITEMS')
     expect(mobileShell).toContain('MANAGER_PRIMARY_ITEMS')
     expect(mobileShell).toContain("role === 'technician'")
+  })
+
+  it('selects the Capacitor export through the canonical Next 16 config', () => {
+    expect(packageJson.scripts['mobile:build']).toBe('MOBILE_BUILD=true next build')
+    expect(Object.values(packageJson.scripts).join('\n')).not.toContain('next build -c')
+    expect(nextConfig).toContain("process.env.MOBILE_BUILD === 'true'")
+    expect(nextConfig).toContain("import mobileNextConfig from './next.config.mobile'")
+    expect(mobileNextConfig).toContain("output: 'export'")
   })
 })
