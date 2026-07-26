@@ -1,0 +1,276 @@
+name: Apply P1 Commercial Schema
+
+on:
+  push:
+    branches:
+      - feat/p1-commercial-pro
+
+permissions:
+  contents: write
+
+jobs:
+  apply-schema:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/p1-commercial-pro
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.4'
+      - run: bun install --frozen-lockfile
+      - name: Append commercial models and migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          schema = Path('prisma/schema.prisma')
+          text = schema.read_text()
+          marker = '// P1 COMMERCIAL PRO — catalogue, devis, facturation et relances'
+          models = r'''
+
+// ───────────────────────────────────────────────────────────────────────────
+// P1 COMMERCIAL PRO — catalogue, devis, facturation et relances
+// ───────────────────────────────────────────────────────────────────────────
+
+model ProCatalogItem {
+  id          String   @id @default(cuid())
+  proUserId   String
+  sku         String
+  name        String
+  description String?
+  kind        String   @default("service") // service | product | fee
+  unit        String   @default("unit") // unit | hour | visit | kg | L | piece
+  unitPrice   Float
+  taxRate     Float    @default(20)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lines ProCommercialLine[]
+
+  @@unique([proUserId, sku])
+  @@index([proUserId, active])
+  @@index([proUserId, kind])
+}
+
+model ProCommercialDocument {
+  id                String   @id @default(cuid())
+  proUserId         String
+  proClientId       String
+  proInterventionId String?
+  type              String // quote | invoice
+  number            String
+  status            String   @default("draft") // draft | sent | accepted | rejected | overdue | paid | cancelled
+  currency          String   @default("EUR")
+  issueDate         DateTime @default(now())
+  dueDate           DateTime?
+  validUntil        DateTime?
+  subtotal          Float    @default(0)
+  taxTotal          Float    @default(0)
+  total             Float    @default(0)
+  notes             String?
+  sentAt            DateTime?
+  acceptedAt        DateTime?
+  paidAt            DateTime?
+  reminderCount     Int      @default(0)
+  lastReminderAt    DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  lines ProCommercialLine[]
+
+  @@unique([proUserId, number])
+  @@index([proUserId, type, status])
+  @@index([proClientId, createdAt])
+  @@index([dueDate, status])
+  @@index([proInterventionId])
+}
+
+model ProCommercialLine {
+  id            String   @id @default(cuid())
+  documentId    String
+  catalogItemId String?
+  description   String
+  quantity      Float
+  unit          String   @default("unit")
+  unitPrice     Float
+  taxRate       Float    @default(20)
+  lineSubtotal  Float
+  lineTax       Float
+  lineTotal     Float
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  document   ProCommercialDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  catalogItem ProCatalogItem?       @relation(fields: [catalogItemId], references: [id], onDelete: SetNull)
+
+  @@index([documentId, sortOrder])
+  @@index([catalogItemId])
+}
+'''
+          if marker not in text:
+              schema.write_text(text.rstrip() + models + '\n')
+
+          sqlite_dir = Path('prisma/migrations/20260726190000_p1_commercial_pro_foundation')
+          sqlite_dir.mkdir(parents=True, exist_ok=True)
+          sqlite_dir.joinpath('migration.sql').write_text(r'''CREATE TABLE "ProCatalogItem" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "proUserId" TEXT NOT NULL,
+  "sku" TEXT NOT NULL,
+  "name" TEXT NOT NULL,
+  "description" TEXT,
+  "kind" TEXT NOT NULL DEFAULT 'service',
+  "unit" TEXT NOT NULL DEFAULT 'unit',
+  "unitPrice" REAL NOT NULL,
+  "taxRate" REAL NOT NULL DEFAULT 20,
+  "active" BOOLEAN NOT NULL DEFAULT true,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL
+);
+CREATE UNIQUE INDEX "ProCatalogItem_proUserId_sku_key" ON "ProCatalogItem"("proUserId", "sku");
+CREATE INDEX "ProCatalogItem_proUserId_active_idx" ON "ProCatalogItem"("proUserId", "active");
+CREATE INDEX "ProCatalogItem_proUserId_kind_idx" ON "ProCatalogItem"("proUserId", "kind");
+
+CREATE TABLE "ProCommercialDocument" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "proUserId" TEXT NOT NULL,
+  "proClientId" TEXT NOT NULL,
+  "proInterventionId" TEXT,
+  "type" TEXT NOT NULL,
+  "number" TEXT NOT NULL,
+  "status" TEXT NOT NULL DEFAULT 'draft',
+  "currency" TEXT NOT NULL DEFAULT 'EUR',
+  "issueDate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "dueDate" DATETIME,
+  "validUntil" DATETIME,
+  "subtotal" REAL NOT NULL DEFAULT 0,
+  "taxTotal" REAL NOT NULL DEFAULT 0,
+  "total" REAL NOT NULL DEFAULT 0,
+  "notes" TEXT,
+  "sentAt" DATETIME,
+  "acceptedAt" DATETIME,
+  "paidAt" DATETIME,
+  "reminderCount" INTEGER NOT NULL DEFAULT 0,
+  "lastReminderAt" DATETIME,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL
+);
+CREATE UNIQUE INDEX "ProCommercialDocument_proUserId_number_key" ON "ProCommercialDocument"("proUserId", "number");
+CREATE INDEX "ProCommercialDocument_proUserId_type_status_idx" ON "ProCommercialDocument"("proUserId", "type", "status");
+CREATE INDEX "ProCommercialDocument_proClientId_createdAt_idx" ON "ProCommercialDocument"("proClientId", "createdAt");
+CREATE INDEX "ProCommercialDocument_dueDate_status_idx" ON "ProCommercialDocument"("dueDate", "status");
+CREATE INDEX "ProCommercialDocument_proInterventionId_idx" ON "ProCommercialDocument"("proInterventionId");
+
+CREATE TABLE "ProCommercialLine" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "documentId" TEXT NOT NULL,
+  "catalogItemId" TEXT,
+  "description" TEXT NOT NULL,
+  "quantity" REAL NOT NULL,
+  "unit" TEXT NOT NULL DEFAULT 'unit',
+  "unitPrice" REAL NOT NULL,
+  "taxRate" REAL NOT NULL DEFAULT 20,
+  "lineSubtotal" REAL NOT NULL,
+  "lineTax" REAL NOT NULL,
+  "lineTotal" REAL NOT NULL,
+  "sortOrder" INTEGER NOT NULL DEFAULT 0,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "ProCommercialLine_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "ProCommercialDocument" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "ProCommercialLine_catalogItemId_fkey" FOREIGN KEY ("catalogItemId") REFERENCES "ProCatalogItem" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE INDEX "ProCommercialLine_documentId_sortOrder_idx" ON "ProCommercialLine"("documentId", "sortOrder");
+CREATE INDEX "ProCommercialLine_catalogItemId_idx" ON "ProCommercialLine"("catalogItemId");
+''')
+
+          pg_dir = Path('prisma/postgresql/migrations/20260726190000_p1_commercial_pro_foundation')
+          pg_dir.mkdir(parents=True, exist_ok=True)
+          pg_dir.joinpath('migration.sql').write_text(r'''CREATE TABLE "ProCatalogItem" (
+  "id" TEXT NOT NULL,
+  "proUserId" TEXT NOT NULL,
+  "sku" TEXT NOT NULL,
+  "name" TEXT NOT NULL,
+  "description" TEXT,
+  "kind" TEXT NOT NULL DEFAULT 'service',
+  "unit" TEXT NOT NULL DEFAULT 'unit',
+  "unitPrice" DOUBLE PRECISION NOT NULL,
+  "taxRate" DOUBLE PRECISION NOT NULL DEFAULT 20,
+  "active" BOOLEAN NOT NULL DEFAULT true,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "ProCatalogItem_pkey" PRIMARY KEY ("id")
+);
+CREATE UNIQUE INDEX "ProCatalogItem_proUserId_sku_key" ON "ProCatalogItem"("proUserId", "sku");
+CREATE INDEX "ProCatalogItem_proUserId_active_idx" ON "ProCatalogItem"("proUserId", "active");
+CREATE INDEX "ProCatalogItem_proUserId_kind_idx" ON "ProCatalogItem"("proUserId", "kind");
+
+CREATE TABLE "ProCommercialDocument" (
+  "id" TEXT NOT NULL,
+  "proUserId" TEXT NOT NULL,
+  "proClientId" TEXT NOT NULL,
+  "proInterventionId" TEXT,
+  "type" TEXT NOT NULL,
+  "number" TEXT NOT NULL,
+  "status" TEXT NOT NULL DEFAULT 'draft',
+  "currency" TEXT NOT NULL DEFAULT 'EUR',
+  "issueDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "dueDate" TIMESTAMP(3),
+  "validUntil" TIMESTAMP(3),
+  "subtotal" DOUBLE PRECISION NOT NULL DEFAULT 0,
+  "taxTotal" DOUBLE PRECISION NOT NULL DEFAULT 0,
+  "total" DOUBLE PRECISION NOT NULL DEFAULT 0,
+  "notes" TEXT,
+  "sentAt" TIMESTAMP(3),
+  "acceptedAt" TIMESTAMP(3),
+  "paidAt" TIMESTAMP(3),
+  "reminderCount" INTEGER NOT NULL DEFAULT 0,
+  "lastReminderAt" TIMESTAMP(3),
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "ProCommercialDocument_pkey" PRIMARY KEY ("id")
+);
+CREATE UNIQUE INDEX "ProCommercialDocument_proUserId_number_key" ON "ProCommercialDocument"("proUserId", "number");
+CREATE INDEX "ProCommercialDocument_proUserId_type_status_idx" ON "ProCommercialDocument"("proUserId", "type", "status");
+CREATE INDEX "ProCommercialDocument_proClientId_createdAt_idx" ON "ProCommercialDocument"("proClientId", "createdAt");
+CREATE INDEX "ProCommercialDocument_dueDate_status_idx" ON "ProCommercialDocument"("dueDate", "status");
+CREATE INDEX "ProCommercialDocument_proInterventionId_idx" ON "ProCommercialDocument"("proInterventionId");
+
+CREATE TABLE "ProCommercialLine" (
+  "id" TEXT NOT NULL,
+  "documentId" TEXT NOT NULL,
+  "catalogItemId" TEXT,
+  "description" TEXT NOT NULL,
+  "quantity" DOUBLE PRECISION NOT NULL,
+  "unit" TEXT NOT NULL DEFAULT 'unit',
+  "unitPrice" DOUBLE PRECISION NOT NULL,
+  "taxRate" DOUBLE PRECISION NOT NULL DEFAULT 20,
+  "lineSubtotal" DOUBLE PRECISION NOT NULL,
+  "lineTax" DOUBLE PRECISION NOT NULL,
+  "lineTotal" DOUBLE PRECISION NOT NULL,
+  "sortOrder" INTEGER NOT NULL DEFAULT 0,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "ProCommercialLine_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX "ProCommercialLine_documentId_sortOrder_idx" ON "ProCommercialLine"("documentId", "sortOrder");
+CREATE INDEX "ProCommercialLine_catalogItemId_idx" ON "ProCommercialLine"("catalogItemId");
+ALTER TABLE "ProCommercialLine" ADD CONSTRAINT "ProCommercialLine_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "ProCommercialDocument"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ProCommercialLine" ADD CONSTRAINT "ProCommercialLine_catalogItemId_fkey" FOREIGN KEY ("catalogItemId") REFERENCES "ProCatalogItem"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+''')
+          PY
+          bun run db:pg:sync
+          bunx prisma validate
+          bunx prisma validate --schema prisma/postgresql/schema.prisma
+      - name: Commit generated schema
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/_apply_p1_commercial_schema.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add prisma .github/workflows/_apply_p1_commercial_schema.yml
+          git commit -m "feat(p1-commercial): add catalog and commercial documents schema"
+          git push origin HEAD:feat/p1-commercial-pro
