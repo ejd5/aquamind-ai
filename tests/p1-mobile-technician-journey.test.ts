@@ -63,8 +63,8 @@ describe('P1 Mobile technician journey', () => {
     expect(todayWorkspace).toContain('TODAY_CACHE_KEY')
     expect(todayWorkspace).toContain('window.localStorage')
     expect(todayWorkspace).toContain("Network.addListener('networkStatusChange'")
-    expect(todayWorkspace).toContain("mobileMode ?")
-    expect(todayWorkspace).toContain("/pro/app/report?id=")
+    expect(todayWorkspace).toContain('const detailsHref = mobileMode')
+    expect(todayWorkspace).toContain('/pro/app/report?id=')
   })
 
   it('queues field status changes through the idempotent offline ledger', () => {
