@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { Capacitor } from '@capacitor/core'
-import { Network, type PluginListenerHandle } from '@capacitor/network'
+import { Capacitor, type PluginListenerHandle } from '@capacitor/core'
+import { Network } from '@capacitor/network'
 import {
   CheckCircle2,
   Clock3,
@@ -54,6 +54,46 @@ type InterventionsResponse = {
   summary?: { urgentOpen?: number }
 }
 
+type CachedDay = {
+  day: string
+  interventions: InterventionRow[]
+  cachedAt: number
+}
+
+const TODAY_CACHE_KEY = 'aqwelia-pro-technician-today'
+
+function localDayKey(date = new Date()): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function readCachedDay(): InterventionRow[] {
+  try {
+    const raw = window.localStorage.getItem(TODAY_CACHE_KEY)
+    if (!raw) return []
+    const cached = JSON.parse(raw) as CachedDay
+    if (cached.day !== localDayKey() || !Array.isArray(cached.interventions)) return []
+    return cached.interventions
+  } catch {
+    return []
+  }
+}
+
+function writeCachedDay(interventions: InterventionRow[]) {
+  try {
+    const value: CachedDay = {
+      day: localDayKey(),
+      interventions,
+      cachedAt: Date.now(),
+    }
+    window.localStorage.setItem(TODAY_CACHE_KEY, JSON.stringify(value))
+  } catch {
+    // The route remains usable if private browsing or storage policy blocks cache writes.
+  }
+}
+
 function currentDayRange(): { from: string; to: string } {
   const from = new Date()
   from.setHours(0, 0, 0, 0)
@@ -101,20 +141,26 @@ export default function TechnicianTodayPage() {
       const response = await api.get<InterventionsResponse>(
         `/api/pro/interventions?${params.toString()}`,
       )
-      setInterventions(
-        [...response.interventions].sort(
-          (first, second) =>
-            new Date(first.scheduledAt).getTime() - new Date(second.scheduledAt).getTime(),
-        ),
+      const ordered = [...response.interventions].sort(
+        (first, second) =>
+          new Date(first.scheduledAt).getTime() - new Date(second.scheduledAt).getTime(),
       )
+      setInterventions(ordered)
+      writeCachedDay(ordered)
     } catch {
-      setError(t('errorGeneric'))
+      if (readCachedDay().length === 0) setError(t('errorGeneric'))
     } finally {
       setLoading(false)
     }
   }, [t])
 
   useEffect(() => {
+    const cached = readCachedDay()
+    if (cached.length > 0) {
+      setInterventions(cached)
+      setLoading(false)
+    }
+
     let nativeListener: PluginListenerHandle | null = null
     let disposed = false
 
@@ -122,6 +168,8 @@ export default function TechnicianTodayPage() {
       setOnline(connected)
       if (connected) {
         void flushPending().then(load)
+      } else {
+        setLoading(false)
       }
     }
 
@@ -154,11 +202,13 @@ export default function TechnicianTodayPage() {
   }, [flushPending, load, setOnline])
 
   const applyOptimisticStatus = useCallback((id: string, status: InterventionStatus) => {
-    setInterventions((current) =>
-      current.map((intervention) =>
+    setInterventions((current) => {
+      const updated = current.map((intervention) =>
         intervention.id === id ? { ...intervention, status } : intervention,
-      ),
-    )
+      )
+      writeCachedDay(updated)
+      return updated
+    })
   }, [])
 
   async function updateStatus(intervention: InterventionRow, status: InterventionStatus) {
