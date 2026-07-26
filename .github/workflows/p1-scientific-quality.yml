@@ -5,9 +5,10 @@ on:
     branches:
       - main
       - feat/p1-mobile-technician-journey
+      - feat/p1-scientific-quality
     paths:
       - '.github/workflows/p1-scientific-quality.yml'
-      - 'docs/release/P1_SCIENTIFIC_QUALITY.md'
+      - 'docs/release/P1_SCIENTIFIC_*.md'
       - 'src/app/api/pool/water-test/route.ts'
       - 'src/lib/pool/**'
       - 'tests/p1-scientific-*.test.ts'
@@ -59,7 +60,7 @@ jobs:
         run: bun run typecheck
 
       - name: Run scientific contracts
-        run: bunx vitest run tests/p1-scientific-quality.test.ts
+        run: bunx vitest run tests/p1-scientific-*.test.ts
 
       - name: Run complete smoke suite
         shell: bash
