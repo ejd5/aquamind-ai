@@ -108,8 +108,11 @@ model PoolProfile {
   treatmentType String   @default("chlorine") // chlorine | salt | bromine | active_oxygen | uv | other
   filterType    String   @default("sand") // sand | cartridge | glass | diatom
   pumpType      String? // marque/modèle pompe
-  saltSystem    Boolean  @default(false)
-  region        String? // région / climat
+  saltSystem              Boolean  @default(false)
+  manufacturerSaltMin      Float? // g/L — minimum documenté par l’équipement
+  manufacturerSaltMax      Float? // g/L — maximum documenté par l’équipement
+  manufacturerChlorineMax  Float? // mg/L — limite haute de la notice produit
+  region                  String? // région / climat
   sunExposure   String   @default("medium") // low | medium | high
   covered       Boolean  @default(false)
   waterBodyType String   @default("pool") // pool | spa | both
@@ -149,8 +152,16 @@ model WaterTest {
   salt             Float? // g/L
   bromine          Float?
   phosphates       Float? // mg/L
-  temperature      Float? // °C
-  source           String   @default("manual") // manual | strip_photo | device | imported
+  temperature             Float? // °C
+  totalDissolvedSolids     Float? // TDS mg/L
+  measuredAt               DateTime? // instant réel de la mesure
+  measurementMethod        String? // kit_drop | strip | photometer | probe | device | imported
+  measurementMetadata      String? // JSON : précision, appareil, calibration, unités
+  scientificQualityScore   Float? // 0..1, qualité des données — pas une probabilité
+  scientificMethodVersion  String?
+  scientificLimitations    String? // JSON string array
+  lsiMethodVersion         String?
+  source                  String   @default("manual") // manual | strip_photo | device | imported
   note             String?
   status           String   @default("ok") // ok | warning | critical
   clearWaterIndex  Int      @default(80) // 0-100
@@ -199,8 +210,11 @@ model ActionPlan {
   waterTestId            String
   diagnosis              String
   severity               String   @default("low") // low | medium | high | urgent
-  confidence             Float    @default(0.8)
-  immediateActions       String // JSON string array (ordonnées)
+  confidence               Float    @default(0.8)
+  scientificMethodVersion String?
+  dosageMethodVersion     String?
+  swimSafetyMethodVersion String?
+  immediateActions         String // JSON string array (ordonnées)
   chemicalDosages        String // JSON string array
   filtrationHours        Float    @default(0)
   retestInHours          Float    @default(24)
