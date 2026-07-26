@@ -21,8 +21,9 @@ export async function GET(req: Request) {
       reminders, chatMessages, maintenanceTasks, poolDesigns, guideViews,
       subscriptions, analyticsEvents, consentRecords, recommendationExecutions,
       recommendationOutcomes, brainFeedback, proClients, trackingSessions,
-      locationPoints, cart, orders, certifications, memberships, ownedOrganizations,
-      agentRuns, offlineMutations, iotSensors,
+      trackingDevices, locationPoints, locationAccessLogs, cart, orders,
+      certifications, memberships, ownedOrganizations, agentRuns, offlineMutations,
+      iotSensors, contactMessages,
     ] = await Promise.all([
       db.user.findUnique({
         where: { id: userId },
@@ -65,7 +66,7 @@ export async function GET(req: Request) {
       (db as any).agentRun.findMany({ where: { userId } }),
       (db as any).offlineMutation.findMany({ where: { userId }, select: { id: true, idempotencyKey: true, method: true, path: true, state: true, statusCode: true, createdAt: true, updatedAt: true, expiresAt: true } }),
       db.iotSensor.findMany({ where: { userId }, select: { id: true, poolId: true, provider: true, label: true, deviceId: true, apiUrl: true, config: true, status: true, lastSyncAt: true, createdAt: true, updatedAt: true } }),
-      db.contactMessage.findMany({ where: { userId }, select: { id: true, name: true, email: true, subject: true, message: true, status: true, resolvedAt: true, createdAt: true } }),
+      db.contactMessage.findMany({ where: { userId }, select: { id: true, name: true, email: true, subject: true, message: true, status: true, createdAt: true } }),
     ])
 
     const exportData = {
