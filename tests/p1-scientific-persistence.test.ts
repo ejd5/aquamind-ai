@@ -110,17 +110,20 @@ describe('P1 Scientific persistence', () => {
     expect(postgresMigration).toContain('TIMESTAMP(3)')
   })
 
-  it('persists provenance and method versions through the water-test API', () => {
+  it('persists provenance and adjusted confidence through the water-test API', () => {
     const route = readFileSync(join(root, 'src/app/api/pool/water-test/route.ts'), 'utf8')
     expect(route).toContain('normalizeMeasurementProvenance')
+    expect(route).toContain('assessMeasurementConfidence')
     expect(route).toContain('totalDissolvedSolids: scientificTest.totalDissolvedSolids')
     expect(route).toContain('measuredAt: provenance.measuredAt')
     expect(route).toContain('measurementMethod: provenance.measurementMethod')
-    expect(route).toContain('scientificQualityScore: standaloneQuality.score')
-    expect(route).toContain('scientificLimitations: JSON.stringify(standaloneQuality.limitations)')
+    expect(route).toContain('scientificQualityScore: standaloneConfidence.score')
+    expect(route).toContain('scientificMethodVersion: standaloneConfidence.methodVersion')
+    expect(route).toContain('scientificLimitations: JSON.stringify(persistedLimitations)')
     expect(route).toContain('lsiMethodVersion: lsiCalculation.methodVersion')
     expect(route).toContain('dosageMethodVersion: qualifiedPlan.dosageMethodVersion')
     expect(route).toContain('swimSafetyMethodVersion: qualifiedPlan.contextualSwimSafety.methodVersion')
+    expect(route).toContain('scientificConfidence: qualifiedPlan?.scientificConfidence ?? standaloneConfidence')
   })
 
   it('uses persisted manufacturer limits from the owned pool profile', () => {
