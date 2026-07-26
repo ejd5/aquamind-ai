@@ -1,0 +1,179 @@
+name: P1 Production Activation
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/p1-production-activation.yml'
+      - 'scripts/check-p1-production-activation.mjs'
+      - 'tests/p1-production-activation.test.ts'
+      - 'docs/release/P1_PRODUCTION_ACTIVATION.md'
+      - '.env.example'
+      - 'prisma/postgresql/**'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Production action to execute
+        required: true
+        type: choice
+        options:
+          - preflight
+          - migrate_postgresql
+          - redeploy_vercel
+        default: preflight
+      confirmation:
+        description: Exact confirmation required for destructive/external actions
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p1-production-activation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  repository-contract:
+    name: Validate production activation contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.4'
+      - run: bun install --frozen-lockfile
+      - name: Generate repository activation report
+        run: node scripts/check-p1-production-activation.mjs --mode=repository --strict --output=artifacts/p1-production-activation-repository.json
+      - name: Run activation contract tests
+        run: bunx vitest run tests/p1-production-activation.test.ts
+      - name: Upload repository activation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1-production-activation-repository
+          path: artifacts/p1-production-activation-repository.json
+          if-no-files-found: error
+          retention-days: 30
+
+  production-preflight:
+    name: Validate configured production environment
+    if: github.event_name == 'workflow_dispatch'
+    needs: repository-contract
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    env:
+      DATABASE_PROVIDER: ${{ vars.DATABASE_PROVIDER }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+      NEXTAUTH_URL: ${{ vars.NEXTAUTH_URL }}
+      NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+      NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      STRIPE_PRICE_OASIS_MONTHLY: ${{ vars.STRIPE_PRICE_OASIS_MONTHLY }}
+      STRIPE_PRICE_OASIS_QUARTERLY: ${{ vars.STRIPE_PRICE_OASIS_QUARTERLY }}
+      STRIPE_PRICE_OASIS_SEASONAL: ${{ vars.STRIPE_PRICE_OASIS_SEASONAL }}
+      STRIPE_PRICE_OASIS_YEARLY: ${{ vars.STRIPE_PRICE_OASIS_YEARLY }}
+      STRIPE_PRICE_WELLNESS_MONTHLY: ${{ vars.STRIPE_PRICE_WELLNESS_MONTHLY }}
+      STRIPE_PRICE_WELLNESS_QUARTERLY: ${{ vars.STRIPE_PRICE_WELLNESS_QUARTERLY }}
+      STRIPE_PRICE_WELLNESS_SEASONAL: ${{ vars.STRIPE_PRICE_WELLNESS_SEASONAL }}
+      STRIPE_PRICE_WELLNESS_YEARLY: ${{ vars.STRIPE_PRICE_WELLNESS_YEARLY }}
+      STRIPE_PRICE_SPA365_MONTHLY: ${{ vars.STRIPE_PRICE_SPA365_MONTHLY }}
+      STRIPE_PRICE_SPA365_QUARTERLY: ${{ vars.STRIPE_PRICE_SPA365_QUARTERLY }}
+      STRIPE_PRICE_SPA365_SEASONAL: ${{ vars.STRIPE_PRICE_SPA365_SEASONAL }}
+      STRIPE_PRICE_SPA365_YEARLY: ${{ vars.STRIPE_PRICE_SPA365_YEARLY }}
+      NEXT_PUBLIC_REVENUECAT_IOS_KEY: ${{ vars.NEXT_PUBLIC_REVENUECAT_IOS_KEY }}
+      NEXT_PUBLIC_REVENUECAT_ANDROID_KEY: ${{ vars.NEXT_PUBLIC_REVENUECAT_ANDROID_KEY }}
+      REVENUECAT_API_KEY: ${{ secrets.REVENUECAT_API_KEY }}
+      REVENUECAT_WEBHOOK_SECRET: ${{ secrets.REVENUECAT_WEBHOOK_SECRET }}
+      GOOGLE_MAPS_SERVER_API_KEY: ${{ secrets.GOOGLE_MAPS_SERVER_API_KEY }}
+      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ vars.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
+      SMTP_HOST: ${{ vars.SMTP_HOST }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      EMAIL_FROM: ${{ vars.EMAIL_FROM }}
+      ADMIN_EMAILS: ${{ vars.ADMIN_EMAILS }}
+      BILLING_RETRY_CRON_SECRET: ${{ secrets.BILLING_RETRY_CRON_SECRET }}
+      NEXT_PUBLIC_LEGAL_PUBLISHER_NAME: ${{ vars.NEXT_PUBLIC_LEGAL_PUBLISHER_NAME }}
+      NEXT_PUBLIC_LEGAL_FORM: ${{ vars.NEXT_PUBLIC_LEGAL_FORM }}
+      NEXT_PUBLIC_LEGAL_ADDRESS: ${{ vars.NEXT_PUBLIC_LEGAL_ADDRESS }}
+      NEXT_PUBLIC_LEGAL_SIREN: ${{ vars.NEXT_PUBLIC_LEGAL_SIREN }}
+      NEXT_PUBLIC_LEGAL_REGISTER: ${{ vars.NEXT_PUBLIC_LEGAL_REGISTER }}
+      NEXT_PUBLIC_LEGAL_VAT: ${{ vars.NEXT_PUBLIC_LEGAL_VAT }}
+      NEXT_PUBLIC_LEGAL_EMAIL: ${{ vars.NEXT_PUBLIC_LEGAL_EMAIL }}
+      NEXT_PUBLIC_LEGAL_PUBLICATION_DIRECTOR: ${{ vars.NEXT_PUBLIC_LEGAL_PUBLICATION_DIRECTOR }}
+      NEXT_PUBLIC_LEGAL_HOST_NAME: ${{ vars.NEXT_PUBLIC_LEGAL_HOST_NAME }}
+      NEXT_PUBLIC_LEGAL_HOST_ADDRESS: ${{ vars.NEXT_PUBLIC_LEGAL_HOST_ADDRESS }}
+      NEXT_PUBLIC_LEGAL_HOST_CONTACT: ${{ vars.NEXT_PUBLIC_LEGAL_HOST_CONTACT }}
+      NEXT_PUBLIC_LEGAL_MEDIATOR_NAME: ${{ vars.NEXT_PUBLIC_LEGAL_MEDIATOR_NAME }}
+      NEXT_PUBLIC_LEGAL_MEDIATOR_URL: ${{ vars.NEXT_PUBLIC_LEGAL_MEDIATOR_URL }}
+      GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      APPLE_CLIENT_ID: ${{ vars.APPLE_CLIENT_ID }}
+      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+      APPLE_KEY_ID: ${{ vars.APPLE_KEY_ID }}
+      APPLE_PRIVATE_KEY: ${{ secrets.APPLE_PRIVATE_KEY }}
+      SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+      TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+      POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
+      NEXT_PUBLIC_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
+      VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate strict production report
+        run: node scripts/check-p1-production-activation.mjs --mode=production --strict --output=artifacts/p1-production-activation-production.json
+      - name: Upload production activation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1-production-activation-production
+          path: artifacts/p1-production-activation-production.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  migrate-postgresql:
+    name: Deploy reviewed PostgreSQL migrations
+    if: github.event_name == 'workflow_dispatch' && inputs.action == 'migrate_postgresql' && inputs.confirmation == 'DEPLOY_P1_MIGRATIONS'
+    needs: repository-contract
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+    env:
+      DATABASE_PROVIDER: postgresql
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.4'
+      - run: bun install --frozen-lockfile
+      - name: Refuse missing or non-PostgreSQL target
+        shell: bash
+        run: |
+          test -n "$DATABASE_URL"
+          case "$DATABASE_URL" in postgresql://*|postgres://*) ;; *) exit 1 ;; esac
+      - run: bun run db:pg:generate
+      - run: bun run test:postgresql
+      - name: Deploy PostgreSQL migrations
+        run: bun run db:pg:deploy
+      - name: Verify migration status
+        run: bunx prisma migrate status --schema prisma/postgresql/schema.prisma
+
+  redeploy-vercel:
+    name: Request final Vercel production redeploy
+    if: github.event_name == 'workflow_dispatch' && inputs.action == 'redeploy_vercel' && inputs.confirmation == 'REDEPLOY_P1_PRODUCTION'
+    needs: repository-contract
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 5
+    env:
+      VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+    steps:
+      - name: Refuse missing deploy hook
+        run: test -n "$VERCEL_DEPLOY_HOOK_URL"
+      - name: Trigger Vercel production deployment
+        run: curl --fail --silent --show-error --request POST "$VERCEL_DEPLOY_HOOK_URL"
