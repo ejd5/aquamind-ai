@@ -19,7 +19,15 @@ jobs:
           fetch-depth: 1
       - name: Rebuild and verify P0-L bundle
         run: |
-          cat .tmp/p0l-bundle-xz.b64.* | base64 -d > /tmp/p0l-bundle.tar.xz
+          cat \
+            .tmp/p0l-bundle-xz.b64.00a \
+            .tmp/p0l-bundle-xz.b64.00b \
+            .tmp/p0l-bundle-xz.b64.01 \
+            .tmp/p0l-bundle-xz.b64.02 \
+            .tmp/p0l-bundle-xz.b64.03 \
+            .tmp/p0l-bundle-xz.b64.04 \
+            .tmp/p0l-bundle-xz.b64.05 \
+            | base64 -d > /tmp/p0l-bundle.tar.xz
           test "$(sha256sum /tmp/p0l-bundle.tar.xz | awk '{print $1}')" = "$(cat .tmp/p0l-bundle-xz.sha256)"
           tar -xJf /tmp/p0l-bundle.tar.xz -C .
       - name: Remove temporary delivery files
