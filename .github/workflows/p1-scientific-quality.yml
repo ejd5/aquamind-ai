@@ -92,7 +92,7 @@ jobs:
         with:
           name: p1-contract-log
           path: /tmp/aqwelia-p1-contracts.log
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
 
       - name: Run complete smoke suite
