@@ -27,5 +27,23 @@ jobs:
           bun-version: "1.3.4"
       - run: bun install --frozen-lockfile >/dev/null
       - run: bun run db:generate:all >/dev/null
-      - name: Lint only
-        run: bun run lint
+      - name: Capture lint output
+        id: lint
+        shell: bash
+        run: |
+          set +e
+          bun run lint > /tmp/p0l-lint.txt 2>&1
+          status=$?
+          set -e
+          cat /tmp/p0l-lint.txt
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+      - name: Upload lint diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p0l-lint-diagnostic
+          path: /tmp/p0l-lint.txt
+          retention-days: 1
+      - name: Fail when lint failed
+        if: steps.lint.outputs.status != '0'
+        run: exit 1
