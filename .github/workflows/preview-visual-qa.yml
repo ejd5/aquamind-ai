@@ -134,18 +134,62 @@ jobs:
       - name: Wait for the exact Vercel preview commit
         if: env.VISUAL_QA_SKIPPED != 'true'
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
+
           for attempt in $(seq 1 40); do
             status=$(curl -L -sS -o /tmp/preview-health.json -w "%{http_code}" "$PREVIEW_URL/api/preview-health" || true)
             deployed_sha=$(jq -r '.environment.gitCommitSha // empty' /tmp/preview-health.json 2>/dev/null || true)
             if { [ "$status" = "200" ] || [ "$status" = "503" ]; } && [ "$deployed_sha" = "$EXPECTED_SHA" ]; then
-              echo "Exact preview commit detected: $deployed_sha (health status $status)"
+              echo "Exact preview commit detected through preview-health: $deployed_sha (status $status)"
               cat /tmp/preview-health.json || true
               exit 0
             fi
-            echo "Waiting for commit $EXPECTED_SHA (attempt $attempt, status $status, deployed $deployed_sha)"
+
+            commit_status=$(curl -fsSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/commits/$EXPECTED_SHA/status")
+            exact_vercel_success=$(printf '%s' "$commit_status" | jq -r '[
+              .statuses[]
+              | select((.context | startswith("Vercel")) and .state == "success")
+            ] | length')
+
+            root_status=$(curl -sS -D /tmp/preview-root.headers -o /tmp/preview-root.html -w "%{http_code}" "$PREVIEW_URL/" || true)
+            root_location=$(awk 'BEGIN { IGNORECASE=1 } /^location:/ { sub(/^location:[[:space:]]*/, ""); sub(/\r$/, ""); print }' /tmp/preview-root.headers | tail -1)
+
+            if [ "$exact_vercel_success" -gt 0 ] && [ "$attempt" -ge 4 ]; then
+              if [ "$root_status" = "401" ] || [ "$root_status" = "403" ] || printf '%s' "$root_location" | grep -Eq 'vercel\.com/(login|sso)|/_vercel/(sso|auth)'; then
+                mkdir -p "$QA_OUTPUT_DIR"
+                cat > "$QA_OUTPUT_DIR/VERCEL_PREVIEW_PROTECTED.md" <<EOF
+          # Preview visual QA not executed
+
+          GitHub confirms a successful Vercel deployment for commit \`$EXPECTED_SHA\`, but the preview requires authentication and cannot be inspected by the automated browser.
+
+          Configure a Vercel automation bypass or run this workflow manually with an accessible preview before release.
+          EOF
+                echo "VISUAL_QA_SKIPPED=true" >> "$GITHUB_ENV"
+                echo "::warning::Exact Vercel deployment confirmed, but preview protection prevents visual QA."
+                {
+                  echo "### Preview Visual QA not executed"
+                  echo "The Vercel status attached to commit \`$EXPECTED_SHA\` is successful, but the preview is protected."
+                  echo "Visual approval remains required before release."
+                } >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+
+              if [ -z "$deployed_sha" ] && { [ "$root_status" -ge 200 ] && [ "$root_status" -lt 400 ]; }; then
+                echo "::warning::preview-health did not expose a SHA; exact deployment is confirmed by the successful Vercel status attached to $EXPECTED_SHA."
+                exit 0
+              fi
+            fi
+
+            echo "Waiting for commit $EXPECTED_SHA (attempt $attempt, health $status, root $root_status, deployed $deployed_sha, exact Vercel successes $exact_vercel_success)"
             sleep 15
           done
+
           echo "The exact preview commit was not detected in time" >&2
           cat /tmp/preview-health.json || true
           exit 1
