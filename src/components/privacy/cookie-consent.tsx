@@ -19,7 +19,7 @@ export function CookieConsent() {
   const [analytics, setAnalytics] = useState(false)
   const [saving, setSaving] = useState(false)
   const [hasExistingChoice, setHasExistingChoice] = useState(false)
-  const [saveError, setSaveError] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
     const existing = readConsentPreference()
@@ -39,7 +39,7 @@ export function CookieConsent() {
 
   async function save(value: boolean, source: string) {
     setSaving(true)
-    setSaveError(false)
+    setSaveError(null)
     try {
       const preference = await persistConsentPreference(value, source)
       setAnalytics(preference.analytics)
@@ -48,7 +48,7 @@ export function CookieConsent() {
       setCustomizing(false)
     } catch {
       // Fail closed: no optional analytics SDK is enabled without a recorded choice.
-      setSaveError(true)
+      setSaveError(copy.saveError)
     } finally {
       setSaving(false)
     }
@@ -74,7 +74,7 @@ export function CookieConsent() {
           ) : null}
         </div>
 
-        {saveError ? <p role="alert" className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">{copy.saveError}</p> : null}
+        {saveError ? <p role="alert" className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">{saveError}</p> : null}
 
         {customizing ? (
           <div className="mt-5 grid gap-3">
