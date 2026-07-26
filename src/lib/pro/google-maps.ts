@@ -1,4 +1,6 @@
-import 'server-only'
+if (typeof window !== 'undefined') {
+  throw new Error('Google Maps server integration cannot run in the browser')
+}
 
 export const GOOGLE_MAPS_INTEGRATION_VERSION = 'google-maps-server-v1' as const
 export const GOOGLE_GEOCODING_POLICY_VERSION = 'google-geocoding-confirmed-location-v1' as const
