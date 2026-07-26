@@ -30,14 +30,14 @@ jobs:
             | base64 -d > /tmp/p0l-bundle.tar.xz
           test "$(sha256sum /tmp/p0l-bundle.tar.xz | awk '{print $1}')" = "$(cat .tmp/p0l-bundle-xz.sha256)"
           tar -xJf /tmp/p0l-bundle.tar.xz -C .
-      - name: Remove temporary delivery files
+      - name: Keep workflow changes for the final GitHub commit
         run: |
+          rm -f .github/workflows/billing-retry-cron.yml
+          rm -f .github/workflows/apply-p0l-bundle.yml
           rm -f .tmp/p0l-bundle-xz.b64.*
           rm -f .tmp/p0l-bundle-xz.sha256
           rm -f .tmp/p0l-bundle.tar.gz
-          rm -f .github/workflows/apply-p0l-bundle.yml
-          rm -f .github/workflows/export-p0l-worktree.yml
-      - name: Commit P0-L baseline
+      - name: Commit application security baseline
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
