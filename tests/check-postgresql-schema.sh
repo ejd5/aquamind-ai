@@ -23,8 +23,9 @@ node scripts/sync-postgresql-schema.mjs
 BASELINE="$MIGRATIONS_DIR/20260712000000_baseline/migration.sql"
 BRAIN_FOUNDATION="$MIGRATIONS_DIR/20260719090000_aqwelia_brain_foundation/migration.sql"
 BRAIN_INDEXES="$MIGRATIONS_DIR/20260722090000_aqwelia_brain_index_parity/migration.sql"
+SCIENTIFIC_PERSISTENCE="$MIGRATIONS_DIR/20260726170000_scientific_measurement_persistence/migration.sql"
 
-for required in "$BASELINE" "$BRAIN_FOUNDATION" "$BRAIN_INDEXES"; do
+for required in "$BASELINE" "$BRAIN_FOUNDATION" "$BRAIN_INDEXES" "$SCIENTIFIC_PERSISTENCE"; do
   if [ ! -f "$required" ]; then
     echo "Required PostgreSQL migration missing: $required" >&2
     exit 1
@@ -73,10 +74,30 @@ for index in \
   fi
 done
 
+for column in \
+  manufacturerSaltMin \
+  manufacturerSaltMax \
+  manufacturerChlorineMax \
+  totalDissolvedSolids \
+  measuredAt \
+  measurementMethod \
+  measurementMetadata \
+  scientificQualityScore \
+  scientificMethodVersion \
+  scientificLimitations \
+  lsiMethodVersion \
+  dosageMethodVersion \
+  swimSafetyMethodVersion; do
+  if ! grep -Fq "ADD COLUMN \"$column\"" "$SCIENTIFIC_PERSISTENCE"; then
+    echo "Scientific persistence migration is missing $column" >&2
+    exit 1
+  fi
+done
+
 # Verify the migration_lock.toml is present.
 if [ ! -f "$MIGRATIONS_DIR/migration_lock.toml" ]; then
   echo "migration_lock.toml missing" >&2
   exit 1
 fi
 
-echo "PostgreSQL migration structure validated: immutable baseline plus Brain incremental migrations"
+echo "PostgreSQL migration structure validated: immutable baseline plus Brain and scientific incremental migrations"

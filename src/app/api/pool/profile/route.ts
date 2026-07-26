@@ -127,6 +127,15 @@ export async function POST(req: NextRequest) {
           ? Number(body.spaTemperature)
           : null
     const spaUsageFreq = body.spaUsageFreq ?? body.spaUsageFrequency ?? null
+    const manufacturerSaltMin = optionalNonNegative(body.manufacturerSaltMin)
+    const manufacturerSaltMax = optionalPositive(body.manufacturerSaltMax)
+    const manufacturerChlorineMax = optionalPositive(body.manufacturerChlorineMax)
+    const limitError = validateManufacturerLimits(
+      manufacturerSaltMin,
+      manufacturerSaltMax,
+      manufacturerChlorineMax,
+    )
+    if (limitError) return NextResponse.json(limitError, { status: 400 })
 
     const data = {
       userId,
@@ -139,6 +148,9 @@ export async function POST(req: NextRequest) {
       filterType: body.filterType || 'sand',
       pumpType: body.pumpType || null,
       saltSystem: !!body.saltSystem,
+      manufacturerSaltMin,
+      manufacturerSaltMax,
+      manufacturerChlorineMax,
       region: body.region || null,
       sunExposure: body.sunExposure || 'medium',
       covered: !!body.covered,
@@ -218,6 +230,28 @@ export async function PATCH(req: NextRequest) {
     if (spaUsageFreq !== undefined) data.spaUsageFreq = spaUsageFreq
     if (body.spaBrand != null) data.spaBrand = body.spaBrand
 
+    const nextSaltMin = Object.prototype.hasOwnProperty.call(body, 'manufacturerSaltMin')
+      ? optionalNonNegative(body.manufacturerSaltMin)
+      : existing.manufacturerSaltMin
+    const nextSaltMax = Object.prototype.hasOwnProperty.call(body, 'manufacturerSaltMax')
+      ? optionalPositive(body.manufacturerSaltMax)
+      : existing.manufacturerSaltMax
+    const nextChlorineMax = Object.prototype.hasOwnProperty.call(body, 'manufacturerChlorineMax')
+      ? optionalPositive(body.manufacturerChlorineMax)
+      : existing.manufacturerChlorineMax
+    const limitError = validateManufacturerLimits(nextSaltMin, nextSaltMax, nextChlorineMax)
+    if (limitError) return NextResponse.json(limitError, { status: 400 })
+
+    if (Object.prototype.hasOwnProperty.call(body, 'manufacturerSaltMin')) {
+      data.manufacturerSaltMin = nextSaltMin
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'manufacturerSaltMax')) {
+      data.manufacturerSaltMax = nextSaltMax
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'manufacturerChlorineMax')) {
+      data.manufacturerChlorineMax = nextChlorineMax
+    }
+
     const profile = await db.poolProfile.update({ where: { id }, data })
     return NextResponse.json({ profile })
   } catch (e) {
@@ -269,4 +303,33 @@ export async function DELETE(req: NextRequest) {
   })
   const profile = remaining[remaining.length - 1] || null
   return NextResponse.json({ profile, profiles: remaining })
+}
+
+function optionalNonNegative(value: unknown): number | null {
+  if (value === '' || value === null || value === undefined) return null
+  const numeric = Number(value)
+  return Number.isFinite(numeric) && numeric >= 0 ? numeric : Number.NaN
+}
+
+function optionalPositive(value: unknown): number | null {
+  if (value === '' || value === null || value === undefined) return null
+  const numeric = Number(value)
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : Number.NaN
+}
+
+function validateManufacturerLimits(
+  saltMin: number | null,
+  saltMax: number | null,
+  chlorineMax: number | null,
+): { error: string; code: string } | null {
+  if (Number.isNaN(saltMin) || Number.isNaN(saltMax) || Number.isNaN(chlorineMax)) {
+    return { error: 'Invalid manufacturer limit', code: 'INVALID_MANUFACTURER_LIMIT' }
+  }
+  if ((saltMin == null) !== (saltMax == null)) {
+    return { error: 'Both manufacturer salt limits are required', code: 'INCOMPLETE_SALT_RANGE' }
+  }
+  if (saltMin != null && saltMax != null && saltMax <= saltMin) {
+    return { error: 'Manufacturer salt maximum must exceed minimum', code: 'INVALID_SALT_RANGE' }
+  }
+  return null
 }

@@ -7,11 +7,16 @@ on:
       - feat/p1-mobile-technician-journey
       - feat/p1-scientific-quality
       - feat/p1-scientific-contextual-targets
+      - feat/p1-scientific-safety-readiness
     paths:
       - '.github/workflows/p1-scientific-quality.yml'
       - 'docs/release/P1_SCIENTIFIC_*.md'
+      - 'prisma/**'
+      - 'src/app/api/pool/profile/route.ts'
       - 'src/app/api/pool/water-test/route.ts'
       - 'src/lib/pool/**'
+      - 'tests/check-postgresql-schema.sh'
+      - 'tests/check-scientific-sqlite-migration.py'
       - 'tests/p1-scientific-*.test.ts'
 
 permissions:
@@ -51,8 +56,11 @@ jobs:
       - name: Generate Prisma clients
         run: bun run db:generate:all
 
-      - name: Validate PostgreSQL schema and baseline
+      - name: Validate PostgreSQL schema and migration structure
         run: bun run test:postgresql
+
+      - name: Execute SQLite scientific migration
+        run: python3 tests/check-scientific-sqlite-migration.py
 
       - name: Lint
         run: bun run lint

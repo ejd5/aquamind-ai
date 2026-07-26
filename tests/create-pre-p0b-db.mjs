@@ -31,9 +31,17 @@ db.exec(`
   -- This fixture represents the pre-P0-B baseline while remaining intentionally
   -- minimal. Later migrations alter these baseline tables, so they must exist
   -- even when the legacy scenario only asserts billing data.
+  CREATE TABLE "PoolProfile" (
+    "id" TEXT NOT NULL PRIMARY KEY
+  );
+
   CREATE TABLE "WaterTest" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE "ActionPlan" (
+    "id" TEXT NOT NULL PRIMARY KEY
   );
 
   CREATE TABLE "PhotoDiagnostic" (
