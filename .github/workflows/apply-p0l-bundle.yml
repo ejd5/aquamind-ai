@@ -1,0 +1,37 @@
+name: Apply P0-L consolidated bundle
+
+on:
+  push:
+    branches:
+      - fix/p0-l-launch-security-baseline
+    paths:
+      - .github/workflows/apply-p0l-bundle.yml
+      - .tmp/p0l-bundle.tar.gz
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message || '', '[skip p0l-bundle]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: fix/p0-l-launch-security-baseline
+          fetch-depth: 1
+      - name: Apply consolidated P0-L files
+        run: tar -xzf .tmp/p0l-bundle.tar.gz -C .
+      - name: Remove temporary delivery files
+        run: |
+          rm -f .tmp/p0l-bundle.tar.gz
+          rm -f .github/workflows/apply-p0l-bundle.yml
+          rm -f .github/workflows/export-p0l-worktree.yml
+      - name: Commit P0-L baseline
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(p0-l): apply launch security baseline [skip p0l-bundle]'
+          git push origin HEAD:fix/p0-l-launch-security-baseline
