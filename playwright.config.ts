@@ -41,7 +41,8 @@ export default defineConfig({
   ],
   webServer: {
     command: 'rm -rf .next ' + TEST_DB + ' && touch ' + TEST_DB + ' && ' +
-      'DATABASE_URL="file:' + TEST_DB + '" bunx prisma db push --skip-generate 2>&1 | tail -1 && ' +
+      'DATABASE_URL="file:' + TEST_DB + '" bunx prisma db push 2>&1 | tail -1 && ' +
+      'bunx prisma generate --schema prisma/postgresql/schema.prisma 2>&1 | tail -1 && ' +
       'node tests/fixtures/weather-server.mjs & DATABASE_URL="file:' + TEST_DB + '" ' +
       'NEXTAUTH_SECRET=e2e-secret-only ' +
       'NEXTAUTH_URL=' + BASE + ' ' +

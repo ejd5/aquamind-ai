@@ -47,6 +47,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Generate Prisma clients
+        run: bunx prisma generate && bunx prisma generate --schema prisma/postgresql/schema.prisma
+
       - name: Install Playwright browsers (Chromium)
         run: bunx playwright install --with-deps chromium
 
