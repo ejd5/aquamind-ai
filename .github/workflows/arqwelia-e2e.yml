@@ -53,8 +53,11 @@ jobs:
       - name: Install Playwright browsers (Chromium)
         run: bunx playwright install --with-deps chromium
 
-      - name: Run Playwright E2E
+      - name: Run Playwright E2E (flag ON)
         run: bunx playwright test --config playwright.config.ts
+
+      - name: Run Playwright E2E (flag OFF — teaser gate)
+        run: bunx playwright test --config playwright.off.config.ts
 
       - name: Upload Playwright report (on failure)
         uses: actions/upload-artifact@v4

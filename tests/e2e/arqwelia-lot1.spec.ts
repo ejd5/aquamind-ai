@@ -5,7 +5,7 @@
  * with NEXT_PUBLIC_ARQWELIA_LOT1_ENABLED=true + demo mode on. No absolute
  * Chromium path — browsers installed via `npx playwright install chromium`.
  *
- * Coverage (16 scenarios, desktop + mobile projects):
+ * Coverage (17 scenarios, desktop + mobile projects):
  *  1. landing loads
  *  2. landing mobile loads
  *  3. primary CTA -> photos
@@ -19,9 +19,10 @@
  * 11. Project Passport created (full happy path)
  * 12. partner waitlist signup
  * 13. Pro route protected -> signin redirect (anonymous)
- * 14. feature flag ON — teaser visible in consumer dashboard
- * 15. feature flag OFF — teaser hidden for unsupported locale (ES)
- * 16. dashboard teaser CTA navigates to /arqwelia
+ * 14. FR + flag ON — teaser visible in consumer dashboard
+ * 15. EN + flag ON — teaser visible in consumer dashboard
+ * 16. ES locale — no teaser in dashboard (unsupported locale)
+ * 17. dashboard teaser CTA navigates to /arqwelia
  */
 import { test, expect } from '@playwright/test'
 import type { Page, BrowserContext } from '@playwright/test'
@@ -42,6 +43,7 @@ const I18N = (locale: 'fr' | 'en') => ({
   joinPilot: locale === 'fr' ? 'Rejoindre la liste pilote' : 'Join the pilot list',
   passportRegex: /ARQ-[A-Z0-9]{3}-[A-Z0-9]{3}/,
   discoverArqwelia: locale === 'fr' ? 'Découvrir ARQWELIA' : 'Discover ARQWELIA',
+  teaserTitle: 'ARQWELIA',
 })
 
 const T = I18N('fr')
@@ -189,70 +191,139 @@ test.describe('ARQWELIA Lot 1 — demo journey (FR)', () => {
     await page.waitForURL(/\/auth\/signin/, { timeout: 10_000 })
   })
 
-  test('14. feature flag ON — authenticated dashboard loads', async ({ page, context, request: api }) => {
-    // Verifies that an authenticated demo user can access the consumer dashboard
-    // at '/'. The ARQWELIA teaser component is gated by NEXT_PUBLIC_ARQWELIA_LOT1_ENABLED
-    // which is inlined at compile time. In Turbopack dev mode (Next.js 16),
-    // NEXT_PUBLIC_* inlining in client bundles can be unreliable; the teaser
-    // rendering is verified by unit tests (arqwelia-lot1.test.ts) and by
-    // manual screenshots. This E2E verifies the dashboard auth + render pipeline.
+  test('14. FR + flag ON — teaser visible in dashboard', async ({ page, context, request: api }) => {
     test.setTimeout(60_000)
     const token = await loginAsDemoAndGetToken(api)
     expect(token).toBeTruthy()
-    await context.addCookies([{
-      name: 'next-auth.session-token', value: token!,
-      domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' as const,
-    }])
+    await context.addCookies([
+      {
+        name: 'next-auth.session-token', value: token!,
+        domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' as const,
+      },
+      {
+        name: 'NEXT_LOCALE', value: 'fr',
+        domain: 'localhost', path: '/', httpOnly: false, sameSite: 'Lax' as const,
+      },
+    ])
+
+    // Set localStorage so the page switches to the app view on load
+    await page.addInitScript(() => {
+      localStorage.setItem('aqwelia_view', 'app')
+    })
 
     await page.goto('/')
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(3000)
 
-    // Dashboard renders — "Aujourd'hui" is the dashboard title
+    // Dashboard title visible
     await expect(page.getByText('Aujourd').first()).toBeVisible({ timeout: 10_000 })
-    // The ARQWELIA landing page is accessible with the flag on
-    await page.goto('/arqwelia')
-    await expect(page.locator('body')).toContainText(/ARQWELIA/)
+
+    // Teaser title "ARQWELIA" visible
+    await expect(page.getByRole('heading', { name: T.teaserTitle }).first()).toBeVisible({ timeout: 10_000 })
+    // CTA "Découvrir ARQWELIA" visible
+    await expect(page.getByRole('link', { name: T.discoverArqwelia }).first()).toBeVisible({ timeout: 5_000 })
+    // CTA link points to /arqwelia
+    await expect(page.getByRole('link', { name: T.discoverArqwelia }).first()).toHaveAttribute('href', '/arqwelia')
   })
 
-  test('15. feature flag OFF — teaser hidden for unsupported locale (ES)', async ({ browser, request: api }) => {
+  test('15. EN + flag ON — teaser visible in dashboard', async ({ browser, request: api }) => {
+    test.setTimeout(60_000)
+    const token = await loginAsDemoAndGetToken(api)
+    expect(token).toBeTruthy()
+
+    const enCtx: BrowserContext = await browser.newContext({ locale: 'en-US' })
+    await enCtx.addCookies([
+      {
+        name: 'next-auth.session-token', value: token!,
+        domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' as const,
+      },
+      {
+        name: 'NEXT_LOCALE', value: 'en',
+        domain: 'localhost', path: '/', httpOnly: false, sameSite: 'Lax' as const,
+      },
+    ])
+    const enPage: Page = await enCtx.newPage()
+
+    // Set localStorage so the page switches to the app view on load
+    await enPage.addInitScript(() => {
+      localStorage.setItem('aqwelia_view', 'app')
+    })
+
+    await enPage.goto('/')
+    await enPage.waitForLoadState('networkidle')
+    await enPage.waitForTimeout(3000)
+
+    // Teaser title "ARQWELIA" visible
+    const T_EN = I18N('en')
+    await expect(enPage.getByRole('heading', { name: T_EN.teaserTitle }).first()).toBeVisible({ timeout: 10_000 })
+    // CTA "Discover ARQWELIA" visible
+    await expect(enPage.getByRole('link', { name: T_EN.discoverArqwelia }).first()).toBeVisible({ timeout: 5_000 })
+
+    await enCtx.close()
+  })
+
+  test('16. ES locale — no teaser in dashboard (unsupported)', async ({ browser, request: api }) => {
     test.setTimeout(60_000)
     const token = await loginAsDemoAndGetToken(api)
     expect(token).toBeTruthy()
 
     const esCtx: BrowserContext = await browser.newContext({ locale: 'es-ES' })
-    await esCtx.addCookies([{
-      name: 'next-auth.session-token', value: token!,
-      domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' as const,
-    }])
+    await esCtx.addCookies([
+      {
+        name: 'next-auth.session-token', value: token!,
+        domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' as const,
+      },
+      {
+        name: 'NEXT_LOCALE', value: 'es',
+        domain: 'localhost', path: '/', httpOnly: false, sameSite: 'Lax' as const,
+      },
+    ])
     const esPage: Page = await esCtx.newPage()
+
+    // Set localStorage so the page switches to the app view on load
+    await esPage.addInitScript(() => {
+      localStorage.setItem('aqwelia_view', 'app')
+    })
 
     await esPage.goto('/')
     await esPage.waitForLoadState('networkidle')
-    await esPage.waitForTimeout(2000)
-    // The dashboard loads for ES locale
-    await expect(esPage.getByText('Hoy|Today|Aujourd').first()).toBeVisible({ timeout: 5000 }).catch(() => {
-      // Dashboard text varies by locale — just verify the page loaded
-    })
+    await esPage.waitForTimeout(3000)
+
+    // No teaser heading with "ARQWELIA" as teaser title in the dashboard
+    await expect(esPage.getByRole('heading', { name: 'ARQWELIA' })).toHaveCount(0, { timeout: 5_000 })
+    // No "Discover ARQWELIA" CTA link
+    await expect(esPage.locator('a[href="/arqwelia"]:has-text("ARQWELIA")')).toHaveCount(0, { timeout: 5_000 })
+
     await esCtx.close()
   })
 
-  test('16. dashboard route accessible — /arqwelia from authenticated session', async ({ page, context, request: api }) => {
+  test('17. dashboard teaser CTA navigates to /arqwelia', async ({ page, context, request: api }) => {
     test.setTimeout(60_000)
     const token = await loginAsDemoAndGetToken(api)
     expect(token).toBeTruthy()
-    await context.addCookies([{
-      name: 'next-auth.session-token', value: token!,
-      domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' as const,
-    }])
+    await context.addCookies([
+      {
+        name: 'next-auth.session-token', value: token!,
+        domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' as const,
+      },
+      {
+        name: 'NEXT_LOCALE', value: 'fr',
+        domain: 'localhost', path: '/', httpOnly: false, sameSite: 'Lax' as const,
+      },
+    ])
 
-    // Navigate to the ARQWELIA landing page from the authenticated dashboard
+    // Set localStorage so the page switches to the app view on load
+    await page.addInitScript(() => {
+      localStorage.setItem('aqwelia_view', 'app')
+    })
+
     await page.goto('/')
     await page.waitForLoadState('networkidle')
-    await page.waitForTimeout(2000)
-    await page.goto('/arqwelia')
-    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(3000)
+
+    // Click the teaser CTA link
+    await page.getByRole('link', { name: T.discoverArqwelia }).first().click({ timeout: 10_000 })
+    await page.waitForURL('**/arqwelia', { timeout: 10_000 })
     await expect(page.locator('body')).toContainText(/ARQWELIA/)
-    await expect(page.getByRole('link', { name: T.startMyProject }).first()).toBeVisible()
   })
 })

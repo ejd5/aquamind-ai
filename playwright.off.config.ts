@@ -1,29 +1,24 @@
 /**
- * ARQWELIA Lot 1 — portable Playwright config.
+ * ARQWELIA teaser gate — flag OFF variant.
  *
- * Standard Playwright setup (no absolute Chromium paths). Browsers are
- * installed via `npx playwright install chromium` (CI does this — see
- * .github/workflows/arqwelia-e2e.yml). The dev server is started
- * automatically by the `webServer` config with the feature flag on and a
- * throwaway SQLite DB at /tmp (CI + local). desktop + mobile projects run
- * the same spec.
+ * Starts the dev server WITHOUT NEXT_PUBLIC_ARQWELIA_LOT1_ENABLED so the
+ * ArqweliaDashboardTeaser returns null and renders zero DOM nodes. This is
+ * the only way to test the flag-OFF path because NEXT_PUBLIC_* is inlined
+ * at compile time.
  *
- * Run locally:
- *   npx playwright install chromium        # one-time
- *   npx playwright test --config playwright.config.ts
+ * Run:
+ *   bunx playwright test --config playwright.off.config.ts
  */
 import { defineConfig, devices } from '@playwright/test'
 
-const PORT = 3098
+const PORT = 3099
 const BASE = `http://localhost:${PORT}`
-
-const TEST_DB = process.env.ARQ_E2E_DB || '/tmp/aqwelia-arq-e2e.db'
+const TEST_DB = '/tmp/aqwelia-arq-e2e-off.db'
 
 export default defineConfig({
   testDir: './tests/e2e',
-  testMatch: /.*\.spec\.ts$/,
-  testIgnore: /arqwelia-teaser-gate\.spec\.ts$/,
-  fullyParallel: false, // single server — avoid concurrent DB writes
+  testMatch: /arqwelia-teaser-gate\.spec\.ts$/,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   workers: 1,
@@ -38,7 +33,6 @@ export default defineConfig({
   },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
-    { name: 'mobile', use: { ...devices['Pixel 5'], viewport: { width: 390, height: 844 } } },
   ],
   webServer: {
     command: 'rm -rf .next ' + TEST_DB + ' && touch ' + TEST_DB + ' && ' +
@@ -47,8 +41,6 @@ export default defineConfig({
       'node tests/fixtures/weather-server.mjs & DATABASE_URL="file:' + TEST_DB + '" ' +
       'NEXTAUTH_SECRET=e2e-secret-only ' +
       'NEXTAUTH_URL=' + BASE + ' ' +
-      'NEXT_PUBLIC_ARQWELIA_LOT1_ENABLED=true ' +
-      'NEXT_PUBLIC_ARQWELIA_DEMO_MODE=true ' +
       'DEMO_ACCOUNT_ENABLED=true ' +
       'DEMO_ACCOUNT_EMAIL=demo@e2e.dev ' +
       'DEMO_ACCOUNT_PASSWORD=demo-e2e-password-2026! ' +
@@ -56,17 +48,15 @@ export default defineConfig({
     url: BASE + '/arqwelia',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
-    // CI starts fresh; locally reuse an existing server if running.
     cwd: process.cwd(),
     env: {
       DATABASE_URL: 'file:' + TEST_DB,
       NEXTAUTH_SECRET: 'e2e-secret-only',
       NEXTAUTH_URL: BASE,
-      NEXT_PUBLIC_ARQWELIA_LOT1_ENABLED: 'true',
-      NEXT_PUBLIC_ARQWELIA_DEMO_MODE: 'true',
       DEMO_ACCOUNT_ENABLED: 'true',
       DEMO_ACCOUNT_EMAIL: 'demo@e2e.dev',
       DEMO_ACCOUNT_PASSWORD: 'demo-e2e-password-2026!',
+      NEXT_PUBLIC_ARQWELIA_LOT1_ENABLED: 'false',
     },
   },
 })
