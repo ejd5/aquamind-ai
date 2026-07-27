@@ -7472,6 +7472,14 @@
       "keep": "Garder le dossier privé",
       "share": "Partager plus tard",
       "findPro": "Trouver des professionnels"
+    },
+    "dashboard": {
+      "title": "ARQWELIA",
+      "subtitle": "Imaginez votre future piscine",
+      "description": "Créez un premier projet visuel, explorez deux directions et préparez votre Project Passport.",
+      "cta": "Découvrir ARQWELIA",
+      "newBadge": "Nouveau",
+      "demoBadge": "Démonstration"
     }
   }
 }

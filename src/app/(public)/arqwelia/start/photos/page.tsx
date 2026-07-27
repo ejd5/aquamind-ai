@@ -164,7 +164,6 @@ export default function PhotosStep() {
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {store.photos.map((p) => (
             <div key={p.id} className="relative overflow-hidden rounded-xl border border-arq-border shadow-arq-deep">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={p.dataUrl} alt={p.name} className="aspect-square w-full object-cover" />
               <button
                 type="button"

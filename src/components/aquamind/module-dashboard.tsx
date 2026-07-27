@@ -40,6 +40,7 @@ import { GamificationWidget } from './gamification-widget'
 import { PredictionsWidget } from './predictions-widget'
 import { WinterGuardianWidget } from './winter-guardian-widget'
 import { AnnualReviewWidget } from './annual-review-widget'
+import { ArqweliaDashboardTeaser } from '@/components/arqwelia/dashboard-teaser'
 
 interface DashboardData {
   profile: any
@@ -458,6 +459,9 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
           )}
         </div>
       </div>
+
+      {/* ARQWELIA Lot 1 teaser — gated by NEXT_PUBLIC_ARQWELIA_LOT1_ENABLED */}
+      <ArqweliaDashboardTeaser />
 
       {/* AQWELIA Predict™ — proactive risk predictions on top */}
       <PredictionsWidget onAskAssistant={onAskAssistant} />

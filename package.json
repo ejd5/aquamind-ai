@@ -128,6 +128,7 @@
   "devDependencies": {
     "@capacitor/android": "^8.4.1",
     "@capacitor/ios": "^8.4.1",
+    "@playwright/test": "^1.62.0",
     "@tailwindcss/postcss": "^4",
     "@types/react": "^19",
     "@types/react-dom": "^19",

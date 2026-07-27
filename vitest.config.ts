@@ -7,6 +7,6 @@ export default defineConfig({
   test: {
     testTimeout: 30000,
     fileParallelism: false,
-    exclude: [...configDefaults.exclude, 'tests/postgresql.test.mjs'],
+    exclude: [...configDefaults.exclude, 'tests/postgresql.test.mjs', 'tests/e2e/**', '.next/**'],
   },
 })

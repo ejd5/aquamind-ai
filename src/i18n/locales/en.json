@@ -7469,6 +7469,14 @@
         "specialty": "Family & natural pools",
         "location": "Nouvelle-Aquitaine"
       }
+    },
+    "dashboard": {
+      "title": "ARQWELIA",
+      "subtitle": "Imagine your future pool",
+      "description": "Create a first visual project, explore two directions and prepare your Project Passport.",
+      "cta": "Discover ARQWELIA",
+      "newBadge": "New",
+      "demoBadge": "Demo"
     }
   }
 }
