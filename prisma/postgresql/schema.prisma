@@ -1376,7 +1376,7 @@ model ArqweliaProject {
   knownMeasureLabel   String?
   knownMeasureValue   Float?
   knownMeasureUnit    String? @default("m")
-  selectedConcept     String? // A | B | null
+  selectedConcept      String? // A | B | null
   postalCode          String?
   realityScoreDemo    Int      @default(0)
   createdAt           DateTime @default(now())

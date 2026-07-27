@@ -35,6 +35,7 @@ SKIP_PATTERNS = [
     r'src/components/ui/',      # shadcn/ui components (no French, just code)
     r'src/hooks/',              # Toast types
     r'mini-services/',          # Separate services
+    r'src/lib/arqwelia/wizard-store\.ts',  # Backward-compat migration map (old French keys → new English codes)
 ]
 
 # Fichiers avec détection multilingue IA (patterns en toutes langues)

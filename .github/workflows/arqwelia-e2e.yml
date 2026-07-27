@@ -26,7 +26,6 @@ jobs:
     timeout-minutes: 25
 
     env:
-      ARQ_E2E_DB: /tmp/aqwelia-arq-e2e.db
       NEXTAUTH_URL: http://localhost:3098
       NEXTAUTH_SECRET: e2e-secret-only
       NEXT_PUBLIC_ARQWELIA_LOT1_ENABLED: 'true'
@@ -50,11 +49,6 @@ jobs:
 
       - name: Install Playwright browsers (Chromium)
         run: bunx playwright install --with-deps chromium
-
-      - name: Spin up schema on the throwaway SQLite DB
-        run: |
-          touch "$ARQ_E2E_DB"
-          bunx prisma db push --skip-generate
 
       - name: Run Playwright E2E
         run: bunx playwright test --config playwright.config.ts

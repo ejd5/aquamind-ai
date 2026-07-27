@@ -9,7 +9,7 @@
  * Namespaced under `arqwelia/fixtures` so it's easy to grep. Never imported
  * by production billing/auth/subscription code.
  */
-import type { ArqQuestionnaireData, ArqProjectType, ArqStyle, ArqConcept } from './types'
+import type { ArqQuestionnaireData, ArqProjectType, ArqConcept } from './types'
 
 export interface ArqAnalysisStep {
   key: 'photos' | 'zone' | 'constraints' | 'concepts'
@@ -18,11 +18,11 @@ export interface ArqAnalysisStep {
   durationMs: number
 }
 
-export const ANALYSIS_STEPS_FR: ArqAnalysisStep[] = [
-  { key: 'photos', label: 'Photos reçues', durationMs: 1200 },
-  { key: 'zone', label: 'Zone principale détectée', durationMs: 1600 },
-  { key: 'constraints', label: 'Contraintes estimées', durationMs: 1800 },
-  { key: 'concepts', label: 'Concepts préparés', durationMs: 1400 },
+export const ANALYSIS_STEPS: ArqAnalysisStep[] = [
+  { key: 'photos', label: 'arqwelia.wizard.analysis.steps.photos', durationMs: 1200 },
+  { key: 'zone', label: 'arqwelia.wizard.analysis.steps.zone', durationMs: 1600 },
+  { key: 'constraints', label: 'arqwelia.wizard.analysis.steps.constraints', durationMs: 1800 },
+  { key: 'concepts', label: 'arqwelia.wizard.analysis.steps.concepts', durationMs: 1400 },
 ]
 
 /** Demo fixture photos (transparent/placeholder SVGs shown as garden previews). */
@@ -45,72 +45,42 @@ export interface ArqConceptCard {
 /** Build two concept cards coherent with the questionnaire answers. */
 export function buildConcepts(q: Partial<ArqQuestionnaireData>): ArqConceptCard[] {
   const surf = surfaceByType(q.projectType)
-  const budget = budgetLabel(q.budget)
-  const style = styleLabel(q.style)
+  const budgetKey = q.budget || 'undefined'
+  const styleKey = q.style || 'contemporary'
 
   return [
     {
       id: 'A',
-      title: 'Concept A — Réaliste',
-      subtitle: 'Dimensions prudents, insertion respectueuse du terrain',
+      title: 'arqwelia.wizard.concepts.cardA.title',
+      subtitle: 'arqwelia.wizard.concepts.cardA.subtitle',
       tone: 'realiste',
       dimensions: `${surf.longueur} × ${surf.largeur} m — ${surf.profondeur} m de profondeur`,
-      badgeSun: 'Ensoleillement : à confirmer sur place',
-      badgeAccess: 'Accès engin : à confirmer',
-      badgeBudget: `Budget déclaré : ${budget}`,
+      badgeSun: 'arqwelia.wizard.concepts.badges.sunConfirm',
+      badgeAccess: 'arqwelia.wizard.concepts.badges.accessEnginConfirm',
+      badgeBudget: `arqwelia.wizard.questionnaire.budgets.${budgetKey}`,
     },
     {
       id: 'B',
-      title: 'Concept B — Inspiration',
-      subtitle: 'Direction plus émotionnelle, jeux d\'eau et ambiance',
+      title: 'arqwelia.wizard.concepts.cardB.title',
+      subtitle: 'arqwelia.wizard.concepts.cardB.subtitle',
       tone: 'inspiration',
       dimensions: `${surf.longueur} × ${surf.largeur} m — variantes de profondeur`,
-      badgeSun: 'Ensoleillement : à confirmer sur place',
-      badgeAccess: 'Accès : à confirmer',
-      badgeBudget: `Budget déclaré : ${budget} — ${style}`,
+      badgeSun: 'arqwelia.wizard.concepts.badges.sunConfirm',
+      badgeAccess: 'arqwelia.wizard.concepts.badges.accessConfirm',
+      badgeBudget: `arqwelia.wizard.questionnaire.budgets.${budgetKey}`,
     },
   ]
 }
 
 function surfaceByType(type?: ArqProjectType) {
   switch (type) {
-    case 'mini_piscine':
+    case 'mini_pool':
       return { longueur: 4, largeur: 2.5, profondeur: 1.4 }
     case 'spa_swim_spa':
       return { longueur: 5, largeur: 2.4, profondeur: 1.35 }
-    case 'piscine_enterrée':
+    case 'buried_pool':
     default:
       return { longueur: 8, largeur: 4, profondeur: 1.5 }
-  }
-}
-
-function budgetLabel(b?: string) {
-  switch (b) {
-    case '<25k':
-      return 'moins de 25 k€'
-    case '25-40k':
-      return '25 à 40 k€'
-    case '40-60k':
-      return '40 à 60 k€'
-    case '>60k':
-      return '60 k€ et plus'
-    default:
-      return 'non défini'
-  }
-}
-
-function styleLabel(s?: ArqStyle) {
-  switch (s) {
-    case 'mediterranean':
-      return 'style méditerranéen'
-    case 'contemporary':
-      return 'style contemporain'
-    case 'natural':
-      return 'style naturel'
-    case 'familial':
-      return 'style familial'
-    default:
-      return 'style libre'
   }
 }
 
@@ -127,8 +97,8 @@ export function demoRealityScore(q: Partial<ArqQuestionnaireData>): number {
 
 /** Anonymous pro preview fixture — no contact revealed. */
 export const DEMO_PRO_OPPORTUNITY = {
-  projectType: 'piscine_enterrée' as ArqProjectType,
-  zoneApprox: 'Sud-Ouest (zone anonymisée)',
+  projectType: 'buried_pool' as ArqProjectType,
+  zoneApproxKey: 'arqwelia.pro.zone.southwest',
   budget: '25-40k' as const,
   timeline: '6-12m' as const,
   completeness: 78,

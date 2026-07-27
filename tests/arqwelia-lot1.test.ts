@@ -18,7 +18,7 @@ import { generateArqweliaPublicId } from '@/lib/arqwelia/public-id'
 
 describe('ARQWELIA Lot 1 — fixtures & helpers', () => {
   it('buildConcepts returns exactly 2 concepts (A realiste, B inspiration)', () => {
-    const out = buildConcepts({ projectType: 'piscine_enterrée', budget: '25-40k', style: 'contemporary' })
+    const out = buildConcepts({ projectType: 'buried_pool', budget: '25-40k', style: 'contemporary' })
     expect(out).toHaveLength(2)
     expect(out[0].id).toBe('A')
     expect(out[0].tone).toBe('realiste')
@@ -27,8 +27,8 @@ describe('ARQWELIA Lot 1 — fixtures & helpers', () => {
   })
 
   it('surfaceByType scales dimensions per project type', () => {
-    const enterrée = buildConcepts({ projectType: 'piscine_enterrée' })[0]
-    const mini = buildConcepts({ projectType: 'mini_piscine' })[0]
+    const enterrée = buildConcepts({ projectType: 'buried_pool' })[0]
+    const mini = buildConcepts({ projectType: 'mini_pool' })[0]
     expect(enterrée.dimensions).toContain('8 × 4 m')
     expect(mini.dimensions).toContain('4 × 2.5 m')
   })
@@ -36,7 +36,7 @@ describe('ARQWELIA Lot 1 — fixtures & helpers', () => {
   it('demoRealityScore is deterministic and bounded [0,100]', () => {
     const empty = demoRealityScore({})
     const full = demoRealityScore({
-      projectType: 'piscine_enterrée',
+      projectType: 'buried_pool',
       timeline: '6-12m',
       budget: '25-40k',
       style: 'contemporary',

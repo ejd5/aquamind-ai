@@ -32,6 +32,11 @@ interface WizardStore extends WizardState {
   reset: () => void
 }
 
+const PROJECT_TYPE_MIGRATION: Record<string, string> = {
+  'piscine_enterrée': 'buried_pool',
+  'mini_piscine': 'mini_pool',
+}
+
 export const useWizardStore = create<WizardStore>()(
   persist(
     (set, get) => ({
@@ -59,7 +64,7 @@ export const useWizardStore = create<WizardStore>()(
         set({
           demoMode: true,
           questionnaire: {
-            projectType: 'piscine_enterrée',
+            projectType: 'buried_pool',
             timeline: '6-12m',
             budget: '25-40k',
             style: 'contemporary',
@@ -73,6 +78,14 @@ export const useWizardStore = create<WizardStore>()(
     }),
     {
       name: 'arqwelia-wizard',
+      version: 1,
+      migrate: (persisted: any, version: number) => {
+        if (version === 0 && persisted?.questionnaire?.projectType) {
+          const mapped = PROJECT_TYPE_MIGRATION[persisted.questionnaire.projectType]
+          if (mapped) persisted.questionnaire.projectType = mapped
+        }
+        return persisted
+      },
       storage: createJSONStorage(() => (typeof window !== 'undefined' ? sessionStorage : (undefined as any))),
       // Don't persist photos across sessions — they may blow past sessionStorage limits.
       // We persist the rest (questionnaire, concept, contact) for refresh resilience.

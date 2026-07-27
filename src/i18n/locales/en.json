@@ -7310,8 +7310,8 @@
         "title": "Your project",
         "projectType": "Project type",
         "projectTypes": {
-          "piscine_enterrée": "In-ground pool",
-          "mini_piscine": "Mini-pool",
+          "buried_pool": "In-ground pool",
+          "mini_pool": "Mini pool",
           "spa_swim_spa": "Spa / Swim spa"
         },
         "timeline": "Timeline",
@@ -7348,7 +7348,13 @@
         "preparing": "Preparing…",
         "done": "Done",
         "resultTitle": "Here is your simulated analysis",
-        "realityScore": "Reality Score (demo)"
+        "realityScore": "Reality Score (demo)",
+        "steps": {
+          "photos": "Photos received",
+          "zone": "Main zone detected",
+          "constraints": "Estimated constraints",
+          "concepts": "Concepts prepared"
+        }
       },
       "concepts": {
         "title": "Compare two concepts",
@@ -7358,7 +7364,22 @@
         "selectPrompt": "Choose a concept to continue",
         "badgeSun": "Sunlight",
         "badgeAccess": "Access to confirm",
-        "badgeBudget": "Stated budget"
+        "badgeBudget": "Stated budget",
+        "cardA": {
+          "title": "Concept A — Realistic",
+          "subtitle": "Prudent dimensions, respectful site integration"
+        },
+        "cardB": {
+          "title": "Concept B — Inspiration",
+          "subtitle": "More emotional direction, water features and ambiance"
+        },
+        "badges": {
+          "sunConfirm": "Sunlight: to confirm on site",
+          "accessEnginConfirm": "Equipment access: to confirm",
+          "accessConfirm": "Access: to confirm"
+        },
+        "toneRealiste": "Realistic",
+        "toneInspiration": "Inspiration"
       },
       "contact": {
         "title": "Create your Project Passport",
@@ -7419,7 +7440,18 @@
         "interest": "Express interest"
       },
       "contactHidden": "Contact not revealed",
-      "interestDisabled": "Coming soon"
+      "interestDisabled": "Coming soon",
+      "matching": "Matching",
+      "matchingDesc": "Connecting with this homeowner will be available in a future release. No contact details are revealed in this demo.",
+      "missingInfo": "Missing information",
+      "missing": {
+        "photos": "Plot photos",
+        "measure": "Precise measurement (m)",
+        "consent": "Contact consent"
+      },
+      "zone": {
+        "southwest": "South-West (anonymized area)"
+      }
     },
     "nav": {
       "howItWorks": "The journey",

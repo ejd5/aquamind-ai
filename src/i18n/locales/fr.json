@@ -7313,8 +7313,8 @@
         "title": "Votre projet",
         "projectType": "Type de projet",
         "projectTypes": {
-          "piscine_enterrée": "Piscine enterrée",
-          "mini_piscine": "Mini-piscine",
+          "buried_pool": "Piscine enterrée",
+          "mini_pool": "Mini-piscine",
           "spa_swim_spa": "Spa / Swim spa"
         },
         "timeline": "Échéance",
@@ -7351,7 +7351,13 @@
         "preparing": "Préparation…",
         "done": "Terminé",
         "resultTitle": "Voici votre analyse simulée",
-        "realityScore": "Reality Score (démo)"
+        "realityScore": "Reality Score (démo)",
+        "steps": {
+          "photos": "Photos reçues",
+          "zone": "Zone principale détectée",
+          "constraints": "Contraintes estimées",
+          "concepts": "Concepts préparés"
+        }
       },
       "concepts": {
         "title": "Comparez deux concepts",
@@ -7361,7 +7367,22 @@
         "selectPrompt": "Choisissez un concept pour continuer",
         "badgeSun": "Ensoleillement",
         "badgeAccess": "Accès à confirmer",
-        "badgeBudget": "Budget déclaré"
+        "badgeBudget": "Budget déclaré",
+        "cardA": {
+          "title": "Concept A — Réaliste",
+          "subtitle": "Dimensions prudents, insertion respectueuse du terrain"
+        },
+        "cardB": {
+          "title": "Concept B — Inspiration",
+          "subtitle": "Direction plus émotionnelle, jeux d'eau et ambiance"
+        },
+        "badges": {
+          "sunConfirm": "Ensoleillement : à confirmer sur place",
+          "accessEnginConfirm": "Accès engin : à confirmer",
+          "accessConfirm": "Accès : à confirmer"
+        },
+        "toneRealiste": "Réaliste",
+        "toneInspiration": "Inspiration"
       },
       "contact": {
         "title": "Créez votre Project Passport",
@@ -7422,7 +7443,18 @@
         "interest": "Manifester mon intérêt"
       },
       "contactHidden": "Contact non révélé",
-      "interestDisabled": "Bientôt disponible"
+      "interestDisabled": "Bientôt disponible",
+      "matching": "Matching",
+      "matchingDesc": "La mise en relation avec ce particulier sera disponible dans un lot ultérieur. Aucune coordonnée n'est révélée dans cette démonstration.",
+      "missingInfo": "Informations manquantes",
+      "missing": {
+        "photos": "Photos du terrain",
+        "measure": "Mesure précise (en m)",
+        "consent": "Consentement de contact"
+      },
+      "zone": {
+        "southwest": "Sud-Ouest (zone anonymisée)"
+      }
     },
     "nav": {
       "howItWorks": "Le parcours",

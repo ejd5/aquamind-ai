@@ -24,12 +24,12 @@ import {
 import { ArqweliaBrand } from '@/components/arqwelia/brand'
 
 export const metadata: Metadata = {
-  title: 'ARQWELIA Studio — aperçu professionnel',
-  description: 'Aperçu d\'opportunité anonymisé. Aucun lead réel distribué dans le Lot 1.',
+  title: 'ARQWELIA Studio — professional preview',
+  description: 'Anonymized opportunity preview. No real leads distributed in Lot 1.',
   robots: 'noindex, nofollow',
 }
 
-const MISSING_FR = ['Photos du terrain', 'Mesure précise (en m)', 'Consentement de contact']
+const MISSING_KEYS = ['arqwelia.pro.missing.photos', 'arqwelia.pro.missing.measure', 'arqwelia.pro.missing.consent'] as const
 const MISSING_EN = ['Plot photos', 'Precise measurement (m)', 'Contact consent']
 
 export default async function ProPreviewPage({
@@ -47,7 +47,7 @@ export default async function ProPreviewPage({
   const forced = await forceArqLocale()
   const messages = await getMessages({ locale: forced })
 
-  const missing = MISSING_FR
+  const missing = MISSING_KEYS
 
   return (
     <NextIntlClientProvider locale={forced} messages={messages}>
@@ -66,7 +66,7 @@ export default async function ProPreviewPage({
           {/* Project visual + summary */}
           <ArqweliaGlassCard className="p-6 lg:col-span-2" border="strong">
             <ArqweliaLabel>{DEMO_PRO_OPPORTUNITY.projectType ? t(`wizard.questionnaire.projectTypes.${DEMO_PRO_OPPORTUNITY.projectType}` as any) as string : ''}</ArqweliaLabel>
-            <h2 className="mt-3 font-aq-display text-xl font-semibold text-arq-mist">{DEMO_PRO_OPPORTUNITY.zoneApprox}</h2>
+            <h2 className="mt-3 font-aq-display text-xl font-semibold text-arq-mist">{t(DEMO_PRO_OPPORTUNITY.zoneApproxKey as any)}</h2>
             <div className="mt-5 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
               <Info label={t('pro.column.budget')} value={t(`wizard.questionnaire.budgets.${DEMO_PRO_OPPORTUNITY.budget}` as any) as string} />
               <Info label={t('pro.column.timeline')} value={t(`wizard.questionnaire.timelines.${DEMO_PRO_OPPORTUNITY.timeline}` as any) as string} />
@@ -77,12 +77,12 @@ export default async function ProPreviewPage({
 
             {/* Informations manquantes */}
             <div className="mt-6 border-t border-arq-border pt-5">
-              <ArqweliaLabel>Informations manquantes</ArqweliaLabel>
+              <ArqweliaLabel>{t('pro.missingInfo')}</ArqweliaLabel>
               <ul className="mt-3 flex flex-wrap gap-2">
                 {missing.map((m) => (
                   <li key={m} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--arqwelia-border-gold)] bg-arq-champagne/5 px-3 py-1 text-[11px] font-semibold text-arq-gold-soft/85">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#C6A56B" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" /></svg>
-                    {m}
+                    {t(m as any)}
                   </li>
                 ))}
               </ul>
@@ -100,10 +100,9 @@ export default async function ProPreviewPage({
         {/* Match availability + interest (disabled) */}
         <ArqweliaGlassCard className="mt-5 flex flex-col items-center justify-between gap-4 p-5 sm:flex-row" border="strong">
           <div>
-            <ArqweliaLabel>Matching</ArqweliaLabel>
+            <ArqweliaLabel>{t('pro.matching')}</ArqweliaLabel>
             <p className="mt-1.5 text-sm text-arq-mist/60">
-              {/* disponibilité future du matching */}
-              La mise en relation avec ce particulier sera disponible dans un lot ultérieur. Aucune coordonnée n’est révélée dans cette démonstration.
+              {t('pro.matchingDesc')}
             </p>
           </div>
           <button

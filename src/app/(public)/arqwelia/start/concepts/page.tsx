@@ -64,7 +64,7 @@ export default function ConceptsStep() {
                   <span className="absolute left-4 top-3 font-aq-display text-3xl font-semibold text-arq-mist/70">{c.id}</span>
                   {/* Tone badge */}
                   <span className={`absolute right-4 top-3 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${c.tone === 'realiste' ? 'border-arq-aqua/40 bg-arq-aqua/10 text-arq-aqua' : 'border-[var(--arqwelia-border-gold)] bg-arq-champagne/5 text-arq-gold-soft'}`}>
-                    {c.tone === 'realiste' ? 'Réaliste' : 'Inspiration'}
+                    {c.tone === 'realiste' ? t('wizard.concepts.toneRealiste') : t('wizard.concepts.toneInspiration')}
                   </span>
                   {/* Conceptual pool silhouette */}
                   <div className="absolute inset-x-0 bottom-0 h-1/3" style={{ background: c.tone === 'realiste' ? 'linear-gradient(180deg, rgba(0,214,197,0.06), rgba(0,214,197,0.20))' : 'linear-gradient(180deg, rgba(67,207,245,0.06), rgba(198,165,107,0.18))' }} />
@@ -82,9 +82,9 @@ export default function ConceptsStep() {
                   <p className="mt-3 text-sm text-arq-mist/75">{c.dimensions}</p>
 
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-arq-aqua/25 px-2.5 py-1 text-[11px] font-semibold text-arq-aqua">{c.badgeSun}</span>
-                    <span className="rounded-full border border-[var(--arqwelia-border-gold)] px-2.5 py-1 text-[11px] font-semibold text-arq-gold-soft/80">{c.badgeAccess}</span>
-                    <span className="rounded-full border border-arq-mist/15 px-2.5 py-1 text-[11px] font-semibold text-arq-mist/60">{c.badgeBudget}</span>
+                    <span className="rounded-full border border-arq-aqua/25 px-2.5 py-1 text-[11px] font-semibold text-arq-aqua">{t(c.badgeSun as any)}</span>
+                    <span className="rounded-full border border-[var(--arqwelia-border-gold)] px-2.5 py-1 text-[11px] font-semibold text-arq-gold-soft/80">{t(c.badgeAccess as any)}</span>
+                    <span className="rounded-full border border-arq-mist/15 px-2.5 py-1 text-[11px] font-semibold text-arq-mist/60">{t(c.badgeBudget as any)}</span>
                   </div>
 
                   <div className="mt-5">

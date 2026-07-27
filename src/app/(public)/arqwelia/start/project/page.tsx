@@ -14,8 +14,8 @@ import {
 
 const OPTIONS = {
   projectType: [
-    { v: 'piscine_enterrée', k: 'piscine_enterrée' },
-    { v: 'mini_piscine', k: 'mini_piscine' },
+    { v: 'buried_pool', k: 'buried_pool' },
+    { v: 'mini_pool', k: 'mini_pool' },
     { v: 'spa_swim_spa', k: 'spa_swim_spa' },
   ] as { v: ArqProjectType; k: string }[],
   timeline: [

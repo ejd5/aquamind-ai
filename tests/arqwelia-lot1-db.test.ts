@@ -43,7 +43,7 @@ describe('ARQWELIA Lot 1 — DB integration', () => {
     expiresAt.setDate(expiresAt.getDate() + 30)
 
     const q = {
-      projectType: 'piscine_enterrée' as const,
+      projectType: 'buried_pool' as const,
       timeline: '6-12m' as const,
       budget: '25-40k' as const,
       style: 'contemporary' as const,

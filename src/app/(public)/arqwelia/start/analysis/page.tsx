@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useWizardStore } from '@/lib/arqwelia/wizard-store'
-import { ANALYSIS_STEPS_FR, demoRealityScore } from '@/lib/arqwelia/fixtures'
+import { ANALYSIS_STEPS, demoRealityScore } from '@/lib/arqwelia/fixtures'
 import { arqTrackClient } from '@/lib/arqwelia/analytics-client'
 import {
   ArqweliaGlassCard,
@@ -35,7 +35,7 @@ export default function AnalysisStep() {
   useEffect(() => {
     let cancelled = false
     let raf = 0
-    const total = ANALYSIS_STEPS_FR.reduce((s, x) => s + x.durationMs, 0)
+    const total = ANALYSIS_STEPS.reduce((s, x) => s + x.durationMs, 0)
     if (reducedMotion) { setProgress(100); return }
     let elapsed = 0
     const tick = () => {
@@ -77,12 +77,12 @@ export default function AnalysisStep() {
           <div className="h-full transition-[width] duration-150" style={{ width: `${progress}%`, background: 'var(--arqwelia-gradient-premium)', boxShadow: 'var(--arqwelia-glow-aqua)' }} />
         </div>
         <ul className="mt-5 space-y-2.5">
-          {ANALYSIS_STEPS_FR.map((s, i) => {
+          {ANALYSIS_STEPS.map((s, i) => {
             const reached = progress >= stepsCumulative(i) || reducedMotion
             return (
               <li key={s.key} className="flex items-center gap-3 text-sm">
                 <span className={reached ? 'text-arq-aqua' : 'text-arq-mist/30'}>{reached ? '✓' : '○'}</span>
-                <span className={reached ? 'text-arq-mist' : 'text-arq-mist/40'}>{s.label}</span>
+                <span className={reached ? 'text-arq-mist' : 'text-arq-mist/40'}>{t(s.label as any)}</span>
               </li>
             )
           })}
@@ -126,7 +126,7 @@ export default function AnalysisStep() {
   )
 
   function stepsCumulative(idx: number) {
-    return ANALYSIS_STEPS_FR.slice(0, idx + 1).reduce((s, x) => s + x.durationMs, 0) / ANALYSIS_STEPS_FR.reduce((s, x) => s + x.durationMs, 0) * 100
+    return ANALYSIS_STEPS.slice(0, idx + 1).reduce((s, x) => s + x.durationMs, 0) / ANALYSIS_STEPS.reduce((s, x) => s + x.durationMs, 0) * 100
   }
 }
 

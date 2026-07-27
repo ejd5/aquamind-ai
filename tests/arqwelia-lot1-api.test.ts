@@ -54,7 +54,7 @@ describe('ARQWELIA Lot 1 — API validation', () => {
   it('rejects when consent is NOT pre-checked (explicit opt-in required)', async () => {
     const { status, json } = await call(createProject, {
       questionnaire: {
-        projectType: 'piscine_enterrée',
+        projectType: 'buried_pool',
         timeline: '6-12m',
         budget: '25-40k',
         style: 'contemporary',
@@ -76,7 +76,7 @@ describe('ARQWELIA Lot 1 — API validation', () => {
   it('rejects invalid email and postal code', async () => {
     const { status, json } = await call(createProject, {
       questionnaire: {
-        projectType: 'piscine_enterrée',
+        projectType: 'buried_pool',
         timeline: '6-12m',
         budget: '25-40k',
         style: 'contemporary',
@@ -92,7 +92,7 @@ describe('ARQWELIA Lot 1 — API validation', () => {
   it('rejects missing concept selection', async () => {
     const { status, json } = await call(createProject, {
       questionnaire: {
-        projectType: 'piscine_enterrée',
+        projectType: 'buried_pool',
         timeline: '6-12m',
         budget: '25-40k',
         style: 'contemporary',
@@ -121,7 +121,7 @@ describe('ARQWELIA Lot 1 — API validation', () => {
     createdEmails.push(email)
     const { status, json } = await call(createProject, {
       questionnaire: {
-        projectType: 'piscine_enterrée',
+        projectType: 'buried_pool',
         timeline: '6-12m',
         budget: '25-40k',
         style: 'contemporary',

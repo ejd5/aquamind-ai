@@ -5,7 +5,7 @@
  * See docs/ARQWELIA_LOT1.md.
  */
 
-export type ArqProjectType = 'piscine_enterrée' | 'mini_piscine' | 'spa_swim_spa'
+export type ArqProjectType = 'buried_pool' | 'mini_pool' | 'spa_swim_spa'
 export type ArqTimeline = '<6m' | '6-12m' | '>12m' | 'undecided'
 export type ArqBudget = '<25k' | '25-40k' | '40-60k' | '>60k' | 'undefined'
 export type ArqStyle = 'mediterranean' | 'contemporary' | 'natural' | 'familial'
