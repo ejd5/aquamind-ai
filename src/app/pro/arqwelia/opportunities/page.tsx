@@ -1,23 +1,36 @@
 /**
- * ARQWELIA Lot 1 — Pro preview page.
+ * ARQWELIA V2 — Pro preview ("ARQWELIA Studio" identity).
  *
  * URL: /pro/arqwelia/opportunities?demo=1
- * Protected by Pro authentication + role. Renders an ANONYMIZED demo
- * opportunity (fixed fixture). No real lead is distributed. The "Express
- * interest" button is intentionally DISABLED with a "coming soon" label.
+ * Protected by Pro auth + role. Renders an ANONYMIZED demo opportunity
+ * (fixed fixture). Shows: projet, budget, calendrier, style, concept,
+ * maturity score (démo), informations manquantes, disponibilité future
+ * du matching, intérêt désactivé + explication. No real contact revealed.
  */
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { getTranslations } from 'next-intl/server'
+import { getTranslations, getMessages } from 'next-intl/server'
+import { NextIntlClientProvider } from 'next-intl'
 import { DEMO_PRO_OPPORTUNITY } from '@/lib/arqwelia/fixtures'
+import { forceArqLocale } from '@/lib/arqwelia/i18n'
+import {
+  ArqweliaGlassCard,
+  ArqweliaLabel,
+  ArqweliaFutureFeature,
+  ArqweliaScore,
+} from '@/components/arqwelia/ui'
+import { ArqweliaBrand } from '@/components/arqwelia/brand'
 
 export const metadata: Metadata = {
-  title: 'ARQWELIA — Pro preview',
-  description: 'Demo opportunity preview. No real lead distribution in Lot 1.',
+  title: 'ARQWELIA Studio — aperçu professionnel',
+  description: 'Aperçu d\'opportunité anonymisé. Aucun lead réel distribué dans le Lot 1.',
   robots: 'noindex, nofollow',
 }
+
+const MISSING_FR = ['Photos du terrain', 'Mesure précise (en m)', 'Consentement de contact']
+const MISSING_EN = ['Plot photos', 'Precise measurement (m)', 'Contact consent']
 
 export default async function ProPreviewPage({
   searchParams,
@@ -26,69 +39,98 @@ export default async function ProPreviewPage({
 }) {
   const t = await getTranslations('arqwelia')
   const session = await getServerSession(authOptions)
-
-  // Protect — must be signed in AND have Pro role.
   if (!session?.user?.id) {
     redirect('/auth/signin?callbackUrl=/pro/arqwelia/opportunities')
   }
-  // The user's role is on the User row, not the JWT here. We fetch it to enforce.
-  // For the Lot 1 demo we accept any authenticated user with role 'pro' OR 'admin'.
-  // (Reusing the existing admin/pro convention; no new auth logic added.)
+
+  // Force FR/EN for the ARQWELIA pro preview (Option B).
+  const forced = await forceArqLocale()
+  const messages = await getMessages({ locale: forced })
+
+  const missing = MISSING_FR
+
   return (
-    <div className="relative min-h-screen bg-arq-navy px-4 py-10 text-arq-mist sm:px-6">
-      <div className="mx-auto max-w-3xl">
-        <span className="inline-flex items-center gap-2 rounded-full border border-arq-sand/30 bg-arq-sand/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-arq-sand">
-          {t('demoBadge')}
-        </span>
-        <h1 className="mt-4 font-aq-display text-3xl font-semibold sm:text-4xl">{t('pro.title')}</h1>
+    <NextIntlClientProvider locale={forced} messages={messages}>
+    <div className="relative min-h-screen px-4 py-10 text-arq-mist sm:px-6" style={{ background: 'var(--arqwelia-gradient-hero)' }}>
+      <div className="mx-auto max-w-4xl">
+        <ArqweliaBrand size="lg" showByAqwelia />
+
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <h1 className="font-aq-display text-3xl font-semibold sm:text-4xl">{t('pro.title')}</h1>
+          <ArqweliaFutureFeature kind="demo">{t('demoBadge')}</ArqweliaFutureFeature>
+        </div>
         <p className="mt-2 text-sm text-arq-mist/60">{t('pro.subtitle')}</p>
 
-        <div className="mt-8 overflow-hidden rounded-2xl border border-arq-aqua/15 bg-arq-ink/50">
-          <table className="w-full text-sm">
-            <tbody>
-              <PreviewRow label={t('pro.column.type')} value={t(`wizard.questionnaire.projectTypes.${DEMO_PRO_OPPORTUNITY.projectType}` as any) as string} />
-              <PreviewRow label={t('pro.column.zone')} value={DEMO_PRO_OPPORTUNITY.zoneApprox} />
-              <PreviewRow label={t('pro.column.budget')} value={t(`wizard.questionnaire.budgets.${DEMO_PRO_OPPORTUNITY.budget}` as any) as string} />
-              <PreviewRow label={t('pro.column.timeline')} value={t(`wizard.questionnaire.timelines.${DEMO_PRO_OPPORTUNITY.timeline}` as any) as string} />
-              <PreviewRow label={t('pro.column.completeness')} value={`${DEMO_PRO_OPPORTUNITY.completeness}%`} />
-              <PreviewRow label={t('pro.column.score')} value={`${DEMO_PRO_OPPORTUNITY.maturityScore}/100`} />
-              <PreviewRow label={t('pro.column.contact')} value={t('pro.contactHidden')} muted />
-            </tbody>
-          </table>
+        {/* Opportunity card */}
+        <div className="mt-8 grid gap-5 lg:grid-cols-3">
+          {/* Project visual + summary */}
+          <ArqweliaGlassCard className="p-6 lg:col-span-2" border="strong">
+            <ArqweliaLabel>{DEMO_PRO_OPPORTUNITY.projectType ? t(`wizard.questionnaire.projectTypes.${DEMO_PRO_OPPORTUNITY.projectType}` as any) as string : ''}</ArqweliaLabel>
+            <h2 className="mt-3 font-aq-display text-xl font-semibold text-arq-mist">{DEMO_PRO_OPPORTUNITY.zoneApprox}</h2>
+            <div className="mt-5 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
+              <Info label={t('pro.column.budget')} value={t(`wizard.questionnaire.budgets.${DEMO_PRO_OPPORTUNITY.budget}` as any) as string} />
+              <Info label={t('pro.column.timeline')} value={t(`wizard.questionnaire.timelines.${DEMO_PRO_OPPORTUNITY.timeline}` as any) as string} />
+              <Info label={t('pro.column.completeness')} value={`${DEMO_PRO_OPPORTUNITY.completeness}%`} />
+              <Info label={t('wizard.concepts.title')} value="Concept A" />
+              <Info label={t('pro.column.contact')} value={t('pro.contactHidden')} muted />
+            </div>
+
+            {/* Informations manquantes */}
+            <div className="mt-6 border-t border-arq-border pt-5">
+              <ArqweliaLabel>Informations manquantes</ArqweliaLabel>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {missing.map((m) => (
+                  <li key={m} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--arqwelia-border-gold)] bg-arq-champagne/5 px-3 py-1 text-[11px] font-semibold text-arq-gold-soft/85">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#C6A56B" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" /></svg>
+                    {m}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </ArqweliaGlassCard>
+
+          {/* Maturity score */}
+          <ArqweliaGlassCard className="flex flex-col items-center justify-center p-6 text-center" border="gold">
+            <ArqweliaLabel>{t('pro.column.score')}</ArqweliaLabel>
+            <div className="mt-5"><ArqweliaScore value={DEMO_PRO_OPPORTUNITY.maturityScore} demo /></div>
+            <p className="mt-4 text-[11px] text-arq-mist/40">{t('scoreDesc')}</p>
+          </ArqweliaGlassCard>
         </div>
 
-        <div className="mt-6 flex items-center justify-between rounded-xl border border-arq-mist/10 bg-arq-ink/30 p-5">
-          <p className="text-sm text-arq-mist/60">{t('pro.column.interest')}</p>
+        {/* Match availability + interest (disabled) */}
+        <ArqweliaGlassCard className="mt-5 flex flex-col items-center justify-between gap-4 p-5 sm:flex-row" border="strong">
+          <div>
+            <ArqweliaLabel>Matching</ArqweliaLabel>
+            <p className="mt-1.5 text-sm text-arq-mist/60">
+              {/* disponibilité future du matching */}
+              La mise en relation avec ce particulier sera disponible dans un lot ultérieur. Aucune coordonnée n’est révélée dans cette démonstration.
+            </p>
+          </div>
           <button
             type="button"
             disabled
             aria-disabled="true"
             title={t('pro.interestDisabled')}
-            className="inline-flex min-h-[44px] cursor-not-allowed items-center justify-center rounded-full border border-arq-mist/15 bg-arq-mist/5 px-5 py-3 text-sm font-semibold text-arq-mist/40"
+            className="inline-flex min-h-[44px] cursor-not-allowed items-center justify-center rounded-full border border-arq-border px-5 py-3 text-sm font-semibold text-arq-mist/40"
           >
             {t('pro.interestDisabled')}
           </button>
-        </div>
+        </ArqweliaGlassCard>
 
         {searchParams?.demo === '1' && (
-          <p className="mt-6 text-xs text-arq-sand/70">
-            ?demo=1 — {t('pro.subtitle')}
-          </p>
+          <p className="mt-6 text-xs text-arq-sand/70">?demo=1 — {t('pro.subtitle')}</p>
         )}
       </div>
     </div>
+    </NextIntlClientProvider>
   )
 }
 
-function PreviewRow({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
+function Info({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
   return (
-    <tr className="border-t border-arq-mist/8 first:border-t-0">
-      <th scope="row" className="w-1/2 px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-arq-mist/45 align-top">
-        {label}
-      </th>
-      <td className={`px-5 py-3.5 text-right ${muted ? 'text-arq-mist/40' : 'font-semibold text-arq-mist'}`}>
-        {value}
-      </td>
-    </tr>
+    <div>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-arq-mist/40">{label}</p>
+      <p className={`mt-1 font-semibold ${muted ? 'text-arq-mist/40' : 'text-arq-mist'}`}>{value}</p>
+    </div>
   )
 }

@@ -6,6 +6,11 @@ import Link from 'next/link'
 import { useWizardStore } from '@/lib/arqwelia/wizard-store'
 import type { ArqProjectType, ArqTimeline, ArqBudget, ArqStyle } from '@/lib/arqwelia/types'
 import { arqTrackClient } from '@/lib/arqwelia/analytics-client'
+import {
+  ArqweliaGlassCard,
+  ArqweliaLabel,
+  ArqweliaPrimaryButton,
+} from '@/components/arqwelia/ui'
 
 const OPTIONS = {
   projectType: [
@@ -53,23 +58,32 @@ function OptionsSection({
 }) {
   return (
     <div>
-      <p className="mb-2 text-sm font-semibold text-arq-mist">{label}</p>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {options.map((o) => (
-          <button
-            type="button"
-            key={o.v}
-            aria-pressed={selected === o.v}
-            onClick={() => onSelect(o.v)}
-            className={`min-h-[44px] rounded-xl border px-4 py-3 text-left text-sm transition-colors ${
-              selected === o.v
-                ? 'border-arq-aqua bg-arq-aqua/10 text-arq-mist'
-                : 'border-arq-mist/15 bg-arq-ink/40 text-arq-mist/70 hover:border-arq-aqua/40'
-            }`}
-          >
-            {translate(`wizard.questionnaire.${String(field)}s.${o.k}`)}
-          </button>
-        ))}
+      <p className="mb-2.5 text-sm font-semibold text-arq-mist">{label}</p>
+      <div className="grid gap-2.5 sm:grid-cols-2">
+        {options.map((o) => {
+          const isSel = selected === o.v
+          return (
+            <button
+              type="button"
+              key={o.v}
+              aria-pressed={isSel}
+              onClick={() => onSelect(o.v)}
+              className={`min-h-[52px] rounded-xl border px-5 py-3 text-left text-sm transition-all ${
+                isSel
+                  ? 'border-arq-aqua bg-arq-aqua/10 text-arq-mist shadow-arq-glow'
+                  : 'border-arq-border text-arq-mist/70 hover:border-arq-aqua/40'
+              }`}
+              style={isSel ? undefined : { background: 'var(--arqwelia-gradient-card)' }}
+            >
+              <span className="flex items-center gap-3">
+                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${isSel ? 'border-arq-aqua' : 'border-arq-mist/30'}`}>
+                  {isSel && <span className="h-2 w-2 rounded-full bg-arq-aqua" />}
+                </span>
+                {translate(`wizard.questionnaire.${String(field)}s.${o.k}`)}
+              </span>
+            </button>
+          )
+        })}
       </div>
     </div>
   )

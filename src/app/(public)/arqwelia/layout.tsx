@@ -1,68 +1,83 @@
 /**
- * ARQWELIA Lot 1 — Shared layout for /arqwelia/* public pages.
+ * ARQWELIA V2 — Shared layout for /arqwelia/* public pages.
  *
- * - Reuses AQWELIA header/footer pattern but adds an ARQWELIA sub-brand bar.
- * - Shows "ARQWELIA" as a typographic sub-brand (NOT a logo replacement).
- * - Respects safe areas + reduced motion.
- * - When ARQWELIA_LOT1_ENABLED is false, nothing links to these routes from
- *   the main nav (handled in the public layout), but the routes still resolve.
+ * Premium navy header with brand symbol + nav + "Commencer mon projet" CTA.
+ * Mobile menu (ArqweliaHeaderNav). Footer with ARQWELIA Studio identity.
+ *
+ * i18n (Round 2, Option B): ARQWELIA is exposed ONLY in FR + EN. Users whose
+ * UI locale is es/de/it/pt/nl get an explicit EN fallback for ARQWELIA routes
+ * (no fake multilingual — see docs/ARQWELIA_LOT1.md). We force the request
+ * locale here (server) and re-scope the client provider (client subtree).
  */
 import Link from 'next/link'
-import { getTranslations } from 'next-intl/server'
+import { getLocale, getMessages, setRequestLocale, getTranslations } from 'next-intl/server'
+import { NextIntlClientProvider } from 'next-intl'
 import { isArqweliaLot1Enabled, isArqweliaDemoMode } from '@/lib/features'
+import { ArqweliaBrand, ArqweliaSymbol } from '@/components/arqwelia/brand'
+import { ArqweliaPrimaryButton, ArqweliaFutureFeature } from '@/components/arqwelia/ui'
+import { ArqweliaHeaderNav } from '@/components/arqwelia/header-nav'
+import { normalizeLocale, type Locale } from '@/i18n/config'
+
+const ARQ_SUPPORT: Locale[] = ['fr', 'en']
+const ARQ_FALLBACK: Locale = 'en'
 
 export default async function ArqweliaLayout({ children }: { children: React.ReactNode }) {
-  const t = await getTranslations('arqwelia')
+  const detected = normalizeLocale(await getLocale())
+  const forced: Locale = ARQ_SUPPORT.includes(detected) ? detected : ARQ_FALLBACK
+  // Force the request locale so server child components (getTranslations) read FR/EN.
+  setRequestLocale(forced)
+
+  const t = await getTranslations({ locale: forced, namespace: 'arqwelia' })
+  const messages = await getMessages({ locale: forced })
   const enabled = isArqweliaLot1Enabled()
   const demo = isArqweliaDemoMode()
+  const startHref = enabled ? '/arqwelia/start/photos' : '/arqwelia/start/analysis?demo=1'
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-arq-navy text-arq-mist">
-      {/* Sub-brand bar — typographic, not a logo replacement */}
-      <header className="safe-area-top sticky top-0 z-40 border-b border-arq-aqua/15 bg-arq-navy/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link href="/arqwelia" className="inline-flex items-baseline gap-2">
-            {/* Reuse the official AQWELIA logo from public/ */}
-            <span className="font-aq-display text-lg font-semibold text-arq-mist">
-              <span className="text-arq-aqua">A</span>QWELIA
-            </span>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-arq-sand/80">
-              ARQWELIA
-            </span>
-          </Link>
-          <nav className="flex items-center gap-2">
-            {enabled && (
-              <Link
-                href="/arqwelia/start/photos"
-                className="hidden rounded-full border border-arq-aqua/30 px-4 py-2 text-xs font-semibold text-arq-aqua transition-colors hover:bg-arq-aqua/10 sm:inline-block"
-              >
-                {t('ctaPrimary')}
-              </Link>
-            )}
-            <Link
-              href="/arqwelia/start/analysis?demo=1"
-              className="hidden rounded-full bg-arq-aqua/10 px-4 py-2 text-xs font-semibold text-arq-mist/80 transition-colors hover:text-arq-mist sm:inline-block"
-            >
-              {t('ctaSecondary')}
-            </Link>
-          </nav>
-        </div>
-      </header>
+    <div className="relative flex min-h-screen flex-col text-arq-mist" style={{ background: 'var(--arqwelia-gradient-hero)' }}>
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 opacity-[0.035]"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(0,214,197,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(0,214,197,0.5) 1px, transparent 1px)',
+          backgroundSize: '52px 52px',
+        }}
+      />
 
-      <main className="relative flex-1">{children}</main>
+      <NextIntlClientProvider locale={forced} messages={messages}>
+        {/* Premium sticky header */}
+        <header className="safe-area-top sticky top-0 z-40 border-b border-arq-border backdrop-blur-2xl" style={{ background: 'rgba(3,15,26,0.78)' }}>
+          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+            <Link href="/arqwelia" aria-label="ARQWELIA — accueil"><ArqweliaBrand size="sm" /></Link>
+            <nav className="hidden items-center gap-5 md:flex">
+              <Link href="/arqwelia#parcours" className="text-xs font-semibold text-arq-mist/70 transition-colors hover:text-arq-mist">{t('nav.howItWorks')}</Link>
+              <Link href="/arqwelia#ia-ar" className="text-xs font-semibold text-arq-mist/70 transition-colors hover:text-arq-mist">{t('nav.technology')}</Link>
+              <Link href="/arqwelia#pros" className="text-xs font-semibold text-arq-mist/70 transition-colors hover:text-arq-mist">{t('nav.professionals')}</Link>
+              <Link href="/arqwelia#faq" className="text-xs font-semibold text-arq-mist/70 transition-colors hover:text-arq-mist">{t('nav.faq')}</Link>
+              <Link href="/pro/arqwelia/opportunities?demo=1" className="text-xs font-semibold text-arq-gold-soft/80 transition-colors hover:text-arq-gold-soft">{t('nav.proSection')}</Link>
+            </nav>
+            <div className="flex items-center gap-3">
+              <ArqweliaPrimaryButton href={startHref} className="hidden !px-5 !py-2 !text-xs sm:inline-flex">{t('nav.startProject')}</ArqweliaPrimaryButton>
+              <ArqweliaHeaderNav startHref={startHref} />
+            </div>
+          </div>
+        </header>
 
-      <footer className="border-t border-arq-aqua/15 bg-arq-navy px-4 py-10 sm:px-6">
-        <div className="mx-auto max-w-6xl text-center">
-          <p className="text-xs text-arq-mist/40">
-            {t('warning')}
-          </p>
-          {demo && (
-            <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-arq-sand/30 bg-arq-sand/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-arq-sand">
-              {t('demoBadge')}
-            </p>
-          )}
-        </div>
-      </footer>
+        <main className="relative flex-1">{children}</main>
+
+        {/* Footer */}
+        <footer className="relative border-t border-arq-border px-4 py-12 sm:px-6">
+          <div className="mx-auto max-w-6xl">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <ArqweliaSymbol className="h-8 w-8" />
+              <p className="font-aq-display text-lg font-semibold text-arq-mist">ARQWELIA Studio <span className="text-arq-gold-soft/70">— by AQWELIA</span></p>
+              <p className="max-w-2xl text-xs leading-relaxed text-arq-mist/45">{t('warning')}</p>
+              {demo && <div className="mt-2"><ArqweliaFutureFeature kind="demo">{t('demoBadge')}</ArqweliaFutureFeature></div>}
+            </div>
+          </div>
+        </footer>
+      </NextIntlClientProvider>
     </div>
   )
 }

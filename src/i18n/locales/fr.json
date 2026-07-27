@@ -7217,54 +7217,66 @@
   "arqwelia": {
     "metaTitle": "ARQWELIA — Votre piscine, avant qu'elle existe",
     "metaDescription": "Scannez votre jardin, explorez deux directions personnalisées et préparez un dossier clair avant de parler à un pisciniste.",
-    "tagline": "Votre piscine, avant qu'elle existe.",
-    "subtitle": "Scannez votre jardin, explorez deux directions personnalisées et préparez un dossier clair avant de parler à un pisciniste.",
-    "ctaPrimary": "Imaginer ma piscine",
+    "tagline": "Votre future piscine, avant qu'elle existe.",
+    "subtitle": "ARQWELIA associe intelligence artificielle, visualisation immersive et professionnels vérifiés pour vous aider à imaginer, structurer et concrétiser votre projet avec confiance.",
+    "ctaPrimary": "Commencer mon projet",
     "ctaSecondary": "Voir la démonstration",
-    "trustStrip": "Deux concepts · Projet privé par défaut · Aucun appel non sollicité",
+    "trustStrip": "IA · Visualisation immersive · Pros vérifiés · Coordonnées protégées",
     "privacyPromise": "Vos coordonnées ne sont jamais diffusées automatiquement. Vous choisissez qui peut vous contacter.",
     "warning": "Visualisation conceptuelle à des fins d'inspiration. Les dimensions, la faisabilité, le budget et l'implantation doivent être confirmés par un professionnel.",
-    "demoBadge": "Démo — analyse simulée",
-    "stepsTitle": "Votre parcours en 4 étapes",
+    "demoBadge": "Démonstration conceptuelle",
+    "stepsTitle": "Votre parcours en 7 étapes",
     "steps": {
       "1": {
-        "title": "Photos",
-        "desc": "Capturez votre jardin depuis chez vous."
+        "title": "Inspiration",
+        "desc": "Découvrez des directions et des finitions premium."
       },
       "2": {
-        "title": "Questionnaire",
-        "desc": "Type de projet, échéance, budget, style."
+        "title": "Photos du terrain",
+        "desc": "Capturez votre jardin — les images restent sur votre appareil."
       },
       "3": {
-        "title": "Analyse",
-        "desc": "Une simulation clairement identifiée comme telle."
+        "title": "Projet et préférences",
+        "desc": "Type, échéance, budget et style."
       },
       "4": {
+        "title": "Analyse personnalisée",
+        "desc": "Une simulation clérement identifiée comme démonstration."
+      },
+      "5": {
         "title": "Concepts",
-        "desc": "Deux directions, un dossier, c'est tout."
+        "desc": "Deux directions — Réaliste et Inspiration."
+      },
+      "6": {
+        "title": "Project Passport",
+        "desc": "Un dossier privé, prêt pour un professionnel."
+      },
+      "7": {
+        "title": "Mise en relation future",
+        "desc": "Vous choisissez, quand vous voulez, qui peut vous contacter."
       }
     },
     "diffTitle": "Ce qu'on déclare et ce qu'on ne déclare pas",
     "diff": {
       "declared": "Déclaré : le budget, l'échéance, le style que vous renseignez",
-      "detected": "Détecté : une zone principale estimée à partir d'une photo",
-      "estimated": "Estimé : des dimensions conceptuelles indicatives",
+      "detected": "Détecté : une zone principale estimée à partir d'une photo (démonstration)",
+      "estimated": "Estimé : des dimensions conceptuelles indicatives (démonstration)",
       "toConfirm": "À confirmer : tout — par un professionnel sur place"
     },
     "passportTitle": "Votre Project Passport",
-    "passportDesc": "Un identifiant de projet privé, un résumé téléchargeable, et le choix de quand — et si — vous partagez.",
+    "passportDesc": "Un identifiant privé, un résumé téléchargeable et le choix de quand — et si — vous partagez avec un professionnel.",
     "partnerTitle": "Vous êtes pisciniste ?",
     "partnerSubtitle": "Rejoignez la liste pilote d'ARQWELIA. Accès anticipé aux opportunités quand le programme ouvrira.",
     "faqTitle": "Questions fréquentes",
     "faq": {
       "q1": "ARQWELIA fait-il appel à une vraie Intelligence Artificielle ?",
-      "a1": "Dans le Lot 1, non. L'analyse est une simulation identifiée comme telle. La vision IA est à venir dans un lot ultérieur.",
+      "a1": "Dans ce Lot 1, l'analyse est une démonstration clairement identifiée comme telle. La vision IA et la réalité augmentée sont des fonctions futures — présentées honnêtement, jamais simulées comme actives.",
       "q2": "Mes photos sont-elles envoyées à un serveur ?",
-      "a2": "Non. Dans le Lot 1, les photos restent dans votre navigateur et servent aux aperçus locaux. Elles sont supprimées en quittant la session.",
+      "a2": "Non. Dans cette démonstration, les photos restent sur votre appareil pour les aperçus locaux et sont supprimées en quittant la session.",
       "q3": "Vais-je être recontacté automatiquement ?",
-      "a3": "Jamais sans votre consentement explicite. Votre dossier reste privé par défaut."
+      "a3": "Jamais sans votre consentement explicite. Vos coordonnées restent privées par défaut et vous choisissez qui peut vous contacter."
     },
-    "finalCtaTitle": "Prêt à visualiser votre piscine ?",
+    "finalCtaTitle": "Prêt à imaginer votre piscine ?",
     "finalCtaSubtitle": "Aucune carte bancaire, aucun engagement, aucune diffusion de vos coordonnées.",
     "wizard": {
       "back": "Retour",
@@ -7358,7 +7370,9 @@
         "phone": "Téléphone",
         "postalCode": "Code postal du projet",
         "consentText": "J'accepte de recevoir mon dossier et de choisir ultérieurement les professionnels autorisés à me contacter.",
-        "consentHint": "Non précoché. Aucune diffusion automatique de vos coordonnées."
+        "consentHint": "Non précoché. Aucune diffusion automatique de vos coordonnées.",
+        "whyTitle": "Pourquoi ces coordonnées ?",
+        "whyBody": "Pour générer un Project Passport privé et vous permettre de choisir, le moment venu, les professionnels autorisés à vous contacter. Vos coordonnées ne sont jamais transmises sans votre consentement explicite."
       },
       "success": {
         "title": "Votre Project Passport est prêt",
@@ -7409,6 +7423,55 @@
       },
       "contactHidden": "Contact non révélé",
       "interestDisabled": "Bientôt disponible"
+    },
+    "nav": {
+      "howItWorks": "Le parcours",
+      "technology": "Technologie",
+      "professionals": "Professionnels",
+      "faq": "FAQ",
+      "proSection": "Espace Pro",
+      "startProject": "Commencer mon projet",
+      "viewDemo": "Voir la démonstration",
+      "menu": "Menu"
+    },
+    "beforeAfterTitle": "Imaginez la transformation",
+    "beforeAfterDesc": "Une visualisation conceptuelle avant/après, révélatrice — pas un relevé réel. La réalité augmentée arrive dans un lot ultérieur.",
+    "iaArTag": "Intelligence Artificielle & Réalité Augmentée",
+    "iaArTitle": "L'IA voit votre terrain. L'AR projette votre piscine.",
+    "iaArDesc": "En production, l'intelligence artificielle analyse vos photos et l'AR projette une visualisation immersive à échelle réelle. Dans cette démonstration, ces capacités sont présentées sans prétendre être actives.",
+    "iaArPoints": {
+      "vision": "Vision IA — lecture du terrain, des ombres et des contraintes (fonction future)",
+      "ar": "Réalité augmentée — visualisation immersive de votre projet (fonction future)",
+      "verified": "Professionnels vérifiés — matching raisonné, jamais automatique (fonction future)"
+    },
+    "scoreTag": "Reality Score",
+    "scoreTitle": "Un indice de maturité, transparent et honnête",
+    "scoreDesc": "Le Reality Score estime la maturité actuelle de votre dossier — plus vous renseignez d'éléments, plus il est élevé. Dans cette démonstration, le score repose uniquement sur vos réponses, sans analyse réelle.",
+    "passportTag": "Project Passport",
+    "prosTag": "Professionnels vérifiés",
+    "prosTitle": "Des piscinistes sélectionnés, pas n'importe qui",
+    "prosDesc": "ARQWELIA met en relation — sans jamais diffuser vos coordonnées — avec des professionnels vérifiés. Vous gardez l'initiative du contact. La mise en relation active est une fonction future.",
+    "prosCards": {
+      "1": {
+        "name": "Atelier Méditerranée",
+        "specialty": "Piscines enterrées & spa",
+        "location": "Sud-PACA"
+      },
+      "2": {
+        "name": "Studiobleu",
+        "specialty": "Design contemporain & AR",
+        "location": "Île-de-France"
+      },
+      "3": {
+        "name": "Familia Pools",
+        "specialty": "Piscines familiales & naturelles",
+        "location": "Nouvelle-Aquitaine"
+      }
+    },
+    "passportActions": {
+      "keep": "Garder le dossier privé",
+      "share": "Partager plus tard",
+      "findPro": "Trouver des professionnels"
     }
   }
 }

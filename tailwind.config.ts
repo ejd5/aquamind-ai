@@ -71,6 +71,13 @@ const config: Config = {
                         'arq-sand': 'var(--arqwelia-sand)',
                         'arq-mist': 'var(--arqwelia-mist)',
                         'arq-ink': 'var(--arqwelia-ink)',
+                        /* ARQWELIA V2 (Round 2) — premium enrichment, additive only */
+                        'arq-navy-2': 'var(--arqwelia-navy-2)',
+                        'arq-navy-deep': 'var(--arqwelia-navy-deep)',
+                        'arq-aqua-bright': 'var(--arqwelia-aqua-bright)',
+                        'arq-champagne': 'var(--arqwelia-champagne)',
+                        'arq-gold-soft': 'var(--arqwelia-gold-soft)',
+                        'arq-ink-2': 'var(--arqwelia-ink-2)',
                 },
                 borderRadius: {
                         lg: 'var(--radius)',
@@ -89,6 +96,10 @@ const config: Config = {
                         'aq-sm': 'var(--aqwelia-shadow-sm)',
                         'aq-md': 'var(--aqwelia-shadow-md)',
                         'aq-lg': 'var(--aqwelia-shadow-lg)',
+                        /* ARQWELIA V2 — premium deep elevation + controlled aqua glow */
+                        'arq-deep': 'var(--arqwelia-shadow-deep)',
+                        'arq-glow': 'var(--arqwelia-glow-aqua)',
+                        'arq-glow-strong': 'var(--arqwelia-glow-aqua-strong)',
                 },
                 fontFamily: {
                         /* AQWELIA — brand typography (P6-DESIGN). Display serif
