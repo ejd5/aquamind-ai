@@ -69,6 +69,8 @@ export function mapDesktopTabToMobile(tab: TabId): MobileNavigation {
       return { screen: 'home' }
     case 'paywall':
       return { screen: 'profile' }
+    case 'arqwelia':
+      return { screen: 'profile' }
     default:
       return { screen: 'home' }
   }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Home,
   Camera,
@@ -16,6 +17,7 @@ import {
   MoreHorizontal,
   Sparkles,
   BrainCircuit,
+  Bot,
 } from 'lucide-react'
 import { Header } from './header'
 import { Footer } from './footer'
@@ -46,6 +48,7 @@ import { useTranslations } from 'next-intl'
 import { api } from '@/lib/api-client'
 import { canAccess, PLANS, DEFAULT_PLAN, type PlanId } from '@/lib/pool/freemium'
 import { toast } from '@/hooks/use-toast'
+import { isArqweliaLot1Enabled } from '@/lib/features'
 
 export type TabId =
   | 'today'
@@ -60,6 +63,7 @@ export type TabId =
   | 'reminders'
   | 'paywall'
   | 'brain'
+  | 'arqwelia'
 
 interface NavItem {
   id: TabId
@@ -84,6 +88,7 @@ export interface AppShellProps {
 }
 
 export function AppShell({ onBackToLanding }: AppShellProps) {
+  const router = useRouter()
   const t = useTranslations('nav')
   const tc = useTranslations('common')
   const tp = useTranslations('pool')
@@ -112,6 +117,7 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
     { id: 'guides', label: t('guides'), short: t('shortGuides'), icon: BookOpen },
     { id: 'reminders', label: t('reminders'), short: t('shortReminders'), icon: Bell },
     { id: 'brain', label: t('brain'), short: t('shortBrain'), icon: BrainCircuit },
+    ...(isArqweliaLot1Enabled() ? [{ id: 'arqwelia' as TabId, label: t('arqwelia'), short: t('shortArqwelia'), icon: Bot }] : []),
     { id: 'paywall', label: t('premium'), short: t('shortPremium'), icon: Crown },
   ]
   const PRIMARY_NAV = NAV.filter((n) => n.primary)
@@ -226,6 +232,10 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
   }
 
   function navigate(tab: TabId) {
+    if (tab === 'arqwelia') {
+      router.push('/arqwelia')
+      return
+    }
     setActiveTab(tab)
     setMoreOpen(false)
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -296,6 +306,7 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
               const active = activeTab === item.id
               const Icon = item.icon
               const isPremium = item.id === 'paywall'
+              const isArqwelia = item.id === 'arqwelia'
               return (
                 <button
                   key={item.id}
@@ -304,15 +315,19 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
                     active
                       ? 'bg-gradient-to-r from-primary/15 to-gold/10 text-foreground shadow-sm'
                       : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
-                  } ${isPremium ? 'border border-gold/30 hover:border-gold/50' : ''}`}
+                  } ${isPremium ? 'border border-gold/30 hover:border-gold/50' : ''} ${isArqwelia ? 'border border-arq-aqua/20 hover:border-arq-aqua/40' : ''}`}
                 >
                   <span
                     className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
                       active
-                        ? 'bg-gradient-to-br from-primary to-gold text-primary-foreground shadow-md shadow-primary/30'
+                        ? isArqwelia
+                          ? 'bg-gradient-to-br from-arq-aqua to-arq-navy-deep text-white shadow-md shadow-arq-aqua/30'
+                          : 'bg-gradient-to-br from-primary to-gold text-primary-foreground shadow-md shadow-primary/30'
                         : isPremium
                           ? 'bg-gold/10 text-gold'
-                          : 'bg-secondary text-muted-foreground group-hover:text-foreground'
+                          : isArqwelia
+                            ? 'bg-arq-aqua/10 text-arq-aqua group-hover:bg-arq-aqua/20'
+                            : 'bg-secondary text-muted-foreground group-hover:text-foreground'
                     }`}
                   >
                     <Icon className="h-4 w-4" />
@@ -321,7 +336,12 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
                   {isPremium && (
                     <Sparkles className="ml-auto h-3 w-3 text-gold" />
                   )}
-                  {active && !isPremium && (
+                  {item.id === 'arqwelia' && (
+                    <span className="ml-auto rounded-full border border-arq-aqua/30 bg-arq-aqua/10 px-1.5 py-0.5 text-[9px] font-bold text-arq-aqua">
+                      {t('newBadge')}
+                    </span>
+                  )}
+                  {active && !isPremium && item.id !== 'arqwelia' && (
                     <span className="ml-auto h-1.5 w-1.5 rounded-full bg-gold" />
                   )}
                 </button>
@@ -448,6 +468,7 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
               const Icon = item.icon
               const active = activeTab === item.id
               const isPremium = item.id === 'paywall'
+              const isArqwelia = item.id === 'arqwelia'
               return (
                 <button
                   key={item.id}
@@ -457,14 +478,18 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
                       ? 'border-gold/60 bg-gold/10 shadow-sm'
                       : isPremium
                         ? 'border-gold/30 bg-gold/5 hover:border-gold/50'
-                        : 'border-border/50 bg-card/40 hover:border-gold/40'
+                        : isArqwelia
+                          ? 'border-arq-aqua/30 bg-arq-aqua/5 hover:border-arq-aqua/50'
+                          : 'border-border/50 bg-card/40 hover:border-gold/40'
                   }`}
                 >
                   <span
                     className={`flex h-9 w-9 items-center justify-center rounded-lg ${
                       isPremium
                         ? 'bg-gradient-to-br from-gold to-primary text-white'
-                        : 'bg-gradient-to-br from-primary to-gold text-primary-foreground'
+                        : isArqwelia
+                          ? 'bg-gradient-to-br from-arq-aqua to-arq-navy-deep text-white'
+                          : 'bg-gradient-to-br from-primary to-gold text-primary-foreground'
                     }`}
                   >
                     <Icon className="h-4 w-4" />
@@ -476,6 +501,11 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
                   {isPremium && (
                     <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[9px] font-bold text-gold">
                       {t('shortPremiumBadge')}
+                    </span>
+                  )}
+                  {item.id === 'arqwelia' && (
+                    <span className="rounded-full border border-arq-aqua/30 bg-arq-aqua/10 px-1.5 py-0.5 text-[9px] font-bold text-arq-aqua">
+                      {t('newBadge')}
                     </span>
                   )}
                 </button>

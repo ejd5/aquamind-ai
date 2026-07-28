@@ -25,6 +25,8 @@ import { ProPreview } from './sections/pro-preview'
 import { CarePreview } from './sections/care-preview'
 import { FinalCta } from './sections/final-cta'
 import { BrainTechnologySection } from '@/components/brain/brain-technology-section'
+import { ArqweliaLandingSection } from '@/components/arqwelia/landing-section'
+import { isArqweliaLot1Enabled } from '@/lib/features'
 import { scrollToId } from './landing-utils'
 
 interface LandingPageProps {
@@ -40,6 +42,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
   const NAV_LINKS = [
     { id: 'probleme', label: t('navProblem') },
     { id: 'solution', label: t('navSolution') },
+    ...(isArqweliaLot1Enabled() ? [{ id: 'arqwelia', label: t('navArqwelia') }] : []),
     { id: 'comparatif', label: t('navComparatif') },
     { id: 'simulations', label: t('navSimulations') },
     { id: 'gains', label: t('navGains') },
@@ -192,6 +195,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
         <PiscinisteCost />
         <Solution />
         <BrainTechnologySection variant="home" />
+        {isArqweliaLot1Enabled() && <ArqweliaLandingSection />}
         <Comparator />
         <Simulations />
         <Savings />

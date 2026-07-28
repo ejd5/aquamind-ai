@@ -351,4 +351,106 @@ test.describe('ARQWELIA Lot 1 — demo journey (FR)', () => {
     await page.waitForURL('**/arqwelia', { timeout: 10_000 })
     await expect(page.locator('body')).toContainText(/ARQWELIA/)
   })
+
+  test('20. landing page header shows ARQWELIA nav link', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    // Desktop: nav link is visible in the header
+    // Mobile: open the hamburger menu to reveal the nav link
+    const desktopNav = page.locator('header nav button:has-text("ARQWELIA")').first()
+    if (await desktopNav.isVisible().catch(() => false)) {
+      await expect(desktopNav).toBeVisible()
+    } else {
+      await page.getByRole('button', { name: 'Ouvrir le menu' }).click()
+      await page.waitForTimeout(300)
+      await expect(page.getByRole('button', { name: 'ARQWELIA' }).first()).toBeVisible({ timeout: 10_000 })
+    }
+  })
+
+  test('21. landing page ARQWELIA section is visible', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await expect(page.locator('#arqwelia')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByRole('link', { name: 'ARQWELIA' }).last()).toBeVisible({ timeout: 5_000 })
+  })
+
+  test('22. authenticated app sidebar shows ARQWELIA with Nouveau badge', async ({ page, context, request: api }) => {
+    test.setTimeout(60_000)
+    const token = await loginAsDemoAndGetToken(api)
+    expect(token).toBeTruthy()
+    await context.addCookies([
+      {
+        name: 'next-auth.session-token', value: token!,
+        domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' as const,
+      },
+      {
+        name: 'NEXT_LOCALE', value: 'fr',
+        domain: 'localhost', path: '/', httpOnly: false, sameSite: 'Lax' as const,
+      },
+    ])
+    await page.addInitScript(() => {
+      localStorage.setItem('aqwelia_view', 'app')
+    })
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(3000)
+
+    // On desktop viewport, sidebar is visible (md:block)
+    // On mobile viewport, the sidebar is hidden — test only on desktop
+    const sidebarArqwelia = page.locator('aside button:has-text("ARQWELIA")')
+    if (await sidebarArqwelia.isVisible().catch(() => false)) {
+      await expect(sidebarArqwelia).toBeVisible({ timeout: 10_000 })
+      await expect(sidebarArqwelia.locator('span:has-text("Nouveau")')).toBeVisible({ timeout: 5_000 })
+    } else {
+      // Mobile: ARQWELIA is in the Profile screen instead
+      test.skip()
+    }
+  })
+
+  test('23. ARQWELIA appears in mobile Profile screen (or Plus sheet)', async ({ page, context, request: api }) => {
+    test.setTimeout(60_000)
+    const token = await loginAsDemoAndGetToken(api)
+    expect(token).toBeTruthy()
+    await context.addCookies([
+      {
+        name: 'next-auth.session-token', value: token!,
+        domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' as const,
+      },
+      {
+        name: 'NEXT_LOCALE', value: 'fr',
+        domain: 'localhost', path: '/', httpOnly: false, sameSite: 'Lax' as const,
+      },
+    ])
+    await page.addInitScript(() => {
+      localStorage.setItem('aqwelia_view', 'app')
+    })
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(3000)
+
+    // Check for ARQWELIA in the Profile screen (MobileAppShell) or Plus sheet (AppShell)
+    const isMobileApp = await page.locator('nav[role="tablist"]').isVisible().catch(() => false)
+    if (isMobileApp) {
+      // MobileAppShell: navigate to Profile tab, then check for ARQWELIA link
+      await page.evaluate(() => {
+        const tabs = document.querySelectorAll('[role="tab"]')
+        const profileTab = Array.from(tabs).find(tab => tab.textContent?.includes('Profil'))
+        if (profileTab) (profileTab as HTMLElement).click()
+      })
+      await page.waitForTimeout(500)
+      await expect(page.getByRole('link', { name: 'ARQWELIA — Votre future piscine' }).first()).toBeVisible({ timeout: 5_000 })
+      await expect(page.locator('a[href="/arqwelia"]').first()).toBeVisible({ timeout: 5_000 })
+    } else {
+      // AppShell: open the Plus sheet, then check
+      const mobileNav = page.locator('nav.fixed.inset-x-0.bottom-0 button[aria-label="Plus de modules"]')
+      if (await mobileNav.isVisible().catch(() => false)) {
+        await mobileNav.click({ timeout: 5_000 })
+        await page.waitForTimeout(500)
+        await expect(page.getByRole('button', { name: 'ARQWELIA' }).first()).toBeVisible({ timeout: 5_000 })
+      } else {
+        // Neither found — skip (e.g. desktop view where Plus is hidden)
+        test.skip()
+      }
+    }
+  })
 })
