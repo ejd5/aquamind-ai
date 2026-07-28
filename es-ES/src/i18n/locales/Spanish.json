@@ -7213,5 +7213,307 @@
     "dataCta": "Voir la politique complète",
     "redirectCta": "Continuer vers la page",
     "redirectNow": "Rediriger maintenant"
+  },
+  "arqwelia": {
+    "metaTitle": "ARQWELIA — Votre piscine, avant qu'elle existe",
+    "metaDescription": "Scannez votre jardin, explorez deux directions personnalisées et préparez un dossier clair avant de parler à un pisciniste.",
+    "tagline": "Votre future piscine, avant qu'elle existe.",
+    "subtitle": "ARQWELIA associe intelligence artificielle, visualisation immersive et professionnels vérifiés pour vous aider à imaginer, structurer et concrétiser votre projet avec confiance.",
+    "ctaPrimary": "Commencer mon projet",
+    "ctaSecondary": "Voir la démonstration",
+    "trustStrip": "IA · Visualisation immersive · Pros vérifiés · Coordonnées protégées",
+    "privacyPromise": "Vos coordonnées ne sont jamais diffusées automatiquement. Vous choisissez qui peut vous contacter.",
+    "warning": "Visualisation conceptuelle à des fins d'inspiration. Les dimensions, la faisabilité, le budget et l'implantation doivent être confirmés par un professionnel.",
+    "demoBadge": "Démonstration conceptuelle",
+    "stepsTitle": "Votre parcours en 7 étapes",
+    "steps": {
+      "1": {
+        "title": "Inspiration",
+        "desc": "Découvrez des directions et des finitions premium."
+      },
+      "2": {
+        "title": "Photos du terrain",
+        "desc": "Capturez votre jardin — les images restent sur votre appareil."
+      },
+      "3": {
+        "title": "Projet et préférences",
+        "desc": "Type, échéance, budget et style."
+      },
+      "4": {
+        "title": "Analyse personnalisée",
+        "desc": "Une simulation clérement identifiée comme démonstration."
+      },
+      "5": {
+        "title": "Concepts",
+        "desc": "Deux directions — Réaliste et Inspiration."
+      },
+      "6": {
+        "title": "Project Passport",
+        "desc": "Un dossier privé, prêt pour un professionnel."
+      },
+      "7": {
+        "title": "Mise en relation future",
+        "desc": "Vous choisissez, quand vous voulez, qui peut vous contacter."
+      }
+    },
+    "diffTitle": "Ce qu'on déclare et ce qu'on ne déclare pas",
+    "diff": {
+      "declared": "Déclaré : le budget, l'échéance, le style que vous renseignez",
+      "detected": "Détecté : une zone principale estimée à partir d'une photo (démonstration)",
+      "estimated": "Estimé : des dimensions conceptuelles indicatives (démonstration)",
+      "toConfirm": "À confirmer : tout — par un professionnel sur place"
+    },
+    "passportTitle": "Votre Project Passport",
+    "passportDesc": "Un identifiant privé, un résumé téléchargeable et le choix de quand — et si — vous partagez avec un professionnel.",
+    "partnerTitle": "Vous êtes pisciniste ?",
+    "partnerSubtitle": "Rejoignez la liste pilote d'ARQWELIA. Accès anticipé aux opportunités quand le programme ouvrira.",
+    "faqTitle": "Questions fréquentes",
+    "faq": {
+      "q1": "ARQWELIA fait-il appel à une vraie Intelligence Artificielle ?",
+      "a1": "Dans ce Lot 1, l'analyse est une démonstration clairement identifiée comme telle. La vision IA et la réalité augmentée sont des fonctions futures — présentées honnêtement, jamais simulées comme actives.",
+      "q2": "Mes photos sont-elles envoyées à un serveur ?",
+      "a2": "Non. Dans cette démonstration, les photos restent sur votre appareil pour les aperçus locaux et sont supprimées en quittant la session.",
+      "q3": "Vais-je être recontacté automatiquement ?",
+      "a3": "Jamais sans votre consentement explicite. Vos coordonnées restent privées par défaut et vous choisissez qui peut vous contacter."
+    },
+    "finalCtaTitle": "Prêt à imaginer votre piscine ?",
+    "finalCtaSubtitle": "Aucune carte bancaire, aucun engagement, aucune diffusion de vos coordonnées.",
+    "wizard": {
+      "back": "Retour",
+      "next": "Continuer",
+      "submit": "Créer mon Project Passport",
+      "demo": "Mode démonstration",
+      "errors": {
+        "required": "Champ requis",
+        "firstName": "Prénom requis (2 caractères minimum)",
+        "email": "E-mail invalide",
+        "postalCode": "Code postal invalide (5 chiffres)",
+        "consentRequired": "Vous devez accepter le traitement pour continuer",
+        "conceptRequired": "Sélectionnez un concept",
+        "photoTooBig": "Image trop volumineuse (10 Mo maximum)",
+        "photoType": "Format non supporté (JPG, PNG ou WebP)",
+        "photoCount": "Maximum 4 photos"
+      },
+      "photos": {
+        "title": "Ajoutez vos photos",
+        "desc": "1 photo minimum, 2 à 4 recommandées, 4 maximum.",
+        "accepted": "JPG, PNG, WebP · 10 Mo max par fichier",
+        "tipsTitle": "Conseils de prise de vue",
+        "tip1": "Prenez le jardin de face, à hauteur d'épaule.",
+        "tip2": "Évitez de viser le soleil en contre-jour.",
+        "tip3": "Incluez l'emplacement présumé de la piscine.",
+        "tip4": "Une photo large suffit pour débuter.",
+        "privacy": "Vos photos restent sur votre appareil. Elles ne sont pas envoyées à un serveur dans ce lot.",
+        "demoBtn": "Démarrer avec les photos de démonstration",
+        "add": "Ajouter une photo",
+        "remove": "Supprimer",
+        "preview": "Aperçu"
+      },
+      "questionnaire": {
+        "title": "Votre projet",
+        "projectType": "Type de projet",
+        "projectTypes": {
+          "buried_pool": "Piscine enterrée",
+          "mini_pool": "Mini-piscine",
+          "spa_swim_spa": "Spa / Swim spa"
+        },
+        "timeline": "Échéance",
+        "timelines": {
+          "<6m": "Moins de 6 mois",
+          "6-12m": "6 à 12 mois",
+          ">12m": "Plus de 12 mois",
+          "undecided": "Indécis"
+        },
+        "budget": "Budget",
+        "budgets": {
+          "<25k": "Moins de 25 k€",
+          "25-40k": "25 à 40 k€",
+          "40-60k": "40 à 60 k€",
+          ">60k": "60 k€ et plus",
+          "undefined": "Non défini"
+        },
+        "style": "Style",
+        "styles": {
+          "mediterranean": "Méditerranéen",
+          "contemporary": "Contemporain",
+          "natural": "Naturel",
+          "familial": "Familial"
+        },
+        "knownMeasureTitle": "Mesure connue (facultatif)",
+        "knownMeasureLabel": "Libellé (ex. largeur de terrain)",
+        "knownMeasureValue": "Valeur",
+        "knownMeasureUnit": "Unité",
+        "measureUnitM": "mètre"
+      },
+      "analysis": {
+        "title": "Analyse de vos données",
+        "desc": "Vous regardez une simulation. Aucune analyse IA réelle n'est exécutée dans ce lot.",
+        "preparing": "Préparation…",
+        "done": "Terminé",
+        "resultTitle": "Voici votre analyse simulée",
+        "realityScore": "Reality Score (démo)",
+        "steps": {
+          "photos": "Photos reçues",
+          "zone": "Zone principale détectée",
+          "constraints": "Contraintes estimées",
+          "concepts": "Concepts préparés"
+        }
+      },
+      "concepts": {
+        "title": "Comparez deux concepts",
+        "desc": "Avertissement : rendu conceptuel d'inspiration, non contractuel, non technique, à confirmer par un professionnel.",
+        "selectBtn": "Sélectionner",
+        "selected": "Concept sélectionné",
+        "selectPrompt": "Choisissez un concept pour continuer",
+        "badgeSun": "Ensoleillement",
+        "badgeAccess": "Accès à confirmer",
+        "badgeBudget": "Budget déclaré",
+        "cardA": {
+          "title": "Concept A — Réaliste",
+          "subtitle": "Dimensions prudents, insertion respectueuse du terrain"
+        },
+        "cardB": {
+          "title": "Concept B — Inspiration",
+          "subtitle": "Direction plus émotionnelle, jeux d'eau et ambiance"
+        },
+        "badges": {
+          "sunConfirm": "Ensoleillement : à confirmer sur place",
+          "accessEnginConfirm": "Accès engin : à confirmer",
+          "accessConfirm": "Accès : à confirmer"
+        },
+        "toneRealiste": "Réaliste",
+        "toneInspiration": "Inspiration",
+        "promptHint": "Choisissez un concept pour continuer",
+        "confirmHint": "Concept sélectionné — vous pouvez continuer"
+      },
+      "contact": {
+        "title": "Créez votre Project Passport",
+        "firstName": "Prénom",
+        "email": "E-mail",
+        "phone": "Téléphone",
+        "postalCode": "Code postal du projet",
+        "consentText": "J'accepte de recevoir mon dossier et de choisir ultérieurement les professionnels autorisés à me contacter.",
+        "consentHint": "Non précoché. Aucune diffusion automatique de vos coordonnées.",
+        "whyTitle": "Pourquoi ces coordonnées ?",
+        "whyBody": "Pour générer un Project Passport privé et vous permettre de choisir, le moment venu, les professionnels autorisés à vous contacter. Vos coordonnées ne sont jamais transmises sans votre consentement explicite."
+      },
+      "success": {
+        "title": "Votre Project Passport est prêt",
+        "idLabel": "Identifiant de projet",
+        "realityScoreLabel": "Reality Score de démonstration",
+        "actions": {
+          "keepPrivate": "Garder le dossier privé",
+          "shareLater": "Partager plus tard",
+          "findPros": "Trouver des professionnels prochainement"
+        },
+        "soon": "Prochainement",
+        "summary": "Résumé de votre projet"
+      }
+    },
+    "partner": {
+      "form": {
+        "companyName": "Société",
+        "contactName": "Votre nom",
+        "email": "E-mail professionnel",
+        "phone": "Téléphone",
+        "postalCode": "Code postal",
+        "radiusKm": "Rayon d'intervention (km)",
+        "consent": "J'accepte d'être recontacté pour la phase pilote ARQWELIA.",
+        "consentHint": "Aucun paiement, aucune vente, aucun accès automatique.",
+        "submit": "Rejoindre la liste pilote",
+        "success": "Merci ! Votre demande a bien été enregistrée.",
+        "already": "Vous êtes déjà sur la liste — merci !"
+      },
+      "errors": {
+        "companyName": "Société requise",
+        "contactName": "Nom requis",
+        "email": "E-mail professionnel invalide",
+        "consentRequired": "Consentement requis"
+      }
+    },
+    "pro": {
+      "title": "Aperçu Pro — démonstration",
+      "subtitle": "Page de démonstration protégée. Aucun vrai lead n'est distribué dans ce lot.",
+      "column": {
+        "type": "Type de projet",
+        "zone": "Zone approximative",
+        "budget": "Budget",
+        "timeline": "Échéance",
+        "completeness": "Complétude",
+        "score": "Score de maturité",
+        "contact": "Contact",
+        "interest": "Manifester mon intérêt"
+      },
+      "contactHidden": "Contact non révélé",
+      "interestDisabled": "Bientôt disponible",
+      "matching": "Matching",
+      "matchingDesc": "La mise en relation avec ce particulier sera disponible dans un lot ultérieur. Aucune coordonnée n'est révélée dans cette démonstration.",
+      "missingInfo": "Informations manquantes",
+      "missing": {
+        "photos": "Photos du terrain",
+        "measure": "Mesure précise (en m)",
+        "consent": "Consentement de contact"
+      },
+      "zone": {
+        "southwest": "Sud-Ouest (zone anonymisée)"
+      }
+    },
+    "nav": {
+      "howItWorks": "Le parcours",
+      "technology": "Technologie",
+      "professionals": "Professionnels",
+      "faq": "FAQ",
+      "proSection": "Espace Pro",
+      "startProject": "Commencer mon projet",
+      "viewDemo": "Voir la démonstration",
+      "menu": "Menu"
+    },
+    "beforeAfterTitle": "Imaginez la transformation",
+    "beforeAfterDesc": "Une visualisation conceptuelle avant/après, révélatrice — pas un relevé réel. La réalité augmentée arrive dans un lot ultérieur.",
+    "iaArTag": "Intelligence Artificielle & Réalité Augmentée",
+    "iaArTitle": "L'IA voit votre terrain. L'AR projette votre piscine.",
+    "iaArDesc": "En production, l'intelligence artificielle analyse vos photos et l'AR projette une visualisation immersive à échelle réelle. Dans cette démonstration, ces capacités sont présentées sans prétendre être actives.",
+    "iaArPoints": {
+      "vision": "Vision IA — lecture du terrain, des ombres et des contraintes (fonction future)",
+      "ar": "Réalité augmentée — visualisation immersive de votre projet (fonction future)",
+      "verified": "Professionnels vérifiés — matching raisonné, jamais automatique (fonction future)"
+    },
+    "scoreTag": "Reality Score",
+    "scoreTitle": "Un indice de maturité, transparent et honnête",
+    "scoreDesc": "Le Reality Score estime la maturité actuelle de votre dossier — plus vous renseignez d'éléments, plus il est élevé. Dans cette démonstration, le score repose uniquement sur vos réponses, sans analyse réelle.",
+    "passportTag": "Project Passport",
+    "prosTag": "Professionnels vérifiés",
+    "prosTitle": "Des piscinistes sélectionnés, pas n'importe qui",
+    "prosDesc": "ARQWELIA met en relation — sans jamais diffuser vos coordonnées — avec des professionnels vérifiés. Vous gardez l'initiative du contact. La mise en relation active est une fonction future.",
+    "prosCards": {
+      "1": {
+        "name": "Atelier Méditerranée",
+        "specialty": "Piscines enterrées & spa",
+        "location": "Sud-PACA"
+      },
+      "2": {
+        "name": "Studiobleu",
+        "specialty": "Design contemporain & AR",
+        "location": "Île-de-France"
+      },
+      "3": {
+        "name": "Familia Pools",
+        "specialty": "Piscines familiales & naturelles",
+        "location": "Nouvelle-Aquitaine"
+      }
+    },
+    "passportActions": {
+      "keep": "Garder le dossier privé",
+      "share": "Partager plus tard",
+      "findPro": "Trouver des professionnels"
+    },
+    "dashboard": {
+      "title": "ARQWELIA",
+      "subtitle": "Imaginez votre future piscine",
+      "description": "Créez un premier projet visuel, explorez deux directions et préparez votre Project Passport.",
+      "cta": "Découvrir ARQWELIA",
+      "newBadge": "Nouveau",
+      "demoBadge": "Démonstration"
+    }
   }
 }
