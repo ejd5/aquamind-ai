@@ -58,7 +58,7 @@ function OptionsSection({
 }) {
   return (
     <div>
-      <p className="mb-2.5 text-sm font-semibold text-arq-mist">{label}</p>
+      <p className="mb-2.5 text-sm font-semibold text-white">{label}</p>
       <div className="grid gap-2.5 sm:grid-cols-2">
         {options.map((o) => {
           const isSel = selected === o.v
@@ -70,13 +70,13 @@ function OptionsSection({
               onClick={() => onSelect(o.v)}
               className={`min-h-[52px] rounded-xl border px-5 py-3 text-left text-sm transition-all ${
                 isSel
-                  ? 'border-arq-aqua bg-arq-aqua/10 text-arq-mist shadow-arq-glow'
-                  : 'border-arq-border text-arq-mist/70 hover:border-arq-aqua/40'
+                  ? 'border-arq-aqua bg-arq-aqua/10 text-white shadow-arq-glow'
+                  : 'border-white/[0.08] text-white/70 hover:border-arq-aqua/40'
               }`}
               style={isSel ? undefined : { background: 'var(--arqwelia-gradient-card)' }}
             >
               <span className="flex items-center gap-3">
-                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${isSel ? 'border-arq-aqua' : 'border-arq-mist/30'}`}>
+                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${isSel ? 'border-arq-aqua' : 'border-white/25'}`}>
                   {isSel && <span className="h-2 w-2 rounded-full bg-arq-aqua" />}
                 </span>
                 {translate(`wizard.questionnaire.${String(field)}s.${o.k}`)}
@@ -102,7 +102,7 @@ export default function ProjectStep() {
       <Link href="/arqwelia/start/photos" className="mb-6 inline-flex items-center gap-1.5 text-xs font-semibold text-arq-aqua">
         ← {t('wizard.back')}
       </Link>
-      <h1 className="font-aq-display text-3xl font-semibold text-arq-mist sm:text-4xl">
+      <h1 className="font-aq-display text-3xl font-semibold text-white sm:text-4xl">
         {t('wizard.questionnaire.title')}
       </h1>
 
@@ -113,15 +113,15 @@ export default function ProjectStep() {
         <OptionsSection field="style" options={OPTIONS.style} label={t('wizard.questionnaire.style')} selected={q.style} onSelect={(v) => store.setQuestionnaire({ style: v as ArqStyle })} translate={(k) => t(k as any)} />
 
         {/* Optional known measurement */}
-        <div className="rounded-xl border border-arq-mist/10 bg-arq-ink/30 p-5">
-          <p className="text-sm font-semibold text-arq-mist">{t('wizard.questionnaire.knownMeasureTitle')}</p>
+        <div className="rounded-xl border border-white/[0.08] p-5" style={{ background: 'var(--arqwelia-gradient-card)' }}>
+          <p className="text-sm font-semibold text-white">{t('wizard.questionnaire.knownMeasureTitle')}</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <input
               aria-label={t('wizard.questionnaire.knownMeasureLabel')}
               placeholder={t('wizard.questionnaire.knownMeasureLabel')}
               value={q.knownMeasureLabel ?? ''}
               onChange={(e) => store.setQuestionnaire({ knownMeasureLabel: e.target.value })}
-              className="rounded-lg border border-arq-mist/15 bg-arq-navy/60 px-3 py-2.5 text-sm text-arq-mist outline-none focus:border-arq-aqua/50"
+              className="rounded-lg border border-white/[0.12] bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none focus:border-arq-aqua/50"
             />
             <input
               type="number"
@@ -129,13 +129,13 @@ export default function ProjectStep() {
               placeholder={t('wizard.questionnaire.knownMeasureValue')}
               value={q.knownMeasureValue ?? ''}
               onChange={(e) => store.setQuestionnaire({ knownMeasureValue: e.target.value ? Number(e.target.value) : undefined })}
-              className="rounded-lg border border-arq-mist/15 bg-arq-navy/60 px-3 py-2.5 text-sm text-arq-mist outline-none focus:border-arq-aqua/50"
+              className="rounded-lg border border-white/[0.12] bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none focus:border-arq-aqua/50"
             />
             <select
               aria-label={t('wizard.questionnaire.knownMeasureUnit')}
               value={q.knownMeasureUnit ?? 'm'}
               onChange={(e) => store.setQuestionnaire({ knownMeasureUnit: e.target.value })}
-              className="rounded-lg border border-arq-mist/15 bg-arq-navy/60 px-3 py-2.5 text-sm text-arq-mist outline-none focus:border-arq-aqua/50"
+              className="rounded-lg border border-white/[0.12] bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none focus:border-arq-aqua/50"
             >
               <option value="m">{t('wizard.questionnaire.measureUnitM')}</option>
             </select>
@@ -156,7 +156,7 @@ export default function ProjectStep() {
             })
             router.push('/arqwelia/start/analysis')
           }}
-          className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-arq-aqua px-7 py-3 text-sm font-bold text-arq-navy transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-arq-aqua px-8 py-3.5 text-sm font-bold text-arq-navy transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {t('wizard.next')}
         </button>

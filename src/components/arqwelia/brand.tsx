@@ -86,9 +86,9 @@ export function ArqweliaScene({
       style={{
         background:
           variant === 'dusk-pool'
-            ? 'radial-gradient(70% 60% at 30% 20%, rgba(92,242,230,0.32), transparent 60%), radial-gradient(80% 50% at 80% 30%, rgba(67,207,245,0.18), transparent 65%), linear-gradient(155deg, #0A2A3C 0%, #061826 55%, #030F1A 100%)'
+            ? 'radial-gradient(70% 60% at 30% 20%, rgba(92,242,230,0.28), transparent 60%), radial-gradient(80% 50% at 80% 30%, rgba(67,207,245,0.15), transparent 65%), linear-gradient(155deg, #0A2A3C 0%, #061826 55%, #040E18 100%)'
             : variant === 'ar-overlay'
-            ? 'radial-gradient(60% 50% at 50% 50%, rgba(0,214,197,0.16), transparent 60%), linear-gradient(160deg, #0C2533, #061826)'
+            ? 'radial-gradient(60% 50% at 50% 50%, rgba(0,214,197,0.12), transparent 60%), linear-gradient(160deg, #0C2533, #061826)'
             : 'linear-gradient(160deg, #0A2A3C 0%, #14334A 50%, #061826 100%)',
       }}
       aria-hidden={children ? undefined : true}

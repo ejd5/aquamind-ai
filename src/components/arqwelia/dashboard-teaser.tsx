@@ -30,7 +30,7 @@ export function ArqweliaDashboardTeaser() {
   if (!enabled || !supported) return null
 
   return (
-    <Card className="glass-card overflow-hidden border-arq-border" style={{ background: 'var(--arqwelia-gradient-card)' }}>
+    <Card className="glass-card overflow-hidden border-white/[0.08]" style={{ background: 'var(--arqwelia-gradient-card)' }}>
       <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div className="flex items-start gap-4">
           <div
@@ -41,7 +41,7 @@ export function ArqweliaDashboardTeaser() {
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-display text-lg font-bold text-arq-mist">
+              <h3 className="font-display text-lg font-bold text-white">
                 {dash('title')}
               </h3>
               <Badge className="border-gold/40 bg-gold/10 text-[10px] font-bold uppercase tracking-wider text-gold">
@@ -49,13 +49,13 @@ export function ArqweliaDashboardTeaser() {
               </Badge>
               <ArqweliaFutureFeature kind="demo">{dash('demoBadge')}</ArqweliaFutureFeature>
             </div>
-            <p className="mt-1 text-sm text-arq-mist/65">{dash('subtitle')}</p>
-            <p className="mt-1.5 max-w-xl text-xs text-arq-mist/50">{dash('description')}</p>
+            <p className="mt-1 text-sm text-white/65">{dash('subtitle')}</p>
+            <p className="mt-1.5 max-w-xl text-xs text-white/50">{dash('description')}</p>
           </div>
         </div>
         <Link
           href="/arqwelia"
-          className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-arq-navy-deep transition-transform hover:scale-[1.02]"
+          className="inline-flex min-h-[48px] shrink-0 items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold text-arq-navy-deep transition-transform hover:scale-[1.02]"
           style={{ background: 'var(--arqwelia-gradient-premium)', boxShadow: 'var(--arqwelia-glow-aqua)' }}
         >
           {dash('cta')}

@@ -51,7 +51,7 @@ export default async function ProPreviewPage({
 
   return (
     <NextIntlClientProvider locale={forced} messages={messages}>
-    <div className="relative min-h-screen px-4 py-10 text-arq-mist sm:px-6" style={{ background: 'var(--arqwelia-gradient-hero)' }}>
+    <div className="relative min-h-screen px-4 py-10 text-white sm:px-6" style={{ background: 'var(--arqwelia-gradient-hero)' }}>
       <div className="mx-auto max-w-4xl">
         <ArqweliaBrand size="lg" showByAqwelia />
 
@@ -59,14 +59,14 @@ export default async function ProPreviewPage({
           <h1 className="font-aq-display text-3xl font-semibold sm:text-4xl">{t('pro.title')}</h1>
           <ArqweliaFutureFeature kind="demo">{t('demoBadge')}</ArqweliaFutureFeature>
         </div>
-        <p className="mt-2 text-sm text-arq-mist/60">{t('pro.subtitle')}</p>
+        <p className="mt-2 text-sm text-white/65">{t('pro.subtitle')}</p>
 
         {/* Opportunity card */}
         <div className="mt-8 grid gap-5 lg:grid-cols-3">
           {/* Project visual + summary */}
           <ArqweliaGlassCard className="p-6 lg:col-span-2" border="strong">
             <ArqweliaLabel>{DEMO_PRO_OPPORTUNITY.projectType ? t(`wizard.questionnaire.projectTypes.${DEMO_PRO_OPPORTUNITY.projectType}` as any) as string : ''}</ArqweliaLabel>
-            <h2 className="mt-3 font-aq-display text-xl font-semibold text-arq-mist">{t(DEMO_PRO_OPPORTUNITY.zoneApproxKey as any)}</h2>
+            <h2 className="mt-3 font-aq-display text-xl font-semibold text-white">{t(DEMO_PRO_OPPORTUNITY.zoneApproxKey as any)}</h2>
             <div className="mt-5 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
               <Info label={t('pro.column.budget')} value={t(`wizard.questionnaire.budgets.${DEMO_PRO_OPPORTUNITY.budget}` as any) as string} />
               <Info label={t('pro.column.timeline')} value={t(`wizard.questionnaire.timelines.${DEMO_PRO_OPPORTUNITY.timeline}` as any) as string} />
@@ -76,7 +76,7 @@ export default async function ProPreviewPage({
             </div>
 
             {/* Informations manquantes */}
-            <div className="mt-6 border-t border-arq-border pt-5">
+            <div className="mt-6 border-t border-white/[0.06] pt-5">
               <ArqweliaLabel>{t('pro.missingInfo')}</ArqweliaLabel>
               <ul className="mt-3 flex flex-wrap gap-2">
                 {missing.map((m) => (
@@ -93,7 +93,7 @@ export default async function ProPreviewPage({
           <ArqweliaGlassCard className="flex flex-col items-center justify-center p-6 text-center" border="gold">
             <ArqweliaLabel>{t('pro.column.score')}</ArqweliaLabel>
             <div className="mt-5"><ArqweliaScore value={DEMO_PRO_OPPORTUNITY.maturityScore} demo /></div>
-            <p className="mt-4 text-[11px] text-arq-mist/40">{t('scoreDesc')}</p>
+            <p className="mt-4 text-[11px] text-white/35">{t('scoreDesc')}</p>
           </ArqweliaGlassCard>
         </div>
 
@@ -101,7 +101,7 @@ export default async function ProPreviewPage({
         <ArqweliaGlassCard className="mt-5 flex flex-col items-center justify-between gap-4 p-5 sm:flex-row" border="strong">
           <div>
             <ArqweliaLabel>{t('pro.matching')}</ArqweliaLabel>
-            <p className="mt-1.5 text-sm text-arq-mist/60">
+            <p className="mt-1.5 text-sm text-white/65">
               {t('pro.matchingDesc')}
             </p>
           </div>
@@ -110,7 +110,7 @@ export default async function ProPreviewPage({
             disabled
             aria-disabled="true"
             title={t('pro.interestDisabled')}
-            className="inline-flex min-h-[44px] cursor-not-allowed items-center justify-center rounded-full border border-arq-border px-5 py-3 text-sm font-semibold text-arq-mist/40"
+            className="inline-flex min-h-[48px] cursor-not-allowed items-center justify-center rounded-full border border-white/[0.08] px-5 py-3 text-sm font-semibold text-white/35"
           >
             {t('pro.interestDisabled')}
           </button>
@@ -128,8 +128,8 @@ export default async function ProPreviewPage({
 function Info({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
   return (
     <div>
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-arq-mist/40">{label}</p>
-      <p className={`mt-1 font-semibold ${muted ? 'text-arq-mist/40' : 'text-arq-mist'}`}>{value}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-white/40">{label}</p>
+      <p className={`mt-1 font-semibold ${muted ? 'text-white/35' : 'text-white/85'}`}>{value}</p>
     </div>
   )
 }

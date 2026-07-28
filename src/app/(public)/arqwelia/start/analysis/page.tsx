@@ -61,10 +61,10 @@ export default function AnalysisStep() {
       <Link href={isDemo ? '/arqwelia' : '/arqwelia/start/project'} className="mb-6 inline-flex items-center gap-1.5 text-xs font-semibold text-arq-aqua">
         ← {t('wizard.back')}
       </Link>
-      <h1 className="font-aq-display text-3xl font-semibold text-arq-mist sm:text-4xl">
+      <h1 className="font-aq-display text-3xl font-semibold text-white sm:text-4xl">
         {t('wizard.analysis.title')}
       </h1>
-      <p className="mt-3 text-sm text-arq-mist/60">{t('wizard.analysis.desc')}</p>
+      <p className="mt-3 text-sm text-white/65">{t('wizard.analysis.desc')}</p>
 
       {/* Permanent demo badge */}
       <div className="mt-4">
@@ -73,7 +73,7 @@ export default function AnalysisStep() {
 
       {/* Deterministic progress (4 steps) */}
       <ArqweliaGlassCard className="mt-8 p-6" border={done ? 'strong' : 'default'} glow={done}>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-arq-aqua/10" role="status" aria-live="polite">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.06]" role="status" aria-live="polite">
           <div className="h-full transition-[width] duration-150" style={{ width: `${progress}%`, background: 'var(--arqwelia-gradient-premium)', boxShadow: 'var(--arqwelia-glow-aqua)' }} />
         </div>
         <ul className="mt-5 space-y-2.5">
@@ -81,8 +81,8 @@ export default function AnalysisStep() {
             const reached = progress >= stepsCumulative(i) || reducedMotion
             return (
               <li key={s.key} className="flex items-center gap-3 text-sm">
-                <span className={reached ? 'text-arq-aqua' : 'text-arq-mist/30'}>{reached ? '✓' : '○'}</span>
-                <span className={reached ? 'text-arq-mist' : 'text-arq-mist/40'}>{t(s.label as any)}</span>
+                <span className={reached ? 'text-arq-aqua' : 'text-white/25'}>{reached ? '✓' : '○'}</span>
+                <span className={reached ? 'text-white/80' : 'text-white/35'}>{t(s.label as any)}</span>
               </li>
             )
           })}
@@ -133,9 +133,9 @@ export default function AnalysisStep() {
 function DeclRow({ label, value, kind }: { label: string; value: string; kind: 'declared' | 'estimated' | 'toConfirm' }) {
   const dotColor = kind === 'declared' ? '#00D6C5' : kind === 'estimated' ? '#C6A56B' : '#FF9C9C'
   return (
-    <div className="flex items-center justify-between border-t border-arq-border pt-3 first:border-t-0 first:pt-0">
-      <span className="flex items-center gap-2 text-arq-mist/55"><span className="h-1.5 w-1.5 rounded-full" style={{ background: dotColor }} />{label}</span>
-      <span className="font-semibold text-arq-mist">{value}</span>
+    <div className="flex items-center justify-between border-t border-white/[0.06] pt-3 first:border-t-0 first:pt-0">
+      <span className="flex items-center gap-2 text-white/55"><span className="h-1.5 w-1.5 rounded-full" style={{ background: dotColor }} />{label}</span>
+      <span className="font-semibold text-white/80">{value}</span>
     </div>
   )
 }

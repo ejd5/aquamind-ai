@@ -44,7 +44,7 @@ export default function SuccessStep() {
           <path d="M20 6L9 17l-5-5" />
         </svg>
       </div>
-      <h1 className="mt-6 font-aq-display text-3xl font-semibold text-arq-mist sm:text-4xl">
+      <h1 className="mt-6 font-aq-display text-3xl font-semibold text-white sm:text-4xl">
         {t('wizard.success.title')}
       </h1>
 
@@ -54,14 +54,14 @@ export default function SuccessStep() {
           {/* Header strip */}
           <div className="flex items-center gap-3 border-b border-[var(--arqwelia-border-gold)] px-6 py-4" style={{ background: 'linear-gradient(120deg, rgba(198,165,107,0.10), transparent)' }}>
             <ArqweliaSymbol className="h-6 w-6" withGlow={false} />
-            <span className="font-aq-display text-sm font-semibold tracking-wide text-arq-mist">PROJECT PASSPORT</span>
+            <span className="font-aq-display text-sm font-semibold tracking-wide text-white">PROJECT PASSPORT</span>
             <span className="ml-auto"><ArqweliaFutureFeature kind="soon">{t('passportActions.keep')}</ArqweliaFutureFeature></span>
           </div>
 
           <div className="grid gap-6 p-6 sm:grid-cols-2 sm:p-8">
             {/* Identity */}
             <div className="text-left">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-arq-mist/40">{t('wizard.success.idLabel')}</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-white/40">{t('wizard.success.idLabel')}</p>
               <p className="mt-1 font-aq-display text-3xl font-semibold text-arq-aqua" style={{ filter: 'var(--arqwelia-glow-aqua)' }}>{data.publicId}</p>
 
               <div className="mt-6 space-y-3 text-sm">
@@ -75,9 +75,9 @@ export default function SuccessStep() {
             </div>
 
             {/* Reality Score gauge */}
-            <div className="flex flex-col items-center justify-center gap-3 border-t border-arq-border pt-6 sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0">
+            <div className="flex flex-col items-center justify-center gap-3 border-t border-white/[0.06] pt-6 sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0">
               <ArqweliaScore value={data.realityScoreDemo} label={t('scoreTag')} demo />
-              <p className="max-w-[220px] text-center text-[11px] text-arq-mist/40">
+              <p className="max-w-[220px] text-center text-[11px] text-white/35">
                 {t('scoreDesc')}
               </p>
             </div>
@@ -102,7 +102,7 @@ export default function SuccessStep() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00D6C5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.3-4.3" /></svg>
                 )}
               </div>
-              <p className="text-sm font-semibold text-arq-mist">{t(`passportActions.${a}`)}</p>
+              <p className="text-sm font-semibold text-white">{t(`passportActions.${a}`)}</p>
               {disabled && <div className="mt-1.5"><ArqweliaFutureFeature kind="soon" /></div>}
             </ArqweliaGlassCard>
           )
@@ -111,7 +111,7 @@ export default function SuccessStep() {
 
       {/* Next steps + privacy cleanup */}
       <div className="mx-auto mt-10 flex flex-col items-center gap-3">
-        <Link href="/arqwelia" className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-arq-border-strong px-7 py-3 text-sm font-semibold text-arq-mist/85 transition-colors hover:bg-arq-aqua/5">
+        <Link href="/arqwelia" className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-white/[0.12] px-8 py-3.5 text-sm font-semibold text-white/80 transition-colors hover:bg-arq-aqua/5">
           {t('wizard.back')}
         </Link>
         <button
@@ -120,7 +120,7 @@ export default function SuccessStep() {
             store.reset()
             try { sessionStorage.removeItem('arqwelia-result') } catch {}
           }}
-          className="text-[11px] text-arq-mist/30 underline underline-offset-2 hover:text-arq-mist/50"
+          className="text-[11px] text-white/25 underline underline-offset-2 hover:text-white/45"
         >
           Effacer mes données de session
         </button>
@@ -131,9 +131,9 @@ export default function SuccessStep() {
 
 function Row({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
   return (
-    <div className="flex items-center justify-between border-t border-arq-border pt-3 first:border-t-0 first:pt-0">
-      <span className="text-arq-mist/45">{label}</span>
-      <span className={`font-semibold ${muted ? 'text-arq-mist/40' : 'text-arq-mist'}`}>{value}</span>
+    <div className="flex items-center justify-between border-t border-white/[0.06] pt-3 first:border-t-0 first:pt-0">
+      <span className="text-white/45">{label}</span>
+      <span className={`font-semibold ${muted ? 'text-white/35' : 'text-white/80'}`}>{value}</span>
     </div>
   )
 }

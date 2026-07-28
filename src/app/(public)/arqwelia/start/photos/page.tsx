@@ -74,14 +74,14 @@ export default function PhotosStep() {
   return (
     <div>
       <Link href="/arqwelia" className="mb-6 inline-flex items-center gap-1.5 text-xs font-semibold text-arq-aqua">← {t('wizard.back')}</Link>
-      <h1 className="font-aq-display text-3xl font-semibold text-arq-mist sm:text-4xl">{t('wizard.photos.title')}</h1>
-      <p className="mt-3 text-arq-mist/60">{t('wizard.photos.desc')}</p>
+      <h1 className="font-aq-display text-3xl font-semibold text-white sm:text-4xl">{t('wizard.photos.title')}</h1>
+      <p className="mt-3 text-white/65">{t('wizard.photos.desc')}</p>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <span className="rounded-full border border-arq-aqua/25 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-arq-aqua">
           {t('wizard.photos.accepted')}
         </span>
-        <span className="rounded-full border border-arq-mist/15 px-3 py-1 text-[11px] font-semibold text-arq-mist/60">
+        <span className="rounded-full border border-white/[0.10] px-3 py-1 text-[11px] font-semibold text-white/55">
           {remaining}/{ARQ_PHOTO_MAX} restantes
         </span>
       </div>
@@ -89,7 +89,7 @@ export default function PhotosStep() {
       {/* Tips */}
       <ArqweliaGlassCard className="mt-6 p-5">
         <ArqweliaLabel>{t('wizard.photos.tipsTitle')}</ArqweliaLabel>
-        <ul className="mt-3 grid gap-2 text-sm text-arq-mist/60 sm:grid-cols-2">
+        <ul className="mt-3 grid gap-2 text-sm text-white/60 sm:grid-cols-2">
           {[1, 2, 3, 4].map((n) => (
             <li key={n} className="flex gap-2"><span className="text-arq-aqua">•</span>{t(`wizard.photos.tip${n}` as const)}</li>
           ))}
@@ -105,16 +105,16 @@ export default function PhotosStep() {
             aria-label={t('wizard.photos.add')}
             onClick={() => fileRef.current?.click()}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileRef.current?.click() }}
-            className="group flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-arq-aqua/30 bg-gradient-to-br from-arq-navy-2/40 to-arq-navy-deep/40 p-8 text-center transition-all hover:border-arq-aqua/60 hover:from-arq-navy-2/60 focus:outline-none focus:ring-2 focus:ring-arq-aqua/40"
-            style={{ boxShadow: 'inset 0 0 60px -20px rgba(0,214,197,0.20)' }}
+            className="group flex min-h-[240px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-arq-aqua/30 bg-gradient-to-br from-arq-navy-2/40 to-arq-navy-deep/40 p-8 text-center transition-all hover:border-arq-aqua/60 hover:from-arq-navy-2/60 focus:outline-none focus:ring-2 focus:ring-arq-aqua/40"
+            style={{ boxShadow: 'inset 0 0 80px -20px rgba(0,214,197,0.18)' }}
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-arq-aqua/35 bg-arq-aqua/10" style={{ boxShadow: 'var(--arqwelia-glow-aqua)' }}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00D6C5" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full border border-arq-aqua/35 bg-arq-aqua/10" style={{ boxShadow: 'var(--arqwelia-glow-aqua)' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00D6C5" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
               </svg>
             </div>
-            <p className="mt-4 text-base font-semibold text-arq-mist">{t('wizard.photos.add')}</p>
-            <p className="mt-1 text-xs text-arq-mist/45">JPG · PNG · WebP — 10 Mo max par fichier</p>
+            <p className="mt-4 text-base font-semibold text-white">{t('wizard.photos.add')}</p>
+            <p className="mt-1 text-xs text-white/45">JPG · PNG · WebP — 10 Mo max par fichier</p>
           </div>
         ) : (
           <div
@@ -123,7 +123,7 @@ export default function PhotosStep() {
             aria-label={t('wizard.photos.add')}
             onClick={() => fileRef.current?.click()}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileRef.current?.click() }}
-            className="flex min-h-[88px] cursor-pointer items-center justify-center rounded-2xl border border-dashed border-arq-aqua/25 bg-arq-navy-2/30 p-5 text-sm font-semibold text-arq-mist/60 transition-colors hover:border-arq-aqua/50 hover:text-arq-mist"
+            className="flex min-h-[88px] cursor-pointer items-center justify-center rounded-2xl border border-dashed border-arq-aqua/25 bg-arq-navy-2/30 p-5 text-sm font-semibold text-white/60 transition-colors hover:border-arq-aqua/50 hover:text-white"
           >
             + {t('wizard.photos.add')}
           </div>
@@ -135,6 +135,7 @@ export default function PhotosStep() {
           multiple
           className="hidden"
           onChange={(e) => onFiles(e.target.files)}
+          aria-label={t('wizard.photos.add')}
         />
       </div>
 
@@ -163,12 +164,12 @@ export default function PhotosStep() {
       {store.photos.length > 0 && (
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {store.photos.map((p) => (
-            <div key={p.id} className="relative overflow-hidden rounded-xl border border-arq-border shadow-arq-deep">
+            <div key={p.id} className="relative overflow-hidden rounded-xl border border-white/[0.08] shadow-arq-deep">
               <img src={p.dataUrl} alt={p.name} className="aspect-square w-full object-cover" />
               <button
                 type="button"
                 onClick={() => store.removePhoto(p.id)}
-                className="absolute right-1.5 top-1.5 rounded-full bg-arq-navy-deep/85 px-2 py-1 text-[10px] font-semibold text-arq-mist backdrop-blur hover:bg-red-500/40"
+                className="absolute right-1.5 top-1.5 rounded-full bg-arq-navy-deep/85 px-2 py-1 text-[10px] font-semibold text-white/80 backdrop-blur hover:bg-red-500/40"
                 aria-label={t('wizard.photos.remove')}
               >✕</button>
             </div>
@@ -176,7 +177,7 @@ export default function PhotosStep() {
         </div>
       )}
 
-      <p className="mt-6 flex items-center gap-2 text-xs text-arq-mist/45">
+      <p className="mt-6 flex items-center gap-2 text-xs text-white/40">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#43CFF5" strokeWidth="1.6" strokeLinecap="round"><path d="M12 22s8-3.5 8-10V5l-8-3-8 3v7c0 6.5 8 10 8 10z" /></svg>
         {t('wizard.photos.privacy')}
       </p>

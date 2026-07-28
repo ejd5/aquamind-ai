@@ -32,7 +32,7 @@ export default function ConceptsStep() {
       <Link href="/arqwelia/start/analysis" className="mb-6 inline-flex items-center gap-1.5 text-xs font-semibold text-arq-aqua">
         ← {t('wizard.back')}
       </Link>
-      <h1 className="font-aq-display text-3xl font-semibold text-arq-mist sm:text-4xl">
+      <h1 className="font-aq-display text-3xl font-semibold text-white sm:text-4xl">
         {t('wizard.concepts.title')}
       </h1>
       <div className="mt-3"><ArqweliaFutureFeature kind="demo">{t('wizard.concepts.desc')}</ArqweliaFutureFeature></div>
@@ -61,7 +61,7 @@ export default function ConceptsStep() {
                   className="relative aspect-[16/10] w-full"
                 >
                   {/* Concept letter watermark */}
-                  <span className="absolute left-4 top-3 font-aq-display text-3xl font-semibold text-arq-mist/70">{c.id}</span>
+                  <span className="absolute left-4 top-3 font-aq-display text-3xl font-semibold text-white/60">{c.id}</span>
                   {/* Tone badge */}
                   <span className={`absolute right-4 top-3 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${c.tone === 'realiste' ? 'border-arq-aqua/40 bg-arq-aqua/10 text-arq-aqua' : 'border-[var(--arqwelia-border-gold)] bg-arq-champagne/5 text-arq-gold-soft'}`}>
                     {c.tone === 'realiste' ? t('wizard.concepts.toneRealiste') : t('wizard.concepts.toneInspiration')}
@@ -77,18 +77,18 @@ export default function ConceptsStep() {
 
                 {/* Body */}
                 <div className="p-5">
-                  <h2 className="text-lg font-bold text-arq-mist">{c.title}</h2>
-                  <p className="mt-1 text-sm text-arq-mist/60">{c.subtitle}</p>
-                  <p className="mt-3 text-sm text-arq-mist/75">{c.dimensions}</p>
+                  <h2 className="text-lg font-bold text-white">{c.title}</h2>
+                  <p className="mt-1 text-sm text-white/60">{c.subtitle}</p>
+                  <p className="mt-3 text-sm text-white/75">{c.dimensions}</p>
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     <span className="rounded-full border border-arq-aqua/25 px-2.5 py-1 text-[11px] font-semibold text-arq-aqua">{t(c.badgeSun as any)}</span>
                     <span className="rounded-full border border-[var(--arqwelia-border-gold)] px-2.5 py-1 text-[11px] font-semibold text-arq-gold-soft/80">{t(c.badgeAccess as any)}</span>
-                    <span className="rounded-full border border-arq-mist/15 px-2.5 py-1 text-[11px] font-semibold text-arq-mist/60">{t(c.badgeBudget as any)}</span>
+                    <span className="rounded-full border border-white/[0.10] px-2.5 py-1 text-[11px] font-semibold text-white/55">{t(c.badgeBudget as any)}</span>
                   </div>
 
                   <div className="mt-5">
-                    <span className={`inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-4 py-3 text-sm font-bold transition-colors ${isSel ? 'text-arq-navy-deep' : 'border border-arq-border-strong text-arq-mist/70'}`} style={isSel ? { background: 'var(--arqwelia-gradient-premium)' } : undefined}>
+                    <span className={`inline-flex min-h-[48px] w-full items-center justify-center rounded-full px-4 py-3 text-sm font-bold transition-colors ${isSel ? 'text-arq-navy-deep' : 'border border-white/[0.12] text-white/65'}`} style={isSel ? { background: 'var(--arqwelia-gradient-premium)' } : undefined}>
                       {isSel ? '✓ ' + t('wizard.concepts.selected') : t('wizard.concepts.selectBtn')}
                     </span>
                   </div>

@@ -52,41 +52,41 @@ export default function ContactStep() {
   }
 
   const fieldCls =
-    'mt-1.5 w-full rounded-lg border border-arq-mist/15 bg-arq-navy/60 px-3.5 py-3 text-sm text-arq-mist placeholder:text-arq-mist/30 outline-none transition-colors focus:border-arq-aqua/50'
+    'mt-1.5 w-full rounded-lg border border-white/[0.12] bg-white/[0.04] px-3.5 py-3 text-sm text-white placeholder:text-white/25 outline-none transition-colors focus:border-arq-aqua/50'
 
   return (
     <div>
       <Link href="/arqwelia/start/concepts" className="mb-6 inline-flex items-center gap-1.5 text-xs font-semibold text-arq-aqua">← {t('wizard.back')}</Link>
-      <h1 className="font-aq-display text-3xl font-semibold text-arq-mist sm:text-4xl">{t('wizard.contact.title')}</h1>
+      <h1 className="font-aq-display text-3xl font-semibold text-white sm:text-4xl">{t('wizard.contact.title')}</h1>
 
       {/* Why we ask — explicit, premium */}
       <ArqweliaGlassCard className="mt-6 p-5" border="strong">
         <ArqweliaLabel>{t('wizard.contact.whyTitle')}</ArqweliaLabel>
-        <p className="mt-3 text-sm text-arq-mist/70">
+        <p className="mt-3 text-sm text-white/65">
           {t('wizard.contact.whyBody')}
         </p>
       </ArqweliaGlassCard>
 
       <form onSubmit={onSubmit} className="mt-6 space-y-5" noValidate>
         <div>
-          <label className="mb-0 block text-xs font-semibold text-arq-mist/70">{t('wizard.contact.firstName')}</label>
-          <input className={fieldCls} value={store.contact.firstName} onChange={(e) => store.setContact({ firstName: e.target.value })} aria-invalid={!!errors.firstName} />
+          <label className="mb-0 block text-xs font-semibold text-white/65">{t('wizard.contact.firstName')}</label>
+          <input className={fieldCls} value={store.contact.firstName} onChange={(e) => store.setContact({ firstName: e.target.value })} aria-invalid={!!errors.firstName} aria-label={t('wizard.contact.firstName')} />
           {errors.firstName && <p className="mt-1 text-xs text-red-400">{errors.firstName}</p>}
         </div>
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
-            <label className="mb-0 block text-xs font-semibold text-arq-mist/70">{t('wizard.contact.email')}</label>
-            <input type="email" className={fieldCls} value={store.contact.email} onChange={(e) => store.setContact({ email: e.target.value })} aria-invalid={!!errors.email} />
+            <label className="mb-0 block text-xs font-semibold text-white/65">{t('wizard.contact.email')}</label>
+            <input type="email" className={fieldCls} value={store.contact.email} onChange={(e) => store.setContact({ email: e.target.value })} aria-invalid={!!errors.email} aria-label={t('wizard.contact.email')} />
             {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
           </div>
           <div>
-            <label className="mb-0 block text-xs font-semibold text-arq-mist/70">{t('wizard.contact.phone')}</label>
-            <input className={fieldCls} value={store.contact.phone} onChange={(e) => store.setContact({ phone: e.target.value })} />
+            <label className="mb-0 block text-xs font-semibold text-white/65">{t('wizard.contact.phone')}</label>
+            <input className={fieldCls} value={store.contact.phone} onChange={(e) => store.setContact({ phone: e.target.value })} aria-label={t('wizard.contact.phone')} />
           </div>
         </div>
         <div>
-          <label className="mb-0 block text-xs font-semibold text-arq-mist/70">{t('wizard.contact.postalCode')}</label>
-          <input inputMode="numeric" className={fieldCls} value={store.contact.postalCode} onChange={(e) => store.setContact({ postalCode: e.target.value })} aria-invalid={!!errors.postalCode} />
+          <label className="mb-0 block text-xs font-semibold text-white/65">{t('wizard.contact.postalCode')}</label>
+          <input inputMode="numeric" className={fieldCls} value={store.contact.postalCode} onChange={(e) => store.setContact({ postalCode: e.target.value })} aria-invalid={!!errors.postalCode} aria-label={t('wizard.contact.postalCode')} />
           {errors.postalCode && <p className="mt-1 text-xs text-red-400">{errors.postalCode}</p>}
         </div>
 
@@ -97,12 +97,13 @@ export default function ContactStep() {
               type="checkbox"
               checked={store.contact.consent}
               onChange={(e) => store.setContact({ consent: e.target.checked })}
-              className="mt-0.5 h-5 w-5 rounded border-arq-mist/30 bg-arq-navy accent-arq-aqua"
+              className="mt-0.5 h-5 w-5 rounded border-white/25 bg-arq-navy accent-arq-aqua"
               aria-invalid={!!errors.consent}
+              aria-label={t('wizard.contact.consentText')}
             />
-            <span className="text-sm text-arq-mist/75">{t('wizard.contact.consentText')}</span>
+            <span className="text-sm text-white/70">{t('wizard.contact.consentText')}</span>
           </label>
-          <p className="mt-2 pl-8 text-xs text-arq-mist/40">{t('wizard.contact.consentHint')}</p>
+          <p className="mt-2 pl-8 text-xs text-white/35">{t('wizard.contact.consentHint')}</p>
           {errors.consent && <p className="mt-2 text-xs text-red-400">{errors.consent}</p>}
         </ArqweliaGlassCard>
 

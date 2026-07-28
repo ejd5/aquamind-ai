@@ -37,25 +37,29 @@ export default async function ArqweliaLayout({ children }: { children: React.Rea
     <div className="relative flex min-h-screen flex-col text-arq-mist" style={{ background: 'var(--arqwelia-gradient-hero)' }}>
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 opacity-[0.035]"
+        className="pointer-events-none fixed inset-0 opacity-[0.018]"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(0,214,197,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(0,214,197,0.5) 1px, transparent 1px)',
-          backgroundSize: '52px 52px',
+            'linear-gradient(rgba(92,242,230,0.35) 1px, transparent 1px), linear-gradient(90deg, rgba(92,242,230,0.35) 1px, transparent 1px)',
+          backgroundSize: '64px 64px',
         }}
       />
 
       <NextIntlClientProvider locale={forced} messages={messages}>
         {/* Premium sticky header */}
-        <header className="safe-area-top sticky top-0 z-40 border-b border-arq-border backdrop-blur-2xl" style={{ background: 'rgba(3,15,26,0.78)' }}>
+        <header className="safe-area-top sticky top-0 z-40 border-b border-white/[0.06] backdrop-blur-2xl" style={{ background: 'rgba(3,15,26,0.82)' }}>
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-            <Link href="/arqwelia" aria-label="ARQWELIA — accueil"><ArqweliaBrand size="sm" /></Link>
-            <nav className="hidden items-center gap-5 md:flex">
-              <Link href="/arqwelia#parcours" className="text-xs font-semibold text-arq-mist/70 transition-colors hover:text-arq-mist">{t('nav.howItWorks')}</Link>
-              <Link href="/arqwelia#ia-ar" className="text-xs font-semibold text-arq-mist/70 transition-colors hover:text-arq-mist">{t('nav.technology')}</Link>
-              <Link href="/arqwelia#pros" className="text-xs font-semibold text-arq-mist/70 transition-colors hover:text-arq-mist">{t('nav.professionals')}</Link>
-              <Link href="/arqwelia#faq" className="text-xs font-semibold text-arq-mist/70 transition-colors hover:text-arq-mist">{t('nav.faq')}</Link>
-              <Link href="/pro/arqwelia/opportunities?demo=1" className="text-xs font-semibold text-arq-gold-soft/80 transition-colors hover:text-arq-gold-soft">{t('nav.proSection')}</Link>
+            <Link href="/arqwelia" aria-label="ARQWELIA — accueil" className="flex items-center gap-2.5">
+              <ArqweliaSymbol className="h-7 w-7" withGlow={false} />
+              <span className="font-aq-display text-base font-semibold tracking-wide text-white">ARQWELIA</span>
+              <span className="hidden text-[9px] font-semibold uppercase tracking-[0.2em] text-arq-gold-soft/60 sm:inline">by AQWELIA</span>
+            </Link>
+            <nav className="hidden items-center gap-6 md:flex">
+              <Link href="/arqwelia#parcours" className="text-[13px] font-medium text-white/60 transition-colors hover:text-white">{t('nav.howItWorks')}</Link>
+              <Link href="/arqwelia#ia-ar" className="text-[13px] font-medium text-white/60 transition-colors hover:text-white">{t('nav.technology')}</Link>
+              <Link href="/arqwelia#pros" className="text-[13px] font-medium text-white/60 transition-colors hover:text-white">{t('nav.professionals')}</Link>
+              <Link href="/arqwelia#faq" className="text-[13px] font-medium text-white/60 transition-colors hover:text-white">{t('nav.faq')}</Link>
+              <Link href="/pro/arqwelia/opportunities?demo=1" className="text-[13px] font-medium text-arq-gold-soft/70 transition-colors hover:text-arq-gold-soft">{t('nav.proSection')}</Link>
             </nav>
             <div className="flex items-center gap-3">
               <ArqweliaPrimaryButton href={startHref} className="hidden !px-5 !py-2 !text-xs sm:inline-flex">{t('nav.startProject')}</ArqweliaPrimaryButton>
@@ -67,13 +71,13 @@ export default async function ArqweliaLayout({ children }: { children: React.Rea
         <main className="relative flex-1">{children}</main>
 
         {/* Footer */}
-        <footer className="relative border-t border-arq-border px-4 py-12 sm:px-6">
+        <footer className="relative border-t border-white/[0.06] px-4 py-14 sm:px-6">
           <div className="mx-auto max-w-6xl">
-            <div className="flex flex-col items-center gap-3 text-center">
-              <ArqweliaSymbol className="h-8 w-8" />
-              <p className="font-aq-display text-lg font-semibold text-arq-mist">ARQWELIA Studio <span className="text-arq-gold-soft/70">— by AQWELIA</span></p>
-              <p className="max-w-2xl text-xs leading-relaxed text-arq-mist/45">{t('warning')}</p>
-              {demo && <div className="mt-2"><ArqweliaFutureFeature kind="demo">{t('demoBadge')}</ArqweliaFutureFeature></div>}
+            <div className="flex flex-col items-center gap-4 text-center">
+              <ArqweliaSymbol className="h-8 w-8 opacity-60" withGlow={false} />
+              <p className="font-aq-display text-base font-semibold text-white/80">ARQWELIA <span className="text-arq-gold-soft/50">by AQWELIA</span></p>
+              <p className="max-w-xl text-xs leading-relaxed text-white/35">{t('warning')}</p>
+              {demo && <div className="mt-1"><ArqweliaFutureFeature kind="demo">{t('demoBadge')}</ArqweliaFutureFeature></div>}
             </div>
           </div>
         </footer>
