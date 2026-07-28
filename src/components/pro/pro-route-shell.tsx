@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { ArrowLeft, Sparkles } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Footer } from '@/components/aquamind/footer'
+import { isArqweliaLot1Enabled } from '@/lib/features'
 
 export function ProRouteShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -20,6 +21,8 @@ export function ProRouteShell({ children }: { children: React.ReactNode }) {
     { href: '/pro#tarifs', label: t('navPricing') },
     { href: '/pro/faq', label: t('navFaq') },
     { href: '/pro/demo', label: t('navDemo') },
+    // ARQWELIA Studio — discrete entry in the Pro space, gated by the feature flag.
+    ...(isArqweliaLot1Enabled() ? [{ href: '/pro/arqwelia/opportunities?demo=1', label: 'ARQWELIA Studio' }] : []),
   ]
 
   return (

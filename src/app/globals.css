@@ -149,6 +149,54 @@
   /* Typography — display serif for hero headlines, body sans for UI */
   --aqwelia-font-display: 'Cormorant Garamond', serif;
   --aqwelia-font-body: -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* ===========================================================
+     ARQWELIA — namespaced tokens for the Lot 1 visual prototype.
+     These are ADDITIVE to the AQWELIA brand tokens above and never
+     replace them. ARQWELIA is a sub-product with a slightly cooler,
+     more "tech blueprint" palette (navy + aqua + cyan + sand) used
+     only by /arqwelia/* and /pro/arqwelia/* routes. See:
+     docs/ARQWELIA_LOT1.md
+     =========================================================== */
+  --arqwelia-navy: #061826;
+  --arqwelia-aqua: #00D6C5;
+  --arqwelia-cyan: #43CFF5;
+  --arqwelia-sand: #E8D8B7;
+  --arqwelia-mist: #F1F7F8;
+  --arqwelia-ink: #0C2533;
+
+  /* ── ARQWELIA V2 (Round 2) — premium enrichment, additive only ──
+     See docs/ARQWELIA_LOT1_ROUND2_AUDIT.md. Direction "7 of 10":
+     deep navy, luminous aqua, champagne/gold, premium gradients,
+     translucent borders, deep shadows, controlled aqua glow. */
+  --arqwelia-navy-2: #0A2A3C;        /* secondary navy (cards, panels) */
+  --arqwelia-navy-deep: #030F1A;     /* darkest navy (hero base) */
+  --arqwelia-aqua-bright: #5CF2E6;   /* brighter aqua for highlights */
+  --arqwelia-champagne: #C6A56B;     /* premium gold accent */
+  --arqwelia-gold-soft: #E8CE9F;     /* soft gold text on dark */
+  --arqwelia-ink-2: #14334A;         /* lighter ink for surfaces */
+
+  /* Translucent borders (premium glass edges) */
+  --arqwelia-border: rgba(92, 242, 230, 0.14);
+  --arqwelia-border-strong: rgba(92, 242, 230, 0.30);
+  --arqwelia-border-gold: rgba(198, 165, 107, 0.28);
+
+  /* Deep shadows for premium card elevation */
+  --arqwelia-shadow-deep: 0 24px 60px -28px rgba(0, 0, 0, 0.7),
+                          0 2px 8px -2px rgba(0, 0, 0, 0.4);
+
+  /* Controlled aqua glow (premium neon-ish, restrained) */
+  --arqwelia-glow-aqua: 0 0 36px -10px rgba(0, 214, 197, 0.45);
+  --arqwelia-glow-aqua-strong: 0 0 56px -8px rgba(0, 214, 197, 0.55);
+
+  /* Premium gradients */
+  --arqwelia-gradient-premium: linear-gradient(135deg, #5CF2E6 0%, #00D6C5 50%, #43CFF5 100%);
+  --arqwelia-gradient-hero: radial-gradient(80% 60% at 20% 0%, rgba(0, 214, 197, 0.14) 0%, transparent 60%),
+                            radial-gradient(60% 50% at 90% 10%, rgba(67, 207, 245, 0.10) 0%, transparent 60%),
+                            radial-gradient(90% 70% at 50% 100%, rgba(198, 165, 107, 0.06) 0%, transparent 60%),
+                            linear-gradient(180deg, #040E18 0%, #061826 50%, #040E18 100%);
+  --arqwelia-gradient-card: linear-gradient(160deg, rgba(20, 51, 74, 0.70) 0%, rgba(10, 42, 60, 0.80) 100%);
+  --arqwelia-gradient-text: linear-gradient(110deg, #E8CE9F 0%, #C6A56B 50%, #E8CE9F 100%);
 }
 
 .dark {
@@ -252,6 +300,13 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes arqScan {
+  0%, 100% { opacity: 0; transform: translateY(-60px); }
+  30% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(60px); }
+}
+
 /* ===========================================================
    PREMIUM UTILITIES
    =========================================================== */
@@ -295,11 +350,11 @@
 }
 
 .dark .glass-card {
-  background: oklch(0.2 0.025 200 / 0.5);
-  border: 1px solid oklch(1 0 0 / 0.1);
+  background: oklch(0.16 0.025 200 / 0.65);
+  border: 1px solid oklch(1 0 0 / 0.12);
   box-shadow:
-    0 1px 0 0 oklch(1 0 0 / 0.05) inset,
-    0 20px 45px -20px oklch(0 0 0 / 0.5);
+    0 1px 0 0 oklch(1 0 0 / 0.06) inset,
+    0 24px 50px -20px oklch(0 0 0 / 0.55);
 }
 
 /* Glass pill */

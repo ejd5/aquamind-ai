@@ -7210,5 +7210,307 @@
     "dataCta": "See full policy",
     "redirectCta": "Continue to the page",
     "redirectNow": "Redirect now"
+  },
+  "arqwelia": {
+    "metaTitle": "ARQWELIA — Your pool, before it exists",
+    "metaDescription": "Scan your yard, explore two personalized directions, and prepare a clear brief before talking to a pool builder.",
+    "tagline": "Your future pool, before it exists.",
+    "subtitle": "ARQWELIA brings together artificial intelligence, immersive visualization and verified professionals to help you imagine, structure and bring your project to life with confidence.",
+    "ctaPrimary": "Start my project",
+    "ctaSecondary": "See the demo",
+    "trustStrip": "AI · Immersive visualization · Verified pros · Protected details",
+    "privacyPromise": "Your contact details are never shared automatically. You choose who may contact you.",
+    "warning": "Conceptual visualization for inspiration only. Dimensions, feasibility, budget and placement must be confirmed by a professional.",
+    "demoBadge": "Conceptual demonstration",
+    "stepsTitle": "Your 7-step journey",
+    "steps": {
+      "1": {
+        "title": "Inspiration",
+        "desc": "Discover premium directions and finishes."
+      },
+      "2": {
+        "title": "Photos of the plot",
+        "desc": "Capture your yard — images stay on your device."
+      },
+      "3": {
+        "title": "Project and preferences",
+        "desc": "Type, timeline, budget and style."
+      },
+      "4": {
+        "title": "Personalized analysis",
+        "desc": "A simulation, clearly identified as a demo."
+      },
+      "5": {
+        "title": "Concepts",
+        "desc": "Two directions — Realistic and Inspiration."
+      },
+      "6": {
+        "title": "Project Passport",
+        "desc": "A private dossier, ready for a professional."
+      },
+      "7": {
+        "title": "Future matchmaking",
+        "desc": "You choose, whenever you want, who may contact you."
+      }
+    },
+    "diffTitle": "What we state, and what we don't",
+    "diff": {
+      "declared": "Declared: the budget, timeline and style you provide",
+      "detected": "Detected: a main zone estimated from a photo (demonstration)",
+      "estimated": "Estimated: indicative conceptual dimensions (demonstration)",
+      "toConfirm": "To confirm: everything — by a professional on site"
+    },
+    "passportTitle": "Your Project Passport",
+    "passportDesc": "A private id, a downloadable summary, and the choice of when — and whether — you share with a professional.",
+    "partnerTitle": "Are you a pool builder?",
+    "partnerSubtitle": "Join the ARQWELIA pilot list. Early access to opportunities when the program opens.",
+    "faqTitle": "Frequently asked questions",
+    "faq": {
+      "q1": "Does ARQWELIA use real Artificial Intelligence?",
+      "a1": "In this Lot 1 the analysis is a demonstration, clearly identified as such. AI vision and augmented reality are future features — presented honestly, never simulated as active.",
+      "q2": "Are my photos sent to a server?",
+      "a2": "No. In this demonstration photos stay on your device for local previews and are deleted when you leave the session.",
+      "q3": "Will I be contacted automatically?",
+      "a3": "Never without your explicit consent. Your details stay private by default and you choose who may contact you."
+    },
+    "finalCtaTitle": "Ready to imagine your pool?",
+    "finalCtaSubtitle": "No card, no commitment, no sharing of your details.",
+    "wizard": {
+      "back": "Back",
+      "next": "Continue",
+      "submit": "Create my Project Passport",
+      "demo": "Demo mode",
+      "errors": {
+        "required": "Required",
+        "firstName": "First name required (2 characters min)",
+        "email": "Invalid email",
+        "postalCode": "Invalid postal code (5 digits)",
+        "consentRequired": "You must accept processing to continue",
+        "conceptRequired": "Select a concept",
+        "photoTooBig": "Image too large (10 MB max)",
+        "photoType": "Unsupported format (JPG, PNG or WebP)",
+        "photoCount": "Maximum 4 photos"
+      },
+      "photos": {
+        "title": "Add your photos",
+        "desc": "1 photo minimum, 2 to 4 recommended, 4 maximum.",
+        "accepted": "JPG, PNG, WebP · 10 MB max per file",
+        "tipsTitle": "Photo tips",
+        "tip1": "Take the yard head-on at shoulder height.",
+        "tip2": "Avoid shooting into the sun (backlit).",
+        "tip3": "Include the presumed pool location.",
+        "tip4": "One wide shot is enough to start.",
+        "privacy": "Your photos stay on your device. They are not sent to a server in this lot.",
+        "demoBtn": "Start with demo photos",
+        "add": "Add a photo",
+        "remove": "Remove",
+        "preview": "Preview"
+      },
+      "questionnaire": {
+        "title": "Your project",
+        "projectType": "Project type",
+        "projectTypes": {
+          "buried_pool": "In-ground pool",
+          "mini_pool": "Mini pool",
+          "spa_swim_spa": "Spa / Swim spa"
+        },
+        "timeline": "Timeline",
+        "timelines": {
+          "<6m": "Less than 6 months",
+          "6-12m": "6 to 12 months",
+          ">12m": "More than 12 months",
+          "undecided": "Undecided"
+        },
+        "budget": "Budget",
+        "budgets": {
+          "<25k": "Under 25k€",
+          "25-40k": "25 to 40k€",
+          "40-60k": "40 to 60k€",
+          ">60k": "60k€ and above",
+          "undefined": "Undefined"
+        },
+        "style": "Style",
+        "styles": {
+          "mediterranean": "Mediterranean",
+          "contemporary": "Contemporary",
+          "natural": "Natural",
+          "familial": "Family"
+        },
+        "knownMeasureTitle": "Known measurement (optional)",
+        "knownMeasureLabel": "Label (e.g. plot width)",
+        "knownMeasureValue": "Value",
+        "knownMeasureUnit": "Unit",
+        "measureUnitM": "meter"
+      },
+      "analysis": {
+        "title": "Analyzing your data",
+        "desc": "You are watching a simulation. No real AI analysis runs in this lot.",
+        "preparing": "Preparing…",
+        "done": "Done",
+        "resultTitle": "Here is your simulated analysis",
+        "realityScore": "Reality Score (demo)",
+        "steps": {
+          "photos": "Photos received",
+          "zone": "Main zone detected",
+          "constraints": "Estimated constraints",
+          "concepts": "Concepts prepared"
+        }
+      },
+      "concepts": {
+        "title": "Compare two concepts",
+        "desc": "Warning: conceptual inspirational rendering, non-contractual, non-technical, to be confirmed by a professional.",
+        "selectBtn": "Select",
+        "selected": "Selected concept",
+        "selectPrompt": "Choose a concept to continue",
+        "badgeSun": "Sunlight",
+        "badgeAccess": "Access to confirm",
+        "badgeBudget": "Stated budget",
+        "cardA": {
+          "title": "Concept A — Realistic",
+          "subtitle": "Prudent dimensions, respectful site integration"
+        },
+        "cardB": {
+          "title": "Concept B — Inspiration",
+          "subtitle": "More emotional direction, water features and ambiance"
+        },
+        "badges": {
+          "sunConfirm": "Sunlight: to confirm on site",
+          "accessEnginConfirm": "Equipment access: to confirm",
+          "accessConfirm": "Access: to confirm"
+        },
+        "toneRealiste": "Realistic",
+        "toneInspiration": "Inspiration",
+        "promptHint": "Select a concept to continue",
+        "confirmHint": "Concept selected — you can continue"
+      },
+      "contact": {
+        "title": "Create your Project Passport",
+        "firstName": "First name",
+        "email": "Email",
+        "phone": "Phone",
+        "postalCode": "Project postal code",
+        "consentText": "I agree to receive my dossier and to choose later which professionals may contact me.",
+        "consentHint": "Not pre-checked. No automatic sharing of your details.",
+        "whyTitle": "Why these details?",
+        "whyBody": "To generate a private Project Passport and let you choose, when the time comes, which professionals may contact you. Your details are never shared without your explicit consent."
+      },
+      "success": {
+        "title": "Your Project Passport is ready",
+        "idLabel": "Project ID",
+        "realityScoreLabel": "Demo Reality Score",
+        "actions": {
+          "keepPrivate": "Keep dossier private",
+          "shareLater": "Share later",
+          "findPros": "Find professionals soon"
+        },
+        "soon": "Coming soon",
+        "summary": "Your project summary"
+      }
+    },
+    "partner": {
+      "form": {
+        "companyName": "Company",
+        "contactName": "Your name",
+        "email": "Professional email",
+        "phone": "Phone",
+        "postalCode": "Postal code",
+        "radiusKm": "Service radius (km)",
+        "consent": "I agree to be contacted for the ARQWELIA pilot phase.",
+        "consentHint": "No payment, no sale, no automatic access.",
+        "submit": "Join the pilot list",
+        "success": "Thank you! Your request has been recorded.",
+        "already": "You're already on the list — thank you!"
+      },
+      "errors": {
+        "companyName": "Company required",
+        "contactName": "Name required",
+        "email": "Invalid professional email",
+        "consentRequired": "Consent required"
+      }
+    },
+    "pro": {
+      "title": "Pro Preview — demo",
+      "subtitle": "Protected demo page. No real lead is distributed in this lot.",
+      "column": {
+        "type": "Project type",
+        "zone": "Approximate zone",
+        "budget": "Budget",
+        "timeline": "Timeline",
+        "completeness": "Completeness",
+        "score": "Maturity score",
+        "contact": "Contact",
+        "interest": "Express interest"
+      },
+      "contactHidden": "Contact not revealed",
+      "interestDisabled": "Coming soon",
+      "matching": "Matching",
+      "matchingDesc": "Connecting with this homeowner will be available in a future release. No contact details are revealed in this demo.",
+      "missingInfo": "Missing information",
+      "missing": {
+        "photos": "Plot photos",
+        "measure": "Precise measurement (m)",
+        "consent": "Contact consent"
+      },
+      "zone": {
+        "southwest": "South-West (anonymized area)"
+      }
+    },
+    "nav": {
+      "howItWorks": "The journey",
+      "technology": "Technology",
+      "professionals": "Professionals",
+      "faq": "FAQ",
+      "proSection": "Pro area",
+      "startProject": "Start my project",
+      "viewDemo": "See the demo",
+      "menu": "Menu"
+    },
+    "beforeAfterTitle": "Imagine the transformation",
+    "beforeAfterDesc": "A conceptual before/after visualization, evocative not survey-accurate. Augmented reality arrives in a later lot.",
+    "iaArTag": "Artificial Intelligence & Augmented Reality",
+    "iaArTitle": "AI reads your terrain. AR projects your pool.",
+    "iaArDesc": "In production, artificial intelligence analyzes your photos and AR projects a full-scale immersive visualization. In this demonstration these capabilities are presented without pretending to be active.",
+    "iaArPoints": {
+      "vision": "AI vision — reading terrain, shadows and constraints (future feature)",
+      "ar": "Augmented reality — immersive visualization of your project (future feature)",
+      "verified": "Verified professionals — reasoned matchmaking, never automatic (future feature)"
+    },
+    "scoreTag": "Reality Score",
+    "scoreTitle": "A maturity index, transparent and honest",
+    "scoreDesc": "The Reality Score estimates the current maturity of your dossier — the more you provide, the higher it grows. In this demonstration the score relies only on your answers; no real analysis runs.",
+    "passportTag": "Project Passport",
+    "passportActions": {
+      "keep": "Keep dossier private",
+      "share": "Share later",
+      "findPro": "Find professionals"
+    },
+    "prosTag": "Verified professionals",
+    "prosTitle": "Selected pool builders, not just anyone",
+    "prosDesc": "ARQWELIA — without ever sharing your details — connects you with verified professionals. You keep the initiative to reach out. Active matchmaking is a future feature.",
+    "prosCards": {
+      "1": {
+        "name": "Atelier Méditerranée",
+        "specialty": "In-ground pools & spa",
+        "location": "South - PACA"
+      },
+      "2": {
+        "name": "Studiobleu",
+        "specialty": "Contemporary design & AR",
+        "location": "Île-de-France"
+      },
+      "3": {
+        "name": "Familia Pools",
+        "specialty": "Family & natural pools",
+        "location": "Nouvelle-Aquitaine"
+      }
+    },
+    "dashboard": {
+      "title": "ARQWELIA",
+      "subtitle": "Imagine your future pool",
+      "description": "Create a first visual project, explore two directions and prepare your Project Passport.",
+      "cta": "Discover ARQWELIA",
+      "newBadge": "New",
+      "demoBadge": "Demo"
+    }
   }
 }
