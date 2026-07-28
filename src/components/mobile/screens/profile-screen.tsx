@@ -1,6 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 
 import {
   User,
@@ -11,8 +12,11 @@ import {
   Bell,
   Shield,
   HelpCircle,
+  Sparkles,
+  ExternalLink,
 } from 'lucide-react'
 import { ModulePaywall } from '../../aquamind/module-paywall'
+import { isArqweliaLot1Enabled } from '@/lib/features'
 import type { PoolProfileLite } from '../../aquamind/app-shell'
 
 interface ProfileScreenProps {
@@ -77,6 +81,33 @@ export function ProfileScreen({ profile, onBackToLanding }: ProfileScreenProps) 
         </div>
         <ModulePaywall />
       </section>
+
+      {/* ARQWELIA — entry point from mobile */}
+      {isArqweliaLot1Enabled() && (
+        <section className="mb-5" aria-label="ARQWELIA">
+          <Link
+            href="/arqwelia"
+            className="group flex items-center gap-3 rounded-2xl border border-arq-aqua/20 bg-gradient-to-r from-arq-aqua/5 to-transparent p-4 transition-all hover:border-arq-aqua/40 hover:from-arq-aqua/10"
+            aria-label={tScr('profileArqweliaAria')}
+          >
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-arq-aqua/30 bg-arq-aqua/10 text-arq-aqua">
+              <Sparkles className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-bold text-white">ARQWELIA</p>
+                <span className="rounded-full border border-arq-aqua/30 bg-arq-aqua/10 px-1.5 py-0.5 text-[9px] font-bold text-arq-aqua">
+                  {tScr('profileNewBadge')}
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs text-white/55">
+                {tScr('profileArqweliaDesc')}
+              </p>
+            </div>
+            <ExternalLink className="h-4 w-4 shrink-0 text-arq-aqua transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        </section>
+      )}
 
       {/* Settings — placeholder list */}
       <section aria-label={tScr('profileAriaSettings')}>

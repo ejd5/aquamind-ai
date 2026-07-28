@@ -70,4 +70,66 @@ test.describe('ARQWELIA teaser gate — flag OFF', () => {
     // No CTA link to /arqwelia with "ARQWELIA" text
     await expect(page.locator('a[href="/arqwelia"]:has-text("ARQWELIA")')).toHaveCount(0, { timeout: 5_000 })
   })
+
+  test('flag OFF — no ARQWELIA nav link in landing page header', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await expect(page.locator('button:has-text("ARQWELIA")')).toHaveCount(0, { timeout: 5_000 })
+  })
+
+  test('flag OFF — no ARQWELIA section on landing page', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await expect(page.locator('#arqwelia')).toHaveCount(0, { timeout: 5_000 })
+  })
+
+  test('flag OFF — no ARQWELIA in sidebar nav', async ({ page, context, request: api }) => {
+    test.setTimeout(60_000)
+    const token = await loginAsDemoAndGetToken(api)
+    expect(token).toBeTruthy()
+    await context.addCookies([
+      {
+        name: 'next-auth.session-token', value: token!,
+        domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' as const,
+      },
+      {
+        name: 'NEXT_LOCALE', value: 'fr',
+        domain: 'localhost', path: '/', httpOnly: false, sameSite: 'Lax' as const,
+      },
+    ])
+    await page.addInitScript(() => {
+      localStorage.setItem('aqwelia_view', 'app')
+    })
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(3000)
+    // Dashboard renders
+    await expect(page.getByText('Aujourd').first()).toBeVisible({ timeout: 10_000 })
+    // No ARQWELIA button in sidebar
+    await expect(page.locator('aside button:has-text("ARQWELIA")')).toHaveCount(0, { timeout: 5_000 })
+  })
+
+  test('flag OFF — no ARQWELIA in mobile Profile screen', async ({ page, context, request: api }) => {
+    test.setTimeout(60_000)
+    const token = await loginAsDemoAndGetToken(api)
+    expect(token).toBeTruthy()
+    await context.addCookies([
+      {
+        name: 'next-auth.session-token', value: token!,
+        domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' as const,
+      },
+      {
+        name: 'NEXT_LOCALE', value: 'fr',
+        domain: 'localhost', path: '/', httpOnly: false, sameSite: 'Lax' as const,
+      },
+    ])
+    await page.addInitScript(() => {
+      localStorage.setItem('aqwelia_view', 'app')
+    })
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(3000)
+    // Check if mobile profile ARQWELIA link is absent
+    await expect(page.locator('a[href="/arqwelia"]')).toHaveCount(0, { timeout: 5_000 })
+  })
 })

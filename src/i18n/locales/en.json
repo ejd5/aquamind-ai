@@ -413,7 +413,10 @@
     "poolCopilot": "Pool copilot",
     "notConfigured": "Not configured",
     "backToLanding": "Back to landing page",
-    "ariaMainNav": "Main navigation"
+    "ariaMainNav": "Main navigation",
+    "arqwelia": "ARQWELIA",
+    "shortArqwelia": "ARQWELIA",
+    "newBadge": "New"
   },
   "navGroups": {
     "home": "Home",
@@ -429,11 +432,12 @@
     "navSimulations": "Scenarios",
     "navGains": "Savings",
     "navTarifs": "Pricing",
-    "navFaq": "FAQ",
-    "navApp": "Open app",
+"navFaq": "FAQ",
+    "navApp": "Access the app",
     "navMySpace": "My space",
     "navStart": "Start for free",
     "navHowItWorks": "See how it works",
+    "navArqwelia": "ARQWELIA",
     "headerCopilote": "Pool copilot",
     "headerAccessApp": "Open app",
     "headerSignin": "Sign in",
@@ -539,6 +543,17 @@
     "solutionDeterminist3": "(not AI).",
     "solutionDeterministText1": "We don't trust your safety to an LLM. Calculations are exact, testable, prudent.",
     "solutionDeterministText2": "AI explains, the engine calculates.",
+    "arqweliaEyebrow": "04.5. ARQWELIA",
+    "arqweliaTitle": "ARQWELIA — Your pool, before it exists",
+    "arqweliaSubtitle": "Scan your garden, explore two personalized directions and receive your Project Passport, before even contacting a professional.",
+    "arqweliaCta": "Discover ARQWELIA",
+    "arqweliaFeature1Title": "Visual inspiration",
+    "arqweliaFeature1Text": "Explore two personalized directions — Realistic and Inspiration — with finishes and volumes tailored to your property.",
+    "arqweliaFeature2Title": "AI & Visualization",
+    "arqweliaFeature2Text": "Intelligent analysis of your property, custom concepts and budget simulation in just a few clicks.",
+    "arqweliaFeature3Title": "Project Passport",
+    "arqweliaFeature3Text": "A private, structured dossier, ready to share with a partner pool builder whenever you decide.",
+    "arqweliaDisclaimer": "Conceptual visualization for inspiration purposes. Dimensions, feasibility and budget must be confirmed by a professional.",
     "comparatorEyebrow": "05. Comparison",
     "comparatorTitle": "AQWELIA vs everything else",
     "comparatorFunctionality": "Feature",
@@ -3369,7 +3384,10 @@
       "profilePrivacyData": "Privacy & data",
       "profileHelpSupport": "Help & support",
       "profileFaqContact": "FAQ + contact",
-      "profileVersionLine": "AQWELIA Pro · v1.0.0-mobile"
+      "profileVersionLine": "AQWELIA Pro · v1.0.0-mobile",
+      "profileArqweliaAria": "ARQWELIA — Your future pool",
+      "profileArqweliaDesc": "Imagine your future pool with AI",
+      "profileNewBadge": "New"
     }
   },
   "metadata": {
