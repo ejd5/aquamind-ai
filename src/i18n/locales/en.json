@@ -7379,7 +7379,9 @@
           "accessConfirm": "Access: to confirm"
         },
         "toneRealiste": "Realistic",
-        "toneInspiration": "Inspiration"
+        "toneInspiration": "Inspiration",
+        "promptHint": "Select a concept to continue",
+        "confirmHint": "Concept selected — you can continue"
       },
       "contact": {
         "title": "Create your Project Passport",

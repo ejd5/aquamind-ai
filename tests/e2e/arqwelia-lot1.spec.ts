@@ -5,7 +5,7 @@
  * with NEXT_PUBLIC_ARQWELIA_LOT1_ENABLED=true + demo mode on. No absolute
  * Chromium path — browsers installed via `npx playwright install chromium`.
  *
- * Coverage (17 scenarios, desktop + mobile projects):
+ * Coverage (19 scenarios, desktop + mobile projects):
  *  1. landing loads
  *  2. landing mobile loads
  *  3. primary CTA -> photos
@@ -137,7 +137,7 @@ test.describe('ARQWELIA Lot 1 — demo journey (FR)', () => {
     await page.goto('/arqwelia/start/analysis?demo=1')
     await page.waitForTimeout(2500)
     await page.goto('/arqwelia/start/concepts')
-    await page.locator('article').first().click()
+    await page.locator('[role="button"][tabindex="0"]').first().click()
     await expect(page.getByText(T.selectedConcept).first()).toBeVisible({ timeout: 5000 })
   })
 
@@ -159,7 +159,7 @@ test.describe('ARQWELIA Lot 1 — demo journey (FR)', () => {
     await page.waitForTimeout(3000)
     await page.goto('/arqwelia/start/concepts')
     await page.waitForTimeout(1000)
-    await page.locator('article').first().click()
+    await page.locator('[role="button"][tabindex="0"]').first().click()
     await page.waitForTimeout(500)
     await page.goto('/arqwelia/start/contact')
     const email = `e2e-${Date.now()}@e2e.dev`
@@ -297,7 +297,32 @@ test.describe('ARQWELIA Lot 1 — demo journey (FR)', () => {
     await esCtx.close()
   })
 
-  test('17. dashboard teaser CTA navigates to /arqwelia', async ({ page, context, request: api }) => {
+  test('18. public header hidden on ARQWELIA routes, visible on public pages', async ({ page }) => {
+    // Public header brand "AQWELIA" (without R) — from (public)/layout.tsx
+    const publicBrand = page.locator('header a[aria-label="AQWELIA"]')
+
+    // 18a. On /arqwelia — public header should NOT be present (ARQWELIA layout renders its own)
+    await page.goto('/arqwelia')
+    await page.waitForLoadState('networkidle')
+    await expect(publicBrand).toHaveCount(0, { timeout: 5_000 })
+
+    // 18b. On /arqwelia/start/photos — public header should NOT be present
+    await page.goto('/arqwelia/start/photos')
+    await page.waitForLoadState('networkidle')
+    await expect(publicBrand).toHaveCount(0, { timeout: 5_000 })
+
+    // 18c. On /fonctionnalites — public header SHOULD be present (not an ARQWELIA route)
+    await page.goto('/fonctionnalites')
+    await page.waitForLoadState('networkidle')
+    await expect(publicBrand).toBeVisible({ timeout: 5_000 })
+
+    // 18d. On /comment-ca-marche — public header SHOULD be present
+    await page.goto('/comment-ca-marche')
+    await page.waitForLoadState('networkidle')
+    await expect(publicBrand).toBeVisible({ timeout: 5_000 })
+  })
+
+  test('19. dashboard teaser CTA navigates to /arqwelia', async ({ page, context, request: api }) => {
     test.setTimeout(60_000)
     const token = await loginAsDemoAndGetToken(api)
     expect(token).toBeTruthy()

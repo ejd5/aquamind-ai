@@ -54,7 +54,7 @@ export default async function ArqweliaLayout({ children }: { children: React.Rea
               <span className="font-aq-display text-base font-semibold tracking-wide text-white">ARQWELIA</span>
               <span className="hidden text-[9px] font-semibold uppercase tracking-[0.2em] text-arq-gold-soft/60 sm:inline">by AQWELIA</span>
             </Link>
-            <nav className="hidden items-center gap-6 md:flex">
+            <nav aria-label="ARQWELIA navigation" className="hidden items-center gap-6 md:flex">
               <Link href="/arqwelia#parcours" className="text-[13px] font-medium text-white/60 transition-colors hover:text-white">{t('nav.howItWorks')}</Link>
               <Link href="/arqwelia#ia-ar" className="text-[13px] font-medium text-white/60 transition-colors hover:text-white">{t('nav.technology')}</Link>
               <Link href="/arqwelia#pros" className="text-[13px] font-medium text-white/60 transition-colors hover:text-white">{t('nav.professionals')}</Link>

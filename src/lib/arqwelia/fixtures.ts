@@ -19,10 +19,10 @@ export interface ArqAnalysisStep {
 }
 
 export const ANALYSIS_STEPS: ArqAnalysisStep[] = [
-  { key: 'photos', label: 'arqwelia.wizard.analysis.steps.photos', durationMs: 1200 },
-  { key: 'zone', label: 'arqwelia.wizard.analysis.steps.zone', durationMs: 1600 },
-  { key: 'constraints', label: 'arqwelia.wizard.analysis.steps.constraints', durationMs: 1800 },
-  { key: 'concepts', label: 'arqwelia.wizard.analysis.steps.concepts', durationMs: 1400 },
+  { key: 'photos', label: 'wizard.analysis.steps.photos', durationMs: 1200 },
+  { key: 'zone', label: 'wizard.analysis.steps.zone', durationMs: 1600 },
+  { key: 'constraints', label: 'wizard.analysis.steps.constraints', durationMs: 1800 },
+  { key: 'concepts', label: 'wizard.analysis.steps.concepts', durationMs: 1400 },
 ]
 
 /** Demo fixture photos (transparent/placeholder SVGs shown as garden previews). */
@@ -51,23 +51,23 @@ export function buildConcepts(q: Partial<ArqQuestionnaireData>): ArqConceptCard[
   return [
     {
       id: 'A',
-      title: 'arqwelia.wizard.concepts.cardA.title',
-      subtitle: 'arqwelia.wizard.concepts.cardA.subtitle',
+      title: 'wizard.concepts.cardA.title',
+      subtitle: 'wizard.concepts.cardA.subtitle',
       tone: 'realiste',
       dimensions: `${surf.longueur} × ${surf.largeur} m — ${surf.profondeur} m de profondeur`,
-      badgeSun: 'arqwelia.wizard.concepts.badges.sunConfirm',
-      badgeAccess: 'arqwelia.wizard.concepts.badges.accessEnginConfirm',
-      badgeBudget: `arqwelia.wizard.questionnaire.budgets.${budgetKey}`,
+      badgeSun: 'wizard.concepts.badges.sunConfirm',
+      badgeAccess: 'wizard.concepts.badges.accessEnginConfirm',
+      badgeBudget: `wizard.questionnaire.budgets.${budgetKey}`,
     },
     {
       id: 'B',
-      title: 'arqwelia.wizard.concepts.cardB.title',
-      subtitle: 'arqwelia.wizard.concepts.cardB.subtitle',
+      title: 'wizard.concepts.cardB.title',
+      subtitle: 'wizard.concepts.cardB.subtitle',
       tone: 'inspiration',
       dimensions: `${surf.longueur} × ${surf.largeur} m — variantes de profondeur`,
-      badgeSun: 'arqwelia.wizard.concepts.badges.sunConfirm',
-      badgeAccess: 'arqwelia.wizard.concepts.badges.accessConfirm',
-      badgeBudget: `arqwelia.wizard.questionnaire.budgets.${budgetKey}`,
+      badgeSun: 'wizard.concepts.badges.sunConfirm',
+      badgeAccess: 'wizard.concepts.badges.accessConfirm',
+      badgeBudget: `wizard.questionnaire.budgets.${budgetKey}`,
     },
   ]
 }
@@ -98,7 +98,7 @@ export function demoRealityScore(q: Partial<ArqQuestionnaireData>): number {
 /** Anonymous pro preview fixture — no contact revealed. */
 export const DEMO_PRO_OPPORTUNITY = {
   projectType: 'buried_pool' as ArqProjectType,
-  zoneApproxKey: 'arqwelia.pro.zone.southwest',
+  zoneApproxKey: 'pro.zone.southwest',
   budget: '25-40k' as const,
   timeline: '6-12m' as const,
   completeness: 78,

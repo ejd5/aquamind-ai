@@ -248,7 +248,7 @@ export function ArqweliaProfessionalCard({
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h4 className="font-semibold text-white">{name}</h4>
+            <h3 className="font-semibold text-white">{name}</h3>
             <span className="inline-flex items-center gap-1 rounded-full border border-arq-aqua/30 bg-arq-aqua/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-arq-aqua">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00D6C5" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
               Vérifié

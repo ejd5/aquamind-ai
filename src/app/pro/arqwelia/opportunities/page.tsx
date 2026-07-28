@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   robots: 'noindex, nofollow',
 }
 
-const MISSING_KEYS = ['arqwelia.pro.missing.photos', 'arqwelia.pro.missing.measure', 'arqwelia.pro.missing.consent'] as const
+const MISSING_KEYS = ['pro.missing.photos', 'pro.missing.measure', 'pro.missing.consent'] as const
 const MISSING_EN = ['Plot photos', 'Precise measurement (m)', 'Contact consent']
 
 export default async function ProPreviewPage({

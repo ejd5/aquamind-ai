@@ -110,6 +110,11 @@ export default async function middleware(req: NextRequest) {
   // Also set on the request headers so getRequestConfig can read it
   res.headers.set('accept-language', detected)
 
+  // Flag ARQWELIA routes so the (public) layout can suppress its own header
+  if (pathname.startsWith('/arqwelia')) {
+    res.headers.set('x-arqwelia-route', '1')
+  }
+
   // NOTE: No global anti-cache headers in production. They would hurt
   // performance for public pages (landing, marketing, etc.) and are
   // unnecessary — Next.js handles dev HMR correctly without them.
