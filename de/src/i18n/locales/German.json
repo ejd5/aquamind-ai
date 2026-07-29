@@ -413,7 +413,10 @@
     "poolCopilot": "Copilote piscine",
     "notConfigured": "Non configuré",
     "backToLanding": "Retour à la landing page",
-    "ariaMainNav": "Navigation principale"
+    "ariaMainNav": "Navigation principale",
+    "arqwelia": "ARQWELIA",
+    "shortArqwelia": "ARQWELIA",
+    "newBadge": "Nouveau"
   },
   "navGroups": {
     "home": "Accueil",
@@ -434,6 +437,7 @@
     "navMySpace": "Mon espace",
     "navStart": "Démarrer gratuitement",
     "navHowItWorks": "Voir comment ça marche",
+    "navArqwelia": "ARQWELIA",
     "headerCopilote": "Copilote piscine",
     "headerAccessApp": "Accéder à l'app",
     "headerSignin": "Connexion",
@@ -539,6 +543,17 @@
     "solutionDeterminist3": "(pas de l'IA).",
     "solutionDeterministText1": "On ne confie pas votre sécurité à un LLM. Les calculs sont exacts, testables, prudents.",
     "solutionDeterministText2": "L'IA explique, le moteur calcule.",
+    "arqweliaEyebrow": "04.5. ARQWELIA",
+    "arqweliaTitle": "ARQWELIA — Votre piscine, avant qu'elle existe",
+    "arqweliaSubtitle": "Scannez votre jardin, explorez deux directions personnalisées et recevez votre Project Passport, avant même de contacter un professionnel.",
+    "arqweliaCta": "Découvrir ARQWELIA",
+    "arqweliaFeature1Title": "Inspiration visuelle",
+    "arqweliaFeature1Text": "Explorez deux directions personnalisées — Réaliste et Inspiration — avec des finitions et volumes adaptés à votre terrain.",
+    "arqweliaFeature2Title": "IA & Visualisation",
+    "arqweliaFeature2Text": "Analyse intelligente de votre terrain, concepts sur mesure et simulation budgétaire en quelques clics.",
+    "arqweliaFeature3Title": "Project Passport",
+    "arqweliaFeature3Text": "Un dossier privé et structuré, prêt à partager avec un pisciniste partenaire quand vous le décidez.",
+    "arqweliaDisclaimer": "Visualisation conceptuelle à des fins d'inspiration. Les dimensions, la faisabilité et le budget doivent être confirmés par un professionnel.",
     "comparatorEyebrow": "05. Comparatif",
     "comparatorTitle": "AQWELIA vs tout le reste",
     "comparatorFunctionality": "Fonctionnalité",
@@ -3371,7 +3386,10 @@
       "profilePrivacyData": "Confidentialité & données",
       "profileHelpSupport": "Aide & support",
       "profileFaqContact": "FAQ + contact",
-      "profileVersionLine": "AQWELIA Pro · v1.0.0-mobile"
+      "profileVersionLine": "AQWELIA Pro · v1.0.0-mobile",
+      "profileArqweliaAria": "ARQWELIA — Votre future piscine",
+      "profileArqweliaDesc": "Imaginez votre future piscine avec l'IA",
+      "profileNewBadge": "Nouveau"
     }
   },
   "metadata": {
