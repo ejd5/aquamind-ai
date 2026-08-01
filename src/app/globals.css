@@ -68,6 +68,30 @@
   --shadow-aq-lg: var(--aqwelia-shadow-lg);
   --font-display-aq: var(--aqwelia-font-display);
   --font-body-aq: var(--aqwelia-font-body);
+  /* ARQWELIA — namespaced tokens (CSS-first). Map to the --arqwelia-*
+     variables declared in :root so Tailwind v4 compiles the arq-*
+     utilities (text-arq-*, bg-arq-*, border-arq-*, from/via/to-arq-*,
+     shadow-arq-*) used across /arqwelia/*, /pro/arqwelia/* and the
+     consumer dashboard teaser. Additive only — see docs/ARQWELIA_LOT1.md. */
+  --color-arq-navy: var(--arqwelia-navy);
+  --color-arq-navy-2: var(--arqwelia-navy-2);
+  --color-arq-navy-deep: var(--arqwelia-navy-deep);
+  --color-arq-aqua: var(--arqwelia-aqua);
+  --color-arq-aqua-bright: var(--arqwelia-aqua-bright);
+  --color-arq-cyan: var(--arqwelia-cyan);
+  --color-arq-sand: var(--arqwelia-sand);
+  --color-arq-mist: var(--arqwelia-mist);
+  --color-arq-ink: var(--arqwelia-ink);
+  --color-arq-ink-2: var(--arqwelia-ink-2);
+  --color-arq-champagne: var(--arqwelia-champagne);
+  --color-arq-gold-soft: var(--arqwelia-gold-soft);
+  --color-arq-border: var(--arqwelia-border);
+  --color-arq-border-strong: var(--arqwelia-border-strong);
+  --color-arq-border-gold: var(--arqwelia-border-gold);
+  --shadow-arq-deep: var(--arqwelia-shadow-deep);
+  --shadow-arq-glow: var(--arqwelia-glow-aqua);
+  --shadow-arq-glow-strong: var(--arqwelia-glow-aqua-strong);
+  --shadow-arq-aqua: var(--arqwelia-aqua);
 }
 
 :root {
