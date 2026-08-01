@@ -42,7 +42,6 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
   const NAV_LINKS = [
     { id: 'probleme', label: t('navProblem') },
     { id: 'solution', label: t('navSolution') },
-    ...(isArqweliaLot1Enabled() ? [{ id: 'arqwelia', label: t('navArqwelia') }] : []),
     { id: 'comparatif', label: t('navComparatif') },
     { id: 'simulations', label: t('navSimulations') },
     { id: 'gains', label: t('navGains') },
@@ -99,6 +98,21 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
                 {link.label}
               </button>
             ))}
+            {isArqweliaLot1Enabled() && (
+              <Link
+                href="/arqwelia"
+                className="relative ml-1 inline-flex items-center gap-1.5 rounded-full border border-arq-aqua/30 bg-gradient-to-r from-arq-aqua/10 to-transparent px-3.5 py-1.5 text-sm font-bold text-arq-aqua transition-all hover:border-arq-aqua/60 hover:from-arq-aqua/20 hover:shadow-[0_0_20px_-4px_var(--arqwelia-aqua)]"
+                aria-label={t('navArqwelia')}
+              >
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-arq-aqua/20">
+                  <span className="h-2 w-2 rounded-full bg-arq-aqua" />
+                </span>
+                {t('navArqwelia')}
+                <span className="rounded-full border border-arq-aqua/30 bg-arq-aqua/10 px-1.5 py-0.5 text-[9px] font-bold text-arq-aqua">
+                  {t('navNewBadge')}
+                </span>
+              </Link>
+            )}
           </nav>
 
           {/* Desktop CTA */}
@@ -163,6 +177,22 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
                     {link.label}
                   </button>
                 ))}
+                {isArqweliaLot1Enabled() && (
+                  <Link
+                    href="/arqwelia"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-2 rounded-lg border border-arq-aqua/30 bg-gradient-to-r from-arq-aqua/10 to-transparent px-3 py-2.5 text-left text-sm font-bold text-arq-aqua transition-colors hover:border-arq-aqua/60 hover:from-arq-aqua/20"
+                    aria-label={t('navArqwelia')}
+                  >
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-arq-aqua/20">
+                      <span className="h-2.5 w-2.5 rounded-full bg-arq-aqua" />
+                    </span>
+                    {t('navArqwelia')}
+                    <span className="ml-auto rounded-full border border-arq-aqua/30 bg-arq-aqua/10 px-1.5 py-0.5 text-[9px] font-bold text-arq-aqua">
+                      {t('navNewBadge')}
+                    </span>
+                  </Link>
+                )}
                 <button
                   onClick={() => {
                     onEnterApp()
