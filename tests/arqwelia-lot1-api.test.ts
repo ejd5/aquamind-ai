@@ -10,7 +10,7 @@
  *
  * Uses a real test SQLite DB so the happy path also runs end-to-end.
  */
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 // Stub server analytics so no PostHog calls fire during tests.
@@ -21,6 +21,7 @@ vi.mock('@/lib/analytics-server', () => ({
 import { POST as createProject } from '@/app/api/arqwelia/project/route'
 import { POST as joinWaitlist } from '@/app/api/arqwelia/partner-waitlist/route'
 import { db } from '@/lib/db'
+import { resetRateLimitsForTests } from '@/lib/rate-limit'
 
 const NOW = Date.now()
 const createdProjectIds: string[] = []
@@ -40,6 +41,11 @@ async function call(handler: typeof createProject, body: unknown, url = '/api/ar
 }
 
 describe('ARQWELIA Lot 1 — API validation', () => {
+  beforeEach(() => {
+    // Keep the per-hour rate-limit buckets from leaking between tests.
+    resetRateLimitsForTests()
+  })
+
   afterAll(async () => {
     // Clean up any rows we created.
     if (createdEmails.length) {
@@ -152,7 +158,7 @@ describe('ARQWELIA Lot 1 — API validation', () => {
     expect(json.errors.consent).toBeTruthy()
   })
 
-  it('partner waitlist dedups by email', async () => {
+  it('partner waitlist dedups by email (generic response, no enumeration)', async () => {
     const email = `dup-${NOW}@e2e.dev`
     createdEmails.push(email)
     const first = await call(joinWaitlist as any, {
@@ -165,14 +171,18 @@ describe('ARQWELIA Lot 1 — API validation', () => {
       consent: true,
     }, '/api/arqwelia/partner-waitlist')
     expect(first.status).toBe(200)
-    expect(first.json.exists).toBe(false)
+    expect(first.json.ok).toBe(true)
     const second = await call(joinWaitlist as any, {
       companyName: 'Other',
       contactName: 'John',
       email,
       consent: true,
     }, '/api/arqwelia/partner-waitlist')
+    // Identical response for existing emails — no exploitable distinction.
     expect(second.status).toBe(200)
-    expect(second.json.exists).toBe(true)
+    expect(second.json.ok).toBe(true)
+    expect(second.json.exists).toBeUndefined()
+    const count = await db.arqweliaPartnerWaitlist.count({ where: { email } })
+    expect(count).toBe(1)
   })
 })

@@ -38,10 +38,12 @@ export function TurnstileWidget({
   siteKey,
   onToken,
   onError,
+  action = 'signup',
 }: {
   siteKey: string
   onToken: (token: string | null) => void
   onError: () => void
+  action?: string
 }) {
   const hostRef = useRef<HTMLDivElement>(null)
   const widgetIdRef = useRef<string | null>(null)
@@ -51,7 +53,7 @@ export function TurnstileWidget({
   useEffect(() => {
     onTokenRef.current = onToken
     onErrorRef.current = onError
-  }, [onError, onToken])
+  }, [onToken, onError])
 
   useEffect(() => {
     let cancelled = false
@@ -59,7 +61,7 @@ export function TurnstileWidget({
       if (cancelled || !hostRef.current || !window.turnstile) return
       widgetIdRef.current = window.turnstile.render(hostRef.current, {
         sitekey: siteKey,
-        action: 'signup',
+        action,
         theme: 'auto',
         size: 'flexible',
         callback: (token: string) => onTokenRef.current(token),
@@ -75,7 +77,7 @@ export function TurnstileWidget({
       if (widgetIdRef.current && window.turnstile) window.turnstile.remove(widgetIdRef.current)
       widgetIdRef.current = null
     }
-  }, [siteKey])
+  }, [siteKey, action])
 
   return <div ref={hostRef} className="min-h-[65px] w-full overflow-hidden rounded-xl" />
 }

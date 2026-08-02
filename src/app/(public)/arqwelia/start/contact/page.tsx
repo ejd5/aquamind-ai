@@ -7,10 +7,10 @@ import Link from 'next/link'
 import { useWizardStore } from '@/lib/arqwelia/wizard-store'
 import { ARQ_CONSENT_VERSION } from '@/lib/arqwelia/types'
 import { arqTrackClient } from '@/lib/arqwelia/analytics-client'
+import { TurnstileWidget } from '@/components/security/turnstile-widget'
 import {
   ArqweliaGlassCard,
   ArqweliaLabel,
-  ArqweliaFutureFeature,
   ArqweliaPrimaryButton,
 } from '@/components/arqwelia/ui'
 
@@ -19,11 +19,16 @@ export default function ContactStep() {
   const router = useRouter()
   const store = useWizardStore()
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [formError, setFormError] = useState<string | null>(null)
   const [status, setStatus] = useState<'idle' | 'loading'>('idle')
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [turnstileError, setTurnstileError] = useState(false)
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ''
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setErrors({})
+    setFormError(null)
     setStatus('loading')
     try {
       const res = await fetch('/api/arqwelia/project', {
@@ -34,6 +39,7 @@ export default function ContactStep() {
           selectedConcept: store.selectedConcept,
           contact: { ...store.contact, consentVersion: ARQ_CONSENT_VERSION },
           demoMode: store.demoMode,
+          turnstileToken,
         }),
       })
       const data = await res.json()
@@ -42,12 +48,20 @@ export default function ContactStep() {
         void arqTrackClient('arq_project_created', { publicId: data.publicId })
         try { sessionStorage.setItem('arqwelia-result', JSON.stringify(data)) } catch {}
         router.push('/arqwelia/start/success')
+      } else if (res.status === 429) {
+        setFormError(t('wizard.errors.rateLimit'))
+      } else if (res.status === 403) {
+        setFormError(data?.errors?.turnstile || t('wizard.errors.turnstileFailed'))
+      } else if (data?.errors) {
+        setErrors(data.errors)
+        if (data.errors.generic) setFormError(data.errors.generic)
       } else {
-        if (data.errors) setErrors(data.errors)
-        setStatus('idle')
+        setFormError(t('wizard.errors.internal'))
       }
+      setStatus('idle')
     } catch {
       setStatus('idle')
+      setFormError(t('wizard.errors.internal'))
     }
   }
 
@@ -67,6 +81,12 @@ export default function ContactStep() {
         </p>
       </ArqweliaGlassCard>
 
+      {formError && (
+        <p role="alert" className="mt-6 rounded-lg border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-300">
+          {formError}
+        </p>
+      )}
+
       <form onSubmit={onSubmit} className="mt-6 space-y-5" noValidate>
         <div>
           <label className="mb-0 block text-xs font-semibold text-white/65">{t('wizard.contact.firstName')}</label>
@@ -81,7 +101,8 @@ export default function ContactStep() {
           </div>
           <div>
             <label className="mb-0 block text-xs font-semibold text-white/65">{t('wizard.contact.phone')}</label>
-            <input className={fieldCls} value={store.contact.phone} onChange={(e) => store.setContact({ phone: e.target.value })} aria-label={t('wizard.contact.phone')} />
+            <input className={fieldCls} value={store.contact.phone} onChange={(e) => store.setContact({ phone: e.target.value })} aria-invalid={!!errors.phone} aria-label={t('wizard.contact.phone')} />
+            {errors.phone && <p className="mt-1 text-xs text-red-400">{errors.phone}</p>}
           </div>
         </div>
         <div>
@@ -107,7 +128,25 @@ export default function ContactStep() {
           {errors.consent && <p className="mt-2 text-xs text-red-400">{errors.consent}</p>}
         </ArqweliaGlassCard>
 
-        <ArqweliaPrimaryButton type="submit" disabled={status === 'loading'} className="w-full">
+        {turnstileSiteKey ? (
+          <div>
+            <TurnstileWidget
+              siteKey={turnstileSiteKey}
+              action="arqwelia_contact"
+              onToken={setTurnstileToken}
+              onError={() => setTurnstileError(true)}
+            />
+            {(turnstileError || errors.turnstile) && (
+              <p role="alert" className="mt-1 text-xs text-red-400">{t('wizard.errors.turnstileFailed')}</p>
+            )}
+          </div>
+        ) : null}
+
+        <ArqweliaPrimaryButton
+          type="submit"
+          disabled={status === 'loading' || (Boolean(turnstileSiteKey) && !turnstileToken)}
+          className="w-full"
+        >
           {status === 'loading' ? '…' : t('wizard.submit')}
         </ArqweliaPrimaryButton>
       </form>

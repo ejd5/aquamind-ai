@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 type Bucket = { count: number; resetAt: number }
 
 const globalStore = globalThis as typeof globalThis & {
@@ -13,11 +15,17 @@ export interface RateLimitResult {
   retryAfterSeconds: number
 }
 
-function clientIdentifier(request: Request): string {
-  const realIp = request.headers.get('x-real-ip')?.trim()
-  if (realIp) return realIp
-  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-  return forwarded || 'unknown'
+/**
+ * Stable server-side fingerprint for a client. The raw IP is NEVER stored or
+ * logged: we derive a non-reversible SHA-256 digest so the in-memory buckets
+ * only ever hold opaque hashes (privacy requirement for PII-accepting routes).
+ */
+function clientFingerprint(request: Request): string {
+  const raw =
+    request.headers.get('x-real-ip')?.trim() ||
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    'unknown'
+  return createHash('sha256').update(raw).digest('hex').slice(0, 32)
 }
 
 /**
@@ -31,7 +39,7 @@ export function checkRateLimit(
   windowMs: number,
   now = Date.now()
 ): RateLimitResult {
-  const key = `${namespace}:${clientIdentifier(request)}`
+  const key = `${namespace}:${clientFingerprint(request)}`
   const existing = buckets.get(key)
   const bucket = !existing || existing.resetAt <= now
     ? { count: 0, resetAt: now + windowMs }
