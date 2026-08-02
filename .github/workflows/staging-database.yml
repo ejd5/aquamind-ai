@@ -25,8 +25,15 @@ jobs:
     env:
       STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
       STAGING_DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+      # Expected canonical target fingerprint, provided by the GitHub
+      # `staging` environment variable (NOT a secret). The guard step below
+      # fails before any Prisma command if the resolved target does not match
+      # this fingerprint. No value is hardcoded here.
+      STAGING_DATABASE_TARGET_FINGERPRINT: ${{ vars.STAGING_DATABASE_TARGET_FINGERPRINT }}
     steps:
       - uses: actions/checkout@v4
+      - name: Verify canonical staging database target
+        run: node scripts/verify-database-target-fingerprint.mjs
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: '1.3.4'
