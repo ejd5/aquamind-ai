@@ -115,6 +115,33 @@ describe('ARQWELIA P0 — endpoint security', () => {
     expect(json.errors.turnstile).toBeTruthy()
   })
 
+  it('passes the real request hostname + action to the Turnstile verifier', async () => {
+    const email = `host-${NOW}@e2e.dev`
+    createdEmails.push(email)
+    const req = makeReq('/api/arqwelia/project', { ...validProjectBody(email), turnstileToken: 't' })
+    const res = await createProject(req)
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    const row = await db.arqweliaProject.findUnique({ where: { publicId: json.publicId } })
+    if (row) createdProjectIds.push(row.id)
+    const lastCall = vi.mocked(verifyArqweliaTurnstile).mock.calls.at(-1)
+    expect(lastCall?.[0]?.expectedAction).toBe('arqwelia_contact')
+    expect(lastCall?.[0]?.expectedHostname).toBe('localhost')
+
+    const partnerEmail = `host-p-${NOW}@e2e.dev`
+    createdEmails.push(partnerEmail)
+    const waitlistReq = makeReq('/api/arqwelia/partner-waitlist', {
+      companyName: 'Piscines H',
+      contactName: 'Jane',
+      email: partnerEmail,
+      consent: true,
+    })
+    await joinWaitlist(waitlistReq)
+    const waitlistCall = vi.mocked(verifyArqweliaTurnstile).mock.calls.at(-1)
+    expect(waitlistCall?.[0]?.expectedAction).toBe('arqwelia_partner')
+    expect(waitlistCall?.[0]?.expectedHostname).toBe('localhost')
+  })
+
   it('project endpoint returns 429 with Retry-After after 5 requests/hour', async () => {
     for (let i = 0; i < 5; i++) {
       const res = await createProject(makeReq('/api/arqwelia/project', {}))
@@ -202,11 +229,14 @@ describe('ARQWELIA P0 — endpoint security', () => {
     expect(serialized).not.toContain('DUMMY_TURNSTILE_TOKEN')
     expect(serialized).not.toContain('Piscines P0')
 
-    // Waitlist distinct id must be an opaque hash, never the raw email.
+    // The distinct id must be the opaque random Prisma row id — never the raw
+    // email and never a direct SHA-256(email) digest.
     const waitlistCall = calls.find(([event]) => event === 'arq_pro_waitlist_submitted')
     expect(waitlistCall).toBeTruthy()
-    const distinctId = waitlistCall![2]
-    expect(distinctId).toMatch(/^[0-9a-f]{64}$/)
+    const distinctId = waitlistCall![2] as string
+    expect(distinctId).toMatch(/^arq_partner_c[a-z0-9]{20,}$/)
     expect(distinctId).not.toBe(partnerEmail)
+    expect(distinctId).not.toMatch(/^[0-9a-f]{64}$/) // NOT a direct sha256(email)
+    expect(distinctId).not.toContain(partnerEmail)
   })
 })

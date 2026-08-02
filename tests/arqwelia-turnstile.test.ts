@@ -52,15 +52,83 @@ describe('ARQWELIA Turnstile verification', () => {
     vi.stubEnv('NODE_ENV', 'development')
     vi.stubEnv('TURNSTILE_SECRET_KEY', 'secret')
     const fetchMock = vi.fn(async (_input: unknown, init?: RequestInit): Promise<Response> => {
-      return new Response(JSON.stringify({ success: true }), { status: 200 })
+      return new Response(JSON.stringify({ success: true, action: 'arqwelia_contact', hostname: 'localhost' }), { status: 200 })
     })
     vi.stubGlobal('fetch', fetchMock)
-    const result = await verifyTurnstileToken({ token: 'valid-token', expectedAction: 'arqwelia_contact' })
+    const result = await verifyTurnstileToken({
+      token: 'valid-token',
+      expectedAction: 'arqwelia_contact',
+      expectedHostname: 'localhost',
+    })
     expect(result.success).toBe(true)
     const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body ?? '{}'))
     expect(body.secret).toBe('secret')
     expect(body.response).toBe('valid-token')
     // The token must never be logged — nothing here should echo it.
+  })
+
+  it('accepts when action is present and matches (success true + action correct)', async () => {
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.stubEnv('TURNSTILE_SECRET_KEY', 'secret')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ success: true, action: 'arqwelia_contact' }), { status: 200 })))
+    const result = await verifyTurnstileToken({ token: 't', expectedAction: 'arqwelia_contact' })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects when the action is ABSENT on the verified token', async () => {
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.stubEnv('TURNSTILE_SECRET_KEY', 'secret')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ success: true }), { status: 200 })))
+    const result = await verifyTurnstileToken({ token: 't', expectedAction: 'arqwelia_contact' })
+    expect(result.success).toBe(false)
+    expect(result.reason).toBe('turnstile_action_mismatch')
+  })
+
+  it('rejects when the action is present but different', async () => {
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.stubEnv('TURNSTILE_SECRET_KEY', 'secret')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ success: true, action: 'signup' }), { status: 200 })))
+    const result = await verifyTurnstileToken({ token: 't', expectedAction: 'arqwelia_contact' })
+    expect(result.success).toBe(false)
+    expect(result.reason).toBe('turnstile_action_mismatch')
+  })
+
+  it('accepts when hostname is present and matches', async () => {
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.stubEnv('TURNSTILE_SECRET_KEY', 'secret')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ success: true, action: 'arqwelia_contact', hostname: 'arqwelia.example.com' }), { status: 200 })))
+    const result = await verifyTurnstileToken({
+      token: 't',
+      expectedAction: 'arqwelia_contact',
+      expectedHostname: 'arqwelia.example.com',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects when hostname is absent but expected', async () => {
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.stubEnv('TURNSTILE_SECRET_KEY', 'secret')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ success: true, action: 'arqwelia_contact' }), { status: 200 })))
+    const result = await verifyTurnstileToken({
+      token: 't',
+      expectedAction: 'arqwelia_contact',
+      expectedHostname: 'arqwelia.example.com',
+    })
+    expect(result.success).toBe(false)
+    expect(result.reason).toBe('turnstile_hostname_mismatch')
+  })
+
+  it('rejects when hostname differs from the expected one', async () => {
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.stubEnv('TURNSTILE_SECRET_KEY', 'secret')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ success: true, action: 'arqwelia_contact', hostname: 'evil.example.com' }), { status: 200 })))
+    const result = await verifyTurnstileToken({
+      token: 't',
+      expectedAction: 'arqwelia_contact',
+      expectedHostname: 'arqwelia.example.com',
+    })
+    expect(result.success).toBe(false)
+    expect(result.reason).toBe('turnstile_hostname_mismatch')
   })
 
   it('reports unavailable when the siteverify service errors', async () => {
@@ -78,14 +146,6 @@ describe('ARQWELIA Turnstile verification', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ success: false, 'error-codes': ['invalid-input-response'] }), { status: 200 })))
     const result = await verifyTurnstileToken({ token: 'bad-token', expectedAction: 'arqwelia_contact' })
     expect(result.success).toBe(false)
-  })
-
-  it('rejects an action mismatch', async () => {
-    vi.stubEnv('NODE_ENV', 'development')
-    vi.stubEnv('TURNSTILE_SECRET_KEY', 'secret')
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ success: true, action: 'signup' }), { status: 200 })))
-    const result = await verifyTurnstileToken({ token: 'valid-token', expectedAction: 'arqwelia_contact' })
-    expect(result.success).toBe(false)
-    expect(result.reason).toBe('turnstile_action_mismatch')
+    expect(result.reason).toBe('invalid-input-response')
   })
 })

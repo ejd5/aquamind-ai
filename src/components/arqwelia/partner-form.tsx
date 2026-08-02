@@ -3,6 +3,13 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { TurnstileWidget } from '@/components/security/turnstile-widget'
+import {
+  rotateTurnstileForm,
+  canSubmitTurnstileForm,
+  isTurnstileFormBlocked,
+  EMPTY_TURNSTILE_FORM_STATE,
+  type TurnstileFormState,
+} from '@/lib/arqwelia/turnstile-form'
 
 /**
  * ARQWELIA Lot 1 — Pisciniste partner waitlist form.
@@ -24,12 +31,26 @@ export function ArqweliaPartnerForm() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
-  const [turnstileError, setTurnstileError] = useState(false)
+  const [turnstile, setTurnstile] = useState<TurnstileFormState>(EMPTY_TURNSTILE_FORM_STATE)
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ''
+  const turnstileBlocked = isTurnstileFormBlocked({
+    isProduction: process.env.NODE_ENV === 'production',
+    siteKey: turnstileSiteKey,
+  })
+
+  // Any failed submission spent the single-use token — rotate and force a fresh one.
+  function failSubmission(formErrorKey: string, fieldErrors?: Record<string, string>) {
+    setFormError(formErrorKey)
+    if (fieldErrors) setErrors(fieldErrors)
+    setStatus('error')
+    setTurnstile((prev) => rotateTurnstileForm(prev))
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!canSubmitTurnstileForm({ blocked: turnstileBlocked, siteKey: turnstileSiteKey, hasToken: Boolean(turnstile.token) })) {
+      return
+    }
     setErrors({})
     setFormError(null)
     setStatus('loading')
@@ -37,28 +58,22 @@ export function ArqweliaPartnerForm() {
       const res = await fetch('/api/arqwelia/partner-waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, consent, turnstileToken }),
+        body: JSON.stringify({ ...form, consent, turnstileToken: turnstile.token }),
       })
       const data = await res.json()
       if (res.ok) {
         setStatus('success')
       } else if (res.status === 429) {
-        setFormError(t('partner.errors.rateLimit'))
-        setStatus('error')
+        failSubmission(t('partner.errors.rateLimit'))
       } else if (res.status === 403) {
-        setFormError(data?.errors?.turnstile || t('partner.errors.turnstileFailed'))
-        setStatus('error')
+        failSubmission(data?.errors?.turnstile || t('partner.errors.turnstileFailed'))
       } else if (data?.errors) {
-        setErrors(data.errors)
-        if (data.errors.generic) setFormError(data.errors.generic)
-        setStatus('error')
+        failSubmission(data.errors.generic || t('partner.errors.internal'), data.errors)
       } else {
-        setFormError(t('partner.errors.internal'))
-        setStatus('error')
+        failSubmission(t('partner.errors.internal'))
       }
     } catch {
-      setFormError(t('partner.errors.internal'))
-      setStatus('error')
+      failSubmission(t('partner.errors.internal'))
     }
   }
 
@@ -167,22 +182,31 @@ export function ArqweliaPartnerForm() {
       </label>
       <p className="-mt-2 text-[11px] text-white/35">{t('partner.form.consentHint')}</p>
       {errors.consent && <p className="text-xs text-red-400">{errors.consent}</p>}
-      {turnstileSiteKey ? (
+      {turnstileBlocked ? (
+        <p role="alert" className="rounded-lg border border-white/15 bg-white/[0.04] p-3 text-sm text-white/70">
+          {t('partner.errors.formUnavailable')}
+        </p>
+      ) : turnstileSiteKey ? (
         <div>
           <TurnstileWidget
+            key={turnstile.widgetKey}
             siteKey={turnstileSiteKey}
             action="arqwelia_partner"
-            onToken={setTurnstileToken}
-            onError={() => setTurnstileError(true)}
+            onToken={(token) => setTurnstile((prev) => ({ ...prev, token }))}
+            onError={() => setTurnstile((prev) => ({ ...prev, error: true }))}
           />
-          {(turnstileError || errors.turnstile) && (
+          {(turnstile.error || errors.turnstile) && (
             <p role="alert" className="mt-1 text-xs text-red-400">{t('partner.errors.turnstileFailed')}</p>
           )}
         </div>
       ) : null}
       <button
         type="submit"
-        disabled={status === 'loading' || (Boolean(turnstileSiteKey) && !turnstileToken)}
+        disabled={!canSubmitTurnstileForm({
+          blocked: turnstileBlocked,
+          siteKey: turnstileSiteKey,
+          hasToken: Boolean(turnstile.token),
+        }) || status === 'loading'}
         className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-arq-aqua px-8 py-3.5 text-sm font-bold text-arq-navy transition-transform hover:scale-[1.01] disabled:opacity-50 sm:w-auto"
       >
         {status === 'loading' ? '…' : t('partner.form.submit')}

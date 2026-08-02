@@ -19,6 +19,7 @@ export async function verifyArqweliaTurnstile(params: {
   token: string
   remoteIp?: string | null
   expectedAction: string
+  expectedHostname?: string
 }): Promise<ArqweliaBotCheck> {
   if (process.env.NODE_ENV === 'production' && !process.env.TURNSTILE_SECRET_KEY) {
     return { success: false, reason: 'turnstile_not_configured' }

@@ -7323,7 +7323,8 @@
         "turnstileFailed": "La vérification anti-robot a échoué. Actualisez la page puis réessayez.",
         "turnstileUnavailable": "La vérification anti-robot est indisponible. Réessayez dans quelques instants.",
         "rateLimit": "Trop de tentatives. Réessayez dans une heure.",
-        "internal": "Une erreur est survenue. Réessayez."
+        "internal": "Une erreur est survenue. Réessayez.",
+        "formUnavailable": "Ce formulaire est temporairement indisponible. Réessayez plus tard."
       },
       "photos": {
         "title": "Ajoutez vos photos",
@@ -7466,7 +7467,8 @@
         "turnstileFailed": "La vérification anti-robot a échoué. Actualisez la page puis réessayez.",
         "turnstileUnavailable": "La vérification anti-robot est indisponible. Réessayez dans quelques instants.",
         "rateLimit": "Trop de tentatives. Réessayez dans une heure.",
-        "internal": "Une erreur est survenue. Réessayez."
+        "internal": "Une erreur est survenue. Réessayez.",
+        "formUnavailable": "Ce formulaire est temporairement indisponible. Réessayez plus tard."
       }
     },
     "pro": {

@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
     token: turnstileToken,
     remoteIp,
     expectedAction: 'arqwelia_contact',
+    expectedHostname: req.nextUrl.hostname,
   })
   if (!turnstile.success) {
     const key = turnstile.reason === 'turnstile_unavailable' ? 'turnstileUnavailable' : 'turnstileFailed'

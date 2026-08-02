@@ -7320,7 +7320,8 @@
         "turnstileFailed": "The anti-bot check failed. Refresh the page and try again.",
         "turnstileUnavailable": "The anti-bot check is unavailable. Please try again shortly.",
         "rateLimit": "Too many attempts. Please try again in an hour.",
-        "internal": "An error occurred. Please try again."
+        "internal": "An error occurred. Please try again.",
+        "formUnavailable": "This form is temporarily unavailable. Please try again later."
       },
       "photos": {
         "title": "Add your photos",
@@ -7463,7 +7464,8 @@
         "turnstileFailed": "The anti-bot check failed. Refresh the page and try again.",
         "turnstileUnavailable": "The anti-bot check is unavailable. Please try again shortly.",
         "rateLimit": "Too many attempts. Please try again in an hour.",
-        "internal": "An error occurred. Please try again."
+        "internal": "An error occurred. Please try again.",
+        "formUnavailable": "This form is temporarily unavailable. Please try again later."
       }
     },
     "pro": {

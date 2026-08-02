@@ -15,7 +15,6 @@
  * - No PII in analytics (the distinct id is an opaque hash, not the email).
  * - Generic errors — no PII in logs, tokens never logged.
  */
-import { createHash } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { db } from '@/lib/db'
@@ -61,6 +60,7 @@ export async function POST(req: NextRequest) {
     token: turnstileToken,
     remoteIp,
     expectedAction: 'arqwelia_partner',
+    expectedHostname: req.nextUrl.hostname,
   })
   if (!turnstile.success) {
     const key = turnstile.reason === 'turnstile_unavailable' ? 'turnstileUnavailable' : 'turnstileFailed'
@@ -107,9 +107,9 @@ export async function POST(req: NextRequest) {
   // whether the row was just created or already existed. This prevents an
   // attacker from probing which emails are already registered.
   try {
-    const existing = await db.arqweliaPartnerWaitlist.findUnique({ where: { email } })
-    if (!existing) {
-      await db.arqweliaPartnerWaitlist.create({
+    let row = await db.arqweliaPartnerWaitlist.findUnique({ where: { email } })
+    if (!row) {
+      row = await db.arqweliaPartnerWaitlist.create({
         data: {
           companyName,
           contactName,
@@ -122,9 +122,11 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Analytics — fire-and-forget. NEVER include PII or the email.
-    // distinctId is an opaque hash, not the raw email.
-    const distinctId = createHash('sha256').update(email).digest('hex')
+    // Analytics — fire-and-forget. NEVER include PII and NEVER derive the
+    // distinct id from the email (no raw email, no SHA-256(email), no phone,
+    // no full postal code, no company or contact name). We use the opaque,
+    // random Prisma row id so the id reveals nothing about the lead.
+    const distinctId = `arq_partner_${row.id}`
     void trackEventServer(
       'arq_pro_waitlist_submitted',
       {
