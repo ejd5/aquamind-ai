@@ -87,24 +87,31 @@ export function ProfileScreen({ profile, onBackToLanding }: ProfileScreenProps) 
         <section className="mb-5" aria-label="ARQWELIA">
           <Link
             href="/arqwelia"
-            className="group flex items-center gap-3 rounded-2xl border border-arq-aqua/20 bg-gradient-to-r from-arq-aqua/5 to-transparent p-4 transition-all hover:border-arq-aqua/40 hover:from-arq-aqua/10"
+            className="group flex items-center gap-3 rounded-2xl border border-white/15 p-4 shadow-[var(--arqwelia-shadow-deep)] transition-all hover:border-white/30"
+            style={{ background: 'var(--arqwelia-gradient-card)' }}
             aria-label={tScr('profileArqweliaAria')}
           >
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-arq-aqua/30 bg-arq-aqua/10 text-arq-aqua">
+            <span
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border"
+              style={{ borderColor: 'rgba(0, 214, 197, 0.30)', background: 'rgba(0, 214, 197, 0.12)', color: 'var(--arqwelia-aqua)' }}
+            >
               <Sparkles className="h-5 w-5" />
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <p className="text-sm font-bold text-white">ARQWELIA</p>
-                <span className="rounded-full border border-arq-aqua/30 bg-arq-aqua/10 px-1.5 py-0.5 text-[9px] font-bold text-arq-aqua">
+                <span
+                  className="rounded-full border border-white/25 px-1.5 py-0.5 text-[9px] font-bold"
+                  style={{ color: 'var(--arqwelia-aqua-bright)', background: 'rgba(0, 214, 197, 0.15)' }}
+                >
                   {tScr('profileNewBadge')}
                 </span>
               </div>
-              <p className="mt-0.5 text-xs text-white/55">
+              <p className="mt-0.5 text-xs text-white/75">
                 {tScr('profileArqweliaDesc')}
               </p>
             </div>
-            <ExternalLink className="h-4 w-4 shrink-0 text-arq-aqua transition-transform group-hover:translate-x-0.5" />
+            <ExternalLink className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: 'var(--arqwelia-aqua)' }} />
           </Link>
         </section>
       )}

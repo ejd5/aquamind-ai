@@ -355,15 +355,16 @@ test.describe('ARQWELIA Lot 1 — demo journey (FR)', () => {
   test('20. landing page header shows ARQWELIA nav link', async ({ page }) => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
-    // Desktop: nav link is visible in the header
+    // Desktop: nav link is visible in the header (rendered as <a>, not <button>)
     // Mobile: open the hamburger menu to reveal the nav link
-    const desktopNav = page.locator('header nav button:has-text("ARQWELIA")').first()
+    const desktopNav = page.locator('header nav a:has-text("ARQWELIA")').first()
     if (await desktopNav.isVisible().catch(() => false)) {
       await expect(desktopNav).toBeVisible()
+      await expect(desktopNav).toHaveAttribute('href', '/arqwelia')
     } else {
       await page.getByRole('button', { name: 'Ouvrir le menu' }).click()
       await page.waitForTimeout(300)
-      await expect(page.getByRole('button', { name: 'ARQWELIA' }).first()).toBeVisible({ timeout: 10_000 })
+      await expect(page.getByRole('link', { name: 'ARQWELIA' }).first()).toBeVisible({ timeout: 10_000 })
     }
   })
 
