@@ -1,11 +1,11 @@
 /**
  * Unit tests for scripts/verify-database-target-fingerprint.mjs.
  *
- * Uses only Node's built-in test runner and fake URLs. The script is executed
- * as a subprocess so we can assert on exit code and stdout/stderr. No
- * connection strings, no secrets, no external dependencies.
+ * Uses Vitest and fake URLs. The script is executed as a subprocess so we can
+ * assert on exit code and stdout/stderr. No connection strings, no secrets,
+ * no external services.
  */
-import { test } from 'node:test'
+import { test } from 'vitest'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
