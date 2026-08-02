@@ -38,6 +38,7 @@
  */
 import type { MetadataRoute } from 'next'
 import { SITE_URL } from '@/lib/seo'
+import { isArqweliaLot1Enabled } from '@/lib/features'
 
 export const dynamic = 'force-static'
 
@@ -122,7 +123,13 @@ const STATIC_ENTRIES: SitemapEntry[] = [
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date().toISOString()
 
-  return STATIC_ENTRIES.map((entry) => ({
+  // ARQWELIA public landing — only indexed when the Lot 1 feature flag is on.
+  // The /arqwelia/start/* wizard routes are intentionally never indexed.
+  const entries: SitemapEntry[] = isArqweliaLot1Enabled()
+    ? [...STATIC_ENTRIES, { path: '/arqwelia', changeFrequency: 'weekly', priority: 0.9 }]
+    : STATIC_ENTRIES
+
+  return entries.map((entry) => ({
     url: `${SITE_URL}${entry.path}`,
     lastModified: entry.lastModified ?? now,
     changeFrequency: entry.changeFrequency,
