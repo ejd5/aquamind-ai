@@ -1,0 +1,81 @@
+name: One-time production database migration 2026-08-03
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/production-database-once-20260803.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aqwelia-production-database
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Migrate canonical Neon production once
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+      PRODUCTION_DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+      PRODUCTION_DATABASE_TARGET_FINGERPRINT: '2b27abc9f736'
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Verify canonical production database target
+        run: node scripts/verify-production-database-target-fingerprint.mjs
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.4'
+
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Validate production connection shapes without printing them
+        run: |
+          node - <<'NODE'
+          const pooled = process.env.PRODUCTION_DATABASE_URL || ''
+          const direct = process.env.PRODUCTION_DIRECT_URL || ''
+          if (!/^postgres(ql)?:\/\//.test(pooled) || !/^postgres(ql)?:\/\//.test(direct)) throw new Error('Both production URLs are required')
+          if (!new URL(pooled).hostname.includes('-pooler')) throw new Error('PRODUCTION_DATABASE_URL must be pooled')
+          if (new URL(direct).hostname.includes('-pooler')) throw new Error('PRODUCTION_DIRECT_URL must be direct')
+          if (new URL(pooled).hostname.replace('-pooler', '') !== new URL(direct).hostname) throw new Error('Production URLs target different Neon endpoints')
+          NODE
+
+      - name: Validate PostgreSQL schema and migrations
+        run: bun run test:postgresql
+
+      - name: Re-verify production target before client generation
+        run: node scripts/verify-production-database-target-fingerprint.mjs
+
+      - name: Generate PostgreSQL client
+        env:
+          DATABASE_URL: ${{ env.PRODUCTION_DIRECT_URL }}
+        run: bun run db:pg:generate
+
+      - name: Re-verify production target before migration
+        run: node scripts/verify-production-database-target-fingerprint.mjs
+
+      - name: Deploy reviewed migrations using direct connection
+        env:
+          DATABASE_URL: ${{ env.PRODUCTION_DIRECT_URL }}
+        run: bun run db:pg:deploy
+
+      - name: Verify Prisma migration status
+        env:
+          DATABASE_URL: ${{ env.PRODUCTION_DIRECT_URL }}
+        run: bunx prisma migrate status --schema prisma/postgresql/schema.prisma
+
+      - name: Re-verify production target before pooled verification
+        run: node scripts/verify-production-database-target-fingerprint.mjs
+
+      - name: Verify pooled application connection read-only
+        env:
+          DATABASE_URL: ${{ env.PRODUCTION_DATABASE_URL }}
+        run: node tests/check-postgresql-connection.mjs
