@@ -1,51 +1,73 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /**
  * ARQWELIA Lot 2 — benchmark smoke CLI (dry-run safe).
  *
- * Usage:
- *   node scripts/benchmark-arqwelia-smoke.mjs --provider mock --model test \
- *     --image <path> --promptA "..." --out <dir> [--budget 5 --authorized]
+ * Requires Bun (the repo already runs on Bun): the CLI imports the canonical
+ * `normalizeImageForAi` from `src/lib/images/secure-image.ts` (TypeScript),
+ * which a plain Node 20 runtime cannot load. Run it as:
  *
- * Safety contract:
- *   - Default is a DRY RUN: no external provider call, no cost.
+ *   bun scripts/benchmark-arqwelia-smoke.mjs --provider mock --out ./benchmark-out
+ *
+ * Usage:
+ *   bun scripts/benchmark-arqwelia-smoke.mjs --provider mock --model test \
+ *     --image <path> --promptA "..." --out <dir> [--budget 5]
+ *
+ * Authorization is ENV-ONLY. The CLI can never authorize a real call and can
+ * never raise the budget:
  *   - A real provider call requires BOTH
  *       ARQWELIA_BENCHMARK_AUTHORIZED=true  AND
  *       ARQWELIA_BENCHMARK_MAX_BUDGET_EUR>0
- *     (the --authorized / --budget flags are a local override of the same gate).
+ *   - `--budget` may only REDUCE the budget below ARQWELIA_BENCHMARK_MAX_BUDGET_EUR
+ *     (a value above the env ceiling is rejected). With no env ceiling it only
+ *     clamps the reported budget — it never unlocks a call.
+ *   - Default (no env vars) is a DRY RUN: no external provider call, no cost.
  *   - Even when authorized, real-provider adapters are stubbed with
  *     "NOT IMPLEMENTED — awaiting Gate", so no paid call can ever occur.
+ *   - Billing is reported from proven fields only: `externalCalls`,
+ *     `actualCostEur`, `billingStatus`. PAID_COST is never claimed to be 0 after
+ *     a real call whose cost is not proven (billingStatus 'unknown').
  *   - API credentials are never printed; any env value whose name matches
  *     /KEY|TOKEN|SECRET/i is redacted before it can reach stdout or a report.
+ *   - Reports are PII-free: no absolute paths, no local username, no raw prompt.
+ *     The prompt is recorded only as promptSha256 (a hash of the text).
  */
 
-import { mkdir, writeFile } from 'node:fs/promises'
-import { basename, join, resolve } from 'node:path'
-import { redactSecrets } from './lib/arqwelia-benchmark/candidates-registry.mjs'
+import { createHash } from 'node:crypto'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { basename, join, relative, resolve } from 'node:path'
+import sharp from 'sharp'
 import {
-  getArqweliaBenchmarkCandidate,
   ARQWELIA_BENCHMARK_AUTHORIZED,
   ARQWELIA_BENCHMARK_MAX_BUDGET_EUR,
+  billingSnapshot,
+  billingSummaryLines,
+  getArqweliaBenchmarkCandidate,
+  redactSecrets,
 } from './lib/arqwelia-benchmark/candidates-registry.mjs'
-import { normalizeBenchmarkImage } from './lib/arqwelia-benchmark/normalize-image.mjs'
+import { normalizeImageForAi, SecureImageError } from '../src/lib/images/secure-image.ts'
 
 const TASK = 'arqwelia-lot2-a1-benchmark-smoke'
-const VERSION = '1.0.0'
+const VERSION = '2.0.0'
+const PROMPT_VERSION = 'arqwelia-lot2-v1'
 
 function printUsage() {
   console.log(
-    `Usage: node scripts/benchmark-arqwelia-smoke.mjs [options]
+    `Usage: bun scripts/benchmark-arqwelia-smoke.mjs [options]
 
 Options:
   --provider <id>   Candidate id (default: mock). One of:
                     nvidia-nim | zai-glm | openai-gpt-image | mock
   --model <name>    Model override (default: candidate model)
-  --image <path>    Source photo to normalize (must be metadata-clean)
-  --promptA <text>  Concept A prompt
+  --image <path>    Source photo to normalize (EXIF/GPS photos are accepted and
+                    normalized; only the EXIF-free normalized output is eligible)
+  --promptA <text>  Concept A prompt (stored in reports only as promptSha256)
   --out <dir>       Output directory (default: ./benchmark-out)
-  --budget <eur>    Budget override (default: ARQWELIA_BENCHMARK_MAX_BUDGET_EUR)
-  --authorized      Authorization override (default: ARQWELIA_BENCHMARK_AUTHORIZED)
+  --budget <eur>    Budget cap — may only REDUCE the budget below
+                    ARQWELIA_BENCHMARK_MAX_BUDGET_EUR; exceeding the env ceiling
+                    is rejected; a value <= 0 is rejected.
 
-A real provider call requires BOTH ARQWELIA_BENCHMARK_AUTHORIZED=true and
+Authorization is ENV-ONLY and cannot be granted from the CLI. A real provider
+call requires BOTH ARQWELIA_BENCHMARK_AUTHORIZED=true and
 ARQWELIA_BENCHMARK_MAX_BUDGET_EUR>0. Otherwise this runs as a DRY RUN.`,
   )
 }
@@ -58,7 +80,6 @@ function parseArgs(argv) {
     promptA: null,
     outDir: null,
     budget: null,
-    authorized: false,
   }
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i]
@@ -89,15 +110,12 @@ function parseArgs(argv) {
       case '--budget': {
         const raw = next()
         const parsed = Number(raw)
-        if (!Number.isFinite(parsed) || parsed < 0) {
-          throw new Error(`Invalid --budget value: ${raw}`)
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+          throw new Error(`Invalid --budget value (must be a positive number): ${raw}`)
         }
         args.budget = parsed
         break
       }
-      case '--authorized':
-        args.authorized = true
-        break
       case '--help':
       case '-h':
         printUsage()
@@ -116,12 +134,73 @@ function stamp() {
   return new Date().toISOString().replace(/[:.]/g, '-')
 }
 
+/**
+ * Reads a local source photo, normalizes it through the canonical
+ * `normalizeImageForAi`, and verifies the NORMALIZED OUTPUT is free of
+ * EXIF/IPTC/XMP. Only the normalized output is ever eligible to reach a
+ * provider; the raw source is never copied anywhere.
+ *
+ * @param {string} imagePath
+ * @returns {Promise<{ sourceFileName: string, dataUrl: string, buffer: Buffer, mimeType: string, width: number, height: number, sha256: string, inputBytes: number, outputBytes: number }>}
+ */
+async function loadAndNormalizeImage(imagePath) {
+  let inputBuffer
+  try {
+    inputBuffer = await readFile(imagePath)
+  } catch {
+    throw new Error(`Image file could not be read: ${imagePath}`)
+  }
+  if (inputBuffer.length === 0) {
+    throw new Error('Image file is empty')
+  }
+
+  let format
+  try {
+    const meta = await sharp(inputBuffer, { failOn: 'error', limitInputPixels: 40_000_000 }).metadata()
+    format = meta.format
+  } catch {
+    throw new Error('Unreadable or corrupted image')
+  }
+
+  const mime = { jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' }[format ?? '']
+  if (!mime) {
+    throw new Error(`Unsupported image format${format ? `: ${format}` : ''}`)
+  }
+
+  let normalized
+  try {
+    normalized = await normalizeImageForAi(`data:${mime};base64,${inputBuffer.toString('base64')}`)
+  } catch (error) {
+    if (error instanceof SecureImageError) {
+      throw new Error(`Image normalization failed: ${error.message}`)
+    }
+    throw new Error(`Image normalization failed: ${error.message}`)
+  }
+
+  const outMeta = await sharp(normalized.buffer).metadata()
+  if (outMeta.exif || outMeta.iptc || outMeta.xmp || outMeta.orientation) {
+    throw new Error('Normalized output still carries metadata (EXIF/IPTC/XMP) — refusing to proceed')
+  }
+
+  return {
+    sourceFileName: basename(imagePath),
+    dataUrl: normalized.dataUrl,
+    buffer: normalized.buffer,
+    mimeType: normalized.mimeType,
+    width: normalized.width,
+    height: normalized.height,
+    sha256: normalized.sha256,
+    inputBytes: normalized.inputBytes,
+    outputBytes: normalized.outputBytes,
+  }
+}
+
 async function run() {
   let args
   try {
     args = parseArgs(process.argv.slice(2))
   } catch (error) {
-    console.error(`error: ${error.message}`)
+    console.error(`error: ${redactSecrets(error.message)}`)
     printUsage()
     process.exit(2)
   }
@@ -138,32 +217,40 @@ async function run() {
 
   const model = args.model || provider.model
   const outDir = resolve(process.cwd(), args.outDir || './benchmark-out')
-  const authorized = args.authorized || ARQWELIA_BENCHMARK_AUTHORIZED
-  const budgetMaxEur = args.budget ?? ARQWELIA_BENCHMARK_MAX_BUDGET_EUR
-  const dryRun = !(authorized === true && budgetMaxEur > 0)
+
+  // Authorization is ENV-ONLY. `--budget` can only reduce the env ceiling.
+  const envBudgetMaxEur = ARQWELIA_BENCHMARK_MAX_BUDGET_EUR
+  let budgetMaxEur = envBudgetMaxEur
+  if (args.budget != null) {
+    if (envBudgetMaxEur > 0 && args.budget > envBudgetMaxEur) {
+      console.error(
+        `error: --budget (${args.budget}) exceeds ARQWELIA_BENCHMARK_MAX_BUDGET_EUR (${envBudgetMaxEur}). ` +
+          'The CLI can only REDUCE the budget below the env ceiling.',
+      )
+      process.exit(2)
+    }
+    budgetMaxEur = args.budget
+  }
+
+  const authorized = ARQWELIA_BENCHMARK_AUTHORIZED === true
+  const realCallAuthorized = authorized && budgetMaxEur > 0
+  const dryRun = !realCallAuthorized
 
   console.log(`${TASK} v${VERSION}`)
   console.log(`provider=${provider.id}`)
   console.log(`model=${model}`)
   console.log(`supportsImageEditing=${provider.supportsImageEditing ? 'true' : 'false'}`)
 
-  // -- image preflight -------------------------------------------------------
+  // -- image preflight (normalize, don't refuse; EXIF/GPS is allowed) --------
   let normalized = null
   if (args.imagePath) {
     try {
-      normalized = await normalizeBenchmarkImage(args.imagePath)
-      if (!normalized.clean) {
-        console.error(
-          `error: image "${args.imagePath}" contains un-normalized metadata (EXIF/GPS/IPTC/XMP). ` +
-            'Refusing to proceed. Normalize the photo before benchmarking.',
-        )
-        process.exit(1)
-      }
+      normalized = await loadAndNormalizeImage(args.imagePath)
       console.log(
         `image=normalized (${normalized.width}x${normalized.height}, sha256=${normalized.sha256.slice(0, 12)}…)`,
       )
     } catch (error) {
-      console.error(`error: image normalization failed for "${args.imagePath}": ${error.message}`)
+      console.error(`error: ${redactSecrets(String((error && error.message) || error))}`)
       process.exit(1)
     }
   }
@@ -187,6 +274,10 @@ async function run() {
         providerId: provider.id,
         model,
         ok: false,
+        externalCalls: 0,
+        actualCostEur: 0,
+        billingStatus: 'not_called',
+        officialPricingSource: null,
         durationMs: Date.now() - started,
         error: String((error && error.message) || error),
       }
@@ -206,14 +297,20 @@ async function run() {
       providerId: provider.id,
       model,
       ok: false,
+      externalCalls: 0,
+      actualCostEur: 0,
+      billingStatus: 'not_called',
+      officialPricingSource: null,
       durationMs: 0,
-      error: 'skipped in dry run — real call requires authorization and budget',
+      error: 'skipped in dry run — real call requires env authorization and budget',
     }
   }
 
-  // -- output & report ------------------------------------------------------
-  const config = provider.validateConfiguration()
-  const officialCost = provider.estimateOfficialCost()
+  // -- billing + output derivation (single source of truth) -----------------
+  const snap = billingSnapshot(result)
+  const promptSha256 = args.promptA
+    ? createHash('sha256').update(args.promptA).digest('hex')
+    : null
 
   console.log(`mode=${dryRun ? 'dry-run' : 'smoke'}`)
   if (dryRun) {
@@ -226,9 +323,28 @@ async function run() {
   } else {
     console.log(`result=skipped (${redactSecrets(result.error || '')})`)
   }
-  console.log('real_calls=0')
-  console.log('paid_eur=0')
-  console.log('REAL_PROVIDER_CALLS=0, PAID_COST=0')
+  for (const line of billingSummaryLines(result)) {
+    console.log(line)
+  }
+
+  // -- report (PII-free) ----------------------------------------------------
+  const config = provider.validateConfiguration()
+  const officialCost = provider.estimateOfficialCost()
+
+  const sanitizedResult = {
+    providerId: result.providerId,
+    model: result.model,
+    ok: result.ok,
+    externalCalls: result.externalCalls,
+    actualCostEur: result.actualCostEur,
+    billingStatus: result.billingStatus,
+    officialPricingSource: result.officialPricingSource,
+    durationMs: result.durationMs,
+    outputWidth: result.outputWidth,
+    outputHeight: result.outputHeight,
+    outputFileName: result.outputPath ? basename(result.outputPath) : null,
+    error: result.error ? redactSecrets(result.error) : null,
+  }
 
   const report = {
     task: TASK,
@@ -237,6 +353,7 @@ async function run() {
     dryRun,
     authorized: authorized === true,
     budgetMaxEur,
+    promptVersion: PROMPT_VERSION,
     provider: {
       id: provider.id,
       model,
@@ -248,19 +365,24 @@ async function run() {
     },
     image: normalized
       ? {
-          path: args.imagePath,
+          sourceFileName: normalized.sourceFileName,
+          normalizedSha256: normalized.sha256,
           width: normalized.width,
           height: normalized.height,
-          sha256: normalized.sha256,
           inputBytes: normalized.inputBytes,
           outputBytes: normalized.outputBytes,
           mimeType: normalized.mimeType,
         }
       : null,
-    promptA: args.promptA ?? null,
-    result,
-    realProviderCalls: 0,
-    paidCostEur: 0,
+    prompt: {
+      version: PROMPT_VERSION,
+      sha256: promptSha256,
+    },
+    result: sanitizedResult,
+    realProviderCalls: snap.externalCalls,
+    paidCostEur: snap.paidCostEur,
+    billingStatus: snap.billingStatus,
+    officialPricingSource: snap.officialPricingSource,
   }
 
   await mkdir(outDir, { recursive: true })
@@ -270,6 +392,7 @@ async function run() {
 
   await writeFile(reportJsonPath, `${JSON.stringify(report, null, 2)}\n`)
 
+  const paidLabel = snap.paidCostEur === null ? 'UNKNOWN' : String(snap.paidCostEur)
   const lines = [
     `# ARQWELIA Lot 2 — Benchmark smoke report`,
     ``,
@@ -279,8 +402,9 @@ async function run() {
     `- mode: ${dryRun ? 'dry-run' : 'smoke'}`,
     `- authorized: ${authorized}`,
     `- budget max (EUR): ${budgetMaxEur}`,
-    `- real provider calls: 0`,
-    `- paid cost (EUR): 0`,
+    `- real provider calls: ${snap.externalCalls}`,
+    `- billing status: ${snap.billingStatus}`,
+    `- paid cost (EUR): ${paidLabel}`,
     ``,
     `## Provider`,
     ``,
@@ -290,24 +414,36 @@ async function run() {
     `- config ok: ${config.ok}${config.reason ? ` (${config.reason})` : ''}`,
     `- official cost known: ${officialCost.known}${officialCost.note ? ` — ${officialCost.note}` : ''}`,
     ``,
-    `## Image`,
+    `## Image (normalized, EXIF-free)`,
     ``,
     normalized
-      ? `- normalized ${basename(args.imagePath)} → ${normalized.width}x${normalized.height} JPEG (q82)`
+      ? `- source: ${normalized.sourceFileName}`
       : `- no image provided`,
+    normalized
+      ? `- normalized: ${normalized.width}x${normalized.height} JPEG (q82), sha256=${normalized.sha256}`
+      : ``,
     ``,
     `## Smoke result`,
     ``,
     `- ok: ${result.ok}`,
     `- duration ms: ${result.durationMs}`,
-    result.outputPath ? `- output: ${result.outputPath}` : `- output: none`,
+    `- external calls: ${snap.externalCalls}`,
+    `- billing status: ${snap.billingStatus}`,
+    `- paid cost (EUR): ${paidLabel}`,
+    `- official pricing source: ${snap.officialPricingSource ?? 'null'}`,
+    result.outputPath ? `- output: ${basename(result.outputPath)}` : `- output: none`,
     result.error ? `- error: ${redactSecrets(result.error)}` : ``,
   ]
   await writeFile(reportMdPath, `${lines.join('\n').trimEnd()}\n`)
 
-  console.log(`report=${reportJsonPath}`)
-  console.log(`report=${reportMdPath}`)
+  console.log(`report=${toRelative(outDir, reportJsonPath)}`)
+  console.log(`report=${toRelative(outDir, reportMdPath)}`)
   process.exit(0)
+}
+
+function toRelative(outDir, filePath) {
+  const rel = relative(process.cwd(), filePath)
+  return rel.startsWith('.') ? rel : `./${rel}`
 }
 
 run().catch((error) => {

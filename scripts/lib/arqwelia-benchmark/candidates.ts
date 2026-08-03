@@ -14,7 +14,14 @@ import {
 } from './candidates-registry.mjs'
 
 export type { ArqweliaBenchmarkProvider, SmokeOptions, SmokeResult } from './provider'
-export { ARQWELIA_BENCHMARK_AUTHORIZED, ARQWELIA_BENCHMARK_MAX_BUDGET_EUR, ensureNoRealCall, redactSecrets } from './provider'
+export {
+  ARQWELIA_BENCHMARK_AUTHORIZED,
+  ARQWELIA_BENCHMARK_MAX_BUDGET_EUR,
+  ensureNoRealCall,
+  redactSecrets,
+  billingSnapshot,
+  billingSummaryLines,
+} from './provider'
 
 /** All registered candidates (nvidia-nim, zai-glm, openai-gpt-image, mock). */
 export const arqweliaBenchmarkCandidates: ArqweliaBenchmarkProvider[] = _candidates as ArqweliaBenchmarkProvider[]
@@ -23,5 +30,5 @@ export const arqweliaBenchmarkCandidates: ArqweliaBenchmarkProvider[] = _candida
 export function getArqweliaBenchmarkCandidate(
   id: string,
 ): ArqweliaBenchmarkProvider | undefined {
-  return _getCandidate(id)
+  return _getCandidate(id) as ArqweliaBenchmarkProvider | undefined
 }

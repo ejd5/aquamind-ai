@@ -34,11 +34,11 @@ These scenes map directly to Phase 0B (10 photos × Concept A + Concept B).
 ## Privacy — no PII
 
 - **No people, no faces, no license plates, no readable mailboxes.**
-- **No EXIF / GPS metadata.** The harness refuses (exit non-zero) any photo
-  that still carries EXIF/IPTC/XMP metadata, because the benchmark must never
-  hand a third-party provider a photo we cannot prove is clean.
-- Recommended minimum: `exiftool -all= photo.png` or macOS `sips -g all` +
-  re-export, or any "remove metadata" export option in your editor.
+- **EXIF / GPS is fine**: the harness normalizes every source photo through
+  `normalizeImageForAi()`, which strips EXIF/GPS, rotates, resizes to ≤1600 px
+  and re-encodes as JPEG q82. Only the EXIF-free normalized output is ever
+  eligible to reach a third-party provider, and the raw source is never copied
+  into the results dir. You do **not** need to strip metadata beforehand.
 
 ## Photo requirements
 
@@ -49,12 +49,13 @@ These scenes map directly to Phase 0B (10 photos × Concept A + Concept B).
 
 ## Preflight
 
-You can verify a photo is acceptable before benchmarking:
+You can verify a photo is accepted before benchmarking (requires **Bun**):
 
 ```bash
-node scripts/benchmark-arqwelia-smoke.mjs --provider mock \
+bun scripts/benchmark-arqwelia-smoke.mjs --provider mock \
   --image dataset/photos/01-small-garden.png --out ./benchmark-out
 ```
 
-Exit `0` with `image=normalized` means the photo is clean and accepted.
-Exit `1` means the photo carries un-normalized metadata — strip it first.
+Exit `0` with `image=normalized` means the photo was normalized successfully.
+Exit `1` means the photo could not be normalized (unreadable, unsupported
+format, or corrupted) — check the error message.

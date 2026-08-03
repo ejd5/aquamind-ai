@@ -19,6 +19,8 @@ import {
   ensureNoRealCall as _ensureNoRealCall,
   redactSecrets as _redactSecrets,
   redactedEnvSummary as _redactedEnvSummary,
+  billingSnapshot as _billingSnapshot,
+  billingSummaryLines as _billingSummaryLines,
 } from './candidates-registry.mjs'
 
 export interface SmokeOptions {
@@ -38,6 +40,16 @@ export interface SmokeResult {
   providerId: string
   model: string
   ok: boolean
+  /** Number of external provider calls actually made. 0 for dry run / not implemented. */
+  externalCalls: number
+  /**
+   * Proven cost in EUR, or `null` when the cost of a real call was NOT proven
+   * (billingStatus 'unknown'). Never `0` after a real call whose cost is unproven.
+   */
+  actualCostEur: number | null
+  billingStatus: 'not_called' | 'measured' | 'unknown'
+  /** Public pricing doc used for a measured cost, or null when unknown/not called. */
+  officialPricingSource: string | null
   durationMs: number
   outputWidth?: number
   outputHeight?: number
@@ -83,3 +95,31 @@ export const redactSecrets: (text: string) => string = _redactSecrets
 
 /** Redacted per-var summary of an env object (secret-named vars are counted only). */
 export const redactedEnvSummary: (env?: Record<string, string | undefined>) => string[] = _redactedEnvSummary
+
+export interface BillingSnapshot {
+  billingStatus: 'not_called' | 'measured' | 'unknown'
+  externalCalls: number
+  paidCostEur: number | null
+  officialPricingSource: string | null
+}
+
+export type BillingInput = Pick<
+  SmokeResult,
+  'billingStatus' | 'actualCostEur' | 'externalCalls' | 'officialPricingSource'
+>
+
+/**
+ * Single source of truth for billing output: the console line, the JSON report
+ * and the Markdown report are all derived from `billingSnapshot`.
+ * - 'not_called' → paidCostEur = 0 (dry run / not implemented).
+ * - 'measured'   → paidCostEur = actualCostEur.
+ * - 'unknown'    → paidCostEur = null (a real call's cost is not proven; never 0).
+ */
+export const billingSnapshot: (result: BillingInput) => BillingSnapshot = _billingSnapshot as (
+  result: BillingInput,
+) => BillingSnapshot
+
+/** Console billing lines rendered from a SmokeResult's billing fields. */
+export const billingSummaryLines: (result: BillingInput) => string[] = _billingSummaryLines as (
+  result: BillingInput,
+) => string[]

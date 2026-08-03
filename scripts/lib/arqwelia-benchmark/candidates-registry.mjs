@@ -94,6 +94,59 @@ export function redactedEnvSummary(env = process.env) {
 }
 
 // ---------------------------------------------------------------------------
+// Reliable billing derivation (single source of truth for the CLI output,
+// JSON report and Markdown report — all three are rendered from these).
+// ---------------------------------------------------------------------------
+
+/**
+ * Derives the billing snapshot from a SmokeResult.
+ *
+ * Billing rules:
+ *   - billingStatus 'not_called' → paidCostEur = 0 (dry run / not implemented:
+ *     nothing was ever billed).
+ *   - billingStatus 'measured'   → paidCostEur = actualCostEur (proven cost).
+ *   - billingStatus 'unknown'    → paidCostEur = null. A real call happened but
+ *     the cost was NOT proven — never claim PAID_COST=0 after a real call.
+ *
+ * @param {{ billingStatus?: string, actualCostEur?: number|null, externalCalls?: number, officialPricingSource?: string|null }} [result]
+ * @returns {{ billingStatus: string, externalCalls: number, paidCostEur: number|null, officialPricingSource: string|null }}
+ */
+export function billingSnapshot(result = {}) {
+  const billingStatus = result.billingStatus ?? 'not_called'
+  const externalCalls = Number(result.externalCalls ?? 0)
+  let paidCostEur = null
+  if (billingStatus === 'not_called') {
+    paidCostEur = 0
+  } else if (billingStatus === 'measured') {
+    paidCostEur = Number(result.actualCostEur ?? 0)
+  }
+  return {
+    billingStatus,
+    externalCalls,
+    paidCostEur,
+    officialPricingSource: result.officialPricingSource ?? null,
+  }
+}
+
+/**
+ * Console lines rendered from a SmokeResult's billing fields. PAID_COST is
+ * `UNKNOWN` (never `0`) when a real call's cost is not proven.
+ *
+ * @param {{ billingStatus?: string, actualCostEur?: number|null, externalCalls?: number, officialPricingSource?: string|null }} [result]
+ * @returns {string[]}
+ */
+export function billingSummaryLines(result = {}) {
+  const snap = billingSnapshot(result)
+  const paid = snap.paidCostEur === null ? 'UNKNOWN' : String(snap.paidCostEur)
+  return [
+    `external_calls=${snap.externalCalls}`,
+    `billing_status=${snap.billingStatus}`,
+    `paid_eur=${paid}`,
+    `REAL_PROVIDER_CALLS=${snap.externalCalls}, PAID_COST=${paid}`,
+  ]
+}
+
+// ---------------------------------------------------------------------------
 // Mock smoke — writes a tiny placeholder PNG. No external call, no cost.
 // ---------------------------------------------------------------------------
 
@@ -122,6 +175,10 @@ export async function mockRunSmoke(opts) {
     providerId: opts.providerId,
     model: opts.model,
     ok: true,
+    externalCalls: 0,
+    actualCostEur: 0,
+    billingStatus: 'not_called',
+    officialPricingSource: null,
     durationMs: Date.now() - started,
     outputWidth: 128,
     outputHeight: 128,
