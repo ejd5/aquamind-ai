@@ -61,3 +61,21 @@ export const ARQ_PHOTO_ACCEPTED = ['image/jpeg', 'image/png', 'image/webp']
 /** Consent text version — bump when the wording changes. Stored on consent. */
 export const ARQ_CONSENT_VERSION = 'arqwelia-lot1-v1'
 export const ARQ_PARTNER_CONSENT_VERSION = 'arqwelia-partner-lot1-v1'
+
+/**
+ * Rate limiting — server-side, per server fingerprint, per fixed window.
+ * The in-process limiter (src/lib/rate-limit.ts) is acceptable for the
+ * current standalone deployment. A distributed limiter (e.g. Upstash/Redis
+ * at the edge) is required before significant traffic scaling.
+ */
+export const ARQWELIA_RATE_WINDOW_MS = 60 * 60 * 1000 // 1 hour
+export const ARQWELIA_PROJECT_RATE_LIMIT = 5 // project creations / hour / fingerprint
+export const ARQWELIA_PARTNER_RATE_LIMIT = 3 // waitlist submissions / hour / fingerprint
+
+/** Strict server-side field limits — mirror the client constraints. */
+export const ARQ_FIRSTNAME_MAX = 80
+export const ARQ_EMAIL_MAX = 200
+export const ARQ_PHONE_MAX = 24
+export const ARQ_COMPANY_MAX = 120
+export const ARQ_CONTACT_NAME_MAX = 120
+export const ARQ_PHONE_RE = /^[+0-9][0-9 ().+\-]{2,23}$/

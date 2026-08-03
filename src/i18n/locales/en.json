@@ -7315,7 +7315,13 @@
         "conceptRequired": "Select a concept",
         "photoTooBig": "Image too large (10 MB max)",
         "photoType": "Unsupported format (JPG, PNG or WebP)",
-        "photoCount": "Maximum 4 photos"
+        "photoCount": "Maximum 4 photos",
+        "phone": "Invalid phone number",
+        "turnstileFailed": "The anti-bot check failed. Refresh the page and try again.",
+        "turnstileUnavailable": "The anti-bot check is unavailable. Please try again shortly.",
+        "rateLimit": "Too many attempts. Please try again in an hour.",
+        "internal": "An error occurred. Please try again.",
+        "formUnavailable": "This form is temporarily unavailable. Please try again later."
       },
       "photos": {
         "title": "Add your photos",
@@ -7451,7 +7457,15 @@
         "companyName": "Company required",
         "contactName": "Name required",
         "email": "Invalid professional email",
-        "consentRequired": "Consent required"
+        "phone": "Invalid phone number",
+        "postalCode": "Invalid postal code (5 digits)",
+        "radiusKm": "Invalid radius",
+        "consentRequired": "Consent required",
+        "turnstileFailed": "The anti-bot check failed. Refresh the page and try again.",
+        "turnstileUnavailable": "The anti-bot check is unavailable. Please try again shortly.",
+        "rateLimit": "Too many attempts. Please try again in an hour.",
+        "internal": "An error occurred. Please try again.",
+        "formUnavailable": "This form is temporarily unavailable. Please try again later."
       }
     },
     "pro": {
