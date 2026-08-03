@@ -7551,6 +7551,22 @@
       "cta": "Discover ARQWELIA",
       "newBadge": "New",
       "demoBadge": "Demo"
+    },
+    "lab": {
+      "arPoc": {
+        "title": "ARQWELIA — Augmented reality POC",
+        "description": "Preview an 8 × 4 m pool in your space with augmented reality (webxr, scene-viewer, quick-look). Future feature, not part of the commercial offering.",
+        "ctaLabel": "View in augmented reality",
+        "arUnavailable": "AR is not available on this device",
+        "reducedMotionNotice": "Reduced motion is enabled: showing a static view of the model.",
+        "fallbackText": "You can still explore the 3D pool model (8 m × 4 m, fixed scale, placed on the floor) on screen.",
+        "open3dView": "Open interactive 3D view",
+        "loading": "Loading the 3D viewer…",
+        "alt": "3D model of a rectangular ARQWELIA pool (8 m × 4 m) placed on the floor, with a blue water surface.",
+        "posterAlt": "Rectangular ARQWELIA pool silhouette (3D model preview)",
+        "keyboardNote": "Keyboard: drag to rotate the view, scroll to zoom. On mobile, the AR button launches the immersive view.",
+        "disabledNote": "Future feature — this experience is not enabled yet. No AR view is rendered until the flag is turned on."
+      }
     }
   }
 }

@@ -7554,6 +7554,22 @@
       "cta": "Découvrir ARQWELIA",
       "newBadge": "Nouveau",
       "demoBadge": "Démonstration"
+    },
+    "lab": {
+      "arPoc": {
+        "title": "ARQWELIA — POC réalité augmentée",
+        "description": "Prévisualisez un bassin 8 × 4 m dans votre espace grâce à la réalité augmentée (webxr, scene-viewer, quick-look). Fonction future, non intégrée à l'offre commerciale.",
+        "ctaLabel": "Voir en réalité augmentée",
+        "arUnavailable": "AR n'est pas disponible sur cet appareil",
+        "reducedMotionNotice": "Réduction des animations activée : affichage statique de la maquette.",
+        "fallbackText": "Vous pouvez tout de même explorer le modèle 3D du bassin (8 m × 4 m, échelle fixe, posé au sol) à l'écran.",
+        "open3dView": "Ouvrir la vue 3D interactive",
+        "loading": "Chargement du visualiseur 3D…",
+        "alt": "Maquette 3D d'une piscine rectangulaire ARQWELIA (8 m × 4 m) posée au sol, avec surface d'eau bleue.",
+        "posterAlt": "Silhouette de piscine rectangulaire ARQWELIA (aperçu de la maquette 3D)",
+        "keyboardNote": "Clavier : faites glisser pour faire pivoter la vue, molette pour zoomer. Sur mobile, le bouton AR lance la vue immersive.",
+        "disabledNote": "Fonction future — cette expérience n'est pas encore activée. Aucune vue AR n'est rendue tant que le flag n'est pas activé."
+      }
     }
   }
 }
