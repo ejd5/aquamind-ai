@@ -16,10 +16,12 @@
 import {
   ARQWELIA_BENCHMARK_AUTHORIZED as _AUTHORIZED,
   ARQWELIA_BENCHMARK_MAX_BUDGET_EUR as _BUDGET,
+  ARQWELIA_BENCHMARK_PHASE0A_EXECUTE as _PHASE0A_EXECUTE,
   ArqweliaProviderError as _ArqweliaProviderError,
   billingFromCaughtError as _billingFromCaughtError,
   computeGate as _computeGate,
   ensureNoRealCall as _ensureNoRealCall,
+  ensurePhase0AGate as _ensurePhase0AGate,
   redactSecrets as _redactSecrets,
   redactedEnvSummary as _redactedEnvSummary,
   registerArqweliaBenchmarkCandidate as _registerCandidate,
@@ -52,6 +54,18 @@ export interface SmokeOptions {
   promptVersion?: string
   /** Sanitized prompt text needed for the call — no free-form user path. */
   sanitizedPrompt?: string
+  /** Concept id (`A` | `B`) used to build the versioned prompt. */
+  concept?: 'A' | 'B'
+  /** PII-free versioned prompt produced by `buildArqweliaPrompt` (real adapters). */
+  builtPrompt?: string
+  /** SHA-256 of the built prompt (report only, never the raw prompt). */
+  promptSha256?: string
+  /** Optional output size token (e.g. `1024x1024`) — closed provider list. */
+  size?: string
+  /** Third gate flag: `ARQWELIA_BENCHMARK_PHASE0A_EXECUTE === 'true'`. */
+  phase0aExecute?: boolean
+  /** Injectable transport used ONLY by tests — the CLI never injects one. */
+  transport?: (request: unknown) => Promise<unknown>
   /** Directory where artifacts (PNG, JSON, Markdown) are written. */
   outDir: string
   budgetMaxEur: number
@@ -79,10 +93,17 @@ export interface SmokeResult {
   error?: string
 }
 
+export type CandidateState =
+  | 'ready_for_authorized_smoke'
+  | 'blocked_missing_capability'
+  | 'blocked_missing_configuration'
+
 export interface ArqweliaBenchmarkProvider {
   id: string
   model: string
   supportsImageEditing: boolean
+  /** Documented candidate status (see docs/release/ARQWELIA_LOT2_BENCHMARK.md). */
+  state?: CandidateState
   /** True when `runSmoke` can be executed safely during a dry run (no real call). */
   dryRunSafe?: boolean
   dryRunDescription: string
@@ -102,6 +123,9 @@ export const ARQWELIA_BENCHMARK_AUTHORIZED: boolean = _AUTHORIZED
 
 /** `Number(ARQWELIA_BENCHMARK_MAX_BUDGET_EUR || 0)`. */
 export const ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: number = _BUDGET
+
+/** `true` only when ARQWELIA_BENCHMARK_PHASE0A_EXECUTE === 'true'. */
+export const ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: boolean = _PHASE0A_EXECUTE
 
 export interface GateComputation {
   envAuthorized: boolean
@@ -168,6 +192,18 @@ export const registerArqweliaBenchmarkCandidate: (candidate: ArqweliaBenchmarkPr
  * Use this as the first statement of every real-provider `runSmoke` adapter.
  */
 export const ensureNoRealCall: (opts: RealCallGuard) => void = _ensureNoRealCall
+
+export interface Phase0AGateGuard extends RealCallGuard {
+  phase0aExecute?: boolean
+}
+
+/**
+ * THREE-GATE BLOCK: throws unless ALL of authorization (`realCallAuthorized`),
+ * budget (`budgetMaxEur > 0`) and Phase 0A execution intent
+ * (`phase0aExecute === true`) are present. Use this as the first statement of
+ * every real-provider `runSmoke` adapter, before `ensureNoRealCall`.
+ */
+export const ensurePhase0AGate: (opts: Phase0AGateGuard) => void = _ensurePhase0AGate
 
 /** Redacts credential-shaped values so they can never reach stdout or reports. */
 export const redactSecrets: (text: string) => string = _redactSecrets

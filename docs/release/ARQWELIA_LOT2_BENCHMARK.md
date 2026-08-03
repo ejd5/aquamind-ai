@@ -1,4 +1,4 @@
-# ARQWELIA Lot 2 — AI Provider Benchmark Harness (A1 round 3)
+# ARQWELIA Lot 2 — AI Provider Benchmark Harness (A1 round 3 + Phase 0A adapters)
 
 ## Purpose
 
@@ -7,10 +7,9 @@ AI image-generation / image-edit providers on real ARQWELIA garden photos —
 without ever spending money accidentally.
 
 The harness is **dry-run safe by default**. Nothing in this harness performs a
-real provider network call unless **two independent env guards** are armed
-(see [Guard rails](#guard-rails)). Even then, the real-provider adapters are
-still stubbed with `NOT IMPLEMENTED — awaiting Gate`, so no paid call can
-occur in this build.
+real provider network call unless **three independent env guards** are armed
+(see [Guard rails](#guard-rails)). Even then, the real-provider adapters never
+receive a transport from the CLI, so no paid call can occur in this build.
 
 Scope decisions honored by this harness:
 
@@ -47,14 +46,15 @@ bun scripts/benchmark-arqwelia-smoke.mjs --provider mock --out ./benchmark-out
 bun run benchmark:smoke -- --provider mock --out ./benchmark-out
 ```
 
-## Guard rails (authorization AND budget are ENV-ONLY)
+## Guard rails (authorization, budget AND execution intent are ENV-ONLY)
 
-A real provider call requires **BOTH** of these environment variables:
+A real provider call requires **ALL THREE** of these environment variables:
 
 | Env var | Meaning |
 | --- | --- |
 | `ARQWELIA_BENCHMARK_AUTHORIZED=true` | Explicit human authorization flag |
 | `ARQWELIA_BENCHMARK_MAX_BUDGET_EUR>0` | Owner-approved budget cap (EUR) — the **only** source of a usable budget |
+| `ARQWELIA_BENCHMARK_PHASE0A_EXECUTE=true` | Explicit Phase 0A execution intent (third gate) |
 
 **The CLI can never authorize a real call and can never create a budget.** The
 budget gate is a single helper `computeGate()` with these exact rules:
@@ -78,10 +78,13 @@ realCallAuthorized = envGateOpen && effectiveBudget > 0
   is `0`** and the gate stays closed — `--budget` never unlocks a call and the
   CLI prints `DRY RUN` with `realCallAuthorized=false`.
 
-Without both env vars (or with a non-positive/invalid env budget) the CLI
+Without all three env vars (or with a non-positive/invalid env budget) the CLI
 prints `DRY RUN — NO EXTERNAL CALL` and exits `0`. On top of that, the
-real-provider adapters throw `NOT IMPLEMENTED — awaiting Gate` even when
-authorized, so no real call can happen in this build.
+real-provider adapters enforce a **three-gate block** via `ensurePhase0AGate`
+(see `scripts/lib/arqwelia-benchmark/adapters/`): a real transport is
+impossible unless authorization AND budget AND Phase 0A execution intent are
+all present, and even then the CLI never injects a transport, so no paid call
+can happen in this build.
 
 The harness **never prints API keys**. Any env value whose name matches
 `/KEY|TOKEN|SECRET/i` is redacted before it can reach stdout or a report.
@@ -146,17 +149,17 @@ back-filled into `estimateOfficialCost()`.
 
 ## Candidates
 
-| id | Model | Image edit | Config check | Official cost |
-| --- | --- | --- | --- | --- |
-| `nvidia-nim` | `tbd` | ❌ `false` until verified (nvidia.ts is vision/chat only) | `NVIDIA_API_KEY` present | `UNKNOWN` |
-| `zai-glm` | `tbd` | ✅ via `z-ai-web-dev-sdk` `images.generations.edit` | `.z-ai-config` file (cwd or home) or `Z_AI_API_KEY` | `UNKNOWN` |
-| `openai-gpt-image` | `gpt-image-1` | ✅ placeholder | `OPENAI_API_KEY` present | `UNKNOWN` |
-| `mock` | `mock-image-v1` | ✅ | always ok | `UNKNOWN` |
+| id | Model | Image edit | Config check | Official cost | Status |
+| --- | --- | --- | --- | --- | --- |
+| `nvidia-nim` | `tbd` | ❌ `false` until verified (nvidia.ts is vision/chat only) | `NVIDIA_API_KEY` present | `UNKNOWN` | `blocked_missing_capability` |
+| `zai-glm` | `tbd` (not verified) | ✅ via `z-ai-web-dev-sdk` `images.generations.edit` (JSON body, base64 PNG out) | `.z-ai-config` file (cwd or home) or `ZAI_BASE_URL` + `Z_AI_API_KEY` | `UNKNOWN` | `ready_for_authorized_smoke` |
+| `openai-gpt-image` | `gpt-image-1` (official) | ✅ official `images/edits` multipart endpoint (base64 PNG out) | `OPENAI_API_KEY` present | `UNKNOWN` | `ready_for_authorized_smoke` |
+| `mock` | `mock-image-v1` | ✅ local placeholder PNG | always ok | `UNKNOWN` | `ready_for_authorized_smoke` |
 
 NVIDIA's image model is a `tbd` placeholder because image generation on
-NVIDIA NIM is **not verified** by this repo. The `mock` candidate never calls
-out — it writes a local placeholder PNG so the pipeline can be tested end to
-end.
+NVIDIA NIM is **not verified** by this repo (state `blocked_missing_capability`
+— no image-edit endpoint is verified). The `mock` candidate never calls out —
+it writes a local placeholder PNG so the pipeline can be tested end to end.
 
 ## Image handling — normalize, don't refuse (EXIF is allowed)
 
@@ -233,16 +236,19 @@ REAL_PROVIDER_CALLS=0, PAID_COST=0
 Reports are written to the `--out` dir (default `./benchmark-out`): one JSON
 and one Markdown summary per run, plus the mock placeholder PNG.
 
-## Run an authorized smoke (owner budget only)
+## Run an authorized smoke (owner budget only + Phase 0A intent)
 
 Authorized smoke **spends money**. It can only be triggered by the owner with
-an explicit env budget — there is no CLI override:
+an explicit env budget AND Phase 0A execution intent — there is no CLI
+override, and a real call still requires a transport that the CLI never
+injects:
 
 ```bash
 export ARQWELIA_BENCHMARK_AUTHORIZED=true
 export ARQWELIA_BENCHMARK_MAX_BUDGET_EUR=5
+export ARQWELIA_BENCHMARK_PHASE0A_EXECUTE=true
 bun scripts/benchmark-arqwelia-smoke.mjs --provider zai-glm \
-  --image dataset/photos/01-small-garden.png --promptA "Concept A..." --out ./benchmark-out
+  --image dataset/photos/01-small-garden.png --concept A --out ./benchmark-out
 ```
 
 `--budget` may cap below that ceiling (never above):
@@ -250,13 +256,88 @@ bun scripts/benchmark-arqwelia-smoke.mjs --provider zai-glm \
 ```bash
 # same run, capped to 3 EUR
 ARQWELIA_BENCHMARK_AUTHORIZED=true ARQWELIA_BENCHMARK_MAX_BUDGET_EUR=5 \
+ARQWELIA_BENCHMARK_PHASE0A_EXECUTE=true \
   bun scripts/benchmark-arqwelia-smoke.mjs --provider zai-glm \
   --budget 3 --out ./benchmark-out
 ```
 
-In this build, real providers still answer `NOT IMPLEMENTED — awaiting Gate`
-(no call is made); the report records `REAL_PROVIDER_CALLS=0, PAID_COST=0`.
-`--provider mock` remains the only provider whose smoke produces an artifact.
+In this build, real providers still answer `NOT IMPLEMENTED — awaiting Phase 0A
+execution` (no transport is ever injected, so no call is made); the report
+records `REAL_PROVIDER_CALLS=0, PAID_COST=0`. `--provider mock` remains the
+only provider whose smoke produces an artifact.
+
+## Phase 0A — benchmark provider adapters (this build)
+
+Phase 0A prepares the two image-edit provider adapters (`zai-glm`,
+`openai-gpt-image`) plus versioned, PII-free prompts and a three-gate block.
+**No real provider call happens in this build.** All request bodies are built
+deterministically and the transports are injectable — tests inject mock
+transports and the CLI never injects one, so the default transport always
+answers `NOT IMPLEMENTED — awaiting Phase 0A execution`.
+
+### Versioned prompts (`scripts/lib/arqwelia-benchmark/prompts/`)
+
+- `concept-a-v1.ts` / `concept-b-v1.ts` — the two STATIC concept templates
+  (v1). Concept A is realistic and sober (preserves house, fences, trees,
+  perspective; minimal garden changes; no people/text/logo). Concept B is a
+  premium, inspirational render (house + perspective preserved; ambitious
+  landscaping; no people/text/logo).
+- `vocabulary.ts` — closed lists for `style`, `shape`, `budgetRange`,
+  `declaredConstraints` and the terrace phrasing. Only these values can ever be
+  interpolated into a prompt.
+- `prompt-builder.ts` — `buildArqweliaPrompt` / `buildDefaultArqweliaPrompt`
+  produce `{ promptVersion: 'arqwelia-lot2-v1', concept, prompt, promptSha256 }`
+  and reject any non-controlled input. The prompt can NEVER include
+  name/firstName/email/phone/address/GPS/postalCode/publicId/projectToken or
+  free-form user text.
+- `pii-guard.ts` — `scanForPii`, `assertPromptPiiFree` (applied by the builder
+  and again by the adapters) and `assertNoPersonalData` (applied by the report
+  writer as a final gate). Messages never echo the offending value.
+
+### Per-candidate Phase 0A status
+
+| Candidate | `zai-glm` | `openai-gpt-image` |
+| --- | --- | --- |
+| **Model** | `tbd` — NOT verified (see below) | `gpt-image-1` — documented official |
+| **Model status** | `tbd` (blocked_missing_capability for the exact model string) | verified from official contract |
+| **Image-editing method** | Z.ai SDK `images.generations.edit` — JSON body `{ model, prompt, image, size? }`, `image` is a base64 data URL | OpenAI `POST https://api.openai.com/v1/images/edits` — `multipart/form-data` (`image` file, `prompt`, `model`, optional `size`) |
+| **Input formats** | normalized JPEG (EXIF-free `normalizeImageForAi` output), sent as `data:image/jpeg;base64,…` | normalized JPEG (EXIF-free) as the `image` file part (`image/jpeg`, filename `image.jpg`) |
+| **Output formats** | base64-encoded PNG (`data[0].base64`), decoded to a `.png` file | base64-encoded PNG (`b64_json`), decoded to a `.png` file |
+| **Config needed** | `.z-ai-config` file (cwd/home) OR `ZAI_BASE_URL` + `Z_AI_API_KEY` env (harness materializes a config for an authorized run) | `OPENAI_API_KEY` env |
+| **Data retention to verify** | MUST be verified from the Z.ai console before an authorized run | MUST be verified — EU/GDPR consideration |
+| **Region to verify** | MUST be verified (no assumption hard-coded) | MUST be verified (no assumption hard-coded) |
+| **Official pricing to verify** | `UNKNOWN — TO BE MEASURED IN LOT 0` | `UNKNOWN — TO BE MEASURED IN LOT 0` |
+| **Status** | `ready_for_authorized_smoke` | `ready_for_authorized_smoke` |
+
+**Z.ai model string is `tbd` (not verified):** `z-ai-web-dev-sdk` v0.0.18
+declares `CreateImageEditBody.model` as **optional** and `createImageEdit`
+forwards `{ ...body }` unchanged — the SDK never injects a default edit model,
+and no `glm` / default-edit-model constant exists in its `dist/`. The concrete
+edit model must be confirmed from the Z.ai console during Phase 0A provisioning
+before any authorized execution. NVIDIA remains `blocked_missing_capability`
+(documentary only, no adapter).
+
+### Request bodies (deterministic, unit-tested)
+
+- `zaiImageAdapter.prepareRequest({ normalizedImageBuffer?, normalizedImageDataUrl?, builtPrompt, model, size? })`
+  returns exactly the JSON body the SDK edit call would receive, without
+  calling the SDK.
+- `openaiImageAdapter.prepareMultipartBody({ normalizedImageBuffer, builtPrompt, model, size? })`
+  returns a plain multipart descriptor (`method`, `endpoint`, `parts`) plus a
+  `toFormData()` builder for the official `images/edits` contract.
+
+The adapters receive ONLY normalized fields (never `imagePath`, never a raw
+source buffer, never CLI free text). `--promptA` is reserved for the
+mock/diagnostic path and never reaches a real adapter; real adapters receive
+the versioned prompt built from `--concept A|B`.
+
+### Conservative billing on a would-be real call
+
+When a mock transport is injected (tests only) a successful would-be real call
+is reported as `externalCalls=1`, `actualCostEur=null`,
+`billingStatus='unknown'` — never `PAID_COST=0`. Transport errors are sanitized
+(no secret, no path) and any generic transport failure keeps the conservative
+`unknown / 1 / null` billing.
 
 ## Phase 0 methodology
 
@@ -299,10 +380,11 @@ values** — it only checks presence.
 
 | Credential | Form | Status |
 | --- | --- | --- |
-| `NVIDIA_API_KEY` | env var | REQUIRED-LATER (image gen unverified) |
-| Z.ai config | `.z-ai-config` file (cwd or home) | REQUIRED-LATER (SDK requires a file, not an env var) |
-| `OPENAI_API_KEY` | env var | REQUIRED-LATER |
+| `NVIDIA_API_KEY` | env var | REQUIRED-LATER (image gen unverified — `blocked_missing_capability`) |
+| Z.ai config | `.z-ai-config` file (cwd or home), or `ZAI_BASE_URL` + `Z_AI_API_KEY` env | REQUIRED-LATER (SDK requires a file; the harness can materialize one from env for an authorized run) |
+| `OPENAI_API_KEY` | env var | REQUIRED-LATER (data retention / region MUST be verified) |
 
 `.env.example` already documents `NVIDIA_API_KEY`, `NVIDIA_BASE_URL`,
 `NVIDIA_VISION_MODEL`, `NVIDIA_CHAT_MODEL`; `Z_AI_API_KEY` is present but
-commented out (the SDK reads `.z-ai-config` instead).
+commented out (the SDK reads `.z-ai-config` instead). Values are never printed
+or stored — the harness only checks presence.

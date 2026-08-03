@@ -16,11 +16,11 @@
  * throws "NOT IMPLEMENTED — awaiting Gate" so no paid call can ever occur.
  */
 
-import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { homedir } from 'node:os'
 import sharp from 'sharp'
+import { zaiImageAdapter } from './adapters/zai-image-adapter.mjs'
+import { openaiImageAdapter } from './adapters/openai-image-adapter.mjs'
 
 // ---------------------------------------------------------------------------
 // Env-gated authorization (module-level, evaluated once at import time).
@@ -28,6 +28,7 @@ import sharp from 'sharp'
 
 export const ARQWELIA_BENCHMARK_AUTHORIZED = process.env.ARQWELIA_BENCHMARK_AUTHORIZED === 'true'
 export const ARQWELIA_BENCHMARK_MAX_BUDGET_EUR = Number(process.env.ARQWELIA_BENCHMARK_MAX_BUDGET_EUR || 0)
+export const ARQWELIA_BENCHMARK_PHASE0A_EXECUTE = process.env.ARQWELIA_BENCHMARK_PHASE0A_EXECUTE === 'true'
 
 /**
  * Budget gate — the SINGLE source of truth for deciding whether a real call may
@@ -67,6 +68,39 @@ export function computeGate({
 
 const SECRET_ENV_NAME_RE = /(KEY|TOKEN|SECRET)/i
 const SECRET_VALUE_RE = /(nvapi-[A-Za-z0-9_\-]+|sk(-live)?-[A-Za-z0-9_\-]+|whsec_[A-Za-z0-9_\-]+|rc_wh_[A-Za-z0-9_\-]+)/g
+
+/**
+ * Phase 0A three-gate guard — the REAL transport is blocked unless ALL THREE
+ * independent gates are open:
+ *   1. ARQWELIA_BENCHMARK_AUTHORIZED === 'true'
+ *   2. ARQWELIA_BENCHMARK_MAX_BUDGET_EUR > 0
+ *   3. ARQWELIA_BENCHMARK_PHASE0A_EXECUTE === 'true'
+ *
+ * Even with all three set, TESTS always mock the transport — this helper only
+ * proves the operator intent, it does not itself make a network call.
+ *
+ * @param {{ realCallAuthorized?: boolean, budgetMaxEur?: number, phase0aExecute?: boolean }} opts
+ */
+export function ensurePhase0AGate(opts = {}) {
+  if (opts.realCallAuthorized !== true) {
+    throw new ArqweliaProviderError(
+      'Refusing real provider call: authorization not granted (ARQWELIA_BENCHMARK_AUTHORIZED must be "true")',
+      { externalCalls: 0, actualCostEur: 0, billingStatus: 'not_called' },
+    )
+  }
+  if (!(Number(opts.budgetMaxEur) > 0)) {
+    throw new ArqweliaProviderError(
+      'Refusing real provider call: no budget allocated (ARQWELIA_BENCHMARK_MAX_BUDGET_EUR must be > 0)',
+      { externalCalls: 0, actualCostEur: 0, billingStatus: 'not_called' },
+    )
+  }
+  if (opts.phase0aExecute !== true) {
+    throw new ArqweliaProviderError(
+      'NOT IMPLEMENTED — awaiting Phase 0A execution (ARQWELIA_BENCHMARK_PHASE0A_EXECUTE must be "true")',
+      { externalCalls: 0, actualCostEur: 0, billingStatus: 'not_called' },
+    )
+  }
+}
 
 /**
  * Guard used by real-provider smoke adapters. Throws when a real call is not
@@ -283,8 +317,9 @@ const nvidiaNimCandidate = {
   model: 'tbd',
   supportsImageEditing: false,
   dryRunSafe: false,
+  state: 'blocked_missing_capability',
   dryRunDescription:
-    'NVIDIA NIM candidate — image generation NOT verified; src/lib/ai/nvidia.ts only does vision-to-text and chat. Requires NVIDIA credential.',
+    'NVIDIA NIM candidate — state blocked_missing_capability: no image-edit endpoint is verified in this repo (src/lib/ai/nvidia.ts only does vision-to-text and chat). Requires NVIDIA credential.',
   validateConfiguration() {
     if (process.env.NVIDIA_API_KEY) return { ok: true }
     return { ok: false, reason: 'NVIDIA credential not configured' }
@@ -302,65 +337,12 @@ const nvidiaNimCandidate = {
   },
 }
 
-const zaiGlimCandidate = {
-  id: 'zai-glm',
-  model: 'tbd',
-  supportsImageEditing: true,
-  dryRunSafe: false,
-  dryRunDescription:
-    'Z.ai GLM candidate — image-to-image edit via z-ai-web-dev-sdk images.generations.edit (returns base64); requires a .z-ai-config file.',
-  validateConfiguration() {
-    if (
-      existsSync(join(process.cwd(), '.z-ai-config')) ||
-      existsSync(join(homedir(), '.z-ai-config')) ||
-      process.env.Z_AI_API_KEY
-    ) {
-      return { ok: true }
-    }
-    return { ok: false, reason: 'Z.ai credential not configured (no .z-ai-config file)' }
-  },
-  estimateOfficialCost() {
-    return { known: false, note: 'UNKNOWN — TO BE MEASURED IN LOT 0' }
-  },
-  async runSmoke(opts) {
-    ensureNoRealCall(opts)
-    throw new ArqweliaProviderError('NOT IMPLEMENTED — awaiting Gate: z-ai-web-dev-sdk image-edit adapter', {
-      externalCalls: 0,
-      actualCostEur: 0,
-      billingStatus: 'not_called',
-    })
-  },
-}
-
-const openaiGptImageCandidate = {
-  id: 'openai-gpt-image',
-  model: 'gpt-image-1',
-  supportsImageEditing: true,
-  dryRunSafe: false,
-  dryRunDescription:
-    'OpenAI GPT Image candidate — image edit placeholder; requires OpenAI credential.',
-  validateConfiguration() {
-    if (process.env.OPENAI_API_KEY) return { ok: true }
-    return { ok: false, reason: 'OpenAI credential not configured' }
-  },
-  estimateOfficialCost() {
-    return { known: false, note: 'UNKNOWN — TO BE MEASURED IN LOT 0' }
-  },
-  async runSmoke(opts) {
-    ensureNoRealCall(opts)
-    throw new ArqweliaProviderError('NOT IMPLEMENTED — awaiting Gate: OpenAI gpt-image adapter', {
-      externalCalls: 0,
-      actualCostEur: 0,
-      billingStatus: 'not_called',
-    })
-  },
-}
-
 const mockCandidate = {
   id: 'mock',
   model: 'mock-image-v1',
   supportsImageEditing: true,
   dryRunSafe: true,
+  state: 'ready_for_authorized_smoke',
   dryRunDescription:
     'Local mock candidate — writes a placeholder PNG. No external call, no cost.',
   validateConfiguration() {
@@ -376,8 +358,8 @@ const mockCandidate = {
 
 export const arqweliaBenchmarkCandidates = [
   nvidiaNimCandidate,
-  zaiGlimCandidate,
-  openaiGptImageCandidate,
+  zaiImageAdapter,
+  openaiImageAdapter,
   mockCandidate,
 ]
 

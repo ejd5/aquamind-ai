@@ -56,10 +56,14 @@ import {
   registerArqweliaBenchmarkCandidate,
 } from './lib/arqwelia-benchmark/candidates-registry.mjs'
 import { normalizeImageForAi, SecureImageError } from '../src/lib/images/secure-image.ts'
+import {
+  ARQWELIA_PROMPT_VERSION,
+  assertNoPersonalData,
+  buildDefaultArqweliaPrompt,
+} from './lib/arqwelia-benchmark/prompts/index.ts'
 
 const TASK = 'arqwelia-lot2-a1-benchmark-smoke'
-const VERSION = '3.0.0'
-const PROMPT_VERSION = 'arqwelia-lot2-v1'
+const VERSION = '3.1.0'
 
 function printUsage() {
   console.log(
@@ -71,7 +75,10 @@ Options:
   --model <name>    Model override (default: candidate model)
   --image <path>    Source photo to normalize (EXIF/GPS photos are accepted and
                     normalized; only the EXIF-free normalized output is eligible)
-  --promptA <text>  Concept A prompt (stored in reports only as promptSha256)
+  --promptA <text>  Diagnostic prompt for the mock path ONLY — it is stored in
+                    reports only as promptSha256 and NEVER reaches a real adapter
+  --concept <A|B>   Concept used to build the versioned PII-free prompt for the
+                    real adapters (default: A)
   --dataset-id <id> Alphanumeric dataset item id recorded in reports (default: a
                     truncated hash of the normalized image)
   --out <dir>       Output directory (default: ./benchmark-out)
@@ -81,8 +88,9 @@ Options:
                     CLI stays a DRY RUN and the effective budget is 0.
 
 Authorization is ENV-ONLY and cannot be granted from the CLI. A real provider
-call requires BOTH ARQWELIA_BENCHMARK_AUTHORIZED=true and
-ARQWELIA_BENCHMARK_MAX_BUDGET_EUR>0. Otherwise this runs as a DRY RUN.`,
+call requires ALL THREE of ARQWELIA_BENCHMARK_AUTHORIZED=true,
+ARQWELIA_BENCHMARK_MAX_BUDGET_EUR>0 AND ARQWELIA_BENCHMARK_PHASE0A_EXECUTE=true.
+Otherwise this runs as a DRY RUN.`,
   )
 }
 
@@ -92,6 +100,7 @@ function parseArgs(argv) {
     model: null,
     imagePath: null,
     promptA: null,
+    concept: 'A',
     datasetId: null,
     outDir: null,
     budget: null,
@@ -119,6 +128,14 @@ function parseArgs(argv) {
       case '--promptA':
         args.promptA = next()
         break
+      case '--concept': {
+        const raw = next()
+        if (raw !== 'A' && raw !== 'B') {
+          throw new Error('Invalid --concept value (must be A or B)')
+        }
+        args.concept = raw
+        break
+      }
       case '--dataset-id': {
         const raw = next()
         if (!/^[A-Za-z0-9]+$/.test(raw)) {
@@ -258,6 +275,8 @@ async function run() {
   const envBudget = gate.envBudget
   const budgetMaxEur = gate.effectiveBudget
   const realCallAuthorized = gate.realCallAuthorized
+  // THIRD GATE — Phase 0A execution intent is ENV-ONLY too.
+  const phase0aExecute = process.env.ARQWELIA_BENCHMARK_PHASE0A_EXECUTE === 'true'
   const dryRun = !realCallAuthorized
 
   if (args.budget != null && envBudget > 0 && args.budget > envBudget) {
@@ -268,11 +287,22 @@ async function run() {
     process.exit(2)
   }
 
+  // Real provider adapters (zai-glm / openai-gpt-image) receive a VERSIONED,
+  // PII-free prompt built from the closed-vocabulary builder — never CLI free
+  // text. `--promptA` is reserved for the mock/diagnostic path only.
+  const isRealProviderAdapter = provider.id === 'zai-glm' || provider.id === 'openai-gpt-image'
+  const builtPrompt = isRealProviderAdapter ? buildDefaultArqweliaPrompt(args.concept) : null
+
   console.log(`${TASK} v${VERSION}`)
   console.log(`provider=${provider.id}`)
   console.log(`model=${model}`)
   console.log(`supportsImageEditing=${provider.supportsImageEditing ? 'true' : 'false'}`)
   console.log(`realCallAuthorized=${realCallAuthorized}`)
+  console.log(`phase0aExecute=${phase0aExecute}`)
+  if (builtPrompt) {
+    console.log(`concept=${builtPrompt.concept}`)
+    console.log(`promptSha256=${builtPrompt.promptSha256}`)
+  }
 
   // -- image preflight (normalize, don't refuse; EXIF/GPS is allowed) --------
   let normalized = null
@@ -293,25 +323,35 @@ async function run() {
   const datasetItemId = args.datasetId || (normalized ? normalized.sha256.slice(0, 16) : null)
 
   // -- smoke ----------------------------------------------------------------
+  // The adapter receives ONLY normalized fields plus the versioned built prompt.
+  // `sanitizedPrompt` for real adapters is the BUILT prompt; CLI `--promptA`
+  // free text never reaches a real adapter.
+  const smokeOpts = {
+    providerId: provider.id,
+    model,
+    normalizedImageBuffer: normalized ? normalized.buffer : undefined,
+    normalizedImageDataUrl: normalized ? normalized.dataUrl : undefined,
+    normalizedMimeType: normalized ? normalized.mimeType : undefined,
+    normalizedSha256: normalized ? normalized.sha256 : undefined,
+    normalizedWidth: normalized ? normalized.width : undefined,
+    normalizedHeight: normalized ? normalized.height : undefined,
+    promptVersion: ARQWELIA_PROMPT_VERSION,
+    sanitizedPrompt: isRealProviderAdapter
+      ? (builtPrompt ? builtPrompt.prompt : undefined)
+      : (args.promptA ?? undefined),
+    concept: builtPrompt ? builtPrompt.concept : undefined,
+    builtPrompt: builtPrompt ? builtPrompt.prompt : undefined,
+    promptSha256: builtPrompt ? builtPrompt.promptSha256 : undefined,
+    phase0aExecute,
+    outDir,
+    budgetMaxEur,
+  }
+
   let result = null
   if (!dryRun && typeof provider.runSmoke === 'function') {
     const started = Date.now()
     try {
-      result = await provider.runSmoke({
-        providerId: provider.id,
-        model,
-        normalizedImageBuffer: normalized ? normalized.buffer : undefined,
-        normalizedImageDataUrl: normalized ? normalized.dataUrl : undefined,
-        normalizedMimeType: normalized ? normalized.mimeType : undefined,
-        normalizedSha256: normalized ? normalized.sha256 : undefined,
-        normalizedWidth: normalized ? normalized.width : undefined,
-        normalizedHeight: normalized ? normalized.height : undefined,
-        promptVersion: PROMPT_VERSION,
-        sanitizedPrompt: args.promptA ?? undefined,
-        outDir,
-        budgetMaxEur,
-        realCallAuthorized: true,
-      })
+      result = await provider.runSmoke({ ...smokeOpts, realCallAuthorized: true })
     } catch (error) {
       // Conservative billing on error: never auto-convert a real-adapter error
       // into externalCalls=0 / actualCostEur=0 / not_called.
@@ -329,21 +369,7 @@ async function run() {
       }
     }
   } else if (dryRun && provider.dryRunSafe === true && typeof provider.runSmoke === 'function') {
-    result = await provider.runSmoke({
-      providerId: provider.id,
-      model,
-      normalizedImageBuffer: normalized ? normalized.buffer : undefined,
-      normalizedImageDataUrl: normalized ? normalized.dataUrl : undefined,
-      normalizedMimeType: normalized ? normalized.mimeType : undefined,
-      normalizedSha256: normalized ? normalized.sha256 : undefined,
-      normalizedWidth: normalized ? normalized.width : undefined,
-      normalizedHeight: normalized ? normalized.height : undefined,
-      promptVersion: PROMPT_VERSION,
-      sanitizedPrompt: args.promptA ?? undefined,
-      outDir,
-      budgetMaxEur,
-      realCallAuthorized: false,
-    })
+    result = await provider.runSmoke({ ...smokeOpts, realCallAuthorized: false })
   } else {
     result = {
       providerId: provider.id,
@@ -360,8 +386,10 @@ async function run() {
 
   // -- billing + output derivation (single source of truth) -----------------
   const snap = billingSnapshot(result)
-  const promptSha256 = args.promptA
-    ? createHash('sha256').update(args.promptA).digest('hex')
+  const promptSha256 = builtPrompt
+    ? builtPrompt.promptSha256
+    : args.promptA
+      ? createHash('sha256').update(args.promptA).digest('hex')
     : null
 
   console.log(`mode=${dryRun ? 'dry-run' : 'smoke'}`)
@@ -405,8 +433,9 @@ async function run() {
     dryRun,
     authorized: envAuthorized === true,
     realCallAuthorized,
+    phase0aExecute,
     budgetMaxEur,
-    promptVersion: PROMPT_VERSION,
+    promptVersion: ARQWELIA_PROMPT_VERSION,
     provider: {
       id: provider.id,
       model,
@@ -428,7 +457,8 @@ async function run() {
         }
       : null,
     prompt: {
-      version: PROMPT_VERSION,
+      version: ARQWELIA_PROMPT_VERSION,
+      concept: builtPrompt ? builtPrompt.concept : null,
       sha256: promptSha256,
     },
     result: sanitizedResult,
@@ -436,6 +466,14 @@ async function run() {
     paidCostEur: snap.paidCostEur,
     billingStatus: snap.billingStatus,
     officialPricingSource: snap.officialPricingSource,
+  }
+
+  // Final PII gate before the report is written: no personal data, no local
+  // path, no secret may survive in any report field.
+  try {
+    assertNoPersonalData(report)
+  } catch (error) {
+    throw new Error(`refusing to write a report that failed the PII guard: ${error.message}`)
   }
 
   await mkdir(outDir, { recursive: true })

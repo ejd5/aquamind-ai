@@ -13,14 +13,21 @@ import {
   getArqweliaBenchmarkCandidate as _getCandidate,
 } from './candidates-registry.mjs'
 
-export type { ArqweliaBenchmarkProvider, SmokeOptions, SmokeResult } from './provider'
+export type {
+  ArqweliaBenchmarkProvider,
+  CandidateState,
+  SmokeOptions,
+  SmokeResult,
+} from './provider'
 export {
   ARQWELIA_BENCHMARK_AUTHORIZED,
   ARQWELIA_BENCHMARK_MAX_BUDGET_EUR,
+  ARQWELIA_BENCHMARK_PHASE0A_EXECUTE,
   ArqweliaProviderError,
   billingFromCaughtError,
   computeGate,
   ensureNoRealCall,
+  ensurePhase0AGate,
   redactSecrets,
   registerArqweliaBenchmarkCandidate,
   billingSnapshot,
