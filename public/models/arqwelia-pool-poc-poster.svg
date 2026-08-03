@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="ARQWELIA pool 3D model preview">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#051a29"/>
+      <stop offset="1" stop-color="#03121f"/>
+    </linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#38d6f0"/>
+      <stop offset="1" stop-color="#0a6a9e"/>
+    </linearGradient>
+    <linearGradient id="deck" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4b555e"/>
+      <stop offset="1" stop-color="#2c333a"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="960" height="540" fill="url(#bg)"/>
+
+  <!-- subtle grid to hint floor placement -->
+  <g stroke="#1d5a73" stroke-width="1" opacity="0.35">
+    <line x1="0" y1="420" x2="960" y2="420"/>
+    <line x1="0" y1="470" x2="960" y2="470"/>
+    <line x1="0" y1="520" x2="960" y2="520"/>
+    <line x1="120" y1="300" x2="120" y2="540"/>
+    <line x1="240" y1="300" x2="240" y2="540"/>
+    <line x1="360" y1="300" x2="360" y2="540"/>
+    <line x1="480" y1="300" x2="480" y2="540"/>
+    <line x1="600" y1="300" x2="600" y2="540"/>
+    <line x1="720" y1="300" x2="720" y2="540"/>
+    <line x1="840" y1="300" x2="840" y2="540"/>
+  </g>
+
+  <!-- pool deck / body -->
+  <rect x="220" y="210" width="520" height="220" rx="18" fill="url(#deck)" stroke="#0a0f14" stroke-width="4"/>
+
+  <!-- water surface -->
+  <rect x="250" y="180" width="460" height="240" rx="14" fill="url(#water)"/>
+
+  <!-- water sheen -->
+  <g opacity="0.28" fill="#bfeefb">
+    <ellipse cx="400" cy="260" rx="120" ry="10"/>
+    <ellipse cx="560" cy="330" rx="90" ry="8"/>
+    <ellipse cx="360" cy="380" rx="70" ry="6"/>
+  </g>
+
+  <!-- brand mark -->
+  <g fill="#7cf2e6">
+    <text x="480" y="120" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" letter-spacing="6">ARQWELIA</text>
+    <text x="480" y="150" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" letter-spacing="3" fill="#4a6b7a">A2 · AR POC — POOL PREVIEW</text>
+  </g>
+</svg>
