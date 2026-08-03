@@ -99,7 +99,7 @@ export const OPENAI_OFFICIAL_PRICING_SOURCE = 'https://openai.com/api/pricing/'
 export const OPENAI_TRANSPORT_DEFAULT_TIMEOUT_MS = 120_000
 
 /** Max HTTP response body size the transport will parse (bytes). */
-export const OPENAI_MAX_RESPONSE_BODY_BYTES = 5 * 1024 * 1024
+export const OPENAI_MAX_RESPONSE_BODY_BYTES = 48 * 1024 * 1024
 
 /** Max decoded image size accepted by the response parser (bytes). */
 export const OPENAI_MAX_DECODED_IMAGE_BYTES = 32 * 1024 * 1024
@@ -217,6 +217,23 @@ export function resolveOpenAiImagesEditEndpoint(baseUrl) {
 
 const NOT_CALLED = { externalCalls: 0, actualCostEur: 0, billingStatus: 'not_called' }
 const CALL_ANSWERED = { externalCalls: 1, actualCostEur: null, billingStatus: 'unknown' }
+
+/**
+ * Sanitizes an HTTP `x-request-id` so it can be kept in the manifest and the
+ * report but can NEVER smuggle a key, an Authorization header, the prompt, the
+ * photo, a local path or any free-form value. Only a short safe token survives;
+ * anything else is dropped to `null`.
+ *
+ * @param {unknown} value
+ * @returns {string|null}
+ */
+export function sanitizeOpenAiRequestId(value) {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (trimmed === '' || trimmed.length > 200) return null
+  if (!/^[A-Za-z0-9_\-:.]+$/.test(trimmed)) return null
+  return trimmed
+}
 
 const IMAGE_MIME_BY_FORMAT = {
   jpeg: 'image/jpeg',
@@ -451,7 +468,7 @@ async function readResponseTextWithLimit(response, maxBytes) {
  * zero across the normal suite).
  *
  * @param {{ apiKey?: string, baseUrl?: string, fetchImpl?: typeof fetch, timeoutMs?: number, locks?: { authorized?: boolean, budgetMaxEur?: number, phase0aExecute?: boolean } }} opts
- * @returns {(request: { normalizedImageBuffer?: Buffer, builtPrompt?: string, model?: string, size?: string, quality?: string, outputFormat?: string }) => Promise<{ buffer: Buffer, width: number|null, height: number|null, mimeType: string }>}
+ * @returns {(request: { normalizedImageBuffer?: Buffer, builtPrompt?: string, model?: string, size?: string, quality?: string, outputFormat?: string }) => Promise<{ buffer: Buffer, width: number|null, height: number|null, mimeType: string, requestId: string|null, externalCallStarted: number, responseReceived: number }>}
  */
 export function createOpenAiImageEditTransport({
   apiKey,
@@ -475,6 +492,10 @@ export function createOpenAiImageEditTransport({
   }
 
   return async (request) => {
+    // CANONICAL TRANSPORT CONTRACT: the transport receives ONLY the normalized
+    // fields and is SOLELY responsible for building the multipart body, the
+    // FormData, the endpoint, the fetch, the response read and the parse. The
+    // caller (runSmoke) NEVER pre-computes a multipart descriptor.
     const multipart = prepareMultipartBody({
       normalizedImageBuffer: request?.normalizedImageBuffer,
       builtPrompt: request?.builtPrompt,
@@ -487,6 +508,7 @@ export function createOpenAiImageEditTransport({
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), timeoutMs)
     let response
+    const externalCallStarted = Date.now()
     try {
       response = await doFetch(endpoint, {
         method: 'POST',
@@ -496,21 +518,32 @@ export function createOpenAiImageEditTransport({
       })
     } catch (error) {
       // NEVER include the underlying fetch error (may carry URL/headers).
-      throw new ArqweliaProviderError('openai images/edits request failed', CALL_ANSWERED)
+      // A fetch that STARTED (even if it aborted/timed out) is billed as one
+      // external call with UNKNOWN cost — never not_called/0.
+      throw new ArqweliaProviderError('openai images/edits request failed', {
+        ...CALL_ANSWERED,
+        externalCallStarted,
+        responseReceived: null,
+        requestId: null,
+      })
     } finally {
       clearTimeout(timer)
     }
+    const responseReceived = Date.now()
 
-    const requestId =
+    const requestId = sanitizeOpenAiRequestId(
       response && response.headers && typeof response.headers.get === 'function'
         ? response.headers.get('x-request-id')
-        : null
+        : null,
+    )
 
     if (!response.ok) {
       // NEVER log the raw error body and NEVER include it in the message.
       throw new ArqweliaProviderError(`openai images/edits HTTP ${response.status}`, {
         ...CALL_ANSWERED,
         requestId: requestId || null,
+        externalCallStarted,
+        responseReceived,
       })
     }
 
@@ -522,9 +555,20 @@ export function createOpenAiImageEditTransport({
       throw new ArqweliaProviderError('openai images/edits response is not valid JSON', {
         ...CALL_ANSWERED,
         requestId: requestId || null,
+        externalCallStarted,
+        responseReceived,
       })
     }
-    return parseOpenAiImageEditResponse(parsed)
+    const image = await parseOpenAiImageEditResponse(parsed)
+    return {
+      buffer: image.buffer,
+      width: image.width,
+      height: image.height,
+      mimeType: image.mimeType,
+      requestId: requestId || null,
+      externalCallStarted,
+      responseReceived,
+    }
   }
 }
 
@@ -585,20 +629,24 @@ export const openaiImageAdapter = {
       throw error
     }
 
-    const multipart = prepareMultipartBody({
-      normalizedImageBuffer: opts.normalizedImageBuffer,
-      builtPrompt: opts.builtPrompt,
-      model: opts.model,
-      size: opts.size,
-      quality: opts.quality,
-      outputFormat: opts.outputFormat,
-    })
-
+    // CANONICAL TRANSPORT CONTRACT: runSmoke forwards the NORMALIZED fields —
+    // never a pre-computed multipart descriptor. The transport is SOLELY
+    // responsible for building the multipart/FormData, the endpoint, the fetch,
+    // the response read and the parse. There is NO second contract and NO shape
+    // auto-detection: the transport returns the parsed
+    // `{ buffer, width, height, mimeType, … }` object.
     const started = Date.now()
     const transport = opts.transport ?? defaultTransport
     let transportResult
     try {
-      transportResult = await transport(multipart)
+      transportResult = await transport({
+        normalizedImageBuffer: opts.normalizedImageBuffer,
+        builtPrompt: opts.builtPrompt,
+        model: opts.model,
+        size: opts.size,
+        quality: opts.quality,
+        outputFormat: opts.outputFormat,
+      })
     } catch (error) {
       // Preserve an ArqweliaProviderError (e.g. the default NOT IMPLEMENTED
       // transport) so its carried billing survives; generic transport errors
@@ -607,19 +655,13 @@ export const openaiImageAdapter = {
       throw new ArqweliaProviderError('openai images/edits transport failed', CALL_ANSWERED)
     }
 
-    // A real transport already returns the sanitized result; a mock transport
-    // returns the raw JSON object which is validated here.
-    let parsed
-    if (transportResult && Buffer.isBuffer(transportResult.buffer)) {
-      parsed = transportResult
-    } else {
-      try {
-        parsed = await parseOpenAiImageEditResponse(transportResult)
-      } catch (error) {
-        if (error instanceof ArqweliaProviderError) throw error
-        throw new ArqweliaProviderError('openai images/edits response rejected', CALL_ANSWERED)
-      }
+    if (transportResult == null || typeof transportResult !== 'object' || !Buffer.isBuffer(transportResult.buffer)) {
+      throw new ArqweliaProviderError(
+        'openai images/edits transport returned an invalid result (expected { buffer, width, height, mimeType })',
+        CALL_ANSWERED,
+      )
     }
+    const parsed = transportResult
 
     await mkdir(opts.outDir, { recursive: true })
     const stamp = new Date().toISOString().replace(/[:.]/g, '-')
@@ -638,6 +680,9 @@ export const openaiImageAdapter = {
       outputWidth: parsed.width,
       outputHeight: parsed.height,
       outputPath,
+      requestId: parsed.requestId ?? null,
+      externalCallStarted: parsed.externalCallStarted ?? null,
+      responseReceived: parsed.responseReceived ?? null,
     }
   },
 }

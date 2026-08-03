@@ -42,7 +42,9 @@ function tmpOut(prefix: string): string {
 }
 
 function latestReportJson(dir: string): { path: string; data: Record<string, unknown> } {
-  const json = readdirSync(dir).filter((file) => file.endsWith('.json'))
+  const json = readdirSync(dir).filter(
+    (file) => file.endsWith('.json') && !file.startsWith('phase0a-manifest'),
+  )
   expect(json.length).toBeGreaterThan(0)
   const path = join(dir, json[json.length - 1])
   return { path, data: JSON.parse(readFileSync(path, 'utf8')) }
@@ -591,13 +593,24 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
     expect(r.externalCalls).toBe(0)
   })
 
-  it('all three env gates open: runSmoke is invoked but still NO real call (no injected transport)', () => {
-    const out = tmpOut('aqw-bench-3gates-')
-    const result = runCli(['--provider', 'openai-gpt-image', '--out', out, '--concept', 'A'], {
-      ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
-      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
-      ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: 'true',
+  it('all three env gates open: runSmoke is invoked but still NO real call (no key → default transport NOT IMPLEMENTED)', async () => {
+    const srcDir = tmpOut('aqw-bench-3gates-img-')
+    const imagePath = join(srcDir, 'source.jpg')
+    const jpeg = await sharp({
+      create: { width: 640, height: 480, channels: 3, background: { r: 40, g: 120, b: 200 } },
     })
+      .jpeg()
+      .toBuffer()
+    writeFileSync(imagePath, jpeg)
+    const out = tmpOut('aqw-bench-3gates-')
+    const result = runCli(
+      ['--provider', 'openai-gpt-image', '--image', imagePath, '--out', out, '--concept', 'A', '--dataset-id', 'item001', '--dataset-kind', 'synthetic'],
+      {
+        ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+        ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+        ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: 'true',
+      },
+    )
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('realCallAuthorized=true')
     expect(result.stdout).toContain('phase0aExecute=true')

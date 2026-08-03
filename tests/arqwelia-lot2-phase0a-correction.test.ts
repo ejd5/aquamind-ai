@@ -382,30 +382,48 @@ describe('Phase 0A correction #9 — 4-call strict counter + idempotence (persis
     expect(phase0aIdempotenceKey({ datasetItemId: 'item01', concept: 'A', model, promptSha256 })).toMatch(/^[a-f0-9]{64}$/)
   })
 
-  it('upsertPhase0aItem records the retention fields (origin, authorization, sha256, noExif, date, statusA/B)', async () => {
+  it('upsertPhase0aItem records the retention fields (synthetic dataset basis, sha256, noExif, no-PII declarations, date, statusA/B)', async () => {
     const out = tmpOut('aqw-phase0a-item-')
     const record = await upsertPhase0aItem({
       outDir: out,
       datasetItemId: 'item01',
-      origin: 'local',
-      authorization: false,
+      datasetKind: 'synthetic',
+      authorizationBasis: 'synthetic',
       normalizedSha256: 'b'.repeat(64),
       noExif: true,
+      noFacesDeclared: true,
+      noPlatesDeclared: true,
+      noHouseNumberDeclared: true,
+      noAddressDeclared: true,
+      noGps: true,
       statusA: 'pending',
       statusB: 'pending',
     })
     expect(record).toMatchObject({
       datasetItemId: 'item01',
-      origin: 'local',
-      authorization: false,
+      datasetKind: 'synthetic',
+      authorizationBasis: 'synthetic',
       normalizedSha256: 'b'.repeat(64),
       noExif: true,
+      noFacesDeclared: true,
+      noPlatesDeclared: true,
+      noHouseNumberDeclared: true,
+      noAddressDeclared: true,
+      noGps: true,
       statusA: 'pending',
       statusB: 'pending',
     })
+    // The dataset authorization basis is NEVER derived from envAuthorized.
+    expect(record).not.toHaveProperty('authorization')
+    expect(record).not.toHaveProperty('origin')
     expect(record.date).toMatch(/^\d{4}-\d{2}-\d{2}T/)
     const manifest = JSON.parse(readFileSync(join(out, PHASE0A_MANIFEST_FILENAME), 'utf8'))
-    expect(manifest.items.item01).toMatchObject({ datasetItemId: 'item01', noExif: true })
+    expect(manifest.items.item01).toMatchObject({
+      datasetItemId: 'item01',
+      datasetKind: 'synthetic',
+      authorizationBasis: 'synthetic',
+      noExif: true,
+    })
   })
 })
 

@@ -38,7 +38,14 @@ Scope decisions honored by this harness (Phase 0A final corrections):
   `{ dataUrl, buffer, mimeType, width, height, sha256, inputBytes, outputBytes }`.
   The harness **reuses this module** — there is no harness-local copy of the
   normalization logic.
-- No `@vercel/blob`, no other provider SDK.
+- **No `@vercel/blob`, no other provider SDK.**
+- **Execution-safety (Phase 0A corrections)**: a single canonical transport
+  contract, atomic `reserve → markStarted → call → finalize` manifest lifecycle
+  behind a local lock file, a FAIL-CLOSED manifest, a SYNTHETIC-only dataset
+  gate, coherent response limits (JSON ≤ 48 MiB, decoded image ≤ 32 MiB) and a
+  `pricingCheckedAt` stamp that must be re-checked on the official pricing page
+  immediately before any smoke. See
+  [Execution-safety contract](#execution-safety-contract).
 
 ## Files
 
@@ -56,6 +63,7 @@ Scope decisions honored by this harness (Phase 0A final corrections):
 | `tests/arqwelia-lot2-benchmark.test.ts` | A1 harness Vitest suite (no real calls, no keys) |
 | `tests/arqwelia-lot2-phase0a-adapters.test.ts` | Phase 0A adapters suite (no real calls, global fetch spy = 0) |
 | `tests/arqwelia-lot2-phase0a-correction.test.ts` | Phase 0A final-correction suite (32 tests) |
+| `tests/arqwelia-lot2-phase0a-execution-safety.test.ts` | Phase 0A EXECUTION-SAFETY suite — full integration (runSmoke → real transport → mock fetch → image), canonical contract, atomic reservation + local lock + concurrency, FAIL-CLOSED manifest, synthetic-only dataset gate, coherent response limits, zero real network, PII-free reports |
 | `dataset/README.md` | Benchmark photo dataset instructions + Phase 0A dataset rules (lives outside git) |
 
 ### Circular import removed
@@ -206,8 +214,13 @@ input tokens for the photo + prompt**):
 
 - `officialPricingSource` references the official docs
   (`https://openai.com/api/pricing/`).
+- **`pricingCheckedAt` = `2026-08-03`.** These USD values MUST be re-checked on
+  the official pricing page/calculator immediately before any authorized smoke
+  (prices change; `pricingCheckedAt` must be bumped to the re-check date).
 - **No USD→EUR conversion is ever invented.** `actualCostEur` stays `null`
-  until real billing is measured during the authorized smoke phase.
+  until real billing is measured during the authorized smoke phase. Exact cost
+  is never derived from `quality` alone, and `PAID_COST=0` is never written
+  after an external call.
 - Recommended first smoke **owner budget = 2 EUR max**
   (`ARQWELIA_BENCHMARK_MAX_BUDGET_EUR=2`, Phase 0A retention config).
 
@@ -282,19 +295,100 @@ A real OpenAI transport is prepared but **never executed in this build**:
 - Only constructible when the three locks are active (it calls
   `ensurePhase0AGate`); all other gate combinations throw.
 - Uses `OPENAI_API_KEY` (server/CLI only — never logged, never stored).
+- **CANONICAL CONTRACT (single source of truth):** the transport receives
+  exactly `{ normalizedImageBuffer, builtPrompt, model, size, quality,
+  outputFormat }` and is SOLELY responsible for building the multipart body +
+  `FormData`, building the endpoint, doing the fetch, reading the response and
+  calling `parseOpenAiImageEditResponse`. `runSmoke` forwards these normalized
+  fields and NEVER pre-computes a multipart descriptor — there is NO second
+  contract and NO shape auto-detection. Mock transports in tests follow the
+  same contract and return the parsed
+  `{ buffer, width, height, mimeType, requestId, externalCallStarted,
+  responseReceived }`.
 - POSTs `multipart/form-data` to the validated `/images/edits` endpoint with
   `image`, `prompt`, `model=gpt-image-2`, `size=1536x1024`,
   `quality=medium`, `output_format=png`.
 - The multipart boundary is left to `fetch`/`FormData` (never set manually).
 - `AbortController` with a configurable timeout (default 120 s).
-- Checks `response.ok`, reads `x-request-id` (a non-secret), parses JSON behind
-  a **max-size guard**, and validates the payload with
-  `parseOpenAiImageEditResponse`.
+- Checks `response.ok`, reads `x-request-id` (sanitized — a non-secret, safe
+  token only), parses JSON behind a **max-size guard** (48 MiB), and validates
+  the payload with `parseOpenAiImageEditResponse` (decoded image ≤ 32 MiB).
+- Returns/attaches sanitized `requestId`, `externalCallStarted` and
+  `responseReceived`; after a started fetch the billing is always
+  `externalCalls=1, actualCostEur=null, billingStatus='unknown'` even on a
+  fetch timeout, HTTP 400/401/429/500, invalid response, parse failure or image
+  write failure.
 - **Never logs** the `Authorization` header, the full prompt, or the source
   photo; errors never contain them.
 - In this build: no real call; all responses are mocked; global `fetch` stays
-  ZERO across the normal test suite — a single transport test injects a local
-  `fetchImpl` mock.
+  ZERO across the normal test suite — transports are exercised only with an
+  injected `fetchImpl` mock.
+
+## Execution-safety contract
+
+### Atomic reservation before network (`phase0a-manifest.mjs`)
+
+The CLI (when `executeAuthorized`) replaces `check→call→record-if-success` with
+an atomic lifecycle:
+
+```
+reservePhase0aCall → markPhase0aCallStarted → call → finalizePhase0aCall
+```
+
+- `reservePhase0aCall` (BEFORE any transport): reads the manifest under a local
+  lock, enforces the 4-call cap + idempotence, and records a `reserved` attempt
+  (`{ attemptId, idempotenceKey, datasetItemId, concept, model, promptSha256,
+  status:'reserved', reservedAt }`).
+- `markPhase0aCallStarted` (immediately before the real fetch invocation):
+  status → `in_flight`, `startedAt` — the attempt PERMANENTLY counts toward the
+  4-call limit.
+- `finalizePhase0aCall`: `succeeded` / `failed` / `unknown` all consume a slot
+  (`externalCalls=1, actualCostEur=null, billingStatus='unknown'`);
+  `cancelled_before_call` (`externalCalls=0, billingStatus='not_called'`) never
+  consumes a slot. A failed call AFTER fetch consumes one of the four slots.
+
+### Local lock + concurrency
+
+Every manifest read-modify-write is guarded by a local lock file
+`phase0a-manifest.lock`, created with `open(lockPath, 'wx')` (atomically fails
+with `EEXIST` when another process owns it), released in a `finally`, with a max
+wait timeout. We never delete a lock owned by another process and refuse
+execution on doubt (inode check before unlink). ≥8 concurrent reservations can
+therefore never record a 5th call.
+
+### FAIL-CLOSED manifest
+
+- manifest ABSENT → creation allowed;
+- PRESENT + VALID → normal read;
+- PRESENT but CORRUPT → **blocking error**;
+- permission / read / write error → **blocking error**.
+
+In `executeAuthorized` the CLI never silently returns an empty manifest, never
+ignores a manifest error and never launches a transport when a manifest
+operation failed. In a dry run a manifest failure produces a diagnostic without
+a call and is never presented as reliable.
+
+### Dataset authorization (synthetic only)
+
+`ARQWELIA_BENCHMARK_AUTHORIZED` concerns **spend** authorization, NOT photo
+authorization. Phase 0A smoke accepts ONLY `--dataset-kind synthetic`
+(`authorized` / `user` / `home` / `real` are REJECTED). When
+`executeAuthorized===true` the CLI REQUIRES `--dataset-id <controlled>`,
+`--dataset-kind synthetic` and `--image <photo>`. The manifest records
+`datasetKind:'synthetic'`, `authorizationBasis:'synthetic'`, `normalizedSha256`,
+`noExif:true`, `noFacesDeclared:true`, `noPlatesDeclared:true`,
+`noHouseNumberDeclared:true`, `noAddressDeclared:true`, `noGps:true` — never
+derived from `envAuthorized`.
+
+### Coherent response limits
+
+- `OPENAI_MAX_RESPONSE_BODY_BYTES = 48 MiB` (covers the 32 MiB decoded image ≈
+  42.7 MiB base64 + the JSON envelope + a small technical margin);
+- `OPENAI_MAX_DECODED_IMAGE_BYTES = 32 MiB` (authoritative image-size guard).
+
+A JSON body between 5 MiB and 48 MiB is accepted when it contains a valid image;
+a JSON body > 48 MiB is rejected by the body limit; a decoded image > 32 MiB is
+rejected by the image guard. Errors never include the raw response body.
 
 ## Phase 0A retention config (no execution) + strict counter
 
@@ -318,7 +412,10 @@ The Phase 0A retention configuration (`phase0a-manifest.mjs`,
 - max **4 calls**; one call per photo+concept;
 - idempotence key = `datasetItemId + concept + model + promptSha256`;
 - refuses a 5th call;
-- refuses a duplicate unless an explicit `retry` option is passed.
+- refuses a duplicate unless an explicit `retry` option is passed;
+- the execute path uses the atomic
+  [reserve → markStarted → call → finalize lifecycle](#atomic-reservation-before-network)
+  with the local lock file (see [Execution-safety contract](#execution-safety-contract)).
 
 The counter reads/writes a local, **NON-versioned** JSON manifest
 (`phase0a-manifest.json`) in the benchmark output directory. For each dataset

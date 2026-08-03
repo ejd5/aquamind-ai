@@ -51,6 +51,7 @@ import {
   OPENAI_PHASE0A_DEFAULT_QUALITY,
   OPENAI_PHASE0A_DEFAULT_SIZE,
   openaiImageAdapter,
+  parseOpenAiImageEditResponse,
 } from '../scripts/lib/arqwelia-benchmark/adapters/openai-image-adapter.mjs'
 
 const CLI = join(process.cwd(), 'scripts/benchmark-arqwelia-smoke.mjs')
@@ -343,7 +344,7 @@ describe('ARQWELIA Lot 2 Phase 0A — adapters receive ONLY normalized fields', 
     const prompt = buildDefaultArqweliaPrompt('A').prompt
     await expect(
       openaiImageAdapter.runSmoke({
-        ...gateOpenOptions({ builtPrompt: prompt, transport: async () => ({ data: [{ b64_json: '' }] }) }),
+        ...gateOpenOptions({ builtPrompt: prompt, transport: async () => ({ buffer: Buffer.alloc(0), width: null, height: null, mimeType: 'image/png' }) }),
         imagePath: '/tmp/private-garden.jpg',
       }),
     ).rejects.toThrow(/normalized/)
@@ -351,7 +352,9 @@ describe('ARQWELIA Lot 2 Phase 0A — adapters receive ONLY normalized fields', 
 
   it('refuses a run without a built prompt (no free prompt can be injected)', async () => {
     await expect(
-      openaiImageAdapter.runSmoke({ ...gateOpenOptions(), transport: async () => ({ data: [{ b64_json: '' }] }) }),
+      openaiImageAdapter.runSmoke({
+        ...gateOpenOptions({ transport: async () => ({ buffer: Buffer.alloc(0), width: null, height: null, mimeType: 'image/png' }) }),
+      }),
     ).rejects.toThrow(/no built prompt/)
   })
 
@@ -359,7 +362,7 @@ describe('ARQWELIA Lot 2 Phase 0A — adapters receive ONLY normalized fields', 
     const err = await openaiImageAdapter
       .runSmoke({
         ...gateOpenOptions({ builtPrompt: 'reimagine my garden for john.doe@example.com' }),
-        transport: async () => ({ data: [{ b64_json: 'AA==' }] }),
+        transport: async () => ({ buffer: Buffer.alloc(0), width: null, height: null, mimeType: 'image/png' }),
       })
       .catch((error: unknown) => error)
     expect(err).toBeInstanceOf(ArqweliaProviderError)
@@ -371,27 +374,47 @@ describe('ARQWELIA Lot 2 Phase 0A — adapters receive ONLY normalized fields', 
     expect(String(err instanceof Error ? err.message : err)).not.toContain('john.doe@example.com')
   })
 
-  it('the request body uses the BUILT prompt and never CLI free text', async () => {
+  it('the transport receives the BUILT prompt (normalized fields) and never CLI free text', async () => {
     const buffer = await validPng()
     const builtPrompt = buildDefaultArqweliaPrompt('A').prompt
     const freeText = 'A concept prompt typed by an operator' // must NEVER reach a provider
-    const seenBodies: unknown[] = []
-    const transport = async (body: unknown) => {
-      seenBodies.push(body)
-      return { data: [{ b64_json: buffer.toString('base64') }] }
+    const seenRequests: unknown[] = []
+    const transport = async (request: unknown) => {
+      seenRequests.push(request)
+      return { buffer, width: null, height: null, mimeType: 'image/png' }
     }
     const result = await openaiImageAdapter.runSmoke({
       ...gateOpenOptions({ builtPrompt, transport }),
       normalizedImageBuffer: buffer,
       sanitizedPrompt: freeText,
+      size: OPENAI_PHASE0A_DEFAULT_SIZE,
+      quality: OPENAI_PHASE0A_DEFAULT_QUALITY,
+      outputFormat: OPENAI_PHASE0A_DEFAULT_OUTPUT_FORMAT,
     })
     expect(result.ok).toBe(true)
-    expect(seenBodies).toHaveLength(1)
-    const descriptor = seenBodies[0] as { parts: { name: string; value: string }[] }
-    const promptPart = descriptor.parts.find((part) => part.name === 'prompt')
-    expect(promptPart?.value).toBe(builtPrompt)
-    expect(promptPart?.value).not.toBe(freeText)
-    expect(promptPart?.value).not.toContain(freeText)
+    expect(seenRequests).toHaveLength(1)
+    const request = seenRequests[0] as {
+      normalizedImageBuffer: Buffer
+      builtPrompt: string
+      model?: string
+      size?: string
+      quality?: string
+      outputFormat?: string
+    }
+    // CANONICAL TRANSPORT CONTRACT: runSmoke forwards normalized fields, never
+    // a pre-computed multipart descriptor.
+    expect(request).toMatchObject({
+      normalizedImageBuffer: buffer,
+      builtPrompt,
+      model: OPENAI_PHASE0A_DEFAULT_MODEL,
+      size: OPENAI_PHASE0A_DEFAULT_SIZE,
+      quality: OPENAI_PHASE0A_DEFAULT_QUALITY,
+      outputFormat: OPENAI_PHASE0A_DEFAULT_OUTPUT_FORMAT,
+    })
+    expect((request as { parts?: unknown[] }).parts).toBeUndefined()
+    expect((request as { toFormData?: unknown }).toFormData).toBeUndefined()
+    expect(request.builtPrompt).not.toBe(freeText)
+    expect(request.builtPrompt).not.toContain(freeText)
   })
 })
 
@@ -403,7 +426,7 @@ describe('ARQWELIA Lot 2 Phase 0A — mock transport, conservative billing', () 
     const result = await openaiImageAdapter.runSmoke({
       ...gateOpenOptions({ builtPrompt: prompt, outDir: out }),
       normalizedImageBuffer: png,
-      transport: async () => ({ data: [{ b64_json: png.toString('base64') }] }),
+      transport: async () => ({ buffer: png, width: 48, height: 24, mimeType: 'image/png' }),
     })
     expect(result.ok).toBe(true)
     expect(result.externalCalls).toBe(1)
@@ -413,14 +436,17 @@ describe('ARQWELIA Lot 2 Phase 0A — mock transport, conservative billing', () 
     expect(written.equals(png)).toBe(true)
   })
 
-  it('openai: the old ROOT b64_json shape is rejected by the response parser', async () => {
+  it('openai: the old ROOT b64_json shape is rejected by the response parser (via the transport)', async () => {
     const png = await validPng()
     const prompt = buildDefaultArqweliaPrompt('A').prompt
     const err = await openaiImageAdapter
       .runSmoke({
         ...gateOpenOptions({ builtPrompt: prompt }),
         normalizedImageBuffer: png,
-        transport: async () => ({ b64_json: png.toString('base64') }),
+        transport: async () =>
+          // Mirrors the REAL transport: the parser rejects the root shape, so
+          // the transport throws and runSmoke rethrows the ArqweliaProviderError.
+          parseOpenAiImageEditResponse({ b64_json: png.toString('base64') }),
       })
       .catch((error: unknown) => error)
     expect(err).toBeInstanceOf(ArqweliaProviderError)
@@ -434,7 +460,7 @@ describe('ARQWELIA Lot 2 Phase 0A — mock transport, conservative billing', () 
     const result = await openaiImageAdapter.runSmoke({
       ...gateOpenOptions({ builtPrompt: prompt, outDir: out }),
       normalizedImageBuffer: png,
-      transport: async () => ({ data: [{ b64_json: png.toString('base64') }] }),
+      transport: async () => ({ buffer: png, width: null, height: null, mimeType: 'image/png' }),
     })
     expect(result.billingStatus).toBe('unknown')
     expect(result.externalCalls).toBe(1)
@@ -475,7 +501,7 @@ describe('ARQWELIA Lot 2 Phase 0A — THREE-GATE block (real call impossible)', 
       .runSmoke({
         ...gateOpenOptions({ builtPrompt: prompt }),
         ...opts,
-        transport: async () => ({ data: [{ b64_json: '' }] }),
+        transport: async () => ({ buffer: Buffer.alloc(0), width: null, height: null, mimeType: 'image/png' }),
       })
       .catch((error: unknown) => error)
   }
@@ -499,7 +525,7 @@ describe('ARQWELIA Lot 2 Phase 0A — THREE-GATE block (real call impossible)', 
     const png = await validPng()
     const prompt = buildDefaultArqweliaPrompt('A').prompt
     const out = tmpOut('aqw-phase0a-allgates-')
-    const transport = vi.fn(async () => ({ data: [{ b64_json: png.toString('base64') }] }))
+    const transport = vi.fn(async () => ({ buffer: png, width: null, height: null, mimeType: 'image/png' }))
     const result = await openaiImageAdapter.runSmoke({
       ...gateOpenOptions({ builtPrompt: prompt, outDir: out }),
       normalizedImageBuffer: png,
@@ -518,7 +544,7 @@ describe('ARQWELIA Lot 2 Phase 0A — THREE-GATE block (real call impossible)', 
     expect(String(err instanceof Error ? err.message : err)).toMatch(/NOT IMPLEMENTED|Phase 0A/)
   })
 
-  it('CLI: all three env gates open still cannot make a real call (default transport NOT IMPLEMENTED)', async () => {
+  it('CLI: all three env gates open still cannot make a real call (no key → default transport NOT IMPLEMENTED)', async () => {
     const srcDir = tmpOut('aqw-phase0a-cli-img-')
     const imagePath = join(srcDir, 'source.jpg')
     const jpeg = await sharp({
@@ -529,11 +555,14 @@ describe('ARQWELIA Lot 2 Phase 0A — THREE-GATE block (real call impossible)', 
     const { writeFileSync } = await import('node:fs')
     writeFileSync(imagePath, jpeg)
     const out = tmpOut('aqw-phase0a-cli-')
-    const result = runCli(['--provider', 'openai-gpt-image', '--image', imagePath, '--out', out, '--concept', 'A'], {
-      ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
-      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
-      ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: 'true',
-    })
+    const result = runCli(
+      ['--provider', 'openai-gpt-image', '--image', imagePath, '--out', out, '--concept', 'A', '--dataset-id', 'item001', '--dataset-kind', 'synthetic'],
+      {
+        ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+        ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+        ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: 'true',
+      },
+    )
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('phase0aExecute=true')
     expect(result.stdout).toContain('result=not-implemented (awaiting Gate)')

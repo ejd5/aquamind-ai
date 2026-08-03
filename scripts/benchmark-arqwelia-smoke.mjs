@@ -53,6 +53,7 @@ import { basename, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import sharp from 'sharp'
 import {
+  ArqweliaProviderError,
   billingFromCaughtError,
   billingSnapshot,
   billingSummaryLines,
@@ -63,10 +64,16 @@ import {
 } from './lib/arqwelia-benchmark/candidates-registry.mjs'
 import { computeExecuteGate } from './lib/arqwelia-benchmark/provider-runtime.mjs'
 import {
-  checkPhase0aCallAllowed,
-  recordPhase0aCall,
+  finalizePhase0aCall,
+  markPhase0aCallStarted,
+  phase0aManifestPath,
+  reservePhase0aCall,
   upsertPhase0aItem,
 } from './lib/arqwelia-benchmark/phase0a-manifest.mjs'
+import {
+  OPENAI_DEFAULT_BASE_URL,
+  createOpenAiImageEditTransport,
+} from './lib/arqwelia-benchmark/adapters/openai-image-adapter.mjs'
 import { normalizeImageForAi, SecureImageError } from '../src/lib/images/secure-image.ts'
 import {
   ARQWELIA_PROMPT_VERSION,
@@ -94,6 +101,11 @@ Options:
                     real adapters (default: A)
   --dataset-id <id> Alphanumeric dataset item id recorded in reports (default: a
                     truncated hash of the normalized image)
+  --dataset-kind <kind>
+                    Phase 0A dataset kind. ONLY "synthetic" is accepted in this
+                    build; "authorized" / "user" / "home" / "real" are REJECTED.
+                    The dataset authorization basis is NEVER derived from
+                    ARQWELIA_BENCHMARK_AUTHORIZED (spend authorization only).
   --out <dir>       Output directory (default: ./benchmark-out)
   --budget <eur>    Budget cap — may only REDUCE the budget below
                     ARQWELIA_BENCHMARK_MAX_BUDGET_EUR; exceeding the env ceiling
@@ -103,6 +115,8 @@ Options:
 Authorization is ENV-ONLY and cannot be granted from the CLI. A real provider
 call requires ALL THREE of ARQWELIA_BENCHMARK_AUTHORIZED=true,
 ARQWELIA_BENCHMARK_MAX_BUDGET_EUR>0 AND ARQWELIA_BENCHMARK_PHASE0A_EXECUTE=true.
+When executeAuthorized===true the Phase 0A provider additionally REQUIRES
+--dataset-id <controlled>, --dataset-kind synthetic AND --image <photo>.
 Otherwise this runs as a DRY RUN.`,
   )
 }
@@ -115,6 +129,7 @@ function parseArgs(argv) {
     promptA: null,
     concept: 'A',
     datasetId: null,
+    datasetKind: null,
     outDir: null,
     budget: null,
   }
@@ -155,6 +170,14 @@ function parseArgs(argv) {
           throw new Error('Invalid --dataset-id value (alphanumeric only)')
         }
         args.datasetId = raw
+        break
+      }
+      case '--dataset-kind': {
+        const raw = next()
+        if (raw !== 'synthetic') {
+          throw new Error('Invalid --dataset-kind value: Phase 0A accepts ONLY "synthetic" (authorized/user/home/real are REJECTED)')
+        }
+        args.datasetKind = raw
         break
       }
       case '--out':
@@ -342,25 +365,41 @@ async function run() {
   // normalized image) — never the original local filename.
   const datasetItemId = args.datasetId || (normalized ? normalized.sha256.slice(0, 16) : null)
 
-  // Phase 0A retention config (no execution in this build): when a dataset item
-  // is processed for the Phase 0A provider (openai-gpt-image), upsert the local
-  // NON-versioned manifest item record (gitignored via benchmark-out/). The
-  // manifest is ONLY written for the openai provider and only when an image is
-  // present, so mock/nvidia runs and no-image dry runs never create it.
+  // Phase 0A dataset authorization: the dataset kind is `synthetic` (the ONLY
+  // value accepted in this build) and the authorization basis is NEVER derived
+  // from ARQWELIA_BENCHMARK_AUTHORIZED — that env flag concerns SPEND
+  // authorization, not photo authorization. In execution the explicit
+  // `--dataset-kind synthetic` flag is REQUIRED (absent → refused).
+  const effectiveDatasetKind = args.datasetKind ?? 'synthetic'
+
+  // Phase 0A retention record (local NON-versioned manifest, gitignored via
+  // benchmark-out/). Written for the Phase 0A provider (openai-gpt-image) only
+  // and only when an image is present. FAIL-CLOSED: in executeAuthorized a
+  // manifest failure BLOCKS the run; in dry-run it produces a diagnostic and
+  // never claims the manifest is reliable.
   if (provider.id === 'openai-gpt-image' && datasetItemId && normalized) {
     try {
       await upsertPhase0aItem({
         outDir,
         datasetItemId,
-        origin: 'local',
-        authorization: envAuthorized,
+        datasetKind: effectiveDatasetKind,
+        authorizationBasis: 'synthetic',
         normalizedSha256: normalized.sha256,
         noExif: true,
+        noFacesDeclared: true,
+        noPlatesDeclared: true,
+        noHouseNumberDeclared: true,
+        noAddressDeclared: true,
+        noGps: true,
         statusA: 'pending',
         statusB: 'pending',
       })
-    } catch {
-      // A manifest write failure must never block a dry run.
+    } catch (error) {
+      const message = String((error && error.message) || error)
+      if (executeAuthorized) {
+        throw new Error(`Phase 0A manifest write failed — refusing to run: ${message}`)
+      }
+      console.log(`manifest=warning: phase0a-manifest.json could not be read/written reliably (${message}) — not treated as authoritative`)
     }
   }
 
@@ -391,53 +430,120 @@ async function run() {
 
   let result = null
   if (executeAuthorized && typeof provider.runSmoke === 'function') {
-    // STRICT Phase 0A counter (persisted manifest): refuse a 5th call and
-    // refuse a duplicate idempotence key before any runSmoke invocation.
-    let phase0aRefused = null
-    if (provider.id === 'openai-gpt-image' && datasetItemId && builtPrompt) {
-      try {
-        await checkPhase0aCallAllowed({
-          outDir,
-          datasetItemId,
-          concept: builtPrompt.concept,
+    if (provider.id === 'openai-gpt-image') {
+      // DATASET GATES (fail-closed): Phase 0A smoke REQUIRES a controlled
+      // --dataset-id, --dataset-kind synthetic AND --image <photo>. Anything
+      // else is refused BEFORE any transport is built.
+      const datasetRefusal = !datasetItemId
+        ? 'Phase 0A call refused: --dataset-id <controlled> is required when executeAuthorized'
+        : args.datasetKind !== 'synthetic'
+          ? 'Phase 0A call refused: --dataset-kind must be "synthetic" during Phase 0A'
+          : !normalized
+            ? 'Phase 0A call refused: --image <photo> is required when executeAuthorized'
+            : null
+      if (datasetRefusal) {
+        result = {
+          providerId: provider.id,
           model,
-          promptSha256: builtPrompt.promptSha256,
-          retry: false,
-        })
-      } catch (error) {
-        phase0aRefused = String((error && error.message) || error)
-      }
-    }
-    if (phase0aRefused) {
-      result = {
-        providerId: provider.id,
-        model,
-        ok: false,
-        externalCalls: 0,
-        actualCostEur: 0,
-        billingStatus: 'not_called',
-        officialPricingSource: null,
-        durationMs: 0,
-        error: phase0aRefused,
+          ok: false,
+          externalCalls: 0,
+          actualCostEur: 0,
+          billingStatus: 'not_called',
+          officialPricingSource: null,
+          durationMs: 0,
+          error: datasetRefusal,
+        }
+      } else {
+        // ATOMIC RESERVATION BEFORE NETWORK: reserve → markStarted → call →
+        // finalize. `reservePhase0aCall` happens BEFORE any transport and
+        // enforces the 4-call cap + idempotence (fail-closed on corrupt/read/
+        // write errors — a manifest failure NEVER launches a transport).
+        const manifestPath = phase0aManifestPath(outDir)
+        let attempt = null
+        try {
+          attempt = await reservePhase0aCall({
+            manifestPath,
+            datasetItemId,
+            concept: builtPrompt.concept,
+            model,
+            promptSha256: builtPrompt.promptSha256,
+          })
+        } catch (error) {
+          result = {
+            providerId: provider.id,
+            model,
+            ok: false,
+            externalCalls: 0,
+            actualCostEur: 0,
+            billingStatus: 'not_called',
+            officialPricingSource: null,
+            durationMs: 0,
+            error: String((error && error.message) || error),
+          }
+        }
+        if (attempt) {
+          const started = Date.now()
+          try {
+            // The transport is built ONLY when the key is present AND all
+            // three locks are active. In a dry run the key is never read, no
+            // transport is ever built and globalThis.fetch is never touched.
+            let transport
+            if (process.env.OPENAI_API_KEY) {
+              transport = createOpenAiImageEditTransport({
+                apiKey: process.env.OPENAI_API_KEY,
+                baseUrl: process.env.OPENAI_BASE_URL || OPENAI_DEFAULT_BASE_URL,
+                locks: { authorized: true, budgetMaxEur, phase0aExecute: true },
+              })
+            }
+            // markStarted immediately before the real fetch invocation: from
+            // here the attempt permanently counts toward the 4-call limit.
+            await markPhase0aCallStarted({ manifestPath, attemptId: attempt.attemptId })
+            result = await provider.runSmoke({ ...smokeOpts, realCallAuthorized: true, transport })
+            await finalizePhase0aCall({
+              manifestPath,
+              attemptId: attempt.attemptId,
+              outcome: 'succeeded',
+              requestId: result.requestId ?? null,
+            })
+          } catch (error) {
+            // Conservative billing on error: never auto-convert a real-adapter
+            // error into externalCalls=0 / actualCostEur=0 / not_called. A
+            // failure AFTER the fetch started (externalCalls>=1) is `failed`;
+            // a failure BEFORE any fetch is `cancelled_before_call`.
+            const billing = billingFromCaughtError(error)
+            const outcome = billing.externalCalls >= 1 ? 'failed' : 'cancelled_before_call'
+            const errorRequestId =
+              error instanceof ArqweliaProviderError && error.billing ? error.billing.requestId : null
+            try {
+              await finalizePhase0aCall({
+                manifestPath,
+                attemptId: attempt.attemptId,
+                outcome,
+                requestId: errorRequestId,
+              })
+            } catch {
+              // A manifest write error AFTER a call must not erase the call:
+              // the conservative billing is still reported below.
+            }
+            result = {
+              providerId: provider.id,
+              model,
+              ok: false,
+              externalCalls: billing.externalCalls,
+              actualCostEur: billing.actualCostEur,
+              billingStatus: billing.billingStatus,
+              officialPricingSource: billing.officialPricingSource,
+              durationMs: Date.now() - started,
+              error: String((error && error.message) || error),
+            }
+          }
+        }
       }
     } else {
       const started = Date.now()
       try {
         result = await provider.runSmoke({ ...smokeOpts, realCallAuthorized: true })
-        // A REAL call (externalCalls>=1) is recorded in the persisted manifest.
-        if (result && result.ok && result.externalCalls >= 1 && provider.id === 'openai-gpt-image' && datasetItemId && builtPrompt) {
-          await recordPhase0aCall({
-            outDir,
-            datasetItemId,
-            concept: builtPrompt.concept,
-            model,
-            promptSha256: builtPrompt.promptSha256,
-            status: result.billingStatus || 'executed',
-          })
-        }
       } catch (error) {
-        // Conservative billing on error: never auto-convert a real-adapter error
-        // into externalCalls=0 / actualCostEur=0 / not_called.
         const billing = billingFromCaughtError(error)
         result = {
           providerId: provider.id,
@@ -507,6 +613,7 @@ async function run() {
     outputWidth: result.outputWidth,
     outputHeight: result.outputHeight,
     outputFileName: result.outputPath ? basename(result.outputPath) : null,
+    requestId: result.requestId ?? null,
     error: result.error ? redactSecrets(result.error) : null,
   }
 
@@ -532,6 +639,7 @@ async function run() {
     image: normalized
       ? {
           datasetItemId,
+          datasetKind: effectiveDatasetKind,
           normalizedSha256: normalized.sha256,
           width: normalized.width,
           height: normalized.height,

@@ -88,3 +88,6 @@ benchmark-out/
 # the output dir is relocated. Never commit real photos or manifests.
 **/benchmark-out/phase0a-manifest.json
 benchmark-out/phase0a-manifest.json
+# Phase 0A local manifest lock (transient, per read-modify-write).
+**/benchmark-out/phase0a-manifest.lock
+benchmark-out/phase0a-manifest.lock
