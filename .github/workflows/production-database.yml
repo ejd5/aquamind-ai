@@ -25,11 +25,10 @@ jobs:
     env:
       PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
       PRODUCTION_DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
-      # Expected canonical target fingerprint, provided by the GitHub
-      # `production` environment variable (NOT a secret). The guard fails
-      # before Bun installation and before every Prisma command when the
-      # resolved target does not match the approved Neon production branch.
-      PRODUCTION_DATABASE_TARGET_FINGERPRINT: ${{ vars.PRODUCTION_DATABASE_TARGET_FINGERPRINT }}
+      # Non-secret fingerprint of the approved Neon Production endpoint plus
+      # database name. Any endpoint rotation requires an explicit reviewed code
+      # change, preventing accidental migration of the homonymous Neon project.
+      PRODUCTION_DATABASE_TARGET_FINGERPRINT: 2b27abc9f736
     steps:
       - uses: actions/checkout@v5
       - name: Verify canonical production database target
