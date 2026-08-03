@@ -83,3 +83,8 @@ mini-services/
 # ARQWELIA Lot 2 — benchmark dataset (photos) and generated reports
 dataset/photos/
 benchmark-out/
+# ARQWELIA Lot 2 Phase 0A — local NON-versioned retention manifest (JSON).
+# Lives inside benchmark-out/, but explicit patterns keep it out of git even if
+# the output dir is relocated. Never commit real photos or manifests.
+**/benchmark-out/phase0a-manifest.json
+benchmark-out/phase0a-manifest.json

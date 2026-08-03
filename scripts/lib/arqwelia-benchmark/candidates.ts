@@ -10,7 +10,9 @@
 import type { ArqweliaBenchmarkProvider } from './provider'
 import {
   arqweliaBenchmarkCandidates as _candidates,
+  arqweliaBenchmarkDocumentaryCandidates as _documentaryCandidates,
   getArqweliaBenchmarkCandidate as _getCandidate,
+  registerArqweliaBenchmarkCandidate as _registerCandidate,
 } from './candidates-registry.mjs'
 
 export type {
@@ -25,21 +27,35 @@ export {
   ARQWELIA_BENCHMARK_PHASE0A_EXECUTE,
   ArqweliaProviderError,
   billingFromCaughtError,
+  computeExecuteGate,
   computeGate,
   ensureNoRealCall,
   ensurePhase0AGate,
   redactSecrets,
-  registerArqweliaBenchmarkCandidate,
   billingSnapshot,
   billingSummaryLines,
 } from './provider'
 
-/** All registered candidates (nvidia-nim, zai-glm, openai-gpt-image, mock). */
+/** All executable candidates (nvidia-nim, openai-gpt-image, mock). */
 export const arqweliaBenchmarkCandidates: ArqweliaBenchmarkProvider[] = _candidates as ArqweliaBenchmarkProvider[]
 
-/** Look up a candidate by id. Returns `undefined` when unknown. */
+/**
+ * Documentary-only candidates (blocked/deprecated — NEVER runnable). Contains
+ * `zai-glm` (blocked for Phase 0A).
+ */
+export const arqweliaBenchmarkDocumentaryCandidates: ArqweliaBenchmarkProvider[] =
+  _documentaryCandidates as ArqweliaBenchmarkProvider[]
+
+/** Look up an EXECUTABLE candidate by id. Returns `undefined` when unknown. */
 export function getArqweliaBenchmarkCandidate(
   id: string,
 ): ArqweliaBenchmarkProvider | undefined {
   return _getCandidate(id) as ArqweliaBenchmarkProvider | undefined
 }
+
+/** Registers an additional executable candidate at runtime (test seam). */
+export const registerArqweliaBenchmarkCandidate: (
+  candidate: ArqweliaBenchmarkProvider,
+) => ArqweliaBenchmarkProvider = _registerCandidate as unknown as (
+  candidate: ArqweliaBenchmarkProvider,
+) => ArqweliaBenchmarkProvider

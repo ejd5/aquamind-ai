@@ -6,9 +6,11 @@
  * future production tunnel and from the app routes.
  *
  * DRY-RUN SAFETY: the runtime helpers (`ensureNoRealCall`, the env constants,
- * `redactSecrets`) are the shared runtime from `candidates-registry.mjs` — a
+ * `redactSecrets`) are the shared runtime from `provider-runtime.mjs` — a
  * plain ESM module so the plain-`node` CLI can consume the exact same objects
- * (Node 20 in this repo cannot import TypeScript directly).
+ * (Node 20 in this repo cannot import TypeScript directly). provider.ts
+ * re-exports from `provider-runtime.mjs` (NEVER from the candidate registry),
+ * which breaks the `registry → adapter → registry` circular import.
  *
  * No candidate adapter in this harness performs a real provider network call.
  */
@@ -19,15 +21,15 @@ import {
   ARQWELIA_BENCHMARK_PHASE0A_EXECUTE as _PHASE0A_EXECUTE,
   ArqweliaProviderError as _ArqweliaProviderError,
   billingFromCaughtError as _billingFromCaughtError,
+  computeExecuteGate as _computeExecuteGate,
   computeGate as _computeGate,
   ensureNoRealCall as _ensureNoRealCall,
   ensurePhase0AGate as _ensurePhase0AGate,
   redactSecrets as _redactSecrets,
   redactedEnvSummary as _redactedEnvSummary,
-  registerArqweliaBenchmarkCandidate as _registerCandidate,
   billingSnapshot as _billingSnapshot,
   billingSummaryLines as _billingSummaryLines,
-} from './candidates-registry.mjs'
+} from './provider-runtime.mjs'
 
 /**
  * The provider adapter receives ONLY the normalized image (or a normalized
@@ -62,6 +64,10 @@ export interface SmokeOptions {
   promptSha256?: string
   /** Optional output size token (e.g. `1024x1024`) — closed provider list. */
   size?: string
+  /** Optional quality token (e.g. `medium`) — closed provider list. */
+  quality?: string
+  /** Optional output format token (e.g. `png`) — closed provider list. */
+  outputFormat?: string
   /** Third gate flag: `ARQWELIA_BENCHMARK_PHASE0A_EXECUTE === 'true'`. */
   phase0aExecute?: boolean
   /** Injectable transport used ONLY by tests — the CLI never injects one. */
@@ -108,14 +114,19 @@ export interface ArqweliaBenchmarkProvider {
   dryRunSafe?: boolean
   dryRunDescription: string
   validateConfiguration(): { ok: boolean; reason?: string }
-  estimateOfficialCost(): { known: boolean; costPerImageEur?: number; note?: string }
+  estimateOfficialCost(): {
+    known: boolean
+    costPerImageEur?: number | null
+    officialPricingSource?: string
+    note?: string
+  }
   runSmoke?(opts: SmokeOptions): Promise<SmokeResult>
 }
 
 export type RealCallGuard = Pick<SmokeOptions, 'realCallAuthorized' | 'budgetMaxEur'>
 
 // ---------------------------------------------------------------------------
-// Runtime helpers (single source of truth lives in candidates-registry.mjs).
+// Runtime helpers (single source of truth lives in provider-runtime.mjs).
 // ---------------------------------------------------------------------------
 
 /** `true` only when ARQWELIA_BENCHMARK_AUTHORIZED === 'true'. */
@@ -142,13 +153,30 @@ export interface ComputeGateInput {
 }
 
 /**
- * Budget gate — see `computeGate` in `candidates-registry.mjs` for the exact
+ * Budget gate — see `computeGate` in `provider-runtime.mjs` for the exact
  * rules. The ONLY source of a usable budget is the environment; `--budget` may
  * only reduce it (an above-ceiling `--budget` is rejected separately by the
  * CLI). Returns `realCallAuthorized=false` whenever the env gate is closed,
  * regardless of any `--budget` value.
  */
 export const computeGate: (input?: ComputeGateInput) => GateComputation = _computeGate
+
+export interface ExecuteGateComputation {
+  executeAuthorized: boolean
+  dryRun: boolean
+}
+
+export interface ExecuteGateInput {
+  realCallAuthorized?: boolean
+  phase0aExecute?: boolean
+}
+
+/**
+ * Phase 0A execution gate (third lock): `executeAuthorized` is true ONLY when
+ * `realCallAuthorized === true && phase0aExecute === true`; all 7 other
+ * combinations of (authorized × budget>0 × phase0aExecute) are dry-run.
+ */
+export const computeExecuteGate: (input?: ExecuteGateInput) => ExecuteGateComputation = _computeExecuteGate
 
 export interface ProviderBillingInfo {
   externalCalls: number
@@ -179,10 +207,6 @@ export const ArqweliaProviderError: ArqweliaProviderErrorCtor = _ArqweliaProvide
 export const billingFromCaughtError: (error: unknown) => ProviderBillingInfo = _billingFromCaughtError as unknown as (
   error: unknown,
 ) => ProviderBillingInfo
-
-/** Registers an additional benchmark candidate at runtime (test seam). */
-export const registerArqweliaBenchmarkCandidate: (candidate: ArqweliaBenchmarkProvider) => ArqweliaBenchmarkProvider =
-  _registerCandidate
 
 /**
  * Throws if a real provider call is not allowed:

@@ -14,18 +14,24 @@
  *
  * Authorization is ENV-ONLY and the budget is ENV-ONLY. The CLI can never
  * authorize a real call and can never create a budget:
- *   - A real provider call requires BOTH
+ *   - A real provider call requires ALL THREE of
  *       ARQWELIA_BENCHMARK_AUTHORIZED=true  AND
- *       ARQWELIA_BENCHMARK_MAX_BUDGET_EUR>0
+ *       ARQWELIA_BENCHMARK_MAX_BUDGET_EUR>0 AND
+ *       ARQWELIA_BENCHMARK_PHASE0A_EXECUTE=true
+ *   - `executeAuthorized = realCallAuthorized && phase0aExecute`;
+ *     `dryRun = !executeAuthorized`. When ANY lock is missing the CLI NEVER
+ *     invokes `runSmoke` of a real provider, never initializes a transport,
+ *     prints "DRY RUN" and reports externalCalls=0 / actualCostEur=0 /
+ *     billingStatus=not_called.
  *   - The only source of a usable budget is the environment (a finite number
  *     strictly > 0). `--budget` may only REDUCE that env budget
  *     (`min(cliBudget, envBudget)`); a value above the env ceiling is rejected,
  *     and with no env budget the effective budget is 0.
- *   - When the env gate is closed (`envGateOpen` false) the CLI prints
- *     "DRY RUN" and `realCallAuthorized` stays false regardless of `--budget`.
  *   - Default (no env vars) is a DRY RUN: no external provider call, no cost.
- *   - Even when authorized, real-provider adapters are stubbed with
- *     "NOT IMPLEMENTED — awaiting Gate", so no paid call can ever occur.
+ *   - Even when all three gates are open, real-provider adapters have no
+ *     injected transport and answer "NOT IMPLEMENTED — awaiting Gate", so no
+ *     paid call can ever occur in this build.
+ *   - zai-glm is BLOCKED for Phase 0A (documentary only — not executable).
  *   - The provider adapter receives ONLY the normalized image fields
  *     (normalizedImageBuffer/DataUrl/MimeType/Sha256/Width/Height, promptVersion,
  *     sanitizedPrompt) — never the raw source buffer and never the source path.
@@ -55,6 +61,12 @@ import {
   redactSecrets,
   registerArqweliaBenchmarkCandidate,
 } from './lib/arqwelia-benchmark/candidates-registry.mjs'
+import { computeExecuteGate } from './lib/arqwelia-benchmark/provider-runtime.mjs'
+import {
+  checkPhase0aCallAllowed,
+  recordPhase0aCall,
+  upsertPhase0aItem,
+} from './lib/arqwelia-benchmark/phase0a-manifest.mjs'
 import { normalizeImageForAi, SecureImageError } from '../src/lib/images/secure-image.ts'
 import {
   ARQWELIA_PROMPT_VERSION,
@@ -63,7 +75,7 @@ import {
 } from './lib/arqwelia-benchmark/prompts/index.ts'
 
 const TASK = 'arqwelia-lot2-a1-benchmark-smoke'
-const VERSION = '3.1.0'
+const VERSION = '3.2.0'
 
 function printUsage() {
   console.log(
@@ -71,7 +83,8 @@ function printUsage() {
 
 Options:
   --provider <id>   Candidate id (default: mock). One of:
-                    nvidia-nim | zai-glm | openai-gpt-image | mock
+                    nvidia-nim | openai-gpt-image | mock
+                    (zai-glm is BLOCKED for Phase 0A — documentary only)
   --model <name>    Model override (default: candidate model)
   --image <path>    Source photo to normalize (EXIF/GPS photos are accepted and
                     normalized; only the EXIF-free normalized output is eligible)
@@ -259,8 +272,12 @@ async function run() {
 
   const provider = getArqweliaBenchmarkCandidate(args.provider)
   if (!provider) {
-    console.error(`error: unknown provider "${args.provider}"`)
-    console.error('providers: nvidia-nim, zai-glm, openai-gpt-image, mock')
+    if (args.provider === 'zai-glm') {
+      console.error('error: provider "zai-glm" is BLOCKED for Phase 0A (documentary only — no runnable transport)')
+    } else {
+      console.error(`error: unknown provider "${args.provider}"`)
+    }
+    console.error('providers: nvidia-nim, openai-gpt-image, mock')
     process.exit(1)
   }
 
@@ -277,7 +294,10 @@ async function run() {
   const realCallAuthorized = gate.realCallAuthorized
   // THIRD GATE — Phase 0A execution intent is ENV-ONLY too.
   const phase0aExecute = process.env.ARQWELIA_BENCHMARK_PHASE0A_EXECUTE === 'true'
-  const dryRun = !realCallAuthorized
+  // Phase 0A execution gate: a real transport may only be initialized (and a
+  // real provider runSmoke may only be invoked) when BOTH realCallAuthorized
+  // AND phase0aExecute are true. All other combinations are a DRY RUN.
+  const { executeAuthorized, dryRun } = computeExecuteGate({ realCallAuthorized, phase0aExecute })
 
   if (args.budget != null && envBudget > 0 && args.budget > envBudget) {
     console.error(
@@ -287,10 +307,10 @@ async function run() {
     process.exit(2)
   }
 
-  // Real provider adapters (zai-glm / openai-gpt-image) receive a VERSIONED,
-  // PII-free prompt built from the closed-vocabulary builder — never CLI free
-  // text. `--promptA` is reserved for the mock/diagnostic path only.
-  const isRealProviderAdapter = provider.id === 'zai-glm' || provider.id === 'openai-gpt-image'
+  // Real provider adapters (openai-gpt-image) receive a VERSIONED, PII-free
+  // prompt built from the closed-vocabulary builder — never CLI free text.
+  // `--promptA` is reserved for the mock/diagnostic path only.
+  const isRealProviderAdapter = provider.id === 'openai-gpt-image'
   const builtPrompt = isRealProviderAdapter ? buildDefaultArqweliaPrompt(args.concept) : null
 
   console.log(`${TASK} v${VERSION}`)
@@ -322,6 +342,28 @@ async function run() {
   // normalized image) — never the original local filename.
   const datasetItemId = args.datasetId || (normalized ? normalized.sha256.slice(0, 16) : null)
 
+  // Phase 0A retention config (no execution in this build): when a dataset item
+  // is processed for the Phase 0A provider (openai-gpt-image), upsert the local
+  // NON-versioned manifest item record (gitignored via benchmark-out/). The
+  // manifest is ONLY written for the openai provider and only when an image is
+  // present, so mock/nvidia runs and no-image dry runs never create it.
+  if (provider.id === 'openai-gpt-image' && datasetItemId && normalized) {
+    try {
+      await upsertPhase0aItem({
+        outDir,
+        datasetItemId,
+        origin: 'local',
+        authorization: envAuthorized,
+        normalizedSha256: normalized.sha256,
+        noExif: true,
+        statusA: 'pending',
+        statusB: 'pending',
+      })
+    } catch {
+      // A manifest write failure must never block a dry run.
+    }
+  }
+
   // -- smoke ----------------------------------------------------------------
   // The adapter receives ONLY normalized fields plus the versioned built prompt.
   // `sanitizedPrompt` for real adapters is the BUILT prompt; CLI `--promptA`
@@ -348,24 +390,66 @@ async function run() {
   }
 
   let result = null
-  if (!dryRun && typeof provider.runSmoke === 'function') {
-    const started = Date.now()
-    try {
-      result = await provider.runSmoke({ ...smokeOpts, realCallAuthorized: true })
-    } catch (error) {
-      // Conservative billing on error: never auto-convert a real-adapter error
-      // into externalCalls=0 / actualCostEur=0 / not_called.
-      const billing = billingFromCaughtError(error)
+  if (executeAuthorized && typeof provider.runSmoke === 'function') {
+    // STRICT Phase 0A counter (persisted manifest): refuse a 5th call and
+    // refuse a duplicate idempotence key before any runSmoke invocation.
+    let phase0aRefused = null
+    if (provider.id === 'openai-gpt-image' && datasetItemId && builtPrompt) {
+      try {
+        await checkPhase0aCallAllowed({
+          outDir,
+          datasetItemId,
+          concept: builtPrompt.concept,
+          model,
+          promptSha256: builtPrompt.promptSha256,
+          retry: false,
+        })
+      } catch (error) {
+        phase0aRefused = String((error && error.message) || error)
+      }
+    }
+    if (phase0aRefused) {
       result = {
         providerId: provider.id,
         model,
         ok: false,
-        externalCalls: billing.externalCalls,
-        actualCostEur: billing.actualCostEur,
-        billingStatus: billing.billingStatus,
-        officialPricingSource: billing.officialPricingSource,
-        durationMs: Date.now() - started,
-        error: String((error && error.message) || error),
+        externalCalls: 0,
+        actualCostEur: 0,
+        billingStatus: 'not_called',
+        officialPricingSource: null,
+        durationMs: 0,
+        error: phase0aRefused,
+      }
+    } else {
+      const started = Date.now()
+      try {
+        result = await provider.runSmoke({ ...smokeOpts, realCallAuthorized: true })
+        // A REAL call (externalCalls>=1) is recorded in the persisted manifest.
+        if (result && result.ok && result.externalCalls >= 1 && provider.id === 'openai-gpt-image' && datasetItemId && builtPrompt) {
+          await recordPhase0aCall({
+            outDir,
+            datasetItemId,
+            concept: builtPrompt.concept,
+            model,
+            promptSha256: builtPrompt.promptSha256,
+            status: result.billingStatus || 'executed',
+          })
+        }
+      } catch (error) {
+        // Conservative billing on error: never auto-convert a real-adapter error
+        // into externalCalls=0 / actualCostEur=0 / not_called.
+        const billing = billingFromCaughtError(error)
+        result = {
+          providerId: provider.id,
+          model,
+          ok: false,
+          externalCalls: billing.externalCalls,
+          actualCostEur: billing.actualCostEur,
+          billingStatus: billing.billingStatus,
+          officialPricingSource: billing.officialPricingSource,
+          durationMs: Date.now() - started,
+          error: String((error && error.message) || error),
+        }
       }
     }
   } else if (dryRun && provider.dryRunSafe === true && typeof provider.runSmoke === 'function') {

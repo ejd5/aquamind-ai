@@ -5,7 +5,13 @@
  * NO REAL PROVIDER CALLS AND NO NETWORK IN THIS SUITE: a global `fetch` spy is
  * installed for the whole file and asserts it was never invoked; the adapters
  * are exercised only with injected mock transports. The static checks at the
- * bottom prove the adapters never import/call the real SDK.
+ * bottom prove the adapters never import/call the real SDK and never call
+ * `fetch`.
+ *
+ * Z.AI is BLOCKED for Phase 0A (documentary only): `zai-glm` is NOT an
+ * executable candidate, has no `runSmoke`, `supportsImageEditing=false` and
+ * `state=blocked_missing_capability`. OpenAI `openai-gpt-image` (gpt-image-2)
+ * is the primary Phase 0A adapter and the ONLY real provider exercised here.
  */
 
 import { spawnSync } from 'node:child_process'
@@ -23,6 +29,7 @@ import {
 } from '../scripts/lib/arqwelia-benchmark/provider'
 import {
   arqweliaBenchmarkCandidates,
+  arqweliaBenchmarkDocumentaryCandidates,
   getArqweliaBenchmarkCandidate,
 } from '../scripts/lib/arqwelia-benchmark/candidates'
 import {
@@ -37,7 +44,14 @@ import {
   scanForPii,
 } from '../scripts/lib/arqwelia-benchmark/prompts/index'
 import { zaiImageAdapter } from '../scripts/lib/arqwelia-benchmark/adapters/zai-image-adapter.mjs'
-import { openaiImageAdapter } from '../scripts/lib/arqwelia-benchmark/adapters/openai-image-adapter.mjs'
+import {
+  OPENAI_IMAGE_EDIT_MODELS,
+  OPENAI_PHASE0A_DEFAULT_MODEL,
+  OPENAI_PHASE0A_DEFAULT_OUTPUT_FORMAT,
+  OPENAI_PHASE0A_DEFAULT_QUALITY,
+  OPENAI_PHASE0A_DEFAULT_SIZE,
+  openaiImageAdapter,
+} from '../scripts/lib/arqwelia-benchmark/adapters/openai-image-adapter.mjs'
 
 const CLI = join(process.cwd(), 'scripts/benchmark-arqwelia-smoke.mjs')
 const TEST_FILE = join(process.cwd(), 'tests/arqwelia-lot2-phase0a-adapters.test.ts')
@@ -63,8 +77,8 @@ async function validPng(width = 24, height = 24): Promise<Buffer> {
 
 function gateOpenOptions(overrides: Record<string, unknown> = {}) {
   return {
-    providerId: 'zai-glm',
-    model: 'tbd',
+    providerId: 'openai-gpt-image',
+    model: OPENAI_PHASE0A_DEFAULT_MODEL,
     outDir: tmpOut('aqw-phase0a-gate-'),
     budgetMaxEur: 5,
     realCallAuthorized: true,
@@ -232,54 +246,49 @@ describe('ARQWELIA Lot 2 Phase 0A — PII guard', () => {
       assertNoPersonalData({
         sha: 'a'.repeat(64),
         datasetItemId: 'item001',
-        description: 'Benchmark candidate (model gpt-image-1)',
+        description: 'Benchmark candidate (model gpt-image-2)',
       }),
     ).not.toThrow()
   })
 })
 
+describe('ARQWELIA Lot 2 Phase 0A — Z.AI blocked (documentary only)', () => {
+  it('zai-glm is NOT an executable candidate and has no runSmoke', () => {
+    expect(arqweliaBenchmarkCandidates.map((candidate) => candidate.id)).not.toContain('zai-glm')
+    expect(getArqweliaBenchmarkCandidate('zai-glm')).toBeUndefined()
+    expect(arqweliaBenchmarkDocumentaryCandidates.map((candidate) => candidate.id)).toContain('zai-glm')
+    expect(zaiImageAdapter.runSmoke).toBeUndefined()
+    expect(zaiImageAdapter.documentaryOnly).toBe(true)
+  })
+
+  it('zai adapter is blocked_missing_capability and never claims image editing', () => {
+    expect(zaiImageAdapter.state).toBe('blocked_missing_capability')
+    expect(zaiImageAdapter.supportsImageEditing).toBe(false)
+    expect(zaiImageAdapter.model).toBe('tbd')
+    expect(zaiImageAdapter.blockReason).toMatch(/no current official API\/model contract proving photo-to-photo editing/)
+    expect(zaiImageAdapter.validateConfiguration().ok).toBe(false)
+  })
+})
+
 describe('ARQWELIA Lot 2 Phase 0A — request building (no SDK, no network)', () => {
-  it('zai prepareRequest builds { model, prompt, image, size }', async () => {
-    const buffer = await validPng()
-    const prompt = buildDefaultArqweliaPrompt('A').prompt
-    const body = zaiImageAdapter.prepareRequest({
-      normalizedImageBuffer: buffer,
-      builtPrompt: prompt,
-      model: 'tbd',
-      size: '1024x1024',
-    })
-    expect(body.model).toBe('tbd')
-    expect(body.prompt).toBe(prompt)
-    expect(body.image.startsWith('data:image/jpeg;base64,')).toBe(true)
-    expect(body.size).toBe('1024x1024')
-    expect(Object.keys(body).sort()).toEqual(['image', 'model', 'prompt', 'size'])
-  })
-
-  it('zai prepareRequest prefers the normalized data URL when both are given', () => {
-    const body = zaiImageAdapter.prepareRequest({
-      normalizedImageDataUrl: 'data:image/jpeg;base64,QUJD',
-      normalizedImageBuffer: Buffer.from('raw'),
-      builtPrompt: 'prompt',
-      model: 'tbd',
-    })
-    expect(body.image).toBe('data:image/jpeg;base64,QUJD')
-    expect(body.prompt).toBe('prompt')
-  })
-
-  it('openai prepareMultipartBody builds the official multipart descriptor', async () => {
+  it('openai prepareMultipartBody builds the official multipart descriptor with Phase 0A defaults', async () => {
     const buffer = await validPng()
     const prompt = buildDefaultArqweliaPrompt('A').prompt
     const multipart = openaiImageAdapter.prepareMultipartBody({
       normalizedImageBuffer: buffer,
       builtPrompt: prompt,
-      model: 'gpt-image-1',
-      size: '1024x1024',
     })
     expect(multipart.method).toBe('POST')
     expect(multipart.endpoint).toContain('/images/edits')
     expect(multipart.contentType).toBe('multipart/form-data')
+    expect(multipart.model).toBe(OPENAI_PHASE0A_DEFAULT_MODEL)
+    expect(multipart.size).toBe(OPENAI_PHASE0A_DEFAULT_SIZE)
+    expect(multipart.quality).toBe(OPENAI_PHASE0A_DEFAULT_QUALITY)
+    expect(multipart.outputFormat).toBe(OPENAI_PHASE0A_DEFAULT_OUTPUT_FORMAT)
+    // gpt-image-2 uses high fidelity automatically → input_fidelity is never sent.
+    expect(multipart.inputFidelity).toBeNull()
     const names = multipart.parts.map((part: { name: string }) => part.name)
-    expect(names).toEqual(['image', 'model', 'prompt', 'size'])
+    expect(names).toEqual(['image', 'model', 'prompt', 'size', 'quality', 'output_format'])
     const imagePart = multipart.parts[0] as { name: string; filename: string; contentType: string; value: Buffer }
     expect(imagePart.filename).toBe('image.jpg')
     expect(imagePart.contentType).toBe('image/jpeg')
@@ -290,24 +299,42 @@ describe('ARQWELIA Lot 2 Phase 0A — request building (no SDK, no network)', ()
     const promptPart = multipart.parts.find((part: { name: string }) => part.name === 'prompt') as {
       value: string
     }
-    expect(modelPart.value).toBe('gpt-image-1')
+    const sizePart = multipart.parts.find((part: { name: string }) => part.name === 'size') as {
+      value: string
+    }
+    expect(modelPart.value).toBe('gpt-image-2')
     expect(promptPart.value).toBe(prompt)
+    expect(sizePart.value).toBe('1536x1024')
 
     const form = multipart.toFormData()
     expect(form).toBeInstanceOf(FormData)
     expect(form.has('image')).toBe(true)
     expect(form.has('prompt')).toBe(true)
     expect(form.has('model')).toBe(true)
+    expect(form.has('quality')).toBe(true)
+    expect(form.has('output_format')).toBe(true)
   })
 
-  it('openai multipart omits size when not requested', async () => {
+  it('openai prepareMultipartBody accepts only the controlled model / size / quality / output_format lists', async () => {
     const buffer = await validPng()
-    const multipart = openaiImageAdapter.prepareMultipartBody({
-      normalizedImageBuffer: buffer,
-      builtPrompt: 'prompt',
-      model: 'gpt-image-1',
-    })
-    expect(multipart.parts.map((part: { name: string }) => part.name)).toEqual(['image', 'model', 'prompt'])
+    const prompt = buildDefaultArqweliaPrompt('A').prompt
+    expect(() =>
+      openaiImageAdapter.prepareMultipartBody({ normalizedImageBuffer: buffer, builtPrompt: prompt, model: 'gpt-image-3' }),
+    ).toThrow(/unsupported model/)
+    expect(() =>
+      openaiImageAdapter.prepareMultipartBody({ normalizedImageBuffer: buffer, builtPrompt: prompt, size: '2048x2048' }),
+    ).toThrow(/unsupported size/)
+    expect(() =>
+      openaiImageAdapter.prepareMultipartBody({ normalizedImageBuffer: buffer, builtPrompt: prompt, quality: 'ultra' }),
+    ).toThrow(/unsupported quality/)
+    expect(() =>
+      openaiImageAdapter.prepareMultipartBody({ normalizedImageBuffer: buffer, builtPrompt: prompt, outputFormat: 'tiff' }),
+    ).toThrow(/unsupported output_format/)
+    for (const model of OPENAI_IMAGE_EDIT_MODELS) {
+      expect(() =>
+        openaiImageAdapter.prepareMultipartBody({ normalizedImageBuffer: buffer, builtPrompt: prompt, model }),
+      ).not.toThrow()
+    }
   })
 })
 
@@ -315,14 +342,8 @@ describe('ARQWELIA Lot 2 Phase 0A — adapters receive ONLY normalized fields', 
   it('refuses an imagePath on the adapter boundary', async () => {
     const prompt = buildDefaultArqweliaPrompt('A').prompt
     await expect(
-      zaiImageAdapter.runSmoke({
-        ...gateOpenOptions({ builtPrompt: prompt, transport: async () => ({ data: [{ base64: '' }] }) }),
-        imagePath: '/tmp/private-garden.jpg',
-      }),
-    ).rejects.toThrow(/normalized/)
-    await expect(
       openaiImageAdapter.runSmoke({
-        ...gateOpenOptions({ providerId: 'openai-gpt-image', model: 'gpt-image-1', builtPrompt: prompt, transport: async () => ({ b64_json: '' }) }),
+        ...gateOpenOptions({ builtPrompt: prompt, transport: async () => ({ data: [{ b64_json: '' }] }) }),
         imagePath: '/tmp/private-garden.jpg',
       }),
     ).rejects.toThrow(/normalized/)
@@ -330,15 +351,15 @@ describe('ARQWELIA Lot 2 Phase 0A — adapters receive ONLY normalized fields', 
 
   it('refuses a run without a built prompt (no free prompt can be injected)', async () => {
     await expect(
-      zaiImageAdapter.runSmoke({ ...gateOpenOptions(), transport: async () => ({ data: [{ base64: '' }] }) }),
+      openaiImageAdapter.runSmoke({ ...gateOpenOptions(), transport: async () => ({ data: [{ b64_json: '' }] }) }),
     ).rejects.toThrow(/no built prompt/)
   })
 
   it('refuses a PII-tainted built prompt with not_called billing (before any call)', async () => {
-    const err = await zaiImageAdapter
+    const err = await openaiImageAdapter
       .runSmoke({
         ...gateOpenOptions({ builtPrompt: 'reimagine my garden for john.doe@example.com' }),
-        transport: async () => ({ data: [{ base64: 'AA==' }] }),
+        transport: async () => ({ data: [{ b64_json: 'AA==' }] }),
       })
       .catch((error: unknown) => error)
     expect(err).toBeInstanceOf(ArqweliaProviderError)
@@ -357,53 +378,32 @@ describe('ARQWELIA Lot 2 Phase 0A — adapters receive ONLY normalized fields', 
     const seenBodies: unknown[] = []
     const transport = async (body: unknown) => {
       seenBodies.push(body)
-      return { data: [{ base64: buffer.toString('base64') }] }
+      return { data: [{ b64_json: buffer.toString('base64') }] }
     }
-    const result = await zaiImageAdapter.runSmoke({
+    const result = await openaiImageAdapter.runSmoke({
       ...gateOpenOptions({ builtPrompt, transport }),
       normalizedImageBuffer: buffer,
       sanitizedPrompt: freeText,
     })
     expect(result.ok).toBe(true)
     expect(seenBodies).toHaveLength(1)
-    const body = seenBodies[0] as { prompt: string; image: string }
-    expect(body.prompt).toBe(builtPrompt)
-    expect(body.prompt).not.toBe(freeText)
-    expect(body.prompt).not.toContain(freeText)
-    expect(body.image.startsWith('data:image/jpeg;base64,')).toBe(true)
-    expect(body.image).not.toContain('/tmp/')
+    const descriptor = seenBodies[0] as { parts: { name: string; value: string }[] }
+    const promptPart = descriptor.parts.find((part) => part.name === 'prompt')
+    expect(promptPart?.value).toBe(builtPrompt)
+    expect(promptPart?.value).not.toBe(freeText)
+    expect(promptPart?.value).not.toContain(freeText)
   })
 })
 
 describe('ARQWELIA Lot 2 Phase 0A — mock transport, conservative billing', () => {
-  it('zai: mock transport base64 PNG is decoded and written to the output dir', async () => {
-    const png = await validPng(32, 16)
-    const prompt = buildDefaultArqweliaPrompt('A').prompt
-    const out = tmpOut('aqw-phase0a-zai-png-')
-    const result = await zaiImageAdapter.runSmoke({
-      ...gateOpenOptions({ builtPrompt: prompt, outDir: out }),
-      normalizedImageBuffer: png,
-      transport: async () => ({ data: [{ base64: png.toString('base64') }] }),
-    })
-    expect(result.ok).toBe(true)
-    expect(result.externalCalls).toBe(1)
-    expect(result.actualCostEur).toBeNull()
-    expect(result.billingStatus).toBe('unknown')
-    expect(result.officialPricingSource).toBeNull()
-    expect(result.outputPath).toBeDefined()
-    const written = readFileSync(result.outputPath!)
-    expect(written.equals(png)).toBe(true)
-    expect(written.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
-  })
-
-  it('openai: mock transport b64_json PNG is decoded and written', async () => {
+  it('openai: mock transport official data[0].b64_json PNG is decoded and written', async () => {
     const png = await validPng(48, 24)
     const prompt = buildDefaultArqweliaPrompt('B').prompt
     const out = tmpOut('aqw-phase0a-oai-png-')
     const result = await openaiImageAdapter.runSmoke({
-      ...gateOpenOptions({ providerId: 'openai-gpt-image', model: 'gpt-image-1', builtPrompt: prompt, outDir: out }),
+      ...gateOpenOptions({ builtPrompt: prompt, outDir: out }),
       normalizedImageBuffer: png,
-      transport: async () => ({ b64_json: png.toString('base64') }),
+      transport: async () => ({ data: [{ b64_json: png.toString('base64') }] }),
     })
     expect(result.ok).toBe(true)
     expect(result.externalCalls).toBe(1)
@@ -411,16 +411,30 @@ describe('ARQWELIA Lot 2 Phase 0A — mock transport, conservative billing', () 
     expect(result.billingStatus).toBe('unknown')
     const written = readFileSync(result.outputPath!)
     expect(written.equals(png)).toBe(true)
+  })
+
+  it('openai: the old ROOT b64_json shape is rejected by the response parser', async () => {
+    const png = await validPng()
+    const prompt = buildDefaultArqweliaPrompt('A').prompt
+    const err = await openaiImageAdapter
+      .runSmoke({
+        ...gateOpenOptions({ builtPrompt: prompt }),
+        normalizedImageBuffer: png,
+        transport: async () => ({ b64_json: png.toString('base64') }),
+      })
+      .catch((error: unknown) => error)
+    expect(err).toBeInstanceOf(ArqweliaProviderError)
+    expect(String(err instanceof Error ? err.message : err)).toMatch(/b64_json at the ROOT/)
   })
 
   it('a would-be real call is always conservatively billed (unknown / 1 / null)', async () => {
     const png = await validPng()
     const prompt = buildDefaultArqweliaPrompt('A').prompt
     const out = tmpOut('aqw-phase0a-conservative-')
-    const result = await zaiImageAdapter.runSmoke({
+    const result = await openaiImageAdapter.runSmoke({
       ...gateOpenOptions({ builtPrompt: prompt, outDir: out }),
       normalizedImageBuffer: png,
-      transport: async () => ({ data: [{ base64: png.toString('base64') }] }),
+      transport: async () => ({ data: [{ b64_json: png.toString('base64') }] }),
     })
     expect(result.billingStatus).toBe('unknown')
     expect(result.externalCalls).toBe(1)
@@ -432,26 +446,18 @@ describe('ARQWELIA Lot 2 Phase 0A — mock transport, conservative billing', () 
   it('provider transport errors are sanitized (no secret, no local path)', async () => {
     const prompt = buildDefaultArqweliaPrompt('A').prompt
     const out = tmpOut('aqw-phase0a-sanitize-')
-    const transport = async () => {
-      throw new Error(`internal sk-fake-456 failure at /Users/someone/secret`)
-    }
-    const zaiError = await zaiImageAdapter
-      .runSmoke({ ...gateOpenOptions({ builtPrompt: prompt, outDir: out }), transport })
-      .catch((error: unknown) => error)
-    expect(zaiError).toBeInstanceOf(ArqweliaProviderError)
-    expect(String(zaiError instanceof Error ? zaiError.message : zaiError)).not.toContain('sk-fake-456')
-    expect(String(zaiError instanceof Error ? zaiError.message : zaiError)).not.toContain('/Users/')
-
     const oaiError = await openaiImageAdapter
       .runSmoke({
-        ...gateOpenOptions({ providerId: 'openai-gpt-image', model: 'gpt-image-1', builtPrompt: prompt, outDir: out }),
+        ...gateOpenOptions({ providerId: 'openai-gpt-image', model: 'gpt-image-2', builtPrompt: prompt, outDir: out }),
+        normalizedImageBuffer: await validPng(),
         transport: async () => {
-          throw new Error(`secret sk-fake-999 leaked`)
+          throw new Error(`secret sk-fake-999 leaked at /Users/someone/secret`)
         },
       })
       .catch((error: unknown) => error)
     expect(oaiError).toBeInstanceOf(ArqweliaProviderError)
     expect(String(oaiError instanceof Error ? oaiError.message : oaiError)).not.toContain('sk-fake-999')
+    expect(String(oaiError instanceof Error ? oaiError.message : oaiError)).not.toContain('/Users/')
   })
 })
 
@@ -463,58 +469,38 @@ describe('ARQWELIA Lot 2 Phase 0A — THREE-GATE block (real call impossible)', 
     expect(() => ensurePhase0AGate({ realCallAuthorized: true, budgetMaxEur: 5, phase0aExecute: true })).not.toThrow()
   })
 
-  const missing = async (adapter: typeof zaiImageAdapter, opts: Record<string, unknown>) => {
+  const missing = async (adapter: typeof openaiImageAdapter, opts: Record<string, unknown>) => {
     const prompt = buildDefaultArqweliaPrompt('A').prompt
     return adapter
       .runSmoke({
         ...gateOpenOptions({ builtPrompt: prompt }),
         ...opts,
-        transport: async () => ({ data: [{ base64: '' }] }),
+        transport: async () => ({ data: [{ b64_json: '' }] }),
       })
       .catch((error: unknown) => error)
   }
 
-  it('zai refuses when authorization is missing', async () => {
-    const err = await missing(zaiImageAdapter, { realCallAuthorized: false, phase0aExecute: true, budgetMaxEur: 5 })
+  it('openai refuses when authorization is missing', async () => {
+    const err = await missing(openaiImageAdapter, { realCallAuthorized: false, phase0aExecute: true, budgetMaxEur: 5 })
     expect(String(err instanceof Error ? err.message : err)).toMatch(/authorization/)
   })
 
-  it('zai refuses when budget is missing', async () => {
-    const err = await missing(zaiImageAdapter, { realCallAuthorized: true, phase0aExecute: true, budgetMaxEur: 0 })
+  it('openai refuses when budget is missing', async () => {
+    const err = await missing(openaiImageAdapter, { realCallAuthorized: true, phase0aExecute: true, budgetMaxEur: 0 })
     expect(String(err instanceof Error ? err.message : err)).toMatch(/budget/)
   })
 
-  it('zai refuses when the Phase 0A execution gate is missing', async () => {
-    const err = await missing(zaiImageAdapter, { realCallAuthorized: true, phase0aExecute: false, budgetMaxEur: 5 })
+  it('openai refuses when the Phase 0A execution gate is missing', async () => {
+    const err = await missing(openaiImageAdapter, { realCallAuthorized: true, phase0aExecute: false, budgetMaxEur: 5 })
     expect(String(err instanceof Error ? err.message : err)).toMatch(/Phase 0A|NOT IMPLEMENTED/)
-  })
-
-  it('openai refuses for each missing gate too', async () => {
-    const prompt = buildDefaultArqweliaPrompt('A').prompt
-    const base = { ...gateOpenOptions({ providerId: 'openai-gpt-image', model: 'gpt-image-1', builtPrompt: prompt }) }
-    const cases = [
-      { realCallAuthorized: false, phase0aExecute: true, budgetMaxEur: 5, expect: /authorization/ },
-      { realCallAuthorized: true, phase0aExecute: true, budgetMaxEur: 0, expect: /budget/ },
-      { realCallAuthorized: true, phase0aExecute: false, budgetMaxEur: 5, expect: /Phase 0A|NOT IMPLEMENTED/ },
-    ]
-    for (const testCase of cases) {
-      const err = await openaiImageAdapter
-        .runSmoke({
-          ...base,
-          ...testCase,
-          transport: async () => ({ b64_json: '' }),
-        })
-        .catch((error: unknown) => error)
-      expect(String(err instanceof Error ? err.message : err)).toMatch(testCase.expect)
-    }
   })
 
   it('with all three gates set, an injected mock transport runs (still no network)', async () => {
     const png = await validPng()
     const prompt = buildDefaultArqweliaPrompt('A').prompt
     const out = tmpOut('aqw-phase0a-allgates-')
-    const transport = vi.fn(async () => ({ data: [{ base64: png.toString('base64') }] }))
-    const result = await zaiImageAdapter.runSmoke({
+    const transport = vi.fn(async () => ({ data: [{ b64_json: png.toString('base64') }] }))
+    const result = await openaiImageAdapter.runSmoke({
       ...gateOpenOptions({ builtPrompt: prompt, outDir: out }),
       normalizedImageBuffer: png,
       transport,
@@ -526,7 +512,7 @@ describe('ARQWELIA Lot 2 Phase 0A — THREE-GATE block (real call impossible)', 
 
   it('with all three gates set but NO injected transport the adapter still refuses', async () => {
     const prompt = buildDefaultArqweliaPrompt('A').prompt
-    const err = await zaiImageAdapter
+    const err = await openaiImageAdapter
       .runSmoke({ ...gateOpenOptions({ builtPrompt: prompt }), normalizedImageBuffer: await validPng() })
       .catch((error: unknown) => error)
     expect(String(err instanceof Error ? err.message : err)).toMatch(/NOT IMPLEMENTED|Phase 0A/)
@@ -543,7 +529,7 @@ describe('ARQWELIA Lot 2 Phase 0A — THREE-GATE block (real call impossible)', 
     const { writeFileSync } = await import('node:fs')
     writeFileSync(imagePath, jpeg)
     const out = tmpOut('aqw-phase0a-cli-')
-    const result = runCli(['--provider', 'zai-glm', '--image', imagePath, '--out', out, '--concept', 'A'], {
+    const result = runCli(['--provider', 'openai-gpt-image', '--image', imagePath, '--out', out, '--concept', 'A'], {
       ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
       ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
       ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: 'true',
@@ -557,7 +543,7 @@ describe('ARQWELIA Lot 2 Phase 0A — THREE-GATE block (real call impossible)', 
 
   it('CLI: dry run when any gate is closed prints DRY RUN and zero calls', () => {
     const out = tmpOut('aqw-phase0a-cli-dry-')
-    const result = runCli(['--provider', 'zai-glm', '--out', out, '--concept', 'A'])
+    const result = runCli(['--provider', 'openai-gpt-image', '--out', out, '--concept', 'A'])
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('DRY RUN — NO EXTERNAL CALL')
     expect(result.stdout).toContain('REAL_PROVIDER_CALLS=0, PAID_COST=0')
@@ -566,9 +552,9 @@ describe('ARQWELIA Lot 2 Phase 0A — THREE-GATE block (real call impossible)', 
 })
 
 describe('ARQWELIA Lot 2 Phase 0A — report hygiene and candidate states', () => {
-  it('CLI zai dry-run report is PII-free, path-free, secret-free, and passes assertNoPersonalData', () => {
+  it('CLI openai dry-run report is PII-free, path-free, secret-free, and passes assertNoPersonalData', () => {
     const out = tmpOut('aqw-phase0a-report-')
-    const result = runCli(['--provider', 'zai-glm', '--out', out, '--concept', 'A', '--dataset-id', 'item001'])
+    const result = runCli(['--provider', 'openai-gpt-image', '--out', out, '--concept', 'A', '--dataset-id', 'item001'])
     expect(result.status).toBe(0)
     const jsons = readdirSync(out).filter((file) => file.endsWith('.json'))
     const report = JSON.parse(readFileSync(join(out, jsons[0]), 'utf8'))
@@ -585,28 +571,36 @@ describe('ARQWELIA Lot 2 Phase 0A — report hygiene and candidate states', () =
 
   it('candidate states and models are documented', () => {
     const nvidia = getArqweliaBenchmarkCandidate('nvidia-nim')!
-    const zai = getArqweliaBenchmarkCandidate('zai-glm')!
     const openai = getArqweliaBenchmarkCandidate('openai-gpt-image')!
     const mock = getArqweliaBenchmarkCandidate('mock')!
     expect(nvidia.state).toBe('blocked_missing_capability')
     expect(nvidia.supportsImageEditing).toBe(false)
-    expect(zai.state).toBe('ready_for_authorized_smoke')
-    expect(zai.model).toBe('tbd') // model string NOT verified from the SDK
-    expect(zai.supportsImageEditing).toBe(true)
+    // zai is DOCUMENTARY only — not executable.
+    expect(zaiImageAdapter.state).toBe('blocked_missing_capability')
+    expect(zaiImageAdapter.supportsImageEditing).toBe(false)
+    expect(zaiImageAdapter.model).toBe('tbd')
     expect(openai.state).toBe('ready_for_authorized_smoke')
-    expect(openai.model).toBe('gpt-image-1')
+    expect(openai.model).toBe('gpt-image-2')
     expect(openai.supportsImageEditing).toBe(true)
     expect(mock.state).toBe('ready_for_authorized_smoke')
     for (const candidate of arqweliaBenchmarkCandidates) {
-      expect(candidate.estimateOfficialCost()).toMatchObject({ known: false })
-      expect(candidate.estimateOfficialCost().note).toContain('UNKNOWN — TO BE MEASURED IN LOT 0')
+      const cost = candidate.estimateOfficialCost()
+      if (candidate.id === 'openai-gpt-image') {
+        expect(cost).toMatchObject({ known: true })
+        expect(cost.note).toContain('official gpt-image-2 pricing')
+      } else {
+        expect(cost).toMatchObject({ known: false })
+        expect(cost.note).toContain('UNKNOWN — TO BE MEASURED IN LOT 0')
+      }
     }
   })
 
-  it('zai model is tbd: the SDK exposes no provable default edit model', () => {
+  it('zai model is tbd and the adapter is documentary-only (blocked)', () => {
     expect(ARQWELIA_BENCHMARK_PHASE0A_EXECUTE).toBe(false) // default env posture
     expect(zaiImageAdapter.model).toBe('tbd')
-    expect(zaiImageAdapter.validateConfiguration().ok).toBe(false) // no config in test env
+    expect(zaiImageAdapter.supportsImageEditing).toBe(false)
+    expect(zaiImageAdapter.runSmoke).toBeUndefined()
+    expect(zaiImageAdapter.validateConfiguration().ok).toBe(false)
   })
 })
 
@@ -620,9 +614,10 @@ describe('ARQWELIA Lot 2 Phase 0A — no network in tests', () => {
     expect(source).not.toMatch(/from\s+['"]z-ai-web-dev-sdk/)
     expect(source).not.toMatch(/require\s*\(\s*['"]z-ai-web-dev-sdk/)
     expect(source).not.toMatch(/fetch\s*\(/)
+    expect(source).not.toContain('runSmoke(')
   })
 
-  it('the openai adapter never calls fetch and has no hard-coded region/pricing', () => {
+  it('the openai adapter never calls fetch and has no hard-coded region/pricing assumptions', () => {
     const source = readFileSync(join(process.cwd(), 'scripts/lib/arqwelia-benchmark/adapters/openai-image-adapter.mjs'), 'utf8')
     expect(source).not.toMatch(/fetch\s*\(/)
     expect(source).toMatch(/retention|region/i)

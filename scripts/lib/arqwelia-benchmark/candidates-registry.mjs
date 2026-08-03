@@ -1,8 +1,11 @@
 /**
  * ARQWELIA Lot 2 — benchmark candidate registry (runtime, plain ESM).
  *
- * This file is the SINGLE source of truth for the candidate registry and the
- * tiny runtime helpers that the CLI and the typed modules share.
+ * This file is the SINGLE source of truth for the executable candidate registry
+ * and the candidates the CLI can run. The tiny runtime helpers shared with the
+ * adapters live in `provider-runtime.mjs` (see below) so there is NO
+ * `registry → adapter → registry` circular import: the adapters import
+ * `provider-runtime.mjs`, never this file.
  *
  * Why a `.mjs` registry? The CLI (`scripts/benchmark-arqwelia-smoke.mjs`) must
  * run under a plain `node` runtime (Node 20 in this repo does NOT support
@@ -11,262 +14,42 @@
  * typechecker. Keeping the registry + helpers here lets both consumers read
  * exactly the same runtime objects without duplicating logic.
  *
+ * Z.AI is BLOCKED for Phase 0A: official Z.AI docs only document
+ * `POST /api/paas/v4/images/generations` with `{model, prompt, quality, size,
+ * user_id}` and a response `data[0].url` (NOT base64); no photo-input
+ * image-edit contract is verified. `zai-glm` is therefore NOT in the executable
+ * list — it is a DOCUMENTARY entry only (no `runSmoke`).
+ *
  * DRY-RUN SAFETY: nothing in this file performs a real provider network call.
- * `runSmoke` for real providers calls `ensureNoRealCall()` first and then
- * throws "NOT IMPLEMENTED — awaiting Gate" so no paid call can ever occur.
+ * `runSmoke` for real providers calls `ensureNoRealCall()` / the gate guards
+ * first and then throws "NOT IMPLEMENTED — awaiting Gate" so no paid call can
+ * ever occur.
  */
 
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import sharp from 'sharp'
+import { ArqweliaProviderError, ensureNoRealCall } from './provider-runtime.mjs'
 import { zaiImageAdapter } from './adapters/zai-image-adapter.mjs'
 import { openaiImageAdapter } from './adapters/openai-image-adapter.mjs'
 
-// ---------------------------------------------------------------------------
-// Env-gated authorization (module-level, evaluated once at import time).
-// ---------------------------------------------------------------------------
-
-export const ARQWELIA_BENCHMARK_AUTHORIZED = process.env.ARQWELIA_BENCHMARK_AUTHORIZED === 'true'
-export const ARQWELIA_BENCHMARK_MAX_BUDGET_EUR = Number(process.env.ARQWELIA_BENCHMARK_MAX_BUDGET_EUR || 0)
-export const ARQWELIA_BENCHMARK_PHASE0A_EXECUTE = process.env.ARQWELIA_BENCHMARK_PHASE0A_EXECUTE === 'true'
-
-/**
- * Budget gate — the SINGLE source of truth for deciding whether a real call may
- * happen. The ONLY source of a usable budget is the environment; the CLI can
- * never create one.
- *
- * Rules (exact):
- *   envAuthorized   = ARQWELIA_BENCHMARK_AUTHORIZED === true
- *   envBudget       = a finite strictly-positive number supplied ONLY by the
- *                     environment (absent/invalid/NaN/<=0 => envBudget = 0)
- *   envGateOpen     = envAuthorized && envBudget > 0
- *   effectiveBudget = --budget absent => envBudget;
- *                     --budget present => min(cliBudget, envBudget)
- *   realCallAuthorized = envGateOpen && effectiveBudget > 0
- *
- * @param {{ cliBudget?: number|null, envAuthorized?: boolean, envBudgetRaw?: string|undefined }} [input]
- * @returns {{ envAuthorized: boolean, envBudget: number, envGateOpen: boolean, effectiveBudget: number, realCallAuthorized: boolean }}
- */
-export function computeGate({
-  cliBudget = null,
-  envAuthorized = ARQWELIA_BENCHMARK_AUTHORIZED,
-  envBudgetRaw = process.env.ARQWELIA_BENCHMARK_MAX_BUDGET_EUR,
-} = {}) {
-  const parsed = envBudgetRaw == null || envBudgetRaw === '' ? 0 : Number(envBudgetRaw)
-  const envBudget = Number.isFinite(parsed) && parsed > 0 ? parsed : 0
-  const envGateOpen = envAuthorized === true && envBudget > 0
-  const effectiveBudget = cliBudget != null ? Math.min(cliBudget, envBudget) : envBudget
-  const realCallAuthorized = envGateOpen && effectiveBudget > 0
-  return {
-    envAuthorized: envAuthorized === true,
-    envBudget,
-    envGateOpen,
-    effectiveBudget,
-    realCallAuthorized,
-  }
-}
-
-const SECRET_ENV_NAME_RE = /(KEY|TOKEN|SECRET)/i
-const SECRET_VALUE_RE = /(nvapi-[A-Za-z0-9_\-]+|sk(-live)?-[A-Za-z0-9_\-]+|whsec_[A-Za-z0-9_\-]+|rc_wh_[A-Za-z0-9_\-]+)/g
-
-/**
- * Phase 0A three-gate guard — the REAL transport is blocked unless ALL THREE
- * independent gates are open:
- *   1. ARQWELIA_BENCHMARK_AUTHORIZED === 'true'
- *   2. ARQWELIA_BENCHMARK_MAX_BUDGET_EUR > 0
- *   3. ARQWELIA_BENCHMARK_PHASE0A_EXECUTE === 'true'
- *
- * Even with all three set, TESTS always mock the transport — this helper only
- * proves the operator intent, it does not itself make a network call.
- *
- * @param {{ realCallAuthorized?: boolean, budgetMaxEur?: number, phase0aExecute?: boolean }} opts
- */
-export function ensurePhase0AGate(opts = {}) {
-  if (opts.realCallAuthorized !== true) {
-    throw new ArqweliaProviderError(
-      'Refusing real provider call: authorization not granted (ARQWELIA_BENCHMARK_AUTHORIZED must be "true")',
-      { externalCalls: 0, actualCostEur: 0, billingStatus: 'not_called' },
-    )
-  }
-  if (!(Number(opts.budgetMaxEur) > 0)) {
-    throw new ArqweliaProviderError(
-      'Refusing real provider call: no budget allocated (ARQWELIA_BENCHMARK_MAX_BUDGET_EUR must be > 0)',
-      { externalCalls: 0, actualCostEur: 0, billingStatus: 'not_called' },
-    )
-  }
-  if (opts.phase0aExecute !== true) {
-    throw new ArqweliaProviderError(
-      'NOT IMPLEMENTED — awaiting Phase 0A execution (ARQWELIA_BENCHMARK_PHASE0A_EXECUTE must be "true")',
-      { externalCalls: 0, actualCostEur: 0, billingStatus: 'not_called' },
-    )
-  }
-}
-
-/**
- * Guard used by real-provider smoke adapters. Throws when a real call is not
- * allowed (no authorization flag and/or no budget). Mock never calls this.
- *
- * @param {{ realCallAuthorized?: boolean, budgetMaxEur?: number }} opts
- */
-export function ensureNoRealCall(opts = {}) {
-  if (opts.realCallAuthorized !== true) {
-    throw new Error(
-      'Refusing real provider call: authorization not granted (ARQWELIA_BENCHMARK_AUTHORIZED must be "true")',
-    )
-  }
-  if (!(Number(opts.budgetMaxEur) > 0)) {
-    throw new Error(
-      'Refusing real provider call: no budget allocated (ARQWELIA_BENCHMARK_MAX_BUDGET_EUR must be > 0)',
-    )
-  }
-}
-
-/**
- * Redacts anything that looks like a credential (env values whose name matches
- * /KEY|TOKEN|SECRET/i plus well-known credential value shapes) so it can never
- * be printed or written to a report.
- *
- * @param {string} text
- * @returns {string}
- */
-export function redactSecrets(text) {
-  if (text == null) return text
-  let out = String(text)
-  for (const [name, value] of Object.entries(process.env)) {
-    if (value == null || value === '' || value.length < 4) continue
-    if (SECRET_ENV_NAME_RE.test(name)) {
-      out = out.split(value).join('[REDACTED]')
-    }
-  }
-  return out.replace(SECRET_VALUE_RE, '[REDACTED]')
-}
-
-/**
- * Human-readable, redacted view of a set of env vars. Secret-named entries are
- * omitted (only counted) so no KEY/TOKEN/SECRET substring ever appears.
- *
- * @param {Record<string, string|undefined>} [env]
- * @returns {string[]}
- */
-export function redactedEnvSummary(env = process.env) {
-  let redacted = 0
-  const lines = []
-  for (const [name, value] of Object.entries(env)) {
-    if (value == null || value === '') continue
-    if (SECRET_ENV_NAME_RE.test(name)) {
-      redacted += 1
-      continue
-    }
-    lines.push(`${name}=${redactSecrets(value)}`)
-  }
-  lines.push(`[redacted ${redacted} vars]`)
-  return lines
-}
-
-// ---------------------------------------------------------------------------
-// Reliable billing derivation (single source of truth for the CLI output,
-// JSON report and Markdown report — all three are rendered from these).
-// ---------------------------------------------------------------------------
-
-/**
- * Provider error that transports billing information. Adapters use it to say
- * what actually happened before/after they failed, so a caught error is never
- * auto-converted into externalCalls=0 / actualCostEur=0 / not_called.
- *
- * Billing rules carried on `billing`:
- *   - error before any proven external call: externalCalls=0, actualCostEur=0,
- *     billingStatus='not_called'
- *   - error after an external call started: externalCalls>=1, actualCostEur=null
- *     if unknown, billingStatus='unknown'
- *   - officially measured cost: billingStatus='measured' + the real value
- */
-export class ArqweliaProviderError extends Error {
-  constructor(message, billing = {}) {
-    super(message)
-    this.name = 'ArqweliaProviderError'
-    this.billing = {
-      externalCalls: 0,
-      actualCostEur: 0,
-      billingStatus: 'not_called',
-      officialPricingSource: null,
-      ...billing,
-    }
-  }
-}
-
-/**
- * Resolves the billing carried by a caught error. An `ArqweliaProviderError`
- * uses its carried billing; ANY other error inside a real-adapter block gets
- * the CONSERVATIVE default (externalCalls=1, actualCostEur=null,
- * billingStatus='unknown') because the system cannot prove no call was made.
- *
- * @param {unknown} error
- * @returns {{ externalCalls: number, actualCostEur: number|null, billingStatus: string, officialPricingSource: string|null }}
- */
-export function billingFromCaughtError(error) {
-  if (error instanceof ArqweliaProviderError) {
-    return {
-      externalCalls: error.billing.externalCalls,
-      actualCostEur: error.billing.actualCostEur,
-      billingStatus: error.billing.billingStatus,
-      officialPricingSource: error.billing.officialPricingSource,
-    }
-  }
-  return {
-    externalCalls: 1,
-    actualCostEur: null,
-    billingStatus: 'unknown',
-    officialPricingSource: null,
-  }
-}
-
-/**
- * Derives the billing snapshot from a SmokeResult.
- *
- * Billing rules:
- *   - billingStatus 'not_called' → paidCostEur = 0 (dry run / not implemented:
- *     nothing was ever billed).
- *   - billingStatus 'measured'   → paidCostEur = actualCostEur (proven cost).
- *   - billingStatus 'unknown'    → paidCostEur = null. A real call happened but
- *     the cost was NOT proven — never claim PAID_COST=0 after a real call.
- *
- * @param {{ billingStatus?: string, actualCostEur?: number|null, externalCalls?: number, officialPricingSource?: string|null }} [result]
- * @returns {{ billingStatus: string, externalCalls: number, paidCostEur: number|null, officialPricingSource: string|null }}
- */
-export function billingSnapshot(result = {}) {
-  const billingStatus = result.billingStatus ?? 'not_called'
-  const externalCalls = Number(result.externalCalls ?? 0)
-  let paidCostEur = null
-  if (billingStatus === 'not_called') {
-    paidCostEur = 0
-  } else if (billingStatus === 'measured') {
-    paidCostEur = Number(result.actualCostEur ?? 0)
-  }
-  return {
-    billingStatus,
-    externalCalls,
-    paidCostEur,
-    officialPricingSource: result.officialPricingSource ?? null,
-  }
-}
-
-/**
- * Console lines rendered from a SmokeResult's billing fields. PAID_COST is
- * `UNKNOWN` (never `0`) when a real call's cost is not proven.
- *
- * @param {{ billingStatus?: string, actualCostEur?: number|null, externalCalls?: number, officialPricingSource?: string|null }} [result]
- * @returns {string[]}
- */
-export function billingSummaryLines(result = {}) {
-  const snap = billingSnapshot(result)
-  const paid = snap.paidCostEur === null ? 'UNKNOWN' : String(snap.paidCostEur)
-  return [
-    `external_calls=${snap.externalCalls}`,
-    `billing_status=${snap.billingStatus}`,
-    `paid_eur=${paid}`,
-    `REAL_PROVIDER_CALLS=${snap.externalCalls}, PAID_COST=${paid}`,
-  ]
-}
+// Re-export the shared runtime helpers so the CLI keeps a single import path
+// (`candidates-registry.mjs`) while the ADAPTERS import `provider-runtime.mjs`.
+export {
+  ARQWELIA_BENCHMARK_AUTHORIZED,
+  ARQWELIA_BENCHMARK_MAX_BUDGET_EUR,
+  ARQWELIA_BENCHMARK_PHASE0A_EXECUTE,
+  ArqweliaProviderError,
+  billingFromCaughtError,
+  billingSnapshot,
+  billingSummaryLines,
+  computeExecuteGate,
+  computeGate,
+  ensureNoRealCall,
+  ensurePhase0AGate,
+  redactSecrets,
+  redactedEnvSummary,
+} from './provider-runtime.mjs'
 
 // ---------------------------------------------------------------------------
 // Mock smoke — writes a tiny placeholder PNG. No external call, no cost.
@@ -356,11 +139,24 @@ const mockCandidate = {
   },
 }
 
+/**
+ * EXECUTABLE candidates — the only candidates the CLI can run.
+ * `zai-glm` is deliberately ABSENT: Z.AI is blocked for Phase 0A (documentary
+ * only, no runnable transport — see `arqweliaBenchmarkDocumentaryCandidates`).
+ */
 export const arqweliaBenchmarkCandidates = [
   nvidiaNimCandidate,
-  zaiImageAdapter,
   openaiImageAdapter,
   mockCandidate,
+]
+
+/**
+ * DOCUMENTARY candidates — blocked/deprecated entries kept for the record but
+ * NEVER runnable. `zai-glm` lives here: "SDK method detected but no current
+ * official API/model contract proving photo-to-photo editing."
+ */
+export const arqweliaBenchmarkDocumentaryCandidates = [
+  zaiImageAdapter,
 ]
 
 /**
