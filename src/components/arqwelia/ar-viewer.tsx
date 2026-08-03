@@ -21,6 +21,10 @@
  *        driven by the 'load' / 'error' events dispatched by <model-viewer>.
  *        On 'error' the viewer is hidden and a 2D fallback + a single manual
  *        retry button are shown (never auto-loop).
+ *  - Retry is a plain React handler: it resets modelStatus to 'loading' and
+ *    increments a `retryNonce` state that is interpolated into the model `src`
+ *    (a cache-busting query), which makes the still-mounted <model-viewer>
+ *    re-fetch the GLB exactly once. No React internals are used anywhere.
  *  - Enables AR with ar-modes="webxr scene-viewer quick-look", fixed scale,
  *    floor placement, camera controls and a lazy-loaded model.
  *  - Falls back to a visible 2D message + poster + "open interactive 3D view"
@@ -91,18 +95,26 @@ export interface ArqweliaModelViewerProps {
   alt: string
   /** true → AR entry enabled + auto-rotate; false → plain desktop orbit. */
   interactive?: boolean
+  /** Model src (controlled by the parent retry nonce). */
+  src?: string
   modelRef?: React.Ref<ModelViewerElement>
 }
 
 /**
  * Presentational <model-viewer> element (no hooks, SSR-safe). Kept separate so
- * tests can assert the exact AR attributes without a DOM.
+ * tests can assert the exact AR attributes without a DOM. `src` is controlled
+ * by the parent so a retry can swap in a distinct, cache-busting URL.
  */
-export function ArqweliaModelViewer({ alt, interactive = true, modelRef }: ArqweliaModelViewerProps) {
+export function ArqweliaModelViewer({
+  alt,
+  interactive = true,
+  src = MODEL_VIEWER_SRC,
+  modelRef,
+}: ArqweliaModelViewerProps) {
   return (
     <model-viewer
       ref={modelRef}
-      src={MODEL_VIEWER_SRC}
+      src={src}
       alt={alt}
       ar={interactive}
       ar-modes={MODEL_VIEWER_AR_MODES}
@@ -139,17 +151,6 @@ function detectArSupport(): boolean {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) || /Android/i.test(navigator.userAgent)
 }
 
-/** Count the rendered hooks on a function-component fiber (dev-time utility). */
-function hookCount(fiber: { memoizedState?: unknown }): number {
-  let count = 0
-  let hook = fiber.memoizedState as { next?: unknown } | null | undefined
-  while (hook) {
-    count++
-    hook = hook.next as { next?: unknown } | null
-  }
-  return count
-}
-
 export function ArqweliaArViewer({ arSupported, reducedMotion }: ArqweliaArViewerProps) {
   const t = useTranslations('arqwelia')
 
@@ -158,8 +159,8 @@ export function ArqweliaArViewer({ arSupported, reducedMotion }: ArqweliaArViewe
   const [arDetected, setArDetected] = useState<boolean | null>(null)
   const [show3d, setShow3d] = useState(false)
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
+  const [retryNonce, setRetryNonce] = useState(0)
   const modelRef = useRef<ModelViewerElement | null>(null)
-  const retryNonceRef = useRef(0)
 
   useEffect(() => {
     if (!isArqweliaArPocEnabled()) return
@@ -206,70 +207,23 @@ export function ArqweliaArViewer({ arSupported, reducedMotion }: ArqweliaArViewe
   const arUnavailable =
     arSupported === false || (arSupported === undefined && arDetected === false)
 
-  // Single manual retry. Attached to the <button> as a NATIVE click listener
-  // (via a callback ref) because after a <model-viewer> load error the dev
-  // server's React 19.2 tree can stop delivering delegated onClick events for
-  // this subtree. The handler re-resolves the live fiber dispatchers at click
-  // time — plain captured useState setters can silently stop driving the
-  // committed fiber in that state — then reloads the model in place.
-  //
-  // The model is NOT remounted through React (key) on retry: after a load error
-  // the dev server aborts that commit and reverts the whole update (status stays
-  // "failed"). Instead we set modelStatus back to "loading" and force the SAME
-  // <model-viewer> element to re-fetch by changing its `src` imperatively —
-  // exactly one new GLB request, never an auto-loop.
-  const handleRetry = useCallback(() => {
-    const startEl = document.querySelector('[data-arqwelia-ar-poc]')
-    if (!startEl) return
-    const fiberKey = Object.keys(startEl).find((k) => k.startsWith('__reactFiber'))
-    if (!fiberKey) return
-    let fiber = (startEl as unknown as Record<string, unknown>)[fiberKey] as
-      | (Record<string, unknown> & {
-          return?: unknown
-          type?: unknown
-          memoizedState?: unknown
-        })
-      | null
-    let guard = 0
-    while (fiber && guard++ < 80) {
-      if (typeof fiber.type === 'function' && hookCount(fiber) >= 4) {
-        let hook: any = fiber.memoizedState
-        let idx = 0
-        while (hook) {
-          if (idx === 2 && typeof hook.queue?.dispatch === 'function') {
-            ;(hook.queue.dispatch as (v: unknown) => void)('loading')
-          }
-          hook = hook.next
-          idx++
-        }
-        break
-      }
-      fiber = fiber.return as never
-    }
-    // Reload the same element after the "loading" commit has made it visible.
-    // The src is made distinct (cache-busting query) so model-viewer's
-    // updateSource re-fetches — setting the same URL would bail out.
-    retryNonceRef.current += 1
-    setTimeout(() => {
-      const el = document.querySelector(MODEL_VIEWER_TAG) as ModelViewerElement | null
-      if (el) {
-        el.setAttribute('src', MODEL_VIEWER_SRC + '?retry=' + retryNonceRef.current)
-      }
-    }, 100)
-  }, [])
+  // Controlled model source. A retry increments the nonce so the src gains a
+  // distinct cache-busting query, which makes the still-mounted <model-viewer>
+  // re-fetch the GLB exactly once.
+  const modelSrc = retryNonce === 0 ? MODEL_VIEWER_SRC : `${MODEL_VIEWER_SRC}?retry=${retryNonce}`
 
-  const retryButtonRef = useCallback(
-    (el: HTMLButtonElement | null) => {
-      if (!el) return
-      el.addEventListener('click', handleRetry)
-      return () => el.removeEventListener('click', handleRetry)
-    },
-    [handleRetry],
-  )
+  // Single manual retry — a plain React handler using only public state. It
+  // returns to 'loading' and bumps the nonce; the `src` change on the mounted
+  // element triggers a fresh GLB request (exactly one, never an auto-loop).
+  const handleRetry = useCallback(() => {
+    setModelStatus('loading')
+    setRetryNonce((value) => value + 1)
+  }, [])
 
   // Callback ref: attach the 'load'/'error' listeners the moment the
   // <model-viewer> element is mounted (synchronously in the commit phase, so
-  // no 'load'/'error' event can be missed), and remove them on unmount.
+  // no 'load'/'error' event can be missed), and remove them on unmount. Uses
+  // only documented DOM APIs.
   const handleViewerMount = useCallback((el: ModelViewerElement | null) => {
     if (!el) return undefined
     modelRef.current = el
@@ -361,9 +315,8 @@ export function ArqweliaArViewer({ arSupported, reducedMotion }: ArqweliaArViewe
 
   // Once the runtime is ready the <model-viewer> is ALWAYS mounted in a stable
   // position — only its visibility toggles (hidden while the model failed).
-  // Keeping the WebGL custom element mounted through the error transition
-  // avoids unmounting it mid-error (which corrupted the React fiber in the
-  // dev server). Retry reloads it in place via an imperative `src` change.
+  // Retry changes the controlled `src` (cache-busting query) so the same
+  // mounted element re-fetches the GLB exactly once.
   const body =
     runtimeStatus === 'ready' ? (
       <div>
@@ -375,6 +328,7 @@ export function ArqweliaArViewer({ arSupported, reducedMotion }: ArqweliaArViewe
           <ArqweliaModelViewer
             alt={t('lab.arPoc.alt')}
             interactive={!interactiveView}
+            src={modelSrc}
             modelRef={handleViewerMount}
           />
         </div>
@@ -386,8 +340,8 @@ export function ArqweliaArViewer({ arSupported, reducedMotion }: ArqweliaArViewe
             </p>
             <p className="mt-2 text-sm text-white/70">{t('lab.arPoc.fallbackText')}</p>
             <button
-              ref={retryButtonRef}
               type="button"
+              onClick={handleRetry}
               className="mt-4 rounded-full border border-white/[0.12] px-5 py-2.5 text-[13px] font-semibold text-white/80 transition-colors hover:border-arq-aqua/50 hover:bg-arq-aqua/5 hover:text-white"
             >
               {t('lab.arPoc.retry')}

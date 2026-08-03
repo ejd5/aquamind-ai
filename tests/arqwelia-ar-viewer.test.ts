@@ -169,13 +169,31 @@ describe('ArqweliaArViewer — error fallback wiring (source-level, no DOM)', ()
   it('hides the viewer and shows a retry button on model error (no auto-loop)', () => {
     expect(src).toContain('modelStatus === \'failed\'')
     expect(src).toContain('t(\'lab.arPoc.retry\')')
-    expect(src).toContain('retryNonceRef.current += 1')
   })
 
-  it('retry reloads the model in place (imperative src re-set) — no React remount', () => {
-    expect(src).toContain('ref={retryButtonRef}')
-    expect(src).toContain("el.addEventListener('click', handleRetry)")
-    expect(src).toContain('MODEL_VIEWER_SRC + \'?retry=\' + retryNonceRef.current')
+  it('retry uses a controlled React state (retryNonce + onClick) — no internals', () => {
+    // The retry handler must be a plain React handler driven by public state.
+    expect(src).toContain('const [retryNonce, setRetryNonce] = useState(0)')
+    expect(src).toContain('onClick={handleRetry}')
+    expect(src).toContain('setRetryNonce((value) => value + 1)')
+    // The controlled src interpolates the nonce as a cache-busting query.
+    expect(src).toContain('retryNonce === 0 ? MODEL_VIEWER_SRC')
+    expect(src).toContain('?retry=${retryNonce}')
+  })
+
+  it('does NOT use any React internal structures', () => {
+    const forbidden = [
+      '__reactFiber',
+      '__reactProps',
+      'memoizedState',
+      'queue.dispatch',
+      'hookCount',
+      'ReactCurrentDispatcher',
+      'ReactSharedInternals',
+    ]
+    for (const token of forbidden) {
+      expect(src, `ar-viewer.tsx must not contain ${token}`).not.toContain(token)
+    }
   })
 
   it('shows the FR/EN loadError message on runtime failure', () => {
