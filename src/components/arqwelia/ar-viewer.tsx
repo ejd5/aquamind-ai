@@ -11,6 +11,16 @@
  * Behaviour:
  *  - Lazy-loads the model-viewer script via dynamic import() after mount so it
  *    never blocks initial paint; until then it shows the poster + a message.
+ *  - Tracks TWO explicit states:
+ *      runtimeStatus: 'idle' | 'loading' | 'ready' | 'failed'
+ *        'failed' when the model-viewer module import fails OR the
+ *        <model-viewer> custom element is not registered after import — the
+ *        viewer is then never marked ready and an uninitialized custom element
+ *        is never rendered (poster + FR/EN loadError message instead).
+ *      modelStatus: 'idle' | 'loading' | 'ready' | 'failed'
+ *        driven by the 'load' / 'error' events dispatched by <model-viewer>.
+ *        On 'error' the viewer is hidden and a 2D fallback + a single manual
+ *        retry button are shown (never auto-loop).
  *  - Enables AR with ar-modes="webxr scene-viewer quick-look", fixed scale,
  *    floor placement, camera controls and a lazy-loaded model.
  *  - Falls back to a visible 2D message + poster + "open interactive 3D view"
@@ -18,7 +28,7 @@
  *    model-viewer's `canActivateAR` boolean).
  *  - Respects prefers-reduced-motion: renders poster + text, no auto-rotate.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { isArqweliaArPocEnabled } from '@/lib/features'
 import type { ModelViewerElement } from '@google/model-viewer'
@@ -48,6 +58,33 @@ declare module 'react' {
 export const MODEL_VIEWER_SRC = '/models/arqwelia-pool-poc.glb'
 export const MODEL_VIEWER_POSTER = '/models/arqwelia-pool-poc-poster.svg'
 export const MODEL_VIEWER_AR_MODES = 'webxr scene-viewer quick-look'
+
+export type RuntimeStatus = 'idle' | 'loading' | 'ready' | 'failed'
+export type ModelStatus = 'idle' | 'loading' | 'ready' | 'failed'
+
+/** Model-viewer's custom element tag. */
+export const MODEL_VIEWER_TAG = 'model-viewer'
+
+/**
+ * Pure state machine for the viewer UI (no DOM needed, unit-tested).
+ *
+ * - 'runtime-failed' → module import failed / custom element not registered:
+ *   never mark ready, show poster + loadError, no uninitialized element.
+ * - 'model-failed' → <model-viewer> dispatched 'error': hide the viewer, show
+ *   2D fallback + message + a single retry button.
+ * - 'loading' → poster/loading indicator while the viewer or model loads.
+ * - 'ready' → viewer interactive.
+ */
+export function resolveArqweliaViewerState(
+  runtime: RuntimeStatus,
+  model: ModelStatus,
+): 'runtime-failed' | 'model-failed' | 'loading' | 'ready' {
+  if (runtime === 'failed') return 'runtime-failed'
+  if (runtime !== 'ready') return 'loading'
+  if (model === 'failed') return 'model-failed'
+  if (model === 'ready') return 'ready'
+  return 'loading'
+}
 
 export interface ArqweliaModelViewerProps {
   /** Descriptive alt text (from i18n). */
@@ -105,7 +142,9 @@ function detectArSupport(): boolean {
 export function ArqweliaArViewer({ arSupported, reducedMotion }: ArqweliaArViewerProps) {
   const t = useTranslations('arqwelia')
 
-  const [scriptReady, setScriptReady] = useState(false)
+  const [runtimeStatus, setRuntimeStatus] = useState<RuntimeStatus>('idle')
+  const [modelStatus, setModelStatus] = useState<ModelStatus>('idle')
+  const [modelAttempt, setModelAttempt] = useState(0)
   const [arDetected, setArDetected] = useState<boolean | null>(null)
   const [show3d, setShow3d] = useState(false)
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
@@ -124,14 +163,26 @@ export function ArqweliaArViewer({ arSupported, reducedMotion }: ArqweliaArViewe
     // model-viewer script is slow to load.
     setArDetected(detectArSupport())
 
-    // Lazy-load the ~700 kB model-viewer runtime after first paint.
+    // Lazy-load the ~700 kB model-viewer runtime after first paint. Importing
+    // the module registers the <model-viewer> custom element as a side effect.
+    setRuntimeStatus('loading')
     import('@google/model-viewer')
       .then(() => {
-        if (!cancelled) setScriptReady(true)
+        if (cancelled) return
+        const isDefined =
+          typeof window !== 'undefined' &&
+          typeof window.customElements !== 'undefined' &&
+          Boolean(window.customElements.get(MODEL_VIEWER_TAG))
+        if (!isDefined) {
+          // The custom element was not registered: never mark ready and never
+          // render an uninitialized <model-viewer>.
+          setRuntimeStatus('failed')
+          return
+        }
+        setRuntimeStatus('ready')
       })
       .catch(() => {
-        // Script failed to load — keep the poster fallback.
-        if (!cancelled) setScriptReady(true)
+        if (!cancelled) setRuntimeStatus('failed')
       })
 
     return () => {
@@ -140,38 +191,108 @@ export function ArqweliaArViewer({ arSupported, reducedMotion }: ArqweliaArViewe
     }
   }, [])
 
-  // Once the element is mounted + upgraded, prefer model-viewer's own signal:
-  // canActivateAR is true when one of the configured ar-modes is active.
+  const reduced = reducedMotion ?? prefersReducedMotion
+  const arUnavailable =
+    arSupported === false || (arSupported === undefined && arDetected === false)
+
+  // Callback ref: attach the 'load'/'error' listeners the moment the
+  // <model-viewer> element is mounted (synchronously in the commit phase, so
+  // no 'load'/'error' event can be missed), and remove them on unmount. A
+  // manual retry re-mounts the element, which re-runs this callback.
+  const handleViewerMount = useCallback((el: ModelViewerElement | null) => {
+    if (!el) return undefined
+    modelRef.current = el
+    const onLoad = () => setModelStatus('ready')
+    const onError = () => setModelStatus('failed')
+    el.addEventListener('load', onLoad)
+    el.addEventListener('error', onError)
+    return () => {
+      if (modelRef.current === el) modelRef.current = null
+      el.removeEventListener('load', onLoad)
+      el.removeEventListener('error', onError)
+    }
+  }, [])
+
+  // While the viewer is mounted, prefer model-viewer's own signals: its
+  // `canActivateAR` and its `loaded` flag (covers the case where the model
+  // finished loading before the listeners were attached, e.g. cached response).
   useEffect(() => {
-    if (!scriptReady) return
+    if (runtimeStatus !== 'ready') return
     const el = modelRef.current
-    setArDetected(Boolean(el && el.canActivateAR))
-  }, [scriptReady])
+    if (!el) return
+
+    setArDetected(Boolean(el.canActivateAR))
+    if (Boolean((el as ModelViewerElement & { loaded?: boolean }).loaded)) {
+      setModelStatus('ready')
+    }
+  }, [runtimeStatus, show3d, modelAttempt, arUnavailable])
 
   if (!isArqweliaArPocEnabled()) {
     return null // ZERO DOM when the client flag is off.
   }
 
-  const reduced = reducedMotion ?? prefersReducedMotion
-  const arUnavailable =
-    arSupported === false || (arSupported === undefined && arDetected === false)
+  const wrapper = (body: React.ReactNode) => (
+    <div data-arqwelia-ar-poc data-runtime-status={runtimeStatus} data-model-status={modelStatus}>
+      {body}
+      <h2 className="mt-6 font-aq-display text-xl font-semibold text-white">{t('lab.arPoc.title')}</h2>
+      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/65">{t('lab.arPoc.description')}</p>
+      <p className="mt-2 text-xs text-white/45">{t('lab.arPoc.keyboardNote')}</p>
+    </div>
+  )
 
   // Reduced motion: static poster + text, no auto-rotate, no 3D canvas.
   if (reduced) {
-    return (
-      <div>
-        <h2 className="sr-only">{t('lab.arPoc.title')}</h2>
+    return wrapper(
+      <>
         <img src={MODEL_VIEWER_POSTER} alt={t('lab.arPoc.posterAlt')} className="aspect-video w-full rounded-2xl object-cover" />
         <p className="mt-4 text-sm text-white/70">{t('lab.arPoc.reducedMotionNotice')}</p>
         <p className="mt-1 text-xs text-white/50">{t('lab.arPoc.fallbackText')}</p>
-      </div>
+      </>,
+    )
+  }
+
+  // Runtime failed: import error or custom element not registered. Show the
+  // poster + a FR/EN loadError message, never an uninitialized <model-viewer>.
+  if (runtimeStatus === 'failed') {
+    return wrapper(
+      <>
+        <img src={MODEL_VIEWER_POSTER} alt={t('lab.arPoc.posterAlt')} className="aspect-video w-full rounded-2xl object-cover" />
+        <p className="mt-4 rounded-lg border border-arq-aqua/30 bg-arq-aqua/5 px-3 py-2 text-sm font-medium text-arq-aqua">
+          {t('lab.arPoc.loadError')}
+        </p>
+        <p className="mt-2 text-sm text-white/70">{t('lab.arPoc.fallbackText')}</p>
+      </>,
+    )
+  }
+
+  // Model failed after runtime ready: <model-viewer> dispatched 'error'. Hide
+  // the viewer, show the 2D fallback + message + a single manual retry button.
+  if (modelStatus === 'failed') {
+    return wrapper(
+      <>
+        <img src={MODEL_VIEWER_POSTER} alt={t('lab.arPoc.posterAlt')} className="aspect-video w-full rounded-2xl object-cover" />
+        <p className="mt-4 rounded-lg border border-arq-aqua/30 bg-arq-aqua/5 px-3 py-2 text-sm font-medium text-arq-aqua">
+          {t('lab.arPoc.modelError')}
+        </p>
+        <p className="mt-2 text-sm text-white/70">{t('lab.arPoc.fallbackText')}</p>
+        <button
+          type="button"
+          onClick={() => {
+            setModelStatus('loading')
+            setModelAttempt((n) => n + 1)
+          }}
+          className="mt-4 rounded-full border border-white/[0.12] px-5 py-2.5 text-[13px] font-semibold text-white/80 transition-colors hover:border-arq-aqua/50 hover:bg-arq-aqua/5 hover:text-white"
+        >
+          {t('lab.arPoc.retry')}
+        </button>
+      </>,
     )
   }
 
   // AR unavailable: visible 2D message + poster + link to the interactive 3D view.
   if (arUnavailable && !show3d) {
-    return (
-      <div>
+    return wrapper(
+      <>
         <img src={MODEL_VIEWER_POSTER} alt={t('lab.arPoc.posterAlt')} className="aspect-video w-full rounded-2xl object-cover" />
         <p className="mt-4 rounded-lg border border-arq-aqua/30 bg-arq-aqua/5 px-3 py-2 text-sm font-medium text-arq-aqua">
           {t('lab.arPoc.arUnavailable')}
@@ -184,32 +305,34 @@ export function ArqweliaArViewer({ arSupported, reducedMotion }: ArqweliaArViewe
         >
           {t('lab.arPoc.open3dView')}
         </button>
-      </div>
+      </>,
     )
   }
 
   const interactiveView = arUnavailable && show3d
 
-  return (
-    <div>
-      {!scriptReady ? (
-        <div>
-          <img src={MODEL_VIEWER_POSTER} alt={t('lab.arPoc.posterAlt')} className="aspect-video w-full rounded-2xl object-cover" />
-          <p className="mt-4 text-sm text-white/70">{t('lab.arPoc.loading')}</p>
-        </div>
-      ) : (
+  // Waiting for the runtime, or ready: poster + loading message while the
+  // model-viewer module loads; viewer once ready (+ model loading indicator).
+  const body =
+    runtimeStatus === 'ready' ? (
+      <div>
         <div className="overflow-hidden rounded-2xl border border-white/[0.08]">
           <ArqweliaModelViewer
             alt={t('lab.arPoc.alt')}
             interactive={!interactiveView}
-            modelRef={modelRef}
+            modelRef={handleViewerMount}
           />
         </div>
-      )}
+        {modelStatus === 'ready' ? null : (
+          <p className="mt-3 text-sm text-white/70">{t('lab.arPoc.modelLoading')}</p>
+        )}
+      </div>
+    ) : (
+      <div>
+        <img src={MODEL_VIEWER_POSTER} alt={t('lab.arPoc.posterAlt')} className="aspect-video w-full rounded-2xl object-cover" />
+        <p className="mt-4 text-sm text-white/70">{t('lab.arPoc.loading')}</p>
+      </div>
+    )
 
-      <h2 className="mt-6 font-aq-display text-xl font-semibold text-white">{t('lab.arPoc.title')}</h2>
-      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/65">{t('lab.arPoc.description')}</p>
-      <p className="mt-2 text-xs text-white/45">{t('lab.arPoc.keyboardNote')}</p>
-    </div>
-  )
+  return wrapper(body)
 }

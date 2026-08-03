@@ -20,18 +20,32 @@ export function isArqweliaLot1Enabled(): boolean {
 
 /**
  * ARQWELIA Lot 2 — A2 web-mobile AR POC (@google/model-viewer).
- * Build-time client flag (NEXT_PUBLIC_*). When false (the default), the AR
- * viewer component renders ZERO DOM and the /arqwelia/lab/ar-poc page shows
- * a non-functional "Fonction future" disabled state.
  *
- * The server-side ARQWELIA_AR_POC_ENABLED var is documented in .env.example as
- * a future authority flag — it is NOT wired to any API in this POC.
+ * The POC is gated by TWO independent flags:
+ *  - ARQWELIA_AR_POC_ENABLED (SERVER, runtime): the authority flag enforced by
+ *    the /arqwelia/lab/ar-poc Server Component at request time. When false the
+ *    page renders a clearly disabled state with ZERO viewer.
+ *  - NEXT_PUBLIC_ARQWELIA_AR_POC_ENABLED (CLIENT, build-time): enforced by the
+ *    <ArqweliaArViewer> client component. When false the component renders
+ *    ZERO DOM. Because NEXT_PUBLIC_* is inlined by Next.js at build time, a
+ *    rebuild is required to change it, while the server flag is read at
+ *    runtime (no rebuild).
  */
 export const ARQWELIA_AR_POC_ENABLED =
+  process.env.ARQWELIA_AR_POC_ENABLED === 'true'
+
+/** Client flag (build-time, NEXT_PUBLIC). Kept as a const so tests can reset it. */
+export const NEXT_PUBLIC_ARQWELIA_AR_POC_ENABLED =
   process.env.NEXT_PUBLIC_ARQWELIA_AR_POC_ENABLED === 'true'
 
+/** Server authority flag, read at request time (runtime env, not inlined). */
+export function isArqweliaArPocServerEnabled(): boolean {
+  return process.env.ARQWELIA_AR_POC_ENABLED === 'true'
+}
+
+/** Client flag (build-time NEXT_PUBLIC). Enforced by the AR viewer component. */
 export function isArqweliaArPocEnabled(): boolean {
-  return ARQWELIA_AR_POC_ENABLED
+  return NEXT_PUBLIC_ARQWELIA_AR_POC_ENABLED
 }
 
 /**

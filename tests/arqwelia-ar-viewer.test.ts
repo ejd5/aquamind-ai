@@ -68,6 +68,123 @@ describe('feature flag — isArqweliaArPocEnabled()', () => {
   })
 })
 
+/* ── Server flag (runtime env, not NEXT_PUBLIC) ────────────────────────── */
+
+async function serverFlagWith(env: string | undefined): Promise<boolean> {
+  vi.resetModules()
+  if (env === undefined) {
+    delete process.env.ARQWELIA_AR_POC_ENABLED
+  } else {
+    process.env.ARQWELIA_AR_POC_ENABLED = env
+  }
+  const { isArqweliaArPocServerEnabled } = await import('@/lib/features')
+  return isArqweliaArPocServerEnabled()
+}
+
+describe('feature flag — isArqweliaArPocServerEnabled() (server runtime)', () => {
+  it('server flag: false when unset / "false" / "0"', async () => {
+    expect(await serverFlagWith(undefined)).toBe(false)
+    expect(await serverFlagWith('false')).toBe(false)
+    expect(await serverFlagWith('0')).toBe(false)
+  })
+
+  it('server flag: true only when ARQWELIA_AR_POC_ENABLED is exactly "true"', async () => {
+    expect(await serverFlagWith('true')).toBe(true)
+  })
+})
+
+/* ── resolveArqweliaViewerState() — pure state machine (no DOM) ────────── */
+
+describe('resolveArqweliaViewerState() — loading states + error fallback', () => {
+  let resolve: typeof import('@/components/arqwelia/ar-viewer').resolveArqweliaViewerState
+
+  beforeAll(async () => {
+    resolve = (await import('@/components/arqwelia/ar-viewer')).resolveArqweliaViewerState
+  })
+
+  it('idle/loading runtime → "loading" (poster + message, no viewer yet)', () => {
+    expect(resolve('idle', 'idle')).toBe('loading')
+    expect(resolve('loading', 'idle')).toBe('loading')
+    expect(resolve('loading', 'ready')).toBe('loading')
+  })
+
+  it('runtime failed (import error / custom element missing) → "runtime-failed", NEVER ready', () => {
+    expect(resolve('failed', 'idle')).toBe('runtime-failed')
+    expect(resolve('failed', 'loading')).toBe('runtime-failed')
+    expect(resolve('failed', 'ready')).toBe('runtime-failed')
+  })
+
+  it('runtime ready + model error → "model-failed": fallback visible + retry', () => {
+    expect(resolve('ready', 'failed')).toBe('model-failed')
+  })
+
+  it('runtime ready + model loading → "loading" (viewer shown, model still loading)', () => {
+    expect(resolve('ready', 'idle')).toBe('loading')
+    expect(resolve('ready', 'loading')).toBe('loading')
+  })
+
+  it('runtime ready + model ready → "ready": viewer interactive', () => {
+    expect(resolve('ready', 'ready')).toBe('ready')
+  })
+
+  it('retry resets model status: after retry the state machine leaves "model-failed"', () => {
+    // Retry sets modelStatus back to 'loading' — the 'model-failed' fallback
+    // is left and the viewer is re-created (no auto-loop).
+    expect(resolve('ready', 'loading')).toBe('loading')
+    expect(resolve('ready', 'ready')).toBe('ready')
+  })
+})
+
+/* ── Error fallback wiring in the component source (no jsdom) ──────────── */
+
+describe('ArqweliaArViewer — error fallback wiring (source-level, no DOM)', () => {
+  let src: string
+  let i18nFr: Record<string, unknown>
+
+  beforeAll(async () => {
+    src = readFileSync(join(ROOT, 'src/components/arqwelia/ar-viewer.tsx'), 'utf8')
+    i18nFr = (await import('@/i18n/locales/fr.json')).default as Record<string, unknown>
+  })
+
+  it('never marks ready when the custom element is not registered (runtime failed)', () => {
+    expect(src).toContain('customElements.get(MODEL_VIEWER_TAG)')
+    expect(src).toContain('setRuntimeStatus(\'failed\')')
+  })
+
+  it('does NOT render an uninitialized <model-viewer> before runtime is ready', () => {
+    // The viewer element is only rendered when runtimeStatus === 'ready'.
+    expect(src).toContain('runtimeStatus === \'ready\' ? (')
+  })
+
+  it('listens to "load" and "error" on the <model-viewer> element', () => {
+    expect(src).toContain("el.addEventListener('load', onLoad)")
+    expect(src).toContain("el.addEventListener('error', onError)")
+  })
+
+  it('removes the "load" and "error" listeners on cleanup/unmount', () => {
+    expect(src).toContain("el.removeEventListener('load', onLoad)")
+    expect(src).toContain("el.removeEventListener('error', onError)")
+  })
+
+  it('hides the viewer and shows a retry button on model error (no auto-loop)', () => {
+    expect(src).toContain('modelStatus === \'failed\'')
+    expect(src).toContain('t(\'lab.arPoc.retry\')')
+    expect(src).toContain('setModelAttempt((n) => n + 1)')
+  })
+
+  it('shows the FR/EN loadError message on runtime failure', () => {
+    expect(src).toContain('t(\'lab.arPoc.loadError\')')
+    expect(src).toContain('t(\'lab.arPoc.modelError\')')
+  })
+
+  it('fr.json declares loadError / modelError / retry keys', () => {
+    const arPoc = (i18nFr.arqwelia as { lab: { arPoc: Record<string, string> } }).lab.arPoc
+    expect(arPoc.loadError).toContain('Impossible de charger')
+    expect(arPoc.modelError).toContain('maquette 3D')
+    expect(arPoc.retry).toBe('Réessayer')
+  })
+})
+
 describe('ArqweliaArViewer — zero DOM when flag off', () => {
   it('flag off → renders nothing (empty string, ZERO DOM)', async () => {
     const html = await renderViewer('false')
