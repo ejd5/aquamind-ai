@@ -7318,7 +7318,13 @@
         "conceptRequired": "Sélectionnez un concept",
         "photoTooBig": "Image trop volumineuse (10 Mo maximum)",
         "photoType": "Format non supporté (JPG, PNG ou WebP)",
-        "photoCount": "Maximum 4 photos"
+        "photoCount": "Maximum 4 photos",
+        "phone": "Numéro de téléphone invalide",
+        "turnstileFailed": "La vérification anti-robot a échoué. Actualisez la page puis réessayez.",
+        "turnstileUnavailable": "La vérification anti-robot est indisponible. Réessayez dans quelques instants.",
+        "rateLimit": "Trop de tentatives. Réessayez dans une heure.",
+        "internal": "Une erreur est survenue. Réessayez.",
+        "formUnavailable": "Ce formulaire est temporairement indisponible. Réessayez plus tard."
       },
       "photos": {
         "title": "Ajoutez vos photos",
@@ -7454,7 +7460,15 @@
         "companyName": "Société requise",
         "contactName": "Nom requis",
         "email": "E-mail professionnel invalide",
-        "consentRequired": "Consentement requis"
+        "phone": "Numéro de téléphone invalide",
+        "postalCode": "Code postal invalide (5 chiffres)",
+        "radiusKm": "Rayon invalide",
+        "consentRequired": "Consentement requis",
+        "turnstileFailed": "La vérification anti-robot a échoué. Actualisez la page puis réessayez.",
+        "turnstileUnavailable": "La vérification anti-robot est indisponible. Réessayez dans quelques instants.",
+        "rateLimit": "Trop de tentatives. Réessayez dans une heure.",
+        "internal": "Une erreur est survenue. Réessayez.",
+        "formUnavailable": "Ce formulaire est temporairement indisponible. Réessayez plus tard."
       }
     },
     "pro": {
