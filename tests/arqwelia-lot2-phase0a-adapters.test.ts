@@ -559,7 +559,7 @@ describe('ARQWELIA Lot 2 Phase 0A — THREE-GATE block (real call impossible)', 
       ['--provider', 'openai-gpt-image', '--image', imagePath, '--out', out, '--concept', 'A', '--dataset-id', 'item001', '--dataset-kind', 'synthetic'],
       {
         ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
-        ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+        ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
         ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: 'true',
       },
     )

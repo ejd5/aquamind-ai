@@ -19,11 +19,13 @@
  *
  * EXECUTION-SAFETY CONTRACT:
  *   - Atomic reservation: reserve → markStarted → call → finalize.
- *   - `reservePhase0aCall` records a `reserved` attempt BEFORE any transport;
+ *   - `reservePhase0aCall` records a `reserved` attempt BEFORE any transport —
+ *     `reserved` provisionally occupies one of the call slots (it counts);
  *   - `markPhase0aCallStarted` flips it to `in_flight` immediately before the
- *     real fetch invocation (this is when the slot permanently counts);
+ *     real fetch invocation (external call started or about to start);
  *   - `finalizePhase0aCall` records `succeeded` / `failed` / `unknown` (all
- *     consume a slot) or `cancelled_before_call` (does NOT consume a slot).
+ *     definitively consume a slot) or `cancelled_before_call` (capacity
+ *     released — the ONLY outcome that frees a slot).
  *   - Every read-modify-write is protected by a local lock file
  *     (`phase0a-manifest.lock`, created with `open(lockPath, 'wx')`). The lock
  *     is released in a `finally`; we never delete a lock owned by another
@@ -112,10 +114,14 @@ export function phase0aManifestLockPath(manifestPath) {
 }
 
 /**
- * The attempts that PERMANENTLY consume one of the Phase 0A call slots.
- * `reserved` attempts have NOT claimed a slot yet; `cancelled_before_call`
- * attempts never made a call and release the slot. Everything else
- * (`in_flight`, `succeeded`, `failed`, `unknown`) counts.
+ * The attempts that occupy one of the Phase 0A call slots:
+ *   - `reserved`                → capacity provisionally occupied (COUNTS),
+ *   - `in_flight`               → external call started or about to start,
+ *   - `succeeded`/`failed`/`unknown` → capacity definitively consumed,
+ *   - `cancelled_before_call`   → capacity released (never made a call).
+ *
+ * `reserved` therefore DOES count: it blocks a slot until the attempt is
+ * finalized. `cancelled_before_call` is the ONLY status that frees a slot.
  *
  * @param {object} manifest
  * @returns {object[]}
@@ -195,6 +201,18 @@ function sleep(ms) {
  * @returns {Promise<import('node:fs/promises').FileHandle>}
  */
 async function acquireManifestLock(lockPath) {
+  // Ensure the lock's parent directory exists BEFORE `open(lockPath, 'wx')` so
+  // a brand-new nested output path works on the very first run. Recursive mkdir
+  // on an existing directory is a no-op; a permission error propagates
+  // fail-closed (a blocking ArqweliaProviderError, never a silent success).
+  try {
+    await mkdir(dirname(lockPath), { recursive: true })
+  } catch {
+    throw new ArqweliaProviderError(
+      'Phase 0A manifest lock parent directory could not be created — refusing to proceed',
+      NOT_CALLED,
+    )
+  }
   const deadline = Date.now() + PHASE0A_MANIFEST_LOCK_MAX_WAIT_MS
   for (;;) {
     let handle = null
@@ -305,8 +323,9 @@ export async function savePhase0aManifest(outDir, manifest) {
  * limit and the idempotence key, and it happens BEFORE any transport is built
  * or any network is touched.
  *
- * Creates a `reserved` attempt. A `reserved` attempt does NOT consume a slot
- * yet — the slot is permanently claimed by `markPhase0aCallStarted`.
+ * Creates a `reserved` attempt. A `reserved` attempt provisionally occupies one
+ * of the 4 slots (it counts toward the cap) until it is finalized;
+ * `cancelled_before_call` is the ONLY outcome that releases the slot.
  *
  * Refuses (throws `ArqweliaProviderError`, billing `not_called`):
  *   - a 5th counting call (4 counting attempts already in the manifest),
@@ -365,8 +384,8 @@ export async function reservePhase0aCall({
 
 /**
  * Marks a reserved attempt `in_flight` immediately before the real fetch
- * invocation. From this point the attempt PERMANENTLY counts toward the 4-call
- * limit.
+ * invocation. From this point the attempt is definitively counted toward the
+ * 4-call limit.
  *
  * @param {{ manifestPath: string, attemptId: string }} opts
  * @returns {Promise<object>}
@@ -410,9 +429,9 @@ function sanitizeManifestRequestId(value) {
  *   cancelled_before_call → status='cancelled_before_call', externalCalls=0, actualCostEur=null, billingStatus='not_called'
  *
  * A failed call AFTER fetch (HTTP error / timeout / parse error / invalid
- * response / image-write failure) consumes one of the four slots. An error
- * before any fetch (`cancelled_before_call`) never consumes a slot and never
- * reports a paid call.
+ * response / image-write failure) definitively consumes one of the four slots.
+ * An error before any fetch (`cancelled_before_call`) releases the slot and
+ * never reports a paid call.
  *
  * @param {{ manifestPath: string, attemptId: string, outcome: 'succeeded'|'failed'|'unknown'|'cancelled_before_call', requestId?: unknown }} opts
  * @returns {Promise<object>}

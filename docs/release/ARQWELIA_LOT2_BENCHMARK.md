@@ -131,6 +131,17 @@ provider, never initializes a transport, prints `DRY RUN`, and reports
 
 - There is **no `--authorized` flag** — passing one is rejected as an unknown
   flag. Authorization comes exclusively from the environment.
+- **HARD OWNER BUDGET CAP (Phase 0A):** `PHASE0A_RETENTION_CONFIG.maximumBudgetEur`
+  (**2 EUR**) is the ABSOLUTE owner cap. The environment can NEVER configure a
+  budget above it, and `--budget` can never exceed it either. Any over-cap
+  budget (env OR CLI) is **refused with a non-zero exit** BEFORE any
+  reservation, manifest item or transport construction — an over-budget config
+  is never merely documented or ignored:
+  - `env=2`, no `--budget` → `effectiveBudget=2` (allowed);
+  - `env=2`, `--budget=1` → `effectiveBudget=1` (allowed);
+  - `env=2`, `--budget=3` → refusal;
+  - `env=10`, no `--budget` → refusal (env exceeds owner cap);
+  - `env=10`, `--budget=2` → refusal ALSO (env config exceeds owner cap).
 - `--budget` may **only reduce** the env budget (`min(cliBudget, envBudget)`).
   A `--budget` above a valid env ceiling is rejected with a clear error;
   `--budget <= 0` is rejected.
@@ -338,14 +349,25 @@ reservePhase0aCall → markPhase0aCallStarted → call → finalizePhase0aCall
 - `reservePhase0aCall` (BEFORE any transport): reads the manifest under a local
   lock, enforces the 4-call cap + idempotence, and records a `reserved` attempt
   (`{ attemptId, idempotenceKey, datasetItemId, concept, model, promptSha256,
-  status:'reserved', reservedAt }`).
+  status:'reserved', reservedAt }`). A `reserved` attempt **provisionally
+  occupies one of the 4 slots (it counts)** until it is finalized.
 - `markPhase0aCallStarted` (immediately before the real fetch invocation):
-  status → `in_flight`, `startedAt` — the attempt PERMANENTLY counts toward the
-  4-call limit.
-- `finalizePhase0aCall`: `succeeded` / `failed` / `unknown` all consume a slot
-  (`externalCalls=1, actualCostEur=null, billingStatus='unknown'`);
-  `cancelled_before_call` (`externalCalls=0, billingStatus='not_called'`) never
-  consumes a slot. A failed call AFTER fetch consumes one of the four slots.
+  status → `in_flight` (external call started or about to start), `startedAt` —
+  the attempt is **definitively** counted toward the 4-call limit.
+- `finalizePhase0aCall`: `succeeded` / `failed` / `unknown` all definitively
+  consume a slot (`externalCalls=1, actualCostEur=null, billingStatus='unknown'`);
+  `cancelled_before_call` (`externalCalls=0, billingStatus='not_called'`)
+  **releases** the slot — it is the ONLY status that frees capacity. A failed
+  call AFTER fetch consumes one of the four slots.
+
+### Capacity accounting (status lifecycle)
+
+| Status | Meaning | Counts toward the 4-call cap? |
+| --- | --- | --- |
+| `reserved` | capacity provisionally occupied | **yes** (until finalized) |
+| `in_flight` | external call started or about to start | yes |
+| `succeeded` / `failed` / `unknown` | capacity definitively consumed | yes |
+| `cancelled_before_call` | capacity released (never made a call) | **no** |
 
 ### Local lock + concurrency
 
@@ -353,8 +375,11 @@ Every manifest read-modify-write is guarded by a local lock file
 `phase0a-manifest.lock`, created with `open(lockPath, 'wx')` (atomically fails
 with `EEXIST` when another process owns it), released in a `finally`, with a max
 wait timeout. We never delete a lock owned by another process and refuse
-execution on doubt (inode check before unlink). ≥8 concurrent reservations can
-therefore never record a 5th call.
+execution on doubt (inode check before unlink). The lock's **parent directory is
+created first** (`mkdir(dirname(lockPath), { recursive: true })`), so a
+completely new nested `--out` path works on the very first run. Because
+`reserved` occupies capacity, 8 concurrent reservations yield **EXACTLY 4
+successes** — a 5th reserved attempt can never be recorded.
 
 ### FAIL-CLOSED manifest
 
@@ -368,17 +393,26 @@ ignores a manifest error and never launches a transport when a manifest
 operation failed. In a dry run a manifest failure produces a diagnostic without
 a call and is never presented as reliable.
 
-### Dataset authorization (synthetic only)
+### Dataset authorization (explicit synthetic only)
 
 `ARQWELIA_BENCHMARK_AUTHORIZED` concerns **spend** authorization, NOT photo
-authorization. Phase 0A smoke accepts ONLY `--dataset-kind synthetic`
-(`authorized` / `user` / `home` / `real` are REJECTED). When
-`executeAuthorized===true` the CLI REQUIRES `--dataset-id <controlled>`,
-`--dataset-kind synthetic` and `--image <photo>`. The manifest records
-`datasetKind:'synthetic'`, `authorizationBasis:'synthetic'`, `normalizedSha256`,
-`noExif:true`, `noFacesDeclared:true`, `noPlatesDeclared:true`,
-`noHouseNumberDeclared:true`, `noAddressDeclared:true`, `noGps:true` — never
-derived from `envAuthorized`.
+authorization. Phase 0A smoke accepts ONLY an **explicit** `--dataset-kind
+synthetic` (`authorized` / `user` / `home` / `real` are REJECTED). The default
+is `null` — an absent declaration is **NEVER** recorded as synthetic:
+
+- When `executeAuthorized===true` the CLI REQUIRES `--dataset-id <controlled>`,
+  `--dataset-kind synthetic` AND `--image <photo>`. These are verified **BEFORE**
+  `upsertPhase0aItem` / `reservePhase0aCall` / any transport — on failure there
+  is NO manifest item, NO reservation, NO transport, and the result is
+  `externalCalls=0 / billingStatus='not_called'`.
+- In a dry run, the manifest records the item only when the explicit
+  `--dataset-kind synthetic` declaration is present; an absent declaration
+  writes **no item** and the report keeps `datasetKind=null`.
+- When recorded, the item carries `datasetKind:'synthetic'`,
+  `authorizationBasis:'synthetic'`, `normalizedSha256`,
+  `noExif:true`, `noFacesDeclared:true`, `noPlatesDeclared:true`,
+  `noHouseNumberDeclared:true`, `noAddressDeclared:true`, `noGps:true` — never
+  derived from `envAuthorized`.
 
 ### Coherent response limits
 
@@ -405,7 +439,7 @@ The Phase 0A retention configuration (`phase0a-manifest.mjs`,
 | photos | 2 |
 | concepts | A and B |
 | maximumCalls | **4** (2 photos × 2 concepts) |
-| maximumBudgetEur | **2 EUR** (recommended first smoke owner budget) |
+| maximumBudgetEur | **2 EUR** — ABSOLUTE owner cap, enforced by the CLI (an env or CLI budget above it is refused with a non-zero exit) |
 
 **STRICT counter** (persisted, not process-memory only):
 
@@ -527,7 +561,8 @@ bun scripts/benchmark-arqwelia-smoke.mjs --provider openai-gpt-image \
   --image dataset/photos/01-small-garden.png --concept A --out ./benchmark-out
 ```
 
-`--budget` may cap below that ceiling (never above):
+`--budget` may cap below that ceiling (never above — and never above the
+2 EUR owner cap):
 
 ```bash
 # same run, capped to 1 EUR
@@ -536,6 +571,10 @@ ARQWELIA_BENCHMARK_PHASE0A_EXECUTE=true \
   bun scripts/benchmark-arqwelia-smoke.mjs --provider openai-gpt-image \
   --budget 1 --out ./benchmark-out
 ```
+
+An environment budget above **2 EUR** (e.g. `ARQWELIA_BENCHMARK_MAX_BUDGET_EUR=10`)
+is **refused** with a non-zero exit — the environment can never configure a
+budget above the Phase 0A owner cap.
 
 In this build, real providers still answer `NOT IMPLEMENTED — awaiting Phase 0A
 execution` (no transport is ever injected, so no call is made); the report

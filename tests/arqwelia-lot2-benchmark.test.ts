@@ -22,6 +22,7 @@ import {
   redactedEnvSummary,
 } from '../scripts/lib/arqwelia-benchmark/provider'
 import { normalizeImageForAi } from '@/lib/images/secure-image'
+import { PHASE0A_RETENTION_CONFIG } from '../scripts/lib/arqwelia-benchmark/phase0a-manifest.mjs'
 
 const CLI = join(process.cwd(), 'scripts/benchmark-arqwelia-smoke.mjs')
 
@@ -194,7 +195,7 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
 
   it('--budget alone (no env authorized) does NOT unlock a real call', () => {
     const out = tmpOut('aqw-bench-budget-alone-')
-    const result = runCli(['--provider', 'mock', '--out', out, '--budget', '50'])
+    const result = runCli(['--provider', 'mock', '--out', out, '--budget', '1'])
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('DRY RUN — NO EXTERNAL CALL')
@@ -214,7 +215,7 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
 
   it('--budget above the env ceiling is rejected', () => {
     const result = runCli(['--provider', 'mock', '--out', tmpOut('aqw-bench-cap-'), '--budget', '50'], {
-      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '1',
     })
     expect(result.status).toBe(2)
     expect(result.stderr).toMatch(/exceeds ARQWELIA_BENCHMARK_MAX_BUDGET_EUR/)
@@ -222,8 +223,8 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
 
   it('--budget below the env ceiling is allowed but still dry-run without env authorization', () => {
     const out = tmpOut('aqw-bench-below-')
-    const result = runCli(['--provider', 'mock', '--out', out, '--budget', '5'], {
-      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '50',
+    const result = runCli(['--provider', 'mock', '--out', out, '--budget', '1'], {
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
     })
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('DRY RUN — NO EXTERNAL CALL')
@@ -231,13 +232,74 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
     const { data } = latestReportJson(out)
     expect(data.dryRun).toBe(true)
     expect(data.authorized).toBe(false)
-    expect(data.budgetMaxEur).toBe(5)
+    expect(data.budgetMaxEur).toBe(1)
   })
 
   it('--budget <= 0 is rejected', () => {
     const result = runCli(['--provider', 'mock', '--out', tmpOut('aqw-bench-zero-'), '--budget', '0'])
     expect(result.status).toBe(2)
     expect(result.stderr).toMatch(/Invalid --budget value/)
+  })
+
+  // -- round 4: HARD OWNER BUDGET CAP (Phase 0A, maximumBudgetEur = 2) -------
+
+  it('HARD OWNER CAP: envBudget=2, no --budget → effectiveBudget=2 (allowed)', () => {
+    expect(PHASE0A_RETENTION_CONFIG.maximumBudgetEur).toBe(2)
+    const out = tmpOut('aqw-bench-owner2-')
+    const result = runCli(['--provider', 'mock', '--out', out], {
+      ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
+    })
+    expect(result.status).toBe(0)
+    const { data } = latestReportJson(out)
+    expect(data.budgetMaxEur).toBe(2)
+    expect(data.dryRun).toBe(true)
+    expect(data.realProviderCalls).toBe(0)
+  })
+
+  it('HARD OWNER CAP: envBudget=2, --budget=1 → effectiveBudget=1 (allowed)', () => {
+    const out = tmpOut('aqw-bench-owner2b-')
+    const result = runCli(['--provider', 'mock', '--out', out, '--budget', '1'], {
+      ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
+    })
+    expect(result.status).toBe(0)
+    const { data } = latestReportJson(out)
+    expect(data.budgetMaxEur).toBe(1)
+    expect(data.realProviderCalls).toBe(0)
+  })
+
+  it('HARD OWNER CAP: envBudget=2, --budget=3 → refusal (exit non-zero)', () => {
+    const result = runCli(['--provider', 'mock', '--out', tmpOut('aqw-bench-owner2c-'), '--budget', '3'], {
+      ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
+    })
+    expect(result.status).toBe(2)
+    expect(result.stderr).toMatch(/exceeds ARQWELIA_BENCHMARK_MAX_BUDGET_EUR/)
+    expect(result.stderr).toMatch(/REDUCE the budget/)
+  })
+
+  it('HARD OWNER CAP: envBudget=10, no --budget → refusal (env exceeds owner cap)', () => {
+    const result = runCli(['--provider', 'mock', '--out', tmpOut('aqw-bench-owner2d-')], {
+      ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+    })
+    expect(result.status).toBe(2)
+    expect(result.stderr).toContain('(10)')
+    expect(result.stderr).toMatch(
+      new RegExp(`owner budget cap \\(${PHASE0A_RETENTION_CONFIG.maximumBudgetEur} EUR\\)`),
+    )
+  })
+
+  it('HARD OWNER CAP: envBudget=10, --budget=2 → refusal ALSO (env config exceeds owner cap)', () => {
+    const result = runCli(['--provider', 'mock', '--out', tmpOut('aqw-bench-owner2e-'), '--budget', '2'], {
+      ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+    })
+    expect(result.status).toBe(2)
+    expect(result.stderr).toMatch(
+      new RegExp(`owner budget cap \\(${PHASE0A_RETENTION_CONFIG.maximumBudgetEur} EUR\\)`),
+    )
   })
 
   // -- reliable billing metrics ---------------------------------------------
@@ -546,21 +608,23 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
     expect(gate.realCallAuthorized).toBe(true)
   })
 
-  it('computeGate/CLI: auth=true, envBudget=10, --budget 15 → REJECT (cli above env ceiling)', () => {
-    const gate = computeGate({ cliBudget: 15, envAuthorized: true, envBudgetRaw: '10' })
-    expect(gate.effectiveBudget).toBe(10)
+  it('computeGate/CLI: auth=true, --budget 15 above the env ceiling → REJECT (cli above env ceiling)', () => {
+    // computeGate alone does not enforce the Phase 0A owner cap — that is the
+    // CLI's job. The env ceiling check still applies here.
+    const gate = computeGate({ cliBudget: 15, envAuthorized: true, envBudgetRaw: '1' })
+    expect(gate.effectiveBudget).toBe(1)
     const out = tmpOut('aqw-bench-rej15-')
     const result = runCli(['--provider', 'mock', '--out', out, '--budget', '15'], {
       ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
-      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '1',
     })
     expect(result.status).toBe(2)
     expect(result.stderr).toMatch(/exceeds ARQWELIA_BENCHMARK_MAX_BUDGET_EUR/)
   })
 
-  it('CRITICAL GATE: authorized + envBudget=0 + --budget 5 stays DRY RUN, realCallAuthorized=false', () => {
+  it('CRITICAL GATE: authorized + envBudget=0 + --budget 1 stays DRY RUN, realCallAuthorized=false', () => {
     const out = tmpOut('aqw-bench-gate-zero-')
-    const result = runCli(['--provider', 'mock', '--out', out, '--budget', '5'], {
+    const result = runCli(['--provider', 'mock', '--out', out, '--budget', '1'], {
       ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
       ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '0',
     })
@@ -578,9 +642,9 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
 
   it('authorized + budget WITHOUT phase0aExecute stays a DRY RUN (third lock missing)', () => {
     const out = tmpOut('aqw-bench-tech-')
-    const result = runCli(['--provider', 'openai-gpt-image', '--out', out, '--budget', '5'], {
+    const result = runCli(['--provider', 'openai-gpt-image', '--out', out, '--budget', '1'], {
       ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
-      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
     })
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('realCallAuthorized=true')
@@ -607,7 +671,7 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
       ['--provider', 'openai-gpt-image', '--image', imagePath, '--out', out, '--concept', 'A', '--dataset-id', 'item001', '--dataset-kind', 'synthetic'],
       {
         ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
-        ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+        ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
         ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: 'true',
       },
     )
@@ -811,7 +875,7 @@ export default {
     const out = tmpOut('aqw-bench-err-out-')
     const result = runCli(['--provider', 'fake-error', '--out', out], {
       ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
-      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
       ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: 'true',
       ARQWELIA_BENCHMARK_EXTRA_CANDIDATE_MODULE: fakeModule,
     })

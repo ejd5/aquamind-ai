@@ -27,6 +27,12 @@
  *     strictly > 0). `--budget` may only REDUCE that env budget
  *     (`min(cliBudget, envBudget)`); a value above the env ceiling is rejected,
  *     and with no env budget the effective budget is 0.
+ *   - HARD OWNER BUDGET CAP (Phase 0A): the environment can NEVER configure a
+ *     budget above `PHASE0A_RETENTION_CONFIG.maximumBudgetEur` (2 EUR), and
+ *     `--budget` can never exceed that cap either. Any over-cap budget (env or
+ *     CLI) is refused with a non-zero exit BEFORE any reservation or transport
+ *     construction — an over-budget config is never merely documented or
+ *     ignored.
  *   - Default (no env vars) is a DRY RUN: no external provider call, no cost.
  *   - Even when all three gates are open, real-provider adapters have no
  *     injected transport and answer "NOT IMPLEMENTED — awaiting Gate", so no
@@ -64,6 +70,7 @@ import {
 } from './lib/arqwelia-benchmark/candidates-registry.mjs'
 import { computeExecuteGate } from './lib/arqwelia-benchmark/provider-runtime.mjs'
 import {
+  PHASE0A_RETENTION_CONFIG,
   finalizePhase0aCall,
   markPhase0aCallStarted,
   phase0aManifestPath,
@@ -82,7 +89,7 @@ import {
 } from './lib/arqwelia-benchmark/prompts/index.ts'
 
 const TASK = 'arqwelia-lot2-a1-benchmark-smoke'
-const VERSION = '3.2.0'
+const VERSION = '3.3.0'
 
 function printUsage() {
   console.log(
@@ -102,14 +109,19 @@ Options:
   --dataset-id <id> Alphanumeric dataset item id recorded in reports (default: a
                     truncated hash of the normalized image)
   --dataset-kind <kind>
-                    Phase 0A dataset kind. ONLY "synthetic" is accepted in this
-                    build; "authorized" / "user" / "home" / "real" are REJECTED.
+                    Phase 0A dataset kind. ONLY the EXPLICIT value "synthetic"
+                    is accepted in this build; when ABSENT the dataset is never
+                    recorded as synthetic (datasetKind=null, no
+                    authorizationBasis written) and execution is refused.
+                    "authorized" / "user" / "home" / "real" are REJECTED.
                     The dataset authorization basis is NEVER derived from
                     ARQWELIA_BENCHMARK_AUTHORIZED (spend authorization only).
   --out <dir>       Output directory (default: ./benchmark-out)
   --budget <eur>    Budget cap — may only REDUCE the budget below
-                    ARQWELIA_BENCHMARK_MAX_BUDGET_EUR; exceeding the env ceiling
-                    is rejected; a value <= 0 is rejected. With no env budget the
+                    ARQWELIA_BENCHMARK_MAX_BUDGET_EUR and may never exceed the
+                    Phase 0A owner cap (PHASE0A_RETENTION_CONFIG.maximumBudgetEur
+                    = 2 EUR). Exceeding the env ceiling or the owner cap is
+                    rejected; a value <= 0 is rejected. With no env budget the
                     CLI stays a DRY RUN and the effective budget is 0.
 
 Authorization is ENV-ONLY and cannot be granted from the CLI. A real provider
@@ -322,10 +334,29 @@ async function run() {
   // AND phase0aExecute are true. All other combinations are a DRY RUN.
   const { executeAuthorized, dryRun } = computeExecuteGate({ realCallAuthorized, phase0aExecute })
 
+  // HARD OWNER BUDGET CAP (Phase 0A) — `PHASE0A_RETENTION_CONFIG.maximumBudgetEur`
+  // (2 EUR) is the ABSOLUTE owner cap. The environment can NEVER configure a
+  // budget above it and `--budget` can never exceed it either. These refusals
+  // happen BEFORE any reservation, manifest item or transport construction — an
+  // over-budget config is never merely documented or ignored.
+  const ownerBudgetCap = PHASE0A_RETENTION_CONFIG.maximumBudgetEur
+  if (envBudget > ownerBudgetCap) {
+    console.error(
+      `error: ARQWELIA_BENCHMARK_MAX_BUDGET_EUR (${envBudget}) exceeds the Phase 0A owner budget cap (${ownerBudgetCap} EUR). ` +
+        'The environment can never configure a budget above the owner cap.',
+    )
+    process.exit(2)
+  }
   if (args.budget != null && envBudget > 0 && args.budget > envBudget) {
     console.error(
       `error: --budget (${args.budget}) exceeds ARQWELIA_BENCHMARK_MAX_BUDGET_EUR (${envBudget}). ` +
         'The CLI can only REDUCE the budget below the env ceiling.',
+    )
+    process.exit(2)
+  }
+  if (args.budget != null && args.budget > ownerBudgetCap) {
+    console.error(
+      `error: --budget (${args.budget}) exceeds the Phase 0A owner budget cap (${ownerBudgetCap} EUR).`,
     )
     process.exit(2)
   }
@@ -365,24 +396,29 @@ async function run() {
   // normalized image) — never the original local filename.
   const datasetItemId = args.datasetId || (normalized ? normalized.sha256.slice(0, 16) : null)
 
-  // Phase 0A dataset authorization: the dataset kind is `synthetic` (the ONLY
-  // value accepted in this build) and the authorization basis is NEVER derived
-  // from ARQWELIA_BENCHMARK_AUTHORIZED — that env flag concerns SPEND
-  // authorization, not photo authorization. In execution the explicit
-  // `--dataset-kind synthetic` flag is REQUIRED (absent → refused).
-  const effectiveDatasetKind = args.datasetKind ?? 'synthetic'
+  // Phase 0A dataset authorization: the dataset kind must be EXPLICITLY
+  // declared as `synthetic` (the ONLY value accepted in this build). The
+  // default is `null` — an absent declaration NEVER becomes a synthetic
+  // authorization basis. In execution the explicit `--dataset-kind synthetic`
+  // flag is REQUIRED (absent → refused before any manifest item / reservation /
+  // transport). The basis is never derived from ARQWELIA_BENCHMARK_AUTHORIZED
+  // (spend authorization only).
+  const effectiveDatasetKind = args.datasetKind ?? null
+  const datasetSyntheticExplicit = args.datasetKind === 'synthetic'
 
   // Phase 0A retention record (local NON-versioned manifest, gitignored via
-  // benchmark-out/). Written for the Phase 0A provider (openai-gpt-image) only
-  // and only when an image is present. FAIL-CLOSED: in executeAuthorized a
-  // manifest failure BLOCKS the run; in dry-run it produces a diagnostic and
-  // never claims the manifest is reliable.
-  if (provider.id === 'openai-gpt-image' && datasetItemId && normalized) {
+  // benchmark-out/). Written for the Phase 0A provider (openai-gpt-image) ONLY
+  // when the dataset kind is EXPLICITLY declared `synthetic` AND the controlled
+  // dataset id + normalized image are present — an absent declaration never
+  // writes datasetKind='synthetic' / authorizationBasis='synthetic'. FAIL-CLOSED:
+  // in executeAuthorized a manifest failure BLOCKS the run; in dry-run it
+  // produces a diagnostic and never claims the manifest is reliable.
+  if (provider.id === 'openai-gpt-image' && datasetSyntheticExplicit && datasetItemId && normalized) {
     try {
       await upsertPhase0aItem({
         outDir,
         datasetItemId,
-        datasetKind: effectiveDatasetKind,
+        datasetKind: 'synthetic',
         authorizationBasis: 'synthetic',
         normalizedSha256: normalized.sha256,
         noExif: true,

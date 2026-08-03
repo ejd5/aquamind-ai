@@ -15,9 +15,11 @@
  *   8.  error before any fetch → `cancelled_before_call`, never counted;
  *   9-11. FAIL-CLOSED manifest (absent → create; corrupt → block; write error
  *       → block before fetch);
- *   12. local-lock concurrency: ≥8 parallel reservations → at most 4 succeed;
+ *   12. local-lock concurrency: ≥8 parallel reservations → EXACTLY 4 succeed
+ *       (reserved occupies capacity — a 5th can never be recorded);
  *   13. duplicate idempotence key refused without explicit retry;
- *   14-16. dataset authorization: ONLY `--dataset-kind synthetic` is accepted,
+ *   14-16. dataset authorization: ONLY an EXPLICIT `--dataset-kind synthetic`
+ *       is accepted, an absent declaration is NEVER recorded as synthetic, and
  *       the authorization basis is NEVER derived from envAuthorized;
  *   17-18. coherent response limits (5 MB < JSON ≤ 48 MB accepted when valid;
  *       JSON > 48 MB rejected; decoded image > 32 MB rejected);
@@ -31,9 +33,9 @@
 
 import { spawnSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { basename, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import sharp from 'sharp'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import {
@@ -421,6 +423,36 @@ describe('Phase 0A execution safety — FAIL-CLOSED manifest', () => {
     expect(manifest.calls[0].idempotenceKey).toMatch(/^[a-f0-9]{64}$/)
   })
 
+  it('COMPLETELY NONEXISTENT nested out path → dir auto-created, lock acquired, manifest created+valid, lock removed', async () => {
+    // A brand-new nested path with NONE of the folders pre-created: the lock's
+    // parent must be created before open(lockPath, 'wx') so the very first
+    // reservation works. A random base guarantees the path is genuinely new.
+    const manifestPath = join(
+      tmpdir(),
+      `aqw-new-parent-${randomBytes(6).toString('hex')}`,
+      'new-benchmark-out',
+      PHASE0A_MANIFEST_FILENAME,
+    )
+    expect(existsSync(dirname(manifestPath))).toBe(false)
+    const attempt = await reservePhase0aCall({
+      manifestPath,
+      datasetItemId: 'item001',
+      concept: 'A',
+      model: OPENAI_PHASE0A_DEFAULT_MODEL,
+      promptSha256: 'a'.repeat(64),
+    })
+    expect(attempt).toBeDefined()
+    expect(existsSync(dirname(manifestPath))).toBe(true)
+    // Lock file is created during the reservation and removed at the end.
+    const lockPath = join(dirname(manifestPath), 'phase0a-manifest.lock')
+    expect(existsSync(lockPath)).toBe(false)
+    // Manifest is created and valid JSON with exactly one reserved attempt.
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    expect(manifest.calls).toHaveLength(1)
+    expect(manifest.calls[0].status).toBe('reserved')
+    expect(manifest.calls[0].attemptId).toBe(attempt.attemptId)
+  })
+
   it('manifest CORRUPT → blocking error (no silent empty manifest, no transport)', async () => {
     const out = tmpOut('aqw-exec-corrupt-')
     const manifestPath = phase0aManifestPath(out)
@@ -461,7 +493,7 @@ describe('Phase 0A execution safety — FAIL-CLOSED manifest', () => {
       ['--provider', 'openai-gpt-image', '--image', imagePath, '--out', out, '--concept', 'A', '--dataset-id', 'item001', '--dataset-kind', 'synthetic'],
       {
         ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
-        ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+        ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
         ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: 'true',
       },
     )
@@ -491,7 +523,7 @@ describe('Phase 0A execution safety — FAIL-CLOSED manifest', () => {
 })
 
 describe('Phase 0A execution safety — local lock + concurrency', () => {
-  it('8 concurrent reservations → at most 4 succeed, no 5th recorded, final JSON valid', async () => {
+  it('8 concurrent reservations → EXACTLY 4 succeed, the other 4 refuse, final manifest holds exactly four reserved attempts and valid JSON', async () => {
     const out = tmpOut('aqw-exec-concurrency-')
     const manifestPath = phase0aManifestPath(out)
     const results = await Promise.allSettled(
@@ -506,12 +538,15 @@ describe('Phase 0A execution safety — local lock + concurrency', () => {
       ),
     )
     const fulfilled = results.filter((r) => r.status === 'fulfilled')
-    expect(fulfilled.length).toBeLessThanOrEqual(PHASE0A_RETENTION_CONFIG.maximumCalls)
-    expect(fulfilled.length).toBeGreaterThan(0)
+    const rejected = results.filter((r) => r.status === 'rejected')
+    // `reserved` PROVISIONALLY occupies a slot and counts toward the 4-call cap,
+    // so 8 concurrent reservations must yield EXACTLY 4 successes (never 1-4).
+    expect(fulfilled.length).toBe(PHASE0A_RETENTION_CONFIG.maximumCalls)
+    expect(rejected.length).toBe(8 - PHASE0A_RETENTION_CONFIG.maximumCalls)
     const raw = readFileSync(manifestPath, 'utf8')
     expect(() => JSON.parse(raw)).not.toThrow()
     const manifest = JSON.parse(raw)
-    expect(manifest.calls.length).toBe(fulfilled.length)
+    expect(manifest.calls.length).toBe(4)
     expect(manifest.calls.every((c: { status: string }) => c.status === 'reserved')).toBe(true)
   })
 
@@ -548,7 +583,7 @@ describe('Phase 0A execution safety — local lock + concurrency', () => {
 })
 
 describe('Phase 0A execution safety — dataset authorization (synthetic only)', () => {
-  it('dataset-kind ABSENT → refused in execution (no transport, not_called/0/0)', async () => {
+  it('dataset-kind ABSENT → refused in execution BEFORE any manifest item, no transport, not_called/0/0', async () => {
     const srcDir = tmpOut('aqw-exec-dsabs-src-')
     const imagePath = join(srcDir, 'source.jpg')
     const jpeg = await sharp({
@@ -562,15 +597,29 @@ describe('Phase 0A execution safety — dataset authorization (synthetic only)',
       ['--provider', 'openai-gpt-image', '--image', imagePath, '--out', out, '--concept', 'A', '--dataset-id', 'item001'],
       {
         ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
-        ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+        ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
         ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: 'true',
       },
     )
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('--dataset-kind must be "synthetic"')
     expect(result.stdout).toContain('REAL_PROVIDER_CALLS=0, PAID_COST=0')
-    const manifest = JSON.parse(readFileSync(join(out, PHASE0A_MANIFEST_FILENAME), 'utf8'))
-    expect(manifest.calls).toEqual([])
+    // The refusal happens BEFORE upsert/reserve: NO manifest item may exist and
+    // no reserved/in_flight attempt may be recorded.
+    const manifestPath = join(out, PHASE0A_MANIFEST_FILENAME)
+    if (existsSync(manifestPath)) {
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+      expect(manifest.calls).toEqual([])
+      expect(Object.keys(manifest.items)).toEqual([])
+    }
+    // The report never records a synthetic datasetKind when the flag is absent.
+    const report = JSON.parse(
+      readFileSync(
+        join(out, readdirSync(out).filter((f) => f.endsWith('.json') && !f.startsWith('phase0a-manifest')).pop()!),
+        'utf8',
+      ),
+    )
+    expect(report.image.datasetKind).toBeNull()
   })
 
   it('dataset-kind non-synthetic (authorized/user/home/real) → REJECTED during Phase 0A', () => {
@@ -623,6 +672,104 @@ describe('Phase 0A execution safety — dataset authorization (synthetic only)',
     expect(record.authorizationBasis).toBe('synthetic')
     expect(record.datasetKind).toBe('synthetic')
     expect(record).not.toHaveProperty('authorization')
+  })
+
+  it('DRY-RUN without --dataset-kind → NO false synthetic declaration (report datasetKind=null, no manifest item)', async () => {
+    const srcDir = tmpOut('aqw-exec-drydsk-src-')
+    const imagePath = join(srcDir, 'source.jpg')
+    const jpeg = await sharp({
+      create: { width: 200, height: 140, channels: 3, background: { r: 200, g: 30, b: 60 } },
+    })
+      .jpeg()
+      .toBuffer()
+    writeFileSync(imagePath, jpeg)
+    const out = tmpOut('aqw-exec-drydsk-')
+    const result = runCli(
+      ['--provider', 'openai-gpt-image', '--image', imagePath, '--out', out, '--concept', 'A', '--dataset-id', 'item001'],
+      {}, // no spend authorization, no budget → dry run
+    )
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('DRY RUN — NO EXTERNAL CALL')
+    // No manifest item and no reserved attempt may be written while the explicit
+    // synthetic declaration is missing.
+    const manifestPath = join(out, PHASE0A_MANIFEST_FILENAME)
+    if (existsSync(manifestPath)) {
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+      expect(Object.keys(manifest.items)).toEqual([])
+      expect(manifest.calls).toEqual([])
+    }
+    const report = JSON.parse(
+      readFileSync(
+        join(out, readdirSync(out).filter((f) => f.endsWith('.json') && !f.startsWith('phase0a-manifest')).pop()!),
+        'utf8',
+      ),
+    )
+    expect(report.image.datasetKind).toBeNull()
+    expect(report.image).not.toHaveProperty('authorizationBasis')
+  })
+
+  it('envAuthorized=true WITHOUT --dataset-kind → NEVER writes authorizationBasis="synthetic"', async () => {
+    const srcDir = tmpOut('aqw-exec-authbasis-dsk-src-')
+    const imagePath = join(srcDir, 'source.jpg')
+    const jpeg = await sharp({
+      create: { width: 210, height: 150, channels: 3, background: { r: 60, g: 20, b: 130 } },
+    })
+      .jpeg()
+      .toBuffer()
+    writeFileSync(imagePath, jpeg)
+    const out = tmpOut('aqw-exec-authbasis-dsk-')
+    const result = runCli(
+      ['--provider', 'openai-gpt-image', '--image', imagePath, '--out', out, '--concept', 'A', '--dataset-id', 'item001'],
+      { ARQWELIA_BENCHMARK_AUTHORIZED: 'true' }, // spend authorization WITHOUT dataset-kind
+    )
+    expect(result.status).toBe(0)
+    const manifestPath = join(out, PHASE0A_MANIFEST_FILENAME)
+    if (existsSync(manifestPath)) {
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+      expect(Object.keys(manifest.items)).toEqual([])
+      expect(manifest.calls).toEqual([])
+    }
+    const report = JSON.parse(
+      readFileSync(
+        join(out, readdirSync(out).filter((f) => f.endsWith('.json') && !f.startsWith('phase0a-manifest')).pop()!),
+        'utf8',
+      ),
+    )
+    expect(report.image.datasetKind).toBeNull()
+    expect(JSON.stringify(report)).not.toContain('authorizationBasis')
+  })
+
+  it('EXECUTION with explicit --dataset-kind synthetic → item + reserved attempt recorded correctly', async () => {
+    const srcDir = tmpOut('aqw-exec-syn-src-')
+    const imagePath = join(srcDir, 'source.jpg')
+    const jpeg = await sharp({
+      create: { width: 220, height: 160, channels: 3, background: { r: 20, g: 160, b: 90 } },
+    })
+      .jpeg()
+      .toBuffer()
+    writeFileSync(imagePath, jpeg)
+    const out = tmpOut('aqw-exec-syn-')
+    const result = runCli(
+      ['--provider', 'openai-gpt-image', '--image', imagePath, '--out', out, '--concept', 'A', '--dataset-id', 'item001', '--dataset-kind', 'synthetic'],
+      {
+        ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+        ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
+        ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: 'true',
+      },
+    )
+    expect(result.status).toBe(0)
+    // The retention item is written with the EXPLICIT synthetic basis.
+    const manifest = JSON.parse(readFileSync(join(out, PHASE0A_MANIFEST_FILENAME), 'utf8'))
+    const record = manifest.items.item001
+    expect(record.datasetKind).toBe('synthetic')
+    expect(record.authorizationBasis).toBe('synthetic')
+    // No transport is injected in this build, so the attempt is cancelled before
+    // any network — but the reservation itself was recorded (capacity occupied).
+    expect(manifest.calls).toHaveLength(1)
+    expect(manifest.calls[0].datasetItemId).toBe('item001')
+    expect(manifest.calls[0].status).toBe('cancelled_before_call')
+    expect(manifest.calls[0].externalCalls).toBe(0)
+    expect(manifest.calls[0].billingStatus).toBe('not_called')
   })
 })
 
