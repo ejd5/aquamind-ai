@@ -27,7 +27,7 @@
  *       is passed as `fetchImpl`, never by stubbing the global.
  *   20. no personal data / secrets / paths / photos in reports or the manifest.
  *
- * NO REAL OPENAI CALL IS POSSIBLE HERE: every transport uses an injected
+ * NO REAL OPENAI CALL IS MADE HERE: every transport uses an injected
  * `fetchImpl` mock and the global `fetch` stays at ZERO across the suite.
  */
 

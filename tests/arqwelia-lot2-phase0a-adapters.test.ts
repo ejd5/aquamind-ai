@@ -81,7 +81,7 @@ function gateOpenOptions(overrides: Record<string, unknown> = {}) {
     providerId: 'openai-gpt-image',
     model: OPENAI_PHASE0A_DEFAULT_MODEL,
     outDir: tmpOut('aqw-phase0a-gate-'),
-    budgetMaxEur: 5,
+    budgetMaxEur: 2,
     realCallAuthorized: true,
     phase0aExecute: true,
     ...overrides,
@@ -487,12 +487,12 @@ describe('ARQWELIA Lot 2 Phase 0A — mock transport, conservative billing', () 
   })
 })
 
-describe('ARQWELIA Lot 2 Phase 0A — THREE-GATE block (real call impossible)', () => {
+describe('ARQWELIA Lot 2 Phase 0A — THREE-GATE block (dry-run unless every gate is open)', () => {
   it('ensurePhase0AGate requires all three gates', () => {
-    expect(() => ensurePhase0AGate({ realCallAuthorized: false, budgetMaxEur: 5, phase0aExecute: true })).toThrow(/authorization/)
+    expect(() => ensurePhase0AGate({ realCallAuthorized: false, budgetMaxEur: 2, phase0aExecute: true })).toThrow(/authorization/)
     expect(() => ensurePhase0AGate({ realCallAuthorized: true, budgetMaxEur: 0, phase0aExecute: true })).toThrow(/budget/)
-    expect(() => ensurePhase0AGate({ realCallAuthorized: true, budgetMaxEur: 5, phase0aExecute: false })).toThrow(/Phase 0A/)
-    expect(() => ensurePhase0AGate({ realCallAuthorized: true, budgetMaxEur: 5, phase0aExecute: true })).not.toThrow()
+    expect(() => ensurePhase0AGate({ realCallAuthorized: true, budgetMaxEur: 2, phase0aExecute: false })).toThrow(/Phase 0A/)
+    expect(() => ensurePhase0AGate({ realCallAuthorized: true, budgetMaxEur: 2, phase0aExecute: true })).not.toThrow()
   })
 
   const missing = async (adapter: typeof openaiImageAdapter, opts: Record<string, unknown>) => {
@@ -507,7 +507,7 @@ describe('ARQWELIA Lot 2 Phase 0A — THREE-GATE block (real call impossible)', 
   }
 
   it('openai refuses when authorization is missing', async () => {
-    const err = await missing(openaiImageAdapter, { realCallAuthorized: false, phase0aExecute: true, budgetMaxEur: 5 })
+    const err = await missing(openaiImageAdapter, { realCallAuthorized: false, phase0aExecute: true, budgetMaxEur: 2 })
     expect(String(err instanceof Error ? err.message : err)).toMatch(/authorization/)
   })
 
@@ -517,7 +517,7 @@ describe('ARQWELIA Lot 2 Phase 0A — THREE-GATE block (real call impossible)', 
   })
 
   it('openai refuses when the Phase 0A execution gate is missing', async () => {
-    const err = await missing(openaiImageAdapter, { realCallAuthorized: true, phase0aExecute: false, budgetMaxEur: 5 })
+    const err = await missing(openaiImageAdapter, { realCallAuthorized: true, phase0aExecute: false, budgetMaxEur: 2 })
     expect(String(err instanceof Error ? err.message : err)).toMatch(/Phase 0A|NOT IMPLEMENTED/)
   })
 

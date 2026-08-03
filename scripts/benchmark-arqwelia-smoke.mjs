@@ -28,15 +28,23 @@
  *     (`min(cliBudget, envBudget)`); a value above the env ceiling is rejected,
  *     and with no env budget the effective budget is 0.
  *   - HARD OWNER BUDGET CAP (Phase 0A): the environment can NEVER configure a
- *     budget above `PHASE0A_RETENTION_CONFIG.maximumBudgetEur` (2 EUR), and
+ *     budget above `PHASE0A_OWNER_BUDGET_CAP_EUR` (2 EUR — the SINGLE source
+ *     of truth lives in `provider-runtime.mjs`; the manifest's
+ *     `PHASE0A_RETENTION_CONFIG.maximumBudgetEur` is derived from it), and
  *     `--budget` can never exceed that cap either. Any over-cap budget (env or
  *     CLI) is refused with a non-zero exit BEFORE any reservation or transport
  *     construction — an over-budget config is never merely documented or
  *     ignored.
  *   - Default (no env vars) is a DRY RUN: no external provider call, no cost.
- *   - Even when all three gates are open, real-provider adapters have no
- *     injected transport and answer "NOT IMPLEMENTED — awaiting Gate", so no
- *     paid call can ever occur in this build.
+ *   - A real execution becomes technically possible ONLY when ALL of the
+ *     following hold: ARQWELIA_BENCHMARK_AUTHORIZED=true;
+ *     ARQWELIA_BENCHMARK_MAX_BUDGET_EUR >0 AND <=2;
+ *     ARQWELIA_BENCHMARK_PHASE0A_EXECUTE=true; OPENAI_API_KEY present;
+ *     OPENAI_BASE_URL allowed; --dataset-id present; --dataset-kind synthetic
+ *     present; --image present; manifest valid and lockable; call limit not
+ *     reached; idempotence respected. Without ALL of them the CLI is a dry run
+ *     (or refuses) and no cost is incurred. No real call has been performed
+ *     during the development or tests of PR #79.
  *   - zai-glm is BLOCKED for Phase 0A (documentary only — not executable).
  *   - The provider adapter receives ONLY the normalized image fields
  *     (normalizedImageBuffer/DataUrl/MimeType/Sha256/Width/Height, promptVersion,
@@ -68,9 +76,8 @@ import {
   redactSecrets,
   registerArqweliaBenchmarkCandidate,
 } from './lib/arqwelia-benchmark/candidates-registry.mjs'
-import { computeExecuteGate } from './lib/arqwelia-benchmark/provider-runtime.mjs'
+import { computeExecuteGate, PHASE0A_OWNER_BUDGET_CAP_EUR } from './lib/arqwelia-benchmark/provider-runtime.mjs'
 import {
-  PHASE0A_RETENTION_CONFIG,
   finalizePhase0aCall,
   markPhase0aCallStarted,
   phase0aManifestPath,
@@ -119,7 +126,7 @@ Options:
   --out <dir>       Output directory (default: ./benchmark-out)
   --budget <eur>    Budget cap — may only REDUCE the budget below
                     ARQWELIA_BENCHMARK_MAX_BUDGET_EUR and may never exceed the
-                    Phase 0A owner cap (PHASE0A_RETENTION_CONFIG.maximumBudgetEur
+                    Phase 0A owner cap (PHASE0A_OWNER_BUDGET_CAP_EUR
                     = 2 EUR). Exceeding the env ceiling or the owner cap is
                     rejected; a value <= 0 is rejected. With no env budget the
                     CLI stays a DRY RUN and the effective budget is 0.
@@ -334,12 +341,14 @@ async function run() {
   // AND phase0aExecute are true. All other combinations are a DRY RUN.
   const { executeAuthorized, dryRun } = computeExecuteGate({ realCallAuthorized, phase0aExecute })
 
-  // HARD OWNER BUDGET CAP (Phase 0A) — `PHASE0A_RETENTION_CONFIG.maximumBudgetEur`
-  // (2 EUR) is the ABSOLUTE owner cap. The environment can NEVER configure a
-  // budget above it and `--budget` can never exceed it either. These refusals
-  // happen BEFORE any reservation, manifest item or transport construction — an
-  // over-budget config is never merely documented or ignored.
-  const ownerBudgetCap = PHASE0A_RETENTION_CONFIG.maximumBudgetEur
+  // HARD OWNER BUDGET CAP (Phase 0A) — `PHASE0A_OWNER_BUDGET_CAP_EUR` (2 EUR)
+  // is the ABSOLUTE owner cap, defined ONCE in `provider-runtime.mjs` (the
+  // manifest derives `PHASE0A_RETENTION_CONFIG.maximumBudgetEur` from it). The
+  // environment can NEVER configure a budget above it and `--budget` can never
+  // exceed it either. These refusals happen BEFORE any reservation, manifest
+  // item or transport construction — an over-budget config is never merely
+  // documented or ignored.
+  const ownerBudgetCap = PHASE0A_OWNER_BUDGET_CAP_EUR
   if (envBudget > ownerBudgetCap) {
     console.error(
       `error: ARQWELIA_BENCHMARK_MAX_BUDGET_EUR (${envBudget}) exceeds the Phase 0A owner budget cap (${ownerBudgetCap} EUR). ` +

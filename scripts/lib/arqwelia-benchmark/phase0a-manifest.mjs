@@ -1,21 +1,25 @@
 /**
  * ARQWELIA Lot 2 Phase 0A — retention config + STRICT local call manifest.
  *
- * NO EXECUTION IN THIS BUILD: this module implements the strict counter and the
+ * DRY-RUN SAFE BY DEFAULT: this module implements the strict counter and the
  * per-dataset-item retention record. The counter does NOT depend on process
  * memory — it persists a local, NON-versioned JSON manifest in the benchmark
- * output directory and reads/writes it for every decision.
+ * output directory and reads/writes it for every decision. A real execution
+ * becomes technically possible ONLY when the owner arms every gate (see
+ * docs/release/ARQWELIA_LOT2_BENCHMARK.md); the default is a dry run.
  *
- * Phase 0A retention config (documented, not executed):
+ * Phase 0A retention config (documented owner-approved config):
  *   provider=openai-gpt-image, model=gpt-image-2, size=1536x1024,
  *   quality=medium, output_format=png, photos=2, concepts=A and B,
- *   maximumCalls=4, maximumBudgetEur=2.
+ *   maximumCalls=4, maximumBudgetEur=PHASE0A_OWNER_BUDGET_CAP_EUR (2).
  *
- * Dataset rules (Phase 0A): SYNTHETIC photos only — no faces, no plates, no
- * house numbers, no addresses, no GPS, no identifying filenames; never commit
- * real photos. The dataset authorization basis is `synthetic` and is NEVER
- * derived from ARQWELIA_BENCHMARK_AUTHORIZED (that env flag concerns SPEND
- * authorization, not photo authorization).
+ * Dataset rules (Phase 0A): PHASE 0A DATASET MODE: SYNTHETIC ONLY — only
+ * synthetic images created for the benchmark; no real homes, no user photos,
+ * no people, no faces, no plates, no house numbers, no addresses, no GPS
+ * coordinates, no identifying filenames; never commit real photos. The dataset
+ * authorization basis is `synthetic` and is NEVER derived from
+ * ARQWELIA_BENCHMARK_AUTHORIZED (that env flag concerns SPEND authorization,
+ * not photo authorization).
  *
  * EXECUTION-SAFETY CONTRACT:
  *   - Atomic reservation: reserve → markStarted → call → finalize.
@@ -40,7 +44,10 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { mkdir, open, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { ArqweliaProviderError } from './provider-runtime.mjs'
+import {
+  ArqweliaProviderError,
+  PHASE0A_OWNER_BUDGET_CAP_EUR,
+} from './provider-runtime.mjs'
 
 /** Phase 0A retention configuration (single source of truth). */
 export const PHASE0A_RETENTION_CONFIG = Object.freeze({
@@ -52,7 +59,7 @@ export const PHASE0A_RETENTION_CONFIG = Object.freeze({
   photos: 2,
   concepts: ['A', 'B'],
   maximumCalls: 4,
-  maximumBudgetEur: 2,
+  maximumBudgetEur: PHASE0A_OWNER_BUDGET_CAP_EUR,
 })
 
 /** Local manifest filename (NON-versioned, written under the out dir). */
@@ -61,14 +68,23 @@ export const PHASE0A_MANIFEST_FILENAME = 'phase0a-manifest.json'
 /** Local lock filename guarding every manifest read-modify-write. */
 export const PHASE0A_MANIFEST_LOCK_FILENAME = 'phase0a-manifest.lock'
 
-/** Phase 0A dataset rules — SYNTHETIC or explicitly authorized photos only. */
+/**
+ * Phase 0A dataset rules — PHASE 0A DATASET MODE: SYNTHETIC ONLY. Only
+ * synthetic images created for the benchmark may be used: no real homes, no
+ * user photos, no people, no faces, no plates, no house numbers, no addresses,
+ * no GPS coordinates, no identifying filenames; never commit real photos.
+ */
 export const PHASE0A_DATASET_RULES = Object.freeze([
-  'synthetic or explicitly authorized photos only',
+  'PHASE 0A DATASET MODE: SYNTHETIC ONLY',
+  'only synthetic images created for the benchmark',
+  'no real homes',
+  'no user photos',
+  'no people',
   'no faces',
   'no license plates',
   'no house numbers',
   'no addresses',
-  'no GPS',
+  'no GPS coordinates',
   'no identifying filenames',
   'never commit real photos',
 ])

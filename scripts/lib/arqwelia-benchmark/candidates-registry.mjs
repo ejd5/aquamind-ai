@@ -20,10 +20,13 @@
  * image-edit contract is verified. `zai-glm` is therefore NOT in the executable
  * list — it is a DOCUMENTARY entry only (no `runSmoke`).
  *
- * DRY-RUN SAFETY: nothing in this file performs a real provider network call.
- * `runSmoke` for real providers calls `ensureNoRealCall()` / the gate guards
- * first and then throws "NOT IMPLEMENTED — awaiting Gate" so no paid call can
- * ever occur.
+ * DRY-RUN SAFETY: this file itself never performs a real provider network call.
+ * Real-provider `runSmoke` adapters enforce the three-gate guards and throw
+ * "NOT IMPLEMENTED — awaiting Gate" when no transport is provided. A real call
+ * becomes technically possible ONLY when the owner arms every gate AND a real
+ * transport with an API key is present (see
+ * docs/release/ARQWELIA_LOT2_BENCHMARK.md). No real call has been performed
+ * during the development or tests of PR #79.
  */
 
 import { mkdir, writeFile } from 'node:fs/promises'

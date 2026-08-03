@@ -13,13 +13,13 @@
  *      `candidates-registry.mjs` (static check).
  *   6. 8-combination gate matrix — only (true, true, true) may allow a
  *      transport; the other 7 are refused / dry-run.
- *   7. Real-but-not-executed OpenAI transport (`createOpenAiImageEditTransport`)
- *      behind the three locks, exercised ONLY with a local `fetchImpl` mock.
+ *   7. REAL OpenAI transport (`createOpenAiImageEditTransport`) behind the
+ *      three locks, exercised ONLY with a local `fetchImpl` mock.
  *   8. 4-call STRICT counter + idempotence persisted in a local manifest.
  *   9. Zero global `fetch` across the whole suite (spy).
  */
 
-import { mkdtempSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import sharp from 'sharp'
@@ -29,7 +29,7 @@ import {
   arqweliaBenchmarkDocumentaryCandidates,
   getArqweliaBenchmarkCandidate,
 } from '../scripts/lib/arqwelia-benchmark/candidates'
-import { computeExecuteGate, ensurePhase0AGate } from '../scripts/lib/arqwelia-benchmark/provider'
+import { computeExecuteGate, ensurePhase0AGate, PHASE0A_OWNER_BUDGET_CAP_EUR } from '../scripts/lib/arqwelia-benchmark/provider'
 import { zaiImageAdapter } from '../scripts/lib/arqwelia-benchmark/adapters/zai-image-adapter.mjs'
 import {
   OPENAI_ADAPTER_ID,
@@ -427,7 +427,7 @@ describe('Phase 0A correction #9 — 4-call strict counter + idempotence (persis
   })
 })
 
-describe('Phase 0A correction #7 — REAL-but-not-executed transport (local fetch mock only)', () => {
+describe('Phase 0A correction #7 — REAL transport behind the three locks (local fetch mock only)', () => {
   const apiKey = 'sk-secret-transport-key-123'
 
   function makeFetchMock(body: unknown, status = 200, headers: Record<string, string> = {}) {
@@ -521,6 +521,177 @@ describe('Phase 0A correction #7 — REAL-but-not-executed transport (local fetc
     expect(message).not.toContain(apiKey)
     expect(message).not.toContain(prompt)
     expect(message).toMatch(/HTTP 500/)
+  })
+})
+
+describe('Phase 0A final alignment — shared owner budget cap (PHASE0A_OWNER_BUDGET_CAP_EUR)', () => {
+  const apiKey = 'sk-secret-transport-key-123'
+  const failFetch = () =>
+    vi.fn(async () => {
+      throw new Error('MUST NOT BE CALLED')
+    })
+
+  function fetchMockFor(body: unknown, status = 200) {
+    return vi.fn(async () => new Response(JSON.stringify(body), { status }))
+  }
+
+  it('PHASE0A_OWNER_BUDGET_CAP_EUR is exported, the manifest derives from it, and the CLI has no second hardcoded cap', () => {
+    expect(PHASE0A_OWNER_BUDGET_CAP_EUR).toBe(2)
+    expect(PHASE0A_RETENTION_CONFIG.maximumBudgetEur).toBe(PHASE0A_OWNER_BUDGET_CAP_EUR)
+    const manifestSource = readFileSync(
+      join(process.cwd(), 'scripts/lib/arqwelia-benchmark/phase0a-manifest.mjs'),
+      'utf8',
+    )
+    expect(manifestSource).toMatch(/PHASE0A_OWNER_BUDGET_CAP_EUR/)
+    expect(manifestSource).not.toMatch(/maximumBudgetEur:\s*2\b/)
+    const cliSource = readFileSync(join(process.cwd(), 'scripts/benchmark-arqwelia-smoke.mjs'), 'utf8')
+    expect(cliSource).toMatch(/PHASE0A_OWNER_BUDGET_CAP_EUR/)
+  })
+
+  it('createOpenAiImageEditTransport REFUSES budgetMaxEur=10 before construction/fetch (exact message)', () => {
+    const fetchImpl = failFetch()
+    expect(() =>
+      createOpenAiImageEditTransport({
+        apiKey,
+        baseUrl: 'https://api.openai.com/v1',
+        fetchImpl,
+        locks: { authorized: true, budgetMaxEur: 10, phase0aExecute: true },
+      }),
+    ).toThrow('Refusing real provider call: budget exceeds Phase 0A owner cap of 2 EUR')
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('budgetMaxEur=2 → gate acceptable (transport constructs; fetchImpl called only when invoked)', async () => {
+    const png = await validPng(30, 30)
+    const fetchMock = fetchMockFor({ data: [{ b64_json: png.toString('base64') }] })
+    const transport = createOpenAiImageEditTransport({
+      apiKey,
+      baseUrl: 'https://api.openai.com/v1',
+      fetchImpl: fetchMock,
+      locks: { authorized: true, budgetMaxEur: 2, phase0aExecute: true },
+    })
+    expect(typeof transport).toBe('function')
+    expect(fetchMock).not.toHaveBeenCalled()
+    const out = await transport({ normalizedImageBuffer: png, builtPrompt: 'PII-free prompt' })
+    expect(out.buffer.equals(png)).toBe(true)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('budgetMaxEur=2.01 → refuse (owner cap not met)', () => {
+    const fetchImpl = failFetch()
+    expect(() =>
+      createOpenAiImageEditTransport({
+        apiKey,
+        baseUrl: 'https://api.openai.com/v1',
+        fetchImpl,
+        locks: { authorized: true, budgetMaxEur: 2.01, phase0aExecute: true },
+      }),
+    ).toThrow(/owner cap of 2 EUR/)
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('budgetMaxEur=1 → gate acceptable', () => {
+    const transport = createOpenAiImageEditTransport({
+      apiKey,
+      baseUrl: 'https://api.openai.com/v1',
+      fetchImpl: failFetch(),
+      locks: { authorized: true, budgetMaxEur: 1, phase0aExecute: true },
+    })
+    expect(typeof transport).toBe('function')
+  })
+
+  it('budgetMaxEur=0 → refuse (existing no-budget gate)', () => {
+    const fetchImpl = failFetch()
+    expect(() =>
+      createOpenAiImageEditTransport({
+        apiKey,
+        baseUrl: 'https://api.openai.com/v1',
+        fetchImpl,
+        locks: { authorized: true, budgetMaxEur: 0, phase0aExecute: true },
+      }),
+    ).toThrow(/no budget allocated/)
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('ensurePhase0AGate refuses a budget above the owner cap (2.01 and 10) with the exact message', () => {
+    for (const budgetMaxEur of [2.01, 10]) {
+      expect(() =>
+        ensurePhase0AGate({ realCallAuthorized: true, budgetMaxEur, phase0aExecute: true }),
+      ).toThrow('Refusing real provider call: budget exceeds Phase 0A owner cap of 2 EUR')
+    }
+  })
+})
+
+describe('Phase 0A final alignment — synthetic only everywhere (static scan)', () => {
+  const FORBIDDEN_PHRASES = ['synthetic or explicitly authorized', 'authorized photos only', 'real garden photos']
+  const SCAN_ENTRIES = [
+    'scripts/lib/arqwelia-benchmark',
+    'dataset/README.md',
+    'docs/release/ARQWELIA_LOT2_BENCHMARK.md',
+    '.env.example',
+  ]
+
+  function collectPhase0aFiles(): string[] {
+    const files: string[] = []
+    for (const entry of SCAN_ENTRIES) {
+      const abs = join(process.cwd(), entry)
+      const info = statSync(abs)
+      if (info.isFile()) {
+        files.push(abs)
+        continue
+      }
+      const stack = [abs]
+      while (stack.length > 0) {
+        const dir = stack.pop()!
+        for (const child of readdirSync(dir, { withFileTypes: true })) {
+          if (child.isDirectory()) {
+            if (child.name === 'node_modules') continue
+            stack.push(join(dir, child.name))
+          } else if (child.isFile()) {
+            files.push(join(dir, child.name))
+          }
+        }
+      }
+    }
+    return files
+  }
+
+  it('NO Phase 0A file contains any forbidden dataset phrase', () => {
+    const violations: string[] = []
+    for (const file of collectPhase0aFiles()) {
+      const content = readFileSync(file, 'utf8')
+      for (const phrase of FORBIDDEN_PHRASES) {
+        if (content.includes(phrase)) {
+          violations.push(`${file}: contains "${phrase}"`)
+        }
+      }
+    }
+    expect(violations).toEqual([])
+  })
+
+  it('the documented manifest fields are the synthetic-only canonical set and the old origin/authorization flags are gone', () => {
+    const docs = readFileSync(join(process.cwd(), 'docs/release/ARQWELIA_LOT2_BENCHMARK.md'), 'utf8')
+    expect(docs).toContain('PHASE 0A DATASET MODE: SYNTHETIC ONLY')
+    for (const field of [
+      'datasetItemId',
+      'datasetKind',
+      'authorizationBasis',
+      'normalizedSha256',
+      'noExif',
+      'noFacesDeclared',
+      'noPlatesDeclared',
+      'noHouseNumberDeclared',
+      'noAddressDeclared',
+      'noGps',
+      'statusA',
+      'statusB',
+    ]) {
+      expect(docs).toContain(field)
+    }
+    const datasetReadme = readFileSync(join(process.cwd(), 'dataset/README.md'), 'utf8')
+    expect(datasetReadme).toContain('PHASE 0A DATASET MODE: SYNTHETIC ONLY')
+    expect(datasetReadme).not.toContain('`origin`')
+    expect(datasetReadme).not.toContain('`authorization`')
   })
 })
 

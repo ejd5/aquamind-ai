@@ -19,6 +19,7 @@ import {
   ARQWELIA_BENCHMARK_AUTHORIZED as _AUTHORIZED,
   ARQWELIA_BENCHMARK_MAX_BUDGET_EUR as _BUDGET,
   ARQWELIA_BENCHMARK_PHASE0A_EXECUTE as _PHASE0A_EXECUTE,
+  PHASE0A_OWNER_BUDGET_CAP_EUR as _PHASE0A_OWNER_BUDGET_CAP_EUR,
   ArqweliaProviderError as _ArqweliaProviderError,
   billingFromCaughtError as _billingFromCaughtError,
   computeExecuteGate as _computeExecuteGate,
@@ -70,7 +71,8 @@ export interface SmokeOptions {
   outputFormat?: string
   /** Third gate flag: `ARQWELIA_BENCHMARK_PHASE0A_EXECUTE === 'true'`. */
   phase0aExecute?: boolean
-  /** Injectable transport used ONLY by tests — the CLI never injects one. */
+  /** Optional transport. The CLI builds the real one ONLY when all three gates
+   * AND OPENAI_API_KEY are present; tests always inject a mock. */
   transport?: (request: unknown) => Promise<unknown>
   /** Directory where artifacts (PNG, JSON, Markdown) are written. */
   outDir: string
@@ -137,6 +139,9 @@ export const ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: number = _BUDGET
 
 /** `true` only when ARQWELIA_BENCHMARK_PHASE0A_EXECUTE === 'true'. */
 export const ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: boolean = _PHASE0A_EXECUTE
+
+/** Phase 0A OWNER budget cap (EUR) — the single source of truth for the cap. */
+export const PHASE0A_OWNER_BUDGET_CAP_EUR: number = _PHASE0A_OWNER_BUDGET_CAP_EUR
 
 export interface GateComputation {
   envAuthorized: boolean

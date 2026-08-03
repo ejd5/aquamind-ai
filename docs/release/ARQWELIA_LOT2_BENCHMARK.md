@@ -8,8 +8,10 @@ without ever spending money accidentally.
 
 The harness is **dry-run safe by default**. Nothing in this harness performs a
 real provider network call unless **three independent env guards** are armed
-(see [Guard rails](#guard-rails)). Even then, the real-provider adapters never
-receive a transport from the CLI, so no paid call can occur in this build.
+(see [Guard rails](#guard-rails)) — and even then a real call can only be
+triggered deliberately: it requires a key, an allowed base URL, the controlled
+synthetic dataset inputs and a lockable manifest, as documented under
+[When can a real call technically occur?](#when-can-a-real-call-technically-occur).
 
 Scope decisions honored by this harness (Phase 0A final corrections):
 
@@ -52,10 +54,10 @@ Scope decisions honored by this harness (Phase 0A final corrections):
 | File | Role |
 | --- | --- |
 | `scripts/lib/arqwelia-benchmark/provider.ts` | Benchmark-only provider interface + typed re-exports of the shared runtime helpers |
-| `scripts/lib/arqwelia-benchmark/provider-runtime.mjs` | **Shared runtime (plain ESM)**: authorization constants, `computeGate`, `computeExecuteGate`, `ensureNoRealCall`, `ensurePhase0AGate`, `ArqweliaProviderError`, billing derivation, secret redaction |
+| `scripts/lib/arqwelia-benchmark/provider-runtime.mjs` | **Shared runtime (plain ESM)**: authorization constants, `PHASE0A_OWNER_BUDGET_CAP_EUR` (the SINGLE owner-cap source), `computeGate`, `computeExecuteGate`, `ensureNoRealCall`, `ensurePhase0AGate`, `ArqweliaProviderError`, billing derivation, secret redaction |
 | `scripts/lib/arqwelia-benchmark/candidates.ts` | Typed candidate registry |
 | `scripts/lib/arqwelia-benchmark/candidates-registry.mjs` | Single source of truth (plain ESM, shared with the CLI): executable candidates, `mockRunSmoke`, documentary candidates, `getArqweliaBenchmarkCandidate`, `registerArqweliaBenchmarkCandidate` |
-| `scripts/lib/arqwelia-benchmark/adapters/openai-image-adapter.mjs` | OpenAI `gpt-image-2` adapter: controlled constants, endpoint validation (EU), PURE response parser, real-but-not-executed transport |
+| `scripts/lib/arqwelia-benchmark/adapters/openai-image-adapter.mjs` | OpenAI `gpt-image-2` adapter: controlled constants, endpoint validation (EU), PURE response parser, real transport (dry-run by default) |
 | `scripts/lib/arqwelia-benchmark/adapters/zai-image-adapter.mjs` | Z.AI **documentary only** (blocked — no `runSmoke`) |
 | `scripts/lib/arqwelia-benchmark/phase0a-manifest.mjs` | Phase 0A retention config + STRICT 4-call counter + idempotence, persisted in a local manifest |
 | `scripts/lib/arqwelia-benchmark/prompts/` | Versioned PII-free prompt builder + PII guard |
@@ -131,12 +133,14 @@ provider, never initializes a transport, prints `DRY RUN`, and reports
 
 - There is **no `--authorized` flag** — passing one is rejected as an unknown
   flag. Authorization comes exclusively from the environment.
-- **HARD OWNER BUDGET CAP (Phase 0A):** `PHASE0A_RETENTION_CONFIG.maximumBudgetEur`
-  (**2 EUR**) is the ABSOLUTE owner cap. The environment can NEVER configure a
-  budget above it, and `--budget` can never exceed it either. Any over-cap
-  budget (env OR CLI) is **refused with a non-zero exit** BEFORE any
-  reservation, manifest item or transport construction — an over-budget config
-  is never merely documented or ignored:
+- **HARD OWNER BUDGET CAP (Phase 0A):** `PHASE0A_OWNER_BUDGET_CAP_EUR`
+  (**2 EUR**, defined once in `scripts/lib/arqwelia-benchmark/provider-runtime.mjs`;
+  `PHASE0A_RETENTION_CONFIG.maximumBudgetEur` is **derived from it**) is the
+  ABSOLUTE owner cap. The environment can NEVER configure a budget above it,
+  and `--budget` can never exceed it either. Any over-cap budget (env OR CLI)
+  is **refused with a non-zero exit** BEFORE any reservation, manifest item or
+  transport construction — an over-budget config is never merely documented or
+  ignored:
   - `env=2`, no `--budget` → `effectiveBudget=2` (allowed);
   - `env=2`, `--budget=1` → `effectiveBudget=1` (allowed);
   - `env=2`, `--budget=3` → refusal;
@@ -152,10 +156,37 @@ provider, never initializes a transport, prints `DRY RUN`, and reports
 Without all three env vars (or with a non-positive/invalid env budget) the CLI
 prints `DRY RUN — NO EXTERNAL CALL` and exits `0`. On top of that, the
 real-provider adapters enforce a **three-gate block** via `ensurePhase0AGate`
-(see `scripts/lib/arqwelia-benchmark/provider-runtime.mjs`): a real transport is
-impossible unless authorization AND budget AND Phase 0A execution intent are
-all present, and even then the CLI never injects a transport, so no paid call
-can happen in this build.
+(see `scripts/lib/arqwelia-benchmark/provider-runtime.mjs`): a real transport
+is only constructed when authorization AND budget (`0 < budget ≤ owner cap`)
+AND Phase 0A execution intent are all present.
+
+### When can a real call technically occur?
+
+The default is a **dry run**: no transport is built, the CLI never reads
+`OPENAI_API_KEY`, no `fetch` happens and no cost is incurred. A real execution
+becomes technically possible **ONLY when ALL** of the following hold at the
+same time:
+
+1. `ARQWELIA_BENCHMARK_AUTHORIZED=true`;
+2. `ARQWELIA_BENCHMARK_MAX_BUDGET_EUR >0` **AND** `<=2` (the Phase 0A owner cap
+   `PHASE0A_OWNER_BUDGET_CAP_EUR`);
+3. `ARQWELIA_BENCHMARK_PHASE0A_EXECUTE=true`;
+4. `OPENAI_API_KEY` present;
+5. `OPENAI_BASE_URL` in the allowlist (`https://api.openai.com/v1` or
+   `https://eu.api.openai.com/v1`);
+6. `--dataset-id <controlled>` present;
+7. `--dataset-kind synthetic` present (Phase 0A is **synthetic only**);
+8. `--image <photo>` present;
+9. the local `phase0a-manifest.json` is valid and lockable (fail-closed);
+10. the 4-call limit is not reached;
+11. the idempotence key is not a duplicate (or an explicit retry is passed).
+
+If any one of these is missing the CLI is a dry run or refuses with
+`externalCalls=0 / billingStatus='not_called'` and no cost.
+
+> **No real call has been performed during the development or tests of PR #79.**
+> The test suites exercise transports **only** with an injected `fetchImpl`
+> mock — the global `fetch` stays at ZERO across every Phase 0A suite.
 
 The harness **never prints API keys**. Any env value whose name matches
 `/KEY|TOKEN|SECRET/i` is redacted before it can reach stdout or a report.
@@ -299,12 +330,14 @@ Tests MUST use the official `{ data: [ { b64_json: "…" } ] }` shape.
 - The EU endpoint requires an **organization with compatible data controls**;
   no real home photo until EU eligibility is confirmed.
 
-### REAL-but-not-executed transport (`createOpenAiImageEditTransport`)
+### Real transport (`createOpenAiImageEditTransport`) — dry-run by default
 
-A real OpenAI transport is prepared but **never executed in this build**:
+A real OpenAI transport is only constructed when every gate is open; the default
+is a dry run (no transport built, no key read, no fetch, no cost):
 
-- Only constructible when the three locks are active (it calls
-  `ensurePhase0AGate`); all other gate combinations throw.
+- Only constructible when the three locks are active and the budget is
+  `0 < budget ≤ PHASE0A_OWNER_BUDGET_CAP_EUR` (it calls `ensurePhase0AGate`);
+  all other combinations throw before any fetch.
 - Uses `OPENAI_API_KEY` (server/CLI only — never logged, never stored).
 - **CANONICAL CONTRACT (single source of truth):** the transport receives
   exactly `{ normalizedImageBuffer, builtPrompt, model, size, quality,
@@ -331,9 +364,10 @@ A real OpenAI transport is prepared but **never executed in this build**:
   write failure.
 - **Never logs** the `Authorization` header, the full prompt, or the source
   photo; errors never contain them.
-- In this build: no real call; all responses are mocked; global `fetch` stays
-  ZERO across the normal test suite — transports are exercised only with an
-  injected `fetchImpl` mock.
+- The test suites make no real call: all responses are mocked, global `fetch`
+  stays ZERO across the normal suites, and transports are exercised only with
+  an injected `fetchImpl` mock. No real call has been performed during the
+  development or tests of PR #79.
 
 ## Execution-safety contract
 
@@ -439,7 +473,7 @@ The Phase 0A retention configuration (`phase0a-manifest.mjs`,
 | photos | 2 |
 | concepts | A and B |
 | maximumCalls | **4** (2 photos × 2 concepts) |
-| maximumBudgetEur | **2 EUR** — ABSOLUTE owner cap, enforced by the CLI (an env or CLI budget above it is refused with a non-zero exit) |
+| maximumBudgetEur | **2 EUR** — ABSOLUTE owner cap, defined once as `PHASE0A_OWNER_BUDGET_CAP_EUR` in `provider-runtime.mjs`; the manifest value is **derived from it**. Enforced by the CLI and by `ensurePhase0AGate` (an env or CLI budget above it is refused with a non-zero exit) |
 
 **STRICT counter** (persisted, not process-memory only):
 
@@ -453,17 +487,21 @@ The Phase 0A retention configuration (`phase0a-manifest.mjs`,
 
 The counter reads/writes a local, **NON-versioned** JSON manifest
 (`phase0a-manifest.json`) in the benchmark output directory. For each dataset
-item the manifest records `datasetItemId`, `origin`, `authorization`,
-`normalizedSha256`, the no-EXIF flag, `date`, `statusA` and `statusB`. The
+item the manifest records `datasetItemId`, `datasetKind='synthetic'`,
+`authorizationBasis='synthetic'`, `normalizedSha256`, `noExif`,
+`noFacesDeclared`, `noPlatesDeclared`, `noHouseNumberDeclared`,
+`noAddressDeclared`, `noGps`, `date`, `statusA` and `statusB`. The
 manifest is gitignored via `benchmark-out/` (explicit patterns were also added
 to `.gitignore`).
 
 ### Phase 0A dataset rules
 
-Synthetic or explicitly authorized photos only:
+**PHASE 0A DATASET MODE: SYNTHETIC ONLY:**
 
-- **no faces**, **no license plates**, **no house numbers**, **no addresses**,
-  **no GPS**, **no identifying filenames**;
+- only **synthetic images created for the benchmark**;
+- **no real homes**, **no user photos**, **no people**, **no faces**,
+  **no license plates**, **no house numbers**, **no addresses**, **no GPS
+  coordinates**, **no identifying filenames**;
 - never commit real photos (`dataset/photos/` and `benchmark-out/` are
   gitignored).
 
@@ -550,8 +588,9 @@ and one Markdown summary per run, plus the mock placeholder PNG. When the
 
 Authorized smoke **spends money**. It can only be triggered by the owner with
 an explicit env budget AND Phase 0A execution intent — there is no CLI
-override, and a real call still requires a transport that the CLI never
-injects:
+override, and a real call still requires the transport, the key, the allowed
+base URL, the synthetic dataset inputs and a lockable manifest listed in
+[When can a real call technically occur?](#when-can-a-real-call-technically-occur):
 
 ```bash
 export ARQWELIA_BENCHMARK_AUTHORIZED=true
@@ -576,19 +615,24 @@ An environment budget above **2 EUR** (e.g. `ARQWELIA_BENCHMARK_MAX_BUDGET_EUR=1
 is **refused** with a non-zero exit — the environment can never configure a
 budget above the Phase 0A owner cap.
 
-In this build, real providers still answer `NOT IMPLEMENTED — awaiting Phase 0A
-execution` (no transport is ever injected, so no call is made); the report
+With no `OPENAI_API_KEY` a real provider answers `NOT IMPLEMENTED — awaiting
+Phase 0A execution` (no transport can be built, so no call is made); the report
 records `REAL_PROVIDER_CALLS=0, PAID_COST=0`. `--provider mock` remains the
-only provider whose smoke produces an artifact.
+only provider whose smoke produces an artifact. No real call has been performed
+during the development or tests of PR #79.
 
 ## Phase 0A — benchmark provider adapters (this build)
 
 Phase 0A prepares the OpenAI image-edit adapter (`openai-gpt-image`,
 `gpt-image-2`) plus versioned, PII-free prompts and a three-gate block.
-**No real provider call happens in this build.** All request bodies are built
-deterministically and the transports are injectable — tests inject mock
-transports and the CLI never injects one, so the default transport always
-answers `NOT IMPLEMENTED — awaiting Phase 0A execution`.
+**The default is a dry run: no real provider call is made unless every gate in
+[When can a real call technically occur?](#when-can-a-real-call-technically-occur)
+is open at the same time.** All request bodies are built deterministically and
+the transports are injectable — tests inject mock transports, and the CLI
+builds the real transport only when the key AND all three gates are present;
+without the key the default transport answers `NOT IMPLEMENTED — awaiting
+Phase 0A execution`. No real call has been performed during the development or
+tests of PR #79.
 
 ### Versioned prompts (`scripts/lib/arqwelia-benchmark/prompts/`)
 

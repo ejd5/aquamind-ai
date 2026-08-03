@@ -3,7 +3,8 @@
  *
  * This module is the SINGLE source of truth for every runtime helper shared by
  * the candidate registry and the provider adapters:
- *   - the common authorization constants (the three env locks),
+ *   - the common authorization constants (the three env locks) and the Phase
+ *     0A OWNER budget cap (`PHASE0A_OWNER_BUDGET_CAP_EUR`),
  *   - `computeGate` / `computeExecuteGate`,
  *   - the two real-call guards (`ensureNoRealCall`, `ensurePhase0AGate`),
  *   - `ArqweliaProviderError` + the reliable billing derivation,
@@ -28,6 +29,15 @@
 export const ARQWELIA_BENCHMARK_AUTHORIZED = process.env.ARQWELIA_BENCHMARK_AUTHORIZED === 'true'
 export const ARQWELIA_BENCHMARK_MAX_BUDGET_EUR = Number(process.env.ARQWELIA_BENCHMARK_MAX_BUDGET_EUR || 0)
 export const ARQWELIA_BENCHMARK_PHASE0A_EXECUTE = process.env.ARQWELIA_BENCHMARK_PHASE0A_EXECUTE === 'true'
+
+/**
+ * Phase 0A OWNER budget cap (EUR) — the SINGLE source of truth for the
+ * absolute owner-approved ceiling. `phase0a-manifest.mjs` derives
+ * `PHASE0A_RETENTION_CONFIG.maximumBudgetEur` from this constant and the CLI
+ * refuses any env/CLI budget above it. `ensurePhase0AGate` refuses any budget
+ * above it too, so a transport is never constructed with an over-cap budget.
+ */
+export const PHASE0A_OWNER_BUDGET_CAP_EUR = 2
 
 /**
  * Budget gate — the SINGLE source of truth for deciding whether a real call may
@@ -103,7 +113,7 @@ const SECRET_VALUE_RE = /(nvapi-[A-Za-z0-9_\-]+|sk(-live)?-[A-Za-z0-9_\-]+|whsec
  * Phase 0A three-gate guard — the REAL transport is blocked unless ALL THREE
  * independent gates are open:
  *   1. ARQWELIA_BENCHMARK_AUTHORIZED === 'true'
- *   2. ARQWELIA_BENCHMARK_MAX_BUDGET_EUR > 0
+ *   2. ARQWELIA_BENCHMARK_MAX_BUDGET_EUR > 0 AND <= PHASE0A_OWNER_BUDGET_CAP_EUR
  *   3. ARQWELIA_BENCHMARK_PHASE0A_EXECUTE === 'true'
  *
  * Even with all three set, TESTS always mock the transport — this helper only
@@ -121,6 +131,12 @@ export function ensurePhase0AGate(opts = {}) {
   if (!(Number(opts.budgetMaxEur) > 0)) {
     throw new ArqweliaProviderError(
       'Refusing real provider call: no budget allocated (ARQWELIA_BENCHMARK_MAX_BUDGET_EUR must be > 0)',
+      { externalCalls: 0, actualCostEur: 0, billingStatus: 'not_called' },
+    )
+  }
+  if (Number(opts.budgetMaxEur) > PHASE0A_OWNER_BUDGET_CAP_EUR) {
+    throw new ArqweliaProviderError(
+      `Refusing real provider call: budget exceeds Phase 0A owner cap of ${PHASE0A_OWNER_BUDGET_CAP_EUR} EUR`,
       { externalCalls: 0, actualCostEur: 0, billingStatus: 'not_called' },
     )
   }

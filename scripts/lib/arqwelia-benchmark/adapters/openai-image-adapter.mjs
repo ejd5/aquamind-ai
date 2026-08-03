@@ -9,10 +9,11 @@
  * `{ data: [ { b64_json, … } ] }` — parsed by `parseOpenAiImageEditResponse`
  * (the ROOT-level `b64_json` shape is REJECTED).
  *
- * PHASE 0A CONTROLLED CONFIG (no execution in this build):
+ * PHASE 0A CONTROLLED CONFIG (dry-run by default):
  *   provider=openai-gpt-image, model=gpt-image-2, size=1536x1024,
  *   quality=medium, output_format=png, photos=2, concepts=A and B,
- *   maximumCalls=4, maximumBudgetEur=2 (see `phase0a-manifest.mjs`).
+ *   maximumCalls=4, maximumBudgetEur=2 (see `phase0a-manifest.mjs`, derived
+ *   from `PHASE0A_OWNER_BUDGET_CAP_EUR`).
  *
  * COMPLIANCE (EU): the base URL is configurable (`OPENAI_BASE_URL`, default
  * `https://api.openai.com/v1`, allowlist also accepts
@@ -23,10 +24,14 @@
  *
  * SAFETY: no network here unless a real transport is constructed. The real
  * transport (`createOpenAiImageEditTransport`) is ONLY constructible when the
- * three env locks are active (authorization + budget + Phase 0A execution
- * intent). In this build no real call is made — all responses are mocked and
- * global `fetch` stays ZERO in the normal test suite. API keys are never
- * printed or stored.
+ * three env locks are active (authorization + budget ≤ owner cap + Phase 0A
+ * execution intent). Default is a DRY RUN: no transport is built, no access
+ * to OPENAI_API_KEY, no fetch, no cost. A real call becomes technically
+ * possible ONLY when ALL of the conditions listed in
+ * docs/release/ARQWELIA_LOT2_BENCHMARK.md are present. No real call has been
+ * performed during the development or tests of PR #79 — the test suites
+ * exercise transports ONLY with an injected `fetchImpl` mock (global `fetch`
+ * stays ZERO). API keys are never printed or stored.
  */
 
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -411,7 +416,7 @@ export function prepareMultipartBody({
 }
 
 function defaultTransport() {
-  throw new ArqweliaProviderError('NOT IMPLEMENTED — awaiting Phase 0A execution: openai images/edits transport not injected', NOT_CALLED)
+  throw new ArqweliaProviderError('NOT IMPLEMENTED — awaiting Phase 0A execution: openai images/edits no transport provided', NOT_CALLED)
 }
 
 // ---------------------------------------------------------------------------
@@ -451,7 +456,8 @@ async function readResponseTextWithLimit(response, maxBytes) {
 
 /**
  * Creates a REAL OpenAI images/edits transport — ONLY constructible when all
- * THREE locks are active (authorization + budget + Phase 0A execution intent).
+ * THREE locks are active (authorization + budget ≤ PHASE0A_OWNER_BUDGET_CAP_EUR
+ * + Phase 0A execution intent).
  *
  * The returned async function POSTs `multipart/form-data` to the validated
  * `/images/edits` endpoint. It sends `image`, `prompt`, `model=gpt-image-2`,
@@ -463,9 +469,9 @@ async function readResponseTextWithLimit(response, maxBytes) {
  * logs the `Authorization` header, never logs the full prompt, and never logs
  * or retains the source photo.
  *
- * In this build NO real call is made — all responses are mocked and a single
- * transport test may inject a local `fetchImpl` mock (global `fetch` stays
- * zero across the normal suite).
+ * No real call is made by the test suites — they inject a local `fetchImpl`
+ * mock (global `fetch` stays zero across the normal suite). No real call has
+ * been performed during the development or tests of PR #79.
  *
  * @param {{ apiKey?: string, baseUrl?: string, fetchImpl?: typeof fetch, timeoutMs?: number, locks?: { authorized?: boolean, budgetMaxEur?: number, phase0aExecute?: boolean } }} opts
  * @returns {(request: { normalizedImageBuffer?: Buffer, builtPrompt?: string, model?: string, size?: string, quality?: string, outputFormat?: string }) => Promise<{ buffer: Buffer, width: number|null, height: number|null, mimeType: string, requestId: string|null, externalCallStarted: number, responseReceived: number }>}
@@ -607,7 +613,7 @@ export const openaiImageAdapter = {
   },
   async runSmoke(opts) {
     const phase0aExecute = opts.phase0aExecute ?? (process.env.ARQWELIA_BENCHMARK_PHASE0A_EXECUTE === 'true')
-    // THREE-GATE BLOCK: real transport is impossible without all three.
+    // THREE-GATE BLOCK: the transport is not constructed unless all three are active.
     ensurePhase0AGate({
       realCallAuthorized: opts.realCallAuthorized,
       budgetMaxEur: opts.budgetMaxEur,
