@@ -139,16 +139,27 @@ function detectArSupport(): boolean {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) || /Android/i.test(navigator.userAgent)
 }
 
+/** Count the rendered hooks on a function-component fiber (dev-time utility). */
+function hookCount(fiber: { memoizedState?: unknown }): number {
+  let count = 0
+  let hook = fiber.memoizedState as { next?: unknown } | null | undefined
+  while (hook) {
+    count++
+    hook = hook.next as { next?: unknown } | null
+  }
+  return count
+}
+
 export function ArqweliaArViewer({ arSupported, reducedMotion }: ArqweliaArViewerProps) {
   const t = useTranslations('arqwelia')
 
   const [runtimeStatus, setRuntimeStatus] = useState<RuntimeStatus>('idle')
   const [modelStatus, setModelStatus] = useState<ModelStatus>('idle')
-  const [modelAttempt, setModelAttempt] = useState(0)
   const [arDetected, setArDetected] = useState<boolean | null>(null)
   const [show3d, setShow3d] = useState(false)
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
   const modelRef = useRef<ModelViewerElement | null>(null)
+  const retryNonceRef = useRef(0)
 
   useEffect(() => {
     if (!isArqweliaArPocEnabled()) return
@@ -195,10 +206,70 @@ export function ArqweliaArViewer({ arSupported, reducedMotion }: ArqweliaArViewe
   const arUnavailable =
     arSupported === false || (arSupported === undefined && arDetected === false)
 
+  // Single manual retry. Attached to the <button> as a NATIVE click listener
+  // (via a callback ref) because after a <model-viewer> load error the dev
+  // server's React 19.2 tree can stop delivering delegated onClick events for
+  // this subtree. The handler re-resolves the live fiber dispatchers at click
+  // time — plain captured useState setters can silently stop driving the
+  // committed fiber in that state — then reloads the model in place.
+  //
+  // The model is NOT remounted through React (key) on retry: after a load error
+  // the dev server aborts that commit and reverts the whole update (status stays
+  // "failed"). Instead we set modelStatus back to "loading" and force the SAME
+  // <model-viewer> element to re-fetch by changing its `src` imperatively —
+  // exactly one new GLB request, never an auto-loop.
+  const handleRetry = useCallback(() => {
+    const startEl = document.querySelector('[data-arqwelia-ar-poc]')
+    if (!startEl) return
+    const fiberKey = Object.keys(startEl).find((k) => k.startsWith('__reactFiber'))
+    if (!fiberKey) return
+    let fiber = (startEl as unknown as Record<string, unknown>)[fiberKey] as
+      | (Record<string, unknown> & {
+          return?: unknown
+          type?: unknown
+          memoizedState?: unknown
+        })
+      | null
+    let guard = 0
+    while (fiber && guard++ < 80) {
+      if (typeof fiber.type === 'function' && hookCount(fiber) >= 4) {
+        let hook: any = fiber.memoizedState
+        let idx = 0
+        while (hook) {
+          if (idx === 2 && typeof hook.queue?.dispatch === 'function') {
+            ;(hook.queue.dispatch as (v: unknown) => void)('loading')
+          }
+          hook = hook.next
+          idx++
+        }
+        break
+      }
+      fiber = fiber.return as never
+    }
+    // Reload the same element after the "loading" commit has made it visible.
+    // The src is made distinct (cache-busting query) so model-viewer's
+    // updateSource re-fetches — setting the same URL would bail out.
+    retryNonceRef.current += 1
+    setTimeout(() => {
+      const el = document.querySelector(MODEL_VIEWER_TAG) as ModelViewerElement | null
+      if (el) {
+        el.setAttribute('src', MODEL_VIEWER_SRC + '?retry=' + retryNonceRef.current)
+      }
+    }, 100)
+  }, [])
+
+  const retryButtonRef = useCallback(
+    (el: HTMLButtonElement | null) => {
+      if (!el) return
+      el.addEventListener('click', handleRetry)
+      return () => el.removeEventListener('click', handleRetry)
+    },
+    [handleRetry],
+  )
+
   // Callback ref: attach the 'load'/'error' listeners the moment the
   // <model-viewer> element is mounted (synchronously in the commit phase, so
-  // no 'load'/'error' event can be missed), and remove them on unmount. A
-  // manual retry re-mounts the element, which re-runs this callback.
+  // no 'load'/'error' event can be missed), and remove them on unmount.
   const handleViewerMount = useCallback((el: ModelViewerElement | null) => {
     if (!el) return undefined
     modelRef.current = el
@@ -225,7 +296,7 @@ export function ArqweliaArViewer({ arSupported, reducedMotion }: ArqweliaArViewe
     if (Boolean((el as ModelViewerElement & { loaded?: boolean }).loaded)) {
       setModelStatus('ready')
     }
-  }, [runtimeStatus, show3d, modelAttempt, arUnavailable])
+  }, [runtimeStatus, show3d, arUnavailable])
 
   if (!isArqweliaArPocEnabled()) {
     return null // ZERO DOM when the client flag is off.
@@ -265,30 +336,6 @@ export function ArqweliaArViewer({ arSupported, reducedMotion }: ArqweliaArViewe
     )
   }
 
-  // Model failed after runtime ready: <model-viewer> dispatched 'error'. Hide
-  // the viewer, show the 2D fallback + message + a single manual retry button.
-  if (modelStatus === 'failed') {
-    return wrapper(
-      <>
-        <img src={MODEL_VIEWER_POSTER} alt={t('lab.arPoc.posterAlt')} className="aspect-video w-full rounded-2xl object-cover" />
-        <p className="mt-4 rounded-lg border border-arq-aqua/30 bg-arq-aqua/5 px-3 py-2 text-sm font-medium text-arq-aqua">
-          {t('lab.arPoc.modelError')}
-        </p>
-        <p className="mt-2 text-sm text-white/70">{t('lab.arPoc.fallbackText')}</p>
-        <button
-          type="button"
-          onClick={() => {
-            setModelStatus('loading')
-            setModelAttempt((n) => n + 1)
-          }}
-          className="mt-4 rounded-full border border-white/[0.12] px-5 py-2.5 text-[13px] font-semibold text-white/80 transition-colors hover:border-arq-aqua/50 hover:bg-arq-aqua/5 hover:text-white"
-        >
-          {t('lab.arPoc.retry')}
-        </button>
-      </>,
-    )
-  }
-
   // AR unavailable: visible 2D message + poster + link to the interactive 3D view.
   if (arUnavailable && !show3d) {
     return wrapper(
@@ -310,20 +357,43 @@ export function ArqweliaArViewer({ arSupported, reducedMotion }: ArqweliaArViewe
   }
 
   const interactiveView = arUnavailable && show3d
+  const modelFailed = modelStatus === 'failed'
 
-  // Waiting for the runtime, or ready: poster + loading message while the
-  // model-viewer module loads; viewer once ready (+ model loading indicator).
+  // Once the runtime is ready the <model-viewer> is ALWAYS mounted in a stable
+  // position — only its visibility toggles (hidden while the model failed).
+  // Keeping the WebGL custom element mounted through the error transition
+  // avoids unmounting it mid-error (which corrupted the React fiber in the
+  // dev server). Retry reloads it in place via an imperative `src` change.
   const body =
     runtimeStatus === 'ready' ? (
       <div>
-        <div className="overflow-hidden rounded-2xl border border-white/[0.08]">
+        <div
+          className={`overflow-hidden rounded-2xl border border-white/[0.08] ${
+            modelFailed ? 'hidden' : ''
+          }`}
+        >
           <ArqweliaModelViewer
             alt={t('lab.arPoc.alt')}
             interactive={!interactiveView}
             modelRef={handleViewerMount}
           />
         </div>
-        {modelStatus === 'ready' ? null : (
+        {modelFailed ? (
+          <div>
+            <img src={MODEL_VIEWER_POSTER} alt={t('lab.arPoc.posterAlt')} className="mt-4 aspect-video w-full rounded-2xl object-cover" />
+            <p className="mt-4 rounded-lg border border-arq-aqua/30 bg-arq-aqua/5 px-3 py-2 text-sm font-medium text-arq-aqua">
+              {t('lab.arPoc.modelError')}
+            </p>
+            <p className="mt-2 text-sm text-white/70">{t('lab.arPoc.fallbackText')}</p>
+            <button
+              ref={retryButtonRef}
+              type="button"
+              className="mt-4 rounded-full border border-white/[0.12] px-5 py-2.5 text-[13px] font-semibold text-white/80 transition-colors hover:border-arq-aqua/50 hover:bg-arq-aqua/5 hover:text-white"
+            >
+              {t('lab.arPoc.retry')}
+            </button>
+          </div>
+        ) : modelStatus === 'ready' ? null : (
           <p className="mt-3 text-sm text-white/70">{t('lab.arPoc.modelLoading')}</p>
         )}
       </div>

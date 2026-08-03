@@ -169,7 +169,13 @@ describe('ArqweliaArViewer — error fallback wiring (source-level, no DOM)', ()
   it('hides the viewer and shows a retry button on model error (no auto-loop)', () => {
     expect(src).toContain('modelStatus === \'failed\'')
     expect(src).toContain('t(\'lab.arPoc.retry\')')
-    expect(src).toContain('setModelAttempt((n) => n + 1)')
+    expect(src).toContain('retryNonceRef.current += 1')
+  })
+
+  it('retry reloads the model in place (imperative src re-set) — no React remount', () => {
+    expect(src).toContain('ref={retryButtonRef}')
+    expect(src).toContain("el.addEventListener('click', handleRetry)")
+    expect(src).toContain('MODEL_VIEWER_SRC + \'?retry=\' + retryNonceRef.current')
   })
 
   it('shows the FR/EN loadError message on runtime failure', () => {
