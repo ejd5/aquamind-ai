@@ -12,42 +12,53 @@
  *   bun scripts/benchmark-arqwelia-smoke.mjs --provider mock --model test \
  *     --image <path> --promptA "..." --out <dir> [--budget 5]
  *
- * Authorization is ENV-ONLY. The CLI can never authorize a real call and can
- * never raise the budget:
+ * Authorization is ENV-ONLY and the budget is ENV-ONLY. The CLI can never
+ * authorize a real call and can never create a budget:
  *   - A real provider call requires BOTH
  *       ARQWELIA_BENCHMARK_AUTHORIZED=true  AND
  *       ARQWELIA_BENCHMARK_MAX_BUDGET_EUR>0
- *   - `--budget` may only REDUCE the budget below ARQWELIA_BENCHMARK_MAX_BUDGET_EUR
- *     (a value above the env ceiling is rejected). With no env ceiling it only
- *     clamps the reported budget — it never unlocks a call.
+ *   - The only source of a usable budget is the environment (a finite number
+ *     strictly > 0). `--budget` may only REDUCE that env budget
+ *     (`min(cliBudget, envBudget)`); a value above the env ceiling is rejected,
+ *     and with no env budget the effective budget is 0.
+ *   - When the env gate is closed (`envGateOpen` false) the CLI prints
+ *     "DRY RUN" and `realCallAuthorized` stays false regardless of `--budget`.
  *   - Default (no env vars) is a DRY RUN: no external provider call, no cost.
  *   - Even when authorized, real-provider adapters are stubbed with
  *     "NOT IMPLEMENTED — awaiting Gate", so no paid call can ever occur.
+ *   - The provider adapter receives ONLY the normalized image fields
+ *     (normalizedImageBuffer/DataUrl/MimeType/Sha256/Width/Height, promptVersion,
+ *     sanitizedPrompt) — never the raw source buffer and never the source path.
  *   - Billing is reported from proven fields only: `externalCalls`,
  *     `actualCostEur`, `billingStatus`. PAID_COST is never claimed to be 0 after
- *     a real call whose cost is not proven (billingStatus 'unknown').
+ *     a real call whose cost is not proven (billingStatus 'unknown'), and a
+ *     caught adapter error never auto-converts to not_called/0/0.
  *   - API credentials are never printed; any env value whose name matches
  *     /KEY|TOKEN|SECRET/i is redacted before it can reach stdout or a report.
- *   - Reports are PII-free: no absolute paths, no local username, no raw prompt.
- *     The prompt is recorded only as promptSha256 (a hash of the text).
+ *   - Reports are PII-free: no absolute paths, no local username, no raw prompt,
+ *     no local file basename. Images are recorded as `datasetItemId` (from the
+ *     controlled `--dataset-id`, or a truncated hash), the prompt only as
+ *     promptSha256, and `normalizedSha256`/dimensions for the image.
  */
 
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { basename, join, relative, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import sharp from 'sharp'
 import {
-  ARQWELIA_BENCHMARK_AUTHORIZED,
-  ARQWELIA_BENCHMARK_MAX_BUDGET_EUR,
+  billingFromCaughtError,
   billingSnapshot,
   billingSummaryLines,
+  computeGate,
   getArqweliaBenchmarkCandidate,
   redactSecrets,
+  registerArqweliaBenchmarkCandidate,
 } from './lib/arqwelia-benchmark/candidates-registry.mjs'
 import { normalizeImageForAi, SecureImageError } from '../src/lib/images/secure-image.ts'
 
 const TASK = 'arqwelia-lot2-a1-benchmark-smoke'
-const VERSION = '2.0.0'
+const VERSION = '3.0.0'
 const PROMPT_VERSION = 'arqwelia-lot2-v1'
 
 function printUsage() {
@@ -61,10 +72,13 @@ Options:
   --image <path>    Source photo to normalize (EXIF/GPS photos are accepted and
                     normalized; only the EXIF-free normalized output is eligible)
   --promptA <text>  Concept A prompt (stored in reports only as promptSha256)
+  --dataset-id <id> Alphanumeric dataset item id recorded in reports (default: a
+                    truncated hash of the normalized image)
   --out <dir>       Output directory (default: ./benchmark-out)
   --budget <eur>    Budget cap — may only REDUCE the budget below
                     ARQWELIA_BENCHMARK_MAX_BUDGET_EUR; exceeding the env ceiling
-                    is rejected; a value <= 0 is rejected.
+                    is rejected; a value <= 0 is rejected. With no env budget the
+                    CLI stays a DRY RUN and the effective budget is 0.
 
 Authorization is ENV-ONLY and cannot be granted from the CLI. A real provider
 call requires BOTH ARQWELIA_BENCHMARK_AUTHORIZED=true and
@@ -78,6 +92,7 @@ function parseArgs(argv) {
     model: null,
     imagePath: null,
     promptA: null,
+    datasetId: null,
     outDir: null,
     budget: null,
   }
@@ -104,6 +119,14 @@ function parseArgs(argv) {
       case '--promptA':
         args.promptA = next()
         break
+      case '--dataset-id': {
+        const raw = next()
+        if (!/^[A-Za-z0-9]+$/.test(raw)) {
+          throw new Error('Invalid --dataset-id value (alphanumeric only)')
+        }
+        args.datasetId = raw
+        break
+      }
       case '--out':
         args.outDir = next()
         break
@@ -138,17 +161,17 @@ function stamp() {
  * Reads a local source photo, normalizes it through the canonical
  * `normalizeImageForAi`, and verifies the NORMALIZED OUTPUT is free of
  * EXIF/IPTC/XMP. Only the normalized output is ever eligible to reach a
- * provider; the raw source is never copied anywhere.
+ * provider; the raw source and its path are never passed to an adapter.
  *
  * @param {string} imagePath
- * @returns {Promise<{ sourceFileName: string, dataUrl: string, buffer: Buffer, mimeType: string, width: number, height: number, sha256: string, inputBytes: number, outputBytes: number }>}
+ * @returns {Promise<{ dataUrl: string, buffer: Buffer, mimeType: string, width: number, height: number, sha256: string, inputBytes: number, outputBytes: number }>}
  */
 async function loadAndNormalizeImage(imagePath) {
   let inputBuffer
   try {
     inputBuffer = await readFile(imagePath)
   } catch {
-    throw new Error(`Image file could not be read: ${imagePath}`)
+    throw new Error('Image file could not be read')
   }
   if (inputBuffer.length === 0) {
     throw new Error('Image file is empty')
@@ -183,7 +206,6 @@ async function loadAndNormalizeImage(imagePath) {
   }
 
   return {
-    sourceFileName: basename(imagePath),
     dataUrl: normalized.dataUrl,
     buffer: normalized.buffer,
     mimeType: normalized.mimeType,
@@ -208,6 +230,16 @@ async function run() {
     process.exit(0)
   }
 
+  // Test-only seam: load an extra candidate module (e.g. a capture/error fake).
+  if (process.env.ARQWELIA_BENCHMARK_EXTRA_CANDIDATE_MODULE) {
+    const modulePath = resolve(process.cwd(), process.env.ARQWELIA_BENCHMARK_EXTRA_CANDIDATE_MODULE)
+    const mod = await import(pathToFileURL(modulePath).href)
+    const extras = mod.default ? (Array.isArray(mod.default) ? mod.default : [mod.default]) : []
+    for (const candidate of extras) {
+      registerArqweliaBenchmarkCandidate(candidate)
+    }
+  }
+
   const provider = getArqweliaBenchmarkCandidate(args.provider)
   if (!provider) {
     console.error(`error: unknown provider "${args.provider}"`)
@@ -218,28 +250,29 @@ async function run() {
   const model = args.model || provider.model
   const outDir = resolve(process.cwd(), args.outDir || './benchmark-out')
 
-  // Authorization is ENV-ONLY. `--budget` can only reduce the env ceiling.
-  const envBudgetMaxEur = ARQWELIA_BENCHMARK_MAX_BUDGET_EUR
-  let budgetMaxEur = envBudgetMaxEur
-  if (args.budget != null) {
-    if (envBudgetMaxEur > 0 && args.budget > envBudgetMaxEur) {
-      console.error(
-        `error: --budget (${args.budget}) exceeds ARQWELIA_BENCHMARK_MAX_BUDGET_EUR (${envBudgetMaxEur}). ` +
-          'The CLI can only REDUCE the budget below the env ceiling.',
-      )
-      process.exit(2)
-    }
-    budgetMaxEur = args.budget
-  }
-
-  const authorized = ARQWELIA_BENCHMARK_AUTHORIZED === true
-  const realCallAuthorized = authorized && budgetMaxEur > 0
+  // Budget gate is ENV-ONLY — the CLI can never create a budget. `--budget` may
+  // only REDUCE an env-supplied budget; with no env budget the gate stays
+  // closed and the effective budget is 0 (DRY RUN).
+  const gate = computeGate({ cliBudget: args.budget })
+  const envAuthorized = gate.envAuthorized
+  const envBudget = gate.envBudget
+  const budgetMaxEur = gate.effectiveBudget
+  const realCallAuthorized = gate.realCallAuthorized
   const dryRun = !realCallAuthorized
+
+  if (args.budget != null && envBudget > 0 && args.budget > envBudget) {
+    console.error(
+      `error: --budget (${args.budget}) exceeds ARQWELIA_BENCHMARK_MAX_BUDGET_EUR (${envBudget}). ` +
+        'The CLI can only REDUCE the budget below the env ceiling.',
+    )
+    process.exit(2)
+  }
 
   console.log(`${TASK} v${VERSION}`)
   console.log(`provider=${provider.id}`)
   console.log(`model=${model}`)
   console.log(`supportsImageEditing=${provider.supportsImageEditing ? 'true' : 'false'}`)
+  console.log(`realCallAuthorized=${realCallAuthorized}`)
 
   // -- image preflight (normalize, don't refuse; EXIF/GPS is allowed) --------
   let normalized = null
@@ -255,6 +288,10 @@ async function run() {
     }
   }
 
+  // Dataset item id is a CONTROLLED alphanumeric id (or a truncated hash of the
+  // normalized image) — never the original local filename.
+  const datasetItemId = args.datasetId || (normalized ? normalized.sha256.slice(0, 16) : null)
+
   // -- smoke ----------------------------------------------------------------
   let result = null
   if (!dryRun && typeof provider.runSmoke === 'function') {
@@ -263,21 +300,30 @@ async function run() {
       result = await provider.runSmoke({
         providerId: provider.id,
         model,
-        imagePath: args.imagePath ?? undefined,
-        promptConceptA: args.promptA ?? undefined,
+        normalizedImageBuffer: normalized ? normalized.buffer : undefined,
+        normalizedImageDataUrl: normalized ? normalized.dataUrl : undefined,
+        normalizedMimeType: normalized ? normalized.mimeType : undefined,
+        normalizedSha256: normalized ? normalized.sha256 : undefined,
+        normalizedWidth: normalized ? normalized.width : undefined,
+        normalizedHeight: normalized ? normalized.height : undefined,
+        promptVersion: PROMPT_VERSION,
+        sanitizedPrompt: args.promptA ?? undefined,
         outDir,
         budgetMaxEur,
         realCallAuthorized: true,
       })
     } catch (error) {
+      // Conservative billing on error: never auto-convert a real-adapter error
+      // into externalCalls=0 / actualCostEur=0 / not_called.
+      const billing = billingFromCaughtError(error)
       result = {
         providerId: provider.id,
         model,
         ok: false,
-        externalCalls: 0,
-        actualCostEur: 0,
-        billingStatus: 'not_called',
-        officialPricingSource: null,
+        externalCalls: billing.externalCalls,
+        actualCostEur: billing.actualCostEur,
+        billingStatus: billing.billingStatus,
+        officialPricingSource: billing.officialPricingSource,
         durationMs: Date.now() - started,
         error: String((error && error.message) || error),
       }
@@ -286,8 +332,14 @@ async function run() {
     result = await provider.runSmoke({
       providerId: provider.id,
       model,
-      imagePath: args.imagePath ?? undefined,
-      promptConceptA: args.promptA ?? undefined,
+      normalizedImageBuffer: normalized ? normalized.buffer : undefined,
+      normalizedImageDataUrl: normalized ? normalized.dataUrl : undefined,
+      normalizedMimeType: normalized ? normalized.mimeType : undefined,
+      normalizedSha256: normalized ? normalized.sha256 : undefined,
+      normalizedWidth: normalized ? normalized.width : undefined,
+      normalizedHeight: normalized ? normalized.height : undefined,
+      promptVersion: PROMPT_VERSION,
+      sanitizedPrompt: args.promptA ?? undefined,
       outDir,
       budgetMaxEur,
       realCallAuthorized: false,
@@ -351,7 +403,8 @@ async function run() {
     version: VERSION,
     timestamp: new Date().toISOString(),
     dryRun,
-    authorized: authorized === true,
+    authorized: envAuthorized === true,
+    realCallAuthorized,
     budgetMaxEur,
     promptVersion: PROMPT_VERSION,
     provider: {
@@ -365,7 +418,7 @@ async function run() {
     },
     image: normalized
       ? {
-          sourceFileName: normalized.sourceFileName,
+          datasetItemId,
           normalizedSha256: normalized.sha256,
           width: normalized.width,
           height: normalized.height,
@@ -400,7 +453,8 @@ async function run() {
     `- provider: ${provider.id} (model: ${model})`,
     `- supports image editing: ${provider.supportsImageEditing}`,
     `- mode: ${dryRun ? 'dry-run' : 'smoke'}`,
-    `- authorized: ${authorized}`,
+    `- authorized: ${envAuthorized}`,
+    `- real call authorized: ${realCallAuthorized}`,
     `- budget max (EUR): ${budgetMaxEur}`,
     `- real provider calls: ${snap.externalCalls}`,
     `- billing status: ${snap.billingStatus}`,
@@ -417,7 +471,7 @@ async function run() {
     `## Image (normalized, EXIF-free)`,
     ``,
     normalized
-      ? `- source: ${normalized.sourceFileName}`
+      ? `- dataset item id: ${datasetItemId}`
       : `- no image provided`,
     normalized
       ? `- normalized: ${normalized.width}x${normalized.height} JPEG (q82), sha256=${normalized.sha256}`

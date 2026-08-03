@@ -1,4 +1,4 @@
-# ARQWELIA Lot 2 — AI Provider Benchmark Harness (A1 round 2)
+# ARQWELIA Lot 2 — AI Provider Benchmark Harness (A1 round 3)
 
 ## Purpose
 
@@ -31,9 +31,9 @@ Scope decisions honored by this harness:
 
 | File | Role |
 | --- | --- |
-| `scripts/lib/arqwelia-benchmark/provider.ts` | Benchmark-only provider interface + runtime guard helpers + billing contract |
+| `scripts/lib/arqwelia-benchmark/provider.ts` | Benchmark-only provider interface + runtime guard helpers + billing contract + `computeGate` |
 | `scripts/lib/arqwelia-benchmark/candidates.ts` | Typed candidate registry |
-| `scripts/lib/arqwelia-benchmark/candidates-registry.mjs` | Single source of truth (plain ESM, shared with the CLI): candidates, `ensureNoRealCall`, `redactSecrets`, billing derivation |
+| `scripts/lib/arqwelia-benchmark/candidates-registry.mjs` | Single source of truth (plain ESM, shared with the CLI): candidates, `computeGate`, `ArqweliaProviderError`, `billingFromCaughtError`, `ensureNoRealCall`, `redactSecrets`, billing derivation |
 | `scripts/benchmark-arqwelia-smoke.mjs` | CLI entry point (**requires Bun**) |
 | `tests/arqwelia-lot2-benchmark.test.ts` | Vitest suite (no real calls, no keys) |
 | `dataset/README.md` | Benchmark photo dataset instructions (lives outside git) |
@@ -47,31 +47,56 @@ bun scripts/benchmark-arqwelia-smoke.mjs --provider mock --out ./benchmark-out
 bun run benchmark:smoke -- --provider mock --out ./benchmark-out
 ```
 
-## Guard rails (authorization is ENV-ONLY)
+## Guard rails (authorization AND budget are ENV-ONLY)
 
 A real provider call requires **BOTH** of these environment variables:
 
 | Env var | Meaning |
 | --- | --- |
 | `ARQWELIA_BENCHMARK_AUTHORIZED=true` | Explicit human authorization flag |
-| `ARQWELIA_BENCHMARK_MAX_BUDGET_EUR>0` | Owner-approved budget cap (EUR) |
+| `ARQWELIA_BENCHMARK_MAX_BUDGET_EUR>0` | Owner-approved budget cap (EUR) — the **only** source of a usable budget |
 
-**The CLI can never authorize a real call and can never raise the budget:**
+**The CLI can never authorize a real call and can never create a budget.** The
+budget gate is a single helper `computeGate()` with these exact rules:
+
+```
+envAuthorized   = ARQWELIA_BENCHMARK_AUTHORIZED === true
+envBudget       = a finite strictly-positive number supplied ONLY by the
+                  environment (absent/invalid/NaN/<=0 => envBudget = 0)
+envGateOpen     = envAuthorized && envBudget > 0
+effectiveBudget = --budget absent => envBudget;
+                  --budget present => min(cliBudget, envBudget)
+realCallAuthorized = envGateOpen && effectiveBudget > 0
+```
 
 - There is **no `--authorized` flag** — passing one is rejected as an unknown
   flag. Authorization comes exclusively from the environment.
-- `--budget` may **only reduce** the budget below
-  `ARQWELIA_BENCHMARK_MAX_BUDGET_EUR`. A `--budget` above the env ceiling is
-  rejected with a clear error; `--budget <= 0` is rejected.
-- With no env ceiling configured, `--budget` only clamps the *reported* budget
-  for the dry run — it never unlocks a real call.
+- `--budget` may **only reduce** the env budget (`min(cliBudget, envBudget)`).
+  A `--budget` above a valid env ceiling is rejected with a clear error;
+  `--budget <= 0` is rejected.
+- With no env budget (absent, `0`, `NaN`, or invalid), the **effective budget
+  is `0`** and the gate stays closed — `--budget` never unlocks a call and the
+  CLI prints `DRY RUN` with `realCallAuthorized=false`.
 
-Without both env vars the CLI prints `DRY RUN — NO EXTERNAL CALL` and exits
-`0`. On top of that, the real-provider adapters throw `NOT IMPLEMENTED —
-awaiting Gate` even when authorized, so no real call can happen in this build.
+Without both env vars (or with a non-positive/invalid env budget) the CLI
+prints `DRY RUN — NO EXTERNAL CALL` and exits `0`. On top of that, the
+real-provider adapters throw `NOT IMPLEMENTED — awaiting Gate` even when
+authorized, so no real call can happen in this build.
 
 The harness **never prints API keys**. Any env value whose name matches
 `/KEY|TOKEN|SECRET/i` is redacted before it can reach stdout or a report.
+
+### Provider receives ONLY the normalized image
+
+`runSmoke` never receives the raw source buffer or the user-supplied path. The
+CLI normalizes first (reusing the canonical `normalizeImageForAi`) and hands the
+adapter **only** these normalized fields:
+
+`normalizedImageBuffer`, `normalizedImageDataUrl`, `normalizedMimeType`,
+`normalizedSha256`, `normalizedWidth`, `normalizedHeight`, `promptVersion`,
+`sanitizedPrompt`, plus `providerId`, `model`, `outDir`, `budgetMaxEur`,
+`realCallAuthorized`. There is no `imagePath` and no `promptConceptA` key —
+the raw source and its path never reach an adapter.
 
 ## Billing contract (reliable, never invented)
 
@@ -94,6 +119,23 @@ Billing rules:
 - Real call without billing proof (`unknown`): `actualCostEur=null` and the
   console prints `PAID_COST=UNKNOWN` — the harness **never claims
   `PAID_COST=0` after a real call whose cost is not proven**.
+
+### Conservative billing on error
+
+A caught adapter error is **never auto-converted** into `externalCalls=0 /
+actualCostEur=0 / not_called`. Adapters signal what actually happened by
+throwing `ArqweliaProviderError(message, billing)`:
+
+- error **before** any proven external call → `externalCalls=0`,
+  `actualCostEur=0`, `billingStatus='not_called'`;
+- error **after** an external call started → `externalCalls>=1`,
+  `actualCostEur=null` (if unknown), `billingStatus='unknown'`;
+- officially measured cost → `billingStatus='measured'` + the real value.
+
+Any **generic** error thrown inside a real-adapter block — when the system
+cannot prove no call was made — gets the conservative default
+`externalCalls=1`, `actualCostEur=null`, `billingStatus='unknown'`. The CLI
+catch path applies the error's carried billing (or that default).
 
 `estimateOfficialCost()` returns `known: false` with note
 `UNKNOWN — TO BE MEASURED IN LOT 0` for every candidate. There is **no
@@ -134,18 +176,29 @@ exits non-zero.
 ## PII-free report
 
 The JSON report, Markdown report and console never store: absolute paths,
-local usernames, the raw free prompt, API keys/tokens, or addresses. The
-report keeps only:
+local usernames, the raw free prompt, API keys/tokens, addresses, or the
+original local file name. The report keeps only:
 
-- sanitized `sourceFileName` (basename only, no path) — or a dataset id;
-- `normalizedSha256`, width/height, input/output bytes, mimeType;
+- `datasetItemId` — the controlled alphanumeric `--dataset-id`, or a truncated
+  hash of the normalized image when not provided (never the local basename);
+- `normalizedSha256`, width/height, input/output bytes, mimeType.
 - `promptVersion` (`arqwelia-lot2-v1`) and `promptSha256` (a SHA-256 **hash of
   the prompt text**, never the prompt itself);
 - provider, model, and technical results (`durationMs`, `externalCalls`,
   `actualCostEur`, `billingStatus`, `officialPricingSource`, output
   width/height, output file name only).
 
-The report never writes the `--image` path or the `--promptA` text.
+The report never writes the `--image` path or the `--promptA` text, and never
+stores the local file basename (no `sourceFileName`). A failure to read an
+image reports exactly `Image file could not be read` — without the path.
+
+```bash
+# controlled dataset id (alphanumeric only); a missing id falls back to a
+# truncated hash of the normalized image
+bun scripts/benchmark-arqwelia-smoke.mjs --provider mock \
+  --image dataset/photos/01-small-garden.png --dataset-id item001 \
+  --out ./benchmark-out
+```
 
 ## Run the dry run (default)
 
@@ -165,12 +218,17 @@ bun scripts/benchmark-arqwelia-smoke.mjs --provider zai-glm --out ./benchmark-ou
 Expected output always ends with:
 
 ```text
+realCallAuthorized=false
+mode=dry-run
 DRY RUN — NO EXTERNAL CALL
 external_calls=0
 billing_status=not_called
 paid_eur=0
 REAL_PROVIDER_CALLS=0, PAID_COST=0
 ```
+
+`realCallAuthorized` is `true` only when the env gate is open (authorized AND
+`ARQWELIA_BENCHMARK_MAX_BUDGET_EUR>0`); it is never derived from `--budget`.
 
 Reports are written to the `--out` dir (default `./benchmark-out`): one JSON
 and one Markdown summary per run, plus the mock placeholder PNG.

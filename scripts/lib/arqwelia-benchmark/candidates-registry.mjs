@@ -29,6 +29,42 @@ import sharp from 'sharp'
 export const ARQWELIA_BENCHMARK_AUTHORIZED = process.env.ARQWELIA_BENCHMARK_AUTHORIZED === 'true'
 export const ARQWELIA_BENCHMARK_MAX_BUDGET_EUR = Number(process.env.ARQWELIA_BENCHMARK_MAX_BUDGET_EUR || 0)
 
+/**
+ * Budget gate — the SINGLE source of truth for deciding whether a real call may
+ * happen. The ONLY source of a usable budget is the environment; the CLI can
+ * never create one.
+ *
+ * Rules (exact):
+ *   envAuthorized   = ARQWELIA_BENCHMARK_AUTHORIZED === true
+ *   envBudget       = a finite strictly-positive number supplied ONLY by the
+ *                     environment (absent/invalid/NaN/<=0 => envBudget = 0)
+ *   envGateOpen     = envAuthorized && envBudget > 0
+ *   effectiveBudget = --budget absent => envBudget;
+ *                     --budget present => min(cliBudget, envBudget)
+ *   realCallAuthorized = envGateOpen && effectiveBudget > 0
+ *
+ * @param {{ cliBudget?: number|null, envAuthorized?: boolean, envBudgetRaw?: string|undefined }} [input]
+ * @returns {{ envAuthorized: boolean, envBudget: number, envGateOpen: boolean, effectiveBudget: number, realCallAuthorized: boolean }}
+ */
+export function computeGate({
+  cliBudget = null,
+  envAuthorized = ARQWELIA_BENCHMARK_AUTHORIZED,
+  envBudgetRaw = process.env.ARQWELIA_BENCHMARK_MAX_BUDGET_EUR,
+} = {}) {
+  const parsed = envBudgetRaw == null || envBudgetRaw === '' ? 0 : Number(envBudgetRaw)
+  const envBudget = Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+  const envGateOpen = envAuthorized === true && envBudget > 0
+  const effectiveBudget = cliBudget != null ? Math.min(cliBudget, envBudget) : envBudget
+  const realCallAuthorized = envGateOpen && effectiveBudget > 0
+  return {
+    envAuthorized: envAuthorized === true,
+    envBudget,
+    envGateOpen,
+    effectiveBudget,
+    realCallAuthorized,
+  }
+}
+
 const SECRET_ENV_NAME_RE = /(KEY|TOKEN|SECRET)/i
 const SECRET_VALUE_RE = /(nvapi-[A-Za-z0-9_\-]+|sk(-live)?-[A-Za-z0-9_\-]+|whsec_[A-Za-z0-9_\-]+|rc_wh_[A-Za-z0-9_\-]+)/g
 
@@ -97,6 +133,58 @@ export function redactedEnvSummary(env = process.env) {
 // Reliable billing derivation (single source of truth for the CLI output,
 // JSON report and Markdown report — all three are rendered from these).
 // ---------------------------------------------------------------------------
+
+/**
+ * Provider error that transports billing information. Adapters use it to say
+ * what actually happened before/after they failed, so a caught error is never
+ * auto-converted into externalCalls=0 / actualCostEur=0 / not_called.
+ *
+ * Billing rules carried on `billing`:
+ *   - error before any proven external call: externalCalls=0, actualCostEur=0,
+ *     billingStatus='not_called'
+ *   - error after an external call started: externalCalls>=1, actualCostEur=null
+ *     if unknown, billingStatus='unknown'
+ *   - officially measured cost: billingStatus='measured' + the real value
+ */
+export class ArqweliaProviderError extends Error {
+  constructor(message, billing = {}) {
+    super(message)
+    this.name = 'ArqweliaProviderError'
+    this.billing = {
+      externalCalls: 0,
+      actualCostEur: 0,
+      billingStatus: 'not_called',
+      officialPricingSource: null,
+      ...billing,
+    }
+  }
+}
+
+/**
+ * Resolves the billing carried by a caught error. An `ArqweliaProviderError`
+ * uses its carried billing; ANY other error inside a real-adapter block gets
+ * the CONSERVATIVE default (externalCalls=1, actualCostEur=null,
+ * billingStatus='unknown') because the system cannot prove no call was made.
+ *
+ * @param {unknown} error
+ * @returns {{ externalCalls: number, actualCostEur: number|null, billingStatus: string, officialPricingSource: string|null }}
+ */
+export function billingFromCaughtError(error) {
+  if (error instanceof ArqweliaProviderError) {
+    return {
+      externalCalls: error.billing.externalCalls,
+      actualCostEur: error.billing.actualCostEur,
+      billingStatus: error.billing.billingStatus,
+      officialPricingSource: error.billing.officialPricingSource,
+    }
+  }
+  return {
+    externalCalls: 1,
+    actualCostEur: null,
+    billingStatus: 'unknown',
+    officialPricingSource: null,
+  }
+}
 
 /**
  * Derives the billing snapshot from a SmokeResult.
@@ -206,7 +294,11 @@ const nvidiaNimCandidate = {
   },
   async runSmoke(opts) {
     ensureNoRealCall(opts)
-    throw new Error('NOT IMPLEMENTED — awaiting Gate: NVIDIA image-generation adapter')
+    throw new ArqweliaProviderError('NOT IMPLEMENTED — awaiting Gate: NVIDIA image-generation adapter', {
+      externalCalls: 0,
+      actualCostEur: 0,
+      billingStatus: 'not_called',
+    })
   },
 }
 
@@ -232,7 +324,11 @@ const zaiGlimCandidate = {
   },
   async runSmoke(opts) {
     ensureNoRealCall(opts)
-    throw new Error('NOT IMPLEMENTED — awaiting Gate: z-ai-web-dev-sdk image-edit adapter')
+    throw new ArqweliaProviderError('NOT IMPLEMENTED — awaiting Gate: z-ai-web-dev-sdk image-edit adapter', {
+      externalCalls: 0,
+      actualCostEur: 0,
+      billingStatus: 'not_called',
+    })
   },
 }
 
@@ -252,7 +348,11 @@ const openaiGptImageCandidate = {
   },
   async runSmoke(opts) {
     ensureNoRealCall(opts)
-    throw new Error('NOT IMPLEMENTED — awaiting Gate: OpenAI gpt-image adapter')
+    throw new ArqweliaProviderError('NOT IMPLEMENTED — awaiting Gate: OpenAI gpt-image adapter', {
+      externalCalls: 0,
+      actualCostEur: 0,
+      billingStatus: 'not_called',
+    })
   },
 }
 
@@ -286,4 +386,22 @@ export const arqweliaBenchmarkCandidates = [
  */
 export function getArqweliaBenchmarkCandidate(id) {
   return arqweliaBenchmarkCandidates.find((candidate) => candidate.id === id)
+}
+
+/**
+ * Registers an additional candidate at runtime. Used by the CLI to load a
+ * test-only candidate from `ARQWELIA_BENCHMARK_EXTRA_CANDIDATE_MODULE` (see
+ * the CLI). Registered candidates share the same registry as built-ins.
+ *
+ * @param {object} candidate
+ */
+export function registerArqweliaBenchmarkCandidate(candidate) {
+  if (!candidate || typeof candidate.id !== 'string' || !candidate.id) {
+    throw new Error('Cannot register a benchmark candidate without an id')
+  }
+  if (getArqweliaBenchmarkCandidate(candidate.id)) {
+    throw new Error(`Duplicate benchmark candidate id: ${candidate.id}`)
+  }
+  arqweliaBenchmarkCandidates.push(candidate)
+  return candidate
 }

@@ -11,8 +11,11 @@ import {
 import {
   ARQWELIA_BENCHMARK_AUTHORIZED,
   ARQWELIA_BENCHMARK_MAX_BUDGET_EUR,
+  ArqweliaProviderError,
+  billingFromCaughtError,
   billingSnapshot,
   billingSummaryLines,
+  computeGate,
   ensureNoRealCall,
   redactSecrets,
   redactedEnvSummary,
@@ -58,7 +61,7 @@ async function writeJpegWithExif(
   writeFileSync(filePath, buffer)
 }
 
-describe('ARQWELIA Lot 2 benchmark harness (A1 round 2)', () => {
+describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
   it('registers unique candidate ids (nvidia-nim, zai-glm, openai-gpt-image, mock)', () => {
     const ids = arqweliaBenchmarkCandidates.map((candidate) => candidate.id)
     expect(new Set(ids).size).toBe(ids.length)
@@ -326,13 +329,16 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 2)', () => {
     expect(data).not.toHaveProperty('imagePath')
     expect(data).not.toHaveProperty('promptA')
     expect(jsonText).not.toContain(exifJpeg)
+    expect(jsonText).not.toContain('with-exif.jpg')
     expect(jsonText).not.toContain(process.env.HOME ?? '/Users/')
     expect(jsonText).not.toContain(prompt)
 
-    const image = data.image as { sourceFileName: string; normalizedSha256: string } | null
+    const image = data.image as { datasetItemId: string; normalizedSha256: string } | null
     expect(image).not.toBeNull()
-    expect(image!.sourceFileName).toBe('with-exif.jpg')
-    expect(image!.sourceFileName).not.toContain('/')
+    expect(image).not.toHaveProperty('sourceFileName')
+    expect(image!.datasetItemId).toMatch(/^[a-f0-9]{16}$/)
+    expect(image!.datasetItemId).not.toContain('/')
+    expect(image!.datasetItemId).not.toContain('with-exif')
     expect(image!.normalizedSha256).toMatch(/^[a-f0-9]{64}$/)
 
     const p = data.prompt as { version: string; sha256: string | null }
@@ -407,12 +413,13 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 2)', () => {
 
     const { data } = latestReportJson(out)
     const image = data.image as {
-      sourceFileName: string
+      datasetItemId: string
       normalizedSha256: string
       width: number
       height: number
     }
-    expect(image.sourceFileName).toBe('with-exif.jpg')
+    expect(image.datasetItemId).toMatch(/^[a-f0-9]{16}$/)
+    expect(image.datasetItemId).not.toContain('with-exif')
     expect(image.normalizedSha256).toMatch(/^[a-f0-9]{64}$/)
     expect(image.width).toBeLessThanOrEqual(1600)
     expect(image.height).toBeLessThanOrEqual(1600)
@@ -485,5 +492,329 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 2)', () => {
       expect(content).not.toContain('sk-fake-xyz')
       expect(content).not.toContain('zai-secret-999')
     }
+  })
+
+  // -- round 3: env-only budget gate (computeGate) --------------------------
+
+  it('computeGate: auth=true, env budget ABSENT, --budget 5 → NO real call', () => {
+    const gate = computeGate({ cliBudget: 5, envAuthorized: true, envBudgetRaw: undefined })
+    expect(gate.envAuthorized).toBe(true)
+    expect(gate.envBudget).toBe(0)
+    expect(gate.envGateOpen).toBe(false)
+    expect(gate.effectiveBudget).toBe(0)
+    expect(gate.realCallAuthorized).toBe(false)
+  })
+
+  it('computeGate: auth=true, envBudget=0, --budget 5 → NO real call', () => {
+    const gate = computeGate({ cliBudget: 5, envAuthorized: true, envBudgetRaw: '0' })
+    expect(gate.envBudget).toBe(0)
+    expect(gate.envGateOpen).toBe(false)
+    expect(gate.effectiveBudget).toBe(0)
+    expect(gate.realCallAuthorized).toBe(false)
+  })
+
+  it('computeGate: auth=true, envBudget="abc", --budget 5 → NO real call (invalid env)', () => {
+    const gate = computeGate({ cliBudget: 5, envAuthorized: true, envBudgetRaw: 'abc' })
+    expect(gate.envBudget).toBe(0)
+    expect(gate.envGateOpen).toBe(false)
+    expect(gate.realCallAuthorized).toBe(false)
+  })
+
+  it('computeGate: auth=true, envBudget=10, --budget 5 → envGateOpen, effectiveBudget=5, realCallAuthorized TRUE (adapter still NOT IMPLEMENTED)', () => {
+    const gate = computeGate({ cliBudget: 5, envAuthorized: true, envBudgetRaw: '10' })
+    expect(gate.envGateOpen).toBe(true)
+    expect(gate.effectiveBudget).toBe(5)
+    expect(gate.realCallAuthorized).toBe(true)
+  })
+
+  it('computeGate/CLI: auth=true, envBudget=10, --budget 15 → REJECT (cli above env ceiling)', () => {
+    const gate = computeGate({ cliBudget: 15, envAuthorized: true, envBudgetRaw: '10' })
+    expect(gate.effectiveBudget).toBe(10)
+    const out = tmpOut('aqw-bench-rej15-')
+    const result = runCli(['--provider', 'mock', '--out', out, '--budget', '15'], {
+      ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+    })
+    expect(result.status).toBe(2)
+    expect(result.stderr).toMatch(/exceeds ARQWELIA_BENCHMARK_MAX_BUDGET_EUR/)
+  })
+
+  it('CRITICAL GATE: authorized + envBudget=0 + --budget 5 stays DRY RUN, realCallAuthorized=false', () => {
+    const out = tmpOut('aqw-bench-gate-zero-')
+    const result = runCli(['--provider', 'mock', '--out', out, '--budget', '5'], {
+      ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '0',
+    })
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('DRY RUN — NO EXTERNAL CALL')
+    expect(result.stdout).toContain('realCallAuthorized=false')
+    expect(result.stdout).toContain('REAL_PROVIDER_CALLS=0, PAID_COST=0')
+
+    const { data } = latestReportJson(out)
+    expect(data.dryRun).toBe(true)
+    expect(data.realCallAuthorized).toBe(false)
+    expect(data.authorized).toBe(true)
+    expect(data.budgetMaxEur).toBe(0)
+  })
+
+  it('auth=true + envBudget=10 + --budget 5 is technically possible but the adapter stays NOT IMPLEMENTED (no actual call)', () => {
+    const out = tmpOut('aqw-bench-tech-')
+    const result = runCli(['--provider', 'zai-glm', '--out', out, '--budget', '5'], {
+      ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+    })
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('realCallAuthorized=true')
+    expect(result.stdout).toContain('result=not-implemented (awaiting Gate)')
+    expect(result.stdout).toContain('REAL_PROVIDER_CALLS=0, PAID_COST=0')
+    const { data } = latestReportJson(out)
+    const r = data.result as { billingStatus: string; externalCalls: number }
+    expect(r.billingStatus).toBe('not_called')
+    expect(r.externalCalls).toBe(0)
+  })
+
+  // -- round 3: provider receives ONLY the normalized image -----------------
+
+  const FAKE_CAPTURE_MODULE = `
+import { createHash } from 'node:crypto'
+import { writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+export default {
+  id: 'fake-capture',
+  model: 'fake-capture-v1',
+  supportsImageEditing: true,
+  dryRunSafe: true,
+  dryRunDescription: 'test-only capture provider',
+  validateConfiguration() { return { ok: true } },
+  estimateOfficialCost() { return { known: false, note: 'test-only' } },
+  async runSmoke(opts) {
+    const captured = {
+      keys: Object.keys(opts).sort(),
+      hasImagePathKey: Object.prototype.hasOwnProperty.call(opts, 'imagePath'),
+      hasPromptConceptAKey: Object.prototype.hasOwnProperty.call(opts, 'promptConceptA'),
+      receivedSha256: opts.normalizedImageBuffer
+        ? createHash('sha256').update(opts.normalizedImageBuffer).digest('hex')
+        : null,
+      normalizedImageDataUrlPrefix: opts.normalizedImageDataUrl ? opts.normalizedImageDataUrl.slice(0, 22) : null,
+      normalizedMimeType: opts.normalizedMimeType ?? null,
+      normalizedSha256: opts.normalizedSha256 ?? null,
+      normalizedWidth: opts.normalizedWidth ?? null,
+      normalizedHeight: opts.normalizedHeight ?? null,
+      promptVersion: opts.promptVersion ?? null,
+      sanitizedPrompt: opts.sanitizedPrompt ?? null,
+      providerId: opts.providerId,
+      model: opts.model,
+      budgetMaxEur: opts.budgetMaxEur,
+      realCallAuthorized: opts.realCallAuthorized,
+    }
+    writeFileSync(join(opts.outDir, 'captured-args.json'), JSON.stringify(captured, null, 2))
+    if (opts.normalizedImageBuffer) {
+      writeFileSync(join(opts.outDir, 'received-buffer.bin'), opts.normalizedImageBuffer)
+    }
+    return {
+      providerId: opts.providerId,
+      model: opts.model,
+      ok: true,
+      externalCalls: 0,
+      actualCostEur: 0,
+      billingStatus: 'not_called',
+      officialPricingSource: null,
+      durationMs: 0,
+    }
+  },
+}
+`
+
+  it('adapter receives ONLY normalized fields — no imagePath, no raw-source buffer, EXIF-free', async () => {
+    const srcDir = tmpOut('aqw-bench-capture-src-')
+    const exifJpeg = join(srcDir, 'garden-location.jpg')
+    await writeJpegWithExif(exifJpeg)
+
+    const input = await sharp({
+      create: { width: 2400, height: 1200, channels: 3, background: { r: 30, g: 140, b: 210 } },
+    })
+      .jpeg({ quality: 90 })
+      .withMetadata({ orientation: 6 })
+      .toBuffer()
+    const expected = await normalizeImageForAi(`data:image/jpeg;base64,${input.toString('base64')}`)
+
+    const fakeDir = tmpOut('aqw-bench-fake-')
+    const fakeModule = join(fakeDir, 'fake-capture.mjs')
+    writeFileSync(fakeModule, FAKE_CAPTURE_MODULE)
+
+    const out = tmpOut('aqw-bench-capture-out-')
+    const result = runCli(
+      ['--provider', 'fake-capture', '--image', exifJpeg, '--promptA', 'A concept prompt', '--out', out],
+      { ARQWELIA_BENCHMARK_EXTRA_CANDIDATE_MODULE: fakeModule },
+    )
+    expect(result.status).toBe(0)
+
+    const captured = JSON.parse(readFileSync(join(out, 'captured-args.json'), 'utf8'))
+    expect(captured.hasImagePathKey).toBe(false)
+    expect(captured.hasPromptConceptAKey).toBe(false)
+    expect(captured.keys).not.toContain('imagePath')
+    expect(captured.keys).not.toContain('promptConceptA')
+    expect(captured.keys).toEqual(
+      expect.arrayContaining([
+        'providerId',
+        'model',
+        'normalizedImageBuffer',
+        'normalizedImageDataUrl',
+        'normalizedMimeType',
+        'normalizedSha256',
+        'normalizedWidth',
+        'normalizedHeight',
+        'promptVersion',
+        'sanitizedPrompt',
+        'outDir',
+        'budgetMaxEur',
+        'realCallAuthorized',
+      ]),
+    )
+    expect(captured.receivedSha256).toBe(expected.sha256)
+    expect(captured.normalizedSha256).toBe(expected.sha256)
+    expect(captured.normalizedWidth).toBe(expected.width)
+    expect(captured.normalizedHeight).toBe(expected.height)
+    expect(captured.normalizedMimeType).toBe('image/jpeg')
+    expect(captured.normalizedImageDataUrlPrefix).toBe('data:image/jpeg;base64')
+    expect(captured.promptVersion).toBe('arqwelia-lot2-v1')
+    expect(captured.sanitizedPrompt).toBe('A concept prompt')
+
+    const received = readFileSync(join(out, 'received-buffer.bin'))
+    expect(received.equals(expected.buffer)).toBe(true)
+    const meta = await sharp(received).metadata()
+    expect(meta.exif).toBeUndefined()
+    expect(meta.orientation).toBeUndefined()
+    expect(meta.iptc).toBeUndefined()
+    expect(meta.xmp).toBeUndefined()
+  })
+
+  // -- round 3: conservative billing on error -------------------------------
+
+  it('billing on error: error before any proven external call → not_called / 0 / 0', () => {
+    const error = new ArqweliaProviderError('failed during validation', {
+      externalCalls: 0,
+      actualCostEur: 0,
+      billingStatus: 'not_called',
+    })
+    const billing = billingFromCaughtError(error)
+    expect(billing.billingStatus).toBe('not_called')
+    expect(billing.externalCalls).toBe(0)
+    expect(billing.actualCostEur).toBe(0)
+  })
+
+  it('billing on error: error after an external call started → unknown / null', () => {
+    const error = new ArqweliaProviderError('connection lost mid-call', {
+      externalCalls: 3,
+      actualCostEur: null,
+      billingStatus: 'unknown',
+    })
+    const billing = billingFromCaughtError(error)
+    expect(billing.billingStatus).toBe('unknown')
+    expect(billing.externalCalls).toBe(3)
+    expect(billing.actualCostEur).toBeNull()
+  })
+
+  it('billing on error: officially measured cost → measured + real value', () => {
+    const error = new ArqweliaProviderError('invoice recorded before failure', {
+      externalCalls: 1,
+      actualCostEur: 0.04,
+      billingStatus: 'measured',
+      officialPricingSource: 'https://example.com/pricing',
+    })
+    const billing = billingFromCaughtError(error)
+    expect(billing.billingStatus).toBe('measured')
+    expect(billing.externalCalls).toBe(1)
+    expect(billing.actualCostEur).toBe(0.04)
+    expect(billing.officialPricingSource).toBe('https://example.com/pricing')
+  })
+
+  it('billing on error: generic adapter error → conservative default unknown / 1 / null (never not_called/0/0)', () => {
+    const billing = billingFromCaughtError(new Error('boom'))
+    expect(billing.billingStatus).toBe('unknown')
+    expect(billing.externalCalls).toBe(1)
+    expect(billing.actualCostEur).toBeNull()
+    expect(billing).not.toMatchObject({ billingStatus: 'not_called', externalCalls: 0, actualCostEur: 0 })
+  })
+
+  const FAKE_ERROR_MODULE = `
+export default {
+  id: 'fake-error',
+  model: 'fake-error-v1',
+  supportsImageEditing: true,
+  dryRunSafe: false,
+  dryRunDescription: 'test-only error provider',
+  validateConfiguration() { return { ok: true } },
+  estimateOfficialCost() { return { known: false, note: 'test-only' } },
+  async runSmoke() {
+    throw new Error('adapter exploded mid-call')
+  },
+}
+`
+
+  it('CLI: a generic authorized adapter error is reported as unknown / 1 / null', () => {
+    const fakeDir = tmpOut('aqw-bench-fake-err-')
+    const fakeModule = join(fakeDir, 'fake-error.mjs')
+    writeFileSync(fakeModule, FAKE_ERROR_MODULE)
+    const out = tmpOut('aqw-bench-err-out-')
+    const result = runCli(['--provider', 'fake-error', '--out', out], {
+      ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+      ARQWELIA_BENCHMARK_EXTRA_CANDIDATE_MODULE: fakeModule,
+    })
+    expect(result.status).toBe(0)
+    const { data } = latestReportJson(out)
+    const r = data.result as {
+      billingStatus: string
+      externalCalls: number
+      actualCostEur: number | null
+      error: string
+    }
+    expect(r.billingStatus).toBe('unknown')
+    expect(r.externalCalls).toBe(1)
+    expect(r.actualCostEur).toBeNull()
+    expect(r.error).toContain('adapter exploded mid-call')
+    expect(data.paidCostEur).toBeNull()
+    expect(data.realProviderCalls).toBe(1)
+  })
+
+  // -- round 3: PII-free (final leaks removed) ------------------------------
+
+  it('unreadable image error message is exactly "Image file could not be read" (no path)', () => {
+    const dir = tmpOut('aqw-bench-noex-')
+    const missing = join(dir, 'does-not-exist.jpg')
+    const out = tmpOut('aqw-bench-noex-out-')
+    const result = runCli(['--provider', 'mock', '--image', missing, '--out', out])
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Image file could not be read')
+    expect(result.stderr).not.toContain(missing)
+    expect(result.stderr).not.toContain('does-not-exist')
+    expect(result.stderr).not.toMatch(/could not be read:\s+\S+/)
+  })
+
+  it('report uses --dataset-id (controlled alphanumeric id), never the local filename', async () => {
+    const dir = tmpOut('aqw-bench-dsid-')
+    const jpeg = join(dir, 'my-private-garden.jpg')
+    await writeJpegWithExif(jpeg)
+    const out = tmpOut('aqw-bench-dsid-out-')
+    const result = runCli(['--provider', 'mock', '--image', jpeg, '--dataset-id', 'item001', '--out', out])
+    expect(result.status).toBe(0)
+    const { data } = latestReportJson(out)
+    const image = data.image as { datasetItemId: string; normalizedSha256: string }
+    expect(image.datasetItemId).toBe('item001')
+    expect(image.normalizedSha256).toMatch(/^[a-f0-9]{64}$/)
+
+    const jsonText = readFileSync(latestReportJson(out).path, 'utf8')
+    expect(jsonText).not.toContain('my-private-garden.jpg')
+    expect(jsonText).not.toContain('my-private-garden')
+    expect(jsonText).not.toContain('sourceFileName')
+  })
+
+  it('non-alphanumeric --dataset-id is rejected', () => {
+    const out = tmpOut('aqw-bench-dsid-bad-')
+    const result = runCli(['--provider', 'mock', '--dataset-id', 'bad/id', '--out', out])
+    expect(result.status).toBe(2)
+    expect(result.stderr).toMatch(/Invalid --dataset-id/)
+    expect(result.stderr).not.toContain('bad/id')
   })
 })

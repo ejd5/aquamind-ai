@@ -17,8 +17,12 @@ export type { ArqweliaBenchmarkProvider, SmokeOptions, SmokeResult } from './pro
 export {
   ARQWELIA_BENCHMARK_AUTHORIZED,
   ARQWELIA_BENCHMARK_MAX_BUDGET_EUR,
+  ArqweliaProviderError,
+  billingFromCaughtError,
+  computeGate,
   ensureNoRealCall,
   redactSecrets,
+  registerArqweliaBenchmarkCandidate,
   billingSnapshot,
   billingSummaryLines,
 } from './provider'

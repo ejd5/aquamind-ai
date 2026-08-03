@@ -16,20 +16,42 @@
 import {
   ARQWELIA_BENCHMARK_AUTHORIZED as _AUTHORIZED,
   ARQWELIA_BENCHMARK_MAX_BUDGET_EUR as _BUDGET,
+  ArqweliaProviderError as _ArqweliaProviderError,
+  billingFromCaughtError as _billingFromCaughtError,
+  computeGate as _computeGate,
   ensureNoRealCall as _ensureNoRealCall,
   redactSecrets as _redactSecrets,
   redactedEnvSummary as _redactedEnvSummary,
+  registerArqweliaBenchmarkCandidate as _registerCandidate,
   billingSnapshot as _billingSnapshot,
   billingSummaryLines as _billingSummaryLines,
 } from './candidates-registry.mjs'
 
+/**
+ * The provider adapter receives ONLY the normalized image (or a normalized
+ * data URL), never the raw source buffer and never the user-supplied path.
+ * The raw source is normalized first (via `normalizeImageForAi`) and only the
+ * EXIF-free normalized fields are handed to `runSmoke`.
+ */
 export interface SmokeOptions {
   providerId: string
   model: string
-  /** Absolute or relative path to the (normalized) source photo. Optional. */
-  imagePath?: string
-  /** Prompt of Concept A for the edit request. Optional. */
-  promptConceptA?: string
+  /** EXIF-free normalized image buffer (canonical `normalizeImageForAi` output). */
+  normalizedImageBuffer?: Buffer
+  /** EXIF-free normalized image as a `data:image/jpeg;base64,…` URL. */
+  normalizedImageDataUrl?: string
+  /** MIME type of the normalized image (`image/jpeg`). */
+  normalizedMimeType?: string
+  /** SHA-256 of the normalized image buffer. */
+  normalizedSha256?: string
+  /** Width of the normalized image. */
+  normalizedWidth?: number
+  /** Height of the normalized image. */
+  normalizedHeight?: number
+  /** Prompt version identifier (e.g. `arqwelia-lot2-v1`). */
+  promptVersion?: string
+  /** Sanitized prompt text needed for the call — no free-form user path. */
+  sanitizedPrompt?: string
   /** Directory where artifacts (PNG, JSON, Markdown) are written. */
   outDir: string
   budgetMaxEur: number
@@ -80,6 +102,63 @@ export const ARQWELIA_BENCHMARK_AUTHORIZED: boolean = _AUTHORIZED
 
 /** `Number(ARQWELIA_BENCHMARK_MAX_BUDGET_EUR || 0)`. */
 export const ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: number = _BUDGET
+
+export interface GateComputation {
+  envAuthorized: boolean
+  envBudget: number
+  envGateOpen: boolean
+  effectiveBudget: number
+  realCallAuthorized: boolean
+}
+
+export interface ComputeGateInput {
+  cliBudget?: number | null
+  envAuthorized?: boolean
+  envBudgetRaw?: string | undefined
+}
+
+/**
+ * Budget gate — see `computeGate` in `candidates-registry.mjs` for the exact
+ * rules. The ONLY source of a usable budget is the environment; `--budget` may
+ * only reduce it (an above-ceiling `--budget` is rejected separately by the
+ * CLI). Returns `realCallAuthorized=false` whenever the env gate is closed,
+ * regardless of any `--budget` value.
+ */
+export const computeGate: (input?: ComputeGateInput) => GateComputation = _computeGate
+
+export interface ProviderBillingInfo {
+  externalCalls: number
+  actualCostEur: number | null
+  billingStatus: 'not_called' | 'measured' | 'unknown'
+  officialPricingSource: string | null
+}
+
+export interface ArqweliaProviderErrorCtor {
+  new (message: string, billing?: Partial<ProviderBillingInfo>): Error & {
+    name: string
+    billing: ProviderBillingInfo
+  }
+}
+
+/**
+ * Provider error that transports billing info so a caught error is never
+ * auto-converted into externalCalls=0 / actualCostEur=0 / not_called.
+ */
+export const ArqweliaProviderError: ArqweliaProviderErrorCtor = _ArqweliaProviderError as unknown as ArqweliaProviderErrorCtor
+
+/**
+ * Resolves the billing carried by a caught error. `ArqweliaProviderError` uses
+ * its carried billing; any other error gets the CONSERVATIVE default
+ * (externalCalls=1, actualCostEur=null, billingStatus='unknown') because the
+ * system cannot prove no call was made.
+ */
+export const billingFromCaughtError: (error: unknown) => ProviderBillingInfo = _billingFromCaughtError as unknown as (
+  error: unknown,
+) => ProviderBillingInfo
+
+/** Registers an additional benchmark candidate at runtime (test seam). */
+export const registerArqweliaBenchmarkCandidate: (candidate: ArqweliaBenchmarkProvider) => ArqweliaBenchmarkProvider =
+  _registerCandidate
 
 /**
  * Throws if a real provider call is not allowed:

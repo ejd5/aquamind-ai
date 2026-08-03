@@ -37,8 +37,13 @@ These scenes map directly to Phase 0B (10 photos × Concept A + Concept B).
 - **EXIF / GPS is fine**: the harness normalizes every source photo through
   `normalizeImageForAi()`, which strips EXIF/GPS, rotates, resizes to ≤1600 px
   and re-encodes as JPEG q82. Only the EXIF-free normalized output is ever
-  eligible to reach a third-party provider, and the raw source is never copied
-  into the results dir. You do **not** need to strip metadata beforehand.
+  eligible to reach a third-party provider, the raw source buffer/path is never
+  passed to an adapter, and the raw source is never copied into the results
+  dir. You do **not** need to strip metadata beforehand.
+- **Reports are PII-free**: the local file name is never stored. Each photo is
+  recorded as `datasetItemId` — pass the controlled alphanumeric id with
+  `--dataset-id <id>` (e.g. `--dataset-id item01`), or a truncated hash of the
+  normalized image is used.
 
 ## Photo requirements
 
@@ -53,9 +58,11 @@ You can verify a photo is accepted before benchmarking (requires **Bun**):
 
 ```bash
 bun scripts/benchmark-arqwelia-smoke.mjs --provider mock \
-  --image dataset/photos/01-small-garden.png --out ./benchmark-out
+  --image dataset/photos/01-small-garden.png --dataset-id item01 \
+  --out ./benchmark-out
 ```
 
-Exit `0` with `image=normalized` means the photo was normalized successfully.
+Exit `0` with `image=normalized` means the photo was normalized successfully
+(the report records it as `datasetItemId=item01`, never the file name).
 Exit `1` means the photo could not be normalized (unreadable, unsupported
-format, or corrupted) — check the error message.
+format, or corrupted) — the error never contains the file path.
