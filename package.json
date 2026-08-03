@@ -27,6 +27,7 @@
     "mobile:clean": "rm -rf out .next && node scripts/build-mobile.mjs && npx cap sync",
     "typecheck": "tsc --noEmit",
     "typecheck:tools": "node scripts/typecheck-tools.mjs",
+    "benchmark:smoke": "bun scripts/benchmark-arqwelia-smoke.mjs",
     "test": "vitest run",
     "test:migration": "bash tests/run-billing-migration-test.sh",
     "test:postgresql": "bash tests/check-postgresql-schema.sh",

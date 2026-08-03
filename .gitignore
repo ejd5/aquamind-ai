@@ -80,3 +80,6 @@ server.log
 .zscripts/
 examples/
 mini-services/
+# ARQWELIA Lot 2 — benchmark dataset (photos) and generated reports
+dataset/photos/
+benchmark-out/
