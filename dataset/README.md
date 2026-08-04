@@ -11,6 +11,32 @@ dataset/photos/
 `dataset/photos/` and `benchmark-out/` are gitignored — they must never be
 committed. Only this README is versioned.
 
+## Phase 0A dataset rules (PHASE 0A DATASET MODE: SYNTHETIC ONLY)
+
+Phase 0A is **dry-run by default (retention-only unless the owner arms every
+gate)**. Every dataset item used for Phase 0A MUST satisfy all of these rules:
+
+- **PHASE 0A DATASET MODE: SYNTHETIC ONLY.** Only **synthetic images created
+  for the benchmark** may be used. No real homes, no user photos, no people,
+  no faces, no license plates, no house numbers, no addresses, no GPS
+  coordinates, no identifying filenames.
+- **No people, no faces, no license plates, no readable mailboxes, no house
+  numbers, no addresses.**
+- **No GPS / EXIF location data** (the harness also strips EXIF/GPS during
+  normalization, but a Phase 0A synthetic image must not carry GPS to begin
+  with).
+- **No identifying filenames** — never name a photo after a real owner,
+  address or GPS location (the harness records `datasetItemId`, never the local
+  file name).
+- **Never commit real photos** — `dataset/photos/` is gitignored.
+- **Local retention manifest** — when a Phase 0A item is processed by the
+  CLI (openai provider + image), a NON-versioned `phase0a-manifest.json` is
+  written in the benchmark output dir recording `datasetItemId`,
+  `datasetKind='synthetic'`, `authorizationBasis='synthetic'`,
+  `normalizedSha256`, `noExif`, `noFacesDeclared`, `noPlatesDeclared`,
+  `noHouseNumberDeclared`, `noAddressDeclared`, `noGps`, `date`, `statusA` and
+  `statusB`. The manifest is gitignored via `benchmark-out/`.
+
 ## Expected dataset (10 photos)
 
 The benchmark expects **10 photos** named like `01-small-garden.png`,
@@ -34,12 +60,13 @@ These scenes map directly to Phase 0B (10 photos × Concept A + Concept B).
 ## Privacy — no PII
 
 - **No people, no faces, no license plates, no readable mailboxes.**
-- **EXIF / GPS is fine**: the harness normalizes every source photo through
-  `normalizeImageForAi()`, which strips EXIF/GPS, rotates, resizes to ≤1600 px
-  and re-encodes as JPEG q82. Only the EXIF-free normalized output is ever
-  eligible to reach a third-party provider, the raw source buffer/path is never
-  passed to an adapter, and the raw source is never copied into the results
-  dir. You do **not** need to strip metadata beforehand.
+- **EXIF / GPS is stripped defensively**: the harness normalizes every source
+  photo through `normalizeImageForAi()`, which strips EXIF/GPS, rotates, resizes
+  to ≤1600 px and re-encodes as JPEG q82. Only the EXIF-free normalized output
+  is ever eligible to reach a third-party provider, the raw source buffer/path
+  is never passed to an adapter, and the raw source is never copied into the
+  results dir. Phase 0A synthetic images carry **no GPS / EXIF by construction**;
+  the strip is a defensive backstop, not a license to use located photos.
 - **Reports are PII-free**: the local file name is never stored. Each photo is
   recorded as `datasetItemId` — pass the controlled alphanumeric id with
   `--dataset-id <id>` (e.g. `--dataset-id item01`), or a truncated hash of the

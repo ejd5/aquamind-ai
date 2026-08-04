@@ -6,6 +6,7 @@ import sharp from 'sharp'
 import { describe, expect, it } from 'vitest'
 import {
   arqweliaBenchmarkCandidates,
+  arqweliaBenchmarkDocumentaryCandidates,
   getArqweliaBenchmarkCandidate,
 } from '../scripts/lib/arqwelia-benchmark/candidates'
 import {
@@ -21,6 +22,7 @@ import {
   redactedEnvSummary,
 } from '../scripts/lib/arqwelia-benchmark/provider'
 import { normalizeImageForAi } from '@/lib/images/secure-image'
+import { PHASE0A_RETENTION_CONFIG } from '../scripts/lib/arqwelia-benchmark/phase0a-manifest.mjs'
 
 const CLI = join(process.cwd(), 'scripts/benchmark-arqwelia-smoke.mjs')
 
@@ -41,7 +43,9 @@ function tmpOut(prefix: string): string {
 }
 
 function latestReportJson(dir: string): { path: string; data: Record<string, unknown> } {
-  const json = readdirSync(dir).filter((file) => file.endsWith('.json'))
+  const json = readdirSync(dir).filter(
+    (file) => file.endsWith('.json') && !file.startsWith('phase0a-manifest'),
+  )
   expect(json.length).toBeGreaterThan(0)
   const path = join(dir, json[json.length - 1])
   return { path, data: JSON.parse(readFileSync(path, 'utf8')) }
@@ -62,13 +66,21 @@ async function writeJpegWithExif(
 }
 
 describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
-  it('registers unique candidate ids (nvidia-nim, zai-glm, openai-gpt-image, mock)', () => {
+  it('registers unique executable candidate ids (nvidia-nim, openai-gpt-image, mock) and blocks zai', () => {
     const ids = arqweliaBenchmarkCandidates.map((candidate) => candidate.id)
     expect(new Set(ids).size).toBe(ids.length)
     expect(ids).toEqual(
-      expect.arrayContaining(['nvidia-nim', 'zai-glm', 'openai-gpt-image', 'mock']),
+      expect.arrayContaining(['nvidia-nim', 'openai-gpt-image', 'mock']),
     )
-    expect(arqweliaBenchmarkCandidates).toHaveLength(4)
+    expect(ids).not.toContain('zai-glm')
+    expect(arqweliaBenchmarkCandidates).toHaveLength(3)
+    const zaiDoc = arqweliaBenchmarkDocumentaryCandidates.find(
+      (candidate) => candidate.id === 'zai-glm',
+    )
+    expect(zaiDoc).toBeDefined()
+    expect(zaiDoc!.state).toBe('blocked_missing_capability')
+    expect(zaiDoc!.supportsImageEditing).toBe(false)
+    expect(zaiDoc!.runSmoke).toBeUndefined()
   })
 
   it('defaults to a dry-run posture (no authorization, no budget)', () => {
@@ -76,12 +88,20 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
     expect(ARQWELIA_BENCHMARK_MAX_BUDGET_EUR).toBe(0)
   })
 
-  it('keeps cost UNKNOWN without official pricing for every candidate', () => {
+  it('keeps cost UNKNOWN without official pricing except openai (official gpt-image-2 pricing)', () => {
     for (const candidate of arqweliaBenchmarkCandidates) {
       const cost = candidate.estimateOfficialCost()
-      expect(cost.known).toBe(false)
-      expect(cost.costPerImageEur).toBeUndefined()
-      expect(cost.note).toMatch(/UNKNOWN — TO BE MEASURED IN LOT 0/)
+      if (candidate.id === 'openai-gpt-image') {
+        expect(cost.known).toBe(true)
+        expect(cost.costPerImageEur).toBeNull()
+        expect(cost.officialPricingSource).toBe('https://openai.com/api/pricing/')
+        expect(cost.note).toMatch(/0\.041/)
+        expect(cost.note).toMatch(/NO USD→EUR conversion/)
+      } else {
+        expect(cost.known).toBe(false)
+        expect(cost.costPerImageEur).toBeUndefined()
+        expect(cost.note).toMatch(/UNKNOWN — TO BE MEASURED IN LOT 0/)
+      }
     }
   })
 
@@ -175,7 +195,7 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
 
   it('--budget alone (no env authorized) does NOT unlock a real call', () => {
     const out = tmpOut('aqw-bench-budget-alone-')
-    const result = runCli(['--provider', 'mock', '--out', out, '--budget', '50'])
+    const result = runCli(['--provider', 'mock', '--out', out, '--budget', '1'])
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('DRY RUN — NO EXTERNAL CALL')
@@ -195,7 +215,7 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
 
   it('--budget above the env ceiling is rejected', () => {
     const result = runCli(['--provider', 'mock', '--out', tmpOut('aqw-bench-cap-'), '--budget', '50'], {
-      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '1',
     })
     expect(result.status).toBe(2)
     expect(result.stderr).toMatch(/exceeds ARQWELIA_BENCHMARK_MAX_BUDGET_EUR/)
@@ -203,8 +223,8 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
 
   it('--budget below the env ceiling is allowed but still dry-run without env authorization', () => {
     const out = tmpOut('aqw-bench-below-')
-    const result = runCli(['--provider', 'mock', '--out', out, '--budget', '5'], {
-      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '50',
+    const result = runCli(['--provider', 'mock', '--out', out, '--budget', '1'], {
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
     })
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('DRY RUN — NO EXTERNAL CALL')
@@ -212,13 +232,74 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
     const { data } = latestReportJson(out)
     expect(data.dryRun).toBe(true)
     expect(data.authorized).toBe(false)
-    expect(data.budgetMaxEur).toBe(5)
+    expect(data.budgetMaxEur).toBe(1)
   })
 
   it('--budget <= 0 is rejected', () => {
     const result = runCli(['--provider', 'mock', '--out', tmpOut('aqw-bench-zero-'), '--budget', '0'])
     expect(result.status).toBe(2)
     expect(result.stderr).toMatch(/Invalid --budget value/)
+  })
+
+  // -- round 4: HARD OWNER BUDGET CAP (Phase 0A, maximumBudgetEur = 2) -------
+
+  it('HARD OWNER CAP: envBudget=2, no --budget → effectiveBudget=2 (allowed)', () => {
+    expect(PHASE0A_RETENTION_CONFIG.maximumBudgetEur).toBe(2)
+    const out = tmpOut('aqw-bench-owner2-')
+    const result = runCli(['--provider', 'mock', '--out', out], {
+      ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
+    })
+    expect(result.status).toBe(0)
+    const { data } = latestReportJson(out)
+    expect(data.budgetMaxEur).toBe(2)
+    expect(data.dryRun).toBe(true)
+    expect(data.realProviderCalls).toBe(0)
+  })
+
+  it('HARD OWNER CAP: envBudget=2, --budget=1 → effectiveBudget=1 (allowed)', () => {
+    const out = tmpOut('aqw-bench-owner2b-')
+    const result = runCli(['--provider', 'mock', '--out', out, '--budget', '1'], {
+      ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
+    })
+    expect(result.status).toBe(0)
+    const { data } = latestReportJson(out)
+    expect(data.budgetMaxEur).toBe(1)
+    expect(data.realProviderCalls).toBe(0)
+  })
+
+  it('HARD OWNER CAP: envBudget=2, --budget=3 → refusal (exit non-zero)', () => {
+    const result = runCli(['--provider', 'mock', '--out', tmpOut('aqw-bench-owner2c-'), '--budget', '3'], {
+      ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
+    })
+    expect(result.status).toBe(2)
+    expect(result.stderr).toMatch(/exceeds ARQWELIA_BENCHMARK_MAX_BUDGET_EUR/)
+    expect(result.stderr).toMatch(/REDUCE the budget/)
+  })
+
+  it('HARD OWNER CAP: envBudget=10, no --budget → refusal (env exceeds owner cap)', () => {
+    const result = runCli(['--provider', 'mock', '--out', tmpOut('aqw-bench-owner2d-')], {
+      ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+    })
+    expect(result.status).toBe(2)
+    expect(result.stderr).toContain('(10)')
+    expect(result.stderr).toMatch(
+      new RegExp(`owner budget cap \\(${PHASE0A_RETENTION_CONFIG.maximumBudgetEur} EUR\\)`),
+    )
+  })
+
+  it('HARD OWNER CAP: envBudget=10, --budget=2 → refusal ALSO (env config exceeds owner cap)', () => {
+    const result = runCli(['--provider', 'mock', '--out', tmpOut('aqw-bench-owner2e-'), '--budget', '2'], {
+      ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+    })
+    expect(result.status).toBe(2)
+    expect(result.stderr).toMatch(
+      new RegExp(`owner budget cap \\(${PHASE0A_RETENTION_CONFIG.maximumBudgetEur} EUR\\)`),
+    )
   })
 
   // -- reliable billing metrics ---------------------------------------------
@@ -235,7 +316,7 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
     expect(snap.billingStatus).toBe('not_called')
 
     const out = tmpOut('aqw-bench-nonim-')
-    const result = runCli(['--provider', 'zai-glm', '--out', out])
+    const result = runCli(['--provider', 'openai-gpt-image', '--out', out])
     expect(result.status).toBe(0)
     const { data } = latestReportJson(out)
     const r = data.result as {
@@ -527,21 +608,23 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
     expect(gate.realCallAuthorized).toBe(true)
   })
 
-  it('computeGate/CLI: auth=true, envBudget=10, --budget 15 → REJECT (cli above env ceiling)', () => {
-    const gate = computeGate({ cliBudget: 15, envAuthorized: true, envBudgetRaw: '10' })
-    expect(gate.effectiveBudget).toBe(10)
+  it('computeGate/CLI: auth=true, --budget 15 above the env ceiling → REJECT (cli above env ceiling)', () => {
+    // computeGate alone does not enforce the Phase 0A owner cap — that is the
+    // CLI's job. The env ceiling check still applies here.
+    const gate = computeGate({ cliBudget: 15, envAuthorized: true, envBudgetRaw: '1' })
+    expect(gate.effectiveBudget).toBe(1)
     const out = tmpOut('aqw-bench-rej15-')
     const result = runCli(['--provider', 'mock', '--out', out, '--budget', '15'], {
       ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
-      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '1',
     })
     expect(result.status).toBe(2)
     expect(result.stderr).toMatch(/exceeds ARQWELIA_BENCHMARK_MAX_BUDGET_EUR/)
   })
 
-  it('CRITICAL GATE: authorized + envBudget=0 + --budget 5 stays DRY RUN, realCallAuthorized=false', () => {
+  it('CRITICAL GATE: authorized + envBudget=0 + --budget 1 stays DRY RUN, realCallAuthorized=false', () => {
     const out = tmpOut('aqw-bench-gate-zero-')
-    const result = runCli(['--provider', 'mock', '--out', out, '--budget', '5'], {
+    const result = runCli(['--provider', 'mock', '--out', out, '--budget', '1'], {
       ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
       ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '0',
     })
@@ -557,20 +640,57 @@ describe('ARQWELIA Lot 2 benchmark harness (A1 round 3)', () => {
     expect(data.budgetMaxEur).toBe(0)
   })
 
-  it('auth=true + envBudget=10 + --budget 5 is technically possible but the adapter stays NOT IMPLEMENTED (no actual call)', () => {
+  it('authorized + budget WITHOUT phase0aExecute stays a DRY RUN (third lock missing)', () => {
     const out = tmpOut('aqw-bench-tech-')
-    const result = runCli(['--provider', 'zai-glm', '--out', out, '--budget', '5'], {
+    const result = runCli(['--provider', 'openai-gpt-image', '--out', out, '--budget', '1'], {
       ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
-      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
     })
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('realCallAuthorized=true')
-    expect(result.stdout).toContain('result=not-implemented (awaiting Gate)')
+    expect(result.stdout).toContain('phase0aExecute=false')
+    expect(result.stdout).toContain('DRY RUN — NO EXTERNAL CALL')
     expect(result.stdout).toContain('REAL_PROVIDER_CALLS=0, PAID_COST=0')
     const { data } = latestReportJson(out)
     const r = data.result as { billingStatus: string; externalCalls: number }
     expect(r.billingStatus).toBe('not_called')
     expect(r.externalCalls).toBe(0)
+  })
+
+  it('all three env gates open WITHOUT a key: refused BEFORE upsert/reserve — no call, not_called', async () => {
+    const srcDir = tmpOut('aqw-bench-3gates-img-')
+    const imagePath = join(srcDir, 'source.jpg')
+    const jpeg = await sharp({
+      create: { width: 640, height: 480, channels: 3, background: { r: 40, g: 120, b: 200 } },
+    })
+      .jpeg()
+      .toBuffer()
+    writeFileSync(imagePath, jpeg)
+    const out = tmpOut('aqw-bench-3gates-')
+    const result = runCli(
+      ['--provider', 'openai-gpt-image', '--image', imagePath, '--out', out, '--concept', 'A', '--dataset-id', 'item001', '--dataset-kind', 'synthetic'],
+      {
+        ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
+        ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
+        ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: 'true',
+        // Explicitly empty so a parent-environment key can never leak in.
+        OPENAI_API_KEY: '',
+        OPENAI_BASE_URL: 'https://api.openai.com/v1',
+      },
+    )
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('realCallAuthorized=true')
+    expect(result.stdout).toContain('phase0aExecute=true')
+    expect(result.stdout).toContain('mode=smoke')
+    expect(result.stdout).not.toContain('DRY RUN — NO EXTERNAL CALL')
+    expect(result.stdout).toContain('OPENAI_API_KEY is required when executeAuthorized')
+    expect(result.stdout).toContain('REAL_PROVIDER_CALLS=0, PAID_COST=0')
+    const { data } = latestReportJson(out)
+    const r = data.result as { billingStatus: string; externalCalls: number }
+    expect(r.billingStatus).toBe('not_called')
+    expect(r.externalCalls).toBe(0)
+    expect(data.realProviderCalls).toBe(0)
+    expect(data.paidCostEur).toBe(0)
   })
 
   // -- round 3: provider receives ONLY the normalized image -----------------
@@ -759,7 +879,8 @@ export default {
     const out = tmpOut('aqw-bench-err-out-')
     const result = runCli(['--provider', 'fake-error', '--out', out], {
       ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
-      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '10',
+      ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
+      ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: 'true',
       ARQWELIA_BENCHMARK_EXTRA_CANDIDATE_MODULE: fakeModule,
     })
     expect(result.status).toBe(0)
