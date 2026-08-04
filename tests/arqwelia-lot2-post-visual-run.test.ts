@@ -13,6 +13,7 @@
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { spawnSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 
 const VERSIONED_NB = join(process.cwd(), 'notebooks/arqwelia-sdxl-inpainting-free-gpu.ipynb')
@@ -143,11 +144,17 @@ describe('ARQWELIA Lot 2 Round 6 — fail-closed CLIP with BOTH SDXL tokenizers'
     }
   })
 
-  it('NO word-count fallback (except Exception -> len(text.split()) removed)', () => {
+  it('NO word-count fallback (len(text.split()) removed from the tokenizer helper)', () => {
     for (const p of NOTEBOOKS) {
       const { code } = loadNotebook(p)
+      // The CLIP tokenizer helper must never fall back to a word count.
       expect(code).not.toContain('len(text.split())')
-      expect(code).not.toMatch(/except Exception:\s*\n\s*return/)
+      // clip_token_counts must not swallow tokenizer exceptions.
+      expect(code).not.toContain('except Exception:\n        return len(')
+      // A general `except Exception: return` is allowed ONLY inside the env
+      // version helper _ver (returns "unknown"), never in clip_token_counts.
+      const clipBlock = code.slice(code.indexOf('def clip_token_counts('), code.indexOf('def clip_token_counts(') + 700)
+      expect(clipBlock).not.toMatch(/except Exception/)
     }
   })
 
@@ -176,9 +183,9 @@ describe('ARQWELIA Lot 2 Round 6 — effective inference steps', () => {
   it('computes effectiveInferenceSteps = min(int(steps*strength), steps)', () => {
     for (const p of NOTEBOOKS) {
       const { code } = loadNotebook(p)
-      expect(code).toContain(
-        'effectiveInferenceSteps = min(int(configuredInferenceSteps * strength), configuredInferenceSteps)',
-      )
+      // Accept the multi-line form (free GPU, per Hotfix 6.1) or the
+      // single-line form (Kaggle) — both compute min(int(steps*strength), steps).
+      expect(code).toMatch(/effectiveInferenceSteps = min\([^)]*int\(configuredInferenceSteps \* strength\)[^)]*configuredInferenceSteps[^)]*\)/)
       expect(code).toContain('"configuredInferenceSteps": 35')
       expect(code).toContain('"strength": 0.99')
     }
@@ -229,8 +236,9 @@ describe('ARQWELIA Lot 2 Round 6 — honest failure report', () => {
   it('error report has no full traceback / no secret', () => {
     for (const p of NOTEBOOKS) {
       const { code } = loadNotebook(p)
-      expect(code).toContain('generationError = str(exc)')
+      expect(code).toContain('sanitize_generation_error(exc)')
       expect(code).not.toContain('traceback.format_exc()')
+      expect(code).not.toContain('import traceback')
     }
   })
 })
@@ -339,6 +347,170 @@ describe('ARQWELIA Lot 2 Round 6 — model/revision pinned, single pipe, CUDA ga
       const pipeIdx = code.indexOf('result = pipe(')
       expect(cudaIdx).toBeGreaterThan(-1)
       expect(pipeIdx).toBeGreaterThan(cudaIdx)
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Hotfix 6.1
+// ---------------------------------------------------------------------------
+
+describe('ARQWELIA Lot 2 Hotfix 6.1 — every Python cell compiles (exec mode)', () => {
+  function pythonCompiles(source: string): boolean {
+    // Uses python3's compile(..., mode="exec") for real syntax validation.
+    const res = spawnSync('python3', ['-c', 'import sys; compile(sys.stdin.read(), "<cell>", "exec")'], {
+      input: source,
+      encoding: 'utf8',
+    })
+    return res.status === 0
+  }
+
+  it('each code cell parses with compile(..., mode="exec") — no mangled/comment cells', () => {
+    for (const p of NOTEBOOKS) {
+      const nb = JSON.parse(readFileSync(p, 'utf8'))
+      for (let i = 0; i < nb.cells.length; i += 1) {
+        const c = nb.cells[i]
+        if (c.cell_type !== 'code') continue
+        const source = c.source.join('')
+        expect(source.trim().length, `cell ${i} of ${p} is empty`).toBeGreaterThan(0)
+        // A cell containing any IPython/shell magic (! or % line) is not plain
+        // Python — skip python-compile for it (only the pip-install cell does).
+        if (source.split('\n').some((l: string) => /^\s*[!%]/.test(l))) continue
+        expect(pythonCompiles(source), `cell ${i} of ${p} failed python compile`).toBe(true)
+      }
+    }
+  })
+
+  it('no cell was accidentally turned into a comment (every code cell has real code lines)', () => {
+    for (const p of NOTEBOOKS) {
+      const nb = JSON.parse(readFileSync(p, 'utf8'))
+      for (let i = 0; i < nb.cells.length; i += 1) {
+        const c = nb.cells[i]
+        if (c.cell_type !== 'code') continue
+        const lines = c.source.join('').split('\n').filter((l: string) => l.trim() !== '')
+        const realLines = lines.filter((l: string) => !/^\s*#/.test(l) && !/^\s*[!%]/.test(l))
+        expect(realLines.length, `cell ${i} of ${p} has no real code`).toBeGreaterThan(0)
+      }
+    }
+  })
+})
+
+describe('ARQWELIA Lot 2 Hotfix 6.1 — linear flow + order checks', () => {
+  it('configuredInferenceSteps/strength are defined BEFORE effectiveInferenceSteps use', () => {
+    for (const p of NOTEBOOKS) {
+      const { code } = loadNotebook(p)
+      const cfgDef = code.indexOf('configuredInferenceSteps = POC_PARAMS')
+      const strDef = code.indexOf('strength = POC_PARAMS')
+      const effUse = code.indexOf('effectiveInferenceSteps = min(')
+      expect(cfgDef).toBeGreaterThan(-1)
+      expect(strDef).toBeGreaterThan(-1)
+      expect(effUse).toBeGreaterThan(strDef)
+      expect(effUse).toBeGreaterThan(cfgDef)
+    }
+  })
+
+  it('restore block (mask_orig, final_output) is defined BEFORE metrics and save', () => {
+    for (const p of NOTEBOOKS) {
+      const { code } = loadNotebook(p)
+      const maskOrigDef = code.indexOf('mask_orig = ')
+      const finalOutputDef = code.indexOf('final_output = ')
+      const metricsIdx = code.indexOf('finalCompositeUnchangedPixelRatioOutsideMask')
+      const saveIdx = code.indexOf('final_output.save(')
+      expect(maskOrigDef).toBeGreaterThan(-1)
+      expect(finalOutputDef).toBeGreaterThan(-1)
+      expect(metricsIdx).toBeGreaterThan(finalOutputDef)
+      expect(saveIdx).toBeGreaterThan(finalOutputDef)
+    }
+  })
+
+  it('canvas_composite is defined before it is saved', () => {
+    for (const p of NOTEBOOKS) {
+      const { code } = loadNotebook(p)
+      const defIdx = code.indexOf('canvas_composite = ')
+      const saveIdx = code.indexOf('canvas_composite.save(')
+      expect(defIdx).toBeGreaterThan(-1)
+      expect(saveIdx).toBeGreaterThan(defIdx)
+    }
+  })
+
+  it('the free GPU notebook restore block PRESERVES the original aspect (1536x1024)', () => {
+    const { code } = loadNotebook(VERSIONED_NB)
+    expect(code).toContain('final_output = Image.composite(')
+    expect(code).toContain('mask_orig = mask.resize(')
+    expect(code).toContain('assert final_output.size == (1536, 1024)')
+  })
+
+  it('forbids legacy variable names in BOTH notebooks', () => {
+    for (const p of NOTEBOOKS) {
+      const { code } = loadNotebook(p)
+      for (const legacy of ['changed_inside', 'unchanged_outside', 'positive_tokens', 'negative_tokens']) {
+        expect(code).not.toContain(legacy)
+      }
+    }
+  })
+})
+
+describe('ARQWELIA Lot 2 Hotfix 6.1 — Kaggle environment preflight', () => {
+  const { code } = loadNotebook(KAGGLE_NB)
+
+  it('reads dependency versions via importlib.metadata', () => {
+    expect(code).toContain('import importlib.metadata as _im')
+    for (const v of ['torchVersion', 'diffusersVersion', 'transformersVersion', 'accelerateVersion', 'pillowVersion', 'numpyVersion']) {
+      expect(code).toContain(v)
+    }
+  })
+
+  it('preflight happens BEFORE the generation gate increment', () => {
+    const preflightIdx = code.indexOf('environment preflight ok')
+    const gateIdx = code.indexOf('generation_attempts >= AUTHORIZED_GENERATIONS')
+    const incIdx = code.indexOf('generation_attempts += 1')
+    expect(preflightIdx).toBeGreaterThan(-1)
+    expect(incIdx).toBeGreaterThan(preflightIdx)
+    expect(incIdx).toBeGreaterThan(gateIdx)
+  })
+
+  it('checks padding_mask_crop in the pipeline signature and VAE API callables', () => {
+    expect(code).toContain('inspect.signature(pipe.__call__)')
+    expect(code).toContain('padding_mask_crop" not in pipe_signature.parameters')
+    expect(code).toContain('callable(getattr(pipe.vae, "enable_slicing", None))')
+    expect(code).toContain('callable(getattr(pipe.vae, "enable_tiling", None))')
+  })
+
+  it('versions are added to BOTH success and failure reports', () => {
+    expect(code).toContain('"pythonVersion": pythonVersion')
+    // failure report also has versions
+    const failIdx = code.indexOf('generationError = sanitize_generation_error(exc)')
+    expect(failIdx).toBeGreaterThan(-1)
+    const after = code.slice(failIdx)
+    expect(after).toContain('"pythonVersion": pythonVersion')
+  })
+})
+
+describe('ARQWELIA Lot 2 Hotfix 6.1 — sanitized generation error', () => {
+  it('both notebooks define sanitize_generation_error (masks sk-/nvapi-/hf_/token, <=1000 chars)', () => {
+    for (const p of NOTEBOOKS) {
+      const { code } = loadNotebook(p)
+      expect(code).toContain('def sanitize_generation_error(exc):')
+      expect(code).toContain('(sk-|nvapi-|hf_)')
+      expect(code).toContain('token=')
+      expect(code).toContain('[:1000]')
+    }
+  })
+
+  it('the sanitizer is DEFINED before any generation can use it', () => {
+    for (const p of NOTEBOOKS) {
+      const { code } = loadNotebook(p)
+      const defIdx = code.indexOf('def sanitize_generation_error(exc):')
+      const useIdx = code.indexOf('sanitize_generation_error(exc)')
+      expect(defIdx).toBeGreaterThan(-1)
+      expect(useIdx).toBeGreaterThan(defIdx)
+    }
+  })
+
+  it('error reports never embed a full traceback', () => {
+    for (const p of NOTEBOOKS) {
+      expect(loadNotebook(p).code).not.toContain('traceback.format_exc()')
+      expect(loadNotebook(p).code).not.toContain('import traceback')
     }
   })
 })
