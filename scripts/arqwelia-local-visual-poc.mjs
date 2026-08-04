@@ -44,6 +44,7 @@ import {
   buildMockVisualBrief,
 } from '../src/lib/arqwelia/visual/deepseek-visual-planner.ts'
 import { validateArqweliaInpaintingMask } from '../src/lib/arqwelia/visual/mask-validator.ts'
+import { prepareArqweliaInpaintingCanvas } from '../src/lib/arqwelia/visual/canvas-prep.ts'
 import { ArqweliaComfyUiLocalClient } from '../src/lib/arqwelia/visual/comfyui-local-client.ts'
 import { ArqweliaComfyUiInpaintingEngine } from '../src/lib/arqwelia/visual/comfyui-inpainting-engine.ts'
 
@@ -213,6 +214,10 @@ async function run() {
   console.log(`image=normalized (${normalizedImage.width}x${normalizedImage.height}, sha256=${normalizedImage.sha256.slice(0, 12)}…)`)
   console.log(`mask=normalized (${normalizedMask.width}x${normalizedMask.height}, sha256=${normalizedMask.sha256.slice(0, 12)}…)`)
 
+  // 1024x1024 working canvas: shared proportional transform for source + mask,
+  // mask re-validated AFTER the transform (throws on an invalid mask).
+  const canvas = await prepareArqweliaInpaintingCanvas(normalizedImage.buffer, normalizedMask.buffer)
+  const canvasMapping = canvas.mapping
   const maskValidation = validateArqweliaInpaintingMask(
     normalizedMask.pixels,
     normalizedMask.width,
@@ -225,6 +230,11 @@ async function run() {
     process.exit(1)
   }
   console.log(`mask=valid (maskedRatio=${maskValidation.maskedRatio.toFixed(3)})`)
+  console.log(
+    `canvas=prepared (${canvas.width}x${canvas.height}, scale=${canvasMapping.scale.toFixed(4)}, ` +
+      `offset=(${canvasMapping.offsetX},${canvasMapping.offsetY}), ` +
+      `original=${canvasMapping.originalWidth}x${canvasMapping.originalHeight})`,
+  )
 
   // -- planner --------------------------------------------------------------
   let visualBrief
@@ -287,10 +297,10 @@ async function run() {
       externalPaidCalls: 0,
       providerCostEur: 0,
       outputPath,
-      width: normalizedImage.width,
-      height: normalizedImage.height,
-      sourceSha256: normalizedImage.sha256,
-      maskSha256: normalizedMask.sha256,
+      width: 64,
+      height: 64,
+      sourceSha256: canvas.imageSha256,
+      maskSha256: canvas.maskSha256,
       durationMs: 0,
     }
   } else if (!execute) {
@@ -305,8 +315,8 @@ async function run() {
       outputPath: null,
       width: null,
       height: null,
-      sourceSha256: normalizedImage.sha256,
-      maskSha256: normalizedMask.sha256,
+      sourceSha256: canvas.imageSha256,
+      maskSha256: canvas.maskSha256,
       durationMs: 0,
       error: 'dry run — set ARQWELIA_LOCAL_VISUAL_EXECUTE=true to run a real local generation',
     }
@@ -315,8 +325,19 @@ async function run() {
     // Real local ComfyUI generation: exactly ONE /prompt, no retry.
     const engine = new ArqweliaComfyUiInpaintingEngine({})
     result = await engine.generateConcept({
-      normalizedImage,
-      normalizedMask,
+      normalizedImage: {
+        buffer: canvas.imageBuffer,
+        mimeType: 'image/png',
+        width: canvas.width,
+        height: canvas.height,
+        sha256: canvas.imageSha256,
+      },
+      normalizedMask: {
+        buffer: canvas.maskBuffer,
+        width: canvas.width,
+        height: canvas.height,
+        sha256: canvas.maskSha256,
+      },
       visualBrief,
       concept: args.concept,
       datasetItemId: args.datasetId,
@@ -345,10 +366,19 @@ async function run() {
     datasetId: args.datasetId,
     planner: args.planner,
     engine: args.engine,
-    sourceSha256: normalizedImage.sha256,
-    maskSha256: normalizedMask.sha256,
+    sourceSha256: canvas.imageSha256,
+    maskSha256: canvas.maskSha256,
     maskMaskedRatio: maskValidation.maskedRatio,
-    image: { width: normalizedImage.width, height: normalizedImage.height },
+    image: { width: canvas.width, height: canvas.height },
+    canvasMapping: {
+      scale: canvasMapping.scale,
+      offsetX: canvasMapping.offsetX,
+      offsetY: canvasMapping.offsetY,
+      originalWidth: canvasMapping.originalWidth,
+      originalHeight: canvasMapping.originalHeight,
+      workingWidth: canvasMapping.workingWidth,
+      workingHeight: canvasMapping.workingHeight,
+    },
     visualBrief: {
       version: visualBrief.version,
       concept: visualBrief.concept,
@@ -387,9 +417,10 @@ async function run() {
     `- dataset-id: ${args.datasetId}`,
     `- planner: ${args.planner}`,
     `- engine: ${args.engine}`,
-    `- source sha256: ${normalizedImage.sha256}`,
-    `- mask sha256: ${normalizedMask.sha256}`,
+    `- source sha256 (canvas): ${canvas.imageSha256}`,
+    `- mask sha256 (canvas): ${canvas.maskSha256}`,
     `- mask masked ratio: ${maskValidation.maskedRatio.toFixed(3)}`,
+    `- canvas: ${canvas.width}x${canvas.height} (scale=${canvasMapping.scale.toFixed(4)}, offset=${canvasMapping.offsetX},${canvasMapping.offsetY}, original=${canvasMapping.originalWidth}x${canvasMapping.originalHeight})`,
     `- status: ${result.status}`,
     `- prompt id: ${result.promptId ?? 'null'}`,
     `- external paid calls: ${result.externalPaidCalls}`,

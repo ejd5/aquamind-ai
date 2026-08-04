@@ -44,12 +44,22 @@ export interface ArqweliaVisualGenerateInput {
   strength?: number
 }
 
+export type ArqweliaVisualGenerateStatus =
+  | 'not_run'
+  | 'preflight_failed'
+  | 'queued'
+  | 'processing'
+  | 'succeeded'
+  | 'failed'
+  | 'timed_out'
+  | 'interrupted'
+
 export interface ArqweliaVisualGenerateResult {
   provider: 'comfyui-local'
   engine: 'sdxl-inpainting'
   workflowVersion: string
   promptId: string | null
-  status: 'succeeded' | 'failed' | 'not_run'
+  status: ArqweliaVisualGenerateStatus
   externalPaidCalls: 0
   providerCostEur: 0
   outputPath: string | null
@@ -59,6 +69,8 @@ export interface ArqweliaVisualGenerateResult {
   maskSha256: string
   durationMs: number
   error?: string
+  timedOut?: boolean
+  interrupted?: boolean
 }
 
 export interface ArqweliaVisualEngine {

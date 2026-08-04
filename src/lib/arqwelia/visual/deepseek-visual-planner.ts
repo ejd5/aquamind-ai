@@ -71,31 +71,88 @@ export type ArqweliaVisualPlannerInput = z.infer<typeof arqweliaVisualPlannerInp
 export const arqweliaPlannerInputSchema = arqweliaVisualPlannerInputSchema
 
 // ---------------------------------------------------------------------------
-// VisualBrief schema (strict output).
+// VisualBrief closed vocabularies (arrays must use closed enums so DeepSeek can
+// only pick from the controlled set — it can never inject a new node, workflow,
+// filename, URL, path or command).
 // ---------------------------------------------------------------------------
 
-export const arqweliaVisualBriefSchema = z.object({
-  version: z.literal('arqwelia-visual-brief-v1'),
-  concept: z.enum(ARQWELIA_CONCEPTS),
-  sceneType: z.literal('residential_garden_pool_inpainting'),
-  pool: z.object({
+export const ARQWELIA_BRIEF_PRESERVE_VALUES = [
+  'house_architecture',
+  'camera_perspective',
+  'boundary_fences',
+  'mature_trees',
+  'unmasked_pixels',
+  'no_people_in_output',
+  'no_text_or_logos',
+  'no_extra_buildings',
+  'exactly_one_pool',
+] as const
+
+export const ARQWELIA_BRIEF_ADD_VALUES = [
+  'realistic_in_ground_pool',
+  'natural_stone_coping',
+  'poured_concrete_coping',
+  'decking_coping',
+  'mediterranean_landscaping',
+  'modern_landscaping',
+  'cottage_landscaping',
+  'tropical_landscaping',
+  'natural_stone_patio_near_pool',
+  'wooden_deck_near_pool',
+  'concrete_patio_near_pool',
+  'soft_planted_edges',
+] as const
+
+export const ARQWELIA_BRIEF_NEGATIVE_VALUES = [
+  'people',
+  'text',
+  'logo',
+  'house_distortion',
+  'extra_buildings',
+  'duplicate_pool',
+  'floating_objects',
+  'unrealistic_reflections',
+  'water_overflow',
+  'construction_machinery',
+] as const
+
+// ---------------------------------------------------------------------------
+// VisualBrief schema (STRICT output — unknown keys must raise a ZodError, not
+// be silently stripped).
+// ---------------------------------------------------------------------------
+
+const poolSchema = z
+  .object({
     shape: z.enum(ARQWELIA_POOL_SHAPES),
     estimatedDimensions: z.enum(ARQWELIA_POOL_DIMENSIONS),
     placement: z.enum(['central_open_lawn', 'corner_of_garden', 'along_fence']),
     orientation: z.enum(['parallel_to_house', 'perpendicular_to_house', 'diagonal']),
-  }),
-  preserve: z.array(z.string()).min(1).max(16),
-  add: z.array(z.string()).min(1).max(16),
-  negative: z.array(z.string()).min(1).max(16),
-  inpaintingPrompt: z.string().min(1).max(4000),
-  negativePrompt: z.string().min(1).max(2000),
-  recommended: z.object({
+  })
+  .strict()
+
+const recommendedSchema = z
+  .object({
     steps: z.number().int().min(15).max(35),
     cfg: z.number().min(4).max(10),
     strength: z.number().min(0.55).max(0.95),
     seed: z.number().int().min(0).max(4294967295),
-  }),
-})
+  })
+  .strict()
+
+export const arqweliaVisualBriefSchema = z
+  .object({
+    version: z.literal('arqwelia-visual-brief-v1'),
+    concept: z.enum(ARQWELIA_CONCEPTS),
+    sceneType: z.literal('residential_garden_pool_inpainting'),
+    pool: poolSchema,
+    preserve: z.array(z.enum(ARQWELIA_BRIEF_PRESERVE_VALUES)).min(1).max(16),
+    add: z.array(z.enum(ARQWELIA_BRIEF_ADD_VALUES)).min(1).max(16),
+    negative: z.array(z.enum(ARQWELIA_BRIEF_NEGATIVE_VALUES)).min(1).max(16),
+    inpaintingPrompt: z.string().min(1).max(4000),
+    negativePrompt: z.string().min(1).max(2000),
+    recommended: recommendedSchema,
+  })
+  .strict()
 
 export type ArqweliaVisualBrief = z.infer<typeof arqweliaVisualBriefSchema>
 
@@ -137,7 +194,7 @@ export const ARQWELIA_VISUAL_BRIEF_VERSION = 'arqwelia-visual-brief-v1'
 
 export function buildMockVisualBrief(input: ArqweliaVisualPlannerInput): ArqweliaVisualBrief {
   arqweliaPlannerInputSchema.parse(input)
-  const preserve = [
+  const preserve: Array<(typeof ARQWELIA_BRIEF_PRESERVE_VALUES)[number]> = [
     'house_architecture',
     'camera_perspective',
     'boundary_fences',
@@ -156,7 +213,7 @@ export function buildMockVisualBrief(input: ArqweliaVisualPlannerInput): Arqweli
   }
   const unique = [...new Set(preserve)]
 
-  const add = [
+  const add: Array<(typeof ARQWELIA_BRIEF_ADD_VALUES)[number]> = [
     'realistic_in_ground_pool',
     `${input.copingMaterial}_coping`,
     `${input.gardenStyle}_landscaping`,
@@ -164,7 +221,7 @@ export function buildMockVisualBrief(input: ArqweliaVisualPlannerInput): Arqweli
     'soft_planted_edges',
   ]
 
-  const negative = [
+  const negative: Array<(typeof ARQWELIA_BRIEF_NEGATIVE_VALUES)[number]> = [
     'people',
     'text',
     'logo',
@@ -178,7 +235,7 @@ export function buildMockVisualBrief(input: ArqweliaVisualPlannerInput): Arqweli
   ]
 
   const inpaintingPrompt =
-    `Photorealistic in-ground swimming pool added to a residential front garden. ` +
+    `Photorealistic in-ground swimming pool added to a residential rear garden. ` +
     `Pool shape: ${input.poolShape}. Pool dimensions: ${input.poolDimensions}. ` +
     `Garden style: ${input.gardenStyle}. Coping: ${input.copingMaterial}. ` +
     `Terrace: ${input.terraceTreatment}. Budget range: ${input.budgetRange}. ` +
@@ -269,7 +326,6 @@ export interface DeepSeekPlannerResult {
   brief: ArqweliaVisualBrief
   mode: 'mock' | 'api'
   callsMade: number
-  rawText?: string
 }
 
 /**
@@ -364,7 +420,9 @@ export async function callDeepSeekVisualPlanner(
     throw new Error('DeepSeek planner: response missing choices[0].message.content')
   }
   const brief = parseVisualBriefJson(content)
-  return { brief, mode: 'api', callsMade: 1, rawText: content }
+  // rawText is intentionally NOT returned in the public result (no unvalidated
+  // model text may leave the planner).
+  return { brief, mode: 'api', callsMade: 1 }
 }
 
 // ---------------------------------------------------------------------------

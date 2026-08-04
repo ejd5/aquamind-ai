@@ -2,12 +2,14 @@
  * AQWELIA Lot 2 — local ComfyUI client (loopback ONLY).
  *
  * Encapsulates the ComfyUI local server routes needed by the POC:
- *   POST /upload/image
- *   POST /upload/mask
+ *   POST /upload/image            (source image)
+ *   POST /upload/image            (mask image — the POC does NOT use /upload/mask)
  *   POST /prompt
  *   GET  /history/{prompt_id}
  *   GET  /view
  *   GET  /system_stats
+ *   GET  /object_info/{class_type} (read-only preflight)
+ *   GET  /models/checkpoints       (read-only preflight)
  *   POST /interrupt
  *
  * SECURITY:
@@ -16,6 +18,9 @@
  *   - HTTPS to an external host, LAN non-loopback IPs, public domains, Comfy
  *     Cloud, userinfo (username/password), query strings, fragments and
  *     redirects to an external domain are all REFUSED.
+ *   - EVERY request uses `redirect: 'error'` so a 3xx redirect is refused
+ *     (no silent follow to an external domain, and the upload body is never
+ *     re-sent to a different host).
  *   - No API key is needed for the local server. No network key is ever read.
  *
  * OPERATION:
@@ -24,8 +29,6 @@
  *   - one submitted /prompt = one generation, never auto-resubmitted;
  *   - no automatic generation retry.
  */
-
-import { z } from 'zod'
 
 export const COMFYUI_ALLOWED_BASE_URLS = Object.freeze([
   'http://127.0.0.1:8188',
@@ -39,6 +42,17 @@ export const COMFYUI_MAX_POLL_ATTEMPTS = 60
 export const COMFYUI_POLL_INTERVAL_MS = 1000
 export const COMFYUI_MAX_UPLOAD_BYTES = 64 * 1024 * 1024
 export const COMFYUI_MAX_VIEW_BYTES = 64 * 1024 * 1024
+
+export const COMFYUI_REQUIRED_OBJECT_INFO = Object.freeze([
+  'CheckpointLoaderSimple',
+  'VAEEncodeForInpaint',
+  'LoadImage',
+  'LoadImageMask',
+  'KSampler',
+  'VAEDecode',
+  'ImageCompositeMasked',
+  'SaveImage',
+])
 
 export interface ArqweliaComfyUiClientOptions {
   baseUrl?: string
@@ -123,6 +137,15 @@ export interface ComfyUiViewResult {
   mimeType: string
 }
 
+export interface ArqweliaComfyUiPreflightReport {
+  reachable: boolean
+  objectInfoAvailable: boolean
+  objectInfoMissing: string[]
+  checkpointAvailable: boolean
+  checkpointName: string | null
+  error?: string
+}
+
 /**
  * Local ComfyUI client. Every method is network-lazy: the client is only ever
  * constructed against an allowlisted loopback base URL, and no request is made
@@ -153,6 +176,7 @@ export class ArqweliaComfyUiLocalClient {
       return await this.doFetch(`${this.baseUrl}${path}`, {
         method,
         signal: controller.signal,
+        redirect: 'error',
         ...init,
       })
     } finally {
@@ -172,26 +196,97 @@ export class ArqweliaComfyUiLocalClient {
     return (await response.json()) as Record<string, unknown>
   }
 
+  async getObjectInfo(classType: string): Promise<Record<string, unknown>> {
+    const response = await this.request('GET', `/object_info/${encodeURIComponent(classType)}`)
+    await this.checkOk(response, `/object_info/${classType}`)
+    return (await response.json()) as Record<string, unknown>
+  }
+
+  async getModelsCheckpoints(): Promise<string[]> {
+    const response = await this.request('GET', '/models/checkpoints')
+    await this.checkOk(response, '/models/checkpoints')
+    const body = (await response.json()) as unknown
+    if (Array.isArray(body)) return body.map((item) => String(item))
+    if (body && typeof body === 'object' && Array.isArray((body as { models?: unknown[] }).models)) {
+      return (body as { models: unknown[] }).models.map((item) => String(item))
+    }
+    return []
+  }
+
   /**
-   * Uploads an image (or mask) to the local server. `overwriteName` keeps the
-   * workflow deterministic; `maskTarget` routes to the mask upload endpoint.
+   * Read-only preflight: ComfyUI reachable? required nodes available? expected
+   * checkpoint present? No generation, no upload, no /prompt.
    */
-  async uploadImage(buffer: Buffer, filename: string, opts: { mask?: boolean; overwriteName?: string } = {}): Promise<ComfyUiUploadResult> {
+  async preflight(checkpointName: string | null): Promise<ArqweliaComfyUiPreflightReport> {
+    try {
+      await this.getSystemStats()
+    } catch (error) {
+      return {
+        reachable: false,
+        objectInfoAvailable: false,
+        objectInfoMissing: [...COMFYUI_REQUIRED_OBJECT_INFO],
+        checkpointAvailable: false,
+        checkpointName,
+        error: String(error instanceof Error ? error.message : error),
+      }
+    }
+    const missing: string[] = []
+    for (const classType of COMFYUI_REQUIRED_OBJECT_INFO) {
+      try {
+        await this.getObjectInfo(classType)
+      } catch {
+        missing.push(classType)
+      }
+    }
+    let checkpoints: string[] = []
+    try {
+      checkpoints = await this.getModelsCheckpoints()
+    } catch {
+      // models/checkpoints may be restricted; checkpoint availability unknown.
+    }
+    const checkpointAvailable = checkpointName
+      ? checkpoints.some((name) => String(name) === checkpointName || String(name).endsWith(`/${checkpointName}`))
+      : false
+    return {
+      reachable: true,
+      objectInfoAvailable: missing.length === 0,
+      objectInfoMissing: missing,
+      checkpointAvailable,
+      checkpointName,
+    }
+  }
+
+  /**
+   * Uploads a SOURCE image to the local server via POST /upload/image.
+   * `overwriteName` keeps the workflow deterministic.
+   */
+  async uploadInputImage(buffer: Buffer, filename: string, overwriteName?: string): Promise<ComfyUiUploadResult> {
+    return this.uploadViaImageEndpoint(buffer, filename, overwriteName)
+  }
+
+  /**
+   * Uploads a MASK image to the local server via POST /upload/image (NOT
+   * /upload/mask). The mask is read back with LoadImageMask channel=red.
+   */
+  async uploadInputMaskImage(buffer: Buffer, filename: string, overwriteName?: string): Promise<ComfyUiUploadResult> {
+    return this.uploadViaImageEndpoint(buffer, filename, overwriteName)
+  }
+
+  private async uploadViaImageEndpoint(buffer: Buffer, filename: string, overwriteName?: string): Promise<ComfyUiUploadResult> {
     if (!buffer || buffer.length === 0) {
       throw new Error('ComfyUI upload: empty image buffer')
     }
     if (buffer.length > COMFYUI_MAX_UPLOAD_BYTES) {
       throw new Error('ComfyUI upload: image exceeds size limit')
     }
-    const endpoint = opts.mask ? '/upload/mask' : '/upload/image'
     const form = new FormData()
-    const overwrite = opts.overwriteName
-    form.append('image', new Blob([buffer as BlobPart]), overwrite ?? filename)
+    const overwrite = overwriteName ?? filename
+    form.append('image', new Blob([buffer as BlobPart]), overwrite)
     form.append('type', 'input')
     form.append('overwrite', 'true')
-    if (overwrite) form.append('name', overwrite)
-    const response = await this.request('POST', endpoint, { body: form })
-    await this.checkOk(response, endpoint)
+    form.append('name', overwrite)
+    const response = await this.request('POST', '/upload/image', { body: form })
+    await this.checkOk(response, '/upload/image')
     const json = (await response.json()) as Record<string, unknown>
     return {
       name: String(json.name ?? filename),
@@ -278,21 +373,19 @@ export class ArqweliaComfyUiLocalClient {
 }
 
 /**
- * Zod schema for the safe subset of a ComfyUI API workflow the builder accepts
- * (used by the static workflow validator). Custom/unexpected nodes are rejected.
+ * The safe set of ComfyUI Core node classes the V1 workflow may use. The
+ * versioned workflow must NOT contain any custom/undocumented node.
  */
 export const comfyCoreNodeIds = new Set([
   'CheckpointLoaderSimple',
-  'VAELoader',
   'CLIPTextEncode',
-  'EmptySD3LatentImage',
-  'SetLatentNoiseMask',
-  'VAEDecode',
-  'SaveImage',
-  'KSampler',
-  'LoraLoader',
-  'CLIPSetLastLayer',
   'LoadImage',
+  'LoadImageMask',
+  'VAEEncodeForInpaint',
+  'KSampler',
+  'VAEDecode',
+  'ImageCompositeMasked',
+  'SaveImage',
 ])
 
 export function assertComfyWorkflowUsesCoreOnly(workflow: Record<string, unknown>): true {
@@ -308,5 +401,3 @@ export function assertComfyWorkflowUsesCoreOnly(workflow: Record<string, unknown
   }
   return true
 }
-
-export { z }

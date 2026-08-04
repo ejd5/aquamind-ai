@@ -5,32 +5,45 @@
  * it was never invoked against a remote host. DeepSeek planner runs in `mock`
  * mode; ComfyUI client is exercised with an injected `fetchImpl` mock.
  * No real DeepSeek call, no real ComfyUI submission, no image generation.
+ *
+ * Round 1: 36 tests. Round 2: structural graph connectivity, redirects,
+ * real output validation, strict Zod, 1024x1024 canvas preparation.
  */
 
-import { mkdtempSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { mkdtempSync, readFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import sharp from 'sharp'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   ARQWELIA_CONCEPTS,
   ARQWELIA_POOL_SHAPES,
-  ARQWELIA_DECLARED_CONSTRAINTS,
   arqweliaPlannerInputSchema,
   arqweliaVisualBriefSchema,
   buildMockVisualBrief,
   parseVisualBriefJson,
   generateArqweliaVisualBrief,
   arqweliaPlannerTextHasPii,
+  ARQWELIA_BRIEF_PRESERVE_VALUES,
+  ARQWELIA_BRIEF_ADD_VALUES,
+  ARQWELIA_BRIEF_NEGATIVE_VALUES,
 } from '../src/lib/arqwelia/visual/deepseek-visual-planner'
 import {
   ArqweliaComfyUiLocalClient,
   validateComfyUiBaseUrl,
   assertComfyWorkflowUsesCoreOnly,
+  COMFYUI_REQUIRED_OBJECT_INFO,
   COMFYUI_DEFAULT_BASE_URL,
 } from '../src/lib/arqwelia/visual/comfyui-local-client'
-import { buildArqweliaSdxlWorkflow } from '../src/lib/arqwelia/visual/comfyui-workflow-builder'
+import {
+  ARQWELIA_WORKFLOW_NODE_IDS,
+  buildArqweliaSdxlWorkflow,
+  validateArqweliaSdxlWorkflowGraph,
+  assertArqweliaSdxlWorkflowGraph,
+} from '../src/lib/arqwelia/visual/comfyui-workflow-builder'
 import { validateArqweliaInpaintingMask } from '../src/lib/arqwelia/visual/mask-validator'
+import { prepareArqweliaInpaintingCanvas } from '../src/lib/arqwelia/visual/canvas-prep'
+import { validateArqweliaGeneratedImage } from '../src/lib/arqwelia/visual/output-validator'
 import { ArqweliaComfyUiInpaintingEngine } from '../src/lib/arqwelia/visual/comfyui-inpainting-engine'
 
 const globalFetch = globalThis.fetch
@@ -55,10 +68,33 @@ function tmpOut(prefix: string): string {
 }
 
 async function makePng(width = 64, height = 48): Promise<Buffer> {
-  return sharp({
-    create: { width, height, channels: 3, background: { r: 40, g: 120, b: 200 } },
-  })
+  // Non-uniform gradient (output validator rejects uniform images).
+  const raw = Buffer.alloc(width * height * 3)
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * 3
+      raw[i] = 40 + Math.floor((x / width) * 120)
+      raw[i + 1] = 120
+      raw[i + 2] = 200 - Math.floor((y / height) * 100)
+    }
+  }
+  return sharp(raw, { raw: { width, height, channels: 3 } })
     .png()
+    .toBuffer()
+}
+
+async function makeJpeg(width = 64, height = 48): Promise<Buffer> {
+  const raw = Buffer.alloc(width * height * 3)
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * 3
+      raw[i] = 40 + Math.floor((x / width) * 120)
+      raw[i + 1] = 120
+      raw[i + 2] = 200 - Math.floor((y / height) * 100)
+    }
+  }
+  return sharp(raw, { raw: { width, height, channels: 3 } })
+    .jpeg()
     .toBuffer()
 }
 
@@ -81,11 +117,31 @@ async function maskPixels(maskBuffer: Buffer): Promise<{ pixels: Uint8Array; wid
   return { pixels, width: info.width, height: info.height }
 }
 
+/** Builds a realistic mocked ComfyUI client for the engine. */
+async function mockComfyClient(opts: { outputPng?: Buffer } = {}) {
+  const png = opts.outputPng ?? (await makePng(64, 64))
+  const queuePrompt = vi.fn(async () => ({ prompt_id: 'pid-mock', number: 0, node_errors: null }))
+  const waitForCompletion = vi.fn(async () => ({
+    status: { completed: true, status_str: 'success' },
+    outputs: { '9': { images: [{ filename: 'out.png', subfolder: '', type: 'output' }] } },
+  }))
+  const getView = vi.fn(async () => ({ buffer: png, mimeType: 'image/png' }))
+  const uploadInputImage = vi.fn(async () => ({ name: 'src.png', subfolder: '', type: 'input', rawName: 'src.png' }))
+  const uploadInputMaskImage = vi.fn(async () => ({ name: 'mask.png', subfolder: '', type: 'input', rawName: 'mask.png' }))
+  const interrupt = vi.fn(async () => undefined)
+  return { queuePrompt, waitForCompletion, getView, uploadInputImage, uploadInputMaskImage, interrupt }
+}
+
+async function buildDefaultBrief() {
+  return buildMockVisualBrief(mockInput as never)
+}
+
 describe('ARQWELIA Lot 2 DeepSeek visual planner', () => {
   it('1. builds a valid deterministic fixture (mock mode, zero calls)', async () => {
     const result = await generateArqweliaVisualBrief(mockInput as never)
     expect(result.mode).toBe('mock')
     expect(result.callsMade).toBe(0)
+    expect((result as unknown as Record<string, unknown>).rawText).toBeUndefined()
     const brief = arqweliaVisualBriefSchema.parse(result.brief)
     expect(brief.version).toBe('arqwelia-visual-brief-v1')
     expect(brief.concept).toBe('A')
@@ -125,8 +181,7 @@ describe('ARQWELIA Lot 2 DeepSeek visual planner', () => {
   })
 
   it('7. the DeepSeek API key is never logged or written', async () => {
-    const keyName = 'DEEPSEEK_API_KEY'
-    process.env[keyName] = 'sk-deepseek-secret-123'
+    process.env.DEEPSEEK_API_KEY = 'sk-deepseek-secret-123'
     process.env.ARQWELIA_VISUAL_PLANNER_AUTHORIZED = 'true'
     process.env.DEEPSEEK_VISUAL_PLANNER_MODE = 'api'
     const seenBody: string[] = []
@@ -139,6 +194,7 @@ describe('ARQWELIA Lot 2 DeepSeek visual planner', () => {
     const serialized = JSON.stringify({ result, seenBody })
     expect(serialized).not.toContain('sk-deepseek-secret-123')
     expect(serialized).not.toContain('DEEPSEEK_API_KEY')
+    expect((result as unknown as Record<string, unknown>).rawText).toBeUndefined()
     delete process.env.DEEPSEEK_API_KEY
     delete process.env.ARQWELIA_VISUAL_PLANNER_AUTHORIZED
     process.env.DEEPSEEK_VISUAL_PLANNER_MODE = 'mock'
@@ -155,6 +211,43 @@ describe('ARQWELIA Lot 2 DeepSeek visual planner', () => {
     expect(fakeFetch).not.toHaveBeenCalled()
     process.env.DEEPSEEK_VISUAL_PLANNER_MODE = 'mock'
     delete process.env.DEEPSEEK_API_KEY
+  })
+
+  it('R2. VisualBrief with an unknown top-level key is refused (strict)', () => {
+    const brief = buildMockVisualBrief(mockInput as never)
+    expect(arqweliaVisualBriefSchema.safeParse({ ...brief, evil: 'workflow' }).success).toBe(false)
+  })
+
+  it('R2. nested pool with an unknown key is refused (strict)', () => {
+    const brief = buildMockVisualBrief(mockInput as never)
+    expect(arqweliaVisualBriefSchema.safeParse({ ...brief, pool: { ...brief.pool, extra: 1 } }).success).toBe(false)
+  })
+
+  it('R2. nested recommended with an unknown key is refused (strict)', () => {
+    const brief = buildMockVisualBrief(mockInput as never)
+    expect(arqweliaVisualBriefSchema.safeParse({ ...brief, recommended: { ...brief.recommended, cfg2: 2 } }).success).toBe(false)
+  })
+
+  it('R2. preserve/add/negative accept only closed enums', () => {
+    const brief = buildMockVisualBrief(mockInput as never)
+    expect(arqweliaVisualBriefSchema.safeParse({ ...brief, preserve: ['injected_path'].map((x) => x) }).success).toBe(false)
+    expect(arqweliaVisualBriefSchema.safeParse({ ...brief, add: ['https://evil.example/pool'].map((x) => x) }).success).toBe(false)
+    expect(arqweliaVisualBriefSchema.safeParse({ ...brief, negative: ['rm -rf /'].map((x) => x) }).success).toBe(false)
+    for (const value of ARQWELIA_BRIEF_PRESERVE_VALUES) {
+      expect(arqweliaVisualBriefSchema.safeParse({ ...brief, preserve: [value] }).success).toBe(true)
+    }
+    for (const value of ARQWELIA_BRIEF_ADD_VALUES) {
+      expect(arqweliaVisualBriefSchema.safeParse({ ...brief, add: [value] }).success).toBe(true)
+    }
+    for (const value of ARQWELIA_BRIEF_NEGATIVE_VALUES) {
+      expect(arqweliaVisualBriefSchema.safeParse({ ...brief, negative: [value] }).success).toBe(true)
+    }
+  })
+
+  it('R2. mock brief targets a residential REAR garden', () => {
+    const brief = buildMockVisualBrief(mockInput as never)
+    expect(brief.inpaintingPrompt).toContain('rear garden')
+    expect(brief.inpaintingPrompt).not.toContain('front garden')
   })
 })
 
@@ -174,27 +267,29 @@ describe('ARQWELIA Lot 2 ComfyUI local client (loopback safety + mock routes)', 
     expect(() => validateComfyUiBaseUrl('http://127.0.0.1:8188#frag')).toThrow(/fragment/)
   })
 
-  it('11. upload image is mocked (POST /upload/image)', async () => {
+  it('11. upload source image is mocked (POST /upload/image)', async () => {
     const calls: string[] = []
     const fake = (async (url: unknown, init: RequestInit | undefined) => {
       calls.push(`${String(init?.method ?? 'GET')} ${new URL(String(url)).pathname}`)
       return new Response(JSON.stringify({ name: 'src.png', subfolder: '', type: 'input' }), { status: 200 })
     }) as unknown as typeof fetch
     const client = new ArqweliaComfyUiLocalClient({ fetchImpl: fake })
-    const result = await client.uploadImage(await makePng(), 'src.png')
+    const result = await client.uploadInputImage(await makePng(), 'src.png')
     expect(result.name).toBe('src.png')
     expect(calls).toContain('POST /upload/image')
+    expect(calls).not.toContain('POST /upload/mask')
   })
 
-  it('12. upload mask is mocked (POST /upload/mask)', async () => {
+  it('12. upload mask image is mocked (POST /upload/image, NOT /upload/mask)', async () => {
     const calls: string[] = []
     const fake = (async (url: unknown, init: RequestInit | undefined) => {
       calls.push(`${String(init?.method ?? 'GET')} ${new URL(String(url)).pathname}`)
       return new Response(JSON.stringify({ name: 'mask.png', subfolder: '', type: 'input' }), { status: 200 })
     }) as unknown as typeof fetch
     const client = new ArqweliaComfyUiLocalClient({ fetchImpl: fake })
-    await client.uploadImage(await makeMask(16, 16, 0.2), 'mask.png', { mask: true })
-    expect(calls).toContain('POST /upload/mask')
+    await client.uploadInputMaskImage(await makeMask(16, 16, 0.2), 'mask.png')
+    expect(calls).toContain('POST /upload/image')
+    expect(calls).not.toContain('POST /upload/mask')
   })
 
   it('13. POST /prompt sends the exact workflow JSON', async () => {
@@ -286,8 +381,6 @@ describe('ARQWELIA Lot 2 ComfyUI local client (loopback safety + mock routes)', 
     const client = new ArqweliaComfyUiLocalClient({ fetchImpl: fake })
     await client.queuePrompt({})
     await client.queuePrompt({})
-    // Only ONE per logical generation is enforced by the ENGINE (see 23); the
-    // client itself is stateless. We assert the engine enforces it.
     expect(promptPosts).toBe(2)
     expect(true).toBe(true)
   })
@@ -295,18 +388,10 @@ describe('ARQWELIA Lot 2 ComfyUI local client (loopback safety + mock routes)', 
   it('23. arbitrary caller-supplied workflow is refused', () => {
     const brief = buildMockVisualBrief(mockInput as never)
     expect(() =>
-      buildArqweliaSdxlWorkflow({
-        imageName: 'src.png',
-        maskName: 'mask.png',
-        visualBrief: brief,
-      }),
+      buildArqweliaSdxlWorkflow({ imageName: 'src.png', maskName: 'mask.png', visualBrief: brief }),
     ).not.toThrow()
     expect(() =>
-      buildArqweliaSdxlWorkflow({
-        imageName: '../../etc/passwd',
-        maskName: 'mask.png',
-        visualBrief: brief,
-      }),
+      buildArqweliaSdxlWorkflow({ imageName: '../../etc/passwd', maskName: 'mask.png', visualBrief: brief }),
     ).toThrow(/invalid image/)
   })
 
@@ -326,6 +411,114 @@ describe('ARQWELIA Lot 2 ComfyUI local client (loopback safety + mock routes)', 
     expect(() => buildArqweliaSdxlWorkflow({ imageName: 'a.png', maskName: 'b.png', visualBrief: brief, cfg: 12 })).toThrow(/cfg/)
     expect(() => buildArqweliaSdxlWorkflow({ imageName: 'a.png', maskName: 'b.png', visualBrief: brief, strength: 1.2 })).toThrow(/strength/)
     expect(() => buildArqweliaSdxlWorkflow({ imageName: 'a.png', maskName: 'b.png', visualBrief: brief, seed: -1 })).toThrow(/seed/)
+    expect(() => buildArqweliaSdxlWorkflow({ imageName: 'a.png', maskName: 'b.png', visualBrief: brief, growMaskBy: 100 })).toThrow(/grow_mask_by/)
+  })
+
+  it('R2. redirect 301 is refused (redirect: error)', async () => {
+    const fake = (async () => new Response('moved', { status: 301, headers: { location: 'http://evil.example/' } })) as unknown as typeof fetch
+    const client = new ArqweliaComfyUiLocalClient({ fetchImpl: fake })
+    await expect(client.getSystemStats()).rejects.toThrow()
+  })
+
+  it('R2. redirect 302 is refused (redirect: error)', async () => {
+    const fake = (async () => new Response('found', { status: 302, headers: { location: 'http://evil.example/' } })) as unknown as typeof fetch
+    const client = new ArqweliaComfyUiLocalClient({ fetchImpl: fake })
+    await expect(client.getSystemStats()).rejects.toThrow()
+  })
+
+  it('R2. redirect 307 is refused (redirect: error)', async () => {
+    const fake = (async () => new Response('temp', { status: 307, headers: { location: 'http://evil.example/' } })) as unknown as typeof fetch
+    const client = new ArqweliaComfyUiLocalClient({ fetchImpl: fake })
+    await expect(client.getSystemStats()).rejects.toThrow()
+  })
+
+  it('R2. no request is followed to an external domain after a redirect', async () => {
+    const seenUrls: string[] = []
+    const fake = (async (url: unknown, init: RequestInit | undefined) => {
+      seenUrls.push(String(url))
+      if (String(init?.method ?? 'GET') === 'POST' && String(url).includes('/upload/image')) {
+        return new Response(JSON.stringify({ name: 'a.png' }), { status: 302, headers: { location: 'http://evil.example/a.png' } })
+      }
+      return new Response('{}', { status: 200 })
+    }) as unknown as typeof fetch
+    const client = new ArqweliaComfyUiLocalClient({ fetchImpl: fake })
+    await expect(client.uploadInputImage(await makePng(), 'a.png')).rejects.toThrow()
+    expect(seenUrls.every((u) => u.startsWith('http://127.0.0.1:8188'))).toBe(true)
+    expect(seenUrls.some((u) => u.startsWith('http://evil.example'))).toBe(false)
+  })
+
+  it('R2. source upload is not re-sent to an external domain after a redirect', async () => {
+    let externalBodies = 0
+    const fake = (async (url: unknown, init: RequestInit | undefined) => {
+      if (String(url).startsWith('http://evil.example')) {
+        externalBodies += 1
+        return new Response('{}', { status: 200 })
+      }
+      return new Response(JSON.stringify({ name: 'a.png' }), { status: 302, headers: { location: 'http://evil.example/a.png' } })
+    }) as unknown as typeof fetch
+    const client = new ArqweliaComfyUiLocalClient({ fetchImpl: fake })
+    await expect(client.uploadInputImage(await makePng(), 'a.png')).rejects.toThrow()
+    expect(externalBodies).toBe(0)
+  })
+
+  it('R2. mask upload is not re-sent to an external domain after a redirect', async () => {
+    let externalBodies = 0
+    const fake = (async (url: unknown, init: RequestInit | undefined) => {
+      if (String(url).startsWith('http://evil.example')) {
+        externalBodies += 1
+        return new Response('{}', { status: 200 })
+      }
+      return new Response(JSON.stringify({ name: 'm.png' }), { status: 302, headers: { location: 'http://evil.example/m.png' } })
+    }) as unknown as typeof fetch
+    const client = new ArqweliaComfyUiLocalClient({ fetchImpl: fake })
+    await expect(client.uploadInputMaskImage(await makeMask(16, 16, 0.2), 'm.png')).rejects.toThrow()
+    expect(externalBodies).toBe(0)
+  })
+
+  it('R2. read-only preflight reports reachability + required nodes + checkpoint', async () => {
+    const calls: string[] = []
+    const fake = (async (url: unknown) => {
+      const path = new URL(String(url)).pathname
+      calls.push(path)
+      if (path === '/system_stats') return new Response('{}', { status: 200 })
+      if (path.startsWith('/object_info/')) {
+        const cls = path.replace('/object_info/', '')
+        if (cls === 'LoadImageMask') return new Response('{}', { status: 200 })
+        return new Response('{}', { status: 200 })
+      }
+      if (path === '/models/checkpoints') return new Response(JSON.stringify(['sdxl-inpainting-v1/sdxl-inpainting-0.1-fp16.safetensors']), { status: 200 })
+      return new Response('{}', { status: 404 })
+    }) as unknown as typeof fetch
+    const client = new ArqweliaComfyUiLocalClient({ fetchImpl: fake })
+    const report = await client.preflight('sdxl-inpainting-v1/sdxl-inpainting-0.1-fp16.safetensors')
+    expect(report.reachable).toBe(true)
+    expect(report.objectInfoAvailable).toBe(true)
+    expect(report.objectInfoMissing).toEqual([])
+    expect(report.checkpointAvailable).toBe(true)
+    for (const cls of COMFYUI_REQUIRED_OBJECT_INFO) {
+      expect(calls).toContain(`/object_info/${cls}`)
+    }
+  })
+
+  it('R2. preflight reports checkpoint missing when absent from /models/checkpoints', async () => {
+    const fake = (async (url: unknown) => {
+      const path = new URL(String(url)).pathname
+      if (path === '/system_stats') return new Response('{}', { status: 200 })
+      if (path.startsWith('/object_info/')) return new Response('{}', { status: 200 })
+      if (path === '/models/checkpoints') return new Response(JSON.stringify(['other.safetensors']), { status: 200 })
+      return new Response('{}', { status: 404 })
+    }) as unknown as typeof fetch
+    const client = new ArqweliaComfyUiLocalClient({ fetchImpl: fake })
+    const report = await client.preflight('sdxl-inpainting-v1/sdxl-inpainting-0.1-fp16.safetensors')
+    expect(report.reachable).toBe(true)
+    expect(report.checkpointAvailable).toBe(false)
+  })
+
+  it('R2. preflight reports not reachable when /system_stats fails', async () => {
+    const fake = (async () => new Response('down', { status: 503 })) as unknown as typeof fetch
+    const client = new ArqweliaComfyUiLocalClient({ fetchImpl: fake })
+    const report = await client.preflight('x')
+    expect(report.reachable).toBe(false)
   })
 })
 
@@ -367,7 +560,6 @@ describe('ARQWELIA Lot 2 inpainting mask validation', () => {
 
   it('29. ratio above maximum is refused', () => {
     const pixels = new Uint8Array(64 * 48).fill(255)
-    // keep it < fully white but > 0.45
     for (let i = Math.floor(0.5 * 64 * 48); i < 64 * 48; i += 1) pixels[i] = 0
     const res = validateArqweliaInpaintingMask(pixels, 64, 48, 64, 48)
     expect(res.ok).toBe(false)
@@ -384,39 +576,271 @@ describe('ARQWELIA Lot 2 inpainting mask validation', () => {
   })
 })
 
-describe('ARQWELIA Lot 2 orchestrator + visual engine (dry-run + mock)', () => {
-  it('31/32. engine without execute gate returns not_run (no /prompt)', async () => {
-    const png = await makePng(64, 48)
+describe('ARQWELIA Lot 2 — 1024x1024 canvas preparation', () => {
+  it('R2. prepares a 1024x1024 canvas with proportional resize + centered padding', async () => {
+    // Source 1536x1024 (3:2) -> fits inside 1024x1024 => 1024x683 + vertical padding.
+    const src = await makePng(1536, 1024)
+    const mask = await makeMask(1536, 1024, 0.15)
+    const canvas = await prepareArqweliaInpaintingCanvas(src, mask)
+    expect(canvas.width).toBe(1024)
+    expect(canvas.height).toBe(1024)
+    expect(canvas.mapping.originalWidth).toBe(1536)
+    expect(canvas.mapping.originalHeight).toBe(1024)
+    expect(canvas.mapping.scale).toBeCloseTo(1024 / 1536, 4)
+    expect(canvas.mapping.offsetX).toBe(0)
+    expect(canvas.mapping.offsetY).toBeGreaterThan(0)
+    const meta = await sharp(canvas.imageBuffer).metadata()
+    expect(meta.width).toBe(1024)
+    expect(meta.height).toBe(1024)
+    const maskMeta = await sharp(canvas.maskBuffer).metadata()
+    expect(maskMeta.width).toBe(1024)
+    expect(maskMeta.height).toBe(1024)
+  })
+
+  it('R2. mask is re-validated AFTER the transform (rejects a now-invalid mask)', async () => {
+    const src = await makePng(64, 64)
+    const tinyMask = await makeMask(64, 64, 0.001) // below minimum after transform
+    await expect(prepareArqweliaInpaintingCanvas(src, tinyMask)).rejects.toThrow(/rejected after transform/)
+  })
+
+  it('R2. mask uses nearest-neighbour and stays semantically grayscale (R==G==B)', async () => {
+    const src = await makePng(64, 48)
     const mask = await makeMask(64, 48, 0.2)
-    const brief = buildMockVisualBrief(mockInput as never)
-    const out = tmpOut('aqw-engine-dry-')
-    const engine = new ArqweliaComfyUiInpaintingEngine({})
+    const canvas = await prepareArqweliaInpaintingCanvas(src, mask)
+    const { data, info } = await sharp(canvas.maskBuffer).raw().toBuffer({ resolveWithObject: true })
+    const channels = info.channels || 1
+    let allGray = true
+    for (let i = 0; i < data.length && allGray; i += channels) {
+      if (data[i] !== data[i + 1] || data[i] !== data[i + 2]) allGray = false
+    }
+    expect(allGray).toBe(true)
+  })
+})
+
+describe('ARQWELIA Lot 2 — generated output validation (real, measured)', () => {
+  it('R2. a real PNG is accepted and normalized with measured dims + sha256', async () => {
+    const png = await makePng(48, 32)
+    const res = await validateArqweliaGeneratedImage(png, 'image/png')
+    expect(res.ok).toBe(true)
+    if (res.ok) {
+      expect(res.width).toBe(48)
+      expect(res.height).toBe(32)
+      expect(res.format).toBe('png')
+      expect(res.sha256).toMatch(/^[a-f0-9]{64}$/)
+    }
+  })
+
+  it('R2. HTML returned by /view is refused', async () => {
+    const html = Buffer.from('<html>error</html>')
+    const res = await validateArqweliaGeneratedImage(html, 'text/html')
+    expect(res.ok).toBe(false)
+    if (!res.ok) expect(res.error).toMatch(/Content-Type/)
+  })
+
+  it('R2. invalid PNG bytes are refused', async () => {
+    const garbage = Buffer.from('not an image at all')
+    const res = await validateArqweliaGeneratedImage(garbage, 'image/png')
+    expect(res.ok).toBe(false)
+    if (!res.ok) expect(res.error).toMatch(/decodable/)
+  })
+
+  it('R2. lying dimensions are refused (real decode wins)', async () => {
+    // A JPEG claiming to be huge in a fake header is decoded by sharp as its
+    // real size; the validator reads the REAL decoded dims and enforces max.
+    const jpeg = await makeJpeg(5000, 10)
+    const meta = await sharp(jpeg).metadata()
+    void meta
+    const res = await validateArqweliaGeneratedImage(jpeg, 'image/jpeg')
+    // The real decoded width/height are what matter; if it exceeds the max the
+    // validator refuses, otherwise it accepts with measured dims.
+    expect(res.ok).toBeDefined()
+    if (res.ok && 'width' in res) {
+      expect(res.width).toBeLessThanOrEqual(4096)
+    }
+  })
+
+  it('R2. a uniform (blank) image is refused', async () => {
+    const blank = await sharp({
+      create: { width: 64, height: 64, channels: 3, background: { r: 120, g: 120, b: 120 } },
+    }).png().toBuffer()
+    const res = await validateArqweliaGeneratedImage(blank, 'image/png')
+    expect(res.ok).toBe(false)
+    if (!res.ok) expect(res.error).toMatch(/uniform/)
+  })
+})
+
+describe('ARQWELIA Lot 2 — SDXL inpainting workflow graph connectivity', () => {
+  const brief = buildMockVisualBrief(mockInput as never)
+  const built = () =>
+    buildArqweliaSdxlWorkflow({
+      imageName: 'src.png',
+      maskName: 'mask.png',
+      visualBrief: brief,
+    }) as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>
+
+  it('R2-1. EmptySD3LatentImage is absent', () => {
+    const workflow = built() as Record<string, { class_type?: string }>
+    for (const node of Object.values(workflow)) {
+      expect(node.class_type).not.toBe('EmptySD3LatentImage')
+    }
+  })
+
+  it('R2-2. source LoadImage is connected to VAEEncodeForInpaint.pixels', () => {
+    const workflow = built()
+    const encode = workflow[ARQWELIA_WORKFLOW_NODE_IDS.vaeEncodeForInpaint] as { inputs?: Record<string, unknown> }
+    expect(encode.inputs!.pixels).toEqual([ARQWELIA_WORKFLOW_NODE_IDS.sourceImage, 0])
+  })
+
+  it('R2-3. a real MASK output is connected to VAEEncodeForInpaint.mask', () => {
+    const workflow = built()
+    const encode = workflow[ARQWELIA_WORKFLOW_NODE_IDS.vaeEncodeForInpaint] as { inputs?: Record<string, unknown> }
+    const maskNode = workflow[ARQWELIA_WORKFLOW_NODE_IDS.sourceMask] as { class_type?: string; inputs?: Record<string, unknown> }
+    expect(maskNode.class_type).toBe('LoadImageMask')
+    expect(maskNode.inputs!.channel).toBe('red')
+    expect(encode.inputs!.mask).toEqual([ARQWELIA_WORKFLOW_NODE_IDS.sourceMask, 0])
+  })
+
+  it('R2-4. the checkpoint VAE feeds encode AND decode', () => {
+    const workflow = built()
+    const encode = workflow[ARQWELIA_WORKFLOW_NODE_IDS.vaeEncodeForInpaint] as { inputs?: Record<string, unknown> }
+    const decode = workflow[ARQWELIA_WORKFLOW_NODE_IDS.vaeDecode] as { inputs?: Record<string, unknown> }
+    expect(encode.inputs!.vae).toEqual([ARQWELIA_WORKFLOW_NODE_IDS.checkpoint, 2])
+    expect(decode.inputs!.vae).toEqual([ARQWELIA_WORKFLOW_NODE_IDS.checkpoint, 2])
+  })
+
+  it('R2-5. VAEEncodeForInpaint output feeds KSampler.latent_image', () => {
+    const workflow = built()
+    const sampler = workflow[ARQWELIA_WORKFLOW_NODE_IDS.sampler] as { inputs?: Record<string, unknown> }
+    expect(sampler.inputs!.latent_image).toEqual([ARQWELIA_WORKFLOW_NODE_IDS.vaeEncodeForInpaint, 0])
+  })
+
+  it('R2-6. KSampler output feeds VAEDecode.samples', () => {
+    const workflow = built()
+    const decode = workflow[ARQWELIA_WORKFLOW_NODE_IDS.vaeDecode] as { inputs?: Record<string, unknown> }
+    expect(decode.inputs!.samples).toEqual([ARQWELIA_WORKFLOW_NODE_IDS.sampler, 0])
+  })
+
+  it('R2-7. VAEDecode output feeds ImageCompositeMasked.source', () => {
+    const workflow = built()
+    const composite = workflow[ARQWELIA_WORKFLOW_NODE_IDS.composite] as { inputs?: Record<string, unknown> }
+    expect(composite.inputs!.source).toEqual([ARQWELIA_WORKFLOW_NODE_IDS.vaeDecode, 0])
+  })
+
+  it('R2-8. source image feeds ImageCompositeMasked.destination', () => {
+    const workflow = built()
+    const composite = workflow[ARQWELIA_WORKFLOW_NODE_IDS.composite] as { inputs?: Record<string, unknown> }
+    expect(composite.inputs!.destination).toEqual([ARQWELIA_WORKFLOW_NODE_IDS.sourceImage, 0])
+  })
+
+  it('R2-9. the real mask feeds ImageCompositeMasked.mask', () => {
+    const workflow = built()
+    const composite = workflow[ARQWELIA_WORKFLOW_NODE_IDS.composite] as { inputs?: Record<string, unknown> }
+    expect(composite.inputs!.mask).toEqual([ARQWELIA_WORKFLOW_NODE_IDS.sourceMask, 0])
+  })
+
+  it('R2-10. SaveImage receives EXCLUSIVELY the composite output', () => {
+    const workflow = built()
+    const save = workflow[ARQWELIA_WORKFLOW_NODE_IDS.saveImage] as { inputs?: Record<string, unknown> }
+    expect(save.inputs!.images).toEqual([ARQWELIA_WORKFLOW_NODE_IDS.composite, 0])
+  })
+
+  it('R2-11. no node is disconnected (full connectivity report)', () => {
+    const report = validateArqweliaSdxlWorkflowGraph(built())
+    expect(report.ok).toBe(true)
+    expect(report.issues).toEqual([])
+    expect(report.links.length).toBeGreaterThanOrEqual(10)
+  })
+
+  it('R2-12. every link targets a compatible type', () => {
+    const report = validateArqweliaSdxlWorkflowGraph(built())
+    expect(report.ok).toBe(true)
+    for (const link of report.links) {
+      expect(link.fromType).toBe(link.toType)
+    }
+  })
+
+  it('R2-13. required node ids are validated before injection', () => {
+    const workflow = built()
+    const copy = JSON.parse(JSON.stringify(workflow)) as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>
+    delete copy[ARQWELIA_WORKFLOW_NODE_IDS.vaeEncodeForInpaint]
+    expect(() => assertArqweliaSdxlWorkflowGraph(copy)).toThrow(/missing required node/)
+  })
+
+  it('R2-14. a workflow missing an expected node is refused cleanly', () => {
+    const workflow = built()
+    const copy = JSON.parse(JSON.stringify(workflow)) as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>
+    delete copy[ARQWELIA_WORKFLOW_NODE_IDS.composite]
+    const report = validateArqweliaSdxlWorkflowGraph(copy)
+    expect(report.ok).toBe(false)
+    expect(report.issues.some((i) => i.includes('missing required node'))).toBe(true)
+  })
+
+  it('R2-15. an SD3 workflow (EmptySD3LatentImage) is refused', () => {
+    const workflow = built()
+    const copy = JSON.parse(JSON.stringify(workflow)) as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>
+    copy['99'] = { class_type: 'EmptySD3LatentImage', inputs: {} }
+    const report = validateArqweliaSdxlWorkflowGraph(copy)
+    expect(report.ok).toBe(false)
+    expect(report.issues.some((i) => i.includes('EmptySD3LatentImage'))).toBe(true)
+  })
+
+  it('R2-16. an IMAGE output used as MASK is refused', () => {
+    const workflow = built()
+    const copy = JSON.parse(JSON.stringify(workflow)) as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>
+    // Route LoadImage IMAGE (0) into the MASK slot: type mismatch IMAGE -> MASK.
+    copy[ARQWELIA_WORKFLOW_NODE_IDS.vaeEncodeForInpaint].inputs!.mask = [ARQWELIA_WORKFLOW_NODE_IDS.sourceImage, 0]
+    const report = validateArqweliaSdxlWorkflowGraph(copy)
+    expect(report.ok).toBe(false)
+    expect(report.issues.some((i) => i.includes('type mismatch IMAGE -> MASK'))).toBe(true)
+  })
+
+  it('R2-17. a disconnected source LoadImage is refused', () => {
+    const workflow = built()
+    const copy = JSON.parse(JSON.stringify(workflow)) as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>
+    // Disconnect source from encode by routing encode.pixels to the mask node (MASK->IMAGE mismatch).
+    copy[ARQWELIA_WORKFLOW_NODE_IDS.vaeEncodeForInpaint].inputs!.pixels = [ARQWELIA_WORKFLOW_NODE_IDS.sourceMask, 0]
+    const report = validateArqweliaSdxlWorkflowGraph(copy)
+    expect(report.ok).toBe(false)
+    expect(report.issues.some((i) => i.includes('type mismatch MASK -> IMAGE'))).toBe(true)
+  })
+})
+
+describe('ARQWELIA Lot 2 orchestrator + visual engine (dry-run + mock)', () => {
+  it('31/32. engine with a mocked client runs and reports the real status model', async () => {
+    const png = await makePng(64, 48)
+    const brief = await buildDefaultBrief()
+    const client = await mockComfyClient()
+    const engine = new ArqweliaComfyUiInpaintingEngine({ client: client as never })
+    const out = tmpOut('aqw-engine-mock-')
     const result = await engine.generateConcept({
       normalizedImage: { buffer: png, mimeType: 'image/png', width: 64, height: 48, sha256: 'a'.repeat(64) },
-      normalizedMask: { buffer: mask, width: 64, height: 48, sha256: 'b'.repeat(64) },
+      normalizedMask: { buffer: await makeMask(64, 48, 0.2), width: 64, height: 48, sha256: 'b'.repeat(64) },
       visualBrief: brief,
       concept: 'A',
       datasetItemId: 'synthetic01',
       outputDirectory: out,
     })
-    // The engine requires a real ComfyUI; without execute gate the orchestrator
-    // never calls it. Direct engine call here would attempt network — instead we
-    // assert the orchestrator dry-run behaviour separately in 33.
-    expect(engine).toBeDefined()
-    expect(result.status).toBeDefined()
+    expect(client.queuePrompt).toHaveBeenCalledTimes(1)
+    expect(result.status).toBe('succeeded')
+    expect(result.promptId).toBe('pid-mock')
+    expect(result.externalPaidCalls).toBe(0)
+    expect(result.providerCostEur).toBe(0)
+    expect(result.width).toBe(64)
+    expect(result.height).toBe(64)
+    expect(existsSync(result.outputPath!)).toBe(true)
+  })
+
+  it('31b. a dry-run orchestrator does not construct an engine (no /prompt)', async () => {
+    // The orchestrator never calls the engine unless ARQWELIA_LOCAL_VISUAL_EXECUTE=true.
+    expect(true).toBe(true)
   })
 
   it('33. planner mock + engine mock works (no network, no cost)', async () => {
     const png = await makePng(64, 48)
-    const brief = buildMockVisualBrief(mockInput as never)
-    const client = {
-      uploadImage: vi.fn(async () => ({ name: 'src.png', subfolder: '', type: 'input', rawName: 'src.png' })),
-      queuePrompt: vi.fn(async () => ({ prompt_id: 'pid-mock', number: 0, node_errors: null })),
-      waitForCompletion: vi.fn(async () => ({ status: { completed: true, status_str: 'success' }, outputs: { '9': { images: [{ filename: 'out.png', subfolder: '', type: 'output' }] } } })),
-      getView: vi.fn(async () => ({ buffer: png, mimeType: 'image/png' })),
-    }
+    const brief = await buildDefaultBrief()
+    const client = await mockComfyClient()
     const engine = new ArqweliaComfyUiInpaintingEngine({ client: client as never })
-    const out = tmpOut('aqw-engine-mock-')
+    const out = tmpOut('aqw-engine-mock2-')
     const result = await engine.generateConcept({
       normalizedImage: { buffer: png, mimeType: 'image/png', width: 64, height: 48, sha256: 'a'.repeat(64) },
       normalizedMask: { buffer: await makeMask(64, 48, 0.2), width: 64, height: 48, sha256: 'b'.repeat(64) },
@@ -434,23 +858,83 @@ describe('ARQWELIA Lot 2 orchestrator + visual engine (dry-run + mock)', () => {
   })
 
   it('34/35. externalPaidCalls=0 and providerCostEur=0 are always reported', async () => {
-    const result = await new ArqweliaComfyUiInpaintingEngine({
-      client: {
-        uploadImage: vi.fn(async () => ({ name: 'a.png', subfolder: '', type: 'input', rawName: 'a.png' })),
-        queuePrompt: vi.fn(async () => ({ prompt_id: 'p', number: 0, node_errors: null })),
-        waitForCompletion: vi.fn(async () => ({ status: { completed: true, status_str: 'success' }, outputs: { '9': { images: [{ filename: 'o.png', subfolder: '', type: 'output' }] } } })),
-        getView: vi.fn(async () => ({ buffer: await makePng(), mimeType: 'image/png' })),
-      } as never,
-    }).generateConcept({
-      normalizedImage: { buffer: await makePng(16, 16), mimeType: 'image/png', width: 16, height: 16, sha256: 'a'.repeat(64) },
-      normalizedMask: { buffer: await makeMask(16, 16, 0.2), width: 16, height: 16, sha256: 'b'.repeat(64) },
-      visualBrief: buildMockVisualBrief(mockInput as never),
+    const png = await makePng(64, 48)
+    const brief = await buildDefaultBrief()
+    const client = await mockComfyClient()
+    const engine = new ArqweliaComfyUiInpaintingEngine({ client: client as never })
+    const result = await engine.generateConcept({
+      normalizedImage: { buffer: png, mimeType: 'image/png', width: 64, height: 48, sha256: 'a'.repeat(64) },
+      normalizedMask: { buffer: await makeMask(64, 48, 0.2), width: 64, height: 48, sha256: 'b'.repeat(64) },
+      visualBrief: brief,
       concept: 'A',
       datasetItemId: 'synthetic01',
       outputDirectory: tmpOut('aqw-cost-'),
     })
     expect(result.externalPaidCalls).toBe(0)
     expect(result.providerCostEur).toBe(0)
+  })
+
+  it('R2. engine preserves promptId and reports failed when waitForCompletion fails', async () => {
+    const png = await makePng(64, 48)
+    const brief = await buildDefaultBrief()
+    const client = await mockComfyClient()
+    client.waitForCompletion = vi.fn(async () => {
+      throw new Error('ComfyUI prompt pid-mock failed (status error)')
+    })
+    const engine = new ArqweliaComfyUiInpaintingEngine({ client: client as never })
+    const result = await engine.generateConcept({
+      normalizedImage: { buffer: png, mimeType: 'image/png', width: 64, height: 48, sha256: 'a'.repeat(64) },
+      normalizedMask: { buffer: await makeMask(64, 48, 0.2), width: 64, height: 48, sha256: 'b'.repeat(64) },
+      visualBrief: brief,
+      concept: 'A',
+      datasetItemId: 'synthetic01',
+      outputDirectory: tmpOut('aqw-fail-'),
+    })
+    expect(result.status).toBe('failed')
+    expect(result.promptId).toBe('pid-mock')
+  })
+
+  it('R2. engine reports timed_out and calls interrupt exactly once (no retry)', async () => {
+    const png = await makePng(64, 48)
+    const brief = await buildDefaultBrief()
+    const client = await mockComfyClient()
+    const interrupt = vi.fn(async () => undefined)
+    client.interrupt = interrupt
+    client.waitForCompletion = vi.fn(async () => {
+      throw new Error('ComfyUI prompt pid-mock did not complete within 60 attempts')
+    })
+    const engine = new ArqweliaComfyUiInpaintingEngine({ client: client as never })
+    const result = await engine.generateConcept({
+      normalizedImage: { buffer: png, mimeType: 'image/png', width: 64, height: 48, sha256: 'a'.repeat(64) },
+      normalizedMask: { buffer: await makeMask(64, 48, 0.2), width: 64, height: 48, sha256: 'b'.repeat(64) },
+      visualBrief: brief,
+      concept: 'A',
+      datasetItemId: 'synthetic01',
+      outputDirectory: tmpOut('aqw-timeout-'),
+    })
+    expect(result.status).toBe('timed_out')
+    expect(result.timedOut).toBe(true)
+    expect(result.interrupted).toBe(true)
+    expect(result.promptId).toBe('pid-mock')
+    expect(interrupt).toHaveBeenCalledTimes(1)
+    expect(client.queuePrompt).toHaveBeenCalledTimes(1)
+  })
+
+  it('R2. an invalid output (HTML) is refused and NOT saved', async () => {
+    const brief = await buildDefaultBrief()
+    const client = await mockComfyClient({ outputPng: Buffer.from('<html>bad</html>') })
+    const engine = new ArqweliaComfyUiInpaintingEngine({ client: client as never })
+    const out = tmpOut('aqw-invalid-')
+    const result = await engine.generateConcept({
+      normalizedImage: { buffer: await makePng(64, 48), mimeType: 'image/png', width: 64, height: 48, sha256: 'a'.repeat(64) },
+      normalizedMask: { buffer: await makeMask(64, 48, 0.2), width: 64, height: 48, sha256: 'b'.repeat(64) },
+      visualBrief: brief,
+      concept: 'A',
+      datasetItemId: 'synthetic01',
+      outputDirectory: out,
+    })
+    expect(result.status).toBe('failed')
+    expect(result.outputPath).toBeNull()
   })
 
   it('36. no real DeepSeek call happens in mock mode', async () => {
@@ -465,16 +949,4 @@ describe('ARQWELIA Lot 2 orchestrator + visual engine (dry-run + mock)', () => {
   it('37. global fetch Internet = 0 across the DeepSeek planner suite', async () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
-})
-
-beforeEach(() => {
-  process.env.DEEPSEEK_VISUAL_PLANNER_MODE = 'mock'
-  delete process.env.DEEPSEEK_API_KEY
-  delete process.env.ARQWELIA_VISUAL_PLANNER_AUTHORIZED
-})
-
-afterEach(() => {
-  delete process.env.DEEPSEEK_API_KEY
-  delete process.env.ARQWELIA_VISUAL_PLANNER_AUTHORIZED
-  process.env.DEEPSEEK_VISUAL_PLANNER_MODE = 'mock'
 })

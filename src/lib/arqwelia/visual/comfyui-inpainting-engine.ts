@@ -5,12 +5,32 @@
  * versioned SDXL inpainting workflow. One workflow = one generation: exactly
  * one POST /prompt, no automatic retry, bounded polling, stop after the first
  * result (success or failure).
+ *
+ * PIPELINE:
+ *   1. prepareArqweliaInpaintingCanvas (1024x1024 working canvas, shared
+ *      proportional transform for source + mask, nearest mask);
+ *   2. upload source via /upload/image and mask via /upload/image;
+ *   3. build + graph-validate the versioned workflow;
+ *   4. preflight (read-only) then queue ONE /prompt;
+ *   5. bounded polling; on timeout call POST /interrupt ONCE (no resubmit);
+ *   6. GET /view + real output validation (sharp decode, real dims, meta strip,
+ *      SHA-256); invalid output => failed, never saved.
+ *
+ * STATUS MODEL: not_run | preflight_failed | queued | processing | succeeded |
+ * failed | timed_out | interrupted. promptId is preserved as soon as /prompt
+ * accepts it — it is never lost on a later error.
  */
 
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join, basename } from 'node:path'
 import { ArqweliaComfyUiLocalClient } from './comfyui-local-client'
-import { buildArqweliaSdxlWorkflow } from './comfyui-workflow-builder'
+import {
+  ARQWELIA_SDXL_WORKFLOW_VERSION,
+  ARQWELIA_WORKFLOW_NODE_IDS,
+  buildArqweliaSdxlWorkflow,
+} from './comfyui-workflow-builder'
+import { prepareArqweliaInpaintingCanvas } from './canvas-prep'
+import { validateArqweliaGeneratedImage } from './output-validator'
 import {
   ArqweliaVisualEngine,
   ArqweliaVisualGenerateInput,
@@ -39,12 +59,16 @@ export class ArqweliaComfyUiInpaintingEngine implements ArqweliaVisualEngine {
 
   async generateConcept(input: ArqweliaVisualGenerateInput): Promise<ArqweliaVisualGenerateResult> {
     const started = Date.now()
-    const base: ArqweliaVisualGenerateResult = {
+    let promptId: string | null = null
+    let timedOut = false
+    let interrupted = false
+
+    const base = (status: ArqweliaVisualGenerateResult['status']): ArqweliaVisualGenerateResult => ({
       provider: ARQWELIA_VISUAL_ENGINE_ID,
       engine: ARQWELIA_VISUAL_ENGINE_MODEL,
-      workflowVersion: 'arqwelia-sdxl-inpainting-v1',
-      promptId: null,
-      status: 'not_run',
+      workflowVersion: ARQWELIA_SDXL_WORKFLOW_VERSION,
+      promptId,
+      status,
       externalPaidCalls: 0,
       providerCostEur: 0,
       outputPath: null,
@@ -52,28 +76,37 @@ export class ArqweliaComfyUiInpaintingEngine implements ArqweliaVisualEngine {
       height: null,
       sourceSha256: input.normalizedImage.sha256,
       maskSha256: input.normalizedMask.sha256,
-      durationMs: 0,
-    }
+      durationMs: Date.now() - started,
+      timedOut,
+      interrupted,
+    })
 
     if (!input.normalizedImage || !input.normalizedImage.buffer) {
-      return { ...base, status: 'failed', durationMs: Date.now() - started, error: 'missing normalized image' }
+      return { ...base('failed'), error: 'missing normalized image' }
     }
     if (!input.normalizedMask || !input.normalizedMask.buffer) {
-      return { ...base, status: 'failed', durationMs: Date.now() - started, error: 'missing normalized mask' }
+      return { ...base('failed'), error: 'missing normalized mask' }
     }
     if (!input.visualBrief) {
-      return { ...base, status: 'failed', durationMs: Date.now() - started, error: 'missing visual brief' }
+      return { ...base('failed'), error: 'missing visual brief' }
     }
 
     try {
-      const stamp = new Date().toISOString().replace(/[:.]/g, '-')
       const safeDataset = String(input.datasetItemId || 'item').replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 40)
-      const imageName = `src-${safeDataset}-${input.normalizedImage.sha256.slice(0, 12)}.png`
-      const maskName = `mask-${safeDataset}-${input.normalizedMask.sha256.slice(0, 12)}.png`
 
-      const imageUpload = await this.client.uploadImage(input.normalizedImage.buffer, imageName, { overwriteName: imageName })
-      const maskUpload = await this.client.uploadImage(input.normalizedMask.buffer, maskName, { overwriteName: maskName })
+      // 1) 1024x1024 working canvas (shared transform, revalidated mask).
+      const canvas = await prepareArqweliaInpaintingCanvas(
+        input.normalizedImage.buffer,
+        input.normalizedMask.buffer,
+      )
 
+      // 2) upload source + mask (both via /upload/image).
+      const imageName = `src-${safeDataset}-${canvas.imageSha256.slice(0, 12)}.png`
+      const maskName = `mask-${safeDataset}-${canvas.maskSha256.slice(0, 12)}.png`
+      const imageUpload = await this.client.uploadInputImage(canvas.imageBuffer, imageName, imageName)
+      const maskUpload = await this.client.uploadInputMaskImage(canvas.maskBuffer, maskName, maskName)
+
+      // 3) build + graph-validate workflow.
       const workflow = buildArqweliaSdxlWorkflow({
         imageName: imageUpload.name,
         maskName: maskUpload.name,
@@ -84,10 +117,30 @@ export class ArqweliaComfyUiInpaintingEngine implements ArqweliaVisualEngine {
         strength: input.strength,
       })
 
+      // 4) queue ONE /prompt (from here promptId is authoritative).
       const queued = await this.client.queuePrompt(workflow)
-      const historyItem = await this.client.waitForCompletion(queued.prompt_id)
+      promptId = queued.prompt_id
 
-      // Locate the output image in the history (SaveImage outputs).
+      // 5) bounded polling. On timeout: single interrupt, no resubmit.
+      let historyItem
+      try {
+        historyItem = await this.client.waitForCompletion(queued.prompt_id)
+      } catch (error) {
+        const message = String(error instanceof Error ? error.message : error)
+        if (/did not complete within/.test(message)) {
+          timedOut = true
+          interrupted = true
+          try {
+            await this.client.interrupt()
+          } catch {
+            // interrupt is best-effort; the timeout is still reported.
+          }
+          return { ...base('timed_out'), error: message }
+        }
+        return { ...base('failed'), error: message }
+      }
+
+      // 6) locate the output image in history (SaveImage outputs).
       let outputName: string | null = null
       let subfolder = ''
       let type = 'output'
@@ -102,31 +155,30 @@ export class ArqweliaComfyUiInpaintingEngine implements ArqweliaVisualEngine {
         }
       }
       if (!outputName) {
-        throw new Error('ComfyUI completed but history contains no output image')
+        return { ...base('failed'), error: 'ComfyUI completed but history contains no output image' }
       }
 
+      // 7) GET /view + REAL output validation (measured dims, never source dims).
       const view = await this.client.getView(outputName, subfolder, type)
+      const validated = await validateArqweliaGeneratedImage(view.buffer, view.mimeType)
+      if (!validated.ok) {
+        return { ...base('failed'), error: validated.error }
+      }
 
+      // 8) save the validated output only.
       await mkdir(input.outputDirectory, { recursive: true })
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-')
       const outputPath = join(input.outputDirectory, `arqwelia-${safeDataset}-${stamp}.png`)
-      await writeFile(outputPath, view.buffer)
+      await writeFile(outputPath, validated.buffer)
 
       return {
-        ...base,
-        promptId: queued.prompt_id,
-        status: 'succeeded',
+        ...base('succeeded'),
         outputPath,
-        width: input.normalizedImage.width,
-        height: input.normalizedImage.height,
-        durationMs: Date.now() - started,
+        width: validated.width,
+        height: validated.height,
       }
     } catch (error) {
-      return {
-        ...base,
-        status: 'failed',
-        durationMs: Date.now() - started,
-        error: String(error instanceof Error ? error.message : error),
-      }
+      return { ...base('failed'), error: String(error instanceof Error ? error.message : error) }
     }
   }
 }
@@ -134,3 +186,5 @@ export class ArqweliaComfyUiInpaintingEngine implements ArqweliaVisualEngine {
 export function arqweliaOutputFileBaseName(path: string): string {
   return basename(path)
 }
+
+export { ARQWELIA_WORKFLOW_NODE_IDS }
