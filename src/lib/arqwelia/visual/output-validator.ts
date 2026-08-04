@@ -29,8 +29,8 @@ export const ARQWELIA_OUTPUT_ALLOWED_MIME = ['image/png', 'image/jpeg', 'image/w
 export interface ArqweliaValidatedOutput {
   ok: true
   buffer: Buffer
-  mimeType: 'image/png' | 'image/jpeg' | 'image/webp'
-  format: string
+  mimeType: 'image/png'
+  format: 'png'
   width: number
   height: number
   sha256: string
@@ -107,19 +107,10 @@ export async function validateArqweliaGeneratedImage(
   }
   void avg
 
-  // Strip metadata and normalize to PNG (lossless) or controlled JPEG.
-  let normalized: Buffer
-  let finalMime: 'image/png' | 'image/jpeg' | 'image/webp'
-  if (format === 'png') {
-    normalized = await sharp(buffer).png().toBuffer()
-    finalMime = 'image/png'
-  } else if (format === 'webp') {
-    normalized = await sharp(buffer).webp().toBuffer()
-    finalMime = 'image/webp'
-  } else {
-    normalized = await sharp(buffer).jpeg({ quality: 92, mozjpeg: true }).toBuffer()
-    finalMime = 'image/jpeg'
-  }
+  // Strip metadata and ALWAYS normalize to PNG (definitive POC output format).
+  // Even if /view returns JPEG or WebP, the decoded pixels are re-encoded to
+  // PNG and the SHA-256 is computed AFTER that conversion.
+  const normalized = await sharp(buffer).png().toBuffer()
 
   const finalMeta = await sharp(normalized).metadata()
   if (finalMeta.exif || finalMeta.iptc || finalMeta.xmp) {
@@ -129,8 +120,8 @@ export async function validateArqweliaGeneratedImage(
   return {
     ok: true,
     buffer: normalized,
-    mimeType: finalMime,
-    format,
+    mimeType: 'image/png',
+    format: 'png',
     width,
     height,
     sha256: sha256(normalized),

@@ -44,7 +44,8 @@ import {
 import { validateArqweliaInpaintingMask } from '../src/lib/arqwelia/visual/mask-validator'
 import { prepareArqweliaInpaintingCanvas } from '../src/lib/arqwelia/visual/canvas-prep'
 import { validateArqweliaGeneratedImage } from '../src/lib/arqwelia/visual/output-validator'
-import { ArqweliaComfyUiInpaintingEngine } from '../src/lib/arqwelia/visual/comfyui-inpainting-engine'
+import { restoreArqweliaInpaintingOutput } from '../src/lib/arqwelia/visual/restore-output'
+import { ArqweliaComfyUiInpaintingEngine, ARQWELIA_EXPECTED_COMFYUI_CHECKPOINT } from '../src/lib/arqwelia/visual/comfyui-inpainting-engine'
 
 const globalFetch = globalThis.fetch
 const fetchSpy = vi.fn()
@@ -118,8 +119,15 @@ async function maskPixels(maskBuffer: Buffer): Promise<{ pixels: Uint8Array; wid
 }
 
 /** Builds a realistic mocked ComfyUI client for the engine. */
-async function mockComfyClient(opts: { outputPng?: Buffer } = {}) {
+async function mockComfyClient(opts: { outputPng?: Buffer; preflightOk?: boolean } = {}) {
   const png = opts.outputPng ?? (await makePng(64, 64))
+  const preflight = vi.fn(async () => ({
+    reachable: opts.preflightOk !== false,
+    objectInfoAvailable: opts.preflightOk !== false,
+    objectInfoMissing: opts.preflightOk === false ? ['LoadImageMask'] : [],
+    checkpointAvailable: opts.preflightOk !== false,
+    checkpointName: ARQWELIA_EXPECTED_COMFYUI_CHECKPOINT,
+  }))
   const queuePrompt = vi.fn(async () => ({ prompt_id: 'pid-mock', number: 0, node_errors: null }))
   const waitForCompletion = vi.fn(async () => ({
     status: { completed: true, status_str: 'success' },
@@ -129,7 +137,7 @@ async function mockComfyClient(opts: { outputPng?: Buffer } = {}) {
   const uploadInputImage = vi.fn(async () => ({ name: 'src.png', subfolder: '', type: 'input', rawName: 'src.png' }))
   const uploadInputMaskImage = vi.fn(async () => ({ name: 'mask.png', subfolder: '', type: 'input', rawName: 'mask.png' }))
   const interrupt = vi.fn(async () => undefined)
-  return { queuePrompt, waitForCompletion, getView, uploadInputImage, uploadInputMaskImage, interrupt }
+  return { preflight, queuePrompt, waitForCompletion, getView, uploadInputImage, uploadInputMaskImage, interrupt }
 }
 
 async function buildDefaultBrief() {
@@ -806,12 +814,17 @@ describe('ARQWELIA Lot 2 — SDXL inpainting workflow graph connectivity', () =>
 })
 
 describe('ARQWELIA Lot 2 orchestrator + visual engine (dry-run + mock)', () => {
-  it('31/32. engine with a mocked client runs and reports the real status model', async () => {
+  // Engine pipeline in tests: 64x48 input (3:2) -> 1024x1024 canvas
+  // (offsetY>0) -> mock /view returns 1024x1024 -> validate (PNG) -> restore to
+  // 64x48 original aspect. All mocked; no network.
+  const canvasOutput = () => makePng(1024, 1024)
+
+  async function runEngine(opts: { client?: Awaited<ReturnType<typeof mockComfyClient>>; out?: string } = {}) {
     const png = await makePng(64, 48)
     const brief = await buildDefaultBrief()
-    const client = await mockComfyClient()
+    const client = opts.client ?? (await mockComfyClient())
     const engine = new ArqweliaComfyUiInpaintingEngine({ client: client as never })
-    const out = tmpOut('aqw-engine-mock-')
+    const out = opts.out ?? tmpOut('aqw-engine-mock-')
     const result = await engine.generateConcept({
       normalizedImage: { buffer: png, mimeType: 'image/png', width: 64, height: 48, sha256: 'a'.repeat(64) },
       normalizedMask: { buffer: await makeMask(64, 48, 0.2), width: 64, height: 48, sha256: 'b'.repeat(64) },
@@ -820,13 +833,26 @@ describe('ARQWELIA Lot 2 orchestrator + visual engine (dry-run + mock)', () => {
       datasetItemId: 'synthetic01',
       outputDirectory: out,
     })
+    return { result, client, png }
+  }
+
+  it('31/32. engine with a mocked client runs and reports the real status model', async () => {
+    const client = await mockComfyClient({ outputPng: await canvasOutput() })
+    const { result } = await runEngine({ client })
+    expect(client.preflight).toHaveBeenCalledTimes(1)
     expect(client.queuePrompt).toHaveBeenCalledTimes(1)
     expect(result.status).toBe('succeeded')
     expect(result.promptId).toBe('pid-mock')
     expect(result.externalPaidCalls).toBe(0)
     expect(result.providerCostEur).toBe(0)
-    expect(result.width).toBe(64)
-    expect(result.height).toBe(64)
+    // Measured working dims = 1024x1024; final restored = original aspect.
+    expect(result.width).toBe(1024)
+    expect(result.height).toBe(1024)
+    expect(result.finalWidth).toBe(64)
+    expect(result.finalHeight).toBe(48)
+    expect(result.restoredToOriginalAspect).toBe(true)
+    expect(result.finalOutputSha256).toMatch(/^[a-f0-9]{64}$/)
+    expect(result.workingOutputSha256).toMatch(/^[a-f0-9]{64}$/)
     expect(existsSync(result.outputPath!)).toBe(true)
   })
 
@@ -835,20 +861,70 @@ describe('ARQWELIA Lot 2 orchestrator + visual engine (dry-run + mock)', () => {
     expect(true).toBe(true)
   })
 
+  it('R3. ComfyUI not reachable -> preflight_failed, ZERO upload, ZERO /prompt', async () => {
+    const client = await mockComfyClient({ preflightOk: false })
+    // Force unreachable.
+    client.preflight = vi.fn(async () => ({
+      reachable: false,
+      objectInfoAvailable: false,
+      objectInfoMissing: ['LoadImageMask'],
+      checkpointAvailable: false,
+      checkpointName: ARQWELIA_EXPECTED_COMFYUI_CHECKPOINT,
+    }))
+    const { result } = await runEngine({ client })
+    expect(result.status).toBe('preflight_failed')
+    expect(result.promptId).toBeNull()
+    expect(client.uploadInputImage).not.toHaveBeenCalled()
+    expect(client.uploadInputMaskImage).not.toHaveBeenCalled()
+    expect(client.queuePrompt).not.toHaveBeenCalled()
+  })
+
+  it('R3. required node missing -> preflight_failed, ZERO upload, ZERO /prompt', async () => {
+    const client = await mockComfyClient({ preflightOk: false })
+    client.preflight = vi.fn(async () => ({
+      reachable: true,
+      objectInfoAvailable: false,
+      objectInfoMissing: ['VAEEncodeForInpaint'],
+      checkpointAvailable: true,
+      checkpointName: ARQWELIA_EXPECTED_COMFYUI_CHECKPOINT,
+    }))
+    const { result } = await runEngine({ client })
+    expect(result.status).toBe('preflight_failed')
+    expect(result.promptId).toBeNull()
+    expect(client.uploadInputImage).not.toHaveBeenCalled()
+    expect(client.queuePrompt).not.toHaveBeenCalled()
+  })
+
+  it('R3. checkpoint not installed -> preflight_failed, ZERO upload, ZERO /prompt', async () => {
+    const client = await mockComfyClient({ preflightOk: false })
+    client.preflight = vi.fn(async () => ({
+      reachable: true,
+      objectInfoAvailable: true,
+      objectInfoMissing: [],
+      checkpointAvailable: false,
+      checkpointName: ARQWELIA_EXPECTED_COMFYUI_CHECKPOINT,
+    }))
+    const { result } = await runEngine({ client })
+    expect(result.status).toBe('preflight_failed')
+    expect(result.promptId).toBeNull()
+    expect(client.uploadInputImage).not.toHaveBeenCalled()
+    expect(client.uploadInputMaskImage).not.toHaveBeenCalled()
+    expect(client.queuePrompt).not.toHaveBeenCalled()
+  })
+
+  it('R3. valid preflight -> normal continuation (upload + /prompt happen)', async () => {
+    const client = await mockComfyClient({ outputPng: await canvasOutput() })
+    const { result } = await runEngine({ client })
+    expect(client.preflight).toHaveBeenCalledTimes(1)
+    expect(client.uploadInputImage).toHaveBeenCalledTimes(1)
+    expect(client.uploadInputMaskImage).toHaveBeenCalledTimes(1)
+    expect(client.queuePrompt).toHaveBeenCalledTimes(1)
+    expect(result.status).toBe('succeeded')
+  })
+
   it('33. planner mock + engine mock works (no network, no cost)', async () => {
-    const png = await makePng(64, 48)
-    const brief = await buildDefaultBrief()
-    const client = await mockComfyClient()
-    const engine = new ArqweliaComfyUiInpaintingEngine({ client: client as never })
-    const out = tmpOut('aqw-engine-mock2-')
-    const result = await engine.generateConcept({
-      normalizedImage: { buffer: png, mimeType: 'image/png', width: 64, height: 48, sha256: 'a'.repeat(64) },
-      normalizedMask: { buffer: await makeMask(64, 48, 0.2), width: 64, height: 48, sha256: 'b'.repeat(64) },
-      visualBrief: brief,
-      concept: 'A',
-      datasetItemId: 'synthetic01',
-      outputDirectory: out,
-    })
+    const client = await mockComfyClient({ outputPng: await canvasOutput() })
+    const { result } = await runEngine({ client })
     expect(client.queuePrompt).toHaveBeenCalledTimes(1)
     expect(result.status).toBe('succeeded')
     expect(result.externalPaidCalls).toBe(0)
@@ -858,83 +934,70 @@ describe('ARQWELIA Lot 2 orchestrator + visual engine (dry-run + mock)', () => {
   })
 
   it('34/35. externalPaidCalls=0 and providerCostEur=0 are always reported', async () => {
-    const png = await makePng(64, 48)
-    const brief = await buildDefaultBrief()
-    const client = await mockComfyClient()
-    const engine = new ArqweliaComfyUiInpaintingEngine({ client: client as never })
-    const result = await engine.generateConcept({
-      normalizedImage: { buffer: png, mimeType: 'image/png', width: 64, height: 48, sha256: 'a'.repeat(64) },
-      normalizedMask: { buffer: await makeMask(64, 48, 0.2), width: 64, height: 48, sha256: 'b'.repeat(64) },
-      visualBrief: brief,
-      concept: 'A',
-      datasetItemId: 'synthetic01',
-      outputDirectory: tmpOut('aqw-cost-'),
-    })
+    const client = await mockComfyClient({ outputPng: await canvasOutput() })
+    const { result } = await runEngine({ client, out: tmpOut('aqw-cost-') })
     expect(result.externalPaidCalls).toBe(0)
     expect(result.providerCostEur).toBe(0)
   })
 
   it('R2. engine preserves promptId and reports failed when waitForCompletion fails', async () => {
-    const png = await makePng(64, 48)
-    const brief = await buildDefaultBrief()
     const client = await mockComfyClient()
     client.waitForCompletion = vi.fn(async () => {
       throw new Error('ComfyUI prompt pid-mock failed (status error)')
     })
-    const engine = new ArqweliaComfyUiInpaintingEngine({ client: client as never })
-    const result = await engine.generateConcept({
-      normalizedImage: { buffer: png, mimeType: 'image/png', width: 64, height: 48, sha256: 'a'.repeat(64) },
-      normalizedMask: { buffer: await makeMask(64, 48, 0.2), width: 64, height: 48, sha256: 'b'.repeat(64) },
-      visualBrief: brief,
-      concept: 'A',
-      datasetItemId: 'synthetic01',
-      outputDirectory: tmpOut('aqw-fail-'),
-    })
+    const { result } = await runEngine({ client })
     expect(result.status).toBe('failed')
     expect(result.promptId).toBe('pid-mock')
   })
 
   it('R2. engine reports timed_out and calls interrupt exactly once (no retry)', async () => {
-    const png = await makePng(64, 48)
-    const brief = await buildDefaultBrief()
     const client = await mockComfyClient()
     const interrupt = vi.fn(async () => undefined)
     client.interrupt = interrupt
     client.waitForCompletion = vi.fn(async () => {
       throw new Error('ComfyUI prompt pid-mock did not complete within 60 attempts')
     })
-    const engine = new ArqweliaComfyUiInpaintingEngine({ client: client as never })
-    const result = await engine.generateConcept({
-      normalizedImage: { buffer: png, mimeType: 'image/png', width: 64, height: 48, sha256: 'a'.repeat(64) },
-      normalizedMask: { buffer: await makeMask(64, 48, 0.2), width: 64, height: 48, sha256: 'b'.repeat(64) },
-      visualBrief: brief,
-      concept: 'A',
-      datasetItemId: 'synthetic01',
-      outputDirectory: tmpOut('aqw-timeout-'),
-    })
+    const { result } = await runEngine({ client })
     expect(result.status).toBe('timed_out')
     expect(result.timedOut).toBe(true)
+    expect(result.interruptAttempted).toBe(true)
+    expect(result.interruptSucceeded).toBe(true)
     expect(result.interrupted).toBe(true)
     expect(result.promptId).toBe('pid-mock')
     expect(interrupt).toHaveBeenCalledTimes(1)
     expect(client.queuePrompt).toHaveBeenCalledTimes(1)
   })
 
-  it('R2. an invalid output (HTML) is refused and NOT saved', async () => {
-    const brief = await buildDefaultBrief()
-    const client = await mockComfyClient({ outputPng: Buffer.from('<html>bad</html>') })
-    const engine = new ArqweliaComfyUiInpaintingEngine({ client: client as never })
-    const out = tmpOut('aqw-invalid-')
-    const result = await engine.generateConcept({
-      normalizedImage: { buffer: await makePng(64, 48), mimeType: 'image/png', width: 64, height: 48, sha256: 'a'.repeat(64) },
-      normalizedMask: { buffer: await makeMask(64, 48, 0.2), width: 64, height: 48, sha256: 'b'.repeat(64) },
-      visualBrief: brief,
-      concept: 'A',
-      datasetItemId: 'synthetic01',
-      outputDirectory: out,
+  it('R3. interrupt failure is reported honestly (interrupted=false)', async () => {
+    const client = await mockComfyClient()
+    client.interrupt = vi.fn(async () => {
+      throw new Error('interrupt failed')
     })
+    client.waitForCompletion = vi.fn(async () => {
+      throw new Error('ComfyUI prompt pid-mock did not complete within 60 attempts')
+    })
+    const { result } = await runEngine({ client })
+    expect(result.status).toBe('timed_out')
+    expect(result.timedOut).toBe(true)
+    expect(result.interruptAttempted).toBe(true)
+    expect(result.interruptSucceeded).toBe(false)
+    expect(result.interrupted).toBe(false)
+  })
+
+  it('R2. an invalid output (HTML) is refused and NOT saved', async () => {
+    const client = await mockComfyClient({ outputPng: Buffer.from('<html>bad</html>') })
+    const { result } = await runEngine({ client, out: tmpOut('aqw-invalid-') })
     expect(result.status).toBe('failed')
     expect(result.outputPath).toBeNull()
+  })
+
+  it('R3. the final saved output is PNG with the ORIGINAL aspect ratio and no black bands', async () => {
+    const client = await mockComfyClient({ outputPng: await canvasOutput() })
+    const { result } = await runEngine({ client })
+    const finalMeta = await sharp(result.outputPath!).metadata()
+    expect(finalMeta.format).toBe('png')
+    expect(finalMeta.width).toBe(64)
+    expect(finalMeta.height).toBe(48)
   })
 
   it('36. no real DeepSeek call happens in mock mode', async () => {
@@ -948,5 +1011,92 @@ describe('ARQWELIA Lot 2 orchestrator + visual engine (dry-run + mock)', () => {
 
   it('37. global fetch Internet = 0 across the DeepSeek planner suite', async () => {
     expect(fetchSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('ARQWELIA Lot 2 — Round 3 restore + PNG format', () => {
+  it('R3. output validator always returns PNG (converts JPEG/WebP)', async () => {
+    const jpeg = await makeJpeg(64, 48)
+    const jpegRes = await validateArqweliaGeneratedImage(jpeg, 'image/jpeg')
+    expect(jpegRes.ok).toBe(true)
+    if (jpegRes.ok) {
+      expect(jpegRes.mimeType).toBe('image/png')
+      expect(jpegRes.format).toBe('png')
+    }
+    const webp = await sharp(await makePng(32, 32)).webp().toBuffer()
+    const webpRes = await validateArqweliaGeneratedImage(webp, 'image/webp')
+    expect(webpRes.ok).toBe(true)
+    if (webpRes.ok) {
+      expect(webpRes.mimeType).toBe('image/png')
+      expect(webpRes.format).toBe('png')
+    }
+  })
+
+  it('R3. restore produces original dimensions with no black padding bands', async () => {
+    const original = await makePng(1536, 1024)
+    const mask = await makeMask(1536, 1024, 0.15)
+    const canvas = await prepareArqweliaInpaintingCanvas(original, mask)
+    // Simulate the generated canvas output: reuse the prepared canvas image.
+    const restored = await restoreArqweliaInpaintingOutput({
+      generatedCanvasBuffer: canvas.imageBuffer,
+      mapping: canvas.mapping,
+      originalSourceBuffer: original,
+      originalMaskBuffer: mask,
+    })
+    expect(restored.width).toBe(1536)
+    expect(restored.height).toBe(1024)
+    const meta = await sharp(restored.buffer).metadata()
+    expect(meta.width).toBe(1536)
+    expect(meta.height).toBe(1024)
+    // No black bands: the top-left corner of the original (unmasked) is the
+    // source color (40-160 range), not pure black.
+    const { data, info } = await sharp(restored.buffer).raw().toBuffer({ resolveWithObject: true })
+    const c = info.channels || 3
+    const tl = data[0 * c] + data[1] + data[2]
+    expect(tl).toBeGreaterThan(90) // not pure black
+  })
+
+  it('R3. restore rejects an invalid mapping', async () => {
+    const original = await makePng(64, 48)
+    const mask = await makeMask(64, 48, 0.2)
+    const canvas = await prepareArqweliaInpaintingCanvas(original, mask)
+    const badMapping = { ...canvas.mapping, scale: Number.NaN }
+    await expect(
+      restoreArqweliaInpaintingOutput({
+        generatedCanvasBuffer: canvas.imageBuffer,
+        mapping: badMapping,
+        originalSourceBuffer: original,
+        originalMaskBuffer: mask,
+      }),
+    ).rejects.toThrow(/invalid/)
+  })
+
+  it('R3. restore rejects an out-of-limits crop', async () => {
+    const original = await makePng(64, 48)
+    const mask = await makeMask(64, 48, 0.2)
+    const canvas = await prepareArqweliaInpaintingCanvas(original, mask)
+    const badMapping = { ...canvas.mapping, offsetX: 900, resizedWidth: 400 }
+    await expect(
+      restoreArqweliaInpaintingOutput({
+        generatedCanvasBuffer: canvas.imageBuffer,
+        mapping: badMapping,
+        originalSourceBuffer: original,
+        originalMaskBuffer: mask,
+      }),
+    ).rejects.toThrow(/exceed|out of limits/)
+  })
+
+  it('R3. restore keeps the mask nearest-neighbour (final mask matches geometry)', async () => {
+    const original = await makePng(1536, 1024)
+    const mask = await makeMask(1536, 1024, 0.15)
+    const canvas = await prepareArqweliaInpaintingCanvas(original, mask)
+    const restored = await restoreArqweliaInpaintingOutput({
+      generatedCanvasBuffer: canvas.imageBuffer,
+      mapping: canvas.mapping,
+      originalSourceBuffer: original,
+      originalMaskBuffer: mask,
+    })
+    expect(restored.width).toBe(1536)
+    expect(restored.height).toBe(1024)
   })
 })

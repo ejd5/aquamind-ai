@@ -6,19 +6,24 @@
  * one POST /prompt, no automatic retry, bounded polling, stop after the first
  * result (success or failure).
  *
- * PIPELINE:
+ * PIPELINE (Round 3):
  *   1. prepareArqweliaInpaintingCanvas (1024x1024 working canvas, shared
  *      proportional transform for source + mask, nearest mask);
- *   2. upload source via /upload/image and mask via /upload/image;
- *   3. build + graph-validate the versioned workflow;
- *   4. preflight (read-only) then queue ONE /prompt;
- *   5. bounded polling; on timeout call POST /interrupt ONCE (no resubmit);
- *   6. GET /view + real output validation (sharp decode, real dims, meta strip,
- *      SHA-256); invalid output => failed, never saved.
+ *   2. BLOCKING preflight: client.preflight(expectedCheckpointName) BEFORE any
+ *      upload / workflow build / queuePrompt. Any failure => preflight_failed,
+ *      promptId=null, zero upload, zero /prompt, zero generation;
+ *   3. upload source via /upload/image and mask via /upload/image;
+ *   4. build + graph-validate the versioned workflow;
+ *   5. queue ONE /prompt (from here promptId is authoritative);
+ *   6. bounded polling; on timeout call POST /interrupt ONCE (no resubmit) and
+ *      report interruptAttempted / interruptSucceeded honestly;
+ *   7. GET /view + real output validation (sharp decode, measured dims, meta
+ *      strip, ALWAYS normalized to PNG, SHA-256 after conversion);
+ *   8. restoreArqweliaInpaintingOutput -> original aspect ratio (no black
+ *      bands), composite onto the original source outside the mask; final PNG.
  *
  * STATUS MODEL: not_run | preflight_failed | queued | processing | succeeded |
- * failed | timed_out | interrupted. promptId is preserved as soon as /prompt
- * accepts it — it is never lost on a later error.
+ * failed | timed_out | interrupted.
  */
 
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -26,11 +31,11 @@ import { join, basename } from 'node:path'
 import { ArqweliaComfyUiLocalClient } from './comfyui-local-client'
 import {
   ARQWELIA_SDXL_WORKFLOW_VERSION,
-  ARQWELIA_WORKFLOW_NODE_IDS,
   buildArqweliaSdxlWorkflow,
 } from './comfyui-workflow-builder'
 import { prepareArqweliaInpaintingCanvas } from './canvas-prep'
 import { validateArqweliaGeneratedImage } from './output-validator'
+import { restoreArqweliaInpaintingOutput } from './restore-output'
 import {
   ArqweliaVisualEngine,
   ArqweliaVisualGenerateInput,
@@ -39,14 +44,25 @@ import {
   ARQWELIA_VISUAL_ENGINE_MODEL,
 } from './visual-engine'
 
+/**
+ * The ComfyUI checkpoint is NOT resolved/installed for the first free
+ * benchmark (the official repo is a multi-file Diffusers pipeline). The
+ * preflight therefore BLOCKS until a VERIFIED checkpoint exists (source, real
+ * name, size, SHA-256, license, CheckpointLoaderSimple compatibility).
+ */
+export const ARQWELIA_EXPECTED_COMFYUI_CHECKPOINT =
+  'sdxl-inpainting-v1/sdxl-inpainting-0.1-fp16.safetensors'
+
 export interface ArqweliaComfyUiEngineOptions {
   client?: ArqweliaComfyUiLocalClient
   baseUrl?: string
   fetchImpl?: typeof fetch
+  expectedCheckpointName?: string
 }
 
 export class ArqweliaComfyUiInpaintingEngine implements ArqweliaVisualEngine {
   private readonly client: ArqweliaComfyUiLocalClient
+  private readonly expectedCheckpointName: string
 
   constructor(opts: ArqweliaComfyUiEngineOptions = {}) {
     this.client =
@@ -55,6 +71,7 @@ export class ArqweliaComfyUiInpaintingEngine implements ArqweliaVisualEngine {
         baseUrl: opts.baseUrl,
         fetchImpl: opts.fetchImpl ?? globalThis.fetch,
       })
+    this.expectedCheckpointName = opts.expectedCheckpointName ?? ARQWELIA_EXPECTED_COMFYUI_CHECKPOINT
   }
 
   async generateConcept(input: ArqweliaVisualGenerateInput): Promise<ArqweliaVisualGenerateResult> {
@@ -62,6 +79,8 @@ export class ArqweliaComfyUiInpaintingEngine implements ArqweliaVisualEngine {
     let promptId: string | null = null
     let timedOut = false
     let interrupted = false
+    let interruptAttempted = false
+    let interruptSucceeded = false
 
     const base = (status: ArqweliaVisualGenerateResult['status']): ArqweliaVisualGenerateResult => ({
       provider: ARQWELIA_VISUAL_ENGINE_ID,
@@ -79,6 +98,8 @@ export class ArqweliaComfyUiInpaintingEngine implements ArqweliaVisualEngine {
       durationMs: Date.now() - started,
       timedOut,
       interrupted,
+      interruptAttempted,
+      interruptSucceeded,
     })
 
     if (!input.normalizedImage || !input.normalizedImage.buffer) {
@@ -100,13 +121,33 @@ export class ArqweliaComfyUiInpaintingEngine implements ArqweliaVisualEngine {
         input.normalizedMask.buffer,
       )
 
-      // 2) upload source + mask (both via /upload/image).
+      // 2) BLOCKING PREFLIGHT — BEFORE any upload / workflow / queuePrompt.
+      //    The unverified community checkpoint is not installed, so this blocks
+      //    until a verified checkpoint exists (see ARQWELIA_EXPECTED_COMFYUI_CHECKPOINT).
+      const preflight = await this.client.preflight(this.expectedCheckpointName)
+      if (!preflight.reachable) {
+        return { ...base('preflight_failed'), error: 'ComfyUI not reachable' }
+      }
+      if (!preflight.objectInfoAvailable) {
+        return {
+          ...base('preflight_failed'),
+          error: `ComfyUI required nodes missing: ${preflight.objectInfoMissing.join(', ')}`,
+        }
+      }
+      if (!preflight.checkpointAvailable) {
+        return {
+          ...base('preflight_failed'),
+          error: `ComfyUI checkpoint not available: ${this.expectedCheckpointName} (unverified / not installed — first free execution path is the official Diffusers notebook)`,
+        }
+      }
+
+      // 3) upload source + mask (both via /upload/image).
       const imageName = `src-${safeDataset}-${canvas.imageSha256.slice(0, 12)}.png`
       const maskName = `mask-${safeDataset}-${canvas.maskSha256.slice(0, 12)}.png`
       const imageUpload = await this.client.uploadInputImage(canvas.imageBuffer, imageName, imageName)
       const maskUpload = await this.client.uploadInputMaskImage(canvas.maskBuffer, maskName, maskName)
 
-      // 3) build + graph-validate workflow.
+      // 4) build + graph-validate workflow.
       const workflow = buildArqweliaSdxlWorkflow({
         imageName: imageUpload.name,
         maskName: maskUpload.name,
@@ -117,11 +158,11 @@ export class ArqweliaComfyUiInpaintingEngine implements ArqweliaVisualEngine {
         strength: input.strength,
       })
 
-      // 4) queue ONE /prompt (from here promptId is authoritative).
+      // 5) queue ONE /prompt (from here promptId is authoritative).
       const queued = await this.client.queuePrompt(workflow)
       promptId = queued.prompt_id
 
-      // 5) bounded polling. On timeout: single interrupt, no resubmit.
+      // 6) bounded polling. On timeout: single interrupt, no resubmit.
       let historyItem
       try {
         historyItem = await this.client.waitForCompletion(queued.prompt_id)
@@ -129,18 +170,21 @@ export class ArqweliaComfyUiInpaintingEngine implements ArqweliaVisualEngine {
         const message = String(error instanceof Error ? error.message : error)
         if (/did not complete within/.test(message)) {
           timedOut = true
-          interrupted = true
+          interruptAttempted = true
           try {
             await this.client.interrupt()
+            interruptSucceeded = true
+            interrupted = true
           } catch {
-            // interrupt is best-effort; the timeout is still reported.
+            interruptSucceeded = false
+            interrupted = false
           }
           return { ...base('timed_out'), error: message }
         }
         return { ...base('failed'), error: message }
       }
 
-      // 6) locate the output image in history (SaveImage outputs).
+      // 7) locate the output image in history (SaveImage outputs).
       let outputName: string | null = null
       let subfolder = ''
       let type = 'output'
@@ -158,24 +202,37 @@ export class ArqweliaComfyUiInpaintingEngine implements ArqweliaVisualEngine {
         return { ...base('failed'), error: 'ComfyUI completed but history contains no output image' }
       }
 
-      // 7) GET /view + REAL output validation (measured dims, never source dims).
+      // 8) GET /view + REAL output validation (measured dims, PNG normalization).
       const view = await this.client.getView(outputName, subfolder, type)
       const validated = await validateArqweliaGeneratedImage(view.buffer, view.mimeType)
       if (!validated.ok) {
         return { ...base('failed'), error: validated.error }
       }
 
-      // 8) save the validated output only.
+      // 9) restore to the ORIGINAL aspect ratio (no black padding bands).
+      const restored = await restoreArqweliaInpaintingOutput({
+        generatedCanvasBuffer: validated.buffer,
+        mapping: canvas.mapping,
+        originalSourceBuffer: input.normalizedImage.buffer,
+        originalMaskBuffer: input.normalizedMask.buffer,
+      })
+
+      // 10) save the final PNG only (working canvas output sha recorded too).
       await mkdir(input.outputDirectory, { recursive: true })
       const stamp = new Date().toISOString().replace(/[:.]/g, '-')
       const outputPath = join(input.outputDirectory, `arqwelia-${safeDataset}-${stamp}.png`)
-      await writeFile(outputPath, validated.buffer)
+      await writeFile(outputPath, restored.buffer)
 
       return {
         ...base('succeeded'),
         outputPath,
         width: validated.width,
         height: validated.height,
+        workingOutputSha256: validated.sha256,
+        finalOutputSha256: restored.sha256,
+        finalWidth: restored.width,
+        finalHeight: restored.height,
+        restoredToOriginalAspect: true,
       }
     } catch (error) {
       return { ...base('failed'), error: String(error instanceof Error ? error.message : error) }
@@ -186,5 +243,3 @@ export class ArqweliaComfyUiInpaintingEngine implements ArqweliaVisualEngine {
 export function arqweliaOutputFileBaseName(path: string): string {
   return basename(path)
 }
-
-export { ARQWELIA_WORKFLOW_NODE_IDS }

@@ -33,6 +33,8 @@ export interface ArqweliaInpaintingCanvasMapping {
   scale: number
   offsetX: number
   offsetY: number
+  resizedWidth: number
+  resizedHeight: number
   originalWidth: number
   originalHeight: number
   workingWidth: number
@@ -146,6 +148,8 @@ export async function prepareArqweliaInpaintingCanvas(
       scale,
       offsetX,
       offsetY,
+      resizedWidth,
+      resizedHeight,
       originalWidth,
       originalHeight,
       workingWidth,

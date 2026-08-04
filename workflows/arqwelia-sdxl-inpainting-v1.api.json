@@ -4,11 +4,20 @@
   "imageModel": "diffusers/stable-diffusion-xl-1.0-inpainting-0.1",
   "resolution": "1024x1024",
   "checkpoint": {
+    "status": "unresolved_not_installed",
     "expectedFile": "sdxl-inpainting-v1/sdxl-inpainting-0.1-fp16.safetensors",
     "directory": "ComfyUI/models/checkpoints",
-    "origin": "SDXL Inpainting 0.1 checkpoint converted from diffusers/stable-diffusion-xl-1.0-inpainting-0.1 (community conversions; verify the exact SHA-256 on first real run)",
-    "sha256": "UNKNOWN — verify on first real run (no model downloaded during this POC)",
-    "vae": "bundled inside the checkpoint (VAE output 2 of CheckpointLoaderSimple); no separate VAE file required",
+    "resolution": "BLOCKED — no verified community checkpoint may be treated as official.",
+    "requirementsBeforeAnyComfyUiSmoke": {
+      "source": "exact upstream URL (diffusers/stable-diffusion-xl-1.0-inpainting-0.1 → safetensors conversion) MUST be documented",
+      "realName": "exact filename actually produced",
+      "size": "exact byte size",
+      "sha256": "verified SHA-256 of the file actually installed",
+      "license": "CreativeML Open RAIL++-M (confirm)",
+      "compatibility": "verified to load via CheckpointLoaderSimple (object_info + a successful dry validation)"
+    },
+    "note": "The official repository is a multi-file Diffusers pipeline, NOT a single .safetensors. The first free benchmark will run through the official Diffusers notebook path; the ComfyUI workflow stays prepared but its preflight BLOCKS until a verified checkpoint exists.",
+    "vae": "bundled inside the checkpoint (output index 2 of CheckpointLoaderSimple); no separate VAE file required",
     "license": "CreativeML Open RAIL++-M"
   },
   "nodes": {

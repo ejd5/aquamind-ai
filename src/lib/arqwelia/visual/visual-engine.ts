@@ -71,6 +71,17 @@ export interface ArqweliaVisualGenerateResult {
   error?: string
   timedOut?: boolean
   interrupted?: boolean
+  interruptAttempted?: boolean
+  interruptSucceeded?: boolean
+  /** Working canvas output (1024x1024) sha256 — set on success. */
+  workingOutputSha256?: string
+  /** Final output (original aspect ratio) sha256 — set on success. */
+  finalOutputSha256?: string
+  /** Final output measured dimensions (original aspect ratio). */
+  finalWidth?: number
+  finalHeight?: number
+  /** True when the final output was produced at the ORIGINAL aspect ratio. */
+  restoredToOriginalAspect?: boolean
 }
 
 export interface ArqweliaVisualEngine {

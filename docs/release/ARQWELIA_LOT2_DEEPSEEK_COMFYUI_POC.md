@@ -98,20 +98,29 @@ ImageCompositeMasked -> SaveImage.images  (SaveImage receives ONLY the composite
   output onto the source image using the same mask, so masked pixels = generated
   and unmasked pixels = the real source.
 
-### Expected checkpoint (documented, NOT downloaded in this POC)
+### Expected checkpoint (BLOCKED — unresolved_not_installed)
 
 - Expected file: `sdxl-inpainting-v1/sdxl-inpainting-0.1-fp16.safetensors`
   (in `ComfyUI/models/checkpoints/`).
-- Origin: SDXL Inpainting 0.1 checkpoint converted from
-  `diffusers/stable-diffusion-xl-1.0-inpainting-0.1` (community conversions;
-  verify the exact SHA-256 on the first real run — none is imposed here).
+- **Status: `unresolved_not_installed`.** The official repository is a
+  multi-file **Diffusers** pipeline, NOT a single `.safetensors`. No community
+  checkpoint may be treated as official.
+- The **first free benchmark** runs through the official **Diffusers notebook**
+  (`StableDiffusionXLInpaintPipeline.from_pretrained(...)`), not ComfyUI.
+- Before ANY future ComfyUI smoke, ALL of these must be provided for the
+  installed checkpoint: exact source, real file name, byte size, verified
+  SHA-256, license (RAIL++-M), and verification that it loads via
+  `CheckpointLoaderSimple`.
 - VAE: bundled inside the checkpoint (output index 2 of
   `CheckpointLoaderSimple`); no separate VAE file required.
-- License: **CreativeML Open RAIL++-M**.
 
 A read-only preflight (`client.preflight(checkpointName)`) checks ComfyUI
 reachability, the required `object_info/*` nodes, and `/models/checkpoints`
-without generating anything.
+**before any upload / workflow build / /prompt**. It is BLOCKING: if ComfyUI is
+unreachable, a required node is missing, or the verified checkpoint is absent,
+the engine returns `status=preflight_failed`, `promptId=null`, and performs
+ZERO uploads and ZERO `/prompt` submissions. No weight is downloaded during this
+POC.
 
 ## Mask upload contract
 
@@ -124,16 +133,36 @@ read back with `LoadImageMask channel=red`.
 After `GET /view` the engine performs real validation: size limits, Content-Type
 allowlist (png/jpeg/webp), mandatory sharp decode (HTML/garbage refused), real
 format + real dimensions (source dims are NEVER used as output dims), max
-dimensions, non-empty non-uniform content, metadata strip, final PNG/JPEG
-normalization and output SHA-256. Invalid content => `failed`, no false success,
+dimensions, non-empty non-uniform content, metadata strip, output SHA-256.
+**The final output is ALWAYS normalized to PNG** — even if `/view` returns JPEG
+or WebP, the pixels are decoded and re-encoded to PNG and the SHA-256 is
+computed AFTER that conversion. Invalid content => `failed`, no false success,
 invalid file never saved.
+
+## Restore to the original aspect ratio (Round 3)
+
+`restoreArqweliaInpaintingOutput()` restores the 1024x1024 canvas output to the
+ORIGINAL source dimensions:
+
+1. crops the USEFUL area out of the canvas using `offsetX/offsetY/resizedWidth/resizedHeight`;
+2. resizes it to `originalWidth x originalHeight`;
+3. resizes the ORIGINAL mask to the original dims with nearest-neighbour;
+4. composites the generated area onto the ORIGINAL normalized source image
+   (mask >= 128 => generated, otherwise original — pixel-level).
+
+For synthetic01: input 1536x1024 -> canvas 1024x1024 -> **final output 1536x1024**,
+no black padding bands. The report distinguishes `workingWidth/workingHeight`,
+`finalWidth/finalHeight`, `mapping`, `workingOutputSha256`, `finalOutputSha256`.
+Invalid mapping or an out-of-limits crop is refused.
 
 ## Status model
 
 `not_run | preflight_failed | queued | processing | succeeded | failed |
 timed_out | interrupted`. `promptId` is preserved as soon as `/prompt` accepts
 it. On polling timeout the engine calls `POST /interrupt` exactly once and
-reports `timed_out` (no resubmit, no retry).
+reports `timed_out` with **honest interrupt fields**: `interruptAttempted`,
+`interruptSucceeded`, `interrupted` (interrupt failure => `interrupted=false`,
+no resubmit, no retry).
 
 ## Replacing the engine later
 
