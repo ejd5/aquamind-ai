@@ -77,6 +77,9 @@ export interface ArqweliaVisualGenerateResult {
   workingOutputSha256?: string
   /** Final output (original aspect ratio) sha256 — set on success. */
   finalOutputSha256?: string
+  /** Working canvas output measured dimensions (1024x1024). */
+  workingWidth?: number
+  workingHeight?: number
   /** Final output measured dimensions (original aspect ratio). */
   finalWidth?: number
   finalHeight?: number

@@ -226,9 +226,13 @@ export class ArqweliaComfyUiInpaintingEngine implements ArqweliaVisualEngine {
       return {
         ...base('succeeded'),
         outputPath,
-        width: validated.width,
-        height: validated.height,
+        // width/height = the FINAL RESTORED FILE dimensions (outputPath is the
+        // restored PNG, not the working canvas).
+        width: restored.width,
+        height: restored.height,
         workingOutputSha256: validated.sha256,
+        workingWidth: validated.width,
+        workingHeight: validated.height,
         finalOutputSha256: restored.sha256,
         finalWidth: restored.width,
         finalHeight: restored.height,

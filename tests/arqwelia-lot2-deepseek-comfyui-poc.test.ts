@@ -582,6 +582,31 @@ describe('ARQWELIA Lot 2 inpainting mask validation', () => {
     expect(res.maskedRatio).toBeGreaterThan(0.15)
     expect(res.maskedRatio).toBeLessThan(0.25)
   })
+
+  it('R4. the owner synthetic01-pool-mask.png is valid (dims, grayscale, ratio, sha256) when present', async () => {
+    const maskPath = join(process.cwd(), 'dataset/masks/synthetic01-pool-mask.png')
+    if (!existsSync(maskPath)) {
+      // Owner has not placed the mask yet — the test documents the expectation.
+      expect(true).toBe(true)
+      return
+    }
+    const mask = readFileSync(maskPath)
+    const meta = await sharp(mask).metadata()
+    expect(meta.format).toBe('png')
+    expect(meta.width).toBe(1536)
+    expect(meta.height).toBe(1024)
+    const { data, info } = await sharp(mask).grayscale().raw().toBuffer({ resolveWithObject: true })
+    const c = info.channels || 1
+    let white = 0
+    for (let i = 0; i < info.width * info.height; i += 1) if (data[i * c] >= 128) white += 1
+    const originalRatio = white / (info.width * info.height)
+    expect(originalRatio).toBeGreaterThan(0.05)
+    expect(originalRatio).toBeLessThan(0.45)
+    const pixels = new Uint8Array(info.width * info.height)
+    for (let i = 0; i < info.width * info.height; i += 1) pixels[i] = data[i * c]
+    const validation = validateArqweliaInpaintingMask(pixels, info.width, info.height, 1536, 1024)
+    expect(validation.ok).toBe(true)
+  })
 })
 
 describe('ARQWELIA Lot 2 — 1024x1024 canvas preparation', () => {
@@ -845,15 +870,57 @@ describe('ARQWELIA Lot 2 orchestrator + visual engine (dry-run + mock)', () => {
     expect(result.promptId).toBe('pid-mock')
     expect(result.externalPaidCalls).toBe(0)
     expect(result.providerCostEur).toBe(0)
-    // Measured working dims = 1024x1024; final restored = original aspect.
-    expect(result.width).toBe(1024)
-    expect(result.height).toBe(1024)
+    // width/height = the FINAL RESTORED FILE dims (64x48); working = canvas.
+    expect(result.width).toBe(64)
+    expect(result.height).toBe(48)
+    expect(result.workingWidth).toBe(1024)
+    expect(result.workingHeight).toBe(1024)
     expect(result.finalWidth).toBe(64)
     expect(result.finalHeight).toBe(48)
     expect(result.restoredToOriginalAspect).toBe(true)
     expect(result.finalOutputSha256).toMatch(/^[a-f0-9]{64}$/)
     expect(result.workingOutputSha256).toMatch(/^[a-f0-9]{64}$/)
     expect(existsSync(result.outputPath!)).toBe(true)
+  })
+
+  it('R4. outputPath points to the RESTORED PNG and width/height match the file', async () => {
+    const client = await mockComfyClient({ outputPng: await canvasOutput() })
+    const { result } = await runEngine({ client })
+    const meta = await sharp(result.outputPath!).metadata()
+    expect(meta.format).toBe('png')
+    expect(meta.width).toBe(result.width)
+    expect(meta.height).toBe(result.height)
+    expect(meta.width).toBe(64)
+    expect(meta.height).toBe(48)
+  })
+
+  it('R4. synthetic01 contract: width=1536, height=1024, working=1024x1024, final=1536x1024', async () => {
+    // Reuse the R3 restore test geometry (1536x1024 source) through the engine
+    // via a 1536x1024 -> 1024x1024 canvas and a canvas-sized mock output.
+    const src = await makePng(1536, 1024)
+    const mask = await makeMask(1536, 1024, 0.15)
+    const canvas = await prepareArqweliaInpaintingCanvas(src, mask)
+    const client = await mockComfyClient({ outputPng: canvas.imageBuffer })
+    const engine = new ArqweliaComfyUiInpaintingEngine({ client: client as never })
+    const out = tmpOut('aqw-synth01-')
+    const result = await engine.generateConcept({
+      normalizedImage: { buffer: src, mimeType: 'image/png', width: 1536, height: 1024, sha256: 'a'.repeat(64) },
+      normalizedMask: { buffer: mask, width: 1536, height: 1024, sha256: 'b'.repeat(64) },
+      visualBrief: await buildDefaultBrief(),
+      concept: 'A',
+      datasetItemId: 'synthetic01',
+      outputDirectory: out,
+    })
+    expect(result.status).toBe('succeeded')
+    expect(result.width).toBe(1536)
+    expect(result.height).toBe(1024)
+    expect(result.workingWidth).toBe(1024)
+    expect(result.workingHeight).toBe(1024)
+    expect(result.finalWidth).toBe(1536)
+    expect(result.finalHeight).toBe(1024)
+    const meta = await sharp(result.outputPath!).metadata()
+    expect(meta.width).toBe(1536)
+    expect(meta.height).toBe(1024)
   })
 
   it('31b. a dry-run orchestrator does not construct an engine (no /prompt)', async () => {
