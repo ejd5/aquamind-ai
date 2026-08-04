@@ -495,6 +495,10 @@ describe('Phase 0A execution safety — FAIL-CLOSED manifest', () => {
         ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
         ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
         ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: 'true',
+        // A fake key + default base URL make the execution prerequisites pass so
+        // the run reaches the FAIL-CLOSED upsert against the corrupt manifest.
+        OPENAI_API_KEY: 'sk-fake',
+        OPENAI_BASE_URL: 'https://api.openai.com/v1',
       },
     )
     expect(result.status).not.toBe(0)
@@ -599,6 +603,8 @@ describe('Phase 0A execution safety — dataset authorization (synthetic only)',
         ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
         ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
         ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: 'true',
+        OPENAI_API_KEY: '',
+        OPENAI_BASE_URL: 'https://api.openai.com/v1',
       },
     )
     expect(result.status).toBe(0)
@@ -739,7 +745,7 @@ describe('Phase 0A execution safety — dataset authorization (synthetic only)',
     expect(JSON.stringify(report)).not.toContain('authorizationBasis')
   })
 
-  it('EXECUTION with explicit --dataset-kind synthetic → item + reserved attempt recorded correctly', async () => {
+  it('EXECUTION without OPENAI_API_KEY → refused BEFORE upsert and reserve (no item, no call, not_called)', async () => {
     const srcDir = tmpOut('aqw-exec-syn-src-')
     const imagePath = join(srcDir, 'source.jpg')
     const jpeg = await sharp({
@@ -755,21 +761,33 @@ describe('Phase 0A execution safety — dataset authorization (synthetic only)',
         ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
         ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
         ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: 'true',
+        // Explicitly empty so a parent-environment key can never leak in.
+        OPENAI_API_KEY: '',
+        OPENAI_BASE_URL: 'https://api.openai.com/v1',
       },
     )
     expect(result.status).toBe(0)
-    // The retention item is written with the EXPLICIT synthetic basis.
-    const manifest = JSON.parse(readFileSync(join(out, PHASE0A_MANIFEST_FILENAME), 'utf8'))
-    const record = manifest.items.item001
-    expect(record.datasetKind).toBe('synthetic')
-    expect(record.authorizationBasis).toBe('synthetic')
-    // No transport is injected in this build, so the attempt is cancelled before
-    // any network — but the reservation itself was recorded (capacity occupied).
-    expect(manifest.calls).toHaveLength(1)
-    expect(manifest.calls[0].datasetItemId).toBe('item001')
-    expect(manifest.calls[0].status).toBe('cancelled_before_call')
-    expect(manifest.calls[0].externalCalls).toBe(0)
-    expect(manifest.calls[0].billingStatus).toBe('not_called')
+    // The missing key is a CLEAN refusal BEFORE any manifest mutation —
+    // it must NOT become a reserved / cancelled_before_call attempt.
+    expect(result.stdout).toContain('OPENAI_API_KEY is required when executeAuthorized')
+    expect(result.stdout).toContain('REAL_PROVIDER_CALLS=0, PAID_COST=0')
+    const manifestPath = join(out, PHASE0A_MANIFEST_FILENAME)
+    if (existsSync(manifestPath)) {
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+      expect(Object.keys(manifest.items)).toEqual([])
+      expect(manifest.calls).toEqual([])
+    }
+    // The report still records the explicit id, but with ZERO calls.
+    const report = JSON.parse(
+      readFileSync(
+        join(out, readdirSync(out).filter((f) => f.endsWith('.json') && !f.startsWith('phase0a-manifest')).pop()!),
+        'utf8',
+      ),
+    )
+    expect(report.image.datasetItemId).toBe('item001')
+    expect(report.result.externalCalls).toBe(0)
+    expect(report.result.billingStatus).toBe('not_called')
+    expect(report.result.requestId).toBeNull()
   })
 })
 

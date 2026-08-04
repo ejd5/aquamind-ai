@@ -544,7 +544,7 @@ describe('ARQWELIA Lot 2 Phase 0A — THREE-GATE block (dry-run unless every gat
     expect(String(err instanceof Error ? err.message : err)).toMatch(/NOT IMPLEMENTED|Phase 0A/)
   })
 
-  it('CLI: all three env gates open still cannot make a real call (no key → default transport NOT IMPLEMENTED)', async () => {
+  it('CLI: all three env gates open WITHOUT a key → refused BEFORE upsert/reserve (no call)', async () => {
     const srcDir = tmpOut('aqw-phase0a-cli-img-')
     const imagePath = join(srcDir, 'source.jpg')
     const jpeg = await sharp({
@@ -561,11 +561,14 @@ describe('ARQWELIA Lot 2 Phase 0A — THREE-GATE block (dry-run unless every gat
         ARQWELIA_BENCHMARK_AUTHORIZED: 'true',
         ARQWELIA_BENCHMARK_MAX_BUDGET_EUR: '2',
         ARQWELIA_BENCHMARK_PHASE0A_EXECUTE: 'true',
+        // Explicitly empty so a parent-environment key can never leak in.
+        OPENAI_API_KEY: '',
+        OPENAI_BASE_URL: 'https://api.openai.com/v1',
       },
     )
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('phase0aExecute=true')
-    expect(result.stdout).toContain('result=not-implemented (awaiting Gate)')
+    expect(result.stdout).toContain('OPENAI_API_KEY is required when executeAuthorized')
     expect(result.stdout).toContain('REAL_PROVIDER_CALLS=0, PAID_COST=0')
     expect(result.stdout).not.toContain('DRY RUN — NO EXTERNAL CALL')
   })

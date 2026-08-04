@@ -56,8 +56,10 @@
  *   - API credentials are never printed; any env value whose name matches
  *     /KEY|TOKEN|SECRET/i is redacted before it can reach stdout or a report.
  *   - Reports are PII-free: no absolute paths, no local username, no raw prompt,
- *     no local file basename. Images are recorded as `datasetItemId` (from the
- *     controlled `--dataset-id`, or a truncated hash), the prompt only as
+ *     no local file basename. Images are recorded as `datasetItemId` — the
+ *     controlled EXPLICIT `--dataset-id`. A truncated hash of the normalized
+ *     image is used ONLY in a dry run, as a technical report id, and NEVER
+ *     satisfies the `--dataset-id` requirement — the prompt only as
  *     promptSha256, and `normalizedSha256`/dimensions for the image.
  */
 
@@ -87,6 +89,7 @@ import {
 import {
   OPENAI_DEFAULT_BASE_URL,
   createOpenAiImageEditTransport,
+  resolveOpenAiImagesEditEndpoint,
 } from './lib/arqwelia-benchmark/adapters/openai-image-adapter.mjs'
 import { normalizeImageForAi, SecureImageError } from '../src/lib/images/secure-image.ts'
 import {
@@ -113,8 +116,11 @@ Options:
                     reports only as promptSha256 and NEVER reaches a real adapter
   --concept <A|B>   Concept used to build the versioned PII-free prompt for the
                     real adapters (default: A)
-  --dataset-id <id> Alphanumeric dataset item id recorded in reports (default: a
-                    truncated hash of the normalized image)
+  --dataset-id <id> Alphanumeric dataset item id. The EXPLICIT value is the ONLY
+                    id that may drive upsert / reserve / idempotence / execution;
+                    execution refuses without it. In a dry run an absent value
+                    may fall back to a truncated hash of the normalized image as
+                    a technical REPORT id only
   --dataset-kind <kind>
                     Phase 0A dataset kind. ONLY the EXPLICIT value "synthetic"
                     is accepted in this build; when ABSENT the dataset is never
@@ -135,8 +141,12 @@ Authorization is ENV-ONLY and cannot be granted from the CLI. A real provider
 call requires ALL THREE of ARQWELIA_BENCHMARK_AUTHORIZED=true,
 ARQWELIA_BENCHMARK_MAX_BUDGET_EUR>0 AND ARQWELIA_BENCHMARK_PHASE0A_EXECUTE=true.
 When executeAuthorized===true the Phase 0A provider additionally REQUIRES
---dataset-id <controlled>, --dataset-kind synthetic AND --image <photo>.
-Otherwise this runs as a DRY RUN.`,
+--dataset-id <controlled>, --dataset-kind synthetic, --image <photo>,
+OPENAI_API_KEY and a valid OPENAI_BASE_URL. These are validated BEFORE any
+manifest item / reservation / transport construction — a missing prerequisite
+is a clean refusal (externalCalls=0 / actualCostEur=0 / billingStatus=not_called)
+and never becomes a reserved/cancelled_before_call attempt. Otherwise this runs
+as a DRY RUN.`,
   )
 }
 
@@ -227,6 +237,46 @@ function parseArgs(argv) {
 
 function stamp() {
   return new Date().toISOString().replace(/[:.]/g, '-')
+}
+
+/**
+ * Phase 0A EXECUTION PREREQUISITES (fail-closed). Called BEFORE any manifest
+ * mutation (upsertPhase0aItem), reservation (reservePhase0aCall),
+ * markPhase0aCallStarted or transport construction. Returns a refusal message
+ * when a prerequisite is missing, else `null`.
+ *
+ * Rules:
+ *   - `explicitDatasetItemId` (from --dataset-id) is MANDATORY — a normalized
+ *     image NEVER satisfies the --dataset-id requirement, so no truncated-hash
+ *     fallback can unlock execution;
+ *   - `--dataset-kind synthetic` is mandatory (Phase 0A synthetic only);
+ *   - `--image` (normalized image) is mandatory;
+ *   - `OPENAI_API_KEY` must be present;
+ *   - `OPENAI_BASE_URL` (or the default) must pass `validateOpenAiBaseUrl` /
+ *     `resolveOpenAiImagesEditEndpoint`.
+ *
+ * @param {{ explicitDatasetItemId: string|null, datasetKind: string|null, normalized: object|null }} input
+ * @returns {string|null}
+ */
+function phase0aExecutionPrerequisiteRefusal({ explicitDatasetItemId, datasetKind, normalized }) {
+  if (!explicitDatasetItemId) {
+    return 'Phase 0A call refused: --dataset-id <controlled> is required when executeAuthorized'
+  }
+  if (datasetKind !== 'synthetic') {
+    return 'Phase 0A call refused: --dataset-kind must be "synthetic" during Phase 0A'
+  }
+  if (!normalized) {
+    return 'Phase 0A call refused: --image <photo> is required when executeAuthorized'
+  }
+  if (!process.env.OPENAI_API_KEY) {
+    return 'Phase 0A call refused: OPENAI_API_KEY is required when executeAuthorized'
+  }
+  try {
+    resolveOpenAiImagesEditEndpoint(process.env.OPENAI_BASE_URL || OPENAI_DEFAULT_BASE_URL)
+  } catch {
+    return 'Phase 0A call refused: OPENAI_BASE_URL is not valid (must be an allowlisted HTTPS base URL)'
+  }
+  return null
 }
 
 /**
@@ -401,9 +451,17 @@ async function run() {
     }
   }
 
-  // Dataset item id is a CONTROLLED alphanumeric id (or a truncated hash of the
-  // normalized image) — never the original local filename.
-  const datasetItemId = args.datasetId || (normalized ? normalized.sha256.slice(0, 16) : null)
+  // Phase 0A EXPLICIT vs REPORT dataset id (explicit-dataset-id gate):
+  //   - explicitDatasetItemId is the ONLY id that may drive upsertPhase0aItem,
+  //     reservePhase0aCall, idempotence and any real execution — it comes ONLY
+  //     from the controlled `--dataset-id`. A normalized image NEVER satisfies
+  //     the --dataset-id requirement.
+  //   - reportDatasetItemId may fall back to a truncated hash of the normalized
+  //     image ONLY in a dry run, as a TECHNICAL report id (the report's
+  //     `image.datasetItemId`). It is never written into the manifest as an
+  //     authorized datasetItemId and can never unlock execution.
+  const explicitDatasetItemId = args.datasetId
+  const reportDatasetItemId = explicitDatasetItemId ?? (dryRun && normalized ? normalized.sha256.slice(0, 16) : null)
 
   // Phase 0A dataset authorization: the dataset kind must be EXPLICITLY
   // declared as `synthetic` (the ONLY value accepted in this build). The
@@ -414,19 +472,32 @@ async function run() {
   // (spend authorization only).
   const effectiveDatasetKind = args.datasetKind ?? null
   const datasetSyntheticExplicit = args.datasetKind === 'synthetic'
+  const isOpenAiGptImage = provider.id === 'openai-gpt-image'
+
+  // Phase 0A EXECUTION PREREQUISITES (openai-gpt-image + executeAuthorized) are
+  // validated BEFORE any manifest mutation (upsertPhase0aItem), reservation
+  // (reservePhase0aCall), markPhase0aCallStarted or transport construction —
+  // ALL of: explicit --dataset-id, --dataset-kind synthetic, --image,
+  // OPENAI_API_KEY and a valid OPENAI_BASE_URL. A missing prerequisite is a
+  // CLEAN refusal (externalCalls=0 / actualCostEur=0 / billingStatus='not_called')
+  // and NEVER becomes a reserved / cancelled_before_call attempt.
+  const executionPrerequisiteRefusal = isOpenAiGptImage && executeAuthorized
+    ? phase0aExecutionPrerequisiteRefusal({ explicitDatasetItemId, datasetKind: args.datasetKind, normalized })
+    : null
 
   // Phase 0A retention record (local NON-versioned manifest, gitignored via
   // benchmark-out/). Written for the Phase 0A provider (openai-gpt-image) ONLY
-  // when the dataset kind is EXPLICITLY declared `synthetic` AND the controlled
-  // dataset id + normalized image are present — an absent declaration never
-  // writes datasetKind='synthetic' / authorizationBasis='synthetic'. FAIL-CLOSED:
-  // in executeAuthorized a manifest failure BLOCKS the run; in dry-run it
-  // produces a diagnostic and never claims the manifest is reliable.
-  if (provider.id === 'openai-gpt-image' && datasetSyntheticExplicit && datasetItemId && normalized) {
+  // when the EXPLICIT dataset id + synthetic declaration + normalized image are
+  // present — either as a dry-run diagnostic (dryRun, explicit id + synthetic)
+  // or AFTER the execution prerequisites pass (executeAuthorized). An absent
+  // declaration never writes datasetKind='synthetic' / authorizationBasis='synthetic'.
+  // FAIL-CLOSED: in executeAuthorized a manifest failure BLOCKS the run; in
+  // dry-run it produces a diagnostic and never claims the manifest is reliable.
+  if (isOpenAiGptImage && explicitDatasetItemId && datasetSyntheticExplicit && normalized && (dryRun || executionPrerequisiteRefusal == null)) {
     try {
       await upsertPhase0aItem({
         outDir,
-        datasetItemId,
+        datasetItemId: explicitDatasetItemId,
         datasetKind: 'synthetic',
         authorizationBasis: 'synthetic',
         normalizedSha256: normalized.sha256,
@@ -476,17 +547,12 @@ async function run() {
   let result = null
   if (executeAuthorized && typeof provider.runSmoke === 'function') {
     if (provider.id === 'openai-gpt-image') {
-      // DATASET GATES (fail-closed): Phase 0A smoke REQUIRES a controlled
-      // --dataset-id, --dataset-kind synthetic AND --image <photo>. Anything
-      // else is refused BEFORE any transport is built.
-      const datasetRefusal = !datasetItemId
-        ? 'Phase 0A call refused: --dataset-id <controlled> is required when executeAuthorized'
-        : args.datasetKind !== 'synthetic'
-          ? 'Phase 0A call refused: --dataset-kind must be "synthetic" during Phase 0A'
-          : !normalized
-            ? 'Phase 0A call refused: --image <photo> is required when executeAuthorized'
-            : null
-      if (datasetRefusal) {
+      // DATASET / PREREQUISITE GATES (fail-closed): the full execution
+      // prerequisite set (explicit --dataset-id, --dataset-kind synthetic,
+      // --image, OPENAI_API_KEY, valid OPENAI_BASE_URL) was already validated
+      // BEFORE any manifest mutation. A missing prerequisite is a clean refusal —
+      // no item, no reservation, no transport, no fetch.
+      if (executionPrerequisiteRefusal) {
         result = {
           providerId: provider.id,
           model,
@@ -496,7 +562,7 @@ async function run() {
           billingStatus: 'not_called',
           officialPricingSource: null,
           durationMs: 0,
-          error: datasetRefusal,
+          error: executionPrerequisiteRefusal,
         }
       } else {
         // ATOMIC RESERVATION BEFORE NETWORK: reserve → markStarted → call →
@@ -508,7 +574,7 @@ async function run() {
         try {
           attempt = await reservePhase0aCall({
             manifestPath,
-            datasetItemId,
+            datasetItemId: explicitDatasetItemId,
             concept: builtPrompt.concept,
             model,
             promptSha256: builtPrompt.promptSha256,
@@ -529,17 +595,15 @@ async function run() {
         if (attempt) {
           const started = Date.now()
           try {
-            // The transport is built ONLY when the key is present AND all
-            // three locks are active. In a dry run the key is never read, no
-            // transport is ever built and globalThis.fetch is never touched.
-            let transport
-            if (process.env.OPENAI_API_KEY) {
-              transport = createOpenAiImageEditTransport({
-                apiKey: process.env.OPENAI_API_KEY,
-                baseUrl: process.env.OPENAI_BASE_URL || OPENAI_DEFAULT_BASE_URL,
-                locks: { authorized: true, budgetMaxEur, phase0aExecute: true },
-              })
-            }
+            // The transport is built ONLY AFTER the execution prerequisites
+            // (including OPENAI_API_KEY and a valid OPENAI_BASE_URL) have been
+            // validated — the key is never read and no transport is ever built
+            // before that point, and globalThis.fetch is never touched.
+            const transport = createOpenAiImageEditTransport({
+              apiKey: process.env.OPENAI_API_KEY,
+              baseUrl: process.env.OPENAI_BASE_URL || OPENAI_DEFAULT_BASE_URL,
+              locks: { authorized: true, budgetMaxEur, phase0aExecute: true },
+            })
             // markStarted immediately before the real fetch invocation: from
             // here the attempt permanently counts toward the 4-call limit.
             await markPhase0aCallStarted({ manifestPath, attemptId: attempt.attemptId })
@@ -683,7 +747,7 @@ async function run() {
     },
     image: normalized
       ? {
-          datasetItemId,
+          datasetItemId: reportDatasetItemId,
           datasetKind: effectiveDatasetKind,
           normalizedSha256: normalized.sha256,
           width: normalized.width,
@@ -746,7 +810,7 @@ async function run() {
     `## Image (normalized, EXIF-free)`,
     ``,
     normalized
-      ? `- dataset item id: ${datasetItemId}`
+      ? `- dataset item id: ${reportDatasetItemId}`
       : `- no image provided`,
     normalized
       ? `- normalized: ${normalized.width}x${normalized.height} JPEG (q82), sha256=${normalized.sha256}`

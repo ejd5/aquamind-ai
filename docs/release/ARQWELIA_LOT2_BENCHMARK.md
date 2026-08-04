@@ -3,7 +3,7 @@
 ## Purpose
 
 A1 is the **benchmark harness** for ARQWELIA Lot 2: it lets the team compare
-AI image-generation / image-edit providers on real ARQWELIA garden photos —
+AI image-generation / image-edit providers on synthetic benchmark garden images —
 without ever spending money accidentally.
 
 The harness is **dry-run safe by default**. Nothing in this harness performs a
@@ -66,6 +66,7 @@ Scope decisions honored by this harness (Phase 0A final corrections):
 | `tests/arqwelia-lot2-phase0a-adapters.test.ts` | Phase 0A adapters suite (no real calls, global fetch spy = 0) |
 | `tests/arqwelia-lot2-phase0a-correction.test.ts` | Phase 0A final-correction suite (32 tests) |
 | `tests/arqwelia-lot2-phase0a-execution-safety.test.ts` | Phase 0A EXECUTION-SAFETY suite — full integration (runSmoke → real transport → mock fetch → image), canonical contract, atomic reservation + local lock + concurrency, FAIL-CLOSED manifest, synthetic-only dataset gate, coherent response limits, zero real network, PII-free reports |
+| `tests/arqwelia-lot2-phase0a-dataset-gate.test.ts` | Phase 0A EXPLICIT-DATASET-ID GATE suite — execution requires the explicit `--dataset-id` (never a hash fallback), prerequisites are validated BEFORE any manifest mutation, and the dry-run truncated-hash id is a technical report id only |
 | `dataset/README.md` | Benchmark photo dataset instructions + Phase 0A dataset rules (lives outside git) |
 
 ### Circular import removed
@@ -183,6 +184,15 @@ same time:
 
 If any one of these is missing the CLI is a dry run or refuses with
 `externalCalls=0 / billingStatus='not_called'` and no cost.
+
+> **Explicit-dataset-id gate (Phase 0A):** execution depends on the EXPLICIT
+> `--dataset-id` value — the truncated hash of a normalized image is ONLY a
+> dry-run technical report id and **never** satisfies the `--dataset-id`
+> requirement. When `executeAuthorized===true` the prerequisites (items 6–8,
+> plus `OPENAI_API_KEY` and a valid base URL) are validated **BEFORE** any
+> manifest mutation: a missing prerequisite produces NO `upsertPhase0aItem`, NO
+> `reservePhase0aCall`, NO transport and NO fetch — a missing key is a clean
+> refusal (`not_called`), never a `reserved` / `cancelled_before_call` attempt.
 
 > **No real call has been performed during the development or tests of PR #79.**
 > The test suites exercise transports **only** with an injected `fetchImpl`
@@ -434,14 +444,21 @@ authorization. Phase 0A smoke accepts ONLY an **explicit** `--dataset-kind
 synthetic` (`authorized` / `user` / `home` / `real` are REJECTED). The default
 is `null` — an absent declaration is **NEVER** recorded as synthetic:
 
-- When `executeAuthorized===true` the CLI REQUIRES `--dataset-id <controlled>`,
-  `--dataset-kind synthetic` AND `--image <photo>`. These are verified **BEFORE**
-  `upsertPhase0aItem` / `reservePhase0aCall` / any transport — on failure there
-  is NO manifest item, NO reservation, NO transport, and the result is
-  `externalCalls=0 / billingStatus='not_called'`.
-- In a dry run, the manifest records the item only when the explicit
-  `--dataset-kind synthetic` declaration is present; an absent declaration
-  writes **no item** and the report keeps `datasetKind=null`.
+- When `executeAuthorized===true` the CLI REQUIRES the EXPLICIT `--dataset-id
+  <controlled>`, `--dataset-kind synthetic`, `--image <photo>`, `OPENAI_API_KEY`
+  and a valid `OPENAI_BASE_URL`. A normalized image **never** satisfies the
+  `--dataset-id` requirement — the truncated-hash fallback cannot unlock
+  execution. These prerequisites are validated **BEFORE** `upsertPhase0aItem` /
+  `reservePhase0aCall` / any transport / `markPhase0aCallStarted`: on failure
+  there is NO manifest item, NO reservation, NO transport and NO fetch, and the
+  result is `externalCalls=0 / billingStatus='not_called'` (a missing key is
+  NEVER turned into a `cancelled_before_call` attempt).
+- In a dry run, the manifest records the item only when the EXPLICIT
+  `--dataset-id` AND the explicit `--dataset-kind synthetic` declaration are
+  present; an absent declaration writes **no item** and the report keeps
+  `datasetKind=null`. Without `--dataset-id` the report may use the truncated
+  hash ONLY as a technical report id — it is never written into the manifest as
+  an authorized `datasetItemId`.
 - When recorded, the item carries `datasetKind:'synthetic'`,
   `authorizationBasis:'synthetic'`, `normalizedSha256`,
   `noExif:true`, `noFacesDeclared:true`, `noPlatesDeclared:true`,
@@ -526,8 +543,10 @@ The JSON report, Markdown report and console never store: absolute paths,
 local usernames, the raw free prompt, API keys/tokens, addresses, or the
 original local file name. The report keeps only:
 
-- `datasetItemId` — the controlled alphanumeric `--dataset-id`, or a truncated
-  hash of the normalized image when not provided (never the local basename);
+- `datasetItemId` — the controlled alphanumeric `--dataset-id`. In a dry run
+  only, an absent `--dataset-id` may fall back to a truncated hash of the
+  normalized image as a technical report id (never written into the manifest as
+  an authorized id, and never able to unlock execution);
 - `normalizedSha256`, width/height, input/output bytes, mimeType.
 - `promptVersion` (`arqwelia-lot2-v1`) and `promptSha256` (a SHA-256 **hash of
   the prompt text**, never the prompt itself);
@@ -541,10 +560,10 @@ image reports exactly `Image file could not be read` — without the path.
 
 ```bash
 # controlled dataset id (alphanumeric only); a missing id falls back to a
-# truncated hash of the normalized image
+# truncated hash of the normalized image AS A DRY-RUN TECHNICAL REPORT ID only
 bun scripts/benchmark-arqwelia-smoke.mjs --provider mock \
-  --image dataset/photos/01-small-garden.png --dataset-id item001 \
-  --out ./benchmark-out
+  --image dataset/photos/synthetic01.png --dataset-id synthetic01 \
+  --dataset-kind synthetic --out ./benchmark-out
 ```
 
 ## Run the dry run (default)
@@ -555,7 +574,8 @@ bun scripts/benchmark-arqwelia-smoke.mjs --provider mock --out ./benchmark-out
 
 # with a source photo (EXIF/GPS is fine — it is normalized away)
 bun scripts/benchmark-arqwelia-smoke.mjs --provider mock \
-  --image dataset/photos/01-small-garden.png --promptA "Concept A..." \
+  --image dataset/photos/synthetic01.png --dataset-id synthetic01 \
+  --dataset-kind synthetic --promptA "Concept A..." \
   --out ./benchmark-out
 
 # non-mock providers still dry-run (report says "skipped in dry run")
@@ -597,7 +617,21 @@ export ARQWELIA_BENCHMARK_AUTHORIZED=true
 export ARQWELIA_BENCHMARK_MAX_BUDGET_EUR=2
 export ARQWELIA_BENCHMARK_PHASE0A_EXECUTE=true
 bun scripts/benchmark-arqwelia-smoke.mjs --provider openai-gpt-image \
-  --image dataset/photos/01-small-garden.png --concept A --out ./benchmark-out
+  --image dataset/photos/synthetic01.png --dataset-id synthetic01 \
+  --dataset-kind synthetic --concept A \
+  --out ./benchmark-out/phase0a-first-smoke
+```
+
+The canonical Phase 0A first smoke:
+
+```bash
+bun scripts/benchmark-arqwelia-smoke.mjs \
+  --provider openai-gpt-image \
+  --image dataset/photos/synthetic01.png \
+  --dataset-id synthetic01 \
+  --dataset-kind synthetic \
+  --concept A \
+  --out ./benchmark-out/phase0a-first-smoke
 ```
 
 `--budget` may cap below that ceiling (never above — and never above the
@@ -608,17 +642,22 @@ bun scripts/benchmark-arqwelia-smoke.mjs --provider openai-gpt-image \
 ARQWELIA_BENCHMARK_AUTHORIZED=true ARQWELIA_BENCHMARK_MAX_BUDGET_EUR=2 \
 ARQWELIA_BENCHMARK_PHASE0A_EXECUTE=true \
   bun scripts/benchmark-arqwelia-smoke.mjs --provider openai-gpt-image \
-  --budget 1 --out ./benchmark-out
+  --image dataset/photos/synthetic01.png --dataset-id synthetic01 \
+  --dataset-kind synthetic --budget 1 --out ./benchmark-out
 ```
 
 An environment budget above **2 EUR** (e.g. `ARQWELIA_BENCHMARK_MAX_BUDGET_EUR=10`)
 is **refused** with a non-zero exit — the environment can never configure a
 budget above the Phase 0A owner cap.
 
-With no `OPENAI_API_KEY` a real provider answers `NOT IMPLEMENTED — awaiting
-Phase 0A execution` (no transport can be built, so no call is made); the report
-records `REAL_PROVIDER_CALLS=0, PAID_COST=0`. `--provider mock` remains the
-only provider whose smoke produces an artifact. No real call has been performed
+The execution prerequisites (explicit `--dataset-id`, `--dataset-kind
+synthetic`, `--image`, `OPENAI_API_KEY`, a valid `OPENAI_BASE_URL`) are
+validated BEFORE any manifest mutation / reservation / transport: with any
+prerequisite missing the CLI refuses with `externalCalls=0 / PAID_COST=0`
+(e.g. without `OPENAI_API_KEY` it reports `Phase 0A call refused:
+OPENAI_API_KEY is required when executeAuthorized` — a missing key is never
+turned into a reserved/cancelled attempt). `--provider mock` remains the only
+provider whose smoke produces an artifact. No real call has been performed
 during the development or tests of PR #79.
 
 ## Phase 0A — benchmark provider adapters (this build)
@@ -629,10 +668,11 @@ Phase 0A prepares the OpenAI image-edit adapter (`openai-gpt-image`,
 [When can a real call technically occur?](#when-can-a-real-call-technically-occur)
 is open at the same time.** All request bodies are built deterministically and
 the transports are injectable — tests inject mock transports, and the CLI
-builds the real transport only when the key AND all three gates are present;
-without the key the default transport answers `NOT IMPLEMENTED — awaiting
-Phase 0A execution`. No real call has been performed during the development or
-tests of PR #79.
+validates the execution prerequisites (explicit `--dataset-id`, `--dataset-kind
+synthetic`, `--image`, `OPENAI_API_KEY`, a valid base URL) BEFORE any manifest
+mutation / reservation / transport; a missing prerequisite is a clean refusal
+(`not_called / 0 / 0`), so a missing key never reaches the transport. No real
+call has been performed during the development or tests of PR #79.
 
 ### Versioned prompts (`scripts/lib/arqwelia-benchmark/prompts/`)
 
@@ -678,8 +718,8 @@ is reported as `externalCalls=1`, `actualCostEur=null`,
 
 ### Phase 0A — feasibility (2 photos, Concepts A + B, 4 calls max)
 
-- Pick **2 photos** from `dataset/photos/` that best cover the input variance
-  (recommended: `01-small-garden` and `08-contemporary-house`). The photos must
+- Pick **2 synthetic images** from `dataset/photos/` that best cover the input
+  variance (recommended: `synthetic01` and `synthetic02`). The images must
   satisfy the [Phase 0A dataset rules](#phase-0a-dataset-rules).
 - Run both **Concept A** and **Concept B** (one call per photo+concept,
   **max 4 calls**, owner budget **2 EUR max**) against the candidate that
