@@ -80,8 +80,9 @@ server.log
 .zscripts/
 examples/
 mini-services/
-# ARQWELIA Lot 2 — benchmark dataset (photos) and generated reports
+# ARQWELIA Lot 2 — benchmark dataset (photos + masks) and generated reports
 dataset/photos/
+dataset/masks/
 benchmark-out/
 # ARQWELIA Lot 2 Phase 0A — local NON-versioned retention manifest (JSON).
 # Lives inside benchmark-out/, but explicit patterns keep it out of git even if

@@ -1,0 +1,108 @@
+{
+  "arqweliaWorkflowVersion": "arqwelia-sdxl-inpainting-v1",
+  "engine": "comfyui-local",
+  "imageModel": "diffusers/stable-diffusion-xl-1.0-inpainting-0.1",
+  "resolution": "1024x1024",
+  "checkpoint": {
+    "status": "unresolved_not_installed",
+    "expectedFile": "sdxl-inpainting-v1/sdxl-inpainting-0.1-fp16.safetensors",
+    "directory": "ComfyUI/models/checkpoints",
+    "resolution": "BLOCKED — no verified community checkpoint may be treated as official.",
+    "requirementsBeforeAnyComfyUiSmoke": {
+      "source": "exact upstream URL (diffusers/stable-diffusion-xl-1.0-inpainting-0.1 → safetensors conversion) MUST be documented",
+      "realName": "exact filename actually produced",
+      "size": "exact byte size",
+      "sha256": "verified SHA-256 of the file actually installed",
+      "license": "CreativeML Open RAIL++-M (confirm)",
+      "compatibility": "verified to load via CheckpointLoaderSimple (object_info + a successful dry validation)"
+    },
+    "note": "The official repository is a multi-file Diffusers pipeline, NOT a single .safetensors. The first free benchmark will run through the official Diffusers notebook path; the ComfyUI workflow stays prepared but its preflight BLOCKS until a verified checkpoint exists.",
+    "vae": "bundled inside the checkpoint (output index 2 of CheckpointLoaderSimple); no separate VAE file required",
+    "license": "CreativeML Open RAIL++-M"
+  },
+  "nodes": {
+    "4": {
+      "class_type": "CheckpointLoaderSimple",
+      "inputs": {
+        "ckpt_name": "sdxl-inpainting-v1/sdxl-inpainting-0.1-fp16.safetensors"
+      }
+    },
+    "6": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {
+        "text": "PLACEHOLDER_POSITIVE",
+        "clip": ["4", 1]
+      }
+    },
+    "7": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {
+        "text": "PLACEHOLDER_NEGATIVE",
+        "clip": ["4", 1]
+      }
+    },
+    "12": {
+      "class_type": "LoadImage",
+      "inputs": {
+        "image": "PLACEHOLDER_IMAGE",
+        "upload": "image"
+      }
+    },
+    "13": {
+      "class_type": "LoadImageMask",
+      "inputs": {
+        "image": "PLACEHOLDER_MASK",
+        "channel": "red"
+      }
+    },
+    "15": {
+      "class_type": "VAEEncodeForInpaint",
+      "inputs": {
+        "pixels": ["12", 0],
+        "vae": ["4", 2],
+        "mask": ["13", 0],
+        "grow_mask_by": 8
+      }
+    },
+    "3": {
+      "class_type": "KSampler",
+      "inputs": {
+        "seed": 42,
+        "steps": 25,
+        "cfg": 7,
+        "sampler_name": "euler",
+        "scheduler": "normal",
+        "denoise": 0.82,
+        "model": ["4", 0],
+        "positive": ["6", 0],
+        "negative": ["7", 0],
+        "latent_image": ["15", 0]
+      }
+    },
+    "8": {
+      "class_type": "VAEDecode",
+      "inputs": {
+        "samples": ["3", 0],
+        "vae": ["4", 2]
+      }
+    },
+    "16": {
+      "class_type": "ImageCompositeMasked",
+      "inputs": {
+        "destination": ["12", 0],
+        "source": ["8", 0],
+        "mask": ["13", 0],
+        "x": 0,
+        "y": 0,
+        "resize_source": false
+      }
+    },
+    "9": {
+      "class_type": "SaveImage",
+      "inputs": {
+        "filename_prefix": "arqwelia-sdxl-v1-",
+        "images": ["16", 0]
+      }
+    }
+  }
+}
