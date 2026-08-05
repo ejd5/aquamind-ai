@@ -527,24 +527,25 @@ model Subscription {
 }
 
 // Wave A2: canonical billing identity — maps a provider's external user id to
-// exactly one AQWELIA User. Uniqueness is (provider, environment,
-// externalUserId); an externalUserId can only ever belong to one User. The
-// RevenueCat webhook resolves app_user_id through this table so an anonymous or
-// mismatched id can never grant access to the wrong User.
+// exactly one AQWELIA User. RevenueCat uses the SAME App User ID for sandbox
+// and production, so the identity is canonical per (provider, externalUserId):
+// an externalUserId can only ever belong to one User. The billing ENVIRONMENT
+// is never stored here; it lives on Subscription and BillingEvent and is always
+// determined server-side (webhook payload or getBillingAccessEnvironment()).
+// The RevenueCat webhook resolves app_user_id through this table so an
+// anonymous or mismatched id can never grant access to the wrong User.
 model BillingIdentity {
   id             String   @id @default(cuid())
   userId         String
   provider       String // stripe | revenuecat
-  environment    String @default("production") // sandbox | production
   externalUserId String // RC app_user_id or Stripe customer id
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([provider, environment, externalUserId])
+  @@unique([provider, externalUserId])
   @@index([userId])
-  @@index([provider, environment])
 }
 
 // P0-B: Billing event log — idempotency for webhooks.

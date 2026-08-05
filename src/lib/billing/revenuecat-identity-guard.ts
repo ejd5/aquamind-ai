@@ -1,34 +1,27 @@
 /**
- * AQWELIA Wave A2 — RevenueCat client identity guard + server convergence.
+ * AQWELIA Wave A2 (Round 1) — RevenueCat client identity guard + convergence.
  *
- * Purchase / restore / getEntitlements are only allowed once the expected
- * AQWELIA identity is confirmed with the RevenueCat SDK (see
- * revenuecat-identity.ts). After a purchase or restore the client refreshes
- * CustomerInfo but only treats the server-side access as CONVERGED after
- * reading GET /api/subscription.
+ * Purchase / restore / getEntitlements / getProducts are only allowed once the
+ * bridge is fully ready: SDK identity confirmed AND server identity bound. The
+ * server identity binding happens inside the manager immediately after
+ * Purchases.logIn (it does NOT wait for an entitlement).
+ *
+ * After a purchase the client refreshes CustomerInfo but only treats the
+ * server-side access as CONVERGED after reading GET /api/subscription.
  */
 
-import { isNative } from '@/lib/platform'
-import { revenueCatIdentityBridge, identityQueueDrained } from '@/lib/billing/revenuecat-identity'
+import { revenueCatManager } from '@/lib/billing/revenuecat-manager'
 
-export class RevenueCatIdentityNotConfirmedError extends Error {
-  constructor() {
-    super('RevenueCat identity is not confirmed for the current user')
-    this.name = 'RevenueCatIdentityNotConfirmedError'
-  }
-}
+export { RevenueCatIdentityNotReadyError } from '@/lib/billing/revenuecat-manager'
+
+export type { RevenueCatManagerSnapshot as RevenueCatBridgeSnapshot } from '@/lib/billing/revenuecat-manager'
 
 /**
- * Waits for the identity transition queue to drain, then verifies that an
- * identity is confirmed. Throws fail-closed otherwise.
+ * Waits for the identity transition queue to drain, then requires a fully ready
+ * identity (SDK confirmed + server bound). Throws fail-closed otherwise.
  */
-export async function requireConfirmedRevenueCatIdentity(): Promise<void> {
-  await identityQueueDrained()
-  if (!isNative()) return
-  const snap = revenueCatIdentityBridge.snapshot()
-  if (snap.state !== 'ready' || !snap.confirmedUserId || snap.expectedUserId !== snap.confirmedUserId) {
-    throw new RevenueCatIdentityNotConfirmedError()
-  }
+export async function requireConfirmedRevenueCatIdentity(): Promise<string> {
+  return revenueCatManager.requireReady()
 }
 
 /**
@@ -49,37 +42,9 @@ export async function confirmServerAccessConverged(userId: string): Promise<bool
     }
     const sub = body?.subscription
     if (!sub || sub.userId !== userId) return false
-    // Server access is converged when an active subscription exists.
     if (sub.active === true) return true
-    // Otherwise fall back to the plan projection (non-decouverte).
     return Boolean(body?.plan && body.plan.id !== 'decouverte')
   } catch {
     return false
-  }
-}
-
-/** Registers (or re-asserts) the canonical billing identity with the server. */
-export async function registerRevenueCatIdentityServerSide(args: {
-  userId: string
-  environment?: string
-  externalUserId: string
-}): Promise<{ ok: boolean }> {
-  if (!isNative()) return { ok: true }
-  try {
-    const res = await fetch('/api/billing/identity', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        provider: 'revenuecat',
-        environment: args.environment ?? 'production',
-        externalUserId: args.externalUserId,
-        userId: args.userId,
-      }),
-    })
-    if (!res.ok) return { ok: false }
-    const body = (await res.json()) as { ok?: boolean }
-    return { ok: body.ok === true }
-  } catch {
-    return { ok: false }
   }
 }

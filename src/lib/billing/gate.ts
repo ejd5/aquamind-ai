@@ -28,6 +28,7 @@ import {
   statusGrantsAccess,
 } from '@/lib/billing/plans'
 import { loadUserEntitlements, pickBestValidRow } from '@/lib/billing/entitlement-projection'
+import { getBillingAccessEnvironment } from '@/lib/billing/identity'
 import { pickLocale, translate } from '@/lib/i18n-api'
 
 export interface GateResult {
@@ -66,8 +67,11 @@ export async function requireFeatureAccess(
 
   const userId = session.user.id
 
-  // Wave A2: evaluate ALL valid subscriptions (Stripe + RevenueCat union).
-  const projection = await loadUserEntitlements(userId)
+  // Wave A2 (Round 1): evaluate ALL valid subscriptions (Stripe + RevenueCat
+  // union) within the server-determined billing access environment. In
+  // Production a sandbox subscription can never grant a right.
+  const accessEnvironment = getBillingAccessEnvironment()
+  const projection = await loadUserEntitlements(userId, accessEnvironment)
   const best = projection.best
 
   const planId: PlanId = best?.plan || DEFAULT_PLAN
@@ -116,8 +120,10 @@ export async function getUserPlan(req: NextRequest): Promise<{
     return { userId: null, planId: DEFAULT_PLAN, status: 'inactive', expiresAt: null }
   }
 
-  // Wave A2: union projection across providers.
-  const projection = await loadUserEntitlements(session.user.id)
+  // Wave A2 (Round 1): union projection across providers within the billing
+  // access environment.
+  const accessEnvironment = getBillingAccessEnvironment()
+  const projection = await loadUserEntitlements(session.user.id, accessEnvironment)
 
   return {
     userId: session.user.id,

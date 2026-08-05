@@ -98,7 +98,7 @@ import { requireConfirmedRevenueCatIdentity, confirmServerAccessConverged } from
 import { billing } from '@/lib/billing'
 import {
   isRevenueCatAnonymous,
-  normalizeRevenueCatEnvironment,
+  parseRevenueCatEnvironment,
   resolveBillingIdentityUserId,
   upsertBillingIdentity,
   billingUserExists,
@@ -121,8 +121,8 @@ describe('Wave A2 — identity bridge (SDK mocked)', () => {
     expect(mockPurchases.configure).toHaveBeenCalled()
     expect(mockPurchases.logIn).toHaveBeenCalledWith({ appUserID: 'user-42' })
     expect(snap.state).toBe('ready')
-    expect(snap.confirmedUserId).toBe('user-42')
-    expect(bridge.isIdentityConfirmed('user-42')).toBe(true)
+    expect(snap.sdkConfirmedUserId).toBe('user-42')
+    expect(bridge.isReady('user-42')).toBe(true)
   })
 
   it('idempotent login: a second setIdentity for the same user does NOT call logIn again', async () => {
@@ -139,8 +139,8 @@ describe('Wave A2 — identity bridge (SDK mocked)', () => {
     const bridge = createIdentityBridge()
     const snap = await bridge.setIdentity('user-bad')
     expect(snap.state).toBe('error')
-    expect(snap.confirmedUserId).toBeNull()
-    expect(bridge.isIdentityConfirmed('user-bad')).toBe(false)
+    expect(snap.sdkConfirmedUserId).toBeNull()
+    expect(bridge.isReady('user-bad')).toBe(false)
     mockPurchases.logIn.mockClear()
   })
 
@@ -152,13 +152,13 @@ describe('Wave A2 — identity bridge (SDK mocked)', () => {
     await Promise.all([p1, p2, p3])
     // Serialized: never more than one in-flight SDK call.
     expect(getMaxActive()).toBe(1)
-    expect(bridge.snapshot().confirmedUserId).toBe('B')
+    expect(bridge.snapshot().sdkConfirmedUserId).toBe('B')
     expect(bridge.snapshot().expectedUserId).toBe('B')
     expect(bridge.snapshot().state).toBe('ready')
     // Ordering must be in → out → in.
     expect(sdkCalls).toEqual(['logIn:A', 'logOut', 'logIn:B'])
-    expect(bridge.isIdentityConfirmed('A')).toBe(false)
-    expect(bridge.isIdentityConfirmed('B')).toBe(true)
+    expect(bridge.isReady('A')).toBe(false)
+    expect(bridge.isReady('B')).toBe(true)
   })
 
   it('A → logout → B with a failing logout still clears the previous identity (fail-closed)', async () => {
@@ -166,11 +166,11 @@ describe('Wave A2 — identity bridge (SDK mocked)', () => {
     await bridge.setIdentity('A')
     mockPurchases.logOut.mockRejectedValueOnce(new Error('RC logout failed'))
     const snap = await bridge.clearIdentity()
-    expect(snap.confirmedUserId).toBeNull()
+    expect(snap.sdkConfirmedUserId).toBeNull()
     expect(snap.expectedUserId).toBeNull()
     // State error means the next login still works (queue continues).
     await bridge.setIdentity('B')
-    expect(bridge.snapshot().confirmedUserId).toBe('B')
+    expect(bridge.snapshot().sdkConfirmedUserId).toBe('B')
     mockPurchases.logOut.mockClear()
   })
 })
@@ -223,7 +223,7 @@ describe('Wave A2 — purchase / restore require a confirmed identity', () => {
     expect(entitlements[0].plan).toBe('wellness')
     expect(entitlements[0].isActive).toBe(true)
     // The restore is only reachable because identity === the same user.
-    expect(revenueCatIdentityBridge.isIdentityConfirmed('user-restore')).toBe(true)
+    expect(revenueCatIdentityBridge.isReady('user-restore')).toBe(true)
   })
 
   it('server convergence is only acknowledged after GET /api/subscription agrees', async () => {
@@ -245,39 +245,33 @@ describe('Wave A2 — persisted billing identity (server side)', () => {
     expect(isRevenueCatAnonymous(undefined)).toBe(false)
   })
 
-  it('normalizes environment', () => {
-    expect(normalizeRevenueCatEnvironment('SANDBOX')).toBe('sandbox')
-    expect(normalizeRevenueCatEnvironment('PRODUCTION')).toBe('production')
-    expect(normalizeRevenueCatEnvironment('production')).toBe('production')
-    expect(normalizeRevenueCatEnvironment(undefined)).toBe('production')
+  it('parses environment strictly (invalid/absent is NOT production)', () => {
+    expect(parseRevenueCatEnvironment('SANDBOX')).toBe('sandbox')
+    expect(parseRevenueCatEnvironment('PRODUCTION')).toBe('production')
+    expect(parseRevenueCatEnvironment('production')).toBe('production')
+    expect(parseRevenueCatEnvironment(undefined)).toBeNull()
   })
 
   it('resolves an unknown externalUserId to null and reports missing users', async () => {
-    expect(await resolveBillingIdentityUserId('revenuecat', 'production', 'does-not-exist')).toBeNull()
+    expect(await resolveBillingIdentityUserId('revenuecat', 'does-not-exist')).toBeNull()
     expect(await billingUserExists('does-not-exist')).toBe(false)
   })
 
-  it('upserts a binding and enforces (provider, environment, externalUserId) uniqueness', async () => {
+  it('upserts a canonical binding (provider + externalUserId) and stays idempotent', async () => {
     const email = `wave-a2-identity-${Date.now()}@aqwelia.test`
     const user = await db.user.create({ data: { email, passwordHash: 'x' } })
     try {
       const first = await upsertBillingIdentity({
-        provider: 'revenuecat', environment: 'production', externalUserId: 'ext-1', userId: user.id,
+        provider: 'revenuecat', externalUserId: 'ext-1', userId: user.id,
       })
       expect(first.ok).toBe(true)
       // Same binding again → idempotent, same user.
       const second = await upsertBillingIdentity({
-        provider: 'revenuecat', environment: 'production', externalUserId: 'ext-1', userId: user.id,
+        provider: 'revenuecat', externalUserId: 'ext-1', userId: user.id,
       })
       expect(second.ok).toBe(true)
       expect(second.ok && second.row.id).toBe(first.ok && first.row.id)
-      // Sandbox is a different namespace.
-      const sandbox = await upsertBillingIdentity({
-        provider: 'revenuecat', environment: 'sandbox', externalUserId: 'ext-1', userId: user.id,
-      })
-      expect(sandbox.ok).toBe(true)
-      expect(await resolveBillingIdentityUserId('revenuecat', 'production', 'ext-1')).toBe(user.id)
-      expect(await resolveBillingIdentityUserId('revenuecat', 'sandbox', 'ext-1')).toBe(user.id)
+      expect(await resolveBillingIdentityUserId('revenuecat', 'ext-1')).toBe(user.id)
     } finally {
       await db.billingIdentity.deleteMany({ where: { userId: user.id } })
       await db.user.deleteMany({ where: { id: user.id } })
@@ -291,16 +285,16 @@ describe('Wave A2 — persisted billing identity (server side)', () => {
     const b = await db.user.create({ data: { email: emailB, passwordHash: 'x' } })
     try {
       const first = await upsertBillingIdentity({
-        provider: 'revenuecat', environment: 'production', externalUserId: 'ext-owner', userId: a.id,
+        provider: 'revenuecat', externalUserId: 'ext-owner', userId: a.id,
       })
       expect(first.ok).toBe(true)
       const conflict = await upsertBillingIdentity({
-        provider: 'revenuecat', environment: 'production', externalUserId: 'ext-owner', userId: b.id,
+        provider: 'revenuecat', externalUserId: 'ext-owner', userId: b.id,
       })
       expect(conflict.ok).toBe(false)
       if (!conflict.ok) expect(conflict.reason).toContain('another_user')
       // The binding still belongs to A.
-      expect(await resolveBillingIdentityUserId('revenuecat', 'production', 'ext-owner')).toBe(a.id)
+      expect(await resolveBillingIdentityUserId('revenuecat', 'ext-owner')).toBe(a.id)
     } finally {
       await db.billingIdentity.deleteMany({ where: { userId: { in: [a.id, b.id] } } })
       await db.user.deleteMany({ where: { id: { in: [a.id, b.id] } } })
@@ -321,7 +315,7 @@ describe('Wave A2 — RevenueCat webhook hardening (DB-level)', () => {
     userId = user.id
     // Bind the canonical identity so the handler resolves the user.
     const bound = await upsertBillingIdentity({
-      provider: 'revenuecat', environment: 'production', externalUserId: userId, userId,
+      provider: 'revenuecat', externalUserId: userId, userId,
     })
     expect(bound.ok).toBe(true)
   })
@@ -562,7 +556,7 @@ describe('Wave A2 — provider coexistence (Stripe + RevenueCat)', () => {
       providerEventId: `${prefix}_e7`, providerEventAt: new Date(Date.now() + 1000),
       expiresAt: new Date(Date.now() - 1000),
     })
-    const projection = await loadUserEntitlements(userId)
+    const projection = await loadUserEntitlements(userId, 'production')
     expect(projection.hasValidAccess).toBe(true)
     expect(projection.best?.plan).toBe('oasis')
     expect(projection.best?.status).toBe('active')
@@ -635,7 +629,7 @@ describe('Wave A2 — migrations (SQLite + PostgreSQL)', () => {
     expect(sql).toContain('CREATE TABLE "BillingIdentity"')
     expect(sql).toContain('ALTER TABLE "Subscription" ADD COLUMN "provider"')
     expect(sql).toContain('ALTER TABLE "Subscription" ADD COLUMN "environment"')
-    expect(sql).toContain('BillingIdentity_provider_environment_externalUserId_key')
+    expect(sql).toContain('BillingIdentity_provider_externalUserId_key')
     expect(sql).toContain('BillingEvent_source_environment_eventId_key')
   })
 

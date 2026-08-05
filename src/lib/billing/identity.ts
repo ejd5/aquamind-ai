@@ -1,17 +1,17 @@
 /**
- * AQWELIA Wave A2 — canonical billing identity (server side).
+ * AQWELIA Wave A2 (Round 1) — canonical billing identity (server side).
  *
- * Resolves a provider's external user id (RevenueCat `app_user_id`, Stripe
- * `customer`) to exactly one AQWELIA User via the `BillingIdentity` table.
- * Uniqueness is (provider, environment, externalUserId). An externalUserId can
- * only ever belong to one User.
+ * RevenueCat uses the SAME App User ID for sandbox and production, so the
+ * canonical identity is scoped by (provider, externalUserId) only — the billing
+ * ENVIRONMENT is never stored here and is always determined server-side:
+ *   - the webhook records the payload environment (validated, never defaulted);
+ *   - entitlement access uses getBillingAccessEnvironment() (fail-closed).
  *
- * The RevenueCat webhook MUST resolve `app_user_id` through this module:
- *   - missing app_user_id        → ignored (missing_user_identity)
- *   - `$RCAnonymousID*`           → ignored (anonymous_identity)
- *   - unknown BillingIdentity     → ignored (unknown_user_identity) unless it
- *     matches the current user's own id (upsert path used by the client bridge)
- *   - ownership conflict A/B      → ignored with a stable reason, never moved
+ * The webhook resolves app_user_id / original_app_user_id / aliases through
+ * resolveRevenueCatIdentity(): candidates are filtered, anonymous ids are
+ * recognised, all non-anonymous ids must converge on ONE User (multiple Users =
+ * identity_conflict / quarantine), no resolved User = transient (retryable),
+ * and the User must really exist.
  */
 
 import { db } from '@/lib/db'
@@ -25,41 +25,61 @@ export interface BillingIdentityRow {
   id: string
   userId: string
   provider: string
-  environment: string
   externalUserId: string
   createdAt: Date
   updatedAt: Date
 }
 
 /** True when the RevenueCat id is the anonymous placeholder. */
-export function isRevenueCatAnonymous(appUserId: string | null | undefined): boolean {
-  return typeof appUserId === 'string' && appUserId.startsWith(RC_ANONYMOUS_PREFIX)
+export function isRevenueCatAnonymous(value: string | null | undefined): boolean {
+  return typeof value === 'string' && value.startsWith(RC_ANONYMOUS_PREFIX)
 }
 
-/** Normalizes a RevenueCat environment string into our enum. */
-export function normalizeRevenueCatEnvironment(env: string | null | undefined): BillingEnvironment {
-  const lower = String(env ?? '').toLowerCase()
-  if (lower.includes('sandbox')) return 'sandbox'
+/**
+ * Strict RevenueCat environment parsing. Returns null for an absent or invalid
+ * value — NEVER defaults to 'production'. An invalid environment is rejected by
+ * the webhook instead of being treated as production.
+ */
+export function parseRevenueCatEnvironment(env: string | null | undefined): BillingEnvironment | null {
+  if (typeof env !== 'string') return null
+  const lower = env.toLowerCase().trim()
+  if (lower === 'sandbox') return 'sandbox'
+  if (lower === 'production') return 'production'
+  return null
+}
+
+/**
+ * Canonical server-side source of the billing access environment (fail-closed).
+ *
+ * In Production (NODE_ENV=production) ONLY 'production' entitlements grant
+ * access — sandbox is never granted. Outside Production, sandbox is allowed
+ * ONLY when explicitly enabled (BILLING_ALLOW_SANDBOX=true). Any other case
+ * falls back to 'production'. Testable via the overrides parameter.
+ */
+export function getBillingAccessEnvironment(overrides?: {
+  nodeEnv?: string
+  allowSandbox?: boolean | string
+}): BillingEnvironment {
+  const nodeEnv = overrides?.nodeEnv ?? process.env.NODE_ENV
+  if (nodeEnv === 'production') return 'production'
+  const allow = overrides?.allowSandbox ?? process.env.BILLING_ALLOW_SANDBOX
+  if (allow === true || allow === 'true') return 'sandbox'
   return 'production'
 }
 
 /**
- * Resolves an external user id to an AQWELIA User id, scoped by provider +
- * environment. Returns null when unknown.
+ * Resolves an external user id to an AQWELIA User id. Canonical per provider —
+ * the environment is intentionally absent: RevenueCat reuses the same App User
+ * ID for sandbox and production. Returns null when unknown.
  */
 export async function resolveBillingIdentityUserId(
   provider: BillingProvider,
-  environment: BillingEnvironment,
   externalUserId: string,
 ): Promise<string | null> {
   if (!externalUserId) return null
   const row = await db.billingIdentity.findUnique({
     where: {
-      provider_environment_externalUserId: {
-        provider,
-        environment,
-        externalUserId,
-      },
+      provider_externalUserId: { provider, externalUserId },
     },
   })
   return row?.userId ?? null
@@ -75,43 +95,128 @@ export async function billingUserExists(userId: string): Promise<boolean> {
 }
 
 /**
- * Upserts a billing identity binding. If the same (provider, environment,
- * externalUserId) is already bound to a DIFFERENT user, the conflict is
- * returned as an error — it is never silently transferred.
+ * Concurrent-safe upsert of a billing identity binding. If the same
+ * (provider, externalUserId) is already bound to a DIFFERENT user, the conflict
+ * is returned as an error — it is never silently transferred. A unique-race
+ * (P2002) is resolved by re-reading the winner instead of throwing a 500.
  *
  * Returns { ok: true, row } on success, or { ok: false, code, reason } on
  * conflict.
  */
 export async function upsertBillingIdentity(args: {
   provider: BillingProvider
-  environment: BillingEnvironment
   externalUserId: string
   userId: string
 }): Promise<
   | { ok: true; row: BillingIdentityRow }
   | { ok: false; code: 'identity_conflict'; reason: string }
 > {
-  const { provider, environment, externalUserId, userId } = args
+  const { provider, externalUserId, userId } = args
   if (!externalUserId || isRevenueCatAnonymous(externalUserId)) {
     return { ok: false, code: 'identity_conflict', reason: 'invalid_external_user_id' }
   }
   const existing = await db.billingIdentity.findUnique({
-    where: {
-      provider_environment_externalUserId: { provider, environment, externalUserId },
-    },
+    where: { provider_externalUserId: { provider, externalUserId } },
   })
   if (existing) {
     if (existing.userId !== userId) {
-      return {
-        ok: false,
-        code: 'identity_conflict',
-        reason: `external_user_id_belongs_to_another_user`,
-      }
+      return { ok: false, code: 'identity_conflict', reason: 'external_user_id_belongs_to_another_user' }
     }
     return { ok: true, row: existing }
   }
-  const row = await db.billingIdentity.create({
-    data: { provider, environment, externalUserId, userId },
-  })
-  return { ok: true, row }
+  try {
+    const row = await db.billingIdentity.create({
+      data: { provider, externalUserId, userId },
+    })
+    return { ok: true, row }
+  } catch (err) {
+    // Concurrent upsert race: someone else created the binding first.
+    if (typeof err === 'object' && err !== null && 'code' in err && err.code === 'P2002') {
+      const winner = await db.billingIdentity.findUnique({
+        where: { provider_externalUserId: { provider, externalUserId } },
+      })
+      if (!winner) throw err
+      if (winner.userId !== userId) {
+        return { ok: false, code: 'identity_conflict', reason: 'external_user_id_belongs_to_another_user' }
+      }
+      return { ok: true, row: winner }
+    }
+    throw err
+  }
+}
+
+/**
+ * Canonical RevenueCat identity resolution — used by the webhook BEFORE any
+ * transition or idempotency reservation.
+ *
+ * Candidates are taken from app_user_id, original_app_user_id and aliases[].
+ * Empty / missing candidates are dropped and anonymous ($RCAnonymousID*) ids
+ * are recognised. All NON-anonymous candidates are looked up in BillingIdentity
+ * and must converge on a single User:
+ *   - several distinct Users → { conflict } (quarantine, never transferred);
+ *   - no resolved User → { transient } (retryable 503, never a definitive
+ *     accept or reject);
+ *   - exactly one User that does not exist → { transient };
+ *   - exactly one existing User → { ok }.
+ *
+ * An anonymous app_user_id is only accepted when a non-anonymous alias resolves
+ * to a known canonical identity.
+ */
+export async function resolveRevenueCatIdentity(
+  event: Record<string, unknown>,
+): Promise<
+  | { ok: true; userId: string; matchedExternalId: string }
+  | { ok: false; code: 'identity_conflict' | 'transient_unknown'; reason: string }
+> {
+  const candidates = collectCandidateIds(event)
+  if (candidates.length === 0) {
+    return { ok: false, code: 'transient_unknown', reason: 'no_identity_candidates' }
+  }
+
+  // Non-anonymous candidates are the only trustworthy ones.
+  const canonicalIds = candidates.filter((id) => !isRevenueCatAnonymous(id))
+
+  const resolved = new Map<string, string>() // externalId -> userId
+  for (const id of canonicalIds) {
+    const userId = await resolveBillingIdentityUserId('revenuecat', id)
+    if (userId) resolved.set(id, userId)
+  }
+
+  if (resolved.size === 0) {
+    // No canonical candidate is bound yet (the client may still be logging in
+    // and binding the identity). This is transient, not a definitive reject.
+    return { ok: false, code: 'transient_unknown', reason: 'no_bound_identity' }
+  }
+
+  const distinctUsers = new Set(resolved.values())
+  if (distinctUsers.size > 1) {
+    return { ok: false, code: 'identity_conflict', reason: 'identity_aliases_conflict' }
+  }
+
+  const userId = resolved.values().next().value as string
+  if (!(await billingUserExists(userId))) {
+    return { ok: false, code: 'transient_unknown', reason: 'resolved_user_missing' }
+  }
+
+  const matchedExternalId = resolved.keys().next().value as string
+  return { ok: true, userId, matchedExternalId }
+}
+
+/**
+ * Collects non-empty identity candidates from app_user_id, original_app_user_id
+ * and aliases[]. Duplicates are removed.
+ */
+function collectCandidateIds(event: Record<string, unknown>): string[] {
+  const ids = new Set<string>()
+  for (const key of ['app_user_id', 'original_app_user_id'] as const) {
+    const value = event[key]
+    if (typeof value === 'string' && value.trim() !== '') ids.add(value.trim())
+  }
+  const aliases = event.aliases
+  if (Array.isArray(aliases)) {
+    for (const alias of aliases) {
+      if (typeof alias === 'string' && alias.trim() !== '') ids.add(alias.trim())
+    }
+  }
+  return [...ids]
 }

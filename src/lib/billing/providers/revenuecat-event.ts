@@ -42,43 +42,49 @@ export async function handleRevenueCatEvent(
   const isDeactivation = RC_DEACTIVE_EVENTS.has(eventType)
   if (!isActivation && !isDeactivation) return { result: 'ignored', reason: 'event_type_not_supported' }
 
-  // Wave A2: canonical identity ownership. The webhook already resolved the
-  // user via BillingIdentity; here we re-assert the binding so the row records
-  // the provider environment and the ownership is never silently transferred.
+  // Wave A2 (Round 1): canonical identity ownership. The webhook already
+  // resolved the user via BillingIdentity; here we re-assert the binding and
+  // scope the transaction lookup by provider + exact environment so a sandbox
+  // event can never resolve a production row and a RevenueCat event can never
+  // resolve a Stripe row.
   const originalTransactionId = event?.original_transaction_id || event?.transaction_id || null
   if (!originalTransactionId) return { result: 'ignored', reason: 'no_subscription_link' }
 
   // Ownership check: the subscription (by original_transaction_id) must belong
-  // to the SAME provider environment AND to the SAME user. If it already
-  // belongs to a different user → conflict, ignored, never transferred.
+  // to provider='revenuecat', the EXACT environment AND the SAME user. If it
+  // already belongs to a different user → conflict, ignored, never transferred.
   const existingByProvider = await db.subscription.findFirst({
-    where: { providerSubscriptionId: originalTransactionId },
+    where: {
+      providerSubscriptionId: originalTransactionId,
+      provider: 'revenuecat',
+      environment,
+    },
   })
   if (existingByProvider && existingByProvider.userId !== userId) {
     return { result: 'ignored', reason: 'transaction_ownership_conflict' }
   }
-  // A/B conflict: the identity binding belongs to another user than the event's
-  // resolved user — log ignored with a stable reason, never transfer.
-  const identityBinding = await db.billingIdentity.findUnique({
-    where: {
-      provider_environment_externalUserId: {
-        provider: 'revenuecat',
-        environment,
-        externalUserId: event?.app_user_id || '',
+  // A/B conflict: the canonical identity binding belongs to another user than
+  // the event's resolved user — log ignored with a stable reason, never
+  // transfer. The binding is canonical per provider (RevenueCat reuses the same
+  // App User ID across sandbox/production), so no environment here.
+  const appUserId = typeof event?.app_user_id === 'string' ? event.app_user_id : ''
+  if (appUserId && !isRevenueCatAnonymous(appUserId)) {
+    const identityBinding = await db.billingIdentity.findUnique({
+      where: {
+        provider_externalUserId: { provider: 'revenuecat', externalUserId: appUserId },
       },
-    },
-  })
-  if (identityBinding && identityBinding.userId !== userId) {
-    return { result: 'ignored', reason: 'identity_conflict_a_b' }
+    })
+    if (identityBinding && identityBinding.userId !== userId) {
+      return { result: 'ignored', reason: 'identity_conflict_a_b' }
+    }
   }
 
   // Keep the canonical binding fresh (idempotent upsert; conflicts are ignored,
   // never transferred).
-  if (event?.app_user_id && !isRevenueCatAnonymous(event.app_user_id)) {
+  if (appUserId && !isRevenueCatAnonymous(appUserId)) {
     await upsertBillingIdentity({
       provider: 'revenuecat',
-      environment,
-      externalUserId: event.app_user_id,
+      externalUserId: appUserId,
       userId,
     }).catch(() => undefined)
   }

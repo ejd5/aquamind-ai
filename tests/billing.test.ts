@@ -137,6 +137,7 @@ describe('P0-B — Billing security', () => {
           app_user_id: 'test-user-nonexistent',
           product_id: 'aqwelia_wellness_monthly',
           event_timestamp_ms: Date.now(),
+          environment: 'PRODUCTION',
         },
       }),
     })

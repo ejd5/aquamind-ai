@@ -1,9 +1,16 @@
 -- Wave A2 — canonical RevenueCat identity + provider coexistence.
 --
---  1. Add provider + environment to Subscription (defaults preserve existing
---     rows: existing rows are treated as 'revenuecat' / 'production').
---  2. Create BillingIdentity mapping (provider, environment, externalUserId)
---     to exactly one User.
+--  1. Add provider + environment to Subscription. Existing rows are backfilled:
+--     any row carrying a Stripe subscription id is 'stripe', otherwise
+--     'revenuecat'. Ambiguous rows must be caught by the preflight script
+--     (scripts/preflight-subscription-provider.mjs) BEFORE this migration runs;
+--     this migration never silently reclassifies a Stripe row.
+--  2. Create BillingIdentity mapping (provider, externalUserId) to exactly one
+--     User with a real FK + cascade. RevenueCat uses the same App User ID for
+--     sandbox and production, so the identity is canonical per provider; the
+--     billing environment is NOT stored here.
+--  3. BillingEvent gains environment; idempotency becomes
+--     [source, environment, eventId].
 
 ALTER TABLE "Subscription" ADD COLUMN "provider" TEXT NOT NULL DEFAULT 'revenuecat';
 ALTER TABLE "Subscription" ADD COLUMN "environment" TEXT NOT NULL DEFAULT 'production';
@@ -18,24 +25,24 @@ WHERE "stripeSubscriptionId" IS NOT NULL;
 DROP INDEX "Subscription_providerSubscriptionId_key";
 CREATE UNIQUE INDEX "Subscription_provider_environment_providerSubscriptionId_key"
     ON "Subscription"("provider", "environment", "providerSubscriptionId");
+CREATE INDEX "Subscription_provider_environment_idx" ON "Subscription"("provider", "environment");
 
 CREATE TABLE "BillingIdentity" (
     "id"             TEXT    NOT NULL,
     "userId"         TEXT    NOT NULL,
     "provider"       TEXT    NOT NULL,
-    "environment"    TEXT    NOT NULL DEFAULT 'production',
     "externalUserId" TEXT    NOT NULL,
     "createdAt"      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt"      DATETIME NOT NULL,
 
-    CONSTRAINT "BillingIdentity_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "BillingIdentity_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "BillingIdentity_userId_fkey"
+        FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE UNIQUE INDEX "BillingIdentity_provider_environment_externalUserId_key"
-    ON "BillingIdentity"("provider", "environment", "externalUserId");
+CREATE UNIQUE INDEX "BillingIdentity_provider_externalUserId_key"
+    ON "BillingIdentity"("provider", "externalUserId");
 CREATE INDEX "BillingIdentity_userId_idx" ON "BillingIdentity"("userId");
-CREATE INDEX "BillingIdentity_provider_environment_idx" ON "BillingIdentity"("provider", "environment");
-CREATE INDEX "Subscription_provider_environment_idx" ON "Subscription"("provider", "environment");
 
 -- Wave A2: idempotency is scoped by environment ([source, environment, eventId]).
 ALTER TABLE "BillingEvent" ADD COLUMN "environment" TEXT NOT NULL DEFAULT 'production';

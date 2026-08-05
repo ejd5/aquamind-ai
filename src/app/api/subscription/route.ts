@@ -18,6 +18,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { PLANS, DEFAULT_PLAN, getPlan, type PlanId, type SubscriptionStatus } from '@/lib/billing/plans'
 import { loadUserEntitlements } from '@/lib/billing/entitlement-projection'
+import { getBillingAccessEnvironment } from '@/lib/billing/identity'
 import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
@@ -31,10 +32,12 @@ export async function GET(req: NextRequest) {
   }
   const userId = session.user.id
 
-  // Wave A2: union projection across providers — the same evaluation the
+  // Wave A2 (Round 1): union projection across providers within the
+  // server-determined billing access environment — the same evaluation the
   // feature gates use. Never exposes provider-sensitive ids (stripeCustomerId,
   // stripeSubscriptionId, providerSubscriptionId, lastProviderEventId).
-  const projection = await loadUserEntitlements(userId)
+  const accessEnvironment = getBillingAccessEnvironment()
+  const projection = await loadUserEntitlements(userId, accessEnvironment)
   const best = projection.best
 
   const planId: PlanId = best?.plan || DEFAULT_PLAN

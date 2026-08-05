@@ -18,6 +18,7 @@ import {
   type SubscriptionStatus,
   statusGrantsAccess,
 } from '@/lib/billing/plans'
+import type { BillingEnvironment } from '@/lib/billing/identity'
 
 /** Stable tier order: higher index = more capable. */
 const PLAN_TIER: Record<string, number> = {
@@ -62,12 +63,22 @@ export function pickBestValidRow(
 }
 
 /**
- * Loads all subscriptions for a user and returns:
+ * Loads all subscriptions for a user within ONE explicit access environment and
+ * returns:
  *   - the best (highest-tier) valid subscription row for projection,
  *   - whether ANY valid subscription exists (union gate),
  *   - the full list (for deterministic capability resolution).
+ *
+ * The access environment is determined server-side (getBillingAccessEnvironment)
+ * and is NEVER inferred from a client or from a sandbox identity. In Production
+ * only environment='production' rows grant rights; sandbox rows can never grant
+ * Production access. Stripe + RevenueCat unions happen only within this same
+ * environment.
  */
-export async function loadUserEntitlements(userId: string): Promise<{
+export async function loadUserEntitlements(
+  userId: string,
+  accessEnvironment: BillingEnvironment,
+): Promise<{
   best: {
     plan: PlanId
     status: SubscriptionStatus
@@ -88,7 +99,7 @@ export async function loadUserEntitlements(userId: string): Promise<{
   }[]
 }> {
   const subs = await db.subscription.findMany({
-    where: { userId },
+    where: { userId, environment: accessEnvironment },
     orderBy: [{ startedAt: 'desc' }],
   })
 
@@ -131,8 +142,11 @@ export function resolveUnionPlan(
 }
 
 /** The effective granted plan for gate evaluation (same as resolveUnionPlan). */
-export function effectivePlanForUser(userId: string): Promise<{ planId: PlanId; status: SubscriptionStatus; expiresAt: Date | null }> {
-  return loadUserEntitlements(userId).then((e) => ({
+export function effectivePlanForUser(
+  userId: string,
+  accessEnvironment: BillingEnvironment,
+): Promise<{ planId: PlanId; status: SubscriptionStatus; expiresAt: Date | null }> {
+  return loadUserEntitlements(userId, accessEnvironment).then((e) => ({
     planId: e.best?.plan ?? DEFAULT_PLAN,
     status: e.best?.status ?? 'inactive',
     expiresAt: e.best?.expiresAt ?? null,
