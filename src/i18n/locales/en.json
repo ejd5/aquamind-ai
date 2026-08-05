@@ -432,7 +432,7 @@
     "navSimulations": "Scenarios",
     "navGains": "Savings",
     "navTarifs": "Pricing",
-"navFaq": "FAQ",
+    "navFaq": "FAQ",
     "navApp": "Access the app",
     "navMySpace": "My space",
     "navStart": "Start for free",
@@ -1563,7 +1563,9 @@
     "clarityAction": "Action recommended",
     "clarityUrgent": "Urgent",
     "tabPhotoPool": "Pool photo",
-    "tabStrip": "Test strip"
+    "tabStrip": "Test strip",
+    "requalificationNeeded": "Plan needs requalification",
+    "requalificationNeededDesc": "This plan cannot be shown as the current plan. Run a scientific regeneration or enter a new measurement."
   },
   "weather": {
     "locateMe": "Locate me",
@@ -1930,7 +1932,9 @@
       "labelChlorine": "Chlorine",
       "labelTac": "TA",
       "labelCya": "CYA",
-      "labelTemp": "Temp."
+      "labelTemp": "Temp.",
+      "requalificationNeeded": "Plan requalification required",
+      "requalificationNeededDesc": "A fresh scientific analysis is needed to get a reliable plan. Run a new water test."
     },
     "waterTest": {
       "title": "Water analysis",

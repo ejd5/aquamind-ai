@@ -1,3 +1,22 @@
+/**
+ * AQWELIA — CANONICAL single source of the user-facing action plan.
+ *
+ * `generateScientificallyQualifiedActionPlan` is the UNIQUE public engine that
+ * produces recommendations / quantities / bathing indications / dosing for
+ * every user-facing path:
+ *   - POST /api/pool/water-test
+ *   - POST /api/pool/action-plan
+ *   - POST /api/pool/strip-scan (save=true)
+ *   - GET /api/dashboard (plan regeneration)
+ *
+ * Wave A1 (fix/wave-a-scientific-single-path): the legacy
+ * `generateActionPlan` is no longer imported by any public route. It remains an
+ * internal deterministic candidate generator that this wrapper qualifies
+ * (measurement completeness, provenance-adjusted confidence, strict LSI,
+ * contextual swimming safety, dosage readiness). A deferred or non-calculable
+ * dosage NEVER exposes an actionable quantity, and no route falls back to the
+ * legacy engine.
+ */
 import type { Locale } from '@/i18n/config'
 import {
   generateActionPlan,
@@ -96,6 +115,9 @@ function numericEstimatedCost(value: string): number {
  * qualifies it before exposure: measurement completeness, provenance-adjusted
  * confidence, strict LSI, contextual swimming safety and dosage readiness.
  * A deferred or non-calculable dosage never exposes an actionable quantity.
+ *
+ * CANONICAL (Wave A1): every public route producing a user-facing plan calls
+ * this function — see the module header for the route list.
  */
 export function generateScientificallyQualifiedActionPlan(
   test: QualifiedWaterTestInput,

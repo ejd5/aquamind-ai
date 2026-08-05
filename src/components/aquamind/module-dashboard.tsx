@@ -33,6 +33,13 @@ import { useTranslations, useLocale } from 'next-intl'
 import type { TabId } from './app-shell'
 import { evaluateParam } from '@/lib/pool/targets'
 import { offlineApi, apiGetCached } from '@/lib/offline/api-cache'
+import type {
+  DashboardApiResponse,
+  DashboardLatestTestView,
+  DashboardPlanView,
+  DashboardSwimView,
+} from '@/lib/pool/dashboard-contract'
+import { isActionableDashboardPlan } from '@/lib/pool/dashboard-contract'
 import { RestockWidget } from './restock-widget'
 import { StoriesWidget } from './stories-widget'
 import { SavingsWidget } from './savings-widget'
@@ -44,11 +51,11 @@ import { ArqweliaDashboardTeaser } from '@/components/arqwelia/dashboard-teaser'
 
 interface DashboardData {
   profile: any
-  latestTest: any | null
-  latestPlan: any | null
+  latestTest: DashboardLatestTestView | null
+  latestPlan: DashboardPlanView | null
   clearWaterIndex: number | null
   clarity: { label: string; status: string; color: string } | null
-  swim: { status: string; reasons: string[] } | null
+  swim: DashboardSwimView | null
   testsCount: number
   trend: any[]
   diagnosticsCount: number
@@ -505,12 +512,14 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
               <p className="text-center text-[11px] text-muted-foreground">
                 {latestTest
                   ? t('measuredAt', {
-                      date: new Date(latestTest.createdAt).toLocaleDateString(locale, {
-                        day: '2-digit',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      }),
+                      date: latestTest.createdAt
+                        ? new Date(latestTest.createdAt).toLocaleDateString(locale, {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : '',
                     })
                   : ''}
               </p>
@@ -548,7 +557,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
                   <CardTitle className="font-display text-base">{t('priority1')}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1">
-                  {latestPlan && latestPlan.immediateActions?.length > 0 ? (() => {
+                  {isActionableDashboardPlan(latestPlan) && latestPlan.immediateActions?.length > 0 ? (() => {
                     const ai = latestPlan.immediateActions[0] as any
                     return (
                     <div>
@@ -569,7 +578,26 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
                       </Button>
                     </div>
                     )
-                  })() : (
+                  })() : latestPlan?.scientificRequalificationRequired ? (
+                    <div className="flex flex-col items-start gap-2">
+                      <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-600 dark:text-amber-400">
+                        <AlertTriangle className="h-4 w-4" />
+                        {t('requalificationNeeded')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {t('requalificationNeededDesc')}
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-1 border-gold/40 text-gold hover:bg-gold/10"
+                        onClick={() => onNavigate('water')}
+                      >
+                        <FlaskConical className="h-3.5 w-3.5" />
+                        {t('enterTest')}
+                      </Button>
+                    </div>
+                  ) : (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <CheckCircle2 className="h-4 w-4 text-[oklch(0.7_0.15_155)]" />
                       {t('noUrgentAction')}
@@ -588,7 +616,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
                   <CardTitle className="font-display text-base">{t('howSoon')}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1">
-                  {latestPlan ? (
+                  {isActionableDashboardPlan(latestPlan) && latestPlan.retestInHours != null && Number.isFinite(latestPlan.retestInHours) ? (
                     <div>
                       <p className="font-display text-3xl font-bold text-primary">
                         {Math.round(latestPlan.retestInHours)}h
@@ -600,6 +628,24 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
                         size="sm"
                         variant="outline"
                         className="mt-3"
+                        onClick={() => onNavigate('water')}
+                      >
+                        <FlaskConical className="h-3.5 w-3.5" />
+                        {t('enterTest')}
+                      </Button>
+                    </div>
+                  ) : latestPlan?.scientificRequalificationRequired ? (
+                    <div className="flex flex-col items-start gap-2">
+                      <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                        {t('requalificationNeeded')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {t('requalificationNeededDesc')}
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-1"
                         onClick={() => onNavigate('water')}
                       >
                         <FlaskConical className="h-3.5 w-3.5" />
@@ -670,8 +716,9 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
                 { key: 'cyanuricAcid', label: t('labelCya'), value: latestTest.cyanuricAcid, unit: '' },
                 { key: 'temperature', label: t('labelTemp'), value: latestTest.temperature, unit: '°C' },
               ].map((m) => {
-                const has = m.value != null
-                const status = has ? evaluateParam(m.key, m.value) : 'unknown'
+                const raw = m.value
+                const has = typeof raw === 'number' && Number.isFinite(raw)
+                const status = has ? evaluateParam(m.key, raw) : 'unknown'
                 return (
                   <div
                     key={m.key}

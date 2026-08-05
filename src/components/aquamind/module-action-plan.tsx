@@ -27,38 +27,18 @@ import { useOfflineStore } from '@/lib/offline/offline-store'
 import { usePdfReport } from '@/hooks/use-pdf-report'
 import { BrainActionTracker } from '@/components/brain/brain-action-tracker'
 import type { TabId } from './app-shell'
+import type { DashboardApiResponse, DashboardPlanView } from '@/lib/pool/dashboard-contract'
+import {
+  canRegenerateDashboardPlan,
+  canTrackDashboardPlan,
+  getDashboardRegenerationTestId,
+  isActionableDashboardPlan,
+} from '@/lib/pool/dashboard-contract'
 
 interface Props {
   onNavigate: (tab: TabId) => void
   /** Active pool id (multi-pool). When provided, dashboard data is scoped. */
   activePoolId?: string | null
-}
-
-interface LatestPlan {
-  id: string
-  diagnosis: string
-  severity: 'low' | 'medium' | 'high' | 'urgent'
-  confidence: number
-  immediateActions: { order: number; action: string; detail: string; product?: string }[]
-  chemicalDosages: {
-    param: string
-    product: string
-    quantity: string
-    method: string
-    filtrationHours: number
-    retestInHours: number
-    waitBeforeSwimHours: number
-    warnings: string[]
-    estimatedCost: string
-  }[]
-  filtrationHours: number
-  retestInHours: number
-  swimSafety: string
-  doNotDo: string[]
-  estimatedCost: string
-  whenToCallProfessional: string | null
-  createdAt: string
-  waterTestId: string
 }
 
 const SEVERITY_CLS: Record<string, string> = {
@@ -116,7 +96,7 @@ export function ModuleActionPlan({ onNavigate, activePoolId }: Props) {
     try { return tAct(key as any, params) } catch { return data?.diagnosis as string }
   }, [tAct])
   const locale = useLocale()
-  const [plan, setPlan] = useState<LatestPlan | null>(null)
+  const [plan, setPlan] = useState<DashboardPlanView | null>(null)
   const [loading, setLoading] = useState(true)
   const [regenerating, setRegenerating] = useState(false)
   const [stale, setStale] = useState(false)
@@ -130,7 +110,7 @@ export function ModuleActionPlan({ onNavigate, activePoolId }: Props) {
       const dashPath = activePoolId
         ? `/api/dashboard?v2&poolId=${encodeURIComponent(activePoolId)}`
         : '/api/dashboard?v2'
-      const { data, stale } = await apiGetCached<{ latestPlan?: LatestPlan }>(
+      const { data, stale } = await apiGetCached<DashboardApiResponse>(
         dashPath,
         'dashboard'
       )
@@ -149,9 +129,14 @@ export function ModuleActionPlan({ onNavigate, activePoolId }: Props) {
   }, [load])
 
   async function regenerate() {
-    if (!plan?.waterTestId) return
+    // Regeneration depends ONLY on a valid sourceWaterTestId — never on the
+    // plan being actionable. A fail-closed plan with a valid test id can still
+    // be regenerated. The payload is always { testId: sourceWaterTestId } and
+    // never carries an undefined or empty testId.
+    const testId = getDashboardRegenerationTestId(plan)
+    if (!testId) return
     setRegenerating(true)
-    const payload = { testId: plan.waterTestId }
+    const payload = { testId }
     try {
       if (!isOnline) {
         queueAction({ method: 'POST', path: '/api/pool/action-plan', body: payload })
@@ -206,8 +191,57 @@ export function ModuleActionPlan({ onNavigate, activePoolId }: Props) {
     )
   }
 
-  const sevCls = SEVERITY_CLS[plan.severity] || SEVERITY_CLS.low
-  const swim = SWIM_CLS[plan.swimSafety] || SWIM_CLS.unknown
+  const actionable = isActionableDashboardPlan(plan)
+
+  // FAIL-CLOSED: a non-null plan with scientificRequalificationRequired=true
+  // must NOT be rendered as a current maintenance plan. Show an explicit
+  // requalification state and the only safe actions (new test / regenerate).
+  if (plan && !actionable) {
+    const canRegenerate = canRegenerateDashboardPlan(plan)
+    return (
+      <Card className="glass-card">
+        <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+          <AlertTriangle className="h-10 w-10 text-amber-500" />
+          <p className="font-display text-lg font-semibold">{t('requalificationNeeded')}</p>
+          <p className="max-w-md text-sm text-muted-foreground">
+            {t('requalificationNeededDesc')}
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button
+              onClick={() => onNavigate('water')}
+              className="bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-lg shadow-primary/20"
+            >
+              <Droplets className="h-4 w-4" />
+              {t('enterMeasure')}
+            </Button>
+            {canRegenerate && (
+              <Button variant="outline" size="sm" onClick={regenerate} disabled={regenerating}>
+                <RefreshCw className={`h-3.5 w-3.5 ${regenerating ? 'animate-spin' : ''}`} />
+                {t('regenerate')}
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const sevCls = SEVERITY_CLS[plan?.severity || 'low'] || SEVERITY_CLS.low
+  const swim = SWIM_CLS[plan?.swimSafety || 'unknown'] || SWIM_CLS.unknown
+  // Date: prefer sourceMeasuredAt (the actual test measurement), fall back to
+  // generatedAt. Never show an Invalid Date for an ephemeral plan.
+  const planDate = plan?.sourceMeasuredAt ?? plan?.generatedAt ?? null
+  const planDateLabel = planDate
+    ? (() => {
+        const d = new Date(String(planDate))
+        return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString(locale, {
+          day: '2-digit',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      })()
+    : null
 
   return (
     <div className="space-y-5">
@@ -275,14 +309,9 @@ export function ModuleActionPlan({ onNavigate, activePoolId }: Props) {
               <Badge variant="outline" className={sevCls}>
                 {t(`severity.${plan.severity}`)}
               </Badge>
-              <span className="text-[10px] text-muted-foreground">
-                {new Date(plan.createdAt).toLocaleDateString(locale, {
-                  day: '2-digit',
-                  month: 'short',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </span>
+              {planDateLabel && (
+                <span className="text-[10px] text-muted-foreground">{planDateLabel}</span>
+              )}
             </div>
           </div>
           <CardDescription className="pt-2 text-sm leading-relaxed text-foreground/80">
@@ -336,7 +365,15 @@ export function ModuleActionPlan({ onNavigate, activePoolId }: Props) {
                         {tr(ai.product, ai.productKey)}
                       </span>
                     )}
-                    <BrainActionTracker actionPlanId={plan.id} actionIndex={i} actionLabel={tr(ai.action, ai.actionKey)} productName={ai.product ? tr(ai.product, ai.productKey) : undefined} poolId={activePoolId} />
+                    {/* BrainActionTracker is rendered ONLY when the plan is
+                        trackable under a stored ActionPlan id
+                        (canTrackDashboardPlan): scientifically available, NOT
+                        ephemeral, and with a valid storedActionPlanId. A fresh
+                        ephemeral plan is never tracked under a stored plan's
+                        identity, even when storedActionPlanId exists. */}
+                    {canTrackDashboardPlan(plan) ? (
+                      <BrainActionTracker actionPlanId={plan.storedActionPlanId!} actionIndex={i} actionLabel={tr(ai.action, ai.actionKey)} productName={ai.product ? tr(ai.product, ai.productKey) : undefined} poolId={activePoolId} />
+                    ) : null}
                   </div>
                 </li>
                 )
@@ -358,7 +395,9 @@ export function ModuleActionPlan({ onNavigate, activePoolId }: Props) {
                   {t('retest')}
                 </span>
                 <span className="font-display font-bold text-primary">
-                  {Math.round(plan.retestInHours)}h
+                  {plan.retestInHours != null && Number.isFinite(plan.retestInHours)
+                    ? `${Math.round(plan.retestInHours)}h`
+                    : '—'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -367,7 +406,9 @@ export function ModuleActionPlan({ onNavigate, activePoolId }: Props) {
                   {t('filtrationMin')}
                 </span>
                 <span className="font-display font-bold text-primary">
-                  {plan.filtrationHours}h
+                  {plan.filtrationHours != null && Number.isFinite(plan.filtrationHours)
+                    ? `${plan.filtrationHours}h`
+                    : '—'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -376,7 +417,7 @@ export function ModuleActionPlan({ onNavigate, activePoolId }: Props) {
                   {t('estimatedCost')}
                 </span>
                 <span className="font-display font-bold text-gold">
-                  {plan.estimatedCost}
+                  {plan.estimatedCost && plan.estimatedCost !== '—' ? plan.estimatedCost : '—'}
                 </span>
               </div>
             </CardContent>
@@ -470,12 +511,15 @@ export function ModuleActionPlan({ onNavigate, activePoolId }: Props) {
         </CardHeader>
         <CardContent>
           <ul className="grid gap-1.5 text-xs text-destructive/90 sm:grid-cols-2">
-            {plan.doNotDo.map((dnd: string, i: number) => (
+            {plan.doNotDo.map((dndRaw, i) => {
+              const dnd = String(dndRaw ?? '')
+              return (
               <li key={i} className="flex items-start gap-2 rounded-lg bg-background/40 p-2">
                 <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-destructive" />
                 {tr(dnd, (plan as any).doNotDoKeys?.[i])}
               </li>
-            ))}
+              )
+            })}
           </ul>
         </CardContent>
       </Card>

@@ -3,9 +3,13 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { clarityLabel, calculateClearWaterIndex } from '@/lib/pool/water-balance'
-import { assessSwimSafety } from '@/lib/pool/safety-rules'
 import { pickLocale, translate } from '@/lib/i18n-api'
-import { generateActionPlan } from '@/lib/pool/action-plan'
+import { generateScientificallyQualifiedActionPlan } from '@/lib/pool/scientific-action-plan'
+import {
+  buildDashboardPlanView,
+  buildDashboardSwim,
+  sanitizeDashboardLatestTest,
+} from '@/lib/pool/dashboard-plan-gate'
 
 export const runtime = 'nodejs'
 
@@ -26,13 +30,20 @@ export async function GET(req: Request) {
   const profileWhere = poolId ? { id: poolId, userId } : { userId }
   const poolScope = poolId ? { OR: [{ poolId }, { poolId: null }] } : {}
 
-  const [profile, latestTest, latestPlan, tests, diagnostics, equipment, products, chatCount] = await Promise.all([
+  const [profile, latestTest, tests, diagnostics, equipment, products, chatCount] = await Promise.all([
     db.poolProfile.findFirst({ where: profileWhere }),
-    db.waterTest.findFirst({ where: { userId, ...poolScope }, orderBy: { createdAt: 'desc' }, include: { actionPlans: true } }),
-    db.actionPlan.findFirst({
-      where: { waterTest: { userId, ...poolScope } },
+    // The plan is fetched as a child of the latest test so the dashboard can
+    // guarantee the stored plan BELONGS to that test (never a previous one).
+    db.waterTest.findFirst({
+      where: { userId, ...poolScope },
       orderBy: { createdAt: 'desc' },
-      include: { executions: true, outcome: true },
+      include: {
+        actionPlans: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          include: { executions: true, outcome: true },
+        },
+      },
     }),
     db.waterTest.findMany({ where: { userId, ...poolScope }, take: 30, orderBy: { createdAt: 'desc' } }),
     db.photoDiagnostic.findMany({ where: { userId, ...poolScope }, take: 5, orderBy: { createdAt: 'desc' } }),
@@ -41,59 +52,85 @@ export async function GET(req: Request) {
     db.chatMessage.count({ where: { userId } }),
   ])
 
+  // The stored plan is the plan attached to the LATEST test (if any). A test
+  // without a plan never picks up a previous test's plan.
+  const storedPlan = latestTest?.actionPlans?.[0] ?? null
+
   let clearWaterIndex: number | null = null
   let clarity: ReturnType<typeof clarityLabel> | null = null
-  let swim: ReturnType<typeof assessSwimSafety> | null = null
-  // latestPlanParsed overrides 3 string fields (JSON columns) with parsed arrays,
-  // so it is intentionally NOT the raw ActionPlan type.
-  let latestPlanParsed: {
-    immediateActions: any[]
-    chemicalDosages: any[]
-    doNotDo: any[]
-    [k: string]: any
-  } | null = null
 
   if (latestTest) {
     clearWaterIndex = latestTest.clearWaterIndex || calculateClearWaterIndex(latestTest as any)
     clarity = clarityLabel(clearWaterIndex)
-    swim = assessSwimSafety(latestTest as any)
   }
 
-  if (latestPlan) {
-    latestPlanParsed = {
-      ...latestPlan,
-      immediateActions: safeParse(latestPlan.immediateActions),
-      chemicalDosages: safeParse(latestPlan.chemicalDosages),
-      doNotDo: safeParse(latestPlan.doNotDo),
-    }
-    // Re-generate the FULL plan from the latest test to get fresh translation
-    // keys. The DB stores French literals without keys for old plans. By
-    // regenerating, we get immediateActions/chemicalDosages WITH actionKey,
-    // detailKey, productKey, methodKey, warningKeys etc. — so the UI can
-    // translate everything instead of showing French fallbacks.
-    if (latestTest && profile) {
-      try {
-        const freshPlan = generateActionPlan(latestTest as any, profile as any)
-        // Use fresh immediateActions and chemicalDosages (they have *Key fields)
-        latestPlanParsed.immediateActions = freshPlan.immediateActions as any
-        latestPlanParsed.chemicalDosages = freshPlan.chemicalDosages as any
-        // Merge scalar key fields
-        latestPlanParsed.diagnosisKey = freshPlan.diagnosisKey
-        latestPlanParsed.diagnosisParams = freshPlan.diagnosisParams
-        latestPlanParsed.doNotDoKeys = freshPlan.doNotDoKeys
-        latestPlanParsed.whenToCallProfessionalKey = freshPlan.whenToCallProfessionalKey
-        latestPlanParsed.whenToCallProfessionalParams = freshPlan.whenToCallProfessionalParams
-        latestPlanParsed.lsiLabelKey = freshPlan.lsiLabelKey
-        latestPlanParsed.swimReasonKeys = freshPlan.swimReasonKeys
-        latestPlanParsed.swimReasonParams = freshPlan.swimReasonParams
-      } catch { /* keep DB-stored plan as fallback */ }
+  // Re-generate the FULL scientific plan from the latest test to get fresh
+  // translation keys AND consistent scientific gating (dosage readiness,
+  // contextual swim safety, method versions). The dashboard never bypasses the
+  // rules and never falls back to the legacy engine: if regeneration fails or
+  // the profile is missing, the plan view is FAIL-CLOSED.
+  let freshPlan: ReturnType<typeof generateScientificallyQualifiedActionPlan> | null = null
+  if (latestTest && profile) {
+    try {
+      freshPlan = generateScientificallyQualifiedActionPlan(
+        latestTest as any,
+        {
+          volume: profile.volume,
+          unit: profile.unit as any,
+          treatmentType: profile.treatmentType,
+          saltSystem: profile.saltSystem,
+          waterBodyType: profile.waterBodyType ?? null,
+          filterType: profile.filterType ?? null,
+          manufacturerSaltMin: profile.manufacturerSaltMin ?? null,
+          manufacturerSaltMax: profile.manufacturerSaltMax ?? null,
+          manufacturerChlorineMax: profile.manufacturerChlorineMax ?? null,
+        } as any,
+        locale,
+        latestTest.measuredAt
+          ? {
+              measuredAt: new Date(latestTest.measuredAt),
+              measurementMethod: (latestTest.measurementMethod as any) || 'manual',
+              measurementMetadata: latestTest.measurementMetadata ?? null,
+            }
+          : undefined,
+        new Date(),
+      )
+    } catch {
+      freshPlan = null
     }
   }
+
+  const latestPlan = buildDashboardPlanView({
+    freshPlan,
+    storedPlan,
+    storedPlanBelongsToLatestTest: Boolean(storedPlan) && storedPlan?.waterTestId === latestTest?.id,
+    // Safe metadata derived from the LATEST TEST, never from historical plan
+    // content. storedActionPlanId is attached by the gate only when a stored
+    // plan belongs exactly to the latest test.
+    sourceMetadata: {
+      sourceWaterTestId: latestTest?.id ?? null,
+      sourceMeasuredAt: latestTest?.measuredAt ?? latestTest?.createdAt ?? null,
+      generatedAt: new Date(),
+    },
+  })
+
+  // FAIL-CLOSED swim: only a fresh canonical plan is authoritative; without one
+  // the header shows 'unknown' + scientificRequalificationRequired (never the
+  // possibly-historical stored latestTest.swimSafety).
+  const swim = buildDashboardSwim({
+    freshPlan,
+    hasLatestTest: Boolean(latestTest),
+  })
+
+  // The PUBLIC latestTest NEVER carries the raw Prisma actionPlans relation
+  // (and therefore no executions/outcome or stored dosage). The plan is exposed
+  // ONLY through the secured `latestPlan` view.
+  const sanitizedLatestTest = sanitizeDashboardLatestTest(latestTest as any)
 
   return NextResponse.json({
     profile,
-    latestTest,
-    latestPlan: latestPlanParsed,
+    latestTest: sanitizedLatestTest,
+    latestPlan,
     clearWaterIndex,
     clarity,
     swim,
@@ -105,9 +142,4 @@ export async function GET(req: Request) {
     productsCount: products,
     chatCount,
   })
-}
-
-function safeParse(s: string | null): any[] {
-  if (!s) return []
-  try { return JSON.parse(s) } catch { return [] }
 }

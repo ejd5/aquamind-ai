@@ -11,12 +11,11 @@ import {
   canAccess,
   type PlanId,
 } from '@/lib/pool/freemium'
-import { generateActionPlan } from '@/lib/pool/action-plan'
+import { generateScientificallyQualifiedActionPlan } from '@/lib/pool/scientific-action-plan'
 import {
   calculateClearWaterIndex,
-  calculateLSI,
+  calculateLsiAssessment,
 } from '@/lib/pool/water-balance'
-import { assessSwimSafety } from '@/lib/pool/safety-rules'
 import { normalizeImageForAi, SecureImageError } from '@/lib/images/secure-image'
 
 export const runtime = 'nodejs'
@@ -240,11 +239,38 @@ export async function POST(req: NextRequest) {
         })
       }
       const cwi = calculateClearWaterIndex(payload as any)
-      const swim = assessSwimSafety(payload as any)
-      const lsi = calculateLSI(payload as any)
+      const lsiCalculation = calculateLsiAssessment(payload as any)
+      const lsi = lsiCalculation.value
+
+      const profile = await db.poolProfile.findFirst({ where: { userId } })
+      // AQWELIA Wave A1 — canonical scientific path: the SAME engine as
+      // POST /api/pool/water-test. A deferred or non-calculable dosage never
+      // exposes an actionable quantity (readiness gates + masking).
+      const qualifiedPlan = profile
+        ? generateScientificallyQualifiedActionPlan(
+            payload as any,
+            {
+              volume: profile.volume,
+              unit: profile.unit as any,
+              treatmentType: profile.treatmentType,
+              saltSystem: profile.saltSystem,
+              waterBodyType: profile.waterBodyType ?? null,
+              filterType: profile.filterType ?? null,
+              manufacturerSaltMin: profile.manufacturerSaltMin ?? null,
+              manufacturerSaltMax: profile.manufacturerSaltMax ?? null,
+              manufacturerChlorineMax: profile.manufacturerChlorineMax ?? null,
+            } as any,
+            locale,
+            // Strip scans carry no instrumented provenance: confidence unadjusted.
+            undefined,
+            new Date(),
+          )
+        : null
+
+      const contextualSwim = qualifiedPlan?.contextualSwimSafety.status ?? 'unknown'
       let testStatus = 'ok'
-      if (swim.status === 'forbidden' || cwi < 40) testStatus = 'critical'
-      else if (cwi < 85 || swim.status === 'avoid') testStatus = 'warning'
+      if (contextualSwim === 'forbidden' || cwi < 40) testStatus = 'critical'
+      else if (cwi < 85 || contextualSwim === 'avoid') testStatus = 'warning'
 
       waterTest = await db.waterTest.create({
         data: {
@@ -253,33 +279,30 @@ export async function POST(req: NextRequest) {
           source: 'strip_photo',
           status: testStatus,
           clearWaterIndex: cwi,
-          swimSafety: swim.status,
+          swimSafety: contextualSwim,
           lsi,
+          lsiMethodVersion: lsiCalculation.methodVersion,
         },
       })
 
-      const profile = await db.poolProfile.findFirst({ where: { userId } })
-      if (profile) {
-        const plan2 = generateActionPlan(payload as any, {
-          volume: profile.volume,
-          unit: profile.unit as any,
-          treatmentType: profile.treatmentType,
-          saltSystem: profile.saltSystem,
-        })
+      if (profile && qualifiedPlan) {
         actionPlan = await db.actionPlan.create({
           data: {
             waterTestId: waterTest.id,
-            diagnosis: plan2.diagnosis,
-            severity: plan2.severity,
-            confidence: plan2.confidence,
-            immediateActions: JSON.stringify(plan2.immediateActions),
-            chemicalDosages: JSON.stringify(plan2.chemicalDosages),
-            filtrationHours: plan2.filtrationHours,
-            retestInHours: plan2.retestInHours,
-            swimSafety: plan2.swimSafety,
-            doNotDo: JSON.stringify(plan2.doNotDo),
-            estimatedCost: plan2.estimatedCost,
-            whenToCallProfessional: plan2.whenToCallProfessional,
+            diagnosis: qualifiedPlan.diagnosis,
+            severity: qualifiedPlan.severity,
+            confidence: qualifiedPlan.confidence,
+            scientificMethodVersion: qualifiedPlan.scientificConfidence.methodVersion,
+            dosageMethodVersion: qualifiedPlan.dosageMethodVersion,
+            swimSafetyMethodVersion: qualifiedPlan.contextualSwimSafety.methodVersion,
+            immediateActions: JSON.stringify(qualifiedPlan.immediateActions),
+            chemicalDosages: JSON.stringify(qualifiedPlan.chemicalDosages),
+            filtrationHours: qualifiedPlan.filtrationHours,
+            retestInHours: qualifiedPlan.retestInHours,
+            swimSafety: qualifiedPlan.swimSafety,
+            doNotDo: JSON.stringify(qualifiedPlan.doNotDo),
+            estimatedCost: qualifiedPlan.estimatedCost,
+            whenToCallProfessional: qualifiedPlan.whenToCallProfessional,
           },
         })
       }
