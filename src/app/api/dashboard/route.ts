@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { clarityLabel, calculateClearWaterIndex } from '@/lib/pool/water-balance'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { generateScientificallyQualifiedActionPlan } from '@/lib/pool/scientific-action-plan'
+import { buildDashboardPlanView } from '@/lib/pool/dashboard-plan-gate'
 
 export const runtime = 'nodejs'
 
@@ -25,13 +26,20 @@ export async function GET(req: Request) {
   const profileWhere = poolId ? { id: poolId, userId } : { userId }
   const poolScope = poolId ? { OR: [{ poolId }, { poolId: null }] } : {}
 
-  const [profile, latestTest, latestPlan, tests, diagnostics, equipment, products, chatCount] = await Promise.all([
+  const [profile, latestTest, tests, diagnostics, equipment, products, chatCount] = await Promise.all([
     db.poolProfile.findFirst({ where: profileWhere }),
-    db.waterTest.findFirst({ where: { userId, ...poolScope }, orderBy: { createdAt: 'desc' }, include: { actionPlans: true } }),
-    db.actionPlan.findFirst({
-      where: { waterTest: { userId, ...poolScope } },
+    // The plan is fetched as a child of the latest test so the dashboard can
+    // guarantee the stored plan BELONGS to that test (never a previous one).
+    db.waterTest.findFirst({
+      where: { userId, ...poolScope },
       orderBy: { createdAt: 'desc' },
-      include: { executions: true, outcome: true },
+      include: {
+        actionPlans: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          include: { executions: true, outcome: true },
+        },
+      },
     }),
     db.waterTest.findMany({ where: { userId, ...poolScope }, take: 30, orderBy: { createdAt: 'desc' } }),
     db.photoDiagnostic.findMany({ where: { userId, ...poolScope }, take: 5, orderBy: { createdAt: 'desc' } }),
@@ -40,93 +48,70 @@ export async function GET(req: Request) {
     db.chatMessage.count({ where: { userId } }),
   ])
 
+  // The stored plan is the plan attached to the LATEST test (if any). A test
+  // without a plan never picks up a previous test's plan.
+  const storedPlan = latestTest?.actionPlans?.[0] ?? null
+
   let clearWaterIndex: number | null = null
   let clarity: ReturnType<typeof clarityLabel> | null = null
   let swim: { status: string; reasons: string[] } | null = null
-  // latestPlanParsed overrides 3 string fields (JSON columns) with parsed arrays,
-  // so it is intentionally NOT the raw ActionPlan type.
-  let latestPlanParsed: {
-    immediateActions: any[]
-    chemicalDosages: any[]
-    doNotDo: any[]
-    [k: string]: any
-  } | null = null
 
   if (latestTest) {
     clearWaterIndex = latestTest.clearWaterIndex || calculateClearWaterIndex(latestTest as any)
     clarity = clarityLabel(clearWaterIndex)
   }
-  if (latestPlan) {    latestPlanParsed = {
-      ...latestPlan,
-      immediateActions: safeParse(latestPlan.immediateActions),
-      chemicalDosages: safeParse(latestPlan.chemicalDosages),
-      doNotDo: safeParse(latestPlan.doNotDo),
-    }
-    // Re-generate the FULL scientific plan from the latest test to get fresh
-    // translation keys AND consistent scientific gating (dosage readiness,
-    // contextual swim safety, method versions). The DB stores French literals
-    // without keys for old plans. By regenerating through the SAME engine as
-    // POST /api/pool/water-test, the dashboard never bypasses the rules — a
-    // deferred or non-calculable dosage never exposes an actionable quantity.
-    if (latestTest && profile) {
-      try {
-        const freshPlan = generateScientificallyQualifiedActionPlan(
-          latestTest as any,
-          {
-            volume: profile.volume,
-            unit: profile.unit as any,
-            treatmentType: profile.treatmentType,
-            saltSystem: profile.saltSystem,
-            waterBodyType: profile.waterBodyType ?? null,
-            filterType: profile.filterType ?? null,
-            manufacturerSaltMin: profile.manufacturerSaltMin ?? null,
-            manufacturerSaltMax: profile.manufacturerSaltMax ?? null,
-            manufacturerChlorineMax: profile.manufacturerChlorineMax ?? null,
-          } as any,
-          locale,
-          latestTest.measuredAt
-            ? {
-                measuredAt: new Date(latestTest.measuredAt),
-                measurementMethod: (latestTest.measurementMethod as any) || 'manual',
-                measurementMetadata: latestTest.measurementMetadata ?? null,
-              }
-            : undefined,
-          new Date(),
-        )
-        // Use fresh immediateActions and chemicalDosages (they have *Key fields
-        // AND readiness/masking), and surface the contextual swim safety.
-        latestPlanParsed.immediateActions = freshPlan.immediateActions as any
-        latestPlanParsed.chemicalDosages = freshPlan.chemicalDosages as any
-        // Merge scalar key fields
-        latestPlanParsed.diagnosisKey = freshPlan.diagnosisKey
-        latestPlanParsed.diagnosisParams = freshPlan.diagnosisParams
-        latestPlanParsed.doNotDoKeys = freshPlan.doNotDoKeys
-        latestPlanParsed.whenToCallProfessionalKey = freshPlan.whenToCallProfessionalKey
-        latestPlanParsed.whenToCallProfessionalParams = freshPlan.whenToCallProfessionalParams
-        latestPlanParsed.lsiLabelKey = freshPlan.lsiLabelKey
-        latestPlanParsed.swimReasonKeys = freshPlan.swimReasonKeys
-        latestPlanParsed.swimReasonParams = freshPlan.swimReasonParams
-        latestPlanParsed.swimSafety = freshPlan.swimSafety
-        latestPlanParsed.dosageMethodVersion = freshPlan.dosageMethodVersion
-        latestPlanParsed.scientificMethodVersion = freshPlan.scientificConfidence.methodVersion
-        latestPlanParsed.contextualSwimSafety = freshPlan.contextualSwimSafety
-        latestPlanParsed.confidence = freshPlan.confidence
-        // Header swim indication is driven by the qualified contextual safety.
-        swim = {
-          status: freshPlan.swimSafety,
-          reasons: freshPlan.swimReasons,
-        }
-      } catch {
-        /* keep DB-stored plan as fallback (never a legacy-engine fallback) */
-      }
+
+  // Re-generate the FULL scientific plan from the latest test to get fresh
+  // translation keys AND consistent scientific gating (dosage readiness,
+  // contextual swim safety, method versions). The dashboard never bypasses the
+  // rules and never falls back to the legacy engine: if regeneration fails or
+  // the profile is missing, the plan view is FAIL-CLOSED.
+  let freshPlan: ReturnType<typeof generateScientificallyQualifiedActionPlan> | null = null
+  if (latestTest && profile) {
+    try {
+      freshPlan = generateScientificallyQualifiedActionPlan(
+        latestTest as any,
+        {
+          volume: profile.volume,
+          unit: profile.unit as any,
+          treatmentType: profile.treatmentType,
+          saltSystem: profile.saltSystem,
+          waterBodyType: profile.waterBodyType ?? null,
+          filterType: profile.filterType ?? null,
+          manufacturerSaltMin: profile.manufacturerSaltMin ?? null,
+          manufacturerSaltMax: profile.manufacturerSaltMax ?? null,
+          manufacturerChlorineMax: profile.manufacturerChlorineMax ?? null,
+        } as any,
+        locale,
+        latestTest.measuredAt
+          ? {
+              measuredAt: new Date(latestTest.measuredAt),
+              measurementMethod: (latestTest.measurementMethod as any) || 'manual',
+              measurementMetadata: latestTest.measurementMetadata ?? null,
+            }
+          : undefined,
+        new Date(),
+      )
+    } catch {
+      freshPlan = null
     }
   }
 
+  const latestPlan = buildDashboardPlanView({
+    freshPlan,
+    storedPlan,
+    storedPlanBelongsToLatestTest: Boolean(storedPlan) && storedPlan?.waterTestId === latestTest?.id,
+  })
+
   // Header swim: prefer the regenerated contextual swim safety. If no fresh
-  // qualified plan was produced (e.g. no profile yet), fall back to the STORED
-  // contextual swim safety (water-test / strip-scan persist it) — never to the
-  // legacy engine.
-  if (!swim && latestTest) {
+  // qualified plan was produced, fall back to the STORED contextual swim safety
+  // (water-test / strip-scan persist it) — never to the legacy engine.
+  if (freshPlan) {
+    swim = {
+      status: freshPlan.swimSafety,
+      reasons: freshPlan.swimReasons,
+    }
+  } else if (latestTest) {
     swim = {
       status: latestTest.swimSafety || 'unknown',
       reasons: [],
@@ -136,7 +121,7 @@ export async function GET(req: Request) {
   return NextResponse.json({
     profile,
     latestTest,
-    latestPlan: latestPlanParsed,
+    latestPlan,
     clearWaterIndex,
     clarity,
     swim,
@@ -148,9 +133,4 @@ export async function GET(req: Request) {
     productsCount: products,
     chatCount,
   })
-}
-
-function safeParse(s: string | null): any[] {
-  if (!s) return []
-  try { return JSON.parse(s) } catch { return [] }
 }

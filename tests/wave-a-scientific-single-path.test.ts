@@ -29,6 +29,11 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { generateScientificallyQualifiedActionPlan } from '@/lib/pool/scientific-action-plan'
 import { DOSAGE_METHOD_VERSION } from '@/lib/pool/scientific-action-plan'
+import {
+  buildDashboardPlanView,
+  storedPlanIsCanonical,
+  safeParseJsonArray,
+} from '@/lib/pool/dashboard-plan-gate'
 
 const ROUTES = {
   waterTest: join(process.cwd(), 'src/app/api/pool/water-test/route.ts'),
@@ -194,17 +199,29 @@ describe('Wave A1 — dashboard regeneration does not bypass the rules', () => {
   it('regenerates the plan through the canonical scientific engine (never the legacy one)', () => {
     const src = readFileSync(ROUTES.dashboard, 'utf8')
     expect(src).toContain("from '@/lib/pool/scientific-action-plan'")
+    expect(src).toContain("from '@/lib/pool/dashboard-plan-gate'")
     expect(src).not.toContain("from '@/lib/pool/action-plan'")
     expect(src).not.toContain('generateActionPlan(')
     expect(src).not.toContain('assessSwimSafety')
     expect(src).toContain('generateScientificallyQualifiedActionPlan(')
   })
 
-  it('surfaces dosageMethodVersion and contextual swim safety to the UI plan', () => {
+  it('builds the plan view through the fail-closed dashboard-plan-gate helper', () => {
     const src = readFileSync(ROUTES.dashboard, 'utf8')
-    expect(src).toContain('latestPlanParsed.dosageMethodVersion = freshPlan.dosageMethodVersion')
-    expect(src).toContain('latestPlanParsed.contextualSwimSafety = freshPlan.contextualSwimSafety')
-    expect(src).toContain('latestPlanParsed.scientificMethodVersion = freshPlan.scientificConfidence.methodVersion')
+    expect(src).toContain('buildDashboardPlanView({')
+    const gate = readFileSync(
+      join(process.cwd(), 'src/lib/pool/dashboard-plan-gate.ts'),
+      'utf8',
+    )
+    expect(gate).toContain('scientificRequalificationRequired')
+    expect(gate).toContain('failClosedView')
+  })
+
+  it('the stored plan is fetched as a child of the LATEST test (association)', () => {
+    const src = readFileSync(ROUTES.dashboard, 'utf8')
+    expect(src).toContain("include: {\n        actionPlans: {")
+    expect(src).toContain('const storedPlan = latestTest?.actionPlans?.[0] ?? null')
+    expect(src).toContain('storedPlan?.waterTestId === latestTest?.id')
   })
 
   it('header swim falls back to the STORED contextual safety, never a legacy engine', () => {
@@ -224,5 +241,154 @@ describe('Wave A1 — water-test route remains the canonical reference', () => {
     // input (measuredAt / measurementMethod / measurementMetadata).
     expect(src).toContain('provenance,')
     expect(src).toContain("normalizeMeasurementProvenance(")
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Wave A1 Round 2 — fail-closed dashboard plan gate (BEHAVIORAL tests)
+// ---------------------------------------------------------------------------
+
+const legacyStoredPlan = {
+  id: 'legacy-plan-1',
+  waterTestId: 'wt-1',
+  diagnosis: 'Ancien diagnostic',
+  diagnosisKey: 'diagIssues',
+  severity: 'high',
+  confidence: 0.9,
+  // NO scientific method versions — produced by the legacy engine
+  immediateActions: JSON.stringify([{ actionKey: 'iaAddSalt', action: 'Ajouter du sel' }]),
+  chemicalDosages: JSON.stringify([
+    { param: 'salt_plus', quantity: '12 kg', estimatedCost: '≈ 12.00 €' },
+  ]),
+  doNotDo: JSON.stringify(['dnd1']),
+  doNotDoKeys: JSON.stringify(['dndKey1']),
+  estimatedCost: '≈ 12.00 €',
+  retestInHours: 24,
+  filtrationHours: 6,
+}
+
+const canonicalStoredPlan = {
+  id: 'canonical-plan-1',
+  waterTestId: 'wt-1',
+  diagnosis: 'Diagnostic canonique',
+  diagnosisKey: 'diagIssues',
+  severity: 'medium',
+  confidence: 0.85,
+  scientificMethodVersion: 'measurement-confidence-v1',
+  dosageMethodVersion: DOSAGE_METHOD_VERSION,
+  swimSafetyMethodVersion: 'contextual-swim-safety-v1',
+  immediateActions: JSON.stringify([{ actionKey: 'iaAdjustTac', action: 'Ajuster TAC' }]),
+  chemicalDosages: JSON.stringify([
+    { param: 'alkalinity_plus', quantity: '—', estimatedCost: '—', calculationSuppressed: true },
+  ]),
+  doNotDo: JSON.stringify(['dnd1']),
+  doNotDoKeys: JSON.stringify(['dndKey1']),
+  estimatedCost: '—',
+  retestInHours: 24,
+  filtrationHours: 6,
+}
+
+describe('Wave A1 Round 2 — fail-closed dashboard plan gate (behavioral)', () => {
+  it('1. a stored legacy plan WITHOUT scientific method versions is requalified, never actionable', () => {
+    const view = buildDashboardPlanView({
+      freshPlan: null,
+      storedPlan: legacyStoredPlan,
+      storedPlanBelongsToLatestTest: true,
+    })
+    expect(view).not.toBeNull()
+    expect(view?.scientificPlanAvailable).toBe(false)
+    expect(view?.scientificRequalificationRequired).toBe(true)
+    // No actionable quantity / cost / validated dosing action.
+    expect(view?.chemicalDosages).toEqual([])
+    expect(view?.immediateActions).toEqual([])
+    expect(view?.estimatedCost).toBeNull()
+    // Safe, non-actionable info preserved.
+    expect(view?.diagnosis).toBe('Ancien diagnostic')
+    expect(view?.doNotDo).toEqual(['dnd1'])
+  })
+
+  it('2. a simulated scientific regeneration failure returns a fail-closed view (even a canonical stored plan)', () => {
+    const view = buildDashboardPlanView({
+      freshPlan: null, // regeneration failed
+      storedPlan: canonicalStoredPlan,
+      storedPlanBelongsToLatestTest: true,
+    })
+    expect(view?.scientificPlanAvailable).toBe(false)
+    expect(view?.scientificRequalificationRequired).toBe(true)
+    // No actionable quantity / cost / validated dosing action is exposed.
+    expect(view?.chemicalDosages).toEqual([])
+    expect(view?.immediateActions).toEqual([])
+    expect(view?.estimatedCost).toBeNull()
+    // Safe, non-actionable info preserved.
+    expect(view?.diagnosis).toBe('Diagnostic canonique')
+  })
+
+  it('3. a latest test WITHOUT a plan returns null (no plan from a previous test)', () => {
+    const view = buildDashboardPlanView({
+      freshPlan: null,
+      storedPlan: null,
+      storedPlanBelongsToLatestTest: false,
+    })
+    expect(view).toBeNull()
+  })
+
+  it('4. a stored plan belonging to ANOTHER test is never exposed (diagnosis included)', () => {
+    const view = buildDashboardPlanView({
+      freshPlan: null,
+      storedPlan: canonicalStoredPlan, // waterTestId 'wt-1'
+      storedPlanBelongsToLatestTest: false, // latest test is a different id
+    })
+    expect(view?.scientificPlanAvailable).toBe(false)
+    expect(view?.scientificRequalificationRequired).toBe(true)
+    expect(view?.associationMismatch).toBe(true)
+    expect(view?.immediateActions).toEqual([])
+    expect(view?.chemicalDosages).toEqual([])
+    expect(view?.estimatedCost).toBeNull()
+    // Another test's diagnosis must not leak either.
+    expect(view?.diagnosis).toBeNull()
+  })
+
+  it('5. storedPlanIsCanonical detects canonical method versions (a pure qualifier)', () => {
+    expect(storedPlanIsCanonical(canonicalStoredPlan)).toBe(true)
+    expect(storedPlanIsCanonical(legacyStoredPlan)).toBe(false)
+    expect(safeParseJsonArray(canonicalStoredPlan.chemicalDosages)).toHaveLength(1)
+  })
+
+  it('6. a fresh regenerated plan is returned as EPHEMERAL (no stored identity reuse)', () => {
+    const freshPlan = generateScientificallyQualifiedActionPlan(
+      { ph: 7.4, freeChlorine: 2, alkalinity: 100 },
+      { volume: 50, unit: 'm3', treatmentType: 'chlorine', saltSystem: false, waterBodyType: 'pool', filterType: 'sand' },
+      'fr',
+    ) as any
+    const view = buildDashboardPlanView({
+      freshPlan,
+      storedPlan: legacyStoredPlan, // legacy stored plan must be ignored
+      storedPlanBelongsToLatestTest: false, // stored plan belongs to another test
+    })
+    expect(view?.scientificPlanAvailable).toBe(true)
+    expect(view?.scientificRequalificationRequired).toBe(false)
+    expect(view?.ephemeral).toBe(true)
+    expect(view?.id).toBeUndefined()
+    // The fresh plan's quantities are canonical (readiness-masked when needed).
+    expect(Array.isArray(view?.chemicalDosages)).toBe(true)
+    // No legacy identity leaked.
+    expect(view?.waterTestId).toBeUndefined()
+  })
+
+  it('7. no actionable quantity or estimatedCost is exposed in fail-closed mode', () => {
+    const view = buildDashboardPlanView({
+      freshPlan: null,
+      storedPlan: legacyStoredPlan,
+      storedPlanBelongsToLatestTest: true,
+    })
+    expect(view?.chemicalDosages).toEqual([])
+    expect(view?.estimatedCost).toBeNull()
+    expect(view?.retestInHours).toBeNull()
+    expect(view?.filtrationHours).toBeNull()
+  })
+
+  it('never falls back to generateActionPlan (module-level guarantee)', () => {
+    const dashboard = readFileSync(ROUTES.dashboard, 'utf8')
+    expect(dashboard).not.toContain('generateActionPlan')
   })
 })
