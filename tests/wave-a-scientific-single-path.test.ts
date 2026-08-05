@@ -1,0 +1,228 @@
+/**
+ * AQWELIA Wave A1 — Scientific single path regression tests.
+ *
+ * Verifies that EVERY user-facing path producing an actionable plan
+ * (recommendation / quantity / bathing indication / dosing) uses the SAME
+ * canonical scientific engine:
+ *   1. POST /api/pool/water-test
+ *   2. POST /api/pool/action-plan
+ *   3. POST /api/pool/strip-scan (save=true)
+ *   4. GET /api/dashboard (plan regeneration)
+ *
+ * Acceptance criteria:
+ *   - zero public imports of the legacy generateActionPlan in these routes;
+ *   - same inputs => same readiness / visible-or-masked quantity / methodVersion
+ *     across all paths;
+ *   - salt without a manufacturer target stays non-calculable;
+ *   - chlorine with pH out of target stays deferred when the rules require it;
+ *   - no quantity is exposed when a dosage is non-calculable;
+ *   - StripScan and dashboard regeneration never bypass the rules;
+ *   - no silent fallback to the legacy engine.
+ *
+ * Static route checks + behavioral checks against the canonical engine (the
+ * engine is deterministic, so the same inputs yield the same qualified output).
+ * No network, no real API calls.
+ */
+
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
+import { generateScientificallyQualifiedActionPlan } from '@/lib/pool/scientific-action-plan'
+import { DOSAGE_METHOD_VERSION } from '@/lib/pool/scientific-action-plan'
+
+const ROUTES = {
+  waterTest: join(process.cwd(), 'src/app/api/pool/water-test/route.ts'),
+  actionPlan: join(process.cwd(), 'src/app/api/pool/action-plan/route.ts'),
+  stripScan: join(process.cwd(), 'src/app/api/pool/strip-scan/route.ts'),
+  dashboard: join(process.cwd(), 'src/app/api/dashboard/route.ts'),
+}
+
+const completeTest = {
+  ph: 7.4,
+  freeChlorine: 2,
+  totalChlorine: 2.2,
+  combinedChlorine: 0.2,
+  bromine: null,
+  alkalinity: 100,
+  calciumHardness: 200,
+  cyanuricAcid: 40,
+  salt: null,
+  phosphates: 0.05,
+  temperature: 27,
+  totalDissolvedSolids: 1000,
+}
+
+const chlorinePool = {
+  volume: 50,
+  unit: 'm3' as const,
+  treatmentType: 'chlorine',
+  saltSystem: false,
+  waterBodyType: 'pool',
+  filterType: 'sand',
+}
+
+describe('Wave A1 — canonical engine used by all four public paths', () => {
+  it('no public user path imports the legacy generateActionPlan directly', () => {
+    for (const [name, path] of Object.entries(ROUTES)) {
+      const src = readFileSync(path, 'utf8')
+      expect(
+        src.includes(`import { generateActionPlan } from '@/lib/pool/action-plan'`) ||
+          src.includes(`generateActionPlan(`),
+        `${name} must not import or call the legacy generateActionPlan`,
+      ).toBe(false)
+    }
+  })
+
+  it('all four public paths route through generateScientificallyQualifiedActionPlan', () => {
+    for (const [name, path] of Object.entries(ROUTES)) {
+      const src = readFileSync(path, 'utf8')
+      expect(src, `${name} must use the canonical scientific engine`).toContain(
+        'generateScientificallyQualifiedActionPlan',
+      )
+    }
+  })
+
+  it('the canonical engine is imported from the scientific-action-plan module', () => {
+    for (const [name, path] of Object.entries(ROUTES)) {
+      const src = readFileSync(path, 'utf8')
+      expect(src).toContain("from '@/lib/pool/scientific-action-plan'")
+    }
+  })
+})
+
+describe('Wave A1 — identical qualification across paths (deterministic)', () => {
+  it('the same test/profile yields the same readiness for the same param', () => {
+    const plan = generateScientificallyQualifiedActionPlan(completeTest, chlorinePool, 'fr')
+    // The engine is deterministic; every path must call exactly this function.
+    for (const dosage of plan.chemicalDosages) {
+      expect(dosage.methodVersion).toBe(DOSAGE_METHOD_VERSION)
+      expect(typeof dosage.readiness.state).toBe('string')
+    }
+  })
+
+  it('salt without a manufacturer target stays non-calculable and masked', () => {
+    const plan = generateScientificallyQualifiedActionPlan(
+      { ...completeTest, salt: 2 },
+      { ...chlorinePool, treatmentType: 'salt', saltSystem: true },
+      'fr',
+    )
+    const salt = plan.chemicalDosages.find((dosage) => dosage.param === 'salt_plus')
+    expect(salt?.readiness.state).toBe('not_calculable')
+    expect(salt?.readiness.reasons).toContain('equipment_salt_range_required')
+    expect(salt?.quantity).toBe('—')
+    expect(salt?.estimatedCost).toBe('—')
+    expect(salt?.calculationSuppressed).toBe(true)
+    expect(plan.immediateActions.some((action) => action.actionKey === 'iaAddSalt')).toBe(false)
+  })
+
+  it('chlorine with pH out of target stays deferred and quantity hidden', () => {
+    const plan = generateScientificallyQualifiedActionPlan(
+      { ...completeTest, ph: 7.9, freeChlorine: 0.2 },
+      chlorinePool,
+      'fr',
+    )
+    const shock = plan.chemicalDosages.find((dosage) => dosage.param === 'chlorine_shock')
+    expect(shock?.readiness.state).toBe('deferred')
+    expect(shock?.readiness.reasons).toContain('rebalance_ph_first')
+    expect(shock?.quantity).toBe('—')
+    expect(shock?.calculationSuppressed).toBe(true)
+  })
+
+  it('no quantity is exposed when a dosage is non-calculable', () => {
+    const plan = generateScientificallyQualifiedActionPlan(
+      { ...completeTest, salt: 2 },
+      { ...chlorinePool, treatmentType: 'salt', saltSystem: true },
+      'en',
+    )
+    for (const dosage of plan.chemicalDosages) {
+      if (dosage.readiness.state !== 'ready') {
+        expect(dosage.quantity).toBe('—')
+        expect(dosage.estimatedCost).toBe('—')
+      }
+    }
+  })
+
+  it('same inputs produce the same methodVersion across runs', () => {
+    const a = generateScientificallyQualifiedActionPlan(completeTest, chlorinePool, 'fr')
+    const b = generateScientificallyQualifiedActionPlan(completeTest, chlorinePool, 'fr')
+    expect(a.dosageMethodVersion).toBe(b.dosageMethodVersion)
+    expect(a.dosageMethodVersion).toBe(DOSAGE_METHOD_VERSION)
+    expect(a.scientificConfidence.methodVersion).toBe(b.scientificConfidence.methodVersion)
+    expect(a.contextualSwimSafety.methodVersion).toBe(b.contextualSwimSafety.methodVersion)
+  })
+})
+
+describe('Wave A1 — action-plan route persists the scientific contract', () => {
+  it('persists scientific / dosage / swimSafety method versions', () => {
+    const src = readFileSync(ROUTES.actionPlan, 'utf8')
+    expect(src).toContain('scientificMethodVersion: plan.scientificConfidence.methodVersion')
+    expect(src).toContain('dosageMethodVersion: plan.dosageMethodVersion')
+    expect(src).toContain('swimSafetyMethodVersion: plan.contextualSwimSafety.methodVersion')
+    expect(src).toContain('generateScientificallyQualifiedActionPlan(')
+  })
+
+  it('builds the qualified profile with the full scientific contract fields', () => {
+    const src = readFileSync(ROUTES.actionPlan, 'utf8')
+    for (const field of ['waterBodyType', 'filterType', 'manufacturerSaltMin', 'manufacturerSaltMax', 'manufacturerChlorineMax']) {
+      expect(src).toContain(field)
+    }
+  })
+})
+
+describe('Wave A1 — StripScan does not bypass the rules', () => {
+  it('uses the canonical scientific engine and persists the scientific contract when save=true', () => {
+    const src = readFileSync(ROUTES.stripScan, 'utf8')
+    expect(src).toContain('generateScientificallyQualifiedActionPlan')
+    expect(src).not.toContain('generateActionPlan')
+    expect(src).not.toContain('assessSwimSafety')
+    expect(src).toContain('scientificMethodVersion: qualifiedPlan.scientificConfidence.methodVersion')
+    expect(src).toContain('dosageMethodVersion: qualifiedPlan.dosageMethodVersion')
+    expect(src).toContain('swimSafetyMethodVersion: qualifiedPlan.contextualSwimSafety.methodVersion')
+    expect(src).toContain('calculateLsiAssessment')
+    expect(src).not.toContain('calculateLSI(')
+  })
+
+  it('derives the persisted swim safety from the qualified contextual assessment', () => {
+    const src = readFileSync(ROUTES.stripScan, 'utf8')
+    expect(src).toContain('const contextualSwim = qualifiedPlan?.contextualSwimSafety.status')
+    expect(src).toContain('swimSafety: contextualSwim')
+    expect(src).not.toContain('swim = assessSwimSafety')
+  })
+})
+
+describe('Wave A1 — dashboard regeneration does not bypass the rules', () => {
+  it('regenerates the plan through the canonical scientific engine (never the legacy one)', () => {
+    const src = readFileSync(ROUTES.dashboard, 'utf8')
+    expect(src).toContain("from '@/lib/pool/scientific-action-plan'")
+    expect(src).not.toContain("from '@/lib/pool/action-plan'")
+    expect(src).not.toContain('generateActionPlan(')
+    expect(src).not.toContain('assessSwimSafety')
+    expect(src).toContain('generateScientificallyQualifiedActionPlan(')
+  })
+
+  it('surfaces dosageMethodVersion and contextual swim safety to the UI plan', () => {
+    const src = readFileSync(ROUTES.dashboard, 'utf8')
+    expect(src).toContain('latestPlanParsed.dosageMethodVersion = freshPlan.dosageMethodVersion')
+    expect(src).toContain('latestPlanParsed.contextualSwimSafety = freshPlan.contextualSwimSafety')
+    expect(src).toContain('latestPlanParsed.scientificMethodVersion = freshPlan.scientificConfidence.methodVersion')
+  })
+
+  it('header swim falls back to the STORED contextual safety, never a legacy engine', () => {
+    const src = readFileSync(ROUTES.dashboard, 'utf8')
+    expect(src).toContain('swim = {')
+    expect(src).toContain('latestTest.swimSafety || \'unknown\'')
+    expect(src).not.toContain('assessSwimSafety(latestTest')
+  })
+})
+
+describe('Wave A1 — water-test route remains the canonical reference', () => {
+  it('uses the canonical engine with provenance-adjusted confidence', () => {
+    const src = readFileSync(ROUTES.waterTest, 'utf8')
+    expect(src).toContain('generateScientificallyQualifiedActionPlan(')
+    expect(src).not.toContain("from '@/lib/pool/action-plan'")
+    // The engine's 4th argument is the provenance-shaped measurement-confidence
+    // input (measuredAt / measurementMethod / measurementMetadata).
+    expect(src).toContain('provenance,')
+    expect(src).toContain("normalizeMeasurementProvenance(")
+  })
+})

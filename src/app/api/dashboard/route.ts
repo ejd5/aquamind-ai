@@ -3,9 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { clarityLabel, calculateClearWaterIndex } from '@/lib/pool/water-balance'
-import { assessSwimSafety } from '@/lib/pool/safety-rules'
 import { pickLocale, translate } from '@/lib/i18n-api'
-import { generateActionPlan } from '@/lib/pool/action-plan'
+import { generateScientificallyQualifiedActionPlan } from '@/lib/pool/scientific-action-plan'
 
 export const runtime = 'nodejs'
 
@@ -43,7 +42,7 @@ export async function GET(req: Request) {
 
   let clearWaterIndex: number | null = null
   let clarity: ReturnType<typeof clarityLabel> | null = null
-  let swim: ReturnType<typeof assessSwimSafety> | null = null
+  let swim: { status: string; reasons: string[] } | null = null
   // latestPlanParsed overrides 3 string fields (JSON columns) with parsed arrays,
   // so it is intentionally NOT the raw ActionPlan type.
   let latestPlanParsed: {
@@ -56,25 +55,46 @@ export async function GET(req: Request) {
   if (latestTest) {
     clearWaterIndex = latestTest.clearWaterIndex || calculateClearWaterIndex(latestTest as any)
     clarity = clarityLabel(clearWaterIndex)
-    swim = assessSwimSafety(latestTest as any)
   }
-
-  if (latestPlan) {
-    latestPlanParsed = {
+  if (latestPlan) {    latestPlanParsed = {
       ...latestPlan,
       immediateActions: safeParse(latestPlan.immediateActions),
       chemicalDosages: safeParse(latestPlan.chemicalDosages),
       doNotDo: safeParse(latestPlan.doNotDo),
     }
-    // Re-generate the FULL plan from the latest test to get fresh translation
-    // keys. The DB stores French literals without keys for old plans. By
-    // regenerating, we get immediateActions/chemicalDosages WITH actionKey,
-    // detailKey, productKey, methodKey, warningKeys etc. — so the UI can
-    // translate everything instead of showing French fallbacks.
+    // Re-generate the FULL scientific plan from the latest test to get fresh
+    // translation keys AND consistent scientific gating (dosage readiness,
+    // contextual swim safety, method versions). The DB stores French literals
+    // without keys for old plans. By regenerating through the SAME engine as
+    // POST /api/pool/water-test, the dashboard never bypasses the rules — a
+    // deferred or non-calculable dosage never exposes an actionable quantity.
     if (latestTest && profile) {
       try {
-        const freshPlan = generateActionPlan(latestTest as any, profile as any)
-        // Use fresh immediateActions and chemicalDosages (they have *Key fields)
+        const freshPlan = generateScientificallyQualifiedActionPlan(
+          latestTest as any,
+          {
+            volume: profile.volume,
+            unit: profile.unit as any,
+            treatmentType: profile.treatmentType,
+            saltSystem: profile.saltSystem,
+            waterBodyType: profile.waterBodyType ?? null,
+            filterType: profile.filterType ?? null,
+            manufacturerSaltMin: profile.manufacturerSaltMin ?? null,
+            manufacturerSaltMax: profile.manufacturerSaltMax ?? null,
+            manufacturerChlorineMax: profile.manufacturerChlorineMax ?? null,
+          } as any,
+          locale,
+          latestTest.measuredAt
+            ? {
+                measuredAt: new Date(latestTest.measuredAt),
+                measurementMethod: (latestTest.measurementMethod as any) || 'manual',
+                measurementMetadata: latestTest.measurementMetadata ?? null,
+              }
+            : undefined,
+          new Date(),
+        )
+        // Use fresh immediateActions and chemicalDosages (they have *Key fields
+        // AND readiness/masking), and surface the contextual swim safety.
         latestPlanParsed.immediateActions = freshPlan.immediateActions as any
         latestPlanParsed.chemicalDosages = freshPlan.chemicalDosages as any
         // Merge scalar key fields
@@ -86,7 +106,30 @@ export async function GET(req: Request) {
         latestPlanParsed.lsiLabelKey = freshPlan.lsiLabelKey
         latestPlanParsed.swimReasonKeys = freshPlan.swimReasonKeys
         latestPlanParsed.swimReasonParams = freshPlan.swimReasonParams
-      } catch { /* keep DB-stored plan as fallback */ }
+        latestPlanParsed.swimSafety = freshPlan.swimSafety
+        latestPlanParsed.dosageMethodVersion = freshPlan.dosageMethodVersion
+        latestPlanParsed.scientificMethodVersion = freshPlan.scientificConfidence.methodVersion
+        latestPlanParsed.contextualSwimSafety = freshPlan.contextualSwimSafety
+        latestPlanParsed.confidence = freshPlan.confidence
+        // Header swim indication is driven by the qualified contextual safety.
+        swim = {
+          status: freshPlan.swimSafety,
+          reasons: freshPlan.swimReasons,
+        }
+      } catch {
+        /* keep DB-stored plan as fallback (never a legacy-engine fallback) */
+      }
+    }
+  }
+
+  // Header swim: prefer the regenerated contextual swim safety. If no fresh
+  // qualified plan was produced (e.g. no profile yet), fall back to the STORED
+  // contextual swim safety (water-test / strip-scan persist it) — never to the
+  // legacy engine.
+  if (!swim && latestTest) {
+    swim = {
+      status: latestTest.swimSafety || 'unknown',
+      reasons: [],
     }
   }
 
