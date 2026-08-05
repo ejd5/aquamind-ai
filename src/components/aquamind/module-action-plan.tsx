@@ -28,7 +28,12 @@ import { usePdfReport } from '@/hooks/use-pdf-report'
 import { BrainActionTracker } from '@/components/brain/brain-action-tracker'
 import type { TabId } from './app-shell'
 import type { DashboardApiResponse, DashboardPlanView } from '@/lib/pool/dashboard-contract'
-import { isActionableDashboardPlan } from '@/lib/pool/dashboard-contract'
+import {
+  canRegenerateDashboardPlan,
+  canTrackDashboardPlan,
+  getDashboardRegenerationTestId,
+  isActionableDashboardPlan,
+} from '@/lib/pool/dashboard-contract'
 
 interface Props {
   onNavigate: (tab: TabId) => void
@@ -124,11 +129,14 @@ export function ModuleActionPlan({ onNavigate, activePoolId }: Props) {
   }, [load])
 
   async function regenerate() {
-    // Regeneration is only possible with a valid sourceWaterTestId — never
-    // undefined, never a stored/other-test identity.
-    if (!isActionableDashboardPlan(plan) || !plan.sourceWaterTestId) return
+    // Regeneration depends ONLY on a valid sourceWaterTestId — never on the
+    // plan being actionable. A fail-closed plan with a valid test id can still
+    // be regenerated. The payload is always { testId: sourceWaterTestId } and
+    // never carries an undefined or empty testId.
+    const testId = getDashboardRegenerationTestId(plan)
+    if (!testId) return
     setRegenerating(true)
-    const payload = { testId: plan.sourceWaterTestId }
+    const payload = { testId }
     try {
       if (!isOnline) {
         queueAction({ method: 'POST', path: '/api/pool/action-plan', body: payload })
@@ -189,7 +197,7 @@ export function ModuleActionPlan({ onNavigate, activePoolId }: Props) {
   // must NOT be rendered as a current maintenance plan. Show an explicit
   // requalification state and the only safe actions (new test / regenerate).
   if (plan && !actionable) {
-    const canRegenerate = Boolean(plan.sourceWaterTestId)
+    const canRegenerate = canRegenerateDashboardPlan(plan)
     return (
       <Card className="glass-card">
         <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
@@ -357,12 +365,14 @@ export function ModuleActionPlan({ onNavigate, activePoolId }: Props) {
                         {tr(ai.product, ai.productKey)}
                       </span>
                     )}
-                    {/* BrainActionTracker is rendered ONLY when a stored plan
-                        belongs exactly to this test (storedActionPlanId). It is
-                        never rendered for an ephemeral plan or in fail-closed
-                        mode, and actionPlanId is never undefined. */}
-                    {plan.storedActionPlanId ? (
-                      <BrainActionTracker actionPlanId={plan.storedActionPlanId} actionIndex={i} actionLabel={tr(ai.action, ai.actionKey)} productName={ai.product ? tr(ai.product, ai.productKey) : undefined} poolId={activePoolId} />
+                    {/* BrainActionTracker is rendered ONLY when the plan is
+                        trackable under a stored ActionPlan id
+                        (canTrackDashboardPlan): scientifically available, NOT
+                        ephemeral, and with a valid storedActionPlanId. A fresh
+                        ephemeral plan is never tracked under a stored plan's
+                        identity, even when storedActionPlanId exists. */}
+                    {canTrackDashboardPlan(plan) ? (
+                      <BrainActionTracker actionPlanId={plan.storedActionPlanId!} actionIndex={i} actionLabel={tr(ai.action, ai.actionKey)} productName={ai.product ? tr(ai.product, ai.productKey) : undefined} poolId={activePoolId} />
                     ) : null}
                   </div>
                 </li>

@@ -14,11 +14,8 @@
  */
 
 import { DOSAGE_METHOD_VERSION } from './scientific-action-plan'
-import {
-  DashboardPlanMetadata,
-  DashboardPlanView,
-  safeParseJsonArray,
-} from './dashboard-contract'
+import type { DashboardPlanMetadata, DashboardPlanView, DashboardSwimView } from './dashboard-contract'
+import { safeParseJsonArray } from './dashboard-contract'
 
 export interface StoredActionPlanRecord {
   id?: string | null
@@ -47,9 +44,6 @@ export interface DashboardSourceMetadata {
   /** injectable for deterministic tests; defaults to now. */
   generatedAt?: string | Date
 }
-
-export type { DashboardPlanView }
-export { safeParseJsonArray }
 
 /**
  * True when the stored plan carries the canonical scientific method versions
@@ -203,8 +197,18 @@ export function buildDashboardPlanView(args: {
     }
   }
 
-  // 2) No fresh plan (regeneration failed or no profile) and no stored plan.
-  if (!storedPlan) return null
+  // 2) No fresh plan (regeneration failed or no profile).
+  if (!storedPlan) {
+    // 2a) A latest WaterTest exists (valid sourceWaterTestId) but no stored
+    //     ActionPlan: return an explicit FAIL-CLOSED requalification view so the
+    //     consumer can offer a regeneration with the latest test. No historical
+    //     diagnosis is invented.
+    if (sourceMetadata.sourceWaterTestId) {
+      return failClosedView(null, false, sourceMetadata)
+    }
+    // 2b) No test at all: no plan.
+    return null
+  }
 
   // 3) A stored plan — canonical or legacy — is NEVER exposed as actionable
   //    when no fresh qualified plan was produced. The dashboard is fail-closed:
@@ -240,13 +244,6 @@ export function sanitizeDashboardLatestTest<T extends Record<string, unknown>>(
   void _droppedSwim
   void _droppedStatus
   return rest as Omit<T, 'actionPlans' | 'swimSafety' | 'status'>
-}
-
-export interface DashboardSwimView {
-  status: 'allowed' | 'avoid' | 'forbidden' | 'unknown'
-  reasons: string[]
-  /** True when the swim conclusion is NOT backed by a fresh canonical engine. */
-  scientificRequalificationRequired: boolean
 }
 
 /**

@@ -134,3 +134,46 @@ export function safeParseJsonArray(value: string | null | unknown): unknown[] {
 export function isActionableDashboardPlan(plan: DashboardPlanView | null): plan is DashboardPlanView & { scientificPlanAvailable: true } {
   return Boolean(plan && plan.scientificPlanAvailable === true)
 }
+
+/**
+ * True when the plan can be regenerated from its latest test. This does NOT
+ * require the plan to be actionable: a fail-closed plan with a valid
+ * sourceWaterTestId can still be regenerated. Requires a non-empty,
+ * non-whitespace sourceWaterTestId.
+ */
+export function canRegenerateDashboardPlan(plan: DashboardPlanView | null): boolean {
+  const id = plan?.sourceWaterTestId
+  return typeof id === 'string' && id.trim().length > 0
+}
+
+/**
+ * Returns the testId to use for regenerating a plan, or null when no valid
+ * sourceWaterTestId exists. Callers must never send a payload with an
+ * undefined or empty testId.
+ */
+export function getDashboardRegenerationTestId(plan: DashboardPlanView | null): string | null {
+  if (!canRegenerateDashboardPlan(plan)) return null
+  return plan!.sourceWaterTestId!.trim()
+}
+
+/**
+ * True when an action execution may be tracked under a stored ActionPlan id.
+ *
+ * RULES (Wave A1 Round 6):
+ *   - the plan must be scientifically available (not fail-closed);
+ *   - the plan must NOT be ephemeral (a freshly regenerated plan is not the
+ *     stored plan, even when storedActionPlanId exists — its actions, order,
+ *     readiness and versions are not proven identical to the stored plan);
+ *   - storedActionPlanId must be a valid non-empty id.
+ *
+ * In the current dashboard, the freshPlan is ALWAYS ephemeral, so a fresh
+ * plan is never tracked under a stored plan's identity. Ephemeral-plan
+ * tracking will be handled later by explicit persistence or a reliable
+ * scientific fingerprint.
+ */
+export function canTrackDashboardPlan(plan: DashboardPlanView | null): boolean {
+  if (!plan || plan.scientificPlanAvailable !== true) return false
+  if (plan.ephemeral === true) return false
+  const id = plan.storedActionPlanId
+  return typeof id === 'string' && id.trim().length > 0
+}

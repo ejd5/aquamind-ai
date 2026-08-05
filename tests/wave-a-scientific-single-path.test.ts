@@ -32,8 +32,8 @@ import { DOSAGE_METHOD_VERSION } from '@/lib/pool/scientific-action-plan'
 import {
   buildDashboardPlanView,
   storedPlanIsCanonical,
-  safeParseJsonArray,
 } from '@/lib/pool/dashboard-plan-gate'
+import { safeParseJsonArray } from '@/lib/pool/dashboard-contract'
 
 const ROUTES = {
   waterTest: join(process.cwd(), 'src/app/api/pool/water-test/route.ts'),
@@ -677,6 +677,9 @@ describe('Wave A1 Round 4 — public contract: response.swim is the only swim so
 import {
   DashboardPlanView,
   DashboardSwimView,
+  canRegenerateDashboardPlan,
+  canTrackDashboardPlan,
+  getDashboardRegenerationTestId,
   isActionableDashboardPlan,
 } from '@/lib/pool/dashboard-contract'
 
@@ -726,10 +729,23 @@ describe('Wave A1 Round 5 — ephemeral plan safe metadata', () => {
   })
 
   it('4. storedActionPlanId is null when no stored plan is associated', () => {
+    // Round 6: a latest test without a stored plan returns a FAIL-CLOSED view
+    // (with a valid sourceWaterTestId), still with storedActionPlanId null.
     const view = buildDashboardPlanView({ freshPlan: null, storedPlan: null, storedPlanBelongsToLatestTest: false, ...baseMeta })
-    expect(view).toBeNull()
+    expect(view).not.toBeNull()
+    expect(view?.scientificPlanAvailable).toBe(false)
+    expect(view?.scientificRequalificationRequired).toBe(true)
+    expect(view?.storedActionPlanId).toBeNull()
     const fresh = buildDashboardPlanView({ freshPlan: freshPlanFixture, storedPlan: null, storedPlanBelongsToLatestTest: false, ...baseMeta })
     expect(fresh?.storedActionPlanId).toBeNull()
+    // Without any test (sourceWaterTestId null) → null.
+    const noTest = buildDashboardPlanView({
+      freshPlan: null,
+      storedPlan: null,
+      storedPlanBelongsToLatestTest: false,
+      sourceMetadata: { sourceWaterTestId: null, sourceMeasuredAt: null, generatedAt: new Date() },
+    })
+    expect(noTest).toBeNull()
   })
 
   it('5. storedActionPlanId is present ONLY for a plan of the same test', () => {
@@ -768,13 +784,13 @@ describe('Wave A1 Round 5 — ephemeral plan safe metadata', () => {
     expect(payload).toBeNull()
   })
 
-  it('8. BrainActionTracker is not rendered without storedActionPlanId', () => {
-    // Mirrors module-action-plan.tsx: tracker only when storedActionPlanId truthy.
+  it('8. BrainActionTracker is not rendered without a trackable plan', () => {
+    // Mirrors module-action-plan.tsx: tracker only when canTrackDashboardPlan.
     const view = buildDashboardPlanView({ freshPlan: freshPlanFixture, storedPlan: null, storedPlanBelongsToLatestTest: false, ...baseMeta })
-    const renderTracker = Boolean(view?.storedActionPlanId)
+    const renderTracker = canTrackDashboardPlan(view)
     expect(renderTracker).toBe(false)
     const moduleSrc = readFileSync(join(process.cwd(), 'src/components/aquamind/module-action-plan.tsx'), 'utf8')
-    expect(moduleSrc).toContain('plan.storedActionPlanId ? (')
+    expect(moduleSrc).toContain('canTrackDashboardPlan(plan) ? (')
   })
 
   it('9. BrainActionTracker is never rendered in fail-closed mode', () => {
@@ -864,5 +880,206 @@ describe('Wave A1 Round 5 — ephemeral plan safe metadata', () => {
     expect(serialized).not.toContain('actionPlans')
     expect(serialized).not.toContain('swimSafety')
     expect(serialized).not.toContain('"critical"')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Wave A1 Round 6 — fail-closed regeneration, ephemeral tracking, no stored plan
+// ---------------------------------------------------------------------------
+
+describe('Wave A1 Round 6 — regeneration helper (fail-closed allowed)', () => {
+  const freshFixture = generateScientificallyQualifiedActionPlan(
+    { ph: 7.4, freeChlorine: 2, alkalinity: 100 },
+    { volume: 50, unit: 'm3', treatmentType: 'chlorine', saltSystem: false, waterBodyType: 'pool', filterType: 'sand' },
+    'fr',
+  ) as any
+
+  const meta = {
+    sourceMetadata: {
+      sourceWaterTestId: 'wt-latest',
+      sourceMeasuredAt: new Date('2026-07-26T18:00:00.000Z'),
+      generatedAt: new Date('2026-07-26T19:00:00.000Z'),
+    },
+  }
+
+  it('1. fail-closed + valid sourceWaterTestId produces a regeneration payload', () => {
+    const failClosed = buildDashboardPlanView({ freshPlan: null, storedPlan: legacyStoredPlan, storedPlanBelongsToLatestTest: true, ...meta })
+    expect(failClosed?.scientificPlanAvailable).toBe(false)
+    expect(canRegenerateDashboardPlan(failClosed)).toBe(true)
+    expect(getDashboardRegenerationTestId(failClosed)).toBe('wt-latest')
+    const payload = getDashboardRegenerationTestId(failClosed)
+      ? { testId: getDashboardRegenerationTestId(failClosed) }
+      : null
+    expect(payload).toEqual({ testId: 'wt-latest' })
+  })
+
+  it('2. actionable + valid sourceWaterTestId produces the same payload', () => {
+    const actionable = buildDashboardPlanView({ freshPlan: freshFixture, storedPlan: null, storedPlanBelongsToLatestTest: false, ...meta })
+    expect(isActionableDashboardPlan(actionable)).toBe(true)
+    expect(getDashboardRegenerationTestId(actionable)).toBe('wt-latest')
+  })
+
+  it('3. undefined testId produces no payload', () => {
+    const view = buildDashboardPlanView({
+      freshPlan: null,
+      storedPlan: null,
+      storedPlanBelongsToLatestTest: false,
+      sourceMetadata: { sourceWaterTestId: null, sourceMeasuredAt: null, generatedAt: new Date() },
+    })
+    expect(getDashboardRegenerationTestId(view)).toBeNull()
+    expect(canRegenerateDashboardPlan(view)).toBe(false)
+  })
+
+  it('4. empty testId produces no payload', () => {
+    const view = buildDashboardPlanView({
+      freshPlan: null,
+      storedPlan: null,
+      storedPlanBelongsToLatestTest: false,
+      sourceMetadata: { sourceWaterTestId: '   ', sourceMeasuredAt: null, generatedAt: new Date() },
+    })
+    expect(getDashboardRegenerationTestId(view)).toBeNull()
+    expect(canRegenerateDashboardPlan(view)).toBe(false)
+  })
+
+  it('5. the fail-closed button uses the regeneration helper', () => {
+    const src = readFileSync(join(process.cwd(), 'src/components/aquamind/module-action-plan.tsx'), 'utf8')
+    expect(src).toContain('const canRegenerate = canRegenerateDashboardPlan(plan)')
+    expect(src).toContain('const testId = getDashboardRegenerationTestId(plan)')
+  })
+
+  it('6. isActionableDashboardPlan never blocks a fail-closed regeneration', () => {
+    const failClosed = buildDashboardPlanView({ freshPlan: null, storedPlan: legacyStoredPlan, storedPlanBelongsToLatestTest: true, ...meta })
+    // The regenerate() function no longer checks isActionableDashboardPlan.
+    const src = readFileSync(join(process.cwd(), 'src/components/aquamind/module-action-plan.tsx'), 'utf8')
+    const regenFn = src.slice(src.indexOf('async function regenerate()'), src.indexOf('if (loading)'))
+    expect(regenFn).not.toContain('isActionableDashboardPlan')
+    expect(getDashboardRegenerationTestId(failClosed)).toBe('wt-latest')
+  })
+
+  it('7. freshPlan ephemeral + storedActionPlanId does NOT allow BrainActionTracker', () => {
+    const ephemeral = buildDashboardPlanView({
+      freshPlan: freshFixture,
+      storedPlan: { ...legacyStoredPlan, id: 'stored-id', waterTestId: 'wt-latest' },
+      storedPlanBelongsToLatestTest: true,
+      ...meta,
+    })
+    expect(ephemeral?.ephemeral).toBe(true)
+    expect(ephemeral?.storedActionPlanId).toBe('stored-id')
+    expect(canTrackDashboardPlan(ephemeral)).toBe(false)
+  })
+
+  it('8. freshPlan ephemeral never triggers a /api/brain/executions call', () => {
+    const ephemeral = buildDashboardPlanView({
+      freshPlan: freshFixture,
+      storedPlan: { ...legacyStoredPlan, id: 'stored-id', waterTestId: 'wt-latest' },
+      storedPlanBelongsToLatestTest: true,
+      ...meta,
+    })
+    expect(canTrackDashboardPlan(ephemeral)).toBe(false)
+    // module-action-plan only renders BrainActionTracker behind canTrackDashboardPlan.
+    const src = readFileSync(join(process.cwd(), 'src/components/aquamind/module-action-plan.tsx'), 'utf8')
+    expect(src).toContain('canTrackDashboardPlan(plan) ? (')
+  })
+
+  it('9. a non-ephemeral persistent plan with a valid id is trackable', () => {
+    const nonEphemeral = {
+      scientificPlanAvailable: true,
+      scientificRequalificationRequired: false,
+      ephemeral: false,
+      storedActionPlanId: 'stored-id',
+      sourceWaterTestId: 'wt-latest',
+      sourceMeasuredAt: null,
+      generatedAt: new Date().toISOString(),
+      immediateActions: [],
+      chemicalDosages: [],
+      doNotDo: [],
+      doNotDoKeys: [],
+      estimatedCost: null,
+      retestInHours: 24,
+      filtrationHours: 6,
+    } as unknown as DashboardPlanView
+    expect(canTrackDashboardPlan(nonEphemeral)).toBe(true)
+  })
+
+  it('10. a fail-closed plan is never trackable', () => {
+    const failClosed = buildDashboardPlanView({ freshPlan: null, storedPlan: legacyStoredPlan, storedPlanBelongsToLatestTest: true, ...meta })
+    expect(canTrackDashboardPlan(failClosed)).toBe(false)
+  })
+
+  it('11. freshPlan null + storedPlan null + valid sourceWaterTestId returns a non-null fail-closed view', () => {
+    const view = buildDashboardPlanView({ freshPlan: null, storedPlan: null, storedPlanBelongsToLatestTest: false, ...meta })
+    expect(view).not.toBeNull()
+    expect(view?.scientificPlanAvailable).toBe(false)
+    expect(view?.scientificRequalificationRequired).toBe(true)
+    expect(view?.sourceWaterTestId).toBe('wt-latest')
+  })
+
+  it('12. that no-stored-plan view has storedActionPlanId null', () => {
+    const view = buildDashboardPlanView({ freshPlan: null, storedPlan: null, storedPlanBelongsToLatestTest: false, ...meta })
+    expect(view?.storedActionPlanId).toBeNull()
+  })
+
+  it('13. that no-stored-plan view keeps immediateActions and chemicalDosages empty', () => {
+    const view = buildDashboardPlanView({ freshPlan: null, storedPlan: null, storedPlanBelongsToLatestTest: false, ...meta })
+    expect(view?.immediateActions).toEqual([])
+    expect(view?.chemicalDosages).toEqual([])
+    expect(view?.estimatedCost).toBeNull()
+    expect(view?.retestInHours).toBeNull()
+    expect(view?.filtrationHours).toBeNull()
+    expect(view?.diagnosis).toBeNull()
+  })
+
+  it('14. absence of any latest test always returns latestPlan null', () => {
+    const view = buildDashboardPlanView({
+      freshPlan: null,
+      storedPlan: null,
+      storedPlanBelongsToLatestTest: false,
+      sourceMetadata: { sourceWaterTestId: null, sourceMeasuredAt: null, generatedAt: new Date() },
+    })
+    expect(view).toBeNull()
+  })
+
+  it('15. module-action-plan shows requalification for a test without a stored plan', () => {
+    const src = readFileSync(join(process.cwd(), 'src/components/aquamind/module-action-plan.tsx'), 'utf8')
+    expect(src).toContain("t('requalificationNeeded')")
+    // The fail-closed branch is reached for a non-null plan with
+    // scientificPlanAvailable false — including the no-stored-plan view.
+    expect(src).toContain('if (plan && !actionable) {')
+  })
+
+  it('16. the regenerate button is not shown without a sourceWaterTestId', () => {
+    const src = readFileSync(join(process.cwd(), 'src/components/aquamind/module-action-plan.tsx'), 'utf8')
+    expect(src).toContain('const canRegenerate = canRegenerateDashboardPlan(plan)')
+    // In the fail-closed branch, the button renders only when canRegenerate.
+    const failClosedBranch = src.slice(src.indexOf('if (plan && !actionable) {'), src.indexOf('const sevCls'))
+    expect(failClosedBranch).toContain('canRegenerate && (')
+    expect(failClosedBranch).toContain('onClick={regenerate}')
+  })
+
+  it('17. Round 1-5 protections remain intact', () => {
+    const dashRoute = readFileSync(ROUTES.dashboard, 'utf8')
+    expect(dashRoute).not.toContain('generateActionPlan')
+    expect(dashRoute).toContain('sanitizeDashboardLatestTest(latestTest as any)')
+    const gate = readFileSync(join(process.cwd(), 'src/lib/pool/dashboard-plan-gate.ts'), 'utf8')
+    expect(gate).not.toContain('import { generateActionPlan }')
+    const sanitized = sanitizeDashboardLatestTest(latestTestWithLegacyPlan) as any
+    expect(sanitized.actionPlans).toBeUndefined()
+    expect(sanitized.swimSafety).toBeUndefined()
+    expect(sanitized.status).toBeUndefined()
+  })
+
+  it('18. no historical dosage or swim safety data reappears in the public response', () => {
+    const sanitized = sanitizeDashboardLatestTest(latestTestWithLegacyPlan) as any
+    const view = buildDashboardPlanView({ freshPlan: null, storedPlan: legacyStoredPlan, storedPlanBelongsToLatestTest: true, ...meta })
+    const response = {
+      latestTest: sanitized,
+      latestPlan: view,
+      swim: buildDashboardSwim({ freshPlan: null, hasLatestTest: true }),
+    }
+    const serialized = JSON.stringify(response)
+    expect(serialized).not.toContain('12 kg')
+    expect(serialized).not.toContain('iaAddSalt')
+    expect(serialized).not.toContain('"swimSafety":"forbidden"')
+    expect(serialized).not.toContain('"status":"critical"')
   })
 })
