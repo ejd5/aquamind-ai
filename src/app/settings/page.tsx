@@ -23,7 +23,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
+import { signOutWithBillingCleanup } from '@/lib/billing/sign-out'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useLocale, useTranslations } from 'next-intl'
@@ -304,7 +305,7 @@ export default function SettingsPage() {
       const data = await res.json().catch(() => null)
       if (!res.ok) throw new Error(data?.error || t('deleteFailedDesc'))
       toast({ title: t('accountDeleted'), description: t('redirecting') })
-      await signOut({ callbackUrl: '/' })
+      await signOutWithBillingCleanup({ callbackUrl: '/' })
     } catch (err) {
       toast({
         title: t('deleteFailed'),
@@ -624,7 +625,7 @@ export default function SettingsPage() {
               description={t('signOutDesc', { email: session.user?.email ?? t('unknownUser') })}
             >
               <Button
-                onClick={() => signOut({ callbackUrl: '/' })}
+                onClick={() => void signOutWithBillingCleanup({ callbackUrl: '/' })}
                 size="sm"
                 variant="outline"
                 className="rounded-full"

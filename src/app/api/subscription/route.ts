@@ -16,8 +16,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { db } from '@/lib/db'
 import { PLANS, DEFAULT_PLAN, getPlan, type PlanId, type SubscriptionStatus } from '@/lib/billing/plans'
+import { loadUserEntitlements } from '@/lib/billing/entitlement-projection'
 import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
@@ -31,22 +31,36 @@ export async function GET(req: NextRequest) {
   }
   const userId = session.user.id
 
-  // Get the most recent subscription (active or not)
-  const sub = await db.subscription.findFirst({
-    where: { userId },
-    orderBy: { startedAt: 'desc' },
-  })
+  // Wave A2: union projection across providers — the same evaluation the
+  // feature gates use. Never exposes provider-sensitive ids (stripeCustomerId,
+  // stripeSubscriptionId, providerSubscriptionId, lastProviderEventId).
+  const projection = await loadUserEntitlements(userId)
+  const best = projection.best
 
-  const planId: PlanId = (sub?.plan as PlanId) || DEFAULT_PLAN
+  const planId: PlanId = best?.plan || DEFAULT_PLAN
   const plan = getPlan(planId) || PLANS[0]
-  const status: SubscriptionStatus = (sub?.status as SubscriptionStatus) || 'inactive'
+  const status: SubscriptionStatus = best?.status || 'inactive'
+
+  const subscription = projection.rows.length > 0
+    ? {
+        id: projection.rows[0].id,
+        userId,
+        plan: best?.plan || DEFAULT_PLAN,
+        status,
+        active: best ? true : false,
+        duration: null,
+        store: best?.provider === 'stripe' ? 'web' : best?.environment === 'sandbox' ? 'ios' : 'ios',
+        provider: best?.provider ?? null,
+        environment: best?.environment ?? null,
+        startedAt: projection.rows[0].startedAt.toISOString(),
+        expiresAt: best?.expiresAt?.toISOString() ?? null,
+        lastProviderEventAt: null,
+      }
+    : null
 
   return NextResponse.json({
     plan,
-    subscription: sub ? {
-      ...sub,
-      status,
-    } : null,
+    subscription,
     allPlans: PLANS,
   })
 }

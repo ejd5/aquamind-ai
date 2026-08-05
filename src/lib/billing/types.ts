@@ -27,6 +27,8 @@ export interface PurchaseResult {
   entitlement?: Entitlement
   error?: string
   userCancelled?: boolean
+  /** Wave A2: true when GET /api/subscription reflects the purchase. */
+  serverConverged?: boolean
 }
 
 export interface BillingClient {
@@ -65,16 +67,14 @@ export interface SubscriptionApiResponse {
     active: boolean
     duration?: string | null
     store?: string | null
+    provider?: string | null
+    environment?: string | null
     startedAt: string
     expiresAt?: string | null
     cancelAt?: string | null
     trialEndsAt?: string | null
     currentPeriodStart?: string | null
     currentPeriodEnd?: string | null
-    stripeCustomerId?: string | null
-    stripeSubscriptionId?: string | null
-    providerSubscriptionId?: string | null
-    lastProviderEventId?: string | null
     lastProviderEventAt?: string | null
   } | null
   allPlans: PlanDefinition[]

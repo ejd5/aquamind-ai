@@ -30,6 +30,7 @@ export async function retryDueBillingEvents(limit = 20): Promise<BillingRetrySum
       const result = await processEventIdempotently({
         eventId: row.eventId,
         source: row.source as 'stripe' | 'revenuecat',
+        environment: row.environment || 'production',
         eventType: row.eventType,
         userId: row.userId || undefined,
         payload: row.payload || '{}',
@@ -43,7 +44,13 @@ export async function retryDueBillingEvents(limit = 20): Promise<BillingRetrySum
             : payload?.purchased_at_ms
               ? new Date(payload.purchased_at_ms)
               : row.createdAt
-          return handleRevenueCatEvent(payload, userId, row.eventId, providerEventAt)
+          return handleRevenueCatEvent(
+            payload,
+            userId,
+            row.eventId,
+            providerEventAt,
+            (row.environment === 'sandbox' ? 'sandbox' : 'production') as 'sandbox' | 'production',
+          )
         },
       })
       if (result.error) summary.failed += 1

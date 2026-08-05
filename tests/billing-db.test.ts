@@ -74,6 +74,19 @@ describe('P0-B — DB-level billing tests', () => {
 
     // Clean up any existing subscriptions for this user
     await clearSubscriptions(userId)
+    // Wave A2: the canonical RevenueCat identity is bound by the client after
+    // logIn — the webhook resolves app_user_id through BillingIdentity.
+    for (const env of ['production', 'sandbox'] as const) {
+      await db.billingIdentity.upsert({
+        where: {
+          provider_environment_externalUserId: {
+            provider: 'revenuecat', environment: env, externalUserId: userId,
+          },
+        },
+        update: {},
+        create: { userId, provider: 'revenuecat', environment: env, externalUserId: userId },
+      })
+    }
   })
 
   afterAll(async () => {
@@ -133,13 +146,16 @@ describe('P0-B — DB-level billing tests', () => {
         active: false,
         duration: 'month',
         store: 'web',
+        provider: 'stripe',
+        environment: 'production',
         stripeSubscriptionId,
         providerSubscriptionId: stripeSubscriptionId,
       },
     })
 
     const now = Math.floor(Date.now() / 1000)
-    const eventId = 'evt_signed_subscription_updated_001'
+    // Unique per run so repeated runs on the same DB are not idempotency-skipped.
+    const eventId = `evt_signed_subscription_updated_${Date.now()}`
     const payload = JSON.stringify({
       id: eventId,
       object: 'event',
@@ -177,7 +193,7 @@ describe('P0-B — DB-level billing tests', () => {
     expect(subscription?.active).toBe(true)
 
     const event = await db.billingEvent.findUnique({
-      where: { source_eventId: { source: 'stripe', eventId } },
+      where: { source_environment_eventId: { source: 'stripe', environment: 'production', eventId } },
     })
     expect(event?.result).toBe('processed')
   })
@@ -289,7 +305,7 @@ describe('P0-B — DB-level billing tests', () => {
     expect(res.status).toBe(200)
 
     const event = await db.billingEvent.findUnique({
-      where: { source_eventId: { source: 'revenuecat', eventId: 'test_evt_unknown_prod_001' } },
+      where: { source_environment_eventId: { source: 'revenuecat', environment: 'production', eventId: 'test_evt_unknown_prod_001' } },
     })
     expect(event).toBeTruthy()
     expect(event?.result).toBe('ignored')

@@ -2,6 +2,12 @@ import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor'
 import { isNative, getPlatform } from '@/lib/platform'
 import type { BillingClient, Product, Entitlement, PurchaseResult, PlanId } from './types'
 import { getPlanFromRCProductId, DURATION_TO_PROVIDER } from './plans'
+import {
+  requireConfirmedRevenueCatIdentity,
+  confirmServerAccessConverged,
+  registerRevenueCatIdentityServerSide,
+} from './revenuecat-identity-guard'
+import { revenueCatIdentityBridge } from './revenuecat-identity'
 
 const RC_API_KEYS = {
   ios: process.env.NEXT_PUBLIC_REVENUECAT_IOS_KEY || '',
@@ -88,6 +94,8 @@ export const revenueCatClient: BillingClient = {
 
   async getEntitlements(): Promise<Entitlement[]> {
     if (!isNative()) return []
+    // Wave A2: never read entitlements until the expected identity is confirmed.
+    await requireConfirmedRevenueCatIdentity()
     await ensureInitialized()
     try {
       const info = await Purchases.getCustomerInfo()
@@ -101,6 +109,8 @@ export const revenueCatClient: BillingClient = {
     if (!isNative()) {
       return { success: false, error: 'Not on native' }
     }
+    // Wave A2: a purchase can only run for the authenticated AQWELIA user.
+    await requireConfirmedRevenueCatIdentity()
     await ensureInitialized()
     try {
       const result = await Purchases.getOfferings()
@@ -121,7 +131,20 @@ export const revenueCatClient: BillingClient = {
       const purchaseResult = await Purchases.purchasePackage({ aPackage: targetPackage })
       const entitlements = mapCustomerInfoToEntitlements(purchaseResult?.customerInfo)
       const active = entitlements.find((e) => e.isActive)
-      return { success: !!active, entitlement: active }
+      let serverConverged = false
+      if (active) {
+        // Wave A2: persist the canonical identity, then only treat the server
+        // access as converged after GET /api/subscription agrees.
+        const identity = revenueCatIdentityBridge.snapshot()
+        if (identity.confirmedUserId) {
+          await registerRevenueCatIdentityServerSide({
+            userId: identity.confirmedUserId,
+            externalUserId: identity.confirmedUserId,
+          }).catch(() => undefined)
+          serverConverged = await confirmServerAccessConverged(identity.confirmedUserId)
+        }
+      }
+      return { success: !!active, entitlement: active, serverConverged }
     } catch (err: any) {
       if (err?.userCancelled) {
         return { success: false, userCancelled: true }
@@ -132,10 +155,21 @@ export const revenueCatClient: BillingClient = {
 
   async restorePurchases(): Promise<Entitlement[]> {
     if (!isNative()) return []
+    // Wave A2: restoration is only allowed for the confirmed identity.
+    await requireConfirmedRevenueCatIdentity()
     await ensureInitialized()
     try {
       const info = await Purchases.restorePurchases()
-      return mapCustomerInfoToEntitlements(info)
+      const entitlements = mapCustomerInfoToEntitlements(info)
+      // Wave A2: register the identity so the webhook can resolve it.
+      const identity = revenueCatIdentityBridge.snapshot()
+      if (identity.confirmedUserId && entitlements.length > 0) {
+        await registerRevenueCatIdentityServerSide({
+          userId: identity.confirmedUserId,
+          externalUserId: identity.confirmedUserId,
+        }).catch(() => undefined)
+      }
+      return entitlements
     } catch {
       return []
     }

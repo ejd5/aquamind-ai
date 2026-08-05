@@ -5,7 +5,7 @@ import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { useTranslations } from 'next-intl'
-import { signOut } from 'next-auth/react'
+import { signOutWithBillingCleanup } from '@/lib/billing/sign-out'
 
 type AdminTab = 'banner' | 'popup' | 'content' | 'analytics' | 'users'
 
@@ -69,7 +69,7 @@ export default function AdminPage() {
               {t('viewSite')}
             </a>
             <button
-              onClick={() => void signOut({ callbackUrl: '/' })}
+              onClick={() => void signOutWithBillingCleanup({ callbackUrl: '/' })}
               className="text-xs text-muted-foreground hover:text-foreground"
             >
               {t('signOut')}

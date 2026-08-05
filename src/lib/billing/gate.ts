@@ -18,7 +18,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { db } from '@/lib/db'
 import {
   type PlanId,
   type SubscriptionStatus,
@@ -28,6 +27,7 @@ import {
   DEFAULT_PLAN,
   statusGrantsAccess,
 } from '@/lib/billing/plans'
+import { loadUserEntitlements, pickBestValidRow } from '@/lib/billing/entitlement-projection'
 import { pickLocale, translate } from '@/lib/i18n-api'
 
 export interface GateResult {
@@ -66,15 +66,13 @@ export async function requireFeatureAccess(
 
   const userId = session.user.id
 
-  // Get the user's current subscription
-  const sub = await db.subscription.findFirst({
-    where: { userId, active: true },
-    orderBy: { startedAt: 'desc' },
-  })
+  // Wave A2: evaluate ALL valid subscriptions (Stripe + RevenueCat union).
+  const projection = await loadUserEntitlements(userId)
+  const best = projection.best
 
-  const planId: PlanId = (sub?.plan as PlanId) || DEFAULT_PLAN
-  const status: SubscriptionStatus = (sub?.status as SubscriptionStatus) || 'inactive'
-  const expiresAt = sub?.expiresAt || null
+  const planId: PlanId = best?.plan || DEFAULT_PLAN
+  const status: SubscriptionStatus = best?.status || 'inactive'
+  const expiresAt = best?.expiresAt || null
 
   // Check feature access
   const result = canAccess(planId, status, feature, options, expiresAt)
@@ -118,15 +116,13 @@ export async function getUserPlan(req: NextRequest): Promise<{
     return { userId: null, planId: DEFAULT_PLAN, status: 'inactive', expiresAt: null }
   }
 
-  const sub = await db.subscription.findFirst({
-    where: { userId: session.user.id, active: true },
-    orderBy: { startedAt: 'desc' },
-  })
+  // Wave A2: union projection across providers.
+  const projection = await loadUserEntitlements(session.user.id)
 
   return {
     userId: session.user.id,
-    planId: (sub?.plan as PlanId) || DEFAULT_PLAN,
-    status: (sub?.status as SubscriptionStatus) || 'inactive',
-    expiresAt: sub?.expiresAt || null,
+    planId: projection.best?.plan || DEFAULT_PLAN,
+    status: projection.best?.status || 'inactive',
+    expiresAt: projection.best?.expiresAt || null,
   }
 }

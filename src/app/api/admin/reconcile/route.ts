@@ -89,12 +89,13 @@ export async function POST(req: NextRequest) {
       expiresAt: expiresAt?.toISOString() || null,
     })
     const result = await processEventIdempotently({
-      eventId, source: 'revenuecat', eventType: 'admin.reconcile', userId,
+      eventId, source: 'revenuecat', environment: 'production', eventType: 'admin.reconcile', userId,
       payload: JSON.stringify({ productId: current.productId, status, reconciledBy: session.user.email }),
       handler: async () => {
         await applyTransition({
           userId, planId: current.plan!.plan, status, duration: current.plan!.duration,
-          store: sub.store || 'ios', providerSubscriptionId: sub.providerSubscriptionId!,
+          store: sub.store || 'ios', provider: 'revenuecat', environment: 'production',
+          providerSubscriptionId: sub.providerSubscriptionId!,
           providerEventId: eventId, providerEventAt: now, expiresAt,
           trialEndsAt: status === 'trialing' ? expiresAt : null,
           currentPeriodEnd: expiresAt,
@@ -149,6 +150,7 @@ export async function POST(req: NextRequest) {
   const result = await processEventIdempotently({
     eventId,
     source: 'stripe',
+    environment: 'production',
     eventType: 'admin.reconcile',
     userId,
     payload: JSON.stringify({
@@ -164,6 +166,8 @@ export async function POST(req: NextRequest) {
         status,
         duration: planInfo.duration,
         store: 'web',
+        provider: 'stripe',
+        environment: 'production',
         stripeSubscriptionId: sub.stripeSubscriptionId!,
         providerSubscriptionId: sub.stripeSubscriptionId!,
         providerEventId: eventId,
