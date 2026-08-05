@@ -224,11 +224,12 @@ describe('Wave A1 — dashboard regeneration does not bypass the rules', () => {
     expect(src).toContain('storedPlan?.waterTestId === latestTest?.id')
   })
 
-  it('header swim falls back to the STORED contextual safety, never a legacy engine', () => {
+  it('header swim is FAIL-CLOSED: freshPlan authoritative, otherwise unknown (never a legacy engine)', () => {
     const src = readFileSync(ROUTES.dashboard, 'utf8')
-    expect(src).toContain('swim = {')
-    expect(src).toContain('latestTest.swimSafety || \'unknown\'')
-    expect(src).not.toContain('assessSwimSafety(latestTest')
+    expect(src).toContain('buildDashboardSwim({')
+    expect(src).toContain('const sanitizedLatestTest = sanitizeDashboardLatestTest(latestTest as any)')
+    expect(src).not.toContain('assessSwimSafety(')
+    expect(src).not.toContain('latestTest.swimSafety || \'unknown\'')
   })
 })
 
@@ -390,5 +391,141 @@ describe('Wave A1 Round 2 — fail-closed dashboard plan gate (behavioral)', () 
   it('never falls back to generateActionPlan (module-level guarantee)', () => {
     const dashboard = readFileSync(ROUTES.dashboard, 'utf8')
     expect(dashboard).not.toContain('generateActionPlan')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Wave A1 Round 3 — public response contract (server-side sanitization)
+// ---------------------------------------------------------------------------
+
+import {
+  sanitizeDashboardLatestTest,
+  buildDashboardSwim,
+} from '@/lib/pool/dashboard-plan-gate'
+
+const legacyPlanRecord = {
+  id: 'legacy-plan-1',
+  waterTestId: 'wt-1',
+  diagnosis: 'Ancien diagnostic',
+  diagnosisKey: 'diagIssues',
+  severity: 'high',
+  confidence: 0.9,
+  immediateActions: JSON.stringify([{ actionKey: 'iaAddSalt', action: 'Ajouter du sel' }]),
+  chemicalDosages: JSON.stringify([{ param: 'salt_plus', quantity: '12 kg', estimatedCost: '≈ 12.00 €' }]),
+  doNotDo: JSON.stringify(['dnd1']),
+  doNotDoKeys: JSON.stringify(['dndKey1']),
+  estimatedCost: '≈ 12.00 €',
+  retestInHours: 24,
+  filtrationHours: 6,
+  executions: [{ id: 'ex1' }],
+  outcome: { id: 'out1' },
+}
+
+const latestTestWithLegacyPlan = {
+  id: 'wt-1',
+  ph: 7.8,
+  freeChlorine: 0.2,
+  swimSafety: 'forbidden',
+  actionPlans: [legacyPlanRecord],
+}
+
+describe('Wave A1 Round 3 — public dashboard response contract (serialized)', () => {
+  it('1. sanitizeDashboardLatestTest strips actionPlans from a test carrying a legacy plan', () => {
+    const sanitized = sanitizeDashboardLatestTest(latestTestWithLegacyPlan)
+    expect(sanitized?.id).toBe('wt-1')
+    expect((sanitized as any).actionPlans).toBeUndefined()
+  })
+
+  it('2. the PUBLIC latestTest never contains actionPlans (server-side, before JSON)', () => {
+    const sanitized = sanitizeDashboardLatestTest(latestTestWithLegacyPlan) as any
+    expect(sanitized.actionPlans).toBeUndefined()
+    const serialized = JSON.stringify(sanitized)
+    expect(serialized).not.toContain('actionPlans')
+  })
+
+  it('3. legacy chemicalDosages are absent from every nested path of the public test', () => {
+    const sanitized = sanitizeDashboardLatestTest(latestTestWithLegacyPlan) as any
+    const serialized = JSON.stringify(sanitized)
+    expect(serialized).not.toContain('chemicalDosages')
+    expect(serialized).not.toContain('salt_plus')
+  })
+
+  it('4. legacy immediateActions are absent from every nested path of the public test', () => {
+    const sanitized = sanitizeDashboardLatestTest(latestTestWithLegacyPlan) as any
+    const serialized = JSON.stringify(sanitized)
+    expect(serialized).not.toContain('immediateActions')
+    expect(serialized).not.toContain('iaAddSalt')
+  })
+
+  it('5. legacy estimatedCost is absent from every nested path of the public test', () => {
+    const sanitized = sanitizeDashboardLatestTest(latestTestWithLegacyPlan) as any
+    const serialized = JSON.stringify(sanitized)
+    expect(serialized).not.toContain('estimatedCost')
+    expect(serialized).not.toContain('12 kg')
+    expect(serialized).not.toContain('12.00')
+  })
+
+  it('6. latestPlan stays fail-closed when no fresh plan exists', () => {
+    const plan = buildDashboardPlanView({
+      freshPlan: null,
+      storedPlan: legacyPlanRecord,
+      storedPlanBelongsToLatestTest: true,
+    })
+    expect(plan?.scientificPlanAvailable).toBe(false)
+    expect(plan?.scientificRequalificationRequired).toBe(true)
+    expect(plan?.chemicalDosages).toEqual([])
+    expect(plan?.immediateActions).toEqual([])
+    expect(plan?.estimatedCost).toBeNull()
+  })
+
+  it('7. swim.status is unknown when no fresh plan exists', () => {
+    const swim = buildDashboardSwim({ freshPlan: null, hasLatestTest: true })
+    expect(swim?.status).toBe('unknown')
+    expect(swim?.reasons).toEqual([])
+  })
+
+  it('8. scientificRequalificationRequired is surfaced on an unqualified swim', () => {
+    const swim = buildDashboardSwim({ freshPlan: null, hasLatestTest: true })
+    expect(swim?.scientificRequalificationRequired).toBe(true)
+    // The historical stored swimSafety is never presented as current.
+    const serialized = JSON.stringify(swim)
+    expect(serialized).not.toContain('forbidden')
+  })
+
+  it('9. a valid freshPlan returns the canonical contextual swim status', () => {
+    const swim = buildDashboardSwim({
+      freshPlan: { swimSafety: 'allowed', swimReasons: ['ok'] },
+      hasLatestTest: true,
+    })
+    expect(swim?.status).toBe('allowed')
+    expect(swim?.reasons).toEqual(['ok'])
+    expect(swim?.scientificRequalificationRequired).toBe(false)
+  })
+
+  it('10. the full public response JSON contains no historical dosage (consumer cannot bypass latestPlan)', () => {
+    const sanitizedTest = sanitizeDashboardLatestTest(latestTestWithLegacyPlan) as any
+    const planView = buildDashboardPlanView({
+      freshPlan: null,
+      storedPlan: legacyPlanRecord,
+      storedPlanBelongsToLatestTest: true,
+    })
+    const response = {
+      latestTest: sanitizedTest,
+      latestPlan: planView,
+      swim: buildDashboardSwim({ freshPlan: null, hasLatestTest: true }),
+    }
+    const serialized = JSON.stringify(response)
+    // No raw plan leak through latestTest (no actionPlans key at all).
+    expect(serialized).not.toContain('actionPlans')
+    // No historical dosage VALUE leaks through any path.
+    expect(serialized).not.toContain('12 kg')
+    expect(serialized).not.toContain('12.00')
+    expect(serialized).not.toContain('iaAddSalt')
+    // The fail-closed plan view exposes only safe info + flags.
+    expect(serialized).toContain('scientificRequalificationRequired')
+    expect(serialized).toContain('"chemicalDosages":[]')
+    expect(serialized).toContain('"immediateActions":[]')
+    expect(serialized).toContain('"estimatedCost":null')
+    expect(serialized).toContain('"status":"unknown"')
   })
 })

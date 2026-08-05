@@ -5,7 +5,11 @@ import { db } from '@/lib/db'
 import { clarityLabel, calculateClearWaterIndex } from '@/lib/pool/water-balance'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { generateScientificallyQualifiedActionPlan } from '@/lib/pool/scientific-action-plan'
-import { buildDashboardPlanView } from '@/lib/pool/dashboard-plan-gate'
+import {
+  buildDashboardPlanView,
+  buildDashboardSwim,
+  sanitizeDashboardLatestTest,
+} from '@/lib/pool/dashboard-plan-gate'
 
 export const runtime = 'nodejs'
 
@@ -54,7 +58,6 @@ export async function GET(req: Request) {
 
   let clearWaterIndex: number | null = null
   let clarity: ReturnType<typeof clarityLabel> | null = null
-  let swim: { status: string; reasons: string[] } | null = null
 
   if (latestTest) {
     clearWaterIndex = latestTest.clearWaterIndex || calculateClearWaterIndex(latestTest as any)
@@ -103,24 +106,22 @@ export async function GET(req: Request) {
     storedPlanBelongsToLatestTest: Boolean(storedPlan) && storedPlan?.waterTestId === latestTest?.id,
   })
 
-  // Header swim: prefer the regenerated contextual swim safety. If no fresh
-  // qualified plan was produced, fall back to the STORED contextual swim safety
-  // (water-test / strip-scan persist it) — never to the legacy engine.
-  if (freshPlan) {
-    swim = {
-      status: freshPlan.swimSafety,
-      reasons: freshPlan.swimReasons,
-    }
-  } else if (latestTest) {
-    swim = {
-      status: latestTest.swimSafety || 'unknown',
-      reasons: [],
-    }
-  }
+  // FAIL-CLOSED swim: only a fresh canonical plan is authoritative; without one
+  // the header shows 'unknown' + scientificRequalificationRequired (never the
+  // possibly-historical stored latestTest.swimSafety).
+  const swim = buildDashboardSwim({
+    freshPlan,
+    hasLatestTest: Boolean(latestTest),
+  })
+
+  // The PUBLIC latestTest NEVER carries the raw Prisma actionPlans relation
+  // (and therefore no executions/outcome or stored dosage). The plan is exposed
+  // ONLY through the secured `latestPlan` view.
+  const sanitizedLatestTest = sanitizeDashboardLatestTest(latestTest as any)
 
   return NextResponse.json({
     profile,
-    latestTest,
+    latestTest: sanitizedLatestTest,
     latestPlan,
     clearWaterIndex,
     clarity,

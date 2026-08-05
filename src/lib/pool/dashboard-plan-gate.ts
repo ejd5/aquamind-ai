@@ -89,6 +89,10 @@ function failClosedView(stored: StoredActionPlanRecord | null, associationMismat
     scientificPlanAvailable: false,
     scientificRequalificationRequired: true,
     associationMismatch,
+    // Informational: whether the stored plan was produced by the canonical
+    // engine. This NEVER makes it actionable — a stored plan is only actionable
+    // through a fresh regeneration.
+    storedPlanIsCanonical: stored ? storedPlanIsCanonical(stored) : false,
     // Only safe, non-actionable info is preserved (historical diagnosis +
     // interdictions) when the stored plan belongs to the latest test. A plan
     // belonging to ANOTHER test is not exposed at all (diagnosis included).
@@ -195,4 +199,60 @@ export function buildDashboardPlanView(args: {
   //    only the safe, non-actionable historical info (diagnosis + interdictions)
   //    may be kept, and only when the plan belongs to the latest test.
   return failClosedView(storedPlan, !storedPlanBelongsToLatestTest)
+}
+
+// ---------------------------------------------------------------------------
+// Wave A1 Round 3 — public response sanitization + fail-closed swim
+// ---------------------------------------------------------------------------
+
+/**
+ * Strips the nested Prisma relations (`actionPlans`, and inside them
+ * `executions` / `outcome`) from the LATEST TEST BEFORE it is serialized into
+ * the public dashboard response. The plan is exposed ONLY through the secured
+ * `latestPlan` view (see `buildDashboardPlanView`); no raw stored dosage can
+ * leak via `latestTest.actionPlans`.
+ *
+ * PURE and testable. The returned object has `actionPlans === undefined`.
+ */
+export function sanitizeDashboardLatestTest<T extends Record<string, unknown>>(latestTest: T | null): Omit<T, 'actionPlans'> | null {
+  if (!latestTest) return null
+  const { actionPlans: _dropped, ...rest } = latestTest
+  void _dropped
+  return rest as Omit<T, 'actionPlans'>
+}
+
+export interface DashboardSwimView {
+  status: 'allowed' | 'avoid' | 'forbidden' | 'unknown'
+  reasons: string[]
+  /** True when the swim conclusion is NOT backed by a fresh canonical engine. */
+  scientificRequalificationRequired: boolean
+}
+
+/**
+ * FAIL-CLOSED swim safety for the dashboard header.
+ *
+ * - When a fresh canonical scientific plan exists: the contextual swim safety
+ *   from that plan is authoritative.
+ * - When no fresh plan exists: the stored `latestTest.swimSafety` is NEVER
+ *   presented as a current scientific conclusion (it may carry the historical
+ *   method). Returns `status='unknown'`, empty reasons and
+ *   `scientificRequalificationRequired: true`.
+ */
+export function buildDashboardSwim(args: {
+  freshPlan: { swimSafety: string; swimReasons: string[] } | null
+  hasLatestTest: boolean
+}): DashboardSwimView | null {
+  if (args.freshPlan) {
+    return {
+      status: (args.freshPlan.swimSafety as DashboardSwimView['status']) || 'unknown',
+      reasons: args.freshPlan.swimReasons,
+      scientificRequalificationRequired: false,
+    }
+  }
+  if (!args.hasLatestTest) return null
+  return {
+    status: 'unknown',
+    reasons: [],
+    scientificRequalificationRequired: true,
+  }
 }
