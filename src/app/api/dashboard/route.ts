@@ -104,6 +104,14 @@ export async function GET(req: Request) {
     freshPlan,
     storedPlan,
     storedPlanBelongsToLatestTest: Boolean(storedPlan) && storedPlan?.waterTestId === latestTest?.id,
+    // Safe metadata derived from the LATEST TEST, never from historical plan
+    // content. storedActionPlanId is attached by the gate only when a stored
+    // plan belongs exactly to the latest test.
+    sourceMetadata: {
+      sourceWaterTestId: latestTest?.id ?? null,
+      sourceMeasuredAt: latestTest?.measuredAt ?? latestTest?.createdAt ?? null,
+      generatedAt: new Date(),
+    },
   })
 
   // FAIL-CLOSED swim: only a fresh canonical plan is authoritative; without one

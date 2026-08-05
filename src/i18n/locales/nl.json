@@ -1446,7 +1446,9 @@
     "clarityAction": "Actie aanbevolen",
     "clarityUrgent": "Dringend",
     "tabPhotoPool": "Zwembadfoto",
-    "tabStrip": "Teststrook"
+    "tabStrip": "Teststrook",
+    "requalificationNeeded": "Plan moet worden herbeoordeeld",
+    "requalificationNeededDesc": "Dit plan kan niet als huidig plan worden getoond. Voer een wetenschappelijke regeneratie uit of voer een nieuwe meting in."
   },
   "weather": {
     "locateMe": "Mij lokaliseren",
@@ -1813,7 +1815,9 @@
       "labelChlorine": "Chloor",
       "labelTac": "TAC",
       "labelCya": "CYA",
-      "labelTemp": "Temperatuur"
+      "labelTemp": "Temperatuur",
+      "requalificationNeeded": "Plan-herbeoordeling vereist",
+      "requalificationNeededDesc": "Voor een betrouwbaar plan is een nieuwe wetenschappelijke analyse nodig. Voer een nieuwe watertest uit."
     },
     "waterTest": {
       "title": "Wateranalyse",

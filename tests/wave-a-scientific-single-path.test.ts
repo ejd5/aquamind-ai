@@ -365,15 +365,27 @@ describe('Wave A1 Round 2 — fail-closed dashboard plan gate (behavioral)', () 
       freshPlan,
       storedPlan: legacyStoredPlan, // legacy stored plan must be ignored
       storedPlanBelongsToLatestTest: false, // stored plan belongs to another test
+      sourceMetadata: {
+        sourceWaterTestId: 'wt-1',
+        sourceMeasuredAt: new Date('2026-07-26T18:00:00.000Z'),
+        generatedAt: new Date('2026-07-26T19:00:00.000Z'),
+      },
     })
     expect(view?.scientificPlanAvailable).toBe(true)
     expect(view?.scientificRequalificationRequired).toBe(false)
     expect(view?.ephemeral).toBe(true)
-    expect(view?.id).toBeUndefined()
+    // The fresh ephemeral plan has safe metadata derived from the LATEST TEST,
+    // never a stored identity.
+    expect((view as unknown as Record<string, unknown>).id).toBeUndefined()
+    expect((view as unknown as Record<string, unknown>).waterTestId).toBeUndefined()
+    expect(view?.storedActionPlanId).toBeNull()
+    expect(view?.sourceWaterTestId).toBe('wt-1')
+    expect(view?.sourceMeasuredAt).toEqual(new Date('2026-07-26T18:00:00.000Z'))
+    expect(view?.generatedAt).toBe(new Date('2026-07-26T19:00:00.000Z').toISOString())
     // The fresh plan's quantities are canonical (readiness-masked when needed).
     expect(Array.isArray(view?.chemicalDosages)).toBe(true)
     // No legacy identity leaked.
-    expect(view?.waterTestId).toBeUndefined()
+    expect((view as unknown as Record<string, unknown>).waterTestId).toBeUndefined()
   })
 
   it('7. no actionable quantity or estimatedCost is exposed in fail-closed mode', () => {
@@ -655,5 +667,202 @@ describe('Wave A1 Round 4 — public contract: response.swim is the only swim so
     // The dashboard route itself must not serialize them either.
     const route = readFileSync(ROUTES.dashboard, 'utf8')
     expect(route).toContain("sanitizeDashboardLatestTest(latestTest as any)")
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Wave A1 Round 5 — strict dashboard API <-> consumer contract
+// ---------------------------------------------------------------------------
+
+import {
+  DashboardPlanView,
+  DashboardSwimView,
+  isActionableDashboardPlan,
+} from '@/lib/pool/dashboard-contract'
+
+describe('Wave A1 Round 5 — ephemeral plan safe metadata', () => {
+  const freshPlanFixture = generateScientificallyQualifiedActionPlan(
+    { ph: 7.4, freeChlorine: 2, alkalinity: 100 },
+    { volume: 50, unit: 'm3', treatmentType: 'chlorine', saltSystem: false, waterBodyType: 'pool', filterType: 'sand' },
+    'fr',
+  ) as any
+
+  const baseMeta = {
+    sourceMetadata: {
+      sourceWaterTestId: 'wt-latest',
+      sourceMeasuredAt: new Date('2026-07-26T18:00:00.000Z'),
+      generatedAt: new Date('2026-07-26T19:00:00.000Z'),
+    },
+  }
+
+  it('1. freshPlan contains sourceWaterTestId', () => {
+    const view = buildDashboardPlanView({
+      freshPlan: freshPlanFixture,
+      storedPlan: null,
+      storedPlanBelongsToLatestTest: false,
+      ...baseMeta,
+    })
+    expect(view?.sourceWaterTestId).toBe('wt-latest')
+  })
+
+  it('2. freshPlan contains a valid date (sourceMeasuredAt / generatedAt)', () => {
+    const view = buildDashboardPlanView({ freshPlan: freshPlanFixture, storedPlan: null, storedPlanBelongsToLatestTest: false, ...baseMeta })
+    expect(view?.sourceMeasuredAt).toEqual(new Date('2026-07-26T18:00:00.000Z'))
+    expect(view?.generatedAt).toBe(new Date('2026-07-26T19:00:00.000Z').toISOString())
+    expect(Number.isNaN(new Date(String(view?.generatedAt)).getTime())).toBe(false)
+  })
+
+  it('3. freshPlan does not reuse the stored plan id', () => {
+    const view = buildDashboardPlanView({
+      freshPlan: freshPlanFixture,
+      storedPlan: { ...legacyStoredPlan, id: 'stored-id-999', waterTestId: 'wt-latest' },
+      storedPlanBelongsToLatestTest: true,
+      ...baseMeta,
+    })
+    expect((view as any).id).toBeUndefined()
+    expect((view as any).waterTestId).toBeUndefined()
+    expect(view?.storedActionPlanId).toBe('stored-id-999') // informational, distinct from fresh identity
+    expect(view?.ephemeral).toBe(true)
+  })
+
+  it('4. storedActionPlanId is null when no stored plan is associated', () => {
+    const view = buildDashboardPlanView({ freshPlan: null, storedPlan: null, storedPlanBelongsToLatestTest: false, ...baseMeta })
+    expect(view).toBeNull()
+    const fresh = buildDashboardPlanView({ freshPlan: freshPlanFixture, storedPlan: null, storedPlanBelongsToLatestTest: false, ...baseMeta })
+    expect(fresh?.storedActionPlanId).toBeNull()
+  })
+
+  it('5. storedActionPlanId is present ONLY for a plan of the same test', () => {
+    const same = buildDashboardPlanView({
+      freshPlan: null,
+      storedPlan: { ...legacyStoredPlan, id: 'same-id', waterTestId: 'wt-latest' },
+      storedPlanBelongsToLatestTest: true,
+      ...baseMeta,
+    })
+    expect(same?.storedActionPlanId).toBe('same-id')
+    const other = buildDashboardPlanView({
+      freshPlan: null,
+      storedPlan: { ...legacyStoredPlan, id: 'other-id', waterTestId: 'wt-other' },
+      storedPlanBelongsToLatestTest: false,
+      ...baseMeta,
+    })
+    expect(other?.storedActionPlanId).toBeNull()
+  })
+
+  it('6. the regenerate payload uses sourceWaterTestId', () => {
+    // Mirrors module-action-plan.tsx regenerate(): only actionable plan with a
+    // valid sourceWaterTestId can regenerate; never undefined.
+    const view = buildDashboardPlanView({ freshPlan: freshPlanFixture, storedPlan: null, storedPlanBelongsToLatestTest: false, ...baseMeta })
+    expect(isActionableDashboardPlan(view)).toBe(true)
+    const payload = view?.sourceWaterTestId ? { testId: view.sourceWaterTestId } : null
+    expect(payload).toEqual({ testId: 'wt-latest' })
+  })
+
+  it('7. no regeneration call with undefined testId', () => {
+    const failClosed = buildDashboardPlanView({ freshPlan: null, storedPlan: legacyStoredPlan, storedPlanBelongsToLatestTest: true, ...baseMeta })
+    // fail-closed: not actionable → regenerate() returns without a payload.
+    expect(isActionableDashboardPlan(failClosed)).toBe(false)
+    const payload = isActionableDashboardPlan(failClosed) && failClosed.sourceWaterTestId
+      ? { testId: failClosed.sourceWaterTestId }
+      : null
+    expect(payload).toBeNull()
+  })
+
+  it('8. BrainActionTracker is not rendered without storedActionPlanId', () => {
+    // Mirrors module-action-plan.tsx: tracker only when storedActionPlanId truthy.
+    const view = buildDashboardPlanView({ freshPlan: freshPlanFixture, storedPlan: null, storedPlanBelongsToLatestTest: false, ...baseMeta })
+    const renderTracker = Boolean(view?.storedActionPlanId)
+    expect(renderTracker).toBe(false)
+    const moduleSrc = readFileSync(join(process.cwd(), 'src/components/aquamind/module-action-plan.tsx'), 'utf8')
+    expect(moduleSrc).toContain('plan.storedActionPlanId ? (')
+  })
+
+  it('9. BrainActionTracker is never rendered in fail-closed mode', () => {
+    const failClosed = buildDashboardPlanView({ freshPlan: null, storedPlan: legacyStoredPlan, storedPlanBelongsToLatestTest: true, ...baseMeta })
+    expect(failClosed?.scientificRequalificationRequired).toBe(true)
+    expect(failClosed?.immediateActions).toEqual([])
+    // The tracker is rendered per immediateAction; an empty list means none.
+    const moduleSrc = readFileSync(join(process.cwd(), 'src/components/aquamind/module-action-plan.tsx'), 'utf8')
+    expect(moduleSrc).toContain('if (plan && !actionable) {')
+  })
+
+  it('10. module-action-plan distinguishes an available plan from one to requalify', () => {
+    const src = readFileSync(join(process.cwd(), 'src/components/aquamind/module-action-plan.tsx'), 'utf8')
+    expect(src).toContain("const actionable = isActionableDashboardPlan(plan)")
+    expect(src).toContain('if (plan && !actionable) {')
+    expect(src).toContain("t('requalificationNeeded')")
+  })
+
+  it('11. module-dashboard never computes Math.round(null)', () => {
+    const src = readFileSync(join(process.cwd(), 'src/components/aquamind/module-dashboard.tsx'), 'utf8')
+    // The retest block guards with isActionableDashboardPlan + finite check.
+    expect(src).toContain('latestPlan.retestInHours != null && Number.isFinite(latestPlan.retestInHours)')
+  })
+
+  it('12. module-dashboard does not show 0h in fail-closed mode', () => {
+    const src = readFileSync(join(process.cwd(), 'src/components/aquamind/module-dashboard.tsx'), 'utf8')
+    // The retest block is only reached for actionable plans.
+    expect(src).toContain('isActionableDashboardPlan(latestPlan) && latestPlan.retestInHours != null && Number.isFinite(latestPlan.retestInHours)')
+    expect(src).toContain('latestPlan?.scientificRequalificationRequired ? (')
+  })
+
+  it('13. no cost or dosage is shown in fail-closed mode', () => {
+    const failClosed = buildDashboardPlanView({ freshPlan: null, storedPlan: legacyStoredPlan, storedPlanBelongsToLatestTest: true, ...baseMeta })
+    expect(failClosed?.estimatedCost).toBeNull()
+    expect(failClosed?.chemicalDosages).toEqual([])
+    expect(failClosed?.immediateActions).toEqual([])
+    // module-action-plan only renders the dosage/cost cards in the actionable branch.
+    const src = readFileSync(join(process.cwd(), 'src/components/aquamind/module-action-plan.tsx'), 'utf8')
+    expect(src).toContain('if (plan && !actionable) {')
+  })
+
+  it('14. no Invalid Date is displayed for an ephemeral plan', () => {
+    const view = buildDashboardPlanView({ freshPlan: freshPlanFixture, storedPlan: null, storedPlanBelongsToLatestTest: false, ...baseMeta })
+    const dateLabel = view?.generatedAt ? new Date(String(view.generatedAt)) : null
+    expect(dateLabel).not.toBeNull()
+    expect(Number.isNaN(dateLabel?.getTime())).toBe(false)
+    const src = readFileSync(join(process.cwd(), 'src/components/aquamind/module-action-plan.tsx'), 'utf8')
+    expect(src).toContain('plan?.sourceMeasuredAt ?? plan?.generatedAt')
+  })
+
+  it('15. an actionable freshPlan is still correctly rendered', () => {
+    const view = buildDashboardPlanView({ freshPlan: freshPlanFixture, storedPlan: null, storedPlanBelongsToLatestTest: false, ...baseMeta })
+    expect(isActionableDashboardPlan(view)).toBe(true)
+    expect(view?.scientificPlanAvailable).toBe(true)
+    // The fixture has all params in range: it may legitimately have zero dosages
+    // but still be actionable (the consumer shows an actionable plan, not a
+    // fail-closed state).
+    expect(Array.isArray(view?.chemicalDosages)).toBe(true)
+    expect(view?.retestInHours).toBeTypeOf('number')
+    expect(view?.immediateActions).toBeDefined()
+  })
+
+  it('16. server and client DTOs use the same shared contract', () => {
+    // dashboard-contract.ts is imported by the gate (server) and the consumers (client).
+    const gate = readFileSync(join(process.cwd(), 'src/lib/pool/dashboard-plan-gate.ts'), 'utf8')
+    expect(gate).toContain("from './dashboard-contract'")
+    const dash = readFileSync(join(process.cwd(), 'src/components/aquamind/module-dashboard.tsx'), 'utf8')
+    expect(dash).toContain("from '@/lib/pool/dashboard-contract'")
+    const plan = readFileSync(join(process.cwd(), 'src/components/aquamind/module-action-plan.tsx'), 'utf8')
+    expect(plan).toContain("from '@/lib/pool/dashboard-contract'")
+  })
+
+  it('17. Round 1-4 protections remain intact (no legacy plan exposure)', () => {
+    const gate = readFileSync(join(process.cwd(), 'src/lib/pool/dashboard-plan-gate.ts'), 'utf8')
+    expect(gate).not.toContain('import { generateActionPlan }')
+    const dashRoute = readFileSync(ROUTES.dashboard, 'utf8')
+    expect(dashRoute).not.toContain('generateActionPlan')
+    expect(dashRoute).toContain("sanitizeDashboardLatestTest(latestTest as any)")
+  })
+
+  it('18. latestTest never re-exposes actionPlans, swimSafety or status', () => {
+    const sanitized = sanitizeDashboardLatestTest({ ...latestTestWithLegacyPlan, status: 'critical' }) as any
+    expect(sanitized.actionPlans).toBeUndefined()
+    expect(sanitized.swimSafety).toBeUndefined()
+    expect(sanitized.status).toBeUndefined()
+    const serialized = JSON.stringify(sanitized)
+    expect(serialized).not.toContain('actionPlans')
+    expect(serialized).not.toContain('swimSafety')
+    expect(serialized).not.toContain('"critical"')
   })
 })

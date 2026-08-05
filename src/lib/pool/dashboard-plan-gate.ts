@@ -1,17 +1,24 @@
 /**
  * AQWELIA Wave A1 — fail-closed dashboard plan gate.
  *
- * A stored ActionPlan is only presented as actionable when it can be qualified
- * as compatible with the canonical scientific contract and its method versions.
- * When the scientific regeneration failed, the pool profile is missing, or the
- * stored plan lacks the canonical method versions, the dashboard returns an
- * explicit `scientificRequalificationRequired` state and NEVER exposes a legacy
- * actionable quantity / estimatedCost / validated dosing action.
+ * A stored ActionPlan is only presented as actionable when a FRESH canonical
+ * scientific plan was regenerated from the latest test + profile. When the
+ * scientific regeneration failed, the pool profile is missing, the stored plan
+ * belongs to another test, or the stored plan lacks the canonical method
+ * versions, the dashboard returns an explicit `scientificRequalificationRequired`
+ * state and NEVER exposes a legacy actionable quantity / estimatedCost /
+ * validated dosing action.
  *
  * This module is PURE (no DB, no network) so it is directly testable.
+ * The public DTO contract lives in `dashboard-contract.ts` (client-safe).
  */
 
 import { DOSAGE_METHOD_VERSION } from './scientific-action-plan'
+import {
+  DashboardPlanMetadata,
+  DashboardPlanView,
+  safeParseJsonArray,
+} from './dashboard-contract'
 
 export interface StoredActionPlanRecord {
   id?: string | null
@@ -34,42 +41,15 @@ export interface StoredActionPlanRecord {
   [k: string]: unknown
 }
 
-export interface DashboardPlanView {
-  /** True when a scientifically qualified, actionable plan is available. */
-  scientificPlanAvailable: boolean
-  /** True when the plan must be requalified before it can be actionable. */
-  scientificRequalificationRequired: boolean
-  /** True when the ephemeral regenerated plan is returned (no stored identity). */
-  ephemeral?: boolean
-  /** True when the stored plan did not belong to the latest test (never exposed). */
-  associationMismatch?: boolean
-  // Safe, non-actionable fields (always present in a fail-closed view).
-  diagnosis?: string | null
-  diagnosisKey?: string | null
-  diagnosisParams?: Record<string, string | number> | null
-  severity?: string | null
-  doNotDo: unknown[]
-  doNotDoKeys: unknown[]
-  // Actionable content — non-empty ONLY when a qualified plan is available.
-  immediateActions: unknown[]
-  chemicalDosages: unknown[]
-  estimatedCost: string | null
-  retestInHours: number | null
-  filtrationHours: number | null
-  confidence?: number | null
-  [k: string]: unknown
+export interface DashboardSourceMetadata {
+  sourceWaterTestId: string | null
+  sourceMeasuredAt: string | Date | null
+  /** injectable for deterministic tests; defaults to now. */
+  generatedAt?: string | Date
 }
 
-export function safeParseJsonArray(value: string | null | unknown): unknown[] {
-  if (Array.isArray(value)) return value
-  if (typeof value !== 'string' || value.trim() === '') return []
-  try {
-    const parsed = JSON.parse(value)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
+export type { DashboardPlanView }
+export { safeParseJsonArray }
 
 /**
  * True when the stored plan carries the canonical scientific method versions
@@ -84,8 +64,32 @@ export function storedPlanIsCanonical(plan: StoredActionPlanRecord): boolean {
   )
 }
 
-function failClosedView(stored: StoredActionPlanRecord | null, associationMismatch: boolean): DashboardPlanView {
+function buildMetadata(
+  source: DashboardSourceMetadata,
+  storedPlan: StoredActionPlanRecord | null,
+  storedPlanBelongsToLatestTest: boolean,
+): DashboardPlanMetadata {
+  const generatedAt = source.generatedAt
+    ? (source.generatedAt instanceof Date ? source.generatedAt.toISOString() : String(source.generatedAt))
+    : new Date().toISOString()
   return {
+    sourceWaterTestId: source.sourceWaterTestId ?? null,
+    sourceMeasuredAt: source.sourceMeasuredAt ?? null,
+    generatedAt,
+    // storedActionPlanId is present ONLY when a stored plan belongs exactly to
+    // the latest test. It is NEVER the identity of a freshPlan.
+    storedActionPlanId:
+      storedPlan && storedPlanBelongsToLatestTest ? (storedPlan.id ?? null) : null,
+  }
+}
+
+function failClosedView(
+  stored: StoredActionPlanRecord | null,
+  associationMismatch: boolean,
+  source: DashboardSourceMetadata,
+): DashboardPlanView {
+  return {
+    ...buildMetadata(source, stored, !associationMismatch),
     scientificPlanAvailable: false,
     scientificRequalificationRequired: true,
     associationMismatch,
@@ -122,11 +126,12 @@ function failClosedView(stored: StoredActionPlanRecord | null, associationMismat
  * `scientificRequalificationRequired` state and NEVER exposes an actionable
  * legacy quantity / estimatedCost / validated dosing action.
  *
- * @param freshPlan regenerated canonical scientific plan (null if regeneration
- *   failed or the pool profile is missing)
- * @param storedPlan persisted ActionPlan (may be legacy)
- * @param storedPlanBelongsToLatestTest whether the stored plan belongs to the
- *   latest WaterTest
+ * @param args.freshPlan regenerated canonical scientific plan (null if
+ *   regeneration failed or the pool profile is missing)
+ * @param args.storedPlan persisted ActionPlan (may be legacy)
+ * @param args.storedPlanBelongsToLatestTest whether the stored plan belongs to
+ *   the latest WaterTest
+ * @param args.sourceMetadata safe metadata derived from the latest test
  */
 export function buildDashboardPlanView(args: {
   freshPlan: {
@@ -155,14 +160,21 @@ export function buildDashboardPlanView(args: {
   } | null
   storedPlan: StoredActionPlanRecord | null
   storedPlanBelongsToLatestTest: boolean
+  sourceMetadata?: DashboardSourceMetadata
 }): DashboardPlanView | null {
   const { freshPlan, storedPlan, storedPlanBelongsToLatestTest } = args
+  const sourceMetadata: DashboardSourceMetadata = args.sourceMetadata ?? {
+    sourceWaterTestId: null,
+    sourceMeasuredAt: null,
+    generatedAt: new Date(),
+  }
 
   // 1) A fresh canonical scientific plan is available: it is an EPHEMERAL plan
   //    derived from the latest test + profile — it never reuses the identity of
   //    a stored (possibly other-test) plan. This is the ONLY actionable view.
   if (freshPlan) {
     return {
+      ...buildMetadata(sourceMetadata, storedPlan, storedPlanBelongsToLatestTest),
       scientificPlanAvailable: true,
       scientificRequalificationRequired: false,
       ephemeral: true,
@@ -198,11 +210,11 @@ export function buildDashboardPlanView(args: {
   //    when no fresh qualified plan was produced. The dashboard is fail-closed:
   //    only the safe, non-actionable historical info (diagnosis + interdictions)
   //    may be kept, and only when the plan belongs to the latest test.
-  return failClosedView(storedPlan, !storedPlanBelongsToLatestTest)
+  return failClosedView(storedPlan, !storedPlanBelongsToLatestTest, sourceMetadata)
 }
 
 // ---------------------------------------------------------------------------
-// Wave A1 Round 3 — public response sanitization + fail-closed swim
+// Wave A1 Round 3/4 — public response sanitization + fail-closed swim
 // ---------------------------------------------------------------------------
 
 /**

@@ -1446,7 +1446,9 @@
     "clarityAction": "Handlung empfohlen",
     "clarityUrgent": "Dringend",
     "tabPhotoPool": "Poolfoto",
-    "tabStrip": "Teststreifen"
+    "tabStrip": "Teststreifen",
+    "requalificationNeeded": "Plan muss neu bewertet werden",
+    "requalificationNeededDesc": "Dieser Plan kann nicht als aktueller Plan angezeigt werden. Führen Sie eine wissenschaftliche Neugenerierung durch oder geben Sie eine neue Messung ein."
   },
   "weather": {
     "locateMe": "Mich lokalisieren",
@@ -1813,7 +1815,9 @@
       "labelChlorine": "Chlor",
       "labelTac": "TAC",
       "labelCya": "CYA",
-      "labelTemp": "Temp."
+      "labelTemp": "Temp.",
+      "requalificationNeeded": "Plan-Neubewertung erforderlich",
+      "requalificationNeededDesc": "Für einen zuverlässigen Plan ist eine neue wissenschaftliche Analyse erforderlich. Führen Sie einen neuen Wassertest durch."
     },
     "waterTest": {
       "title": "Wasseranalyse",

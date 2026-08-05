@@ -1444,7 +1444,9 @@
     "clarityAction": "Azione consigliata",
     "clarityUrgent": "Urgenza",
     "tabPhotoPool": "Foto piscina",
-    "tabStrip": "Striscia reattiva"
+    "tabStrip": "Striscia reattiva",
+    "requalificationNeeded": "Piano da riqualificare",
+    "requalificationNeededDesc": "Questo piano non può essere mostrato come piano attuale. Avvia una rigenerazione scientifica o inserisci una nuova misurazione."
   },
   "weather": {
     "locateMe": "Localizzami",
@@ -1811,7 +1813,9 @@
       "labelChlorine": "Cloro",
       "labelTac": "TAC",
       "labelCya": "CYA",
-      "labelTemp": "Temp."
+      "labelTemp": "Temp.",
+      "requalificationNeeded": "Riqualificazione del piano richiesta",
+      "requalificationNeededDesc": "Serve una nuova analisi scientifica per ottenere un piano affidabile. Esegui un nuovo test dell’acqua."
     },
     "waterTest": {
       "title": "Analisi dell'acqua",
