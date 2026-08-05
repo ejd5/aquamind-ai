@@ -206,19 +206,28 @@ export function buildDashboardPlanView(args: {
 // ---------------------------------------------------------------------------
 
 /**
- * Strips the nested Prisma relations (`actionPlans`, and inside them
- * `executions` / `outcome`) from the LATEST TEST BEFORE it is serialized into
- * the public dashboard response. The plan is exposed ONLY through the secured
- * `latestPlan` view (see `buildDashboardPlanView`); no raw stored dosage can
- * leak via `latestTest.actionPlans`.
+ * Strips the nested Prisma relations and HISTORICAL SCIENTIFIC CONCLUSIONS from
+ * the LATEST TEST BEFORE it is serialized into the public dashboard response:
+ *   - `actionPlans` (and inside them `executions` / `outcome`);
+ *   - `swimSafety` (may carry a historical swim method);
+ *   - `status` (may carry a historical status method).
  *
- * PURE and testable. The returned object has `actionPlans === undefined`.
+ * The plan is exposed ONLY through the secured `latestPlan` view and swimming
+ * safety ONLY through the secured top-level `swim` object — a raw stored
+ * dosage or an unqualified swim conclusion can never leak via `latestTest`.
+ *
+ * PURE and testable. The returned type reflects the absence of these three
+ * properties via `Omit`.
  */
-export function sanitizeDashboardLatestTest<T extends Record<string, unknown>>(latestTest: T | null): Omit<T, 'actionPlans'> | null {
+export function sanitizeDashboardLatestTest<T extends Record<string, unknown>>(
+  latestTest: T | null,
+): Omit<T, 'actionPlans' | 'swimSafety' | 'status'> | null {
   if (!latestTest) return null
-  const { actionPlans: _dropped, ...rest } = latestTest
-  void _dropped
-  return rest as Omit<T, 'actionPlans'>
+  const { actionPlans: _droppedPlans, swimSafety: _droppedSwim, status: _droppedStatus, ...rest } = latestTest
+  void _droppedPlans
+  void _droppedSwim
+  void _droppedStatus
+  return rest as Omit<T, 'actionPlans' | 'swimSafety' | 'status'>
 }
 
 export interface DashboardSwimView {

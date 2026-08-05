@@ -426,6 +426,7 @@ const latestTestWithLegacyPlan = {
   ph: 7.8,
   freeChlorine: 0.2,
   swimSafety: 'forbidden',
+  status: 'critical',
   actionPlans: [legacyPlanRecord],
 }
 
@@ -441,6 +442,17 @@ describe('Wave A1 Round 3 — public dashboard response contract (serialized)', 
     expect(sanitized.actionPlans).toBeUndefined()
     const serialized = JSON.stringify(sanitized)
     expect(serialized).not.toContain('actionPlans')
+  })
+
+  it('2b. the PUBLIC latestTest never contains swimSafety or status (Round 4)', () => {
+    const sanitized = sanitizeDashboardLatestTest(latestTestWithLegacyPlan) as any
+    expect(sanitized.swimSafety).toBeUndefined()
+    expect(sanitized.status).toBeUndefined()
+    const serialized = JSON.stringify(sanitized)
+    expect(serialized).not.toContain('swimSafety')
+    expect(serialized).not.toContain('status')
+    expect(serialized).not.toContain('"forbidden"')
+    expect(serialized).not.toContain('"critical"')
   })
 
   it('3. legacy chemicalDosages are absent from every nested path of the public test', () => {
@@ -527,5 +539,121 @@ describe('Wave A1 Round 3 — public dashboard response contract (serialized)', 
     expect(serialized).toContain('"immediateActions":[]')
     expect(serialized).toContain('"estimatedCost":null')
     expect(serialized).toContain('"status":"unknown"')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Wave A1 Round 4 — response.swim is the UNIQUE public source of swim safety
+// ---------------------------------------------------------------------------
+
+describe('Wave A1 Round 4 — public contract: response.swim is the only swim source', () => {
+  const freshPlanFixture = generateScientificallyQualifiedActionPlan(
+    { ph: 7.4, freeChlorine: 2, alkalinity: 100 },
+    { volume: 50, unit: 'm3', treatmentType: 'chlorine', saltSystem: false, waterBodyType: 'pool', filterType: 'sand' },
+    'fr',
+  ) as any
+
+  it('1. public latestTest does not have actionPlans', () => {
+    const sanitized = sanitizeDashboardLatestTest(latestTestWithLegacyPlan) as any
+    expect(sanitized.actionPlans).toBeUndefined()
+  })
+
+  it('2. public latestTest does not have swimSafety', () => {
+    const sanitized = sanitizeDashboardLatestTest(latestTestWithLegacyPlan) as any
+    expect(sanitized.swimSafety).toBeUndefined()
+  })
+
+  it('3. public latestTest does not have status', () => {
+    const sanitized = sanitizeDashboardLatestTest(latestTestWithLegacyPlan) as any
+    expect(sanitized.status).toBeUndefined()
+  })
+
+  it('4. JSON of the response without a freshPlan never contains "swimSafety":"forbidden"', () => {
+    const sanitized = sanitizeDashboardLatestTest(latestTestWithLegacyPlan) as any
+    const planView = buildDashboardPlanView({
+      freshPlan: null,
+      storedPlan: legacyPlanRecord,
+      storedPlanBelongsToLatestTest: true,
+    })
+    const response = {
+      latestTest: sanitized,
+      latestPlan: planView,
+      swim: buildDashboardSwim({ freshPlan: null, hasLatestTest: true }),
+    }
+    const serialized = JSON.stringify(response)
+    expect(serialized).not.toContain('"swimSafety":"forbidden"')
+    expect(serialized).not.toContain('"swimSafety"')
+  })
+
+  it('5. JSON of the response without a freshPlan never contains "status":"critical"', () => {
+    const sanitized = sanitizeDashboardLatestTest(latestTestWithLegacyPlan) as any
+    const response = {
+      latestTest: sanitized,
+      latestPlan: buildDashboardPlanView({ freshPlan: null, storedPlan: legacyPlanRecord, storedPlanBelongsToLatestTest: true }),
+      swim: buildDashboardSwim({ freshPlan: null, hasLatestTest: true }),
+    }
+    const serialized = JSON.stringify(response)
+    expect(serialized).not.toContain('"status":"critical"')
+  })
+
+  it('6. the ONLY public current swim source is the top-level swim object', () => {
+    const sanitized = sanitizeDashboardLatestTest(latestTestWithLegacyPlan) as any
+    const response = {
+      latestTest: sanitized,
+      latestPlan: null,
+      swim: buildDashboardSwim({ freshPlan: freshPlanFixture, hasLatestTest: true }),
+    }
+    const serialized = JSON.stringify(response)
+    // latestTest carries no swimSafety/status; swim is the sole carrier.
+    expect((response.latestTest as any).swimSafety).toBeUndefined()
+    expect((response.latestTest as any).status).toBeUndefined()
+    expect(response.swim).toHaveProperty('status')
+    expect(response.swim).toHaveProperty('reasons')
+    expect(response.swim).toHaveProperty('scientificRequalificationRequired')
+    expect(serialized).toContain('"swim"')
+  })
+
+  it('7. without a freshPlan, swim.status is unknown', () => {
+    const swim = buildDashboardSwim({ freshPlan: null, hasLatestTest: true })
+    expect(swim?.status).toBe('unknown')
+    expect(swim?.reasons).toEqual([])
+    expect(swim?.scientificRequalificationRequired).toBe(true)
+  })
+
+  it('8. with a freshPlan, swim.status is the canonical contextual status', () => {
+    const swim = buildDashboardSwim({ freshPlan: freshPlanFixture, hasLatestTest: true })
+    expect(swim?.status).toBe(freshPlanFixture.swimSafety)
+    expect(swim?.reasons).toEqual(freshPlanFixture.swimReasons)
+    expect(swim?.scientificRequalificationRequired).toBe(false)
+  })
+
+  it('9. no historical dosage reappears in the serialized response', () => {
+    const sanitized = sanitizeDashboardLatestTest(latestTestWithLegacyPlan) as any
+    const response = {
+      latestTest: sanitized,
+      latestPlan: buildDashboardPlanView({ freshPlan: null, storedPlan: legacyPlanRecord, storedPlanBelongsToLatestTest: true }),
+      swim: buildDashboardSwim({ freshPlan: null, hasLatestTest: true }),
+    }
+    const serialized = JSON.stringify(response)
+    expect(serialized).not.toContain('12 kg')
+    expect(serialized).not.toContain('salt_plus')
+    expect(serialized).not.toContain('iaAddSalt')
+    expect(serialized).not.toContain('"chemicalDosages":[{"param":"salt_plus"')
+  })
+
+  it('10. no dashboard consumer reads latestTest.swimSafety or latestTest.status', () => {
+    const consumers = [
+      join(process.cwd(), 'src/components/aquamind/module-dashboard.tsx'),
+      join(process.cwd(), 'src/components/aquamind/module-action-plan.tsx'),
+      join(process.cwd(), 'src/components/aquamind/module-water-test.tsx'),
+    ]
+    for (const file of consumers) {
+      const src = readFileSync(file, 'utf8')
+      expect(src, `${file} must not read latestTest.swimSafety`).not.toMatch(/latestTest\??\.swimSafety/)
+      expect(src, `${file} must not read latestTest.status`).not.toMatch(/latestTest\??\.status/)
+    }
+    // The dashboard route itself must not serialize them either.
+    const route = readFileSync(ROUTES.dashboard, 'utf8')
+    expect(route).toContain("sanitizeDashboardLatestTest(latestTest as any)")
   })
 })
