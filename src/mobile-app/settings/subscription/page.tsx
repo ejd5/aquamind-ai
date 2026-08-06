@@ -31,15 +31,18 @@ export default function MobileSubscriptionPage() {
   const [plan, setPlan] = useState<string | null>(null)
   const [sources, setSources] = useState<{ provider?: string; store?: string | null; environment?: string }[]>([])
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<string | null> => {
     try {
       const { data } = await offlineApi.subscription()
       const projection = data as SubscriptionApiResponse | null
-      setPlan(projection?.plan?.id ?? null)
+      const serverPlan = projection?.plan?.id ?? null
+      setPlan(serverPlan)
       setSources((projection?.sources as { provider?: string; store?: string | null; environment?: string }[]) || [])
+      return serverPlan
     } catch {
       setPlan(null)
       setSources([])
+      return null
     }
   }, [])
 
@@ -60,9 +63,12 @@ export default function MobileSubscriptionPage() {
         await load()
         return
       }
-      // converged → reload /api/subscription; only the server plan is shown.
-      await load()
-      toast({ title: t('restoreSuccess'), description: t('restoreSuccessDesc', { plan: plan ?? 'oasis' }) })
+      // converged → reload /api/subscription; only the returned server plan is shown.
+      const serverPlan = await load()
+      toast({
+        title: t('restoreSuccess'),
+        description: t('restoreSuccessDesc', { plan: serverPlan ?? 'decouverte' }),
+      })
     } catch {
       toast({ title: t('restoreFailed'), variant: 'destructive' })
     } finally {
