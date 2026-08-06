@@ -63,12 +63,19 @@ describe('AQWELIA Wave A3 — mobile runtime hardening', () => {
     expect(entitlements).not.toContain('<key>com.apple.InAppPurchase</key>')
   })
 
-  it('builds the iOS SwiftPM project (project flag, not the missing workspace)', () => {
+  it('builds the iOS SwiftPM project on the Xcode 26 runner (project flag, not the missing workspace)', () => {
     const workflow = read('.github/workflows/mobile-native-quality.yml')
+    // The iOS job runs on the deterministic macos-26 runner (Capacitor 8 needs Xcode 26).
+    expect(workflow).toContain('runs-on: macos-26')
+    // An explicit Xcode 26 verification gate must exist and fail the job otherwise.
+    expect(workflow).toContain('Verify Xcode 26')
+    expect(workflow).toContain("grep -Eq '^Xcode 26(\\.|$)'")
     // The iOS job must target the actual project (Swift Package Manager).
     expect(workflow).toContain('-project ios/App/App.xcodeproj')
     // The old workspace flag must be gone (ios/App/App.xcworkspace does not exist).
     expect(workflow).not.toContain('-workspace ios/App/App.xcworkspace')
+    // The old macos-14 runner must be gone from the iOS job.
+    expect(workflow).not.toContain('runs-on: macos-14')
     // The rest of the command stays intact.
     expect(workflow).toContain("xcodebuild \\\n            -project ios/App/App.xcodeproj \\\n            -scheme App \\\n            -sdk iphonesimulator \\\n            -configuration Debug \\\n            -destination 'generic/platform=iOS Simulator' \\\n            CODE_SIGNING_ALLOWED=NO \\")
   })
