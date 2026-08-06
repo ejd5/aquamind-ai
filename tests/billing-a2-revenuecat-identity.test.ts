@@ -214,9 +214,14 @@ describe('Wave A2 — purchase / restore require a confirmed identity', () => {
         },
       },
     })
-    // confirmServerAccessConverged fetches /api/subscription — stub it active.
+    // Wave A2 (Round 3): convergence requires the EXPECTED RevenueCat source.
     subscriptionFetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ subscription: { userId: 'user-restore', active: true } }), { status: 200 }),
+      new Response(JSON.stringify({
+        subscription: { userId: 'user-restore', active: true, plan: 'wellness', provider: 'revenuecat', environment: 'production', store: 'ios' },
+        plan: { id: 'wellness' },
+        access: { hasValidAccess: true, grantedPlans: ['wellness'] },
+        sources: [{ id: 's1', plan: 'wellness', provider: 'revenuecat', environment: 'production', store: 'ios', status: 'active', expiresAt: null }],
+      }), { status: 200 }),
     )
     const result = await billing.restorePurchases()
     expect(mockPurchases.restorePurchases).toHaveBeenCalledTimes(1)

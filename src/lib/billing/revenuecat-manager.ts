@@ -49,8 +49,10 @@ import { getPlanFromRCProductId, DURATION_TO_PROVIDER } from './plans'
 import {
   pickDisplayEntitlement,
   hasActiveEntitlement,
+  plansFromEntitlements,
 } from './entitlement-resolution'
-import { awaitServerConvergence } from './revenuecat-identity-guard'
+import { awaitRevenueCatSourceConvergence } from './revenuecat-identity-guard'
+import { getBillingAccessEnvironment } from './identity'
 
 const RC_API_KEYS = {
   ios: process.env.NEXT_PUBLIC_REVENUECAT_IOS_KEY || '',
@@ -289,6 +291,13 @@ export class RevenueCatManager {
     if (!isNative()) return { success: false, error: 'Not on native' }
     await this.requireReady()
     try {
+      // Wave A2 (Round 3): resolve the expected plan from the canonical product id.
+      const mapped = getPlanFromRCProductId(productId)
+      if (!mapped) {
+        return { success: false, error: 'Product not found' }
+      }
+      const expectedPlan: PlanId = mapped.plan
+
       const result = await Purchases.getOfferings()
       const targetPackage = findPackageById(result, productId)
       if (!targetPackage) return { success: false, error: 'Product not found' }
@@ -296,11 +305,24 @@ export class RevenueCatManager {
       const entitlements = mapCustomerInfoToEntitlements(purchaseResult?.customerInfo)
       const success = hasActiveEntitlement(entitlements)
       const display = pickDisplayEntitlement(entitlements)
-      // Wave A2 (Round 2): same convergence contract as restore — refresh
-      // CustomerInfo (done above), then read GET /api/subscription (bounded).
+      if (!success) {
+        return { success: false, error: 'No active entitlement after purchase' }
+      }
+
+      // Wave A2 (Round 3): convergence requires the EXPECTED RevenueCat source
+      // (plan + provider + environment + userId). A pre-existing Stripe
+      // subscription of the same plan NEVER confirms a RevenueCat purchase.
       const userId = this.sdkConfirmedUserId
-      const { converged } = userId ? await awaitServerConvergence(userId) : { converged: false }
-      return { success, entitlement: display ?? undefined, serverConverged: success ? converged : false }
+      const environment = this.billingAccessEnvironment()
+      const { converged } = userId
+        ? await awaitRevenueCatSourceConvergence({
+            userId,
+            provider: 'revenuecat',
+            environment,
+            expectedPlans: [expectedPlan],
+          })
+        : { converged: false }
+      return { success, entitlement: display ?? undefined, serverConverged: converged }
     } catch (err: any) {
       if (err?.userCancelled) return { success: false, userCancelled: true }
       return { success: false, error: err?.message || 'Purchase failed' }
@@ -308,13 +330,21 @@ export class RevenueCatManager {
   }
 
   /**
-   * Wave A2 (Round 2) — restore follows the SAME contract as purchase:
-   *   1. identity SDK confirmed (requireReady);
-   *   2. server binding confirmed (ready implies it);
-   *   3. Purchases.restorePurchases() + refreshed CustomerInfo;
-   *   4. bounded read of GET /api/subscription;
-   *   5. explicit serverConverged / pending — never a definitive active from
-   *      local CustomerInfo alone.
+   * Wave A2 (Round 3) — restore follows the same contract as purchase, with an
+   * ALL-REQUIRED expected-plans rule: convergence is true ONLY when EVERY
+   * restored active RevenueCat entitlement is present as a valid RevenueCat
+   * source (provider='revenuecat', matching environment, matching userId) in
+   * GET /api/subscription.
+   *
+   *  1. identity SDK confirmed (requireReady);
+   *  2. server binding confirmed (ready implies it);
+   *  3. Purchases.restorePurchases() + refreshed CustomerInfo;
+   *  4. build expectedPlans from the restored active entitlements;
+   *  5. bounded read of GET /api/subscription requiring ALL expected plans as
+   *     RevenueCat sources;
+   *  6. explicit serverConverged / state converged|pending|none — never a
+   *     definitive active from local CustomerInfo alone, never a Stripe source
+   *     as confirmation.
    */
   async restorePurchases(): Promise<RestoreResult> {
     if (!isNative()) return { entitlements: [], restored: false, serverConverged: false, state: 'none' }
@@ -326,8 +356,17 @@ export class RevenueCatManager {
       if (!restored) {
         return { entitlements, restored: false, serverConverged: false, state: 'none' }
       }
+      const expectedPlans = plansFromEntitlements(entitlements)
       const userId = this.sdkConfirmedUserId
-      const { converged } = userId ? await awaitServerConvergence(userId) : { converged: false }
+      const environment = this.billingAccessEnvironment()
+      const { converged } = userId
+        ? await awaitRevenueCatSourceConvergence({
+            userId,
+            provider: 'revenuecat',
+            environment,
+            expectedPlans,
+          })
+        : { converged: false }
       return {
         entitlements,
         restored: true,
@@ -337,6 +376,11 @@ export class RevenueCatManager {
     } catch {
       return { entitlements: [], restored: false, serverConverged: false, state: 'none' }
     }
+  }
+
+  /** Server-determined billing access environment (client can never choose). */
+  private billingAccessEnvironment(): 'sandbox' | 'production' {
+    return getBillingAccessEnvironment()
   }
 
   async getActivePlan(): Promise<PlanId> {

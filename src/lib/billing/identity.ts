@@ -48,20 +48,48 @@ export function parseRevenueCatEnvironment(env: string | null | undefined): Bill
   return null
 }
 
+export type DeploymentEnvironment = 'production' | 'staging' | 'development'
+
+const VALID_DEPLOYMENT_ENVS: ReadonlySet<string> = new Set(['production', 'staging', 'development'])
+
 /**
  * Canonical server-side source of the billing access environment (fail-closed).
  *
- * In Production (NODE_ENV=production) ONLY 'production' entitlements grant
- * access — sandbox is never granted. Outside Production, sandbox is allowed
- * ONLY when explicitly enabled (BILLING_ALLOW_SANDBOX=true). Any other case
- * falls back to 'production'. Testable via the overrides parameter.
+ * The deployment is determined by the EXPLICIT variable AQWELIA_DEPLOYMENT_ENV
+ * (production | staging | development) — NOT by NODE_ENV (Vercel sets
+ * NODE_ENV=production on BOTH Production and Staging). Rules:
+ *   - production  : ONLY environment='production' grants access. BILLING_ALLOW_SANDBOX
+ *                   can NEVER override this.
+ *   - staging     : sandbox is allowed ONLY when BILLING_ALLOW_SANDBOX=true;
+ *                   otherwise 'production' (fail-closed).
+ *   - development : sandbox allowed only when BILLING_ALLOW_SANDBOX=true;
+ *                   otherwise 'production'.
+ *   - absent or INVALID AQWELIA_DEPLOYMENT_ENV : FAIL-CLOSED to 'production'
+ *     (never grants sandbox by default). An invalid configuration behaves like
+ *     production — no sandbox access is ever leaked.
+ *
+ * The client can never choose the environment: it is always server-derived.
+ * Testable via the overrides parameter.
  */
 export function getBillingAccessEnvironment(overrides?: {
-  nodeEnv?: string
+  deploymentEnv?: string
   allowSandbox?: boolean | string
 }): BillingEnvironment {
-  const nodeEnv = overrides?.nodeEnv ?? process.env.NODE_ENV
-  if (nodeEnv === 'production') return 'production'
+  const deploymentEnv =
+    overrides?.deploymentEnv ??
+    process.env.AQWELIA_DEPLOYMENT_ENV ??
+    ''
+
+  // Absent or invalid → fail-closed to production (sandbox never granted).
+  if (!VALID_DEPLOYMENT_ENVS.has(deploymentEnv.trim().toLowerCase())) {
+    return 'production'
+  }
+  const normalized = deploymentEnv.trim().toLowerCase() as DeploymentEnvironment
+
+  // Production NEVER allows sandbox, whatever BILLING_ALLOW_SANDBOX says.
+  if (normalized === 'production') return 'production'
+
+  // staging / development: sandbox only when explicitly enabled.
   const allow = overrides?.allowSandbox ?? process.env.BILLING_ALLOW_SANDBOX
   if (allow === true || allow === 'true') return 'sandbox'
   return 'production'

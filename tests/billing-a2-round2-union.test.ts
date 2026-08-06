@@ -282,11 +282,31 @@ describe('R2 — restore / purchase server convergence (bounded)', () => {
     process.env.REVENUECAT_CONVERGENCE_INTERVAL_MS = '5'
   })
 
-  function subscriptionResponse(active: boolean, userId = 'user-x') {
+  function subscriptionResponse(
+    active: boolean,
+    userId = 'user-x',
+    sources: { plan: string; provider: string; environment?: string; store?: string | null }[] = [],
+  ) {
     return new Response(
       JSON.stringify({
-        subscription: active ? { userId, active: true } : null,
-        plan: active ? { id: 'oasis' } : { id: 'decouverte' },
+        subscription: active ? { userId, active: true, plan: sources[0]?.plan ?? null, provider: sources[0]?.provider ?? null, environment: sources[0]?.environment ?? 'production', store: sources[0]?.store ?? null } : null,
+        plan: active ? { id: sources[0]?.plan ?? 'oasis' } : { id: 'decouverte' },
+        access: {
+          hasValidAccess: active,
+          grantedPlans: active ? sources.map((s) => s.plan) : [],
+          grantedFeatures: [],
+          effectiveLimits: {},
+        },
+        sources: sources.map((s) => ({
+          id: `src_${s.plan}`,
+          plan: s.plan,
+          status: 'active',
+          provider: s.provider,
+          environment: s.environment ?? 'production',
+          store: s.store ?? null,
+          expiresAt: null,
+          startedAt: '2026-08-01T00:00:00.000Z',
+        })),
       }),
       { status: 200 },
     )
@@ -301,8 +321,8 @@ describe('R2 — restore / purchase server convergence (bounded)', () => {
       }
       if (url.includes('/api/subscription')) {
         calls += 1
-        // First call inactive, subsequent active.
-        return subscriptionResponse(calls > 1)
+        // First call no RC source, subsequent calls have the RC source.
+        return subscriptionResponse(calls > 1, 'user-x', calls > 1 ? [{ plan: 'oasis', provider: 'revenuecat', environment: 'production', store: 'ios' }] : [])
       }
       return new Response(JSON.stringify({ ok: true }), { status: 200 })
     }))
@@ -358,7 +378,7 @@ describe('R2 — restore / purchase server convergence (bounded)', () => {
       if (url.includes('/api/billing/identity')) return new Response(JSON.stringify({ ok: true }), { status: 200 })
       if (url.includes('/api/subscription')) {
         calls += 1
-        return subscriptionResponse(calls > 1)
+        return subscriptionResponse(calls > 1, 'user-x', calls > 1 ? [{ plan: 'oasis', provider: 'revenuecat', environment: 'production', store: 'ios' }] : [])
       }
       return new Response(JSON.stringify({ ok: true }), { status: 200 })
     }))
@@ -376,13 +396,16 @@ describe('R2 — restore / purchase server convergence (bounded)', () => {
     expect(result.serverConverged).toBe(true)
   })
 
-  it('awaitServerConvergence is bounded (no infinite loop)', async () => {
+  it('awaitRevenueCatSourceConvergence is bounded (no infinite loop)', async () => {
     let calls = 0
     vi.stubGlobal('fetch', vi.fn(async () => {
       calls += 1
       return subscriptionResponse(false)
     }))
-    const { converged } = await awaitServerConvergence('user-x', { attempts: 3, intervalMs: 1 })
+    const { converged } = await awaitServerConvergence(
+      { userId: 'user-x', provider: 'revenuecat', environment: 'production', expectedPlans: ['oasis'] },
+      { attempts: 3, intervalMs: 1 },
+    )
     expect(converged).toBe(false)
     expect(calls).toBe(3)
   })

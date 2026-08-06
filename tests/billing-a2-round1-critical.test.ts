@@ -360,11 +360,20 @@ describe('R1 — sandbox / production access isolation', () => {
     await db.user.deleteMany({ where: { id: user } })
   })
 
-  it('getBillingAccessEnvironment is fail-closed (production by default)', () => {
-    expect(getBillingAccessEnvironment({ nodeEnv: 'production', allowSandbox: 'true' })).toBe('production')
-    expect(getBillingAccessEnvironment({ nodeEnv: 'development' })).toBe('production')
-    expect(getBillingAccessEnvironment({ nodeEnv: 'development', allowSandbox: true })).toBe('sandbox')
-    expect(getBillingAccessEnvironment({ nodeEnv: 'test', allowSandbox: 'true' })).toBe('sandbox')
+  it('getBillingAccessEnvironment is fail-closed (production default)', () => {
+    // Real production (Vercel Production): only production, sandbox never.
+    expect(getBillingAccessEnvironment({ deploymentEnv: 'production', allowSandbox: 'true' })).toBe('production')
+    // Vercel Staging is NODE_ENV=production but AQWELIA_DEPLOYMENT_ENV=staging:
+    // sandbox only when explicitly enabled.
+    expect(getBillingAccessEnvironment({ deploymentEnv: 'staging' })).toBe('production')
+    expect(getBillingAccessEnvironment({ deploymentEnv: 'staging', allowSandbox: true })).toBe('sandbox')
+    // Development: sandbox only when explicitly enabled.
+    expect(getBillingAccessEnvironment({ deploymentEnv: 'development', allowSandbox: 'true' })).toBe('sandbox')
+    expect(getBillingAccessEnvironment({ deploymentEnv: 'development' })).toBe('production')
+    // Absent or invalid configuration → fail-closed production, never sandbox.
+    expect(getBillingAccessEnvironment({ deploymentEnv: '' })).toBe('production')
+    expect(getBillingAccessEnvironment({ deploymentEnv: 'bogus', allowSandbox: 'true' })).toBe('production')
+    expect(getBillingAccessEnvironment({})).toBe('production')
   })
 
   it('a sandbox subscription never grants rights in Production', async () => {
