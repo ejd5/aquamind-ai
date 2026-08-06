@@ -110,3 +110,4 @@ sandbox / Play billing test** avant d'être cochéée.
 - La recette sandbox externe (appareil/émulateur + consoles) **n'est pas terminée** :
   cette Wave rend la recette techniquement possible et documentée, elle ne
   l'exécute pas.
+# ci trigger
