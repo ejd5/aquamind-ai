@@ -54,10 +54,12 @@ describe('AQWELIA Wave A3 — mobile runtime hardening', () => {
     }
   })
 
-  it('keeps the In-App Purchase capability enabled in the Xcode project', () => {
+  it('keeps In-App Purchase as an Xcode capability, not a signing entitlement', () => {
     const project = read('ios/App/App.xcodeproj/project.pbxproj')
+    const entitlements = read('ios/App/App/App.entitlements')
 
     expect(project).toContain('com.apple.InAppPurchase = {')
     expect(project).toContain('enabled = 1;')
+    expect(entitlements).not.toContain('<key>com.apple.InAppPurchase</key>')
   })
 })
