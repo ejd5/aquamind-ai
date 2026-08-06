@@ -1266,7 +1266,9 @@
     "planOasis": "Pool",
     "planWellness": "Complete",
     "restorePending": "Wiederherstellung wird geprüft",
-    "restorePendingDesc": "Synchronisierung mit dem Server läuft. Bitte versuchen Sie es gleich noch einmal."
+    "restorePendingDesc": "Synchronisierung mit dem Server läuft. Bitte versuchen Sie es gleich noch einmal.",
+    "manageMultiTitle": "Mehrere aktive Abonnements",
+    "manageMultiDesc": "Wählen Sie den Anbieter im entsprechenden Portal."
   },
   "auth": {
     "backHome": "Zurück zur Startseite",

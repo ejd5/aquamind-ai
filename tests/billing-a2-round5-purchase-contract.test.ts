@@ -221,7 +221,7 @@ describe('R5 — UI contract (no false activation, server projection authority)'
 
   it('PurchaseResult contract is documented with explicit state + invariants', () => {
     const src = readFileSync(join(PROJECT_ROOT, 'src/lib/billing/types.ts'), 'utf8')
-    expect(src).toContain("state: 'converged' | 'pending' | 'cancelled' | 'failed'")
+    expect(src).toContain("state: 'converged' | 'pending' | 'redirected' | 'cancelled' | 'failed'")
     expect(src).toContain('success===true')
     expect(src).toContain("an ACTIVE entitlement whose plan")
     expect(src).toContain('serverConverged===false')

@@ -76,9 +76,10 @@ export const stripeWebClient: BillingClient = {
       const result = await api.post<{ url: string }>('/api/stripe/checkout', { productId })
       if (result?.url) {
         window.location.href = result.url
-        // Checkout redirect: convergence is deferred to the webhook.
+        // Wave A2 (Round 6): creating a Checkout URL is NOT a confirmed purchase.
+        // state='redirected' (checkout_started); the webhook drives convergence.
         const planInfo = getPlanFromWebProductId(productId)
-        return { success: true, state: 'pending', serverConverged: false, purchasedPlan: planInfo?.plan }
+        return { success: true, state: 'redirected', serverConverged: false, purchasedPlan: planInfo?.plan }
       }
       return { success: false, state: 'failed', error: 'No checkout URL' }
     } catch (err) {
@@ -109,5 +110,14 @@ export const stripeWebClient: BillingClient = {
   async manageSubscription(): Promise<void> {
     const result = await api.post<{ url: string }>('/api/stripe/portal', {})
     if (result?.url) window.location.href = result.url
+  },
+
+  async manageSubscriptionForTarget(target: 'stripe' | 'apple' | 'google'): Promise<void> {
+    if (target === 'stripe') {
+      await this.manageSubscription()
+      return
+    }
+    // Apple / Google management is not available on web — open the account page.
+    window.open('https://aqwelia.app/account', '_blank')
   },
 }

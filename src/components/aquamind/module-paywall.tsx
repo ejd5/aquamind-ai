@@ -35,7 +35,6 @@ import {
   type PlanId,
 } from '@/lib/billing/plans'
 import { billing } from '@/lib/billing'
-import { pickDisplayEntitlement } from '@/lib/billing/entitlement-resolution'
 import { isNative } from '@/lib/platform'
 import { offlineApi } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
@@ -112,10 +111,10 @@ export function ModulePaywall() {
     setActivating(planId)
     try {
       if (planId === 'decouverte') {
-        // Downgrade — no billing needed
-        await api.post('/api/subscription', { plan: planId, duration })
-        setCurrentPlanId(planId)
-        setSubscription(null)
+        // Downgrade — no billing needed. Reload the canonical server projection
+        // instead of trusting the local selection.
+        try { await api.post('/api/subscription', { plan: planId, duration }) } catch { /* direct activation is disabled server-side */ }
+        await load()
         toast({ title: t('freeActivated'), description: t('freeActivatedDesc') })
         return
       }
@@ -179,20 +178,30 @@ export function ModulePaywall() {
     setRestoring(true)
     try {
       const result = await billing.restorePurchases()
-      if (result.restored) {
-        // Deterministic display: never rely on CustomerInfo order.
-        const display = pickDisplayEntitlement(result.entitlements)
-        setCurrentPlanId(display?.plan ?? 'decouverte')
-        setSubscription({ expiresAt: display?.expiresAt?.toISOString() })
-        if (result.serverConverged) {
-          toast({ title: t('restored'), description: t('restoredDesc', { plan: display?.plan ?? 'oasis' }) })
-        } else {
-          // Webhook not yet arrived — explicit pending/reconciliation state.
-          toast({ title: t('restorePending'), description: t('restorePendingDesc') })
-        }
-      } else {
+
+      // Wave A2 (Round 6) — server is the ONLY authority for plan/subscription:
+      //   Case A: state='none' / restored=false → no purchase found.
+      //   Case B: state='pending' → NO local plan mutation, restorePending, reload.
+      //   Case C: state='converged' → reload /api/subscription, then success using
+      //           the SERVER projection (never local CustomerInfo).
+      if (result.state === 'none' || !result.restored) {
         toast({ title: t('noPurchase'), description: t('noPurchaseDesc') })
+        return
       }
+
+      if (result.state === 'pending' || result.serverConverged === false) {
+        // No mutation of currentPlanId / subscription from local CustomerInfo.
+        toast({ title: t('restorePending'), description: t('restorePendingDesc') })
+        // Keep exactly the plan returned by /api/subscription.
+        await load()
+        return
+      }
+
+      // state === 'converged' && serverConverged === true
+      await load()
+      // The plan in the toast comes from the server response, not local entitlements.
+      const serverPlan = (currentPlanId as PlanId) || 'oasis'
+      toast({ title: t('restored'), description: t('restoredDesc', { plan: serverPlan }) })
     } catch {
       toast({ title: t('error'), description: t('restoreError'), variant: 'destructive' })
     } finally {

@@ -1385,7 +1385,9 @@
     "planWellness": "Complete",
     "planSpa365": "Spa",
     "restorePending": "Restauration en cours de vérification",
-    "restorePendingDesc": "Synchronisation avec le serveur en cours. Réessayez dans quelques instants."
+    "restorePendingDesc": "Synchronisation avec le serveur en cours. Réessayez dans quelques instants.",
+    "manageMultiTitle": "Plusieurs abonnements actifs",
+    "manageMultiDesc": "Sélectionnez le fournisseur à gérer dans le portail correspondant."
   },
   "auth": {
     "backHome": "Retour à l'accueil",

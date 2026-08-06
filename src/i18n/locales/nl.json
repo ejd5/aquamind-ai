@@ -1266,7 +1266,9 @@
     "planOasis": "Pool",
     "planWellness": "Complete",
     "restorePending": "Herstel wordt gecontroleerd",
-    "restorePendingDesc": "Synchroniseren met de server. Probeer het over een ogenblik opnieuw."
+    "restorePendingDesc": "Synchroniseren met de server. Probeer het over een ogenblik opnieuw.",
+    "manageMultiTitle": "Meerdere actieve abonnementen",
+    "manageMultiDesc": "Selecteer de provider om te beheren in het bijbehorende portaal."
   },
   "auth": {
     "backHome": "Terug naar home",

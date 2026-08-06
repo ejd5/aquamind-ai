@@ -17,6 +17,8 @@ export const billing = {
   restorePurchases: () => getBillingClient().restorePurchases(),
   getActivePlan: () => getBillingClient().getActivePlan(),
   manageSubscription: () => getBillingClient().manageSubscription(),
+  manageSubscriptionForTarget: (target: 'stripe' | 'apple' | 'google') =>
+    getBillingClient().manageSubscriptionForTarget(target),
 }
 
 export type { PlanId, Product, Entitlement, PurchaseResult, RestoreResult, BillingPlatform, BillingClient } from './types'

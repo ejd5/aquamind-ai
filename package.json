@@ -129,7 +129,7 @@
     "@axe-core/playwright": "^4.12.1",
     "@capacitor/android": "^8.4.1",
     "@capacitor/ios": "^8.4.1",
-    "@playwright/test": "^1.62.0",
+    "@playwright/test": "1.62.0",
     "@tailwindcss/postcss": "^4",
     "@types/react": "^19",
     "@types/react-dom": "^19",

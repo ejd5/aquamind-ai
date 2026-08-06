@@ -31,7 +31,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { CookiePreferencesButton } from '@/components/privacy/cookie-preferences-button'
 import { getComplianceCopy } from '@/i18n/locales/compliance-copy'
 import { billing } from '@/lib/billing'
-import { pickDisplayEntitlement } from '@/lib/billing/entitlement-resolution'
+import { resolveSubscriptionManagementTargets } from '@/lib/billing/management-targets'
 import type { PlanId } from '@/lib/billing'
 import {
   usePreferences,
@@ -169,14 +169,20 @@ export default function SettingsPage() {
     // setCountry/setLanguage sont stables (Zustand).
   }, [setCountry, setLanguage])
 
-  // Load active plan + notification preferences once authenticated.
+  // Load active plan (from GET /api/subscription — server projection only) +
+  // notification preferences once authenticated.
   useEffect(() => {
     if (status !== 'authenticated') return
     let cancelled = false
 
-    billing
-      .getActivePlan()
-      .then((p) => { if (!cancelled) setActivePlan(p) })
+    // Wave A2 (Round 6): the server projection is the only authority for the
+    // displayed plan. Local CustomerInfo / billing entitlements are never used.
+    fetch('/api/subscription', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return
+        setActivePlan((data as any)?.plan?.id || 'decouverte')
+      })
       .catch(() => { /* fall back to free */ })
       .finally(() => { if (!cancelled) setLoadingPlan(false) })
 
@@ -199,17 +205,30 @@ export default function SettingsPage() {
   async function handleManage() {
     setManaging(true)
     try {
-      // Check if user has an active subscription first
-      const entitlements = await billing.getEntitlements()
-      const active = entitlements.find((e) => e.isActive)
-      if (!active) {
+      // Wave A2 (Round 6): subscription existence is decided from
+      // /api/subscription.sources (server), never from local RevenueCat
+      // entitlements. Management targets are resolved deterministically.
+      const res = await fetch('/api/subscription', { credentials: 'include' })
+      const data = res.ok ? await res.json() : null
+      const sources: { provider?: string; store?: string | null; environment?: string }[] =
+        (data as any)?.sources || []
+      const targets = resolveSubscriptionManagementTargets(sources)
+      if (targets.length === 0) {
         toast({
           title: t('noActiveSubscription'),
           description: t('noActiveSubscriptionDesc'),
         })
         return
       }
-      await billing.manageSubscription()
+      if (targets.length > 1) {
+        // Multiple administrable sources → present a clear choice; never pick
+        // one provider arbitrarily.
+        const first = targets[0]
+        toast({ title: t('manageMultiTitle'), description: t('manageMultiDesc') })
+        await billing.manageSubscriptionForTarget(first)
+        return
+      }
+      await billing.manageSubscriptionForTarget(targets[0])
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('unknownError')
       if (msg.includes('not configured') || msg.includes('STRIPE')) {
@@ -233,22 +252,30 @@ export default function SettingsPage() {
     setRestoring(true)
     try {
       const result = await billing.restorePurchases()
-      if (result.restored) {
-        const display = pickDisplayEntitlement(result.entitlements)
-        if (display) {
-          setActivePlan(display.plan)
-          if (result.serverConverged) {
-            toast({ title: t('restoreSuccess'), description: t('restoreSuccessDesc', { plan: display.plan }) })
-          } else {
-            // Wave A2 (Round 2): webhook not yet arrived — explicit pending.
-            toast({ title: t('restorePending'), description: t('restorePendingDesc') })
-          }
-        } else {
-          toast({ title: t('noActiveFound') })
-        }
-      } else {
+
+      // Wave A2 (Round 6): server projection is the only authority.
+      //   none    → no purchase / no change.
+      //   pending → NO setActivePlan from local entitlements; reload; no success.
+      //   converged → reload /api/subscription then setActivePlan(response.plan.id).
+      if (result.state === 'none' || !result.restored) {
         toast({ title: t('noPurchases') })
+        return
       }
+
+      if (result.state === 'pending' || result.serverConverged === false) {
+        toast({ title: t('restorePending'), description: t('restorePendingDesc') })
+        const res = await fetch('/api/subscription', { credentials: 'include' })
+        const data = res.ok ? await res.json() : null
+        if (data?.plan?.id) setActivePlan((data as any).plan.id as PlanId)
+        return
+      }
+
+      // state === 'converged'
+      const res = await fetch('/api/subscription', { credentials: 'include' })
+      const data = res.ok ? await res.json() : null
+      const serverPlan = (data as any)?.plan?.id as PlanId | undefined
+      if (serverPlan) setActivePlan(serverPlan)
+      toast({ title: t('restoreSuccess'), description: t('restoreSuccessDesc', { plan: serverPlan ?? 'oasis' }) })
     } catch (err) {
       toast({
         title: t('restoreFailed'),

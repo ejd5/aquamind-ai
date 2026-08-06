@@ -23,27 +23,33 @@ export interface Entitlement {
 }
 
 /**
- * Wave A2 (Round 5) — PurchaseResult contract (strict invariants).
+ * Wave A2 (Round 5/6) — PurchaseResult contract (strict invariants).
  *
  * state is the canonical, single-source status:
  *   - 'converged' : SDK confirmed the EXPECTED plan AND the expected RevenueCat
  *                   source is present server-side (serverConverged=true).
- *   - 'pending'   : SDK confirmed the EXPECTED plan locally, but the RevenueCat
- *                   webhook has not projected it yet (serverConverged=false).
- *                   NOT an activation — the UI must show a reconciliation state.
+ *   - 'pending'   : the provider CONFIRMED the purchase (native: expected plan
+ *                   active in CustomerInfo; web: webhook-driven) but it is not
+ *                   yet projected server-side. NOT an activation.
+ *   - 'redirected'/'checkout_started' : Stripe ONLY — a Checkout URL was created
+ *                   and the user is being redirected. This is NEVER a confirmed
+ *                   purchase: success=true here ONLY means "redirect initiated".
  *   - 'cancelled' : the user cancelled the purchase (userCancelled=true).
  *   - 'failed'    : the purchase did not succeed (success=false).
  *
- * Invariants (must never regress):
+ * NATIVE invariants:
  *   - success===true        ⇔  SDK confirmed an ACTIVE entitlement whose plan
- *                              === the purchased plan (expectedPlan). An active
- *                              entitlement of ANOTHER plan can never make
- *                              success true.
+ *                              === the purchased plan (expectedPlan).
  *   - serverConverged===true ⇒  expected RevenueCat source present server-side.
  *   - success===true + serverConverged===false  ⇔  state==='pending' — the UI
  *                              must NEVER treat this as a definitive activation.
- *   - entitlement (when set) is ALWAYS the expected plan's entitlement — never
- *     a display entitlement of another plan.
+ *
+ * WEB / CHECKOUT invariants:
+ *   - state==='redirected'  ⇔  a Checkout URL was created; the purchase is NOT
+ *                              confirmed yet. No caller may interpret this as a
+ *                              successful purchase.
+ *   - web convergence is webhook-driven: after the redirect the user's server
+ *     projection (GET /api/subscription) is the authority.
  */
 export interface PurchaseResult {
   success: boolean
@@ -52,8 +58,8 @@ export interface PurchaseResult {
   userCancelled?: boolean
   /** Wave A2: true when the expected RevenueCat source is present server-side. */
   serverConverged?: boolean
-  /** Wave A2 (Round 5): explicit state — converged | pending | cancelled | failed. */
-  state: 'converged' | 'pending' | 'cancelled' | 'failed'
+  /** Wave A2 (Round 5/6): explicit state. */
+  state: 'converged' | 'pending' | 'redirected' | 'cancelled' | 'failed'
   /** The plan the purchase was made for (canonical product id → plan). */
   purchasedPlan?: PlanId
 }
@@ -79,6 +85,8 @@ export interface BillingClient {
   restorePurchases(): Promise<RestoreResult>
   getActivePlan(): Promise<PlanId>
   manageSubscription(): Promise<void>
+  /** Wave A2 (Round 6): manage a specific provider target (stripe | apple | google). */
+  manageSubscriptionForTarget(target: 'stripe' | 'apple' | 'google'): Promise<void>
 }
 
 

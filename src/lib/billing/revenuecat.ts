@@ -49,4 +49,23 @@ export const revenueCatClient: BillingClient = {
       window.open('https://aqwelia.app/account', '_blank')
     }
   },
+
+  async manageSubscriptionForTarget(target: 'stripe' | 'apple' | 'google'): Promise<void> {
+    if (target === 'stripe') {
+      const { api } = await import('@/lib/api-client')
+      const result = await api.post<{ url: string }>('/api/stripe/portal', {})
+      if (result?.url) window.location.href = result.url
+      return
+    }
+    // Apple / Google management requires a native context (native only).
+    if (!isNative()) {
+      window.open('https://aqwelia.app/account', '_blank')
+      return
+    }
+    const { Browser } = await import('@capacitor/browser')
+    const url = target === 'apple'
+      ? 'https://apps.apple.com/account/subscriptions'
+      : 'https://play.google.com/store/account/subscriptions'
+    await Browser.open({ url })
+  },
 }

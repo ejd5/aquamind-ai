@@ -1266,7 +1266,9 @@
     "planOasis": "Pool",
     "planWellness": "Complete",
     "restorePending": "Restauração em verificação",
-    "restorePendingDesc": "Sincronizando com o servidor. Tente novamente em instantes."
+    "restorePendingDesc": "Sincronizando com o servidor. Tente novamente em instantes.",
+    "manageMultiTitle": "Várias assinaturas ativas",
+    "manageMultiDesc": "Selecione o provedor a gerenciar no portal correspondente."
   },
   "auth": {
     "backHome": "Voltar ao início",
