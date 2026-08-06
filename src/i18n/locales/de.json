@@ -1006,7 +1006,9 @@
       }
     },
     "restorePending": "Wiederherstellung wird geprüft",
-    "restorePendingDesc": "Synchronisierung mit dem Server läuft. Bitte versuchen Sie es gleich noch einmal."
+    "restorePendingDesc": "Synchronisierung mit dem Server läuft. Bitte versuchen Sie es gleich noch einmal.",
+    "purchasePending": "Kauf erfasst, Validierung läuft",
+    "purchasePendingDesc": "Ihr Kauf wurde erhalten. AQWELIA schließt die Synchronisierung mit dem Store ab."
   },
   "onboarding": {
     "welcome": "Willkommen bei AQWELIA",

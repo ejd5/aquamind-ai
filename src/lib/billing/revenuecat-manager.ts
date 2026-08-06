@@ -361,40 +361,48 @@ export class RevenueCatManager {
   }
 
   async purchase(productId: string): Promise<PurchaseResult> {
-    if (!isNative()) return { success: false, error: 'Not on native' }
+    if (!isNative()) return { success: false, state: 'failed', error: 'Not on native' }
     await this.requireReady()
     const lease = this.captureLease()
     if (!lease) {
-      return { success: false, error: 'RevenueCat identity is not confirmed (SDK + server) for the current user' }
+      return { success: false, state: 'failed', error: 'RevenueCat identity is not confirmed (SDK + server) for the current user' }
     }
     try {
       // Wave A2 (Round 3): resolve the expected plan from the canonical product id.
       const mapped = getPlanFromRCProductId(productId)
       if (!mapped) {
-        return { success: false, error: 'Product not found' }
+        return { success: false, state: 'failed', error: 'Product not found' }
       }
       const expectedPlan: PlanId = mapped.plan
 
       const result = await Purchases.getOfferings()
       const targetPackage = findPackageById(result, productId)
-      if (!targetPackage) return { success: false, error: 'Product not found' }
+      if (!targetPackage) return { success: false, state: 'failed', error: 'Product not found' }
       // Verify after the offering read (identity may have changed).
       if (this.verifyLease(lease)) {
-        return { success: false, error: 'Identity changed during purchase', userCancelled: false }
+        return { success: false, state: 'failed', error: 'Identity changed during purchase' }
       }
       const purchaseResult = await Purchases.purchasePackage({ aPackage: targetPackage })
       if (this.verifyLease(lease)) {
         // A result started under A must never be accepted under B.
-        return { success: false, error: 'Identity changed during purchase', userCancelled: false }
+        return { success: false, state: 'failed', error: 'Identity changed during purchase' }
       }
       const entitlements = mapCustomerInfoToEntitlements(purchaseResult?.customerInfo)
-      const success = hasActiveEntitlement(entitlements)
-      const display = pickDisplayEntitlement(entitlements)
-      if (!success) {
-        return { success: false, error: 'No active entitlement after purchase' }
+      // Wave A2 (Round 5): success requires an ACTIVE entitlement whose plan ===
+      // expectedPlan. An active entitlement of ANOTHER plan must never make this
+      // purchase succeed.
+      const expectedEntitlement = entitlements.find((e) => e.isActive && e.plan === expectedPlan)
+      if (!expectedEntitlement) {
+        return {
+          success: false,
+          state: 'failed',
+          serverConverged: false,
+          error: `Purchase did not activate the expected plan (${expectedPlan})`,
+          purchasedPlan: expectedPlan,
+        }
       }
 
-      // Wave A2 (Round 3/4): convergence requires the EXPECTED RevenueCat source
+      // Wave A2 (Round 3/4/5): convergence requires the EXPECTED RevenueCat source
       // (userId + plan + provider + server-provided environment).
       const { converged } = await awaitRevenueCatSourceConvergence({
         userId: lease.userId,
@@ -404,12 +412,18 @@ export class RevenueCatManager {
       })
       // Verify once more before accepting convergence.
       if (this.verifyLease(lease)) {
-        return { success: false, error: 'Identity changed during purchase', userCancelled: false }
+        return { success: false, state: 'failed', error: 'Identity changed during purchase' }
       }
-      return { success, entitlement: display ?? undefined, serverConverged: converged }
+      return {
+        success: true,
+        entitlement: expectedEntitlement,
+        serverConverged: converged,
+        state: converged ? 'converged' : 'pending',
+        purchasedPlan: expectedPlan,
+      }
     } catch (err: any) {
-      if (err?.userCancelled) return { success: false, userCancelled: true }
-      return { success: false, error: err?.message || 'Purchase failed' }
+      if (err?.userCancelled) return { success: false, userCancelled: true, state: 'cancelled' }
+      return { success: false, state: 'failed', error: err?.message || 'Purchase failed' }
     }
   }
 

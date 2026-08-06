@@ -22,13 +22,40 @@ export interface Entitlement {
   originalPurchaseDate?: Date
 }
 
+/**
+ * Wave A2 (Round 5) — PurchaseResult contract (strict invariants).
+ *
+ * state is the canonical, single-source status:
+ *   - 'converged' : SDK confirmed the EXPECTED plan AND the expected RevenueCat
+ *                   source is present server-side (serverConverged=true).
+ *   - 'pending'   : SDK confirmed the EXPECTED plan locally, but the RevenueCat
+ *                   webhook has not projected it yet (serverConverged=false).
+ *                   NOT an activation — the UI must show a reconciliation state.
+ *   - 'cancelled' : the user cancelled the purchase (userCancelled=true).
+ *   - 'failed'    : the purchase did not succeed (success=false).
+ *
+ * Invariants (must never regress):
+ *   - success===true        ⇔  SDK confirmed an ACTIVE entitlement whose plan
+ *                              === the purchased plan (expectedPlan). An active
+ *                              entitlement of ANOTHER plan can never make
+ *                              success true.
+ *   - serverConverged===true ⇒  expected RevenueCat source present server-side.
+ *   - success===true + serverConverged===false  ⇔  state==='pending' — the UI
+ *                              must NEVER treat this as a definitive activation.
+ *   - entitlement (when set) is ALWAYS the expected plan's entitlement — never
+ *     a display entitlement of another plan.
+ */
 export interface PurchaseResult {
   success: boolean
   entitlement?: Entitlement
   error?: string
   userCancelled?: boolean
-  /** Wave A2: true when GET /api/subscription reflects the purchase. */
+  /** Wave A2: true when the expected RevenueCat source is present server-side. */
   serverConverged?: boolean
+  /** Wave A2 (Round 5): explicit state — converged | pending | cancelled | failed. */
+  state: 'converged' | 'pending' | 'cancelled' | 'failed'
+  /** The plan the purchase was made for (canonical product id → plan). */
+  purchasedPlan?: PlanId
 }
 
 /**

@@ -1006,7 +1006,9 @@
       }
     },
     "restorePending": "Herstel wordt gecontroleerd",
-    "restorePendingDesc": "Synchroniseren met de server. Probeer het over een ogenblik opnieuw."
+    "restorePendingDesc": "Synchroniseren met de server. Probeer het over een ogenblik opnieuw.",
+    "purchasePending": "Aankoop geregistreerd, validatie loopt",
+    "purchasePendingDesc": "Uw aankoop is ontvangen. AQWELIA voltooit de synchronisatie met de winkel."
   },
   "onboarding": {
     "welcome": "Welkom bij AQWELIA",

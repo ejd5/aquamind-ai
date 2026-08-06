@@ -26,8 +26,10 @@ const markers = [
 ]
 
 if (!existsSync(chunksDir)) {
-  console.log('[bundle-guard] .next/static/chunks not found — run `next build` first (skipped).')
-  process.exit(0)
+  // Wave A2 (Round 5): missing chunks is NEVER a silent success — the guard must
+  // be run after `next build` and must fail loudly in CI.
+  console.error('[bundle-guard] .next/static/chunks not found — run `next build` first. Missing client bundles cannot validate the client/server boundary.')
+  process.exit(1)
 }
 
 const files = []

@@ -1,6 +1,6 @@
 import { api } from '@/lib/api-client'
 import type { BillingClient, Product, Entitlement, PurchaseResult, PlanId, RestoreResult, SubscriptionApiResponse, BillingPlatform } from './types'
-import { PLANS, DURATION_TO_PROVIDER, WEB_DURATIONS, PAID_PLAN_IDS } from './plans'
+import { PLANS, DURATION_TO_PROVIDER, WEB_DURATIONS, PAID_PLAN_IDS, getPlanFromWebProductId } from './plans'
 import { pickDisplayEntitlement, hasActiveEntitlement } from './entitlement-resolution'
 
 // Paid plan ids that grant an entitlement.
@@ -76,11 +76,13 @@ export const stripeWebClient: BillingClient = {
       const result = await api.post<{ url: string }>('/api/stripe/checkout', { productId })
       if (result?.url) {
         window.location.href = result.url
-        return { success: true }
+        // Checkout redirect: convergence is deferred to the webhook.
+        const planInfo = getPlanFromWebProductId(productId)
+        return { success: true, state: 'pending', serverConverged: false, purchasedPlan: planInfo?.plan }
       }
-      return { success: false, error: 'No checkout URL' }
+      return { success: false, state: 'failed', error: 'No checkout URL' }
     } catch (err) {
-      return { success: false, error: err instanceof Error ? err.message : 'Checkout failed' }
+      return { success: false, state: 'failed', error: err instanceof Error ? err.message : 'Checkout failed' }
     }
   },
 

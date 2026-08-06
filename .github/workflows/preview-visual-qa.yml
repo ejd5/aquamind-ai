@@ -44,10 +44,12 @@ jobs:
       - name: Install repository dependencies
         run: bun install --frozen-lockfile
 
-      - name: Install Playwright runner
-        run: bun add --dev --no-save playwright@1.54.2
-
-      - name: Install Chromium
+      # Wave A2 (Round 5): single pinned Playwright version (1.62.0, aligned with
+      # @playwright/test) from the lockfile. The previous `--no-save playwright@1.54.2`
+      # step created a browser-version mismatch (headless_shell-1181 vs -1234) that
+      # broke the capture. The CLI and the runtime browser now come from the same
+      # lockfile-versioned package.
+      - name: Install Chromium (lockfile-pinned Playwright)
         run: bunx playwright install --with-deps chromium
 
       - name: Resolve the Vercel Preview URL

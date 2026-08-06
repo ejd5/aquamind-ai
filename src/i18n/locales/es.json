@@ -1004,7 +1004,9 @@
       }
     },
     "restorePending": "Restauración en verificación",
-    "restorePendingDesc": "Sincronizando con el servidor. Inténtalo de nuevo en un momento."
+    "restorePendingDesc": "Sincronizando con el servidor. Inténtalo de nuevo en un momento.",
+    "purchasePending": "Compra registrada, validación en curso",
+    "purchasePendingDesc": "Hemos recibido tu compra. AQWELIA está finalizando la sincronización con la tienda."
   },
   "onboarding": {
     "welcome": "Bienvenido a AQWELIA",

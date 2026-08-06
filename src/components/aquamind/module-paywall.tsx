@@ -80,13 +80,11 @@ export function ModulePaywall() {
     try {
       const { data } = await offlineApi.subscription()
       setPlans((data as any)?.allPlans || [])
+      // Wave A2 (Round 5): the SERVER projection is the only source of truth for
+      // the displayed plan, feature gates, sources and capability union. The
+      // local CustomerInfo is never treated as an authority.
       setCurrentPlanId((data as any)?.plan?.id || 'decouverte')
       setSubscription((data as any)?.subscription || null)
-      // On native, also refresh entitlements from RevenueCat
-      if (isNative()) {
-        const activePlan = await billing.getActivePlan()
-        if (activePlan) setCurrentPlanId(activePlan)
-      }
     } catch {
       // noop
     } finally {
@@ -126,16 +124,34 @@ export function ModulePaywall() {
         // Native: use RevenueCat IAP
         const productId = `aqwelia_${planId}_${DURATION_TO_PROVIDER[duration]}`
         const result = await billing.purchase(productId)
-        if (result.userCancelled) {
+
+        // Wave A2 (Round 5) — strict UI contract:
+        //   Case A: failed / cancelled → existing error/cancel, NO state mutation.
+        //   Case B: success + pending (no server convergence) → NO activation,
+        //           explicit reconciliation toast, then reload /api/subscription.
+        //   Case C: success + converged → reload /api/subscription, then activate
+        //           using the SERVER projection (never local CustomerInfo).
+        if (result.userCancelled || result.state === 'cancelled') {
           toast({ title: t('purchaseCancelled'), description: t('purchaseCancelledDesc') })
           return
         }
-        if (!result.success) {
+        if (!result.success || result.state === 'failed') {
           throw new Error(result.error || t('failed'))
         }
-        setCurrentPlanId(planId)
-        setSubscription({ expiresAt: result.entitlement?.expiresAt?.toISOString() })
-        toast({ title: t('subscriptionActivated'), description: t('subscriptionActivatedDesc', { plan: planId }) })
+
+        if (result.serverConverged === true && result.state === 'converged') {
+          // Case C: server converged → reload the canonical projection and only
+          // then show the activation using the SERVER-provided plan/rights.
+          await load()
+          toast({ title: t('subscriptionActivated'), description: t('subscriptionActivatedDesc', { plan: result.purchasedPlan ?? planId }) })
+          return
+        }
+
+        // Case B: local purchase received, server sync pending — never activate.
+        toast({ title: t('purchasePending'), description: t('purchasePendingDesc') })
+        // Reload the canonical state from the server without treating the local
+        // CustomerInfo as an authority.
+        await load()
       } else {
         // Web: redirect to Stripe Checkout
         if (!isOnline) {
