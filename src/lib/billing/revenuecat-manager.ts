@@ -1,9 +1,23 @@
 /**
- * AQWELIA Wave A2 (Round 1) — THE single RevenueCat lifecycle manager (native).
+ * AQWELIA Wave A2 — THE single RevenueCat lifecycle manager (native).
  *
  * This module is the ONLY place that ever calls Purchases.configure and the
  * ONLY owner of the SDK lifecycle. Everything else (hooks, sign-out wrapper,
  * BillingClient) delegates here. There is intentionally NO second initializer.
+ *
+ * Wave A2 (Round 4) — CLIENT / SERVER BOUNDARY:
+ *   - This module is loaded on the browser. It MUST NOT import Prisma, @/lib/db,
+ *     next-auth server, server-only, or any server secret. The billing ACCESS
+ *     ENVIRONMENT is NEVER computed here — it is received from the server in the
+ *     POST /api/billing/identity response (billingAccessEnvironment) and stored.
+ *   - `ready` requires: SDK identity confirmed AND server identity bound AND a
+ *     valid server-provided billing access environment.
+ *   - Every billing operation captures an identity EPOCH at start and verifies
+ *     (before the SDK call, after the SDK call, and before accepting server
+ *     convergence) that the epoch / userId / environment are unchanged. A
+ *     logout or account switch during an operation makes the operation return
+ *     pending/error fail-closed — a result started under A is never accepted
+ *     under B.
  *
  * Lifecycle (documented strategy):
  *
@@ -11,33 +25,27 @@
  *     session loads → setIdentity(userId):
  *       1. configure the SDK once;
  *       2. Purchases.logIn({ appUserID: userId }) → sdkIdentityConfirmed;
- *       3. POST /api/billing/identity (bind BillingIdentity server-side)
- *          → serverIdentityBound;
+ *       3. POST /api/billing/identity (bind BillingIdentity server-side) →
+ *          serverIdentityBound + billingAccessEnvironment (server-provided);
  *       4. only then state = ready.
- *     No getCustomerInfo / getEntitlements / getProducts / purchase /
- *     restorePurchases may run before BOTH sdkIdentityConfirmed AND
- *     serverIdentityBound are true.
  *
  *   Logout
- *     sign-out wrapper calls clearIdentity() BEFORE the NextAuth signOut:
- *       Purchases.logOut() → sdkIdentityConfirmed=false, serverIdentityBound
- *       =false, expectedUserId=null, state=idle. Fail-closed: even if logOut
- *       throws, the previous identity is never reused.
+ *     clearIdentity() BEFORE NextAuth signOut: Purchases.logOut() → clears
+ *     sdkConfirmedUserId, serverBound, billingAccessEnvironment, expectedUserId;
+ *     increments the epoch. Fail-closed: even if logOut throws, the previous
+ *     identity is never reused.
  *
  *   Account switch A → B
- *     Transitions are serialized through a FIFO queue: setIdentity(B) is
- *     enqueued after clearIdentity(), so a fast A → logout → B never leaves
- *     concurrent logIn/logOut calls.
+ *     Transitions are serialized through a FIFO queue; clearIdentity()/setIdentity(B)
+ *     increment the epoch so any in-flight A billing operation is invalidated.
  *
  *   App restart
- *     The SDK is configured again on the next setIdentity (initialized=false).
- *     The session hook re-establishes the identity and re-binds the server
- *     identity (idempotent upsert), so the ready state is re-converged.
+ *     The SDK is configured again on the next setIdentity; identity + server
+ *     environment are re-converged (idempotent).
  *
  *   Session still loading
- *     The hook only calls setIdentity once a userId is present. While the
- *     session is loading, the bridge stays idle and every billing operation is
- *     blocked (fail-closed).
+ *     The hook only calls setIdentity once a userId is present; while loading
+ *     the bridge stays idle and every billing operation is blocked (fail-closed).
  *
  * The SDK is mocked in tests; on web this module is a no-op (native only).
  */
@@ -52,7 +60,7 @@ import {
   plansFromEntitlements,
 } from './entitlement-resolution'
 import { awaitRevenueCatSourceConvergence } from './revenuecat-identity-guard'
-import { getBillingAccessEnvironment } from './identity'
+import type { BillingEnvironment } from './billing-types'
 
 const RC_API_KEYS = {
   ios: process.env.NEXT_PUBLIC_REVENUECAT_IOS_KEY || '',
@@ -67,6 +75,8 @@ export interface RevenueCatManagerSnapshot {
   sdkConfirmedUserId: string | null
   sdkIdentityConfirmed: boolean
   serverIdentityBound: boolean
+  /** Server-provided billing access environment (never client-computed). */
+  billingAccessEnvironment: BillingEnvironment | null
   error: string | null
   sdkConfigureCount: number
 }
@@ -78,15 +88,30 @@ export class RevenueCatIdentityNotReadyError extends Error {
   }
 }
 
+/** Fail-closed result for an operation invalidated by an identity change. */
+export interface IdentityChangedError {
+  kind: 'identity_changed'
+  message: string
+}
+
+interface BindResult {
+  ok: boolean
+  environment: BillingEnvironment | null
+  reason?: string
+}
+
 export class RevenueCatManager {
   private state: RevenueCatManagerState = 'idle'
   private expectedUserId: string | null = null
   private sdkConfirmedUserId: string | null = null
   private serverBound = false
+  private billingAccessEnvironment: BillingEnvironment | null = null
   private error: string | null = null
   private initialized = false
   private sdkConfigureCount = 0
   private queue: Promise<void> = Promise.resolve()
+  /** Incremented on every identity transition (login/logout/switch). */
+  private epoch = 0
 
   snapshot(): RevenueCatManagerSnapshot {
     return {
@@ -95,6 +120,7 @@ export class RevenueCatManager {
       sdkConfirmedUserId: this.sdkConfirmedUserId,
       sdkIdentityConfirmed: this.sdkConfirmedUserId !== null,
       serverIdentityBound: this.serverBound,
+      billingAccessEnvironment: this.billingAccessEnvironment,
       error: this.error,
       sdkConfigureCount: this.sdkConfigureCount,
     }
@@ -112,8 +138,7 @@ export class RevenueCatManager {
 
   /**
    * Configures the SDK exactly once. This is the ONLY Purchases.configure call
-   * in the codebase. Never reached through getProducts/getCustomerInfo/...
-   * before an identity is set (setIdentity runs it first).
+   * in the codebase.
    */
   private async ensureInitialized(): Promise<void> {
     if (this.initialized) return
@@ -128,27 +153,35 @@ export class RevenueCatManager {
   }
 
   /**
-   * Binds the canonical identity server-side (BillingIdentity). Must succeed
-   * before the bridge can ever become ready. Returns true on success.
+   * Binds the canonical identity server-side. Returns the SERVER-PROVIDED
+   * billing access environment. A binding without a valid environment is a
+   * FAIL-CLOSED failure (the manager never reaches ready).
    */
-  private async bindServerIdentity(userId: string): Promise<boolean> {
+  private async bindServerIdentity(userId: string): Promise<BindResult> {
     try {
       const res = await fetch('/api/billing/identity', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider: 'revenuecat', externalUserId: userId, userId }),
       })
-      if (!res.ok) return false
-      const body = (await res.json()) as { ok?: boolean }
-      return body.ok === true
+      if (!res.ok) return { ok: false, environment: null, reason: 'binding_http_error' }
+      const body = (await res.json()) as { ok?: boolean; billingAccessEnvironment?: unknown }
+      if (body.ok !== true) return { ok: false, environment: null, reason: 'binding_not_ok' }
+      const env = body.billingAccessEnvironment
+      if (env !== 'sandbox' && env !== 'production') {
+        // A binding without a valid server environment must stay fail-closed.
+        return { ok: false, environment: null, reason: 'missing_billing_access_environment' }
+      }
+      return { ok: true, environment: env }
     } catch {
-      return false
+      return { ok: false, environment: null, reason: 'binding_network_error' }
     }
   }
 
   /**
    * Establishes the identity after authentication. Ready is reached ONLY when
-   * the SDK identity is confirmed AND the server identity is bound.
+   * the SDK identity is confirmed AND the server identity is bound AND a valid
+   * server-provided billing access environment is stored.
    */
   async setIdentity(userId: string): Promise<RevenueCatManagerSnapshot> {
     if (!isNative() || !userId) {
@@ -161,14 +194,17 @@ export class RevenueCatManager {
         this.expectedUserId === userId &&
         this.sdkConfirmedUserId === userId &&
         this.serverBound &&
+        this.billingAccessEnvironment !== null &&
         this.state === 'ready'
       ) {
         return this.snapshot()
       }
+      this.epoch += 1
       this.state = 'transitioning'
       this.error = null
       this.expectedUserId = userId
       this.serverBound = false
+      this.billingAccessEnvironment = null
       try {
         await this.ensureInitialized()
         await Purchases.logIn({ appUserID: userId })
@@ -176,14 +212,16 @@ export class RevenueCatManager {
         // Server binding happens immediately after the SDK identity is
         // confirmed — it must NOT wait for any entitlement to exist.
         const bound = await this.bindServerIdentity(userId)
-        if (!bound) {
-          this.error = 'server identity binding failed'
+        if (!bound.ok || !bound.environment) {
+          this.error = bound.reason || 'server identity binding failed'
           this.state = 'error'
           this.sdkConfirmedUserId = null
           this.serverBound = false
+          this.billingAccessEnvironment = null
           return this.snapshot()
         }
         this.serverBound = true
+        this.billingAccessEnvironment = bound.environment
         this.state = 'ready'
       } catch (err) {
         this.error = err instanceof Error ? err.message : String(err)
@@ -191,6 +229,7 @@ export class RevenueCatManager {
         // Fail-closed: never reuse a previous user's identity.
         if (this.sdkConfirmedUserId !== userId) this.sdkConfirmedUserId = null
         this.serverBound = false
+        this.billingAccessEnvironment = null
       }
       return this.snapshot()
     })
@@ -198,17 +237,21 @@ export class RevenueCatManager {
 
   /**
    * Clears the identity on sign-out. Always runs BEFORE the NextAuth signOut.
-   * Fail-closed: on error the previous identity is still cleared.
+   * Fail-closed: on error the previous identity is still cleared. Increments
+   * the epoch so any in-flight billing operation is invalidated.
    */
   async clearIdentity(): Promise<RevenueCatManagerSnapshot> {
     if (!isNative()) {
+      this.epoch += 1
       this.expectedUserId = null
       this.sdkConfirmedUserId = null
       this.serverBound = false
+      this.billingAccessEnvironment = null
       this.state = 'idle'
       return this.snapshot()
     }
     return this.enqueue(async () => {
+      this.epoch += 1
       this.state = 'transitioning'
       this.expectedUserId = null
       try {
@@ -217,12 +260,14 @@ export class RevenueCatManager {
         }
         this.sdkConfirmedUserId = null
         this.serverBound = false
+        this.billingAccessEnvironment = null
         this.state = 'idle'
       } catch (err) {
         this.error = err instanceof Error ? err.message : String(err)
         this.state = 'error'
         this.sdkConfirmedUserId = null
         this.serverBound = false
+        this.billingAccessEnvironment = null
         this.expectedUserId = null
       }
       return this.snapshot()
@@ -231,12 +276,13 @@ export class RevenueCatManager {
 
   /**
    * Blocks until the transition queue is drained, then requires a fully ready
-   * identity (SDK confirmed + server bound). Throws fail-closed otherwise.
+   * identity (SDK confirmed + server bound + server environment). Throws
+   * fail-closed otherwise.
    */
   async requireReady(): Promise<string> {
     await this.queue
     if (!isNative()) return 'web'
-    if (this.state !== 'ready' || !this.sdkConfirmedUserId || !this.serverBound) {
+    if (this.state !== 'ready' || !this.sdkConfirmedUserId || !this.serverBound || !this.billingAccessEnvironment) {
       throw new RevenueCatIdentityNotReadyError()
     }
     return this.sdkConfirmedUserId
@@ -247,7 +293,8 @@ export class RevenueCatManager {
       this.state === 'ready' &&
       this.expectedUserId === userId &&
       this.sdkConfirmedUserId === userId &&
-      this.serverBound
+      this.serverBound &&
+      this.billingAccessEnvironment !== null
     )
   }
 
@@ -255,21 +302,44 @@ export class RevenueCatManager {
     return this.sdkConfirmedUserId === null && this.expectedUserId === null
   }
 
-  // ── Billing operations (all blocked until ready) ─────────────────────────
+  /**
+   * Captures the identity lease (epoch + user + environment) at the start of a
+   * billing operation. Returns null when not fully ready.
+   */
+  private captureLease(): { epoch: number; userId: string; environment: BillingEnvironment } | null {
+    if (this.state !== 'ready' || !this.sdkConfirmedUserId || !this.billingAccessEnvironment) return null
+    return {
+      epoch: this.epoch,
+      userId: this.sdkConfirmedUserId,
+      environment: this.billingAccessEnvironment,
+    }
+  }
+
+  /**
+   * Verifies the identity lease is still current. Returns null when unchanged,
+   * or a fail-closed error description when the identity changed during the
+   * operation.
+   */
+  private verifyLease(lease: { epoch: number; userId: string; environment: BillingEnvironment }): IdentityChangedError | null {
+    if (this.epoch !== lease.epoch) return { kind: 'identity_changed', message: 'identity changed during operation' }
+    if (this.sdkConfirmedUserId !== lease.userId) return { kind: 'identity_changed', message: 'identity changed during operation' }
+    if (this.billingAccessEnvironment !== lease.environment) return { kind: 'identity_changed', message: 'environment changed during operation' }
+    return null
+  }
+
+  // ── Billing operations (all blocked until ready, epoch-protected) ─────────
 
   /**
    * Wave A2 (Round 2) — canonical offering + strict dedup.
-   * Uses the CURRENT RevenueCat offering when present (canonical), otherwise
-   * iterates all offerings. Every package is validated against the canonical
-   * product IDs in plans.ts and deduplicated strictly by product identifier;
-   * the result is sorted deterministically. No duplicates, no blind
-   * aggregation.
    */
   async getProducts(): Promise<Product[]> {
     if (!isNative()) return []
     await this.requireReady()
+    const lease = this.captureLease()
+    if (!lease) return []
     try {
       const result = await Purchases.getOfferings()
+      if (this.verifyLease(lease)) return []
       return collectCanonicalProducts(result)
     } catch {
       return []
@@ -279,8 +349,11 @@ export class RevenueCatManager {
   async getEntitlements(): Promise<Entitlement[]> {
     if (!isNative()) return []
     await this.requireReady()
+    const lease = this.captureLease()
+    if (!lease) return []
     try {
       const info = await Purchases.getCustomerInfo()
+      if (this.verifyLease(lease)) return []
       return mapCustomerInfoToEntitlements(info)
     } catch {
       return []
@@ -290,6 +363,10 @@ export class RevenueCatManager {
   async purchase(productId: string): Promise<PurchaseResult> {
     if (!isNative()) return { success: false, error: 'Not on native' }
     await this.requireReady()
+    const lease = this.captureLease()
+    if (!lease) {
+      return { success: false, error: 'RevenueCat identity is not confirmed (SDK + server) for the current user' }
+    }
     try {
       // Wave A2 (Round 3): resolve the expected plan from the canonical product id.
       const mapped = getPlanFromRCProductId(productId)
@@ -301,7 +378,15 @@ export class RevenueCatManager {
       const result = await Purchases.getOfferings()
       const targetPackage = findPackageById(result, productId)
       if (!targetPackage) return { success: false, error: 'Product not found' }
+      // Verify after the offering read (identity may have changed).
+      if (this.verifyLease(lease)) {
+        return { success: false, error: 'Identity changed during purchase', userCancelled: false }
+      }
       const purchaseResult = await Purchases.purchasePackage({ aPackage: targetPackage })
+      if (this.verifyLease(lease)) {
+        // A result started under A must never be accepted under B.
+        return { success: false, error: 'Identity changed during purchase', userCancelled: false }
+      }
       const entitlements = mapCustomerInfoToEntitlements(purchaseResult?.customerInfo)
       const success = hasActiveEntitlement(entitlements)
       const display = pickDisplayEntitlement(entitlements)
@@ -309,19 +394,18 @@ export class RevenueCatManager {
         return { success: false, error: 'No active entitlement after purchase' }
       }
 
-      // Wave A2 (Round 3): convergence requires the EXPECTED RevenueCat source
-      // (plan + provider + environment + userId). A pre-existing Stripe
-      // subscription of the same plan NEVER confirms a RevenueCat purchase.
-      const userId = this.sdkConfirmedUserId
-      const environment = this.billingAccessEnvironment()
-      const { converged } = userId
-        ? await awaitRevenueCatSourceConvergence({
-            userId,
-            provider: 'revenuecat',
-            environment,
-            expectedPlans: [expectedPlan],
-          })
-        : { converged: false }
+      // Wave A2 (Round 3/4): convergence requires the EXPECTED RevenueCat source
+      // (userId + plan + provider + server-provided environment).
+      const { converged } = await awaitRevenueCatSourceConvergence({
+        userId: lease.userId,
+        provider: 'revenuecat',
+        environment: lease.environment,
+        expectedPlans: [expectedPlan],
+      })
+      // Verify once more before accepting convergence.
+      if (this.verifyLease(lease)) {
+        return { success: false, error: 'Identity changed during purchase', userCancelled: false }
+      }
       return { success, entitlement: display ?? undefined, serverConverged: converged }
     } catch (err: any) {
       if (err?.userCancelled) return { success: false, userCancelled: true }
@@ -330,43 +414,36 @@ export class RevenueCatManager {
   }
 
   /**
-   * Wave A2 (Round 3) — restore follows the same contract as purchase, with an
-   * ALL-REQUIRED expected-plans rule: convergence is true ONLY when EVERY
-   * restored active RevenueCat entitlement is present as a valid RevenueCat
-   * source (provider='revenuecat', matching environment, matching userId) in
-   * GET /api/subscription.
-   *
-   *  1. identity SDK confirmed (requireReady);
-   *  2. server binding confirmed (ready implies it);
-   *  3. Purchases.restorePurchases() + refreshed CustomerInfo;
-   *  4. build expectedPlans from the restored active entitlements;
-   *  5. bounded read of GET /api/subscription requiring ALL expected plans as
-   *     RevenueCat sources;
-   *  6. explicit serverConverged / state converged|pending|none — never a
-   *     definitive active from local CustomerInfo alone, never a Stripe source
-   *     as confirmation.
+   * Wave A2 (Round 3/4) — restore follows the same contract as purchase, with
+   * an ALL-REQUIRED expected-plans rule and the same epoch protection.
    */
   async restorePurchases(): Promise<RestoreResult> {
     if (!isNative()) return { entitlements: [], restored: false, serverConverged: false, state: 'none' }
     await this.requireReady()
+    const lease = this.captureLease()
+    if (!lease) {
+      return { entitlements: [], restored: false, serverConverged: false, state: 'none' }
+    }
     try {
       const info = await Purchases.restorePurchases()
+      if (this.verifyLease(lease)) {
+        return { entitlements: [], restored: false, serverConverged: false, state: 'none' }
+      }
       const entitlements = mapCustomerInfoToEntitlements(info)
       const restored = hasActiveEntitlement(entitlements)
       if (!restored) {
         return { entitlements, restored: false, serverConverged: false, state: 'none' }
       }
       const expectedPlans = plansFromEntitlements(entitlements)
-      const userId = this.sdkConfirmedUserId
-      const environment = this.billingAccessEnvironment()
-      const { converged } = userId
-        ? await awaitRevenueCatSourceConvergence({
-            userId,
-            provider: 'revenuecat',
-            environment,
-            expectedPlans,
-          })
-        : { converged: false }
+      const { converged } = await awaitRevenueCatSourceConvergence({
+        userId: lease.userId,
+        provider: 'revenuecat',
+        environment: lease.environment,
+        expectedPlans,
+      })
+      if (this.verifyLease(lease)) {
+        return { entitlements: [], restored: false, serverConverged: false, state: 'none' }
+      }
       return {
         entitlements,
         restored: true,
@@ -376,11 +453,6 @@ export class RevenueCatManager {
     } catch {
       return { entitlements: [], restored: false, serverConverged: false, state: 'none' }
     }
-  }
-
-  /** Server-determined billing access environment (client can never choose). */
-  private billingAccessEnvironment(): 'sandbox' | 'production' {
-    return getBillingAccessEnvironment()
   }
 
   async getActivePlan(): Promise<PlanId> {

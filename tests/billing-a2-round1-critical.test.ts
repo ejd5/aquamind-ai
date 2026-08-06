@@ -80,12 +80,12 @@ beforeAll(() => {
   fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
     if (url.includes('/api/billing/identity')) {
-      return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
     }
     if (url.includes('/api/subscription')) {
       return new Response(JSON.stringify({ subscription: { userId: 'x', active: true } }), { status: 200 })
     }
-    return new Response(JSON.stringify({ ok: true }), { status: 200 })
+    return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
   })
   vi.stubGlobal('fetch', fetchMock)
 })
@@ -200,7 +200,7 @@ describe('R1 — single SDK lifecycle', () => {
       if (String(input).includes('/api/billing/identity')) {
         return new Response(JSON.stringify({ error: 'boom' }), { status: 500 })
       }
-      return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
     })
     const manager = createIdentityBridge()
     const snap = await manager.setIdentity('user-fail-bind')

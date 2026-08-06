@@ -16,10 +16,20 @@
 
 import { db } from '@/lib/db'
 
-export type BillingProvider = 'stripe' | 'revenuecat'
-export type BillingEnvironment = 'sandbox' | 'production'
+// Wave A2 (Round 4): types + pure helpers are CLIENT-SAFE and live in
+// billing-types.ts (no db / Prisma / server import). This server module
+// imports them for local use and re-exports so existing server callers keep
+// working unchanged.
+import {
+  isRevenueCatAnonymous,
+  parseRevenueCatEnvironment,
+  RC_ANONYMOUS_PREFIX,
+  type BillingEnvironment,
+  type BillingProvider,
+} from './billing-types'
 
-export const RC_ANONYMOUS_PREFIX = '$RCAnonymousID'
+export { isRevenueCatAnonymous, parseRevenueCatEnvironment, RC_ANONYMOUS_PREFIX }
+export type { BillingEnvironment, BillingProvider }
 
 export interface BillingIdentityRow {
   id: string
@@ -28,24 +38,6 @@ export interface BillingIdentityRow {
   externalUserId: string
   createdAt: Date
   updatedAt: Date
-}
-
-/** True when the RevenueCat id is the anonymous placeholder. */
-export function isRevenueCatAnonymous(value: string | null | undefined): boolean {
-  return typeof value === 'string' && value.startsWith(RC_ANONYMOUS_PREFIX)
-}
-
-/**
- * Strict RevenueCat environment parsing. Returns null for an absent or invalid
- * value — NEVER defaults to 'production'. An invalid environment is rejected by
- * the webhook instead of being treated as production.
- */
-export function parseRevenueCatEnvironment(env: string | null | undefined): BillingEnvironment | null {
-  if (typeof env !== 'string') return null
-  const lower = env.toLowerCase().trim()
-  if (lower === 'sandbox') return 'sandbox'
-  if (lower === 'production') return 'production'
-  return null
 }
 
 export type DeploymentEnvironment = 'production' | 'staging' | 'development'

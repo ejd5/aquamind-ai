@@ -317,14 +317,14 @@ describe('R2 — restore / purchase server convergence (bounded)', () => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
       if (url.includes('/api/billing/identity')) {
-        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+        return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
       }
       if (url.includes('/api/subscription')) {
         calls += 1
         // First call no RC source, subsequent calls have the RC source.
         return subscriptionResponse(calls > 1, 'user-x', calls > 1 ? [{ plan: 'oasis', provider: 'revenuecat', environment: 'production', store: 'ios' }] : [])
       }
-      return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
     }))
     const manager = createIdentityBridge()
     await manager.setIdentity('user-x')
@@ -341,9 +341,9 @@ describe('R2 — restore / purchase server convergence (bounded)', () => {
   it('restore without server convergence → explicit pending (not active)', async () => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input)
-      if (url.includes('/api/billing/identity')) return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      if (url.includes('/api/billing/identity')) return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
       if (url.includes('/api/subscription')) return subscriptionResponse(false)
-      return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
     }))
     const manager = createIdentityBridge()
     await manager.setIdentity('user-x')
@@ -359,9 +359,9 @@ describe('R2 — restore / purchase server convergence (bounded)', () => {
   it('restore with nothing to restore → state none', async () => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input)
-      if (url.includes('/api/billing/identity')) return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      if (url.includes('/api/billing/identity')) return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
       if (url.includes('/api/subscription')) return subscriptionResponse(false)
-      return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
     }))
     const manager = createIdentityBridge()
     await manager.setIdentity('user-x')
@@ -375,12 +375,12 @@ describe('R2 — restore / purchase server convergence (bounded)', () => {
     let calls = 0
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input)
-      if (url.includes('/api/billing/identity')) return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      if (url.includes('/api/billing/identity')) return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
       if (url.includes('/api/subscription')) {
         calls += 1
         return subscriptionResponse(calls > 1, 'user-x', calls > 1 ? [{ plan: 'oasis', provider: 'revenuecat', environment: 'production', store: 'ios' }] : [])
       }
-      return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
     }))
     const manager = createIdentityBridge()
     await manager.setIdentity('user-x')
@@ -423,8 +423,8 @@ describe('R2 — canonical offering dedup', () => {
   it('dedups strictly by product identifier across multiple offerings', async () => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input)
-      if (url.includes('/api/billing/identity')) return new Response(JSON.stringify({ ok: true }), { status: 200 })
-      return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      if (url.includes('/api/billing/identity')) return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
+      return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
     }))
     const manager = createIdentityBridge()
     await manager.setIdentity('user-x')
@@ -452,8 +452,8 @@ describe('R2 — canonical offering dedup', () => {
   it('prefers the current/canonical offering when present', async () => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input)
-      if (url.includes('/api/billing/identity')) return new Response(JSON.stringify({ ok: true }), { status: 200 })
-      return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      if (url.includes('/api/billing/identity')) return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
+      return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
     }))
     const manager = createIdentityBridge()
     await manager.setIdentity('user-x')

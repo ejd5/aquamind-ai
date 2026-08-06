@@ -66,9 +66,17 @@ function payload(
   sources: { plan: PlanId; provider?: string; environment?: string; store?: string | null }[],
   overrides: Partial<SubscriptionConvergencePayload> = {},
 ): SubscriptionConvergencePayload {
+  const first = sources[0]
   return {
-    subscription: null,
-    plan: { id: 'decouverte' },
+    subscription: {
+      userId: 'user-x',
+      active: sources.length > 0,
+      plan: first?.plan ?? null,
+      provider: first?.provider ?? null,
+      environment: first?.environment ?? 'production',
+      store: first?.store ?? null,
+    },
+    plan: { id: first?.plan ?? 'decouverte' },
     access: { hasValidAccess: sources.length > 0, grantedPlans: sources.map((s) => s.plan) },
     sources: sources.map((s, i) => ({
       id: `src_${i}`,
@@ -112,17 +120,19 @@ describe('R3 — expected-source convergence contract (pure)', () => {
     expect(subscriptionConvergesForExpectedSource(body, { ...base, expectedPlans: ['spa365'] })).toBe(false)
   })
 
-  it('wrong userId is handled by the caller (subscription.userId mismatch)', async () => {
-    // The pure matcher is userId-agnostic; the guard checks subscription.userId
-    // separately via the full payload. Simulate the route exposing the wrong user.
+  it('wrong userId → false even with correct plan/provider/environment', () => {
+    // Wave A2 (Round 4): the matcher is NOT userId-agnostic. Correct RC source,
+    // correct provider + environment, but subscription.userId is the WRONG user
+    // → convergence false.
     const body = payload([{ plan: 'spa365', provider: 'revenuecat', environment: 'production' }], {
       subscription: { userId: 'other-user', active: true, plan: 'spa365', provider: 'revenuecat', environment: 'production', store: 'ios' },
     })
-    // The matcher does not look at subscription.userId, but the bounded poll in
-    // the manager relies on the SDK-confirmed user. Here we verify the matcher
-    // still requires the SOURCE; a response that lacks sources cannot converge.
-    expect(subscriptionConvergesForExpectedSource(null, { ...base, expectedPlans: ['spa365'] })).toBe(false)
-    expect(subscriptionConvergesForExpectedSource(body, { ...base, expectedPlans: ['spa365'] })).toBe(true)
+    expect(subscriptionConvergesForExpectedSource(body, { ...base, expectedPlans: ['spa365'] })).toBe(false)
+    // Absent subscription → false.
+    expect(subscriptionConvergesForExpectedSource({ ...body, subscription: null }, { ...base, expectedPlans: ['spa365'] })).toBe(false)
+    // Correct userId → true.
+    const correct = payload([{ plan: 'spa365', provider: 'revenuecat', environment: 'production' }])
+    expect(subscriptionConvergesForExpectedSource(correct, { ...base, expectedPlans: ['spa365'] })).toBe(true)
   })
 
   it('upgrade Oasis → Wellness: Wellness must be really present (old Oasis not enough)', () => {
@@ -158,13 +168,13 @@ describe('R3 — bounded expected-source polling (no false positive)', () => {
     let n = 0
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input)
-      if (onIdentity && url.includes('/api/billing/identity')) return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      if (onIdentity && url.includes('/api/billing/identity')) return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
       if (url.includes('/api/subscription')) {
         n += 1
         const b = typeof body === 'function' ? body(n) : body
         return new Response(JSON.stringify(b), { status: 200 })
       }
-      return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
     }))
     return () => n
   }
@@ -272,7 +282,7 @@ describe('R3 — full manager purchase/restore convergence (SDK mocked)', () => 
     let n = 0
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input)
-      if (url.includes('/api/billing/identity')) return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      if (url.includes('/api/billing/identity')) return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
       if (url.includes('/api/subscription')) {
         const list = responses[Math.min(n, responses.length - 1)]
         n += 1
@@ -283,7 +293,7 @@ describe('R3 — full manager purchase/restore convergence (SDK mocked)', () => 
           sources: list.map((s, i) => ({ id: `src_${i}`, plan: s.plan, provider: s.provider, environment: s.environment ?? 'production', store: s.provider === 'stripe' ? 'web' : 'ios', status: 'active', expiresAt: null })),
         }), { status: 200 })
       }
-      return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      return new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 })
     }))
     return () => n
   }

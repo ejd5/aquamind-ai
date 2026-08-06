@@ -85,7 +85,9 @@ vi.mock('@revenuecat/purchases-capacitor', () => ({
 // Mock the subscription fetch so we never hit a real server.
 let subscriptionFetchMock: ReturnType<typeof vi.fn>
 beforeAll(() => {
-  subscriptionFetchMock = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }))
+  subscriptionFetchMock = vi.fn(
+    async () => new Response(JSON.stringify({ ok: true, billingAccessEnvironment: 'production' }), { status: 200 }),
+  )
   vi.stubGlobal('fetch', subscriptionFetchMock)
 })
 afterAll(() => {

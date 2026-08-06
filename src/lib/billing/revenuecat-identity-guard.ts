@@ -96,14 +96,22 @@ export async function fetchSubscriptionConvergence(): Promise<SubscriptionConver
 }
 
 /**
- * True ONLY when `sources` contains a valid source matching every expected
- * criterion. A pre-existing Stripe subscription of the same plan NEVER counts.
+ * True ONLY when the response belongs to the expected user AND `sources`
+ * contains a valid source matching every expected criterion. A pre-existing
+ * Stripe subscription of the same plan NEVER counts.
+ *
+ * Wave A2 (Round 4): the expected `userId` is MANDATORY — the matcher is NOT
+ * userId-agnostic. If `subscription` is absent or its `userId` differs from
+ * `expected.userId`, convergence is false.
  */
 export function subscriptionConvergesForExpectedSource(
   body: SubscriptionConvergencePayload | null,
   expected: ExpectedRevenueCatSource,
 ): boolean {
-  if (!body || !Array.isArray(body.sources) || body.sources.length === 0) return false
+  if (!body) return false
+  // The response must belong to the expected user.
+  if (!body.subscription || body.subscription.userId !== expected.userId) return false
+  if (!Array.isArray(body.sources) || body.sources.length === 0) return false
   const matching = body.sources.filter((s) => {
     if (s.provider !== expected.provider) return false
     if (s.environment !== expected.environment) return false

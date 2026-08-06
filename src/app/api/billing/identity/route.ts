@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { upsertBillingIdentity, parseRevenueCatEnvironment } from '@/lib/billing/identity'
+import { upsertBillingIdentity, getBillingAccessEnvironment } from '@/lib/billing/identity'
 
 export const runtime = 'nodejs'
 
@@ -13,10 +13,14 @@ export const runtime = 'nodejs'
  *
  * The identity is canonical per provider (RevenueCat reuses the same App User
  * ID for sandbox and production), so the client CANNOT choose the billing
- * environment here: it is never persisted and never trusted. If the client
- * sends an `environment` field it is strictly validated ('sandbox' | '
- * production') or the request is rejected — an invalid value is never defaulted
- * to production.
+ * environment here: it is never persisted and never trusted, and any
+ * client-sent `environment` field is ignored for scoping.
+ *
+ * Wave A2 (Round 4): after a successful binding, the server returns the
+ * AUTHORITATIVE billing access environment computed exclusively by
+ * getBillingAccessEnvironment() (server-side). The client stores this value
+ * and uses it for purchase / restore / convergence — it never computes or
+ * sends it.
  */
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -38,14 +42,6 @@ export async function POST(req: NextRequest) {
   if (!provider || !externalUserId) {
     return NextResponse.json({ error: 'provider and externalUserId are required' }, { status: 400 })
   }
-  // A client-provided environment is informational only and must be strictly
-  // valid; it is never stored and never used to scope the identity.
-  if (body.environment !== undefined) {
-    const env = parseRevenueCatEnvironment(body.environment as string)
-    if (!env) {
-      return NextResponse.json({ error: 'Invalid environment value' }, { status: 400 })
-    }
-  }
   // The client may only bind its own identity.
   if (body.userId != null && body.userId !== userId) {
     return NextResponse.json({ error: 'Cannot bind identity to another user' }, { status: 403 })
@@ -55,5 +51,13 @@ export async function POST(req: NextRequest) {
   if (!result.ok) {
     return NextResponse.json({ ok: false, code: result.code, reason: result.reason }, { status: 409 })
   }
-  return NextResponse.json({ ok: true, identity: result.row })
+
+  // Wave A2 (Round 4): the server is the ONLY source of the billing access
+  // environment. Never trust a client-supplied value.
+  const billingAccessEnvironment = getBillingAccessEnvironment()
+  return NextResponse.json({
+    ok: true,
+    identity: result.row,
+    billingAccessEnvironment,
+  })
 }
