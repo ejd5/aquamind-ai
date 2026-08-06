@@ -1268,7 +1268,10 @@
     "restorePending": "Restauração em verificação",
     "restorePendingDesc": "Sincronizando com o servidor. Tente novamente em instantes.",
     "manageMultiTitle": "Várias assinaturas ativas",
-    "manageMultiDesc": "Selecione o provedor a gerenciar no portal correspondente."
+    "manageMultiDesc": "Selecione o provedor a gerenciar no portal correspondente.",
+    "manageStripe": "Gerenciar minha assinatura Stripe",
+    "manageApple": "Gerenciar minha assinatura Apple",
+    "manageGoogle": "Gerenciar minha assinatura Google"
   },
   "auth": {
     "backHome": "Voltar ao início",

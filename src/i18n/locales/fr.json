@@ -1387,7 +1387,10 @@
     "restorePending": "Restauration en cours de vérification",
     "restorePendingDesc": "Synchronisation avec le serveur en cours. Réessayez dans quelques instants.",
     "manageMultiTitle": "Plusieurs abonnements actifs",
-    "manageMultiDesc": "Sélectionnez le fournisseur à gérer dans le portail correspondant."
+    "manageMultiDesc": "Sélectionnez le fournisseur à gérer dans le portail correspondant.",
+    "manageStripe": "Gérer mon abonnement Stripe",
+    "manageApple": "Gérer mon abonnement Apple",
+    "manageGoogle": "Gérer mon abonnement Google"
   },
   "auth": {
     "backHome": "Retour à l'accueil",

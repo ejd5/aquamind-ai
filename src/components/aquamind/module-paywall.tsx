@@ -35,6 +35,7 @@ import {
   type PlanId,
 } from '@/lib/billing/plans'
 import { billing } from '@/lib/billing'
+import type { SubscriptionApiResponse } from '@/lib/billing/types'
 import { isNative } from '@/lib/platform'
 import { offlineApi } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
@@ -74,18 +75,20 @@ export function ModulePaywall() {
   const queueAction = useOfflineStore((s) => s.queueAction)
   const isOnline = useOfflineStore((s) => s.isOnline)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<SubscriptionApiResponse | null> => {
     setLoading(true)
     try {
       const { data } = await offlineApi.subscription()
-      setPlans((data as any)?.allPlans || [])
+      const projection = data as SubscriptionApiResponse
+      setPlans(projection?.allPlans || [])
       // Wave A2 (Round 5): the SERVER projection is the only source of truth for
       // the displayed plan, feature gates, sources and capability union. The
       // local CustomerInfo is never treated as an authority.
-      setCurrentPlanId((data as any)?.plan?.id || 'decouverte')
-      setSubscription((data as any)?.subscription || null)
+      setCurrentPlanId(projection?.plan?.id || 'decouverte')
+      setSubscription(projection?.subscription || null)
+      return projection ?? null
     } catch {
-      // noop
+      return null
     } finally {
       setLoading(false)
     }
@@ -140,9 +143,15 @@ export function ModulePaywall() {
 
         if (result.serverConverged === true && result.state === 'converged') {
           // Case C: server converged → reload the canonical projection and only
-          // then show the activation using the SERVER-provided plan/rights.
-          await load()
-          toast({ title: t('subscriptionActivated'), description: t('subscriptionActivatedDesc', { plan: result.purchasedPlan ?? planId }) })
+          // then show the activation using the SERVER-provided plan (never the
+          // stale React state nor just result.purchasedPlan).
+          const projection = await load()
+          const serverPlan = projection?.plan?.id as PlanId | undefined
+          if (!serverPlan) {
+            toast({ title: t('purchasePending'), description: t('purchasePendingDesc') })
+            return
+          }
+          toast({ title: t('subscriptionActivated'), description: t('subscriptionActivatedDesc', { plan: serverPlan }) })
           return
         }
 
@@ -198,9 +207,15 @@ export function ModulePaywall() {
       }
 
       // state === 'converged' && serverConverged === true
-      await load()
-      // The plan in the toast comes from the server response, not local entitlements.
-      const serverPlan = (currentPlanId as PlanId) || 'oasis'
+      const projection = await load()
+      // The plan in the toast comes from the SERVER response reloaded here —
+      // never from a stale React state, never from result.entitlements.
+      const serverPlan = projection?.plan?.id as PlanId | undefined
+      if (!serverPlan) {
+        // Reload failed or no valid plan: no fake success with an arbitrary plan.
+        toast({ title: t('restorePending'), description: t('restorePendingDesc') })
+        return
+      }
       toast({ title: t('restored'), description: t('restoredDesc', { plan: serverPlan }) })
     } catch {
       toast({ title: t('error'), description: t('restoreError'), variant: 'destructive' })

@@ -1266,7 +1266,10 @@
     "restorePending": "Ripristino in verifica",
     "restorePendingDesc": "Sincronizzazione con il server in corso. Riprova tra poco.",
     "manageMultiTitle": "Più abbonamenti attivi",
-    "manageMultiDesc": "Seleziona il fornitore da gestire nel relativo portale."
+    "manageMultiDesc": "Seleziona il fornitore da gestire nel relativo portale.",
+    "manageStripe": "Gestisci il mio abbonamento Stripe",
+    "manageApple": "Gestisci il mio abbonamento Apple",
+    "manageGoogle": "Gestisci il mio abbonamento Google"
   },
   "auth": {
     "backHome": "Torna alla home",

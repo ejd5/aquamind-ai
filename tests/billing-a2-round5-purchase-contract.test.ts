@@ -216,7 +216,7 @@ describe('R5 — UI contract (no false activation, server projection authority)'
     const src = readFileSync(join(PROJECT_ROOT, 'src/components/aquamind/module-paywall.tsx'), 'utf8')
     // The native getActivePlan() override was removed.
     expect(src).not.toMatch(/billing\.getActivePlan\(\)/)
-    expect(src).toContain("setCurrentPlanId((data as any)?.plan?.id || 'decouverte')")
+    expect(src).toContain("setCurrentPlanId(projection?.plan?.id || 'decouverte')")
   })
 
   it('PurchaseResult contract is documented with explicit state + invariants', () => {

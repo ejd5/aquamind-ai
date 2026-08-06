@@ -1385,7 +1385,10 @@
     "restorePending": "Restore pending verification",
     "restorePendingDesc": "Synchronizing with the server. Please retry in a moment.",
     "manageMultiTitle": "Multiple active subscriptions",
-    "manageMultiDesc": "Select the provider to manage in its portal."
+    "manageMultiDesc": "Select the provider to manage in its portal.",
+    "manageStripe": "Manage my Stripe subscription",
+    "manageApple": "Manage my Apple subscription",
+    "manageGoogle": "Manage my Google subscription"
   },
   "auth": {
     "backHome": "Back to home",

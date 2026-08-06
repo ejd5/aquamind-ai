@@ -113,11 +113,8 @@ export const stripeWebClient: BillingClient = {
   },
 
   async manageSubscriptionForTarget(target: 'stripe' | 'apple' | 'google'): Promise<void> {
-    if (target === 'stripe') {
-      await this.manageSubscription()
-      return
-    }
-    // Apple / Google management is not available on web — open the account page.
-    window.open('https://aqwelia.app/account', '_blank')
+    const { manageSubscriptionTarget } = await import('./manage-subscription-router')
+    const { isNative } = await import('@/lib/platform')
+    await manageSubscriptionTarget(target, { isNative })
   },
 }

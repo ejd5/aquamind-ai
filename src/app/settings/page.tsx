@@ -51,6 +51,9 @@ import {
 } from '@/lib/preferences/store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
 import {
   Select,
@@ -202,10 +205,12 @@ export default function SettingsPage() {
     return () => { cancelled = true }
   }, [status])
 
+  const [manageTargets, setManageTargets] = useState<('stripe' | 'apple' | 'google')[] | null>(null)
+
   async function handleManage() {
     setManaging(true)
     try {
-      // Wave A2 (Round 6): subscription existence is decided from
+      // Wave A2 (Round 6/7): subscription existence is decided from
       // /api/subscription.sources (server), never from local RevenueCat
       // entitlements. Management targets are resolved deterministically.
       const res = await fetch('/api/subscription', { credentials: 'include' })
@@ -220,15 +225,15 @@ export default function SettingsPage() {
         })
         return
       }
-      if (targets.length > 1) {
-        // Multiple administrable sources → present a clear choice; never pick
-        // one provider arbitrarily.
-        const first = targets[0]
-        toast({ title: t('manageMultiTitle'), description: t('manageMultiDesc') })
-        await billing.manageSubscriptionForTarget(first)
+      if (targets.length === 1) {
+        // Case B: single administrable target → open it directly.
+        await billing.manageSubscriptionForTarget(targets[0])
         return
       }
-      await billing.manageSubscriptionForTarget(targets[0])
+      // Case C: several administrable targets → NEVER auto-open. Present a
+      // user-facing chooser; manageSubscriptionForTarget is called only after
+      // an explicit click.
+      setManageTargets(targets)
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('unknownError')
       if (msg.includes('not configured') || msg.includes('STRIPE')) {
@@ -243,6 +248,22 @@ export default function SettingsPage() {
           variant: 'destructive',
         })
       }
+    } finally {
+      setManaging(false)
+    }
+  }
+
+  async function openManageTarget(target: 'stripe' | 'apple' | 'google') {
+    setManageTargets(null)
+    setManaging(true)
+    try {
+      await billing.manageSubscriptionForTarget(target)
+    } catch (err) {
+      toast({
+        title: t('portalFailed'),
+        description: err instanceof Error ? err.message : t('unknownError'),
+        variant: 'destructive',
+      })
     } finally {
       setManaging(false)
     }
@@ -430,6 +451,38 @@ export default function SettingsPage() {
                 )}
               </Button>
             </SettingsCard>
+
+            {/* ── Multi-provider subscription management chooser ── */}
+            <Dialog open={manageTargets !== null} onOpenChange={(open) => { if (!open) setManageTargets(null) }}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{t('manageMultiTitle')}</DialogTitle>
+                  <DialogDescription>{t('manageMultiDesc')}</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-2">
+                  {manageTargets?.includes('stripe') && (
+                    <Button variant="outline" onClick={() => openManageTarget('stripe')}>
+                      {t('manageStripe')}
+                    </Button>
+                  )}
+                  {manageTargets?.includes('apple') && (
+                    <Button variant="outline" onClick={() => openManageTarget('apple')}>
+                      {t('manageApple')}
+                    </Button>
+                  )}
+                  {manageTargets?.includes('google') && (
+                    <Button variant="outline" onClick={() => openManageTarget('google')}>
+                      {t('manageGoogle')}
+                    </Button>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setManageTargets(null)}>
+                    {t('cancel')}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {/* ───────── 2. Restaurer mes achats ───────── */}
             <SettingsCard

@@ -1268,7 +1268,10 @@
     "restorePending": "Wiederherstellung wird geprüft",
     "restorePendingDesc": "Synchronisierung mit dem Server läuft. Bitte versuchen Sie es gleich noch einmal.",
     "manageMultiTitle": "Mehrere aktive Abonnements",
-    "manageMultiDesc": "Wählen Sie den Anbieter im entsprechenden Portal."
+    "manageMultiDesc": "Wählen Sie den Anbieter im entsprechenden Portal.",
+    "manageStripe": "Mein Stripe-Abonnement verwalten",
+    "manageApple": "Mein Apple-Abonnement verwalten",
+    "manageGoogle": "Mein Google-Abonnement verwalten"
   },
   "auth": {
     "backHome": "Zurück zur Startseite",
