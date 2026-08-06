@@ -106,7 +106,8 @@ import {
 import { handleRevenueCatEvent } from '@/lib/billing/providers/revenuecat-event'
 import { processEventIdempotently } from '@/lib/billing/idempotency'
 import { applyTransition } from '@/lib/billing/transition'
-import { loadUserEntitlements, pickBestValidRow, resolveUnionPlan } from '@/lib/billing/entitlement-projection'
+import { loadUserEntitlements, resolveUnionPlan } from '@/lib/billing/entitlement-projection'
+import { getPlan, combineLimits } from '@/lib/billing/plans'
 
 describe('Wave A2 — identity bridge (SDK mocked)', () => {
   beforeEach(() => {
@@ -217,11 +218,14 @@ describe('Wave A2 — purchase / restore require a confirmed identity', () => {
     subscriptionFetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify({ subscription: { userId: 'user-restore', active: true } }), { status: 200 }),
     )
-    const entitlements = await billing.restorePurchases()
+    const result = await billing.restorePurchases()
     expect(mockPurchases.restorePurchases).toHaveBeenCalledTimes(1)
-    expect(entitlements).toHaveLength(1)
-    expect(entitlements[0].plan).toBe('wellness')
-    expect(entitlements[0].isActive).toBe(true)
+    expect(result.restored).toBe(true)
+    expect(result.entitlements).toHaveLength(1)
+    expect(result.entitlements[0].plan).toBe('wellness')
+    expect(result.entitlements[0].isActive).toBe(true)
+    expect(result.serverConverged).toBe(true)
+    expect(result.state).toBe('converged')
     // The restore is only reachable because identity === the same user.
     expect(revenueCatIdentityBridge.isReady('user-restore')).toBe(true)
   })
@@ -590,33 +594,40 @@ describe('Wave A2 — provider coexistence (Stripe + RevenueCat)', () => {
   })
 })
 
-describe('Wave A2 — deterministic entitlement resolution', () => {
-  it('picks the highest valid tier, ignoring invalid rows', () => {
-    const rows = [
-      { plan: 'wellness', status: 'expired', expiresAt: null },
-      { plan: 'oasis', status: 'active', expiresAt: new Date(Date.now() + 1000) },
-      { plan: 'spa365', status: 'active', expiresAt: new Date(Date.now() + 5000) },
-    ]
-    const best = pickBestValidRow(rows)
-    expect(best?.plan).toBe('spa365')
-    expect(resolveUnionPlan(rows as never)).toBe('spa365')
+describe('Wave A2 — deterministic entitlement resolution (Round 2 union)', () => {
+  it('combines plans into a true capability union (no single ranking)', () => {
+    // wellness + oasis + spa365: NOT a ranking — all granted, limits combined.
+    const defs = ['wellness', 'oasis', 'spa365'].map((p) => getPlan(p)!).filter(Boolean)
+    const limits = combineLimits(defs)
+    expect(limits.spaSupport).toBe(true)
+    expect(limits.pdfReport).toBe(true)
+    expect(limits.proMode).toBe(true)
+    expect(limits.multiPool).toBe(true)
+    expect(limits.maxSpas).toBe(1)
+    expect(limits.maxPools).toBe(2)
+    expect(limits.weatherEnabled).toBe(true)
+    expect(limits.historyDays).toBe(9999)
   })
 
-  it('ties on the same tier are broken deterministically by later expiry', () => {
-    const rows = [
-      { plan: 'wellness', status: 'active', expiresAt: new Date('2026-12-01') },
-      { plan: 'wellness', status: 'active', expiresAt: new Date('2027-06-01') },
-    ]
-    expect(pickBestValidRow(rows)?.expiresAt?.getTime()).toBe(new Date('2027-06-01').getTime())
+  it('Oasis + Spa365 keeps BOTH pool and spa rights', () => {
+    const defs = ['oasis', 'spa365'].map((p) => getPlan(p)!).filter(Boolean)
+    const limits = combineLimits(defs)
+    // Oasis pool rights preserved:
+    expect(limits.pdfReport).toBe(true)
+    expect(limits.proMode).toBe(true)
+    expect(limits.weatherEnabled).toBe(true)
+    // Spa365 spa rights preserved:
+    expect(limits.spaSupport).toBe(true)
+    expect(limits.maxSpas).toBe(1)
   })
 
-  it('no valid rows → null best and decouverte union', () => {
-    const rows = [
-      { plan: 'wellness', status: 'expired', expiresAt: null },
-      { plan: 'oasis', status: 'inactive', expiresAt: null },
-    ]
-    expect(pickBestValidRow(rows)).toBeNull()
-    expect(resolveUnionPlan(rows as never)).toBe('decouverte')
+  it('no valid rows → no union (decouverte limits)', () => {
+    const defs: never[] = []
+    const limits = combineLimits(defs)
+    expect(limits.spaSupport).toBe(false)
+    expect(limits.pdfReport).toBe(false)
+    expect(limits.maxPools).toBe(1)
+    expect(resolveUnionPlan([] as never)).toBe('decouverte')
   })
 })
 

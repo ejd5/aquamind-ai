@@ -1004,7 +1004,9 @@
         "stock": "Gestão de stock",
         "reminders": "Lembretes inteligentes"
       }
-    }
+    },
+    "restorePending": "Restauração em verificação",
+    "restorePendingDesc": "Sincronizando com o servidor. Tente novamente em instantes."
   },
   "onboarding": {
     "welcome": "Bem-vindo à AQWELIA",
@@ -1260,7 +1262,9 @@
     "deleteFailedDesc": "Supressão falhou",
     "planDecouverte": "Descoberta",
     "planOasis": "Pool",
-    "planWellness": "Complete"
+    "planWellness": "Complete",
+    "restorePending": "Restauração em verificação",
+    "restorePendingDesc": "Sincronizando com o servidor. Tente novamente em instantes."
   },
   "auth": {
     "backHome": "Voltar ao início",

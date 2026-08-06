@@ -1,23 +1,28 @@
 /**
  * AQWELIA — Subscription API (P0-B: secure).
  *
- * GET  — returns the user's current plan + subscription state.
+ * GET  — returns the user's TRUE capability union (consistent with the feature
+ *        gates) plus a display projection.
  * POST — REMOVED. Subscriptions can only be activated via Stripe checkout
  *        or RevenueCat purchase. Direct POST activation was a CRITICAL
  *        vulnerability (P0-B fix).
  *
- * To change plan, the client must:
- *   1. POST /api/stripe/checkout → get a Stripe Checkout URL
- *   2. Complete payment on Stripe
- *   3. Stripe webhook activates the subscription
- *
- * On mobile, the client uses RevenueCat SDK directly.
+ * Wave A2 (Round 2):
+ *   - `access` exposes the capability union (grantedPlans, grantedFeatures,
+ *     effectiveLimits, hasValidAccess) — the SAME evaluation the gates use.
+ *   - `sources` exposes each valid entitlement source with provider /
+ *     environment / store preserved; never a provider-sensitive id
+ *     (stripeCustomerId, stripeSubscriptionId, providerSubscriptionId,
+ *     lastProviderEventId).
+ *   - `subscription` is the DISPLAY row: its id/startedAt/provider/store/
+ *     environment all come from the SAME row — never mixed across rows, never
+ *     an arbitrary 'ios'.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { PLANS, DEFAULT_PLAN, getPlan, type PlanId, type SubscriptionStatus } from '@/lib/billing/plans'
-import { loadUserEntitlements } from '@/lib/billing/entitlement-projection'
+import { loadUserEntitlements, type GrantSource } from '@/lib/billing/entitlement-projection'
 import { getBillingAccessEnvironment } from '@/lib/billing/identity'
 import { pickLocale, translate } from '@/lib/i18n-api'
 
@@ -32,31 +37,34 @@ export async function GET(req: NextRequest) {
   }
   const userId = session.user.id
 
-  // Wave A2 (Round 1): union projection across providers within the
-  // server-determined billing access environment — the same evaluation the
-  // feature gates use. Never exposes provider-sensitive ids (stripeCustomerId,
-  // stripeSubscriptionId, providerSubscriptionId, lastProviderEventId).
+  // Wave A2 (Round 2): the SAME evaluation the feature gates use.
   const accessEnvironment = getBillingAccessEnvironment()
   const projection = await loadUserEntitlements(userId, accessEnvironment)
-  const best = projection.best
 
-  const planId: PlanId = best?.plan || DEFAULT_PLAN
+  const displayRow = pickDisplaySource(projection.sources, projection.displayPlan)
+
+  const planId: PlanId = projection.displayPlan
   const plan = getPlan(planId) || PLANS[0]
-  const status: SubscriptionStatus = best?.status || 'inactive'
+  const status: SubscriptionStatus = projection.displayStatus
 
-  const subscription = projection.rows.length > 0
+  const subscription = displayRow
     ? {
-        id: projection.rows[0].id,
+        id: displayRow.id,
         userId,
-        plan: best?.plan || DEFAULT_PLAN,
+        plan: displayRow.plan,
         status,
-        active: best ? true : false,
+        active: projection.hasValidAccess,
         duration: null,
-        store: best?.provider === 'stripe' ? 'web' : best?.environment === 'sandbox' ? 'ios' : 'ios',
-        provider: best?.provider ?? null,
-        environment: best?.environment ?? null,
-        startedAt: projection.rows[0].startedAt.toISOString(),
-        expiresAt: best?.expiresAt?.toISOString() ?? null,
+        // Store/provider/environment come from THIS row — never guessed.
+        store: displayRow.store,
+        provider: displayRow.provider,
+        environment: displayRow.environment,
+        startedAt: displayRow.startedAt.toISOString(),
+        expiresAt: displayRow.expiresAt?.toISOString() ?? null,
+        cancelAt: null,
+        trialEndsAt: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
         lastProviderEventAt: null,
       }
     : null
@@ -64,8 +72,41 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     plan,
     subscription,
+    access: {
+      hasValidAccess: projection.hasValidAccess,
+      grantedPlans: projection.grantedPlans,
+      grantedFeatures: projection.grantedFeatures,
+      effectiveLimits: projection.effectiveLimits,
+    },
+    sources: projection.sources.map((s) => ({
+      id: s.id,
+      plan: s.plan,
+      status: s.status,
+      provider: s.provider,
+      environment: s.environment,
+      store: s.store,
+      expiresAt: s.expiresAt?.toISOString() ?? null,
+      startedAt: s.startedAt.toISOString(),
+    })),
     allPlans: PLANS,
   })
+}
+
+/**
+ * Deterministically picks the source row used for the DISPLAY projection: the
+ * valid source matching displayPlan (latest expiry, then earliest start);
+ * otherwise the first valid source.
+ */
+function pickDisplaySource(sources: GrantSource[], displayPlan: PlanId): GrantSource | null {
+  if (sources.length === 0) return null
+  const matching = sources.filter((s) => s.plan === displayPlan)
+  const pool = matching.length > 0 ? matching : sources
+  return [...pool].sort((a, b) => {
+    const aEnd = a.expiresAt?.getTime() ?? 0
+    const bEnd = b.expiresAt?.getTime() ?? 0
+    if (bEnd !== aEnd) return bEnd - aEnd
+    return a.startedAt.getTime() - b.startedAt.getTime()
+  })[0]
 }
 
 /**

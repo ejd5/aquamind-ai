@@ -35,6 +35,7 @@ import {
   type PlanId,
 } from '@/lib/billing/plans'
 import { billing } from '@/lib/billing'
+import { pickDisplayEntitlement } from '@/lib/billing/entitlement-resolution'
 import { isNative } from '@/lib/platform'
 import { offlineApi } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
@@ -161,12 +162,18 @@ export function ModulePaywall() {
   async function restorePurchases() {
     setRestoring(true)
     try {
-      const entitlements = await billing.restorePurchases()
-      const active = entitlements.find((e) => e.isActive)
-      if (active) {
-        setCurrentPlanId(active.plan)
-        setSubscription({ expiresAt: active.expiresAt?.toISOString() })
-        toast({ title: t('restored'), description: t('restoredDesc', { plan: active.plan }) })
+      const result = await billing.restorePurchases()
+      if (result.restored) {
+        // Deterministic display: never rely on CustomerInfo order.
+        const display = pickDisplayEntitlement(result.entitlements)
+        setCurrentPlanId(display?.plan ?? 'decouverte')
+        setSubscription({ expiresAt: display?.expiresAt?.toISOString() })
+        if (result.serverConverged) {
+          toast({ title: t('restored'), description: t('restoredDesc', { plan: display?.plan ?? 'oasis' }) })
+        } else {
+          // Webhook not yet arrived — explicit pending/reconciliation state.
+          toast({ title: t('restorePending'), description: t('restorePendingDesc') })
+        }
       } else {
         toast({ title: t('noPurchase'), description: t('noPurchaseDesc') })
       }

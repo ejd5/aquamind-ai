@@ -4,6 +4,10 @@
  * This module provides a single function `requireFeatureAccess` that
  * API routes call to enforce subscription-based feature gates.
  *
+ * Wave A2 (Round 2): gates evaluate the TRUE capability union of ALL valid
+ * subscriptions (Stripe + RevenueCat, within the billing access environment),
+ * never a single ranked plan.
+ *
  * Usage:
  *   import { requireFeatureAccess } from '@/lib/billing/gate'
  *
@@ -22,12 +26,10 @@ import {
   type PlanId,
   type SubscriptionStatus,
   type FeatureGate,
-  canAccess,
-  getPlan,
+  unionCanAccess,
   DEFAULT_PLAN,
-  statusGrantsAccess,
 } from '@/lib/billing/plans'
-import { loadUserEntitlements, pickBestValidRow } from '@/lib/billing/entitlement-projection'
+import { loadUserEntitlements } from '@/lib/billing/entitlement-projection'
 import { getBillingAccessEnvironment } from '@/lib/billing/identity'
 import { pickLocale, translate } from '@/lib/i18n-api'
 
@@ -37,17 +39,17 @@ export interface GateResult {
   userId?: string
   planId?: PlanId
   status?: SubscriptionStatus
+  grantedPlans?: PlanId[]
 }
 
 /**
- * Check if the authenticated user has access to a feature.
+ * Check if the authenticated user has access to a feature, evaluating the union
+ * of all valid subscriptions' capabilities.
  *
  * Returns:
  *   - { denied: true, response: 401 } if not authenticated
- *   - { denied: true, response: 403 } if feature is not available on their plan
- *   - { denied: false, userId, planId, status } if access is granted
- *
- * Also checks photo scan quota if feature is 'photo_scan'.
+ *   - { denied: true, response: 403 } if the union does not grant the feature
+ *   - { denied: false, userId, planId, status, grantedPlans } otherwise
  */
 export async function requireFeatureAccess(
   req: NextRequest,
@@ -67,19 +69,17 @@ export async function requireFeatureAccess(
 
   const userId = session.user.id
 
-  // Wave A2 (Round 1): evaluate ALL valid subscriptions (Stripe + RevenueCat
-  // union) within the server-determined billing access environment. In
-  // Production a sandbox subscription can never grant a right.
+  // Wave A2 (Round 2): true capability union across providers within the
+  // server-determined billing access environment.
   const accessEnvironment = getBillingAccessEnvironment()
   const projection = await loadUserEntitlements(userId, accessEnvironment)
-  const best = projection.best
 
-  const planId: PlanId = best?.plan || DEFAULT_PLAN
-  const status: SubscriptionStatus = best?.status || 'inactive'
-  const expiresAt = best?.expiresAt || null
-
-  // Check feature access
-  const result = canAccess(planId, status, feature, options, expiresAt)
+  const result = unionCanAccess(
+    projection.effectiveLimits,
+    projection.hasValidAccess,
+    feature,
+    options,
+  )
 
   if (!result.allowed) {
     const msg = result.reasonKey
@@ -96,16 +96,23 @@ export async function requireFeatureAccess(
         { status: 403 }
       ),
       userId,
-      planId,
-      status,
+      planId: projection.displayPlan,
+      status: projection.displayStatus,
+      grantedPlans: projection.grantedPlans,
     }
   }
 
-  return { denied: false, userId, planId, status }
+  return {
+    denied: false,
+    userId,
+    planId: projection.displayPlan,
+    status: projection.displayStatus,
+    grantedPlans: projection.grantedPlans,
+  }
 }
 
 /**
- * Get the user's current plan and subscription status.
+ * Get the user's current plan and subscription status (display projection).
  * Used by routes that need the plan but don't gate on a specific feature.
  */
 export async function getUserPlan(req: NextRequest): Promise<{
@@ -120,15 +127,15 @@ export async function getUserPlan(req: NextRequest): Promise<{
     return { userId: null, planId: DEFAULT_PLAN, status: 'inactive', expiresAt: null }
   }
 
-  // Wave A2 (Round 1): union projection across providers within the billing
+  // Wave A2 (Round 2): union projection across providers within the billing
   // access environment.
   const accessEnvironment = getBillingAccessEnvironment()
   const projection = await loadUserEntitlements(session.user.id, accessEnvironment)
 
   return {
     userId: session.user.id,
-    planId: projection.best?.plan || DEFAULT_PLAN,
-    status: projection.best?.status || 'inactive',
-    expiresAt: projection.best?.expiresAt || null,
+    planId: projection.displayPlan,
+    status: projection.displayStatus,
+    expiresAt: projection.displayExpiresAt,
   }
 }

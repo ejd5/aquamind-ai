@@ -1121,7 +1121,9 @@
         "stock": "Gestion du stock",
         "reminders": "Rappels intelligents"
       }
-    }
+    },
+    "restorePending": "Restauration en cours de vérification",
+    "restorePendingDesc": "Synchronisation avec le serveur en cours. Réessayez dans quelques instants."
   },
   "onboarding": {
     "welcome": "Bienvenue sur AQWELIA",
@@ -1379,7 +1381,9 @@
     "planDecouverte": "Free",
     "planOasis": "Pool",
     "planWellness": "Complete",
-    "planSpa365": "Spa"
+    "planSpa365": "Spa",
+    "restorePending": "Restauration en cours de vérification",
+    "restorePendingDesc": "Synchronisation avec le serveur en cours. Réessayez dans quelques instants."
   },
   "auth": {
     "backHome": "Retour à l'accueil",

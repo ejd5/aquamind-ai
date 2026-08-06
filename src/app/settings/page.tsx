@@ -31,6 +31,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { CookiePreferencesButton } from '@/components/privacy/cookie-preferences-button'
 import { getComplianceCopy } from '@/i18n/locales/compliance-copy'
 import { billing } from '@/lib/billing'
+import { pickDisplayEntitlement } from '@/lib/billing/entitlement-resolution'
 import type { PlanId } from '@/lib/billing'
 import {
   usePreferences,
@@ -231,12 +232,17 @@ export default function SettingsPage() {
   async function handleRestore() {
     setRestoring(true)
     try {
-      const entitlements = await billing.restorePurchases()
-      if (entitlements.length > 0) {
-        const active = entitlements.find((e) => e.isActive)
-        if (active) {
-          setActivePlan(active.plan)
-          toast({ title: t('restoreSuccess'), description: t('restoreSuccessDesc', { plan: active.plan }) })
+      const result = await billing.restorePurchases()
+      if (result.restored) {
+        const display = pickDisplayEntitlement(result.entitlements)
+        if (display) {
+          setActivePlan(display.plan)
+          if (result.serverConverged) {
+            toast({ title: t('restoreSuccess'), description: t('restoreSuccessDesc', { plan: display.plan }) })
+          } else {
+            // Wave A2 (Round 2): webhook not yet arrived — explicit pending.
+            toast({ title: t('restorePending'), description: t('restorePendingDesc') })
+          }
         } else {
           toast({ title: t('noActiveFound') })
         }

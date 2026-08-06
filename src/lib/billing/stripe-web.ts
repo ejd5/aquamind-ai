@@ -1,6 +1,7 @@
 import { api } from '@/lib/api-client'
-import type { BillingClient, Product, Entitlement, PurchaseResult, PlanId, SubscriptionApiResponse } from './types'
+import type { BillingClient, Product, Entitlement, PurchaseResult, PlanId, RestoreResult, SubscriptionApiResponse, BillingPlatform } from './types'
 import { PLANS, DURATION_TO_PROVIDER, WEB_DURATIONS, PAID_PLAN_IDS } from './plans'
+import { pickDisplayEntitlement, hasActiveEntitlement } from './entitlement-resolution'
 
 // Paid plan ids that grant an entitlement.
 const PAID_ENTITLEMENT_IDS: ReadonlySet<string> = new Set(PAID_PLAN_IDS)
@@ -33,34 +34,38 @@ export const stripeWebClient: BillingClient = {
     return products
   },
 
+  /**
+   * Wave A2 (Round 2): returns ONE entitlement per granted plan (union), never
+   * a single selected row. Reads the access.grantedPlans projection which is
+   * identical to the server feature gates.
+   */
   async getEntitlements(): Promise<Entitlement[]> {
     try {
       const sub = await api.get<SubscriptionApiResponse>('/api/subscription')
-      if (!sub?.subscription?.active) return []
-      // Always read the plan id from subscription.plan (the DB string),
-      // never from sub.plan (the object).
-      const planId: PlanId = sub.subscription.plan
-      // SECURITY: an unknown or Free plan id must NEVER grant a paid
-      // entitlement. The previous implementation fell back to 'oasis',
-      // which would silently grant Pool access to any user with a
-      // corrupted or unknown plan. We now return no entitlement and
-      // log the anomaly for server-side investigation.
-      if (!PAID_ENTITLEMENT_IDS.has(planId)) {
-        if (typeof console !== 'undefined' && planId !== 'decouverte') {
-          console.warn('[billing] active subscription with unknown plan id — no entitlement granted:', planId)
+      const access = sub?.access
+      if (!access?.hasValidAccess) return []
+      const store: BillingPlatform = (sub?.subscription?.store as BillingPlatform) || 'web'
+      const expiresAt = sub?.subscription?.expiresAt
+      const entitlements: Entitlement[] = []
+      for (const planId of access.grantedPlans) {
+        if (!PAID_ENTITLEMENT_IDS.has(planId)) {
+          // SECURITY: an unknown or Free plan id must NEVER grant a paid
+          // entitlement. Log the anomaly for server-side investigation.
+          if (typeof console !== 'undefined' && planId !== 'decouverte') {
+            console.warn('[billing] active subscription with unknown plan id — no entitlement granted:', planId)
+          }
+          continue
         }
-        return []
-      }
-      return [
-        {
+        entitlements.push({
           id: planId as 'oasis' | 'wellness' | 'spa365',
           plan: planId,
           isActive: true,
           willRenew: true,
-          expiresAt: sub.subscription.expiresAt ? new Date(sub.subscription.expiresAt) : undefined,
-          store: 'web',
-        },
-      ]
+          expiresAt: expiresAt ? new Date(expiresAt) : undefined,
+          store,
+        })
+      }
+      return entitlements
     } catch {
       return []
     }
@@ -79,19 +84,24 @@ export const stripeWebClient: BillingClient = {
     }
   },
 
-  async restorePurchases(): Promise<Entitlement[]> {
-    return this.getEntitlements()
+  async restorePurchases(): Promise<RestoreResult> {
+    try {
+      const entitlements = await this.getEntitlements()
+      const restored = hasActiveEntitlement(entitlements)
+      return {
+        entitlements,
+        restored,
+        serverConverged: restored,
+        state: restored ? 'converged' : 'none',
+      }
+    } catch {
+      return { entitlements: [], restored: false, serverConverged: false, state: 'none' }
+    }
   },
 
   async getActivePlan(): Promise<PlanId> {
     const entitlements = await this.getEntitlements()
-    const wellness = entitlements.find((e) => e.plan === 'wellness' && e.isActive)
-    if (wellness) return 'wellness'
-    const spa365 = entitlements.find((e) => e.plan === 'spa365' && e.isActive)
-    if (spa365) return 'spa365'
-    const oasis = entitlements.find((e) => e.plan === 'oasis' && e.isActive)
-    if (oasis) return 'oasis'
-    return 'decouverte'
+    return pickDisplayEntitlement(entitlements)?.plan ?? 'decouverte'
   },
 
   async manageSubscription(): Promise<void> {

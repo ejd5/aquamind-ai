@@ -242,6 +242,7 @@ describe('P0-J — B2C release readiness', () => {
     })
 
     function mockSubResponse(planId: string, active: boolean, expiresAt?: string | null): SubscriptionApiResponse {
+      const granted = active && planId !== 'decouverte' ? [planId as never] : []
       return {
         plan: PLANS.find((p) => p.id === planId) || PLANS[0],
         subscription: {
@@ -262,6 +263,24 @@ describe('P0-J — B2C release readiness', () => {
           currentPeriodEnd: null,
           lastProviderEventAt: '2026-07-15T00:00:00.000Z',
         },
+        access: {
+          hasValidAccess: granted.length > 0,
+          grantedPlans: granted as never,
+          grantedFeatures: [],
+          effectiveLimits: (PLANS.find((p) => p.id === planId) || PLANS[0]).limits,
+        },
+        sources: granted.length > 0
+          ? [{
+              id: 'sub_test',
+              plan: planId as never,
+              status: 'active' as never,
+              provider: 'stripe',
+              environment: 'production',
+              store: 'web',
+              expiresAt: expiresAt ?? null,
+              startedAt: '2026-07-15T00:00:00.000Z',
+            }]
+          : [],
         allPlans: PLANS,
       }
     }

@@ -19,4 +19,4 @@ export const billing = {
   manageSubscription: () => getBillingClient().manageSubscription(),
 }
 
-export type { PlanId, Product, Entitlement, PurchaseResult, BillingPlatform, BillingClient } from './types'
+export type { PlanId, Product, Entitlement, PurchaseResult, RestoreResult, BillingPlatform, BillingClient } from './types'

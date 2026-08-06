@@ -1004,7 +1004,9 @@
         "stock": "Bestandsverwaltung",
         "reminders": "Intelligente Erinnerungen"
       }
-    }
+    },
+    "restorePending": "Wiederherstellung wird geprüft",
+    "restorePendingDesc": "Synchronisierung mit dem Server läuft. Bitte versuchen Sie es gleich noch einmal."
   },
   "onboarding": {
     "welcome": "Willkommen bei AQWELIA",
@@ -1260,7 +1262,9 @@
     "deleteFailedDesc": "Löschen fehlgeschlagen",
     "planDecouverte": "Entdeckung",
     "planOasis": "Pool",
-    "planWellness": "Complete"
+    "planWellness": "Complete",
+    "restorePending": "Wiederherstellung wird geprüft",
+    "restorePendingDesc": "Synchronisierung mit dem Server läuft. Bitte versuchen Sie es gleich noch einmal."
   },
   "auth": {
     "backHome": "Zurück zur Startseite",

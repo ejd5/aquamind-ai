@@ -1,4 +1,4 @@
-import type { PlanId, BillingPlatform, ProviderDuration, PlanDefinition, SubscriptionStatus } from './plans'
+import type { PlanId, BillingPlatform, ProviderDuration, PlanDefinition, SubscriptionStatus, PlanLimits } from './plans'
 export type { PlanId, BillingPlatform } from './plans'
 
 export interface Product {
@@ -31,11 +31,25 @@ export interface PurchaseResult {
   serverConverged?: boolean
 }
 
+/**
+ * Wave A2 (Round 2) — restore result. A restore never presents the local
+ * CustomerInfo as definitively active; it reports an explicit convergence state:
+ *   - converged : server projection reflects at least one active subscription
+ *   - pending   : restored locally but the webhook has not arrived yet
+ *   - none      : nothing to restore
+ */
+export interface RestoreResult {
+  entitlements: Entitlement[]
+  restored: boolean
+  serverConverged: boolean
+  state: 'converged' | 'pending' | 'none'
+}
+
 export interface BillingClient {
   getProducts(): Promise<Product[]>
   getEntitlements(): Promise<Entitlement[]>
   purchase(productId: string): Promise<PurchaseResult>
-  restorePurchases(): Promise<Entitlement[]>
+  restorePurchases(): Promise<RestoreResult>
   getActivePlan(): Promise<PlanId>
   manageSubscription(): Promise<void>
 }
@@ -55,13 +69,13 @@ export interface BillingClient {
  * ever recurring.
  */
 export interface SubscriptionApiResponse {
-  /** Full plan definition object (from getPlan()). NOT a PlanId string. */
+  /** Full plan definition object (from getPlan()) — DISPLAY ONLY. */
   plan: PlanDefinition
-  /** Database subscription row, or null if no subscription exists. */
+  /** Display subscription row, or null if no subscription exists. */
   subscription: {
     id: string
     userId: string
-    /** PlanId string stored in the DB column (e.g. "spa365"). */
+    /** PlanId string of the DISPLAY plan (e.g. "spa365"). */
     plan: PlanId
     status: SubscriptionStatus
     active: boolean
@@ -77,5 +91,23 @@ export interface SubscriptionApiResponse {
     currentPeriodEnd?: string | null
     lastProviderEventAt?: string | null
   } | null
+  /** Wave A2 (Round 2): true capability union — consistent with the gates. */
+  access: {
+    hasValidAccess: boolean
+    grantedPlans: PlanId[]
+    grantedFeatures: string[]
+    effectiveLimits: PlanLimits
+  }
+  /** Valid entitlement sources, provider/environment/store preserved. */
+  sources: {
+    id: string
+    plan: PlanId
+    status: SubscriptionStatus
+    provider: string
+    environment: string
+    store: string | null
+    expiresAt: string | null
+    startedAt: string
+  }[]
   allPlans: PlanDefinition[]
 }

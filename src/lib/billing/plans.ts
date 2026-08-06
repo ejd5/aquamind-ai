@@ -507,6 +507,126 @@ export function canAccess(
   }
 }
 
+/**
+ * Wave A2 (Round 2) — TRUE capability-union feature gate.
+ *
+ * Feature gates are evaluated against the union of ALL valid subscriptions'
+ * effective limits (combineLimits), never against a single ranked plan. The
+ * union preserves every right: e.g. Oasis (Stripe) + Spa365 (RevenueCat) keeps
+ * BOTH the pool rights of Oasis and the spa rights of Spa365.
+ *
+ * Boolean capabilities combine with OR; quotas combine with max; guidesAccess
+ * takes the most permissive level. hasValidAccess must be true for any paid
+ * feature.
+ */
+export function unionCanAccess(
+  limits: PlanLimits,
+  hasValidAccess: boolean,
+  feature: FeatureGate,
+  usage?: { photoScansThisMonth?: number },
+): CanAccessResult {
+  // Fail-closed: every PAID feature requires at least one valid subscription.
+  const requireValid = (reason: string, reasonKey: string, ctaPlan: PlanId): CanAccessResult => {
+    if (!hasValidAccess) {
+      return { allowed: false, reason, reasonKey: 'gates.subscription_expired', ctaPlan }
+    }
+    return { allowed: true }
+  }
+  switch (feature) {
+    case 'photo_scan':
+      if (usage?.photoScansThisMonth != null && usage.photoScansThisMonth >= limits.maxPhotoScansPerMonth) {
+        return {
+          allowed: false,
+          reason: `Limite de ${limits.maxPhotoScansPerMonth} scans/mois atteinte.`,
+          reasonKey: 'gates.photo_scan_limit',
+          reasonParams: { n: limits.maxPhotoScansPerMonth },
+          ctaPlan: 'oasis',
+        }
+      }
+      return { allowed: true }
+
+    case 'weather_advanced':
+      return hasValidAccess && limits.weatherEnabled
+        ? { allowed: true }
+        : { allowed: false, reason: 'Météo avancée réservée aux plans payants.', reasonKey: 'gates.weather_advanced', ctaPlan: 'oasis' }
+
+    case 'smart_reminders':
+      if (!limits.smartReminders) return { allowed: false, reason: 'Rappels intelligents réservés aux plans payants.', reasonKey: 'gates.smart_reminders', ctaPlan: 'oasis' }
+      return requireValid('Rappels intelligents réservés aux plans payants.', 'gates.smart_reminders', 'oasis')
+
+    case 'guides_premium':
+      return hasValidAccess && limits.guidesAccess !== 'basic'
+        ? { allowed: true }
+        : { allowed: false, reason: 'Guides premium réservés aux plans payants.', reasonKey: 'gates.guides_premium', ctaPlan: 'oasis' }
+
+    case 'multi_pool':
+      if (!limits.multiPool) return { allowed: false, reason: 'Plusieurs bassins nécessitent AQWELIA Complete.', reasonKey: 'gates.multi_pool', ctaPlan: 'wellness' }
+      return requireValid('Plusieurs bassins nécessitent AQWELIA Complete.', 'gates.multi_pool', 'wellness')
+
+    case 'pdf_report':
+      if (!limits.pdfReport) return { allowed: false, reason: 'Rapport PDF réservé à AQWELIA Pool et Complete.', reasonKey: 'gates.pdf_report', ctaPlan: 'oasis' }
+      return requireValid('Rapport PDF réservé à AQWELIA Pool et Complete.', 'gates.pdf_report', 'oasis')
+
+    case 'pro_mode':
+      if (!limits.proMode) return { allowed: false, reason: 'Mode avancé réservé à AQWELIA Pool et Complete.', reasonKey: 'gates.pro_mode', ctaPlan: 'oasis' }
+      return requireValid('Mode avancé réservé à AQWELIA Pool et Complete.', 'gates.pro_mode', 'oasis')
+
+    case 'history_extended':
+      if (limits.historyDays < 90) return { allowed: false, reason: 'Historique étendu réservé aux plans payants.', reasonKey: 'gates.history_extended', ctaPlan: 'oasis' }
+      return requireValid('Historique étendu réservé aux plans payants.', 'gates.history_extended', 'oasis')
+
+    case 'spa_support':
+      if (!limits.spaSupport) return { allowed: false, reason: 'Le support spa nécessite AQWELIA Spa ou Complete.', reasonKey: 'gates.spa_support', ctaPlan: 'spa365' }
+      return requireValid('Le support spa nécessite AQWELIA Spa ou Complete.', 'gates.spa_support', 'spa365')
+
+    default:
+      return { allowed: true }
+  }
+}
+
+/**
+ * Wave A2 (Round 2) — combine the limits of several plan definitions into a
+ * single effective capability set. Combination rules (documented, tested):
+ *   - booleans (weatherEnabled, smartReminders, multiPool, pdfReport, proMode,
+ *     spaSupport)                 → OR (any source grants it)
+ *   - quotas (maxPhotoScansPerMonth, maxTestsPerMonth) → max
+ *   - maxPools / maxSpas          → max (each paid plan grants its own counts;
+ *                                   union keeps the largest so no right is lost)
+ *   - guidesAccess                → most permissive (all_plus_video > all > basic)
+ *   - historyDays                 → max
+ * With no paid plan, the free (decouverte) limits are returned.
+ */
+export function combineLimits(plans: PlanDefinition[]): PlanLimits {
+  const paid = plans.filter((p) => p.id !== 'decouverte' && p.active)
+  if (paid.length === 0) {
+    const free = getPlan('decouverte')
+    if (free) return { ...free.limits }
+    return {
+      maxPools: 1, maxSpas: 0, maxPhotoScansPerMonth: 2, maxTestsPerMonth: 2,
+      weatherEnabled: true, smartReminders: false, guidesAccess: 'basic',
+      multiPool: false, pdfReport: false, proMode: false, historyDays: 14, spaSupport: false,
+    }
+  }
+  const guidesRank: Record<string, number> = { basic: 0, all: 1, all_plus_video: 2 }
+  return {
+    maxPools: Math.max(...paid.map((p) => p.limits.maxPools)),
+    maxSpas: Math.max(...paid.map((p) => p.limits.maxSpas)),
+    maxPhotoScansPerMonth: Math.max(...paid.map((p) => p.limits.maxPhotoScansPerMonth)),
+    maxTestsPerMonth: Math.max(...paid.map((p) => p.limits.maxTestsPerMonth)),
+    weatherEnabled: paid.some((p) => p.limits.weatherEnabled),
+    smartReminders: paid.some((p) => p.limits.smartReminders),
+    guidesAccess: paid.reduce(
+      (best, p) => (guidesRank[p.limits.guidesAccess] > guidesRank[best] ? p.limits.guidesAccess : best),
+      'basic' as PlanLimits['guidesAccess'],
+    ),
+    multiPool: paid.some((p) => p.limits.multiPool),
+    pdfReport: paid.some((p) => p.limits.pdfReport),
+    proMode: paid.some((p) => p.limits.proMode),
+    historyDays: Math.max(...paid.map((p) => p.limits.historyDays)),
+    spaSupport: paid.some((p) => p.limits.spaSupport),
+  }
+}
+
 // ─── Stripe product ID mapping ──────────────────────────────────────────────
 
 /**

@@ -1002,7 +1002,9 @@
         "stock": "Gestione scorte",
         "reminders": "Promemoria intelligenti"
       }
-    }
+    },
+    "restorePending": "Ripristino in verifica",
+    "restorePendingDesc": "Sincronizzazione con il server in corso. Riprova tra poco."
   },
   "onboarding": {
     "welcome": "Benvenuto in AQWELIA",
@@ -1258,7 +1260,9 @@
     "deleteFailedDesc": "Eliminazione fallita",
     "planDecouverte": "Scoperta",
     "planOasis": "Pool",
-    "planWellness": "Complete"
+    "planWellness": "Complete",
+    "restorePending": "Ripristino in verifica",
+    "restorePendingDesc": "Sincronizzazione con il server in corso. Riprova tra poco."
   },
   "auth": {
     "backHome": "Torna alla home",

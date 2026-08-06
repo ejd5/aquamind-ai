@@ -44,8 +44,13 @@
 
 import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor'
 import { isNative, getPlatform } from '@/lib/platform'
-import type { Product, Entitlement, PurchaseResult, PlanId } from './types'
+import type { Product, Entitlement, PurchaseResult, PlanId, RestoreResult } from './types'
 import { getPlanFromRCProductId, DURATION_TO_PROVIDER } from './plans'
+import {
+  pickDisplayEntitlement,
+  hasActiveEntitlement,
+} from './entitlement-resolution'
+import { awaitServerConvergence } from './revenuecat-identity-guard'
 
 const RC_API_KEYS = {
   ios: process.env.NEXT_PUBLIC_REVENUECAT_IOS_KEY || '',
@@ -250,21 +255,20 @@ export class RevenueCatManager {
 
   // ── Billing operations (all blocked until ready) ─────────────────────────
 
+  /**
+   * Wave A2 (Round 2) — canonical offering + strict dedup.
+   * Uses the CURRENT RevenueCat offering when present (canonical), otherwise
+   * iterates all offerings. Every package is validated against the canonical
+   * product IDs in plans.ts and deduplicated strictly by product identifier;
+   * the result is sorted deterministically. No duplicates, no blind
+   * aggregation.
+   */
   async getProducts(): Promise<Product[]> {
     if (!isNative()) return []
     await this.requireReady()
     try {
       const result = await Purchases.getOfferings()
-      const products: Product[] = []
-      const all = (result as any)?.all || {}
-      for (const offering of Object.values(all)) {
-        const packages = (offering as any)?.availablePackages || []
-        for (const pkg of packages) {
-          const product = mapPackageToProduct(pkg)
-          if (product) products.push(product)
-        }
-      }
-      return products
+      return collectCanonicalProducts(result)
     } catch {
       return []
     }
@@ -286,49 +290,59 @@ export class RevenueCatManager {
     await this.requireReady()
     try {
       const result = await Purchases.getOfferings()
-      const all = (result as any)?.all || {}
-      let targetPackage: any = null
-      for (const offering of Object.values(all)) {
-        const packages = (offering as any)?.availablePackages || []
-        for (const pkg of packages) {
-          if (pkg?.product?.identifier === productId) {
-            targetPackage = pkg
-            break
-          }
-        }
-      }
+      const targetPackage = findPackageById(result, productId)
       if (!targetPackage) return { success: false, error: 'Product not found' }
       const purchaseResult = await Purchases.purchasePackage({ aPackage: targetPackage })
       const entitlements = mapCustomerInfoToEntitlements(purchaseResult?.customerInfo)
-      const active = entitlements.find((e) => e.isActive)
-      return { success: !!active, entitlement: active }
+      const success = hasActiveEntitlement(entitlements)
+      const display = pickDisplayEntitlement(entitlements)
+      // Wave A2 (Round 2): same convergence contract as restore — refresh
+      // CustomerInfo (done above), then read GET /api/subscription (bounded).
+      const userId = this.sdkConfirmedUserId
+      const { converged } = userId ? await awaitServerConvergence(userId) : { converged: false }
+      return { success, entitlement: display ?? undefined, serverConverged: success ? converged : false }
     } catch (err: any) {
       if (err?.userCancelled) return { success: false, userCancelled: true }
       return { success: false, error: err?.message || 'Purchase failed' }
     }
   }
 
-  async restorePurchases(): Promise<Entitlement[]> {
-    if (!isNative()) return []
+  /**
+   * Wave A2 (Round 2) — restore follows the SAME contract as purchase:
+   *   1. identity SDK confirmed (requireReady);
+   *   2. server binding confirmed (ready implies it);
+   *   3. Purchases.restorePurchases() + refreshed CustomerInfo;
+   *   4. bounded read of GET /api/subscription;
+   *   5. explicit serverConverged / pending — never a definitive active from
+   *      local CustomerInfo alone.
+   */
+  async restorePurchases(): Promise<RestoreResult> {
+    if (!isNative()) return { entitlements: [], restored: false, serverConverged: false, state: 'none' }
     await this.requireReady()
     try {
       const info = await Purchases.restorePurchases()
-      return mapCustomerInfoToEntitlements(info)
+      const entitlements = mapCustomerInfoToEntitlements(info)
+      const restored = hasActiveEntitlement(entitlements)
+      if (!restored) {
+        return { entitlements, restored: false, serverConverged: false, state: 'none' }
+      }
+      const userId = this.sdkConfirmedUserId
+      const { converged } = userId ? await awaitServerConvergence(userId) : { converged: false }
+      return {
+        entitlements,
+        restored: true,
+        serverConverged: converged,
+        state: converged ? 'converged' : 'pending',
+      }
     } catch {
-      return []
+      return { entitlements: [], restored: false, serverConverged: false, state: 'none' }
     }
   }
 
   async getActivePlan(): Promise<PlanId> {
     if (!isNative()) return 'decouverte'
     const entitlements = await this.getEntitlements()
-    const wellness = entitlements.find((e) => e.plan === 'wellness' && e.isActive)
-    if (wellness) return 'wellness'
-    const spa365 = entitlements.find((e) => e.plan === 'spa365' && e.isActive)
-    if (spa365) return 'spa365'
-    const oasis = entitlements.find((e) => e.plan === 'oasis' && e.isActive)
-    if (oasis) return 'oasis'
-    return 'decouverte'
+    return pickDisplayEntitlement(entitlements)?.plan ?? 'decouverte'
   }
 }
 
@@ -372,6 +386,45 @@ function mapPackageToProduct(pkg: any): Product | null {
   } catch {
     return null
   }
+}
+
+/**
+ * Wave A2 (Round 2) — canonical offering strategy:
+ *   - prefer result.current (the current/canonical RevenueCat offering) when it
+ *     exists; otherwise iterate result.all in a deterministic order;
+ *   - validate every package against the canonical product IDs in plans.ts;
+ *   - deduplicate STRICTLY by product identifier (first occurrence wins);
+ *   - sort deterministically by product id.
+ */
+function collectCanonicalProducts(result: any): Product[] {
+  const byId = new Map<string, Product>()
+  const offerings = result?.current
+    ? [result.current]
+    : Object.values(result?.all || {}).sort((a, b) =>
+        String((a as any)?.identifier ?? '').localeCompare(String((b as any)?.identifier ?? '')),
+      )
+  for (const offering of offerings) {
+    const packages = (offering as any)?.availablePackages || []
+    for (const pkg of packages) {
+      const product = mapPackageToProduct(pkg)
+      if (product && !byId.has(product.id)) byId.set(product.id, product)
+    }
+  }
+  return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id))
+}
+
+/** Deterministic package lookup across the canonical offering set. */
+function findPackageById(result: any, productId: string): any | null {
+  const offerings = result?.current
+    ? [result.current]
+    : Object.values(result?.all || {})
+  for (const offering of offerings) {
+    const packages = (offering as any)?.availablePackages || []
+    for (const pkg of packages) {
+      if (pkg?.product?.identifier === productId) return pkg
+    }
+  }
+  return null
 }
 
 function mapCustomerInfoToEntitlements(info: any): Entitlement[] {

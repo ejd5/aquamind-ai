@@ -1119,7 +1119,9 @@
         "stock": "Stock management",
         "reminders": "Smart reminders"
       }
-    }
+    },
+    "restorePending": "Restore pending verification",
+    "restorePendingDesc": "Synchronizing with the server. Please retry in a moment."
   },
   "onboarding": {
     "welcome": "Welcome to AQWELIA",
@@ -1377,7 +1379,9 @@
     "planDecouverte": "Free",
     "planOasis": "Pool",
     "planWellness": "Complete",
-    "planSpa365": "Spa"
+    "planSpa365": "Spa",
+    "restorePending": "Restore pending verification",
+    "restorePendingDesc": "Synchronizing with the server. Please retry in a moment."
   },
   "auth": {
     "backHome": "Back to home",

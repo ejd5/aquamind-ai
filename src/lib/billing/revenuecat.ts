@@ -1,16 +1,19 @@
 /**
- * AQWELIA Wave A2 (Round 1) — RevenueCat BillingClient.
+ * AQWELIA Wave A2 — RevenueCat BillingClient.
  *
  * All SDK operations (offerings, customer info, purchase, restore) are owned by
  * the single lifecycle manager (revenuecat-manager.ts). This module is only a
  * thin BillingClient adapter plus the web-side subscription management surface.
  * There is NO second Purchases.configure here.
+ *
+ * Wave A2 (Round 2): purchase and restore already return explicit server
+ * convergence (serverConverged / state) computed inside the manager with a
+ * bounded GET /api/subscription poll.
  */
 
 import { isNative, getPlatform } from '@/lib/platform'
-import type { BillingClient, Product, Entitlement, PurchaseResult, PlanId } from './types'
+import type { BillingClient, Product, Entitlement, PurchaseResult, PlanId, RestoreResult } from './types'
 import { revenueCatManager } from './revenuecat-manager'
-import { confirmServerAccessConverged } from './revenuecat-identity-guard'
 
 export const revenueCatClient: BillingClient = {
   async getProducts(): Promise<Product[]> {
@@ -22,20 +25,10 @@ export const revenueCatClient: BillingClient = {
   },
 
   async purchase(productId: string): Promise<PurchaseResult> {
-    const result = await revenueCatManager.purchase(productId)
-    if (result.success && result.entitlement) {
-      // Wave A2: after a purchase the client refreshes CustomerInfo (already
-      // done inside the manager) but only treats the server access as converged
-      // after GET /api/subscription agrees.
-      const confirmedUserId = revenueCatManager.snapshot().sdkConfirmedUserId
-      if (confirmedUserId) {
-        result.serverConverged = await confirmServerAccessConverged(confirmedUserId)
-      }
-    }
-    return result
+    return revenueCatManager.purchase(productId)
   },
 
-  async restorePurchases(): Promise<Entitlement[]> {
+  async restorePurchases(): Promise<RestoreResult> {
     return revenueCatManager.restorePurchases()
   },
 

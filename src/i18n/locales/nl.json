@@ -1004,7 +1004,9 @@
         "stock": "Voorraadbeheer",
         "reminders": "Slimme herinneringen"
       }
-    }
+    },
+    "restorePending": "Herstel wordt gecontroleerd",
+    "restorePendingDesc": "Synchroniseren met de server. Probeer het over een ogenblik opnieuw."
   },
   "onboarding": {
     "welcome": "Welkom bij AQWELIA",
@@ -1260,7 +1262,9 @@
     "deleteFailedDesc": "Verwijdering mislukt",
     "planDecouverte": "Ontdekking",
     "planOasis": "Pool",
-    "planWellness": "Complete"
+    "planWellness": "Complete",
+    "restorePending": "Herstel wordt gecontroleerd",
+    "restorePendingDesc": "Synchroniseren met de server. Probeer het over een ogenblik opnieuw."
   },
   "auth": {
     "backHome": "Terug naar home",
