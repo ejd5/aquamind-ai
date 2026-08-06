@@ -47,8 +47,14 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
       - name: Billing & mobile tests
-        run: bunx vitest run tests/billing-a2-round1-critical.test.ts tests/billing-a2-round4-boundary.test.ts tests/billing-a2-round5-purchase-contract.test.ts tests/billing-a2-round6-server-authority.test.ts tests/billing-a2-round7-restore-toast.test.ts tests/wave-a3-mobile-b2c.test.ts tests/b2c-pricing.test.ts tests/p0-j.test.ts
+        run: bunx vitest run tests/billing-a2-round1-critical.test.ts tests/billing-a2-round4-boundary.test.ts tests/billing-a2-round5-purchase-contract.test.ts tests/billing-a2-round6-server-authority.test.ts tests/billing-a2-round7-restore-toast.test.ts tests/wave-a3-mobile-b2c.test.ts tests/wave-a3-mobile-runtime-hardening.test.ts tests/b2c-pricing.test.ts tests/p0-j.test.ts
       - name: Mobile environment preflight
+        env:
+          DATABASE_URL: ""
+          NEXTAUTH_SECRET: ""
+          STRIPE_SECRET_KEY: ""
+          STRIPE_WEBHOOK_SECRET: ""
+          REVENUECAT_WEBHOOK_SECRET: ""
         run: node scripts/mobile-env-preflight.mjs
       - name: Build mobile (B2C shell)
         run: bun run mobile:build
