@@ -89,6 +89,15 @@ lint/tmp/
 # Android Profiling
 *.hprof
 
+# Wave A3: required app resources (launcher icons + splash) must be committed
+# so a fresh clone can build. Un-ignore the res pngs that the app references.
+!app/src/main/res/drawable/splash.png
+!app/src/main/res/drawable-land-*/splash.png
+!app/src/main/res/drawable-port-*/splash.png
+!app/src/main/res/mipmap-*/ic_launcher.png
+!app/src/main/res/mipmap-*/ic_launcher_foreground.png
+!app/src/main/res/mipmap-*/ic_launcher_round.png
+
 # Cordova plugins for Capacitor
 capacitor-cordova-android-plugins
 
