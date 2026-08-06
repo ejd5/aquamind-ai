@@ -1,14 +1,30 @@
 'use client'
 
+/**
+ * AQWELIA Wave A3 — mobile entry router.
+ *
+ * Routes by canonical identity and account type (server-resolved):
+ *   - unauthenticated / invalid session → /auth/signin
+ *   - technician / pro                  → /pro/app/today (technician shell)
+ *   - growth                            → /pro/app/today (fallback shell)
+ *   - consumer (B2C)                    → /dashboard (B2C shell)
+ *   - inconsistent account type         → explicit error screen (no automatic
+ *     pool creation, no forced technician route)
+ *
+ * A regular consumer is NEVER sent to /pro/app/today.
+ */
+
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Loader2, RefreshCw } from 'lucide-react'
 import { api, ApiError } from '@/lib/api-client'
+import type { MobileAccountType } from '@/lib/auth-entry-target'
 
 type MobileSessionResponse = {
   user: { id?: string; email?: string | null; name?: string | null } | null
   entryTarget?: string
+  accountType?: MobileAccountType
 }
 
 export default function MobileEntryPage() {
@@ -25,12 +41,21 @@ export default function MobileEntryPage() {
         return
       }
 
-      if (response.entryTarget?.startsWith('/pro/app')) {
-        router.replace('/pro/app/today')
-        return
-      }
+      const accountType = response.accountType ?? (response.entryTarget?.startsWith('/pro/app') ? 'technician' : 'consumer')
 
-      setError(true)
+      switch (accountType) {
+        case 'technician':
+        case 'pro':
+        case 'growth':
+          router.replace('/pro/app/today')
+          return
+        case 'consumer':
+          router.replace('/dashboard')
+          return
+        default:
+          // Inconsistent account type → explicit error, never auto-create a pool.
+          setError(true)
+      }
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 401) {
         router.replace('/auth/signin')

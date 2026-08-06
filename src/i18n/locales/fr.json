@@ -1422,7 +1422,11 @@
     "agreeTermsAnd": " et ",
     "orContinueWith": "ou continuer avec",
     "signInWithGoogle": "Continuer avec Google",
-    "signInWithApple": "Continuer avec Apple"
+    "signInWithApple": "Continuer avec Apple",
+    "name": "Nom",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "alreadyAccount": "Déjà un compte ?"
   },
   "diagnostic": {
     "title": "Diagnostic par photo",

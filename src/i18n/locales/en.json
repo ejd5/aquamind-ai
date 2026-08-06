@@ -1420,7 +1420,11 @@
     "agreeTermsAnd": " and ",
     "orContinueWith": "or continue with",
     "signInWithGoogle": "Continue with Google",
-    "signInWithApple": "Continue with Apple"
+    "signInWithApple": "Continue with Apple",
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "alreadyAccount": "Already have an account?"
   },
   "diagnostic": {
     "title": "Photo diagnostic",

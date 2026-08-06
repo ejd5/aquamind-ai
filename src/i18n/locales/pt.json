@@ -1303,7 +1303,11 @@
     "agreeTermsAnd": " e ",
     "orContinueWith": "ou continue com",
     "signInWithGoogle": "Continuar com Google",
-    "signInWithApple": "Continuar com Apple"
+    "signInWithApple": "Continuar com Apple",
+    "name": "Nome",
+    "email": "E-mail",
+    "password": "Senha",
+    "alreadyAccount": "Já tem uma conta?"
   },
   "diagnostic": {
     "title": "Diagnóstico por foto",
