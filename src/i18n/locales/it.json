@@ -1002,7 +1002,11 @@
         "stock": "Gestione scorte",
         "reminders": "Promemoria intelligenti"
       }
-    }
+    },
+    "restorePending": "Ripristino in verifica",
+    "restorePendingDesc": "Sincronizzazione con il server in corso. Riprova tra poco.",
+    "purchasePending": "Acquisto registrato, validazione in corso",
+    "purchasePendingDesc": "Abbiamo ricevuto il tuo acquisto. AQWELIA sta completando la sincronizzazione con il negozio."
   },
   "onboarding": {
     "welcome": "Benvenuto in AQWELIA",
@@ -1258,7 +1262,14 @@
     "deleteFailedDesc": "Eliminazione fallita",
     "planDecouverte": "Scoperta",
     "planOasis": "Pool",
-    "planWellness": "Complete"
+    "planWellness": "Complete",
+    "restorePending": "Ripristino in verifica",
+    "restorePendingDesc": "Sincronizzazione con il server in corso. Riprova tra poco.",
+    "manageMultiTitle": "Più abbonamenti attivi",
+    "manageMultiDesc": "Seleziona il fornitore da gestire nel relativo portale.",
+    "manageStripe": "Gestisci il mio abbonamento Stripe",
+    "manageApple": "Gestisci il mio abbonamento Apple",
+    "manageGoogle": "Gestisci il mio abbonamento Google"
   },
   "auth": {
     "backHome": "Torna alla home",

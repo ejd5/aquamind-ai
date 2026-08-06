@@ -35,6 +35,11 @@ export interface TransitionParams {
   status: SubscriptionStatus
   duration?: Duration | null
   store?: string | null
+  // Wave A2: provider + environment scope the transition. A transition can only
+  // ever modify the subscription sharing the same provider identity; creating a
+  // RevenueCat row must never deactivate a Stripe row and vice versa.
+  provider?: 'stripe' | 'revenuecat' | null
+  environment?: string | null
   stripeCustomerId?: string | null
   stripeSubscriptionId?: string | null
   providerSubscriptionId?: string | null
@@ -104,6 +109,8 @@ export async function applyTransition(params: TransitionParams): Promise<Transit
         active,
         duration: params.duration ?? existing.duration,
         store: params.store ?? existing.store,
+        provider: params.provider ?? existing.provider,
+        environment: params.environment ?? existing.environment,
         stripeCustomerId: params.stripeCustomerId ?? existing.stripeCustomerId,
         stripeSubscriptionId: params.stripeSubscriptionId ?? existing.stripeSubscriptionId,
         providerSubscriptionId: params.providerSubscriptionId ?? existing.providerSubscriptionId,
@@ -127,6 +134,8 @@ export async function applyTransition(params: TransitionParams): Promise<Transit
 
   try {
     await db.$transaction(async (tx) => {
+      const provider = params.provider ?? 'revenuecat'
+      const environment = params.environment ?? 'production'
       const created = await tx.subscription.create({
         data: {
           userId: params.userId,
@@ -135,6 +144,8 @@ export async function applyTransition(params: TransitionParams): Promise<Transit
           active,
           duration: params.duration,
           store: params.store,
+          provider,
+          environment,
           stripeCustomerId: params.stripeCustomerId,
           stripeSubscriptionId: params.stripeSubscriptionId,
           providerSubscriptionId: params.providerSubscriptionId,
@@ -148,8 +159,17 @@ export async function applyTransition(params: TransitionParams): Promise<Transit
           lastProviderEventAt: params.providerEventAt,
         },
       })
+      // Wave A2: only deactivate other active rows for the SAME provider +
+      // environment. A RevenueCat transition must never disable a Stripe
+      // subscription and vice versa.
       await tx.subscription.updateMany({
-        where: { userId: params.userId, active: true, id: { not: created.id } },
+        where: {
+          userId: params.userId,
+          provider,
+          environment,
+          active: true,
+          id: { not: created.id },
+        },
         data: { active: false, status: 'inactive' },
       })
     })
@@ -169,21 +189,34 @@ function isUniqueConstraintError(error: unknown): boolean {
 
 /**
  * Find a subscription by provider identity.
- * Searches by: providerSubscriptionId, then stripeSubscriptionId, then userId (most recent).
+ * Searches by: providerSubscriptionId, then stripeSubscriptionId, then userId
+ * (most recent) — always scoped to the same provider + environment so a
+ * RevenueCat transition can never modify a Stripe row.
  */
 async function findSubscriptionByProvider(params: TransitionParams) {
+  const provider = params.provider ?? 'revenuecat'
+  const environment = params.environment ?? 'production'
+
   if (params.providerSubscriptionId) {
-    const byProvider = await db.subscription.findFirst({
-      where: { providerSubscriptionId: params.providerSubscriptionId },
+    // Wave A2: match the composite provider identity exactly, so a sandbox
+    // event can never resolve to (or collide with) a production row.
+    return db.subscription.findFirst({
+      where: {
+        providerSubscriptionId: params.providerSubscriptionId,
+        provider,
+        environment,
+      },
     })
-    if (byProvider) return byProvider
   }
 
   if (params.stripeSubscriptionId) {
-    const byStripe = await db.subscription.findFirst({
-      where: { stripeSubscriptionId: params.stripeSubscriptionId },
+    return db.subscription.findFirst({
+      where: {
+        stripeSubscriptionId: params.stripeSubscriptionId,
+        provider,
+        environment,
+      },
     })
-    if (byStripe) return byStripe
   }
 
   // A supplied provider identity is authoritative. If it does not exist yet,
@@ -191,7 +224,7 @@ async function findSubscriptionByProvider(params: TransitionParams) {
   if (params.providerSubscriptionId || params.stripeSubscriptionId) return null
 
   return db.subscription.findFirst({
-    where: { userId: params.userId },
+    where: { userId: params.userId, provider, environment },
     orderBy: { startedAt: 'desc' },
   })
 }

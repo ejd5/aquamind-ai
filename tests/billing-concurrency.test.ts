@@ -50,7 +50,7 @@ describe('P0-B atomicity and convergence', () => {
     })).skipped).toBe(true)
     expect(calls).toBe(0)
     await db.billingEvent.update({
-      where: { source_eventId: { source: 'stripe', eventId } },
+      where: { source_environment_eventId: { source: 'stripe', environment: 'production', eventId } },
       data: { nextRetryAt: new Date(Date.now() - 1_000) },
     })
     const results = await Promise.all(Array.from({ length: 8 }, () => processEventIdempotently({
@@ -59,7 +59,7 @@ describe('P0-B atomicity and convergence', () => {
     })))
     expect(calls).toBe(1)
     expect(results.filter(result => !result.skipped)).toHaveLength(1)
-    const event = await db.billingEvent.findUnique({ where: { source_eventId: { source: 'stripe', eventId } } })
+    const event = await db.billingEvent.findUnique({ where: { source_environment_eventId: { source: 'stripe', environment: 'production', eventId } } })
     expect(event?.result).toBe('processed')
     expect(event?.attemptCount).toBe(2)
   })
@@ -78,7 +78,7 @@ describe('P0-B atomicity and convergence', () => {
     })))
     expect(calls).toBe(1)
     expect(results.filter(result => !result.skipped)).toHaveLength(1)
-    const event = await db.billingEvent.findUnique({ where: { source_eventId: { source: 'stripe', eventId } } })
+    const event = await db.billingEvent.findUnique({ where: { source_environment_eventId: { source: 'stripe', environment: 'production', eventId } } })
     expect(event?.result).toBe('processed')
     expect(event?.processingToken).toBeNull()
   })
@@ -95,7 +95,7 @@ describe('P0-B atomicity and convergence', () => {
           expiresAt: status === 'expired' ? timestamp : new Date('2026-08-11T10:00:00Z'),
         })
       }
-      const subscription = await db.subscription.findUnique({ where: { providerSubscriptionId } })
+      const subscription = await db.subscription.findFirst({ where: { providerSubscriptionId } })
       expect(subscription?.status).toBe('expired')
       expect(subscription?.active).toBe(false)
     }
@@ -129,7 +129,7 @@ describe('P0-B atomicity and convergence', () => {
       eventId, source: 'revenuecat', eventType: 'RENEWAL', userId, payload: '{}', handler,
     })).error).toContain('simulated crash')
     await db.billingEvent.update({
-      where: { source_eventId: { source: 'revenuecat', eventId } },
+      where: { source_environment_eventId: { source: 'revenuecat', environment: 'production', eventId } },
       data: { nextRetryAt: new Date(Date.now() - 1_000) },
     })
     expect((await processEventIdempotently({

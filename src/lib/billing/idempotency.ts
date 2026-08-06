@@ -27,6 +27,7 @@ export interface ProcessEventParams {
   eventId: string
   source: EventSource
   eventType: string
+  environment?: string // Wave A2: 'sandbox' | 'production' (default 'production')
   userId?: string
   payload: string
   handler: () => Promise<HandlerResult | void>  // handler can return 'ignored' with a reason
@@ -94,6 +95,7 @@ export async function processEventIdempotently(
   const redactedPayload = redactPayload(params.payload)
   const now = new Date()
   const processingToken = randomUUID()
+  const environment = params.environment || 'production'
 
   // 1. ATOMIC RESERVATION
   try {
@@ -101,6 +103,7 @@ export async function processEventIdempotently(
       data: {
         eventId: params.eventId,
         source: params.source,
+        environment,
         eventType: params.eventType,
         userId: params.userId || null,
         payload: redactedPayload,
@@ -122,6 +125,7 @@ export async function processEventIdempotently(
     const reclaim = await db.billingEvent.updateMany({
       where: {
         source: params.source,
+        environment,
         eventId: params.eventId,
         OR: [
           // Failed event with nextRetryAt in the past
@@ -160,7 +164,7 @@ export async function processEventIdempotently(
     // Handler can return { result: 'ignored', reason: '...' } for non-actionable events
     if (handlerResult && handlerResult.result === 'ignored') {
       const finalized = await db.billingEvent.updateMany({
-        where: { source: params.source, eventId: params.eventId, result: 'processing', processingToken },
+        where: { source: params.source, environment, eventId: params.eventId, result: 'processing', processingToken },
         data: {
           result: 'ignored',
           ignoredReason: handlerResult.reason,
@@ -176,7 +180,7 @@ export async function processEventIdempotently(
 
     // 3a. Mark as processed
     const finalized = await db.billingEvent.updateMany({
-      where: { source: params.source, eventId: params.eventId, result: 'processing', processingToken },
+      where: { source: params.source, environment, eventId: params.eventId, result: 'processing', processingToken },
       data: {
         result: 'processed',
         processedAt: new Date(),
@@ -189,7 +193,7 @@ export async function processEventIdempotently(
     return { skipped: finalized.count === 0 }
   } catch (err: any) {
     const errorMessage = err instanceof Error ? err.message : String(err)
-    const attemptCount = await getAttemptCount(params.source, params.eventId)
+    const attemptCount = await getAttemptCount(params.source, params.eventId, environment)
 
     // 3b. Mark as failed (with nextRetryAt if retries remaining)
     const nextRetryAt = attemptCount < MAX_BILLING_RETRIES
@@ -197,7 +201,7 @@ export async function processEventIdempotently(
       : null
 
     const finalized = await db.billingEvent.updateMany({
-      where: { source: params.source, eventId: params.eventId, result: 'processing', processingToken },
+      where: { source: params.source, environment, eventId: params.eventId, result: 'processing', processingToken },
       data: {
         result: 'failed',
         errorMessage: errorMessage.slice(0, 500),
@@ -212,9 +216,9 @@ export async function processEventIdempotently(
   }
 }
 
-async function getAttemptCount(source: EventSource, eventId: string): Promise<number> {
+async function getAttemptCount(source: EventSource, eventId: string, environment: string): Promise<number> {
   const event = await db.billingEvent.findUnique({
-    where: { source_eventId: { source, eventId } },
+    where: { source_environment_eventId: { source, environment, eventId } },
     select: { attemptCount: true },
   })
   return event?.attemptCount ?? 0
@@ -225,10 +229,11 @@ async function getAttemptCount(source: EventSource, eventId: string): Promise<nu
  */
 export async function getEventStatus(
   source: EventSource,
-  eventId: string
+  eventId: string,
+  environment: string = 'production',
 ): Promise<EventResult | null> {
   const event = await db.billingEvent.findUnique({
-    where: { source_eventId: { source, eventId } },
+    where: { source_environment_eventId: { source, environment, eventId } },
     select: { result: true },
   })
   return event?.result as EventResult | null

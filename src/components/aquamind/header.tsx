@@ -1,5 +1,6 @@
 import { Droplets, ArrowLeft, Settings, LogOut, ChevronDown, Plus, Check, Trash2, Users } from 'lucide-react'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
+import { signOutWithBillingCleanup } from '@/lib/billing/sign-out'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
@@ -271,7 +272,7 @@ export function Header({
                     {t('settings')}
                   </Link>
                   <button
-                    onClick={() => signOut({ callbackUrl: '/' })}
+                    onClick={() => void signOutWithBillingCleanup({ callbackUrl: '/' })}
                     className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-destructive transition-colors hover:bg-destructive/5"
                   >
                     <LogOut className="h-4 w-4" />

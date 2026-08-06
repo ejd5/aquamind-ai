@@ -1004,7 +1004,11 @@
         "stock": "Voorraadbeheer",
         "reminders": "Slimme herinneringen"
       }
-    }
+    },
+    "restorePending": "Herstel wordt gecontroleerd",
+    "restorePendingDesc": "Synchroniseren met de server. Probeer het over een ogenblik opnieuw.",
+    "purchasePending": "Aankoop geregistreerd, validatie loopt",
+    "purchasePendingDesc": "Uw aankoop is ontvangen. AQWELIA voltooit de synchronisatie met de winkel."
   },
   "onboarding": {
     "welcome": "Welkom bij AQWELIA",
@@ -1260,7 +1264,14 @@
     "deleteFailedDesc": "Verwijdering mislukt",
     "planDecouverte": "Ontdekking",
     "planOasis": "Pool",
-    "planWellness": "Complete"
+    "planWellness": "Complete",
+    "restorePending": "Herstel wordt gecontroleerd",
+    "restorePendingDesc": "Synchroniseren met de server. Probeer het over een ogenblik opnieuw.",
+    "manageMultiTitle": "Meerdere actieve abonnementen",
+    "manageMultiDesc": "Selecteer de provider om te beheren in het bijbehorende portaal.",
+    "manageStripe": "Mijn Stripe-abonnement beheren",
+    "manageApple": "Mijn Apple-abonnement beheren",
+    "manageGoogle": "Mijn Google-abonnement beheren"
   },
   "auth": {
     "backHome": "Terug naar home",

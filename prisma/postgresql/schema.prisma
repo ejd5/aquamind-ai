@@ -46,6 +46,8 @@ model User {
   reminders                Reminder[]
   guideViews               GuideView[]
   subscriptions            Subscription[]
+  // Wave A2: canonical billing identities owned by this user.
+  billingIdentities        BillingIdentity[]
   analyticsEvents          AnalyticsEvent[]
   recommendationExecutions RecommendationExecution[]
   recommendationOutcomes   RecommendationOutcome[]
@@ -483,6 +485,8 @@ model GuideView {
 // P0-B: added status, store, stripeCustomerId, stripeSubscriptionId,
 // cancelAt, trialEndsAt, currentPeriodStart, currentPeriodEnd.
 // The `active` field is kept for backward compat but is derived from `status`.
+// Wave A2: added provider + environment so Stripe and RevenueCat rights can
+// coexist on the same User without one deactivating the other.
 model Subscription {
   id                     String    @id @default(cuid())
   userId                 String
@@ -490,6 +494,9 @@ model Subscription {
   status                 String    @default("inactive") // inactive, trialing, active, past_due, canceled, expired, grace_period
   duration               String? // week, month, halfyear, year
   store                  String? // web, ios, android
+  // Wave A2: billing provider + environment this row belongs to.
+  provider               String    @default("revenuecat") // stripe | revenuecat
+  environment            String    @default("production") // sandbox | production
   startedAt              DateTime  @default(now())
   expiresAt              DateTime?
   cancelAt               DateTime?
@@ -499,7 +506,9 @@ model Subscription {
   stripeCustomerId       String?
   stripeSubscriptionId   String?   @unique
   // P0-B: stable provider identity for finding inactive subscriptions
-  providerSubscriptionId String?   @unique // RC original_transaction_id or Stripe sub ID
+  // Wave A2: uniqueness scoped by (provider, environment) so sandbox and
+  // production (and Stripe/RevenueCat) never collide on the same provider id.
+  providerSubscriptionId String?
   // P0-B: out-of-order event protection
   lastProviderEventId    String?
   lastProviderEventAt    DateTime?
@@ -509,6 +518,30 @@ model Subscription {
 
   @@index([userId])
   @@index([status])
+  @@index([provider, environment])
+  @@unique([provider, environment, providerSubscriptionId])
+}
+
+// Wave A2: canonical billing identity — maps a provider's external user id to
+// exactly one AQWELIA User. RevenueCat uses the SAME App User ID for sandbox
+// and production, so the identity is canonical per (provider, externalUserId):
+// an externalUserId can only ever belong to one User. The billing ENVIRONMENT
+// is never stored here; it lives on Subscription and BillingEvent and is always
+// determined server-side (webhook payload or getBillingAccessEnvironment()).
+// The RevenueCat webhook resolves app_user_id through this table so an
+// anonymous or mismatched id can never grant access to the wrong User.
+model BillingIdentity {
+  id             String   @id @default(cuid())
+  userId         String
+  provider       String // stripe | revenuecat
+  externalUserId String // RC app_user_id or Stripe customer id
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, externalUserId])
+  @@index([userId])
 }
 
 // P0-B: Billing event log — idempotency for webhooks.
@@ -519,6 +552,9 @@ model BillingEvent {
   id                  String    @id @default(cuid())
   eventId             String // Stripe event.id or RC event.id
   source              String // stripe | revenuecat
+  // Wave A2: idempotency is scoped by environment so a sandbox event can never
+  // collide with (or be skipped by) the same eventId in production.
+  environment         String    @default("production") // sandbox | production
   eventType           String // checkout.session.completed, CANCELLATION, etc.
   userId              String?
   payload             String? // Redacted JSON (no card numbers, secrets)
@@ -532,7 +568,7 @@ model BillingEvent {
   nextRetryAt         DateTime?
   createdAt           DateTime  @default(now())
 
-  @@unique([source, eventId])
+  @@unique([source, environment, eventId])
   @@index([source, eventType])
   @@index([userId])
   @@index([result])

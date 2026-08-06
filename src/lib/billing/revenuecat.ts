@@ -1,156 +1,39 @@
-import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor'
+/**
+ * AQWELIA Wave A2 — RevenueCat BillingClient.
+ *
+ * All SDK operations (offerings, customer info, purchase, restore) are owned by
+ * the single lifecycle manager (revenuecat-manager.ts). This module is only a
+ * thin BillingClient adapter plus the web-side subscription management surface.
+ * There is NO second Purchases.configure here.
+ *
+ * Wave A2 (Round 2): purchase and restore already return explicit server
+ * convergence (serverConverged / state) computed inside the manager with a
+ * bounded GET /api/subscription poll.
+ */
+
 import { isNative, getPlatform } from '@/lib/platform'
-import type { BillingClient, Product, Entitlement, PurchaseResult, PlanId } from './types'
-import { getPlanFromRCProductId, DURATION_TO_PROVIDER } from './plans'
-
-const RC_API_KEYS = {
-  ios: process.env.NEXT_PUBLIC_REVENUECAT_IOS_KEY || '',
-  android: process.env.NEXT_PUBLIC_REVENUECAT_ANDROID_KEY || '',
-}
-
-let _initialized = false
-
-async function ensureInitialized() {
-  if (_initialized || !isNative()) return
-  const platform = getPlatform()
-  const apiKey = platform === 'ios' ? RC_API_KEYS.ios : RC_API_KEYS.android
-  if (!apiKey) throw new Error('RevenueCat API key not configured')
-
-  await Purchases.configure({ apiKey })
-  await Purchases.setLogLevel({ level: LOG_LEVEL.INFO })
-  _initialized = true
-}
-
-function mapPackageToProduct(pkg: any): Product | null {
-  try {
-    const id = pkg?.product?.identifier || ''
-    const mapped = getPlanFromRCProductId(id)
-    if (!mapped) return null
-
-    return {
-      id,
-      plan: mapped.plan,
-      duration: DURATION_TO_PROVIDER[mapped.duration],
-      price: parseFloat(pkg?.product?.price || '0') || 0,
-      priceString: pkg?.product?.priceString || '',
-      currency: pkg?.product?.currencyCode || 'EUR',
-    }
-  } catch {
-    return null
-  }
-}
-
-function mapCustomerInfoToEntitlements(info: any): Entitlement[] {
-  const entitlements: Entitlement[] = []
-  const platform = getPlatform() as 'ios' | 'android'
-
-  try {
-    const all = info?.entitlements?.all || {}
-    for (const [id, data] of Object.entries(all)) {
-      if (id !== 'oasis' && id !== 'wellness' && id !== 'spa365') continue
-      const d = data as any
-      entitlements.push({
-        id: id as 'oasis' | 'wellness' | 'spa365',
-        plan: id as PlanId,
-        isActive: !!d?.isActive,
-        willRenew: !!d?.willRenew,
-        expiresAt: d?.expirationDate ? new Date(d.expirationDate) : undefined,
-        purchasedAt: d?.latestPurchaseDate ? new Date(d.latestPurchaseDate) : undefined,
-        store: platform,
-        originalPurchaseDate: d?.originalPurchaseDate ? new Date(d.originalPurchaseDate) : undefined,
-      })
-    }
-  } catch {}
-
-  return entitlements
-}
+import type { BillingClient, Product, Entitlement, PurchaseResult, PlanId, RestoreResult } from './types'
+import { revenueCatManager } from './revenuecat-manager'
 
 export const revenueCatClient: BillingClient = {
   async getProducts(): Promise<Product[]> {
-    if (!isNative()) return []
-    await ensureInitialized()
-    try {
-      const result = await Purchases.getOfferings()
-      const products: Product[] = []
-      const all = (result as any)?.all || {}
-      for (const offering of Object.values(all)) {
-        const packages = (offering as any)?.availablePackages || []
-        for (const pkg of packages) {
-          const product = mapPackageToProduct(pkg)
-          if (product) products.push(product)
-        }
-      }
-      return products
-    } catch {
-      return []
-    }
+    return revenueCatManager.getProducts()
   },
 
   async getEntitlements(): Promise<Entitlement[]> {
-    if (!isNative()) return []
-    await ensureInitialized()
-    try {
-      const info = await Purchases.getCustomerInfo()
-      return mapCustomerInfoToEntitlements(info)
-    } catch {
-      return []
-    }
+    return revenueCatManager.getEntitlements()
   },
 
   async purchase(productId: string): Promise<PurchaseResult> {
-    if (!isNative()) {
-      return { success: false, error: 'Not on native' }
-    }
-    await ensureInitialized()
-    try {
-      const result = await Purchases.getOfferings()
-      const all = (result as any)?.all || {}
-      let targetPackage: any = null
-      for (const offering of Object.values(all)) {
-        const packages = (offering as any)?.availablePackages || []
-        for (const pkg of packages) {
-          if (pkg?.product?.identifier === productId) {
-            targetPackage = pkg
-            break
-          }
-        }
-      }
-      if (!targetPackage) {
-        return { success: false, error: 'Product not found' }
-      }
-      const purchaseResult = await Purchases.purchasePackage({ aPackage: targetPackage })
-      const entitlements = mapCustomerInfoToEntitlements(purchaseResult?.customerInfo)
-      const active = entitlements.find((e) => e.isActive)
-      return { success: !!active, entitlement: active }
-    } catch (err: any) {
-      if (err?.userCancelled) {
-        return { success: false, userCancelled: true }
-      }
-      return { success: false, error: err?.message || 'Purchase failed' }
-    }
+    return revenueCatManager.purchase(productId)
   },
 
-  async restorePurchases(): Promise<Entitlement[]> {
-    if (!isNative()) return []
-    await ensureInitialized()
-    try {
-      const info = await Purchases.restorePurchases()
-      return mapCustomerInfoToEntitlements(info)
-    } catch {
-      return []
-    }
+  async restorePurchases(): Promise<RestoreResult> {
+    return revenueCatManager.restorePurchases()
   },
 
   async getActivePlan(): Promise<PlanId> {
-    if (!isNative()) return 'decouverte'
-    const entitlements = await this.getEntitlements()
-    const wellness = entitlements.find((e) => e.plan === 'wellness' && e.isActive)
-    if (wellness) return 'wellness'
-    const spa365 = entitlements.find((e) => e.plan === 'spa365' && e.isActive)
-    if (spa365) return 'spa365'
-    const oasis = entitlements.find((e) => e.plan === 'oasis' && e.isActive)
-    if (oasis) return 'oasis'
-    return 'decouverte'
+    return revenueCatManager.getActivePlan()
   },
 
   async manageSubscription(): Promise<void> {
@@ -165,5 +48,11 @@ export const revenueCatClient: BillingClient = {
     } else {
       window.open('https://aqwelia.app/account', '_blank')
     }
+  },
+
+  async manageSubscriptionForTarget(target: 'stripe' | 'apple' | 'google'): Promise<void> {
+    const { manageSubscriptionTarget } = await import('./manage-subscription-router')
+    const { isNative } = await import('@/lib/platform')
+    await manageSubscriptionTarget(target, { isNative })
   },
 }

@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
   const result = await processEventIdempotently({
     eventId: event.id,
     source: 'stripe',
+    environment: 'production',
     eventType: event.type,
     payload: JSON.stringify(event),
     handler: async () => { return await handleStripeEvent(event) },

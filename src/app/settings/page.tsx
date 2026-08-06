@@ -23,13 +23,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
+import { signOutWithBillingCleanup } from '@/lib/billing/sign-out'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useLocale, useTranslations } from 'next-intl'
 import { CookiePreferencesButton } from '@/components/privacy/cookie-preferences-button'
 import { getComplianceCopy } from '@/i18n/locales/compliance-copy'
 import { billing } from '@/lib/billing'
+import { resolveSubscriptionManagementTargets } from '@/lib/billing/management-targets'
 import type { PlanId } from '@/lib/billing'
 import {
   usePreferences,
@@ -49,6 +51,9 @@ import {
 } from '@/lib/preferences/store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
 import {
   Select,
@@ -167,14 +172,20 @@ export default function SettingsPage() {
     // setCountry/setLanguage sont stables (Zustand).
   }, [setCountry, setLanguage])
 
-  // Load active plan + notification preferences once authenticated.
+  // Load active plan (from GET /api/subscription — server projection only) +
+  // notification preferences once authenticated.
   useEffect(() => {
     if (status !== 'authenticated') return
     let cancelled = false
 
-    billing
-      .getActivePlan()
-      .then((p) => { if (!cancelled) setActivePlan(p) })
+    // Wave A2 (Round 6): the server projection is the only authority for the
+    // displayed plan. Local CustomerInfo / billing entitlements are never used.
+    fetch('/api/subscription', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return
+        setActivePlan((data as any)?.plan?.id || 'decouverte')
+      })
       .catch(() => { /* fall back to free */ })
       .finally(() => { if (!cancelled) setLoadingPlan(false) })
 
@@ -194,20 +205,35 @@ export default function SettingsPage() {
     return () => { cancelled = true }
   }, [status])
 
+  const [manageTargets, setManageTargets] = useState<('stripe' | 'apple' | 'google')[] | null>(null)
+
   async function handleManage() {
     setManaging(true)
     try {
-      // Check if user has an active subscription first
-      const entitlements = await billing.getEntitlements()
-      const active = entitlements.find((e) => e.isActive)
-      if (!active) {
+      // Wave A2 (Round 6/7): subscription existence is decided from
+      // /api/subscription.sources (server), never from local RevenueCat
+      // entitlements. Management targets are resolved deterministically.
+      const res = await fetch('/api/subscription', { credentials: 'include' })
+      const data = res.ok ? await res.json() : null
+      const sources: { provider?: string; store?: string | null; environment?: string }[] =
+        (data as any)?.sources || []
+      const targets = resolveSubscriptionManagementTargets(sources)
+      if (targets.length === 0) {
         toast({
           title: t('noActiveSubscription'),
           description: t('noActiveSubscriptionDesc'),
         })
         return
       }
-      await billing.manageSubscription()
+      if (targets.length === 1) {
+        // Case B: single administrable target → open it directly.
+        await billing.manageSubscriptionForTarget(targets[0])
+        return
+      }
+      // Case C: several administrable targets → NEVER auto-open. Present a
+      // user-facing chooser; manageSubscriptionForTarget is called only after
+      // an explicit click.
+      setManageTargets(targets)
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('unknownError')
       if (msg.includes('not configured') || msg.includes('STRIPE')) {
@@ -227,21 +253,50 @@ export default function SettingsPage() {
     }
   }
 
+  async function openManageTarget(target: 'stripe' | 'apple' | 'google') {
+    setManageTargets(null)
+    setManaging(true)
+    try {
+      await billing.manageSubscriptionForTarget(target)
+    } catch (err) {
+      toast({
+        title: t('portalFailed'),
+        description: err instanceof Error ? err.message : t('unknownError'),
+        variant: 'destructive',
+      })
+    } finally {
+      setManaging(false)
+    }
+  }
+
   async function handleRestore() {
     setRestoring(true)
     try {
-      const entitlements = await billing.restorePurchases()
-      if (entitlements.length > 0) {
-        const active = entitlements.find((e) => e.isActive)
-        if (active) {
-          setActivePlan(active.plan)
-          toast({ title: t('restoreSuccess'), description: t('restoreSuccessDesc', { plan: active.plan }) })
-        } else {
-          toast({ title: t('noActiveFound') })
-        }
-      } else {
+      const result = await billing.restorePurchases()
+
+      // Wave A2 (Round 6): server projection is the only authority.
+      //   none    → no purchase / no change.
+      //   pending → NO setActivePlan from local entitlements; reload; no success.
+      //   converged → reload /api/subscription then setActivePlan(response.plan.id).
+      if (result.state === 'none' || !result.restored) {
         toast({ title: t('noPurchases') })
+        return
       }
+
+      if (result.state === 'pending' || result.serverConverged === false) {
+        toast({ title: t('restorePending'), description: t('restorePendingDesc') })
+        const res = await fetch('/api/subscription', { credentials: 'include' })
+        const data = res.ok ? await res.json() : null
+        if (data?.plan?.id) setActivePlan((data as any).plan.id as PlanId)
+        return
+      }
+
+      // state === 'converged'
+      const res = await fetch('/api/subscription', { credentials: 'include' })
+      const data = res.ok ? await res.json() : null
+      const serverPlan = (data as any)?.plan?.id as PlanId | undefined
+      if (serverPlan) setActivePlan(serverPlan)
+      toast({ title: t('restoreSuccess'), description: t('restoreSuccessDesc', { plan: serverPlan ?? 'oasis' }) })
     } catch (err) {
       toast({
         title: t('restoreFailed'),
@@ -304,7 +359,7 @@ export default function SettingsPage() {
       const data = await res.json().catch(() => null)
       if (!res.ok) throw new Error(data?.error || t('deleteFailedDesc'))
       toast({ title: t('accountDeleted'), description: t('redirecting') })
-      await signOut({ callbackUrl: '/' })
+      await signOutWithBillingCleanup({ callbackUrl: '/' })
     } catch (err) {
       toast({
         title: t('deleteFailed'),
@@ -396,6 +451,38 @@ export default function SettingsPage() {
                 )}
               </Button>
             </SettingsCard>
+
+            {/* ── Multi-provider subscription management chooser ── */}
+            <Dialog open={manageTargets !== null} onOpenChange={(open) => { if (!open) setManageTargets(null) }}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{t('manageMultiTitle')}</DialogTitle>
+                  <DialogDescription>{t('manageMultiDesc')}</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-2">
+                  {manageTargets?.includes('stripe') && (
+                    <Button variant="outline" onClick={() => openManageTarget('stripe')}>
+                      {t('manageStripe')}
+                    </Button>
+                  )}
+                  {manageTargets?.includes('apple') && (
+                    <Button variant="outline" onClick={() => openManageTarget('apple')}>
+                      {t('manageApple')}
+                    </Button>
+                  )}
+                  {manageTargets?.includes('google') && (
+                    <Button variant="outline" onClick={() => openManageTarget('google')}>
+                      {t('manageGoogle')}
+                    </Button>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setManageTargets(null)}>
+                    {t('cancel')}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {/* ───────── 2. Restaurer mes achats ───────── */}
             <SettingsCard
@@ -624,7 +711,7 @@ export default function SettingsPage() {
               description={t('signOutDesc', { email: session.user?.email ?? t('unknownUser') })}
             >
               <Button
-                onClick={() => signOut({ callbackUrl: '/' })}
+                onClick={() => void signOutWithBillingCleanup({ callbackUrl: '/' })}
                 size="sm"
                 variant="outline"
                 className="rounded-full"

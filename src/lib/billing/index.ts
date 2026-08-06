@@ -1,6 +1,7 @@
 import { isNative } from '@/lib/platform'
 import { revenueCatClient } from './revenuecat'
 import { stripeWebClient } from './stripe-web'
+import { manageSubscriptionTarget } from './manage-subscription-router'
 import type { BillingClient } from './types'
 
 export function getBillingClient(): BillingClient {
@@ -17,6 +18,10 @@ export const billing = {
   restorePurchases: () => getBillingClient().restorePurchases(),
   getActivePlan: () => getBillingClient().getActivePlan(),
   manageSubscription: () => getBillingClient().manageSubscription(),
+  // Wave A2 (Round 7): target-based routing — independent of the current
+  // platform and NOT delegated to getBillingClient().
+  manageSubscriptionForTarget: (target: 'stripe' | 'apple' | 'google') =>
+    manageSubscriptionTarget(target, { isNative }),
 }
 
-export type { PlanId, Product, Entitlement, PurchaseResult, BillingPlatform, BillingClient } from './types'
+export type { PlanId, Product, Entitlement, PurchaseResult, RestoreResult, BillingPlatform, BillingClient } from './types'

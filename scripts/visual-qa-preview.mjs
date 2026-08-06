@@ -208,7 +208,10 @@ for (const testCase of cases) {
       horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - window.innerWidth),
       imageCount: images.length,
       brokenImages: images
-        .filter((image) => !image.complete || image.naturalWidth === 0)
+        // A next/image (fill/unoptimized) element can briefly hold
+        // complete=false while already decoded; naturalWidth===0 is the
+        // reliable "broken" signal. Only that is reported as broken.
+        .filter((image) => image.naturalWidth === 0)
         .map((image) => image.currentSrc || image.src),
       imagesMissingAlt: images
         .filter((image) => !image.hasAttribute('alt'))

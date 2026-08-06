@@ -118,6 +118,7 @@ async function importPostgres(pg, ordered, data, checksum) {
       data: {
         eventId: migrationEventId,
         source: 'data_migration',
+        environment: 'production',
         eventType: 'sqlite_to_postgresql',
         result: 'processing',
       },
@@ -142,7 +143,13 @@ async function importPostgres(pg, ordered, data, checksum) {
     if (counts.BillingEvent !== billingRows.length) throw new Error('Count mismatch for BillingEvent')
 
     await tx.billingEvent.update({
-      where: { source_eventId: { source: 'data_migration', eventId: migrationEventId } },
+      where: {
+        source_environment_eventId: {
+          source: 'data_migration',
+          environment: 'production',
+          eventId: migrationEventId,
+        },
+      },
       data: { result: 'processed', processedAt: new Date() },
     })
   })

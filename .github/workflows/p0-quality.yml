@@ -59,3 +59,16 @@ jobs:
 
       - name: Build production application
         run: bun run build
+
+      # Wave A2 (Round 5): client/server boundary is protected at every PR. The
+      # build above must have produced .next/static/chunks — the guard FAILS if
+      # the directory is missing or if any Prisma / server-only / billing-server
+      # marker leaked into a client chunk.
+      - name: Bundle guard — no Prisma/server-only in client chunks
+        run: |
+          set -euo pipefail
+          if [ ! -d ".next/static/chunks" ]; then
+            echo "Client bundle chunks missing after next build (.next/static/chunks) — cannot validate the client/server boundary." >&2
+            exit 1
+          fi
+          node scripts/check-client-bundle.mjs

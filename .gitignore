@@ -80,3 +80,7 @@ server.log
 .zscripts/
 examples/
 mini-services/
+
+# Playwright
+test-results/
+playwright-report/

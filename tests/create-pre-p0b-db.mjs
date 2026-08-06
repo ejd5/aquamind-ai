@@ -18,13 +18,11 @@ db.exec(`
   CREATE TABLE "Subscription" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
-    "plan" TEXT NOT NULL,
+    "plan" TEXT NOT NULL DEFAULT 'decouverte',
     "duration" TEXT,
     "active" BOOLEAN NOT NULL DEFAULT false,
     "startedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "expiresAt" DATETIME,
-    "provider" TEXT,
-    "externalId" TEXT
+    "expiresAt" DATETIME
   );
   CREATE INDEX "Subscription_userId_idx" ON "Subscription"("userId");
 

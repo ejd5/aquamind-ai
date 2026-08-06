@@ -74,6 +74,16 @@ describe('P0-B — DB-level billing tests', () => {
 
     // Clean up any existing subscriptions for this user
     await clearSubscriptions(userId)
+    // Wave A2 (Round 1): the canonical RevenueCat identity is bound by the
+    // client after logIn — the webhook resolves app_user_id through
+    // BillingIdentity (canonical per provider, no environment).
+    await db.billingIdentity.upsert({
+      where: {
+        provider_externalUserId: { provider: 'revenuecat', externalUserId: userId },
+      },
+      update: {},
+      create: { userId, provider: 'revenuecat', externalUserId: userId },
+    })
   })
 
   afterAll(async () => {
@@ -133,13 +143,16 @@ describe('P0-B — DB-level billing tests', () => {
         active: false,
         duration: 'month',
         store: 'web',
+        provider: 'stripe',
+        environment: 'production',
         stripeSubscriptionId,
         providerSubscriptionId: stripeSubscriptionId,
       },
     })
 
     const now = Math.floor(Date.now() / 1000)
-    const eventId = 'evt_signed_subscription_updated_001'
+    // Unique per run so repeated runs on the same DB are not idempotency-skipped.
+    const eventId = `evt_signed_subscription_updated_${Date.now()}`
     const payload = JSON.stringify({
       id: eventId,
       object: 'event',
@@ -177,7 +190,7 @@ describe('P0-B — DB-level billing tests', () => {
     expect(subscription?.active).toBe(true)
 
     const event = await db.billingEvent.findUnique({
-      where: { source_eventId: { source: 'stripe', eventId } },
+      where: { source_environment_eventId: { source: 'stripe', environment: 'production', eventId } },
     })
     expect(event?.result).toBe('processed')
   })
@@ -195,6 +208,7 @@ describe('P0-B — DB-level billing tests', () => {
   })
 
   it('RevenueCat webhook: TEST event → 200, BillingEvent created with result=ignored', async () => {
+    const testEventId = 'test_evt_' + Date.now()
     const res = await fetch(`${BASE}/api/revenuecat/webhook`, {
       method: 'POST',
       headers: {
@@ -204,10 +218,11 @@ describe('P0-B — DB-level billing tests', () => {
       body: JSON.stringify({
         event: {
           type: 'TEST',
-          id: 'test_evt_001',
+          id: testEventId,
           app_user_id: userId,
           event_timestamp_ms: Date.now(),
           product_id: 'aqwelia_oasis_monthly',
+          environment: 'PRODUCTION',
         },
       }),
     })
@@ -215,22 +230,25 @@ describe('P0-B — DB-level billing tests', () => {
     const data = await res.json()
     expect(data.received).toBe(true)
 
-    // Verify BillingEvent was created
-    const events = await getBillingEvents(userId)
-    const testEvent = events.find(e => e.eventId === 'test_evt_001')
+    // Verify BillingEvent was created (quarantined, no userId stored)
+    const testEvent = await db.billingEvent.findUnique({
+      where: { source_environment_eventId: { source: 'revenuecat', environment: 'production', eventId: testEventId } },
+    })
     expect(testEvent).toBeTruthy()
     expect(testEvent?.result).toBe('ignored')
     expect(testEvent?.ignoredReason).toBe('event_type_not_supported')
   })
 
   it('RevenueCat webhook: duplicate event → 200 skipped, no double effect', async () => {
+    const dupEventId = 'test_evt_dup_' + Date.now()
     const eventBody = {
       event: {
         type: 'TEST',
-        id: 'test_evt_dup_001',
+        id: dupEventId,
         app_user_id: userId,
         event_timestamp_ms: Date.now(),
         product_id: 'aqwelia_oasis_monthly',
+        environment: 'PRODUCTION',
       },
     }
 
@@ -260,12 +278,13 @@ describe('P0-B — DB-level billing tests', () => {
 
     // Verify only ONE BillingEvent exists
     const events = await db.billingEvent.findMany({
-      where: { eventId: 'test_evt_dup_001', source: 'revenuecat' },
+      where: { eventId: dupEventId, source: 'revenuecat' },
     })
     expect(events.length).toBe(1)
   })
 
   it('RevenueCat webhook: unknown product → 200, BillingEvent=ignored with reason', async () => {
+    const unknownProdEventId = 'test_evt_unknown_prod_' + Date.now()
     const res = await fetch(`${BASE}/api/revenuecat/webhook`, {
       method: 'POST',
       headers: {
@@ -275,7 +294,7 @@ describe('P0-B — DB-level billing tests', () => {
       body: JSON.stringify({
         event: {
           type: 'INITIAL_PURCHASE',
-          id: 'test_evt_unknown_prod_001',
+          id: unknownProdEventId,
           app_user_id: userId,
           event_timestamp_ms: Date.now(),
           product_id: 'unknown_product_xyz',
@@ -283,13 +302,14 @@ describe('P0-B — DB-level billing tests', () => {
           expiration_at_ms: Date.now() + 30 * 24 * 60 * 60 * 1000,
           original_transaction_id: 'rc_orig_001',
           store: 'APP_STORE',
+          environment: 'PRODUCTION',
         },
       }),
     })
     expect(res.status).toBe(200)
 
     const event = await db.billingEvent.findUnique({
-      where: { source_eventId: { source: 'revenuecat', eventId: 'test_evt_unknown_prod_001' } },
+      where: { source_environment_eventId: { source: 'revenuecat', environment: 'production', eventId: unknownProdEventId } },
     })
     expect(event).toBeTruthy()
     expect(event?.result).toBe('ignored')
