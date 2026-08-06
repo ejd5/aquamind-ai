@@ -62,4 +62,14 @@ describe('AQWELIA Wave A3 — mobile runtime hardening', () => {
     expect(project).toContain('enabled = 1;')
     expect(entitlements).not.toContain('<key>com.apple.InAppPurchase</key>')
   })
+
+  it('builds the iOS SwiftPM project (project flag, not the missing workspace)', () => {
+    const workflow = read('.github/workflows/mobile-native-quality.yml')
+    // The iOS job must target the actual project (Swift Package Manager).
+    expect(workflow).toContain('-project ios/App/App.xcodeproj')
+    // The old workspace flag must be gone (ios/App/App.xcworkspace does not exist).
+    expect(workflow).not.toContain('-workspace ios/App/App.xcworkspace')
+    // The rest of the command stays intact.
+    expect(workflow).toContain("xcodebuild \\\n            -project ios/App/App.xcodeproj \\\n            -scheme App \\\n            -sdk iphonesimulator \\\n            -configuration Debug \\\n            -destination 'generic/platform=iOS Simulator' \\\n            CODE_SIGNING_ALLOWED=NO \\")
+  })
 })
