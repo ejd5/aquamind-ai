@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Aqwelia</string>
+    <string name="title_activity_main">Aqwelia</string>
+    <string name="package_name">com.aqwelia.app</string>
+    <string name="custom_url_scheme">com.aqwelia.app</string>
+</resources>
