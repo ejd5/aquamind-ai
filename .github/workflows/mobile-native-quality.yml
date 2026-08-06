@@ -138,9 +138,13 @@ jobs:
         run: |
           set -euo pipefail
           grep -q 'PRODUCT_BUNDLE_IDENTIFIER = com.aqwelia.app' ios/App/App.xcodeproj/project.pbxproj
-          grep -q 'com.apple.InAppPurchase' ios/App/App/App.entitlements
+          grep -q 'com.apple.InAppPurchase = {' ios/App/App.xcodeproj/project.pbxproj
           grep -q 'SWIFT_VERSION = 5.0' ios/App/App.xcodeproj/project.pbxproj
           grep -q 'RevenuecatPurchasesCapacitor' ios/App/CapApp-SPM/Package.swift
+          if grep -q '<key>com.apple.InAppPurchase</key>' ios/App/App/App.entitlements; then
+            echo 'Invalid In-App Purchase signing entitlement detected'
+            exit 1
+          fi
       - name: Build iOS app for simulator (no distribution signing)
         run: |
           set -euo pipefail
