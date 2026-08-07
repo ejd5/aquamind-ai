@@ -14,6 +14,9 @@ import { useRevenueCatIdentity } from '@/hooks/use-revenuecat-identity'
 import { installMobileApiFetchBridge } from '@/lib/mobile-api-fetch'
 
 function RevenueCatIdentitySync() {
+  // The hook owns the canonical RevenueCat transition that was previously
+  // inline here: setIdentity(user.id). Keeping identity logic in one hook also
+  // ensures login, logout and account-switch behaviour stay centralized.
   useRevenueCatIdentity()
   return null
 }
