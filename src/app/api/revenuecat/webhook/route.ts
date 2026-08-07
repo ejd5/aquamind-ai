@@ -1,40 +1,9 @@
 /**
  * AQWELIA — RevenueCat webhook (P0-B: official fields, transition engine).
  *
- * Official RevenueCat webhook payload:
- *   body = { event: { ... } }
- *   event.type         = 'INITIAL_PURCHASE' | 'RENEWAL' | 'CANCELLATION' | etc.
- *   event.id           = stable event identifier (use for idempotency)
- *   event.event_timestamp_ms = milliseconds since epoch
- *   event.purchased_at_ms    = milliseconds since epoch
- *   event.expiration_at_ms   = milliseconds since epoch
- *   event.original_transaction_id = stable subscription identifier
- *   event.transaction_id           = individual transaction
- *   event.product_id        = e.g. 'aqwelia_wellness_monthly'
- *   event.period_type       = 'normal' | 'trial' | 'intro' | 'grace'
- *   event.store             = 'APP_STORE' | 'PLAY_STORE' | 'AMAZON' | etc.
- *   event.app_user_id       = RevenueCat App User ID (NOT trusted raw)
- *   event.original_app_user_id = previous App User ID
- *   event.aliases           = list of App User IDs aliased to this one
- *   event.environment       = 'SANDBOX' | 'PRODUCTION' (strictly validated)
- *
- * Wave A2 (Round 1) — canonical identity resolution:
- *   1. The payload environment is STRICTLY validated. An absent or invalid
- *      environment is rejected (400) — it is NEVER defaulted to production.
- *   2. The identity is resolved BEFORE any idempotency reservation:
- *        - all candidates (app_user_id, original_app_user_id, aliases) must
- *          converge on a single existing User;
- *        - several distinct Users → identity_conflict → quarantined (ignored),
- *          200, never transferred;
- *        - no bound identity → 503 retryable, NO event is reserved, so the
- *          provider can re-deliver after the client binds BillingIdentity;
- *        - resolved User does not exist → 503 retryable.
- *   3. Only after a canonical User is resolved is the event processed through
- *      processEventIdempotently (the same contract used by the internal retry),
- *      which keeps [source, environment, eventId] idempotency and out-of-order
- *      protection.
- *   The stored payload is redacted: raw app_user_id / original_app_user_id /
- *   aliases are replaced by a short hash — never stored in clear.
+ * The server-side AQWELIA subscription projection is authoritative. RevenueCat
+ * payload identities are resolved through BillingIdentity before any access is
+ * granted, and every state-changing event is idempotent per environment.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
@@ -49,7 +18,6 @@ export async function POST(req: NextRequest) {
   const webhookSecret = process.env.REVENUECAT_WEBHOOK_SECRET
   if (!webhookSecret) return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 })
 
-  // Constant-time Bearer comparison
   const expectedAuth = `Bearer ${webhookSecret}`
   const authBuffer = Buffer.from(authHeader)
   const expectedBuffer = Buffer.from(expectedAuth)
@@ -62,38 +30,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  // BLOCAGE 1: use official body.event envelope
   const event = body.event
-  if (!event || typeof event !== 'object') return NextResponse.json({ error: 'Invalid event envelope' }, { status: 400 })
+  if (!event || typeof event !== 'object') {
+    return NextResponse.json({ error: 'Invalid event envelope' }, { status: 400 })
+  }
 
-  // BLOCAGE 1: use event.type (official), not event_type
   const eventType = event?.type || 'UNKNOWN'
-
-  // Wave A2 (Round 1): strict environment validation — absent or invalid is
-  // REJECTED, never defaulted to production.
   const environment = parseRevenueCatEnvironment(event?.environment)
   if (!environment) {
     return NextResponse.json({ error: 'Invalid or missing event environment' }, { status: 400 })
   }
 
-  // BLOCAGE 1: use event.id (official), fingerprint as fallback only
   const eventId = event?.id || await generateEventFingerprint('revenuecat', eventType, {
     original_transaction_id: event?.original_transaction_id || '',
     transaction_id: event?.transaction_id || '',
     purchased_at_ms: event?.purchased_at_ms || 0,
   })
 
-  // BLOCAGE 1: use event_timestamp_ms (milliseconds), not purchased_at (seconds)
-  const providerEventAt = event?.event_timestamp_ms
-    ? new Date(event.event_timestamp_ms)
-    : event?.purchased_at_ms
-    ? new Date(event.purchased_at_ms)
-    : new Date()
-
-  // ── Wave A2 (Round 1): control events (TEST / TRANSFER / ALIAS / …) can
-  // never carry a transition and must not wait on identity resolution. They are
-  // acknowledged and recorded as ignored with a stable reason (quarantine) —
-  // a TEST/TRANSFER is never granted access and never retried forever. ──
+  // Events that must never mutate access are acknowledged before identity
+  // resolution. PRODUCT_CHANGE may describe a deferred Store switch; only the
+  // subsequent effective purchase/renewal is allowed to change AQWELIA plan.
   const controlReason = RC_CONTROL_REASONS[eventType]
   if (controlReason) {
     const result = await processEventIdempotently({
@@ -108,13 +64,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true, ignored: true, skipped: result.skipped, reason: controlReason })
   }
 
-  // ── Wave A2 (Round 1): resolve the canonical identity BEFORE reservation ──
+  // Never promote a missing timestamp to `now`: that can make malformed or
+  // replayed payloads look newer than the real subscription state and bypass
+  // the out-of-order protection.
+  const timestampCandidate = Number(event?.event_timestamp_ms ?? event?.purchased_at_ms)
+  if (!Number.isFinite(timestampCandidate) || timestampCandidate <= 0) {
+    return NextResponse.json({ error: 'Invalid or missing event timestamp' }, { status: 400 })
+  }
+  const providerEventAt = new Date(timestampCandidate)
+  if (Number.isNaN(providerEventAt.getTime())) {
+    return NextResponse.json({ error: 'Invalid event timestamp' }, { status: 400 })
+  }
+
+  // Resolve the canonical AQWELIA user before reserving a state-changing event.
+  // An unbound identity remains retryable and does not consume the event ID.
   const resolution = await resolveRevenueCatIdentity(event)
 
   if (!resolution.ok) {
     if (resolution.code === 'identity_conflict') {
-      // Quarantine: multiple distinct Users resolved. Record a definitive
-      // ignored event (never transferred) and acknowledge.
       const result = await processEventIdempotently({
         eventId,
         source: 'revenuecat',
@@ -126,10 +93,7 @@ export async function POST(req: NextRequest) {
       if (result.error) return NextResponse.json({ error: 'Processing failed' }, { status: 500 })
       return NextResponse.json({ received: true, ignored: true, reason: 'identity_conflict' })
     }
-    // transient_unknown: the identity is not bound (or the resolved User does
-    // not exist). Return a RETRYABLE 503 WITHOUT reserving the event so the
-    // provider can re-deliver after the client binds BillingIdentity. No
-    // BillingEvent row is created, so there is no double-transition risk.
+
     return NextResponse.json(
       { error: 'Identity not resolvable yet', reason: resolution.reason },
       { status: 503 },
@@ -137,7 +101,6 @@ export async function POST(req: NextRequest) {
   }
 
   const resolvedUserId = resolution.userId
-
   const result = await processEventIdempotently({
     eventId,
     source: 'revenuecat',
@@ -154,10 +117,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ received: true, skipped: result.skipped })
 }
 
-/**
- * Redacts personal identifiers from the event before it is stored. Never log a
- * raw app_user_id / original_app_user_id / alias or a secret in clear.
- */
+/** Never persist RevenueCat customer identifiers in webhook payload logs. */
 function redactEvent(event: Record<string, unknown>): Record<string, unknown> {
   const redacted: Record<string, unknown> = { ...event }
   for (const key of ['app_user_id', 'original_app_user_id']) {
@@ -176,16 +136,10 @@ function redactEvent(event: Record<string, unknown>): Record<string, unknown> {
   return redacted
 }
 
-/**
- * Control events (TEST / TRANSFER / ALIAS / …) can never carry a monetization
- * transition and are quarantined (recorded ignored) without requiring identity
- * resolution. Each maps to a stable ignore reason.
- */
 const RC_CONTROL_REASONS: Record<string, string> = {
   TEST: 'event_type_not_supported',
   TRANSFER: 'rc_event_quarantined:transfer',
   ALIAS: 'rc_event_quarantined:alias',
   UNSUBSCRIPTION: 'rc_event_quarantined:unsubscription',
-  SUBSCRIPTION_EXTENDED: 'rc_event_quarantined:subscription_extended',
-  SUBSCRIPTION_PAUSED: 'rc_event_quarantined:subscription_paused',
+  PRODUCT_CHANGE: 'rc_event_deferred_to_effective_purchase:product_change',
 }

@@ -35,7 +35,7 @@ import {
   type PlanId,
 } from '@/lib/billing/plans'
 import { billing } from '@/lib/billing'
-import type { SubscriptionApiResponse } from '@/lib/billing/types'
+import type { Product, SubscriptionApiResponse } from '@/lib/billing/types'
 import { isNative } from '@/lib/platform'
 import { offlineApi } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
@@ -64,7 +64,9 @@ const FAQ_KEYS = ['changePlan', 'endSubscription', 'annual', 'refund'] as const
 
 export function ModulePaywall() {
   const t = useTranslations('plans')
+  const tc = useTranslations('common')
   const locale = useLocale()
+  const native = isNative()
   const [plans, setPlans] = useState<Plan[]>([])
   const [currentPlanId, setCurrentPlanId] = useState<PlanId>('decouverte')
   const [subscription, setSubscription] = useState<{ expiresAt?: string | null } | null>(null)
@@ -72,6 +74,8 @@ export function ModulePaywall() {
   const [duration, setDuration] = useState<Exclude<Duration, 'week'>>('halfyear')
   const [activating, setActivating] = useState<PlanId | null>(null)
   const [restoring, setRestoring] = useState(false)
+  const [storeProducts, setStoreProducts] = useState<Product[]>([])
+  const [storeProductsLoading, setStoreProductsLoading] = useState(false)
   const queueAction = useOfflineStore((s) => s.queueAction)
   const isOnline = useOfflineStore((s) => s.isOnline)
 
@@ -94,21 +98,59 @@ export function ModulePaywall() {
     }
   }, [])
 
+  const loadNativeProducts = useCallback(async (): Promise<Product[]> => {
+    if (!native) return []
+    setStoreProductsLoading(true)
+    try {
+      // RevenueCat identity convergence is mounted alongside this paywall. A
+      // short bounded retry absorbs the initial SessionProvider/SDK transition
+      // without ever substituting the static web price grid.
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        try {
+          const products = await billing.getProducts()
+          if (products.length > 0) {
+            setStoreProducts(products)
+            return products
+          }
+        } catch {
+          // Identity may still be transitioning. Retry below, fail closed after
+          // the bounded window.
+        }
+        if (attempt < 7) {
+          await new Promise((resolve) => setTimeout(resolve, 400))
+        }
+      }
+      setStoreProducts([])
+      return []
+    } finally {
+      setStoreProductsLoading(false)
+    }
+  }, [native])
+
   useEffect(() => {
     load()
   }, [load])
+
+  useEffect(() => {
+    if (native) void loadNativeProducts()
+  }, [native, loadNativeProducts])
 
   // Analytics — paywall shown. Fire once on mount with the current plan
   // (if any) so we can compute upgrade conversion rates in PostHog.
   useEffect(() => {
     trackEvent('paywall_shown', {
       currentPlan: currentPlanId,
-      platform: isNative() ? 'native' : 'web',
+      platform: native ? 'native' : 'web',
     })
   }, [])
 
   const paidPlans = useMemo(() => plans.filter((p) => p.id !== 'decouverte'), [plans])
   const freePlan = plans.find((p) => p.id === 'decouverte')
+
+  function storeProductFor(planId: PlanId, selectedDuration: Exclude<Duration, 'week'> = duration): Product | undefined {
+    const providerDuration = DURATION_TO_PROVIDER[selectedDuration]
+    return storeProducts.find((product) => product.plan === planId && product.duration === providerDuration)
+  }
 
   async function activate(planId: PlanId) {
     setActivating(planId)
@@ -122,10 +164,15 @@ export function ModulePaywall() {
         return
       }
 
-      if (isNative()) {
-        // Native: use RevenueCat IAP
-        const productId = `aqwelia_${planId}_${DURATION_TO_PROVIDER[duration]}`
-        const result = await billing.purchase(productId)
+      if (native) {
+        // Native: the product id AND displayed price must come from the current
+        // RevenueCat offering. Never reconstruct an id or fall back to web EUR
+        // prices when the store product is unavailable.
+        const storeProduct = storeProductFor(planId)
+        if (!storeProduct?.id || !storeProduct.priceString) {
+          throw new Error(t('failed'))
+        }
+        const result = await billing.purchase(storeProduct.id)
 
         // Wave A2 (Round 5) — strict UI contract:
         //   Case A: failed / cancelled → existing error/cancel, NO state mutation.
@@ -233,6 +280,11 @@ export function ModulePaywall() {
   }
 
   function formatPrice(plan: Plan) {
+    if (native) {
+      // Store-localised string (currency, decimal formatting, storefront) is the
+      // only native display source. No fabricated web-price fallback.
+      return storeProductFor(plan.id)?.priceString || '—'
+    }
     const p = plan.price[duration]
     if (p === 0) return '0 €'
     return `${p.toFixed(2).replace('.', ',')} €`
@@ -308,11 +360,23 @@ export function ModulePaywall() {
         ))}
       </div>
 
+      {native && !storeProductsLoading && storeProducts.length === 0 && (
+        <div className="flex items-center justify-center gap-3 rounded-xl border border-border/60 bg-card/50 p-3 text-xs text-muted-foreground">
+          <span>{t('failed')}</span>
+          <Button type="button" size="sm" variant="outline" onClick={() => void loadNativeProducts()}>
+            <RefreshCw className="h-3.5 w-3.5" />
+            {tc('refresh')}
+          </Button>
+        </div>
+      )}
+
       <div className="grid gap-4 lg:grid-cols-3">
         {paidPlans.map((plan) => {
           const isCurrent = plan.id === currentPlanId
           const highlighted = plan.highlighted
           const advantage = getPriceAdvantage(plan, duration)
+          const storeProduct = native ? storeProductFor(plan.id) : undefined
+          const storeUnavailable = native && !storeProduct?.priceString
           return (
             <Card
               key={plan.id}
@@ -336,12 +400,14 @@ export function ModulePaywall() {
                   </div>
                 </div>
                 <div className="flex items-end gap-1.5">
-                  <span className="font-display text-3xl font-bold text-primary">{formatPrice(plan)}</span>
+                  <span className="font-display text-3xl font-bold text-primary">
+                    {native && storeProductsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : formatPrice(plan)}
+                  </span>
                   <span className="mb-1 text-xs text-muted-foreground">
                     {t(DURATIONS.find((d) => d.id === duration)?.suffixKey || 'perMonth')}
                   </span>
                 </div>
-                {duration !== 'month' && (
+                {!native && duration !== 'month' && (
                   <div className="rounded-lg bg-emerald-500/10 px-3 py-2 text-[11px] text-emerald-700 dark:text-emerald-300">
                     <strong>{t('savePercent', { percent: advantage.savedPercent })}</strong>
                     {advantage.freeMonths >= 0.9 && (
@@ -358,7 +424,7 @@ export function ModulePaywall() {
                   ))}
                 </ul>
                 <Button
-                  disabled={isCurrent || activating === plan.id}
+                  disabled={isCurrent || activating === plan.id || storeUnavailable || (native && storeProductsLoading)}
                   onClick={() => activate(plan.id)}
                   className={`w-full ${
                     highlighted

@@ -43,48 +43,133 @@ export interface BillingIdentityRow {
 export type DeploymentEnvironment = 'production' | 'staging' | 'development'
 
 const VALID_DEPLOYMENT_ENVS: ReadonlySet<string> = new Set(['production', 'staging', 'development'])
+const STAGING_PROJECT_HOST = 'aqwelia-staging.vercel.app'
+const STAGING_DEPLOYMENT_PREFIX = 'aqwelia-staging-'
+
+export interface BillingRuntimeContext {
+  deploymentEnvironment: DeploymentEnvironment | 'unknown'
+  sandboxAllowed: boolean
+  billingAccessEnvironment: BillingEnvironment
+  inferredFromVercel: boolean
+}
+
+export interface BillingRuntimeOverrides {
+  deploymentEnv?: string
+  allowSandbox?: boolean | string
+  vercelEnv?: string
+  vercelUrl?: string
+  vercelProjectProductionUrl?: string
+}
+
+function normalizeHost(value: string | undefined): string {
+  const normalized = (value || '').trim().toLowerCase()
+  if (!normalized) return ''
+  try {
+    return new URL(normalized.includes('://') ? normalized : `https://${normalized}`).hostname
+  } catch {
+    return normalized.split('/')[0]
+  }
+}
+
+function isVerifiedStagingPreview(args: {
+  vercelEnv: string
+  vercelUrl: string
+  vercelProjectProductionUrl: string
+}): boolean {
+  if (args.vercelEnv !== 'preview') return false
+  const deploymentHost = normalizeHost(args.vercelUrl)
+  const projectHost = normalizeHost(args.vercelProjectProductionUrl)
+  return (
+    projectHost === STAGING_PROJECT_HOST ||
+    deploymentHost === STAGING_PROJECT_HOST ||
+    deploymentHost.startsWith(STAGING_DEPLOYMENT_PREFIX)
+  )
+}
+
+/**
+ * Resolves the server billing runtime context.
+ *
+ * Security invariants:
+ *   - a Vercel Production deployment is ALWAYS production billing, even if a
+ *     conflicting AQWELIA_DEPLOYMENT_ENV/BILLING_ALLOW_SANDBOX value exists;
+ *   - an explicit valid AQWELIA_DEPLOYMENT_ENV remains authoritative outside
+ *     Vercel Production;
+ *   - when those public flags are absent, ONLY a Vercel Preview whose system
+ *     hostname belongs to the dedicated aqwelia-staging project is inferred as
+ *     staging + sandbox;
+ *   - every other missing/invalid configuration fails closed to production.
+ *
+ * When overrides are supplied, the helper is intentionally pure: omitted
+ * override fields do NOT fall back to process.env. This keeps tests, preflight
+ * checks and explicit security assertions deterministic regardless of the CI
+ * host's own Vercel variables. Runtime callers simply omit the argument.
+ */
+export function resolveBillingRuntimeContext(
+  overrides?: BillingRuntimeOverrides,
+): BillingRuntimeContext {
+  const useRuntimeEnv = overrides === undefined
+  const vercelEnv = (
+    useRuntimeEnv ? process.env.VERCEL_ENV ?? '' : overrides.vercelEnv ?? ''
+  ).trim().toLowerCase()
+  const vercelUrl = useRuntimeEnv ? process.env.VERCEL_URL ?? '' : overrides.vercelUrl ?? ''
+  const vercelProjectProductionUrl = useRuntimeEnv
+    ? process.env.VERCEL_PROJECT_PRODUCTION_URL ?? ''
+    : overrides.vercelProjectProductionUrl ?? ''
+  const explicitDeploymentEnv = (
+    useRuntimeEnv ? process.env.AQWELIA_DEPLOYMENT_ENV ?? '' : overrides.deploymentEnv ?? ''
+  ).trim().toLowerCase()
+
+  const inferredStaging = isVerifiedStagingPreview({
+    vercelEnv,
+    vercelUrl,
+    vercelProjectProductionUrl,
+  })
+
+  let deploymentEnvironment: DeploymentEnvironment | 'unknown'
+  if (vercelEnv === 'production') {
+    deploymentEnvironment = 'production'
+  } else if (VALID_DEPLOYMENT_ENVS.has(explicitDeploymentEnv)) {
+    deploymentEnvironment = explicitDeploymentEnv as DeploymentEnvironment
+  } else if (inferredStaging) {
+    deploymentEnvironment = 'staging'
+  } else {
+    deploymentEnvironment = 'unknown'
+  }
+
+  const explicitSandbox = useRuntimeEnv
+    ? process.env.BILLING_ALLOW_SANDBOX
+    : overrides.allowSandbox
+  const sandboxFlagEnabled = explicitSandbox === true || explicitSandbox === 'true'
+  const sandboxAllowed =
+    deploymentEnvironment !== 'production' &&
+    deploymentEnvironment !== 'unknown' &&
+    (sandboxFlagEnabled || inferredStaging)
+
+  const billingAccessEnvironment: BillingEnvironment =
+    sandboxAllowed && (deploymentEnvironment === 'staging' || deploymentEnvironment === 'development')
+      ? 'sandbox'
+      : 'production'
+
+  return {
+    deploymentEnvironment,
+    sandboxAllowed,
+    billingAccessEnvironment,
+    inferredFromVercel: inferredStaging && !VALID_DEPLOYMENT_ENVS.has(explicitDeploymentEnv),
+  }
+}
 
 /**
  * Canonical server-side source of the billing access environment (fail-closed).
  *
- * The deployment is determined by the EXPLICIT variable AQWELIA_DEPLOYMENT_ENV
- * (production | staging | development) — NOT by NODE_ENV (Vercel sets
- * NODE_ENV=production on BOTH Production and Staging). Rules:
- *   - production  : ONLY environment='production' grants access. BILLING_ALLOW_SANDBOX
- *                   can NEVER override this.
- *   - staging     : sandbox is allowed ONLY when BILLING_ALLOW_SANDBOX=true;
- *                   otherwise 'production' (fail-closed).
- *   - development : sandbox allowed only when BILLING_ALLOW_SANDBOX=true;
- *                   otherwise 'production'.
- *   - absent or INVALID AQWELIA_DEPLOYMENT_ENV : FAIL-CLOSED to 'production'
- *     (never grants sandbox by default). An invalid configuration behaves like
- *     production — no sandbox access is ever leaked.
- *
- * The client can never choose the environment: it is always server-derived.
- * Testable via the overrides parameter.
+ * Production can NEVER be overridden into sandbox. Staging/development use
+ * sandbox only when explicitly allowed, except for verified Preview deployments
+ * of the dedicated aqwelia-staging Vercel project, which are safely inferred.
+ * All unknown environments fail closed to production.
  */
-export function getBillingAccessEnvironment(overrides?: {
-  deploymentEnv?: string
-  allowSandbox?: boolean | string
-}): BillingEnvironment {
-  const deploymentEnv =
-    overrides?.deploymentEnv ??
-    process.env.AQWELIA_DEPLOYMENT_ENV ??
-    ''
-
-  // Absent or invalid → fail-closed to production (sandbox never granted).
-  if (!VALID_DEPLOYMENT_ENVS.has(deploymentEnv.trim().toLowerCase())) {
-    return 'production'
-  }
-  const normalized = deploymentEnv.trim().toLowerCase() as DeploymentEnvironment
-
-  // Production NEVER allows sandbox, whatever BILLING_ALLOW_SANDBOX says.
-  if (normalized === 'production') return 'production'
-
-  // staging / development: sandbox only when explicitly enabled.
-  const allow = overrides?.allowSandbox ?? process.env.BILLING_ALLOW_SANDBOX
-  if (allow === true || allow === 'true') return 'sandbox'
-  return 'production'
+export function getBillingAccessEnvironment(
+  overrides?: BillingRuntimeOverrides,
+): BillingEnvironment {
+  return resolveBillingRuntimeContext(overrides).billingAccessEnvironment
 }
 
 /**
@@ -146,7 +231,7 @@ export async function upsertBillingIdentity(args: {
   }
   try {
     const row = await db.billingIdentity.create({
-      data: { provider, externalUserId, userId },
+      data: { userId, provider, externalUserId },
     })
     return { ok: true, row }
   } catch (err) {

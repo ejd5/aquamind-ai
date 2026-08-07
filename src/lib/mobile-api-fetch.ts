@@ -12,6 +12,12 @@
  * activates when NEXT_PUBLIC_API_BASE_URL was compiled as an absolute HTTPS
  * URL. It keeps the shared web components usable without duplicating every
  * API call in the mobile tree.
+ *
+ * Rewritten API calls also default to `credentials: 'include'`. Once a local
+ * `/api/...` URL becomes an absolute HTTPS backend URL it is cross-origin from
+ * the Capacitor WebView, so the default browser credential mode would no longer
+ * be sufficient for AQWELIA's cookie-backed NextAuth session. Callers that
+ * explicitly set another credential mode keep their explicit choice.
  */
 
 import { apiUrl } from '@/lib/api-client'
@@ -52,6 +58,11 @@ export function resolveMobileApiInput(input: RequestInfo | URL): RequestInfo | U
     return path ? new URL(apiUrl(path)) : input
   }
 
+  if (typeof Request !== 'undefined' && input instanceof Request) {
+    const path = localApiPath(input.url)
+    return path ? new Request(apiUrl(path), input) : input
+  }
+
   return input
 }
 
@@ -65,8 +76,16 @@ export function installMobileApiFetchBridge(): void {
   if (current.__aqweliaMobileApiBridge) return
 
   const original = current.bind(window)
-  const bridged = ((input: RequestInfo | URL, init?: RequestInit) =>
-    original(resolveMobileApiInput(input), init)) as BridgedFetch
+  const bridged = ((input: RequestInfo | URL, init?: RequestInit) => {
+    const resolved = resolveMobileApiInput(input)
+    const wasRewritten = resolved !== input
+    const bridgedInit =
+      wasRewritten && init?.credentials === undefined
+        ? { ...init, credentials: 'include' as const }
+        : init
+
+    return original(resolved, bridgedInit)
+  }) as BridgedFetch
 
   bridged.__aqweliaMobileApiBridge = true
   window.fetch = bridged

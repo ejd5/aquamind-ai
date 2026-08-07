@@ -1,31 +1,30 @@
 #!/usr/bin/env node
 /**
- * AQWELIA Wave A3 — mobile build environment preflight (fail-closed).
+ * AQWELIA Launch R1 — mobile build environment preflight (fail-closed).
  *
  * Validates the public environment variables required for a mobile build and
  * blocks a Release/Staging compile if a required variable is missing or
  * invalid. NEVER reads server secrets from the bundle.
  *
  * Public variables expected:
- *   NEXT_PUBLIC_API_BASE_URL         HTTPS, no localhost, no .invalid, no
- *                                    ephemeral Vercel preview domain.
- *   NEXT_PUBLIC_REVENUECAT_IOS_KEY   public (sk_ or goog_ prefixed) RevenueCat
- *                                    App Store key.
- *   NEXT_PUBLIC_REVENUECAT_ANDROID_KEY public (goog_ or sk_ prefixed) RevenueCat
- *                                    Play key.
+ *   NEXT_PUBLIC_API_BASE_URL           HTTPS, no localhost, no .invalid, no
+ *                                      ephemeral Vercel preview domain.
+ *   NEXT_PUBLIC_REVENUECAT_IOS_KEY     RevenueCat App Store public SDK key,
+ *                                      prefix appl_.
+ *   NEXT_PUBLIC_REVENUECAT_ANDROID_KEY RevenueCat Play Store public SDK key,
+ *                                      prefix goog_.
  *
  * Server secrets that must NEVER appear in the bundle:
  *   REVENUECAT_API_KEY, REVENUECAT_WEBHOOK_SECRET, STRIPE_SECRET_KEY,
  *   STRIPE_WEBHOOK_SECRET, DATABASE_URL, NEXTAUTH_SECRET.
- *
- * Usage:
- *   NODE_ENV=production NEXT_PUBLIC_API_BASE_URL=... node scripts/mobile-env-preflight.mjs
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 const root = process.cwd()
-const profile = process.env.BUILD_PROFILE || process.env.NODE_ENV || 'production'
+const explicitProfile = process.env.BUILD_PROFILE || ''
+const profile = explicitProfile || process.env.NODE_ENV || 'production'
+const structuralCi = process.env.CI === 'true' && explicitProfile === ''
 const requiredPublic = [
   'NEXT_PUBLIC_API_BASE_URL',
   'NEXT_PUBLIC_REVENUECAT_IOS_KEY',
@@ -50,25 +49,39 @@ for (const name of requiredPublic) {
     errors.push(`Missing required public variable ${name} for ${profile} build`)
     continue
   }
-  // NEXT_PUBLIC_ vars are inlined by Next; validate the URL + key shape.
+
   if (name === 'NEXT_PUBLIC_API_BASE_URL') {
     try {
       const url = new URL(value)
       if (url.protocol !== 'https:') errors.push(`${name} must be HTTPS (got ${url.protocol}//)`)
-      if (/localhost|127\.0\.0\.1|\.invalid/.test(url.hostname)) errors.push(`${name} must not be localhost/.invalid (got ${url.hostname})`)
-      if (/vercel\.app/.test(url.hostname) && /preview/i.test(url.hostname)) errors.push(`${name} must not be an ephemeral preview domain (got ${url.hostname})`)
+      if (/localhost|127\.0\.0\.1|\.invalid/.test(url.hostname)) {
+        errors.push(`${name} must not be localhost/.invalid (got ${url.hostname})`)
+      }
+      if (/vercel\.app/.test(url.hostname) && /preview/i.test(url.hostname)) {
+        errors.push(`${name} must not be an ephemeral preview domain (got ${url.hostname})`)
+      }
     } catch {
       errors.push(`${name} is not a valid URL`)
     }
   }
-  if (name === 'NEXT_PUBLIC_REVENUECAT_IOS_KEY' || name === 'NEXT_PUBLIC_REVENUECAT_ANDROID_KEY') {
-    // RevenueCat public SDK keys are NOT 'sk_live_...' secrets; they are
-    // per-store public keys. We only enforce non-empty + length sanity and
-    // reject obvious server secret shapes.
-    if (value.startsWith('sk_live_') || value.startsWith('sk_test_')) {
-      errors.push(`${name} looks like a server Stripe secret — public RevenueCat keys never start with sk_`)
+
+  if (name === 'NEXT_PUBLIC_REVENUECAT_IOS_KEY' && !/^appl_[A-Za-z0-9_-]{6,}$/.test(value)) {
+    errors.push(`${name} must be an App Store RevenueCat public SDK key (appl_...)`)
+  }
+
+  if (name === 'NEXT_PUBLIC_REVENUECAT_ANDROID_KEY' && !/^goog_[A-Za-z0-9_-]{6,}$/.test(value)) {
+    errors.push(`${name} must be a Play Store RevenueCat public SDK key (goog_...)`)
+  }
+
+  if (
+    (name === 'NEXT_PUBLIC_REVENUECAT_IOS_KEY' || name === 'NEXT_PUBLIC_REVENUECAT_ANDROID_KEY') &&
+    /fixture|placeholder|example|changeme/i.test(value)
+  ) {
+    if (structuralCi) {
+      warnings.push(`${name} is an allowed structural-CI fixture key`)
+    } else {
+      errors.push(`${name} must not use a fixture/placeholder in ${profile}`)
     }
-    if (value.length < 12) errors.push(`${name} is too short to be a valid public RevenueCat key`)
   }
 }
 
