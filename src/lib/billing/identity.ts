@@ -98,16 +98,26 @@ function isVerifiedStagingPreview(args: {
  *     hostname belongs to the dedicated aqwelia-staging project is inferred as
  *     staging + sandbox;
  *   - every other missing/invalid configuration fails closed to production.
+ *
+ * When overrides are supplied, the helper is intentionally pure: omitted
+ * override fields do NOT fall back to process.env. This keeps tests, preflight
+ * checks and explicit security assertions deterministic regardless of the CI
+ * host's own Vercel variables. Runtime callers simply omit the argument.
  */
 export function resolveBillingRuntimeContext(
-  overrides: BillingRuntimeOverrides = {},
+  overrides?: BillingRuntimeOverrides,
 ): BillingRuntimeContext {
-  const vercelEnv = (overrides.vercelEnv ?? process.env.VERCEL_ENV ?? '').trim().toLowerCase()
-  const vercelUrl = overrides.vercelUrl ?? process.env.VERCEL_URL ?? ''
-  const vercelProjectProductionUrl =
-    overrides.vercelProjectProductionUrl ?? process.env.VERCEL_PROJECT_PRODUCTION_URL ?? ''
-  const explicitDeploymentEnv =
-    (overrides.deploymentEnv ?? process.env.AQWELIA_DEPLOYMENT_ENV ?? '').trim().toLowerCase()
+  const useRuntimeEnv = overrides === undefined
+  const vercelEnv = (
+    useRuntimeEnv ? process.env.VERCEL_ENV ?? '' : overrides.vercelEnv ?? ''
+  ).trim().toLowerCase()
+  const vercelUrl = useRuntimeEnv ? process.env.VERCEL_URL ?? '' : overrides.vercelUrl ?? ''
+  const vercelProjectProductionUrl = useRuntimeEnv
+    ? process.env.VERCEL_PROJECT_PRODUCTION_URL ?? ''
+    : overrides.vercelProjectProductionUrl ?? ''
+  const explicitDeploymentEnv = (
+    useRuntimeEnv ? process.env.AQWELIA_DEPLOYMENT_ENV ?? '' : overrides.deploymentEnv ?? ''
+  ).trim().toLowerCase()
 
   const inferredStaging = isVerifiedStagingPreview({
     vercelEnv,
@@ -126,7 +136,9 @@ export function resolveBillingRuntimeContext(
     deploymentEnvironment = 'unknown'
   }
 
-  const explicitSandbox = overrides.allowSandbox ?? process.env.BILLING_ALLOW_SANDBOX
+  const explicitSandbox = useRuntimeEnv
+    ? process.env.BILLING_ALLOW_SANDBOX
+    : overrides.allowSandbox
   const sandboxFlagEnabled = explicitSandbox === true || explicitSandbox === 'true'
   const sandboxAllowed =
     deploymentEnvironment !== 'production' &&
