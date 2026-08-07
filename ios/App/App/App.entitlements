@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  In-App Purchase is enabled through the Xcode SystemCapabilities entry
+  `com.apple.InAppPurchase` in project.pbxproj. Apple does not define an
+  In-App Purchase code-signing entitlement, so this plist intentionally stays
+  empty until AQWELIA needs a separate capability that requires entitlements.
+-->
+<dict/>
+</plist>

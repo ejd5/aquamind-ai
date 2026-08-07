@@ -1,0 +1,3 @@
+"NSCameraUsageDescription" = "AQWELIA uses the camera to analyse your pool water from a photo.";
+"NSPhotoLibraryUsageDescription" = "AQWELIA lets you pick a pool water photo from your library for analysis.";
+"NSLocationWhenInUseUsageDescription" = "AQWELIA uses your location to provide local weather for your pool.";

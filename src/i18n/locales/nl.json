@@ -1303,7 +1303,11 @@
     "agreeTermsAnd": " en ",
     "orContinueWith": "of ga verder met",
     "signInWithGoogle": "Doorgaan met Google",
-    "signInWithApple": "Doorgaan met Apple"
+    "signInWithApple": "Doorgaan met Apple",
+    "name": "Naam",
+    "email": "E-mail",
+    "password": "Wachtwoord",
+    "alreadyAccount": "Al een account?"
   },
   "diagnostic": {
     "title": "Fotodiagnose",
