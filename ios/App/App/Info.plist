@@ -66,6 +66,7 @@
 	<key>WKAppBoundDomains</key>
 	<array>
 		<string>aqwelia-staging.vercel.app</string>
+		<string>aqwelia-staging-git-fix-wave-a4-mobile-au-2b2425-ejd5s-projects.vercel.app</string>
 		<string>aqwelia-production.vercel.app</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
