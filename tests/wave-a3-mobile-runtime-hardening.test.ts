@@ -63,21 +63,29 @@ describe('AQWELIA Wave A3 — mobile runtime hardening', () => {
     expect(entitlements).not.toContain('<key>com.apple.InAppPurchase</key>')
   })
 
-  it('builds the iOS SwiftPM project on the Xcode 26 runner (project flag, not the missing workspace)', () => {
+  it('deduplicates the native quality workflow to PR-only and hardens the Xcode 26 probe', () => {
     const workflow = read('.github/workflows/mobile-native-quality.yml')
-    // The iOS job runs on the deterministic macos-26 runner (Capacitor 8 needs Xcode 26).
+    // 1. The workflow triggers on PR to main only — no duplicate push trigger.
+    expect(workflow).toContain('pull_request:')
+    expect(workflow).toContain('branches:\n      - main')
+    expect(workflow).not.toMatch(/push:\s*\n\s*branches:\s*\n\s*- feat\/wave-a3-mobile-b2c-sandbox-foundation/)
+    // 2. The iOS job runs on the deterministic macos-26 runner (Capacitor 8 needs Xcode 26).
     expect(workflow).toContain('runs-on: macos-26')
-    // An explicit Xcode 26 verification gate must exist and fail the job otherwise.
+    // 3. The Xcode probe has a retry limited to 3 attempts and probes xcodebuild -version.
     expect(workflow).toContain('Verify Xcode 26')
+    expect(workflow).toContain('for attempt in 1 2 3; do')
+    expect(workflow).toContain("if version_output=\"$(xcodebuild -version 2>&1)\"; then")
     expect(workflow).toContain("grep -Eq '^Xcode 26(\\.|$)'")
-    // The iOS job must target the actual project (Swift Package Manager).
+    expect(workflow).toContain('if [ "${success}" -ne 1 ]; then')
+    // 4. The real iOS build targets the project and stays fail-closed (no retry around it).
     expect(workflow).toContain('-project ios/App/App.xcodeproj')
-    // The old workspace flag must be gone (ios/App/App.xcworkspace does not exist).
     expect(workflow).not.toContain('-workspace ios/App/App.xcworkspace')
-    // The old macos-14 runner must be gone from the iOS job.
     expect(workflow).not.toContain('runs-on: macos-14')
-    // The rest of the command stays intact.
-    expect(workflow).toContain("xcodebuild \\\n            -project ios/App/App.xcodeproj \\\n            -scheme App \\\n            -sdk iphonesimulator \\\n            -configuration Debug \\\n            -destination 'generic/platform=iOS Simulator' \\\n            CODE_SIGNING_ALLOWED=NO \\")
+    // The final build command is NOT wrapped in a retry loop — its exit code is exposed.
+    const build = workflow.slice(workflow.indexOf('- name: Build iOS app for simulator'))
+    expect(build).toContain('build | tee /tmp/ios-build.log | tail -40')
+    expect(build).not.toContain('for attempt in 1 2 3')
+    expect(build).toContain('set -euo pipefail')
   })
 
   it('attaches the fr/en localized resources to the Xcode App group (path = App)', () => {

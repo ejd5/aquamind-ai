@@ -4,9 +4,6 @@ on:
   pull_request:
     branches:
       - main
-  push:
-    branches:
-      - feat/wave-a3-mobile-b2c-sandbox-foundation
 
 permissions:
   contents: read
@@ -129,8 +126,30 @@ jobs:
       - name: Verify Xcode 26
         run: |
           set -euo pipefail
-          xcodebuild -version
-          xcodebuild -version | grep -Eq '^Xcode 26(\.|$)'
+
+          success=0
+          for attempt in 1 2 3; do
+            echo "Xcode version probe attempt ${attempt}/3"
+
+            if version_output="$(xcodebuild -version 2>&1)"; then
+              echo "${version_output}"
+              echo "${version_output}" | grep -Eq '^Xcode 26(\.|$)'
+              success=1
+              break
+            fi
+
+            status=$?
+            echo "xcodebuild -version failed on attempt ${attempt} (exit ${status})"
+
+            if [ "${attempt}" -lt 3 ]; then
+              sleep 5
+            fi
+          done
+
+          if [ "${success}" -ne 1 ]; then
+            echo "Xcode 26 preflight failed after 3 attempts"
+            exit 1
+          fi
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Generate Prisma clients
