@@ -143,7 +143,10 @@ export default function MobileSandboxDiagnosticsPage() {
   }, [])
 
   useEffect(() => {
-    void refresh()
+    const timer = window.setTimeout(() => {
+      void refresh()
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [refresh])
 
   if (!ENABLED) {
