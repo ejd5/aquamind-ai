@@ -7,9 +7,10 @@
  * web origin. The static Capacitor bundle must not bypass that protection or
  * attempt to mint a production Turnstile token from its local WebView origin.
  *
- * We therefore open the hosted signup flow in the system browser. Once the
- * account is created, the user returns to AQWELIA and signs in through the
- * native credentials flow, which owns the Capacitor cookie/session lifecycle.
+ * We therefore open the hosted signup flow in the system browser and provide
+ * a local callback path. Once the account is created, the hosted flow opens
+ * the AQWELIA deep link and the native app resumes on its credentials screen,
+ * which owns the Capacitor cookie/session lifecycle.
  */
 
 import { useState } from 'react'
@@ -18,6 +19,8 @@ import { useTranslations } from 'next-intl'
 import { Browser } from '@capacitor/browser'
 import { ExternalLink, Loader2, ShieldCheck } from 'lucide-react'
 import { apiUrl } from '@/lib/api-client'
+
+const MOBILE_AUTH_CALLBACK_PATH = '/auth/mobile-complete'
 
 export default function MobileRegisterPage() {
   const t = useTranslations('auth')
@@ -28,7 +31,8 @@ export default function MobileRegisterPage() {
     setOpening(true)
     setError(null)
     try {
-      const url = apiUrl('/auth/signin?mode=signup')
+      const callbackUrl = encodeURIComponent(MOBILE_AUTH_CALLBACK_PATH)
+      const url = apiUrl(`/auth/signin?mode=signup&callbackUrl=${callbackUrl}`)
       if (!/^https:\/\//i.test(url)) throw new Error(t('errorGeneric'))
       await Browser.open({ url })
     } catch (cause) {
