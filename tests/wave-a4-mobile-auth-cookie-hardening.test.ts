@@ -40,4 +40,15 @@ describe('AQWELIA Wave A4 mobile auth and cookie hardening', () => {
     expect(register).not.toContain("fetch('/api/auth/register'")
     expect(register).not.toContain("signIn('credentials'")
   })
+
+  it('uses RevenueCat offering prices and ids as the only native paywall authority', () => {
+    const paywall = read('src/components/aquamind/module-paywall.tsx')
+
+    expect(paywall).toContain('const products = await billing.getProducts()')
+    expect(paywall).toContain("return storeProductFor(plan.id)?.priceString || '—'")
+    expect(paywall).toContain('const result = await billing.purchase(storeProduct.id)')
+    expect(paywall).toContain("!native && duration !== 'month'")
+    expect(paywall).toContain('const storeUnavailable = native && !storeProduct?.priceString')
+    expect(paywall).not.toContain('const productId = `aqwelia_${planId}_${DURATION_TO_PROVIDER[duration]}`')
+  })
 })
