@@ -6,13 +6,14 @@ const root = process.cwd()
 const read = (path: string) => readFileSync(join(root, path), 'utf8')
 
 describe('AQWELIA Wave A4 mobile auth and cookie hardening', () => {
-  it('declares Staging, A4 branch and Production backend hosts as iOS App-Bound Domains', () => {
+  it('declares Staging, Launch R1 and Production backend hosts as iOS App-Bound Domains', () => {
     const plist = read('ios/App/App/Info.plist')
 
     expect(plist).toContain('<key>WKAppBoundDomains</key>')
     expect(plist).toContain('<string>aqwelia-staging.vercel.app</string>')
-    expect(plist).toContain('<string>aqwelia-staging-git-fix-wave-a4-mobile-au-2b2425-ejd5s-projects.vercel.app</string>')
+    expect(plist).toContain('<string>aqwelia-staging-git-release-aqwelia-launch-ejd5s-projects.vercel.app</string>')
     expect(plist).toContain('<string>aqwelia-production.vercel.app</string>')
+    expect(plist).not.toContain('aqwelia-staging-git-fix-wave-a4-mobile-au-2b2425-ejd5s-projects.vercel.app')
   })
 
   it('keeps native credential sign-in and the shared API client cookie-authenticated', () => {
@@ -47,10 +48,10 @@ describe('AQWELIA Wave A4 mobile auth and cookie hardening', () => {
     expect(hosted).toContain("fetch('/api/auth/register'")
     expect(hosted).toContain("window.location.assign(COMPLETE_PATH)")
     expect(hosted).toContain("const COMPLETE_PATH = '/auth/mobile-complete'")
-    expect(hosted).not.toContain("signIn(")
-    expect(hosted).not.toContain("handleOAuth")
-    expect(hosted).not.toContain("signInWithGoogle")
-    expect(hosted).not.toContain("signInWithApple")
+    expect(hosted).not.toContain('signIn(')
+    expect(hosted).not.toContain('handleOAuth')
+    expect(hosted).not.toContain('signInWithGoogle')
+    expect(hosted).not.toContain('signInWithApple')
   })
 
   it('returns secure hosted registration to the installed native app without transporting credentials', () => {
@@ -116,27 +117,38 @@ describe('AQWELIA Wave A4 mobile auth and cookie hardening', () => {
     expect(diagnostics).not.toContain('NEXT_PUBLIC_REVENUECAT_ANDROID_KEY')
   })
 
-  it('provides a safe preview-only server readiness probe for RevenueCat sandbox mode', () => {
+  it('provides a safe preview-only server readiness probe using the canonical billing runtime context', () => {
     const readiness = read('src/app/api/mobile/sandbox-readiness/route.ts')
+    const identity = read('src/lib/billing/identity.ts')
 
+    expect(readiness).toContain("import { resolveBillingRuntimeContext } from '@/lib/billing/identity'")
+    expect(readiness).toContain('const runtimeContext = resolveBillingRuntimeContext()')
     expect(readiness).toContain("vercelEnvironment === 'production'")
-    expect(readiness).toContain("deploymentEnvironment === 'production'")
-    expect(readiness).toContain('getBillingAccessEnvironment()')
-    expect(readiness).toContain("process.env.BILLING_ALLOW_SANDBOX === 'true'")
-    expect(readiness).toContain("deploymentEnvironment === 'staging'")
-    expect(readiness).toContain("billingAccessEnvironment === 'sandbox'")
+    expect(readiness).toContain("runtimeContext.deploymentEnvironment === 'production'")
+    expect(readiness).toContain("runtimeContext.deploymentEnvironment === 'staging'")
+    expect(readiness).toContain("runtimeContext.billingAccessEnvironment === 'sandbox'")
+    expect(readiness).toContain('runtimeContext.sandboxAllowed')
+
+    expect(identity).toContain("const STAGING_PROJECT_HOST = 'aqwelia-staging.vercel.app'")
+    expect(identity).toContain("if (vercelEnv === 'production')")
+    expect(identity).toContain('isVerifiedStagingPreview')
+    expect(identity).toContain("billingAccessEnvironment: BillingEnvironment")
   })
 
-  it('keeps pull-request CI separate from the one-shot Staging sandbox APK workflow', () => {
+  it('automatically gates the Launch R1 Staging sandbox APK while keeping standard PR builds separate', () => {
     const workflow = read('.github/workflows/mobile-native-quality.yml')
 
     expect(workflow).toContain("if: github.event_name == 'pull_request'")
     expect(workflow).toContain('name: Android Staging sandbox APK')
-    expect(workflow).toContain("if: github.event_name == 'workflow_dispatch'")
-    expect(workflow).toContain("NEXT_PUBLIC_MOBILE_SANDBOX_DIAGNOSTICS: \"true\"")
-    expect(workflow).toContain('aqwelia-staging-git-fix-wave-a4-mobile-au-2b2425-ejd5s-projects.vercel.app')
+    expect(workflow).toContain("github.head_ref == 'release/aqwelia-launch'")
+    expect(workflow).toContain("github.event_name == 'workflow_dispatch'")
+    expect(workflow).toContain('environment: staging')
+    expect(workflow).toContain('NEXT_PUBLIC_MOBILE_SANDBOX_DIAGNOSTICS: "true"')
+    expect(workflow).toContain('aqwelia-staging-git-release-aqwelia-launch-ejd5s-projects.vercel.app')
+    expect(workflow).not.toContain('aqwelia-staging-git-fix-wave-a4-mobile-au-2b2425-ejd5s-projects.vercel.app')
     expect(workflow).toContain('/api/mobile/sandbox-readiness')
     expect(workflow).toContain('Refusing to build sandbox APK against Production')
+    expect(workflow).toContain('Refusing fixture RevenueCat keys for sandbox APK')
     expect(workflow).toContain('aqwelia-staging-sandbox.apk')
     expect(workflow).toContain('manifest.json')
   })
