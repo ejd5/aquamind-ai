@@ -79,4 +79,33 @@ describe('AQWELIA Wave A3 — mobile runtime hardening', () => {
     // The rest of the command stays intact.
     expect(workflow).toContain("xcodebuild \\\n            -project ios/App/App.xcodeproj \\\n            -scheme App \\\n            -sdk iphonesimulator \\\n            -configuration Debug \\\n            -destination 'generic/platform=iOS Simulator' \\\n            CODE_SIGNING_ALLOWED=NO \\")
   })
+
+  it('attaches the fr/en localized resources to the Xcode App group (path = App)', () => {
+    const pbxproj = read('ios/App/App.xcodeproj/project.pbxproj')
+    // Extract the exact App group block.
+    const groupStart = pbxproj.indexOf('504EC3061FED79650016851F /* App */ = {')
+    expect(groupStart).toBeGreaterThan(-1)
+    const groupBlock = pbxproj.slice(groupStart, pbxproj.indexOf('/* End PBXGroup section */'))
+    // 1. The two references are children of the App group.
+    expect(groupBlock).toContain('A3AA00030000000000000001 /* fr.lproj */,')
+    expect(groupBlock).toContain('A3AA00040000000000000001 /* en.lproj */,')
+    // 2. The group resolves paths from ios/App/App/.
+    expect(groupBlock).toContain('path = App;')
+    expect(groupBlock).toContain('sourceTree = "<group>";')
+    // 3. The declarations keep their relative paths.
+    expect(pbxproj).toMatch(/A3AA00030000000000000001 \/\* fr\.lproj \*\/ = \{[\s\S]*?path = fr\.lproj;[\s\S]*?sourceTree = "<group>";/)
+    expect(pbxproj).toMatch(/A3AA00040000000000000001 \/\* en\.lproj \*\/ = \{[\s\S]*?path = en\.lproj;[\s\S]*?sourceTree = "<group>";/)
+    // 4. knownRegions contains en, fr, Base.
+    const regions = pbxproj.slice(pbxproj.indexOf('knownRegions = ('), pbxproj.indexOf(');', pbxproj.indexOf('knownRegions = (')))
+    expect(regions).toContain('en,')
+    expect(regions).toContain('fr,')
+    expect(regions).toContain('Base,')
+    // 5. The physical localized strings files exist.
+    expect(join(root, 'ios/App/App/fr.lproj/InfoPlist.strings')).toSatisfy((p: string) => {
+      try { readFileSync(p); return true } catch { return false }
+    })
+    expect(join(root, 'ios/App/App/en.lproj/InfoPlist.strings')).toSatisfy((p: string) => {
+      try { readFileSync(p); return true } catch { return false }
+    })
+  })
 })
