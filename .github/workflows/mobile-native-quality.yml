@@ -44,7 +44,7 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
       - name: Billing & mobile tests
-        run: bunx vitest run tests/billing-a2-round1-critical.test.ts tests/billing-a2-round4-boundary.test.ts tests/billing-a2-round5-purchase-contract.test.ts tests/billing-a2-round6-server-authority.test.ts tests/billing-a2-round7-restore-toast.test.ts tests/wave-a3-mobile-b2c.test.ts tests/wave-a3-mobile-runtime-hardening.test.ts tests/b2c-pricing.test.ts tests/p0-j.test.ts
+        run: bunx vitest run tests/billing-a2-round1-critical.test.ts tests/billing-a2-round4-boundary.test.ts tests/billing-a2-round5-purchase-contract.test.ts tests/billing-a2-round6-server-authority.test.ts tests/billing-a2-round7-restore-toast.test.ts tests/wave-a3-mobile-b2c.test.ts tests/wave-a3-mobile-runtime-hardening.test.ts tests/wave-a4-mobile-auth-cookie-hardening.test.ts tests/b2c-pricing.test.ts tests/p0-j.test.ts
       - name: Mobile environment preflight
         env:
           DATABASE_URL: ""
@@ -158,13 +158,16 @@ jobs:
         run: bun run mobile:build
       - name: Sync iOS
         run: npx cap sync ios
-      - name: Verify iOS project (Bundle ID, In-App Purchase, Swift 5+, RevenueCat)
+      - name: Verify iOS project (Bundle ID, In-App Purchase, Swift 5+, RevenueCat, App-Bound Domains)
         run: |
           set -euo pipefail
           grep -q 'PRODUCT_BUNDLE_IDENTIFIER = com.aqwelia.app' ios/App/App.xcodeproj/project.pbxproj
           grep -q 'com.apple.InAppPurchase = {' ios/App/App.xcodeproj/project.pbxproj
           grep -q 'SWIFT_VERSION = 5.0' ios/App/App.xcodeproj/project.pbxproj
           grep -q 'RevenuecatPurchasesCapacitor' ios/App/CapApp-SPM/Package.swift
+          grep -q '<key>WKAppBoundDomains</key>' ios/App/App/Info.plist
+          grep -q '<string>aqwelia-staging.vercel.app</string>' ios/App/App/Info.plist
+          grep -q '<string>aqwelia-production.vercel.app</string>' ios/App/App/Info.plist
           if grep -q '<key>com.apple.InAppPurchase</key>' ios/App/App/App.entitlements; then
             echo 'Invalid In-App Purchase signing entitlement detected'
             exit 1
