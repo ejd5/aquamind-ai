@@ -14,12 +14,21 @@ describe('AQWELIA Wave A4 mobile auth and cookie hardening', () => {
     expect(plist).toContain('<string>aqwelia-production.vercel.app</string>')
   })
 
-  it('keeps native credential sign-in explicitly cookie-authenticated', () => {
+  it('keeps native credential sign-in and the shared API client cookie-authenticated', () => {
     const signin = read('src/mobile-app/auth/signin/page.tsx')
     const apiClient = read('src/lib/api-client.ts')
 
     expect(signin).toContain("credentials: 'include'")
     expect(apiClient).toContain("credentials: 'include'")
+  })
+
+  it('adds cookies by default when a local API request is bridged to the HTTPS backend', () => {
+    const bridge = read('src/lib/mobile-api-fetch.ts')
+
+    expect(bridge).toContain('const wasRewritten = resolved !== input')
+    expect(bridge).toContain("credentials: 'include' as const")
+    expect(bridge).toContain('init?.credentials === undefined')
+    expect(bridge).toContain("new Request(apiUrl(path), input)")
   })
 
   it('does not bypass Turnstile from the static mobile registration bundle', () => {
