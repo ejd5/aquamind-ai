@@ -44,7 +44,7 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
       - name: Billing & mobile tests
-        run: bunx vitest run tests/billing-a2-round1-critical.test.ts tests/billing-a2-round4-boundary.test.ts tests/billing-a2-round5-purchase-contract.test.ts tests/billing-a2-round6-server-authority.test.ts tests/billing-a2-round7-restore-toast.test.ts tests/wave-a3-mobile-b2c.test.ts tests/wave-a3-mobile-runtime-hardening.test.ts tests/wave-a4-mobile-auth-cookie-hardening.test.ts tests/b2c-pricing.test.ts tests/p0-j.test.ts
+        run: bunx vitest run tests/billing-a2-round1-critical.test.ts tests/billing-a2-round4-boundary.test.ts tests/billing-a2-round5-purchase-contract.test.ts tests/billing-a2-round6-server-authority.test.ts tests/billing-a2-round7-restore-toast.test.ts tests/wave-a3-mobile-b2c.test.ts tests/wave-a3-mobile-runtime-hardening.test.ts tests/wave-a4-mobile-auth-cookie-hardening.test.ts tests/launch-r1-staging-billing-runtime.test.ts tests/b2c-pricing.test.ts tests/p0-j.test.ts
       - name: Mobile environment preflight
         env:
           DATABASE_URL: ""
@@ -71,7 +71,7 @@ jobs:
     timeout-minutes: 40
     env:
       DATABASE_URL: file:/tmp/aqwelia-mobile-android.db
-      NEXTAUTH_SECRET: test-secret-for-ci-only-do-not-use-in-production
+      NEXTAUTH_SECRET: test-secret-for-ci-only-do-not-use-by-mobile-runtime
       NEXT_PUBLIC_API_BASE_URL: https://api.aqwelia.app
       NEXT_PUBLIC_REVENUECAT_IOS_KEY: appl_public_ci_fixture_key
       NEXT_PUBLIC_REVENUECAT_ANDROID_KEY: goog_public_ci_fixture_key
@@ -190,7 +190,7 @@ jobs:
 
   android-sandbox:
     name: Android Staging sandbox APK
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.head_ref == 'release/aqwelia-launch')
     runs-on: ubuntu-latest
     timeout-minutes: 40
     environment: staging
