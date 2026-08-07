@@ -5,7 +5,7 @@ import { Activity, CheckCircle2, Loader2, RefreshCw, XCircle } from 'lucide-reac
 import { MobileSubHeader } from '@/components/mobile/mobile-sub-header'
 import { billing } from '@/lib/billing'
 import { revenueCatIdentityBridge } from '@/lib/billing/revenuecat-identity'
-import type { Product, SubscriptionApiResponse } from '@/lib/billing/types'
+import type { Entitlement, Product, SubscriptionApiResponse } from '@/lib/billing/types'
 import { api, apiUrl } from '@/lib/api-client'
 import { getPlatform, isNative } from '@/lib/platform'
 
@@ -20,15 +20,21 @@ type Readiness = {
   billingAccessEnvironment?: string
 }
 
+type Source = SubscriptionApiResponse['sources'][number]
+
 type DiagnosticState = {
   refreshing: boolean
   backendReachable: boolean | null
   authenticated: boolean | null
   plan: string | null
   identityState: string
+  sdkIdentityConfirmed: boolean
   serverIdentityBound: boolean
   billingEnvironment: string | null
+  sdkConfigureCount: number
   products: Product[]
+  entitlements: Entitlement[]
+  sources: Source[]
   readiness: Readiness | null
   error: string | null
 }
@@ -39,9 +45,13 @@ const INITIAL: DiagnosticState = {
   authenticated: null,
   plan: null,
   identityState: 'idle',
+  sdkIdentityConfirmed: false,
   serverIdentityBound: false,
   billingEnvironment: null,
+  sdkConfigureCount: 0,
   products: [],
+  entitlements: [],
+  sources: [],
   readiness: null,
   error: null,
 }
@@ -73,6 +83,8 @@ export default function MobileSandboxDiagnosticsPage() {
     let authenticated = false
     let plan: string | null = null
     let products: Product[] = []
+    let entitlements: Entitlement[] = []
+    let sources: Source[] = []
     let readiness: Readiness | null = null
     let error: string | null = null
 
@@ -98,14 +110,16 @@ export default function MobileSandboxDiagnosticsPage() {
       try {
         const projection = await api.get<SubscriptionApiResponse>('/api/subscription')
         plan = projection?.plan?.id ?? null
+        sources = projection?.sources ?? []
       } catch (cause) {
         error = error ?? (cause instanceof Error ? cause.message : 'Subscription projection unavailable')
       }
 
       try {
         products = await billing.getProducts()
+        entitlements = await billing.getEntitlements()
       } catch (cause) {
-        error = error ?? (cause instanceof Error ? cause.message : 'RevenueCat products unavailable')
+        error = error ?? (cause instanceof Error ? cause.message : 'RevenueCat state unavailable')
       }
     }
 
@@ -116,9 +130,13 @@ export default function MobileSandboxDiagnosticsPage() {
       authenticated,
       plan,
       identityState: identity.state,
+      sdkIdentityConfirmed: identity.sdkIdentityConfirmed,
       serverIdentityBound: identity.serverIdentityBound,
       billingEnvironment: identity.billingAccessEnvironment,
+      sdkConfigureCount: identity.sdkConfigureCount,
       products,
+      entitlements,
+      sources,
       readiness,
       error,
     })
@@ -156,15 +174,18 @@ export default function MobileSandboxDiagnosticsPage() {
             <dt className="text-muted-foreground">Backend reachable</dt><dd><Status value={state.backendReachable} /></dd>
             <dt className="text-muted-foreground">Authenticated</dt><dd><Status value={state.authenticated} /></dd>
             <dt className="text-muted-foreground">Server plan</dt><dd>{state.plan ?? '—'}</dd>
-            <dt className="text-muted-foreground">RevenueCat identity</dt><dd>{state.identityState}</dd>
-            <dt className="text-muted-foreground">Server identity bound</dt><dd><Status value={state.serverIdentityBound} /></dd>
+            <dt className="text-muted-foreground">RevenueCat state</dt><dd>{state.identityState}</dd>
+            <dt className="text-muted-foreground">SDK identity</dt><dd><Status value={state.sdkIdentityConfirmed} /></dd>
+            <dt className="text-muted-foreground">Server identity</dt><dd><Status value={state.serverIdentityBound} /></dd>
             <dt className="text-muted-foreground">Billing environment</dt><dd>{state.billingEnvironment ?? '—'}</dd>
+            <dt className="text-muted-foreground">SDK configure count</dt><dd>{state.sdkConfigureCount}</dd>
           </dl>
         </section>
 
         <section className="rounded-3xl border border-border/60 bg-card p-5 shadow-sm">
           <p className="font-semibold">Staging backend</p>
           <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
+            <dt className="text-muted-foreground">Vercel</dt><dd>{state.readiness?.vercelEnvironment ?? '—'}</dd>
             <dt className="text-muted-foreground">Deployment</dt><dd>{state.readiness?.deploymentEnvironment ?? '—'}</dd>
             <dt className="text-muted-foreground">Sandbox allowed</dt><dd><Status value={state.readiness?.sandboxAllowed ?? null} /></dd>
             <dt className="text-muted-foreground">Server billing mode</dt><dd>{state.readiness?.billingAccessEnvironment ?? '—'}</dd>
@@ -185,6 +206,41 @@ export default function MobileSandboxDiagnosticsPage() {
                     <span className="font-bold text-primary">{product.priceString}</span>
                   </div>
                   <p className="mt-1 break-all text-muted-foreground">{product.id}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="rounded-3xl border border-border/60 bg-card p-5 shadow-sm">
+          <p className="font-semibold">Local entitlements</p>
+          {state.entitlements.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">No active/local entitlement returned.</p>
+          ) : (
+            <ul className="mt-3 space-y-2 text-xs">
+              {state.entitlements.map((entitlement) => (
+                <li key={`${entitlement.id}-${entitlement.store}`} className="flex items-center justify-between rounded-2xl border border-border/60 p-3">
+                  <span>{entitlement.plan} · {entitlement.store}</span>
+                  <Status value={entitlement.isActive} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="rounded-3xl border border-border/60 bg-card p-5 shadow-sm">
+          <p className="font-semibold">Server subscription sources</p>
+          {state.sources.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">No projected billing source.</p>
+          ) : (
+            <ul className="mt-3 space-y-2 text-xs">
+              {state.sources.map((source) => (
+                <li key={source.id} className="rounded-2xl border border-border/60 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-semibold">{source.plan}</span>
+                    <span>{source.status}</span>
+                  </div>
+                  <p className="mt-1 text-muted-foreground">{source.provider} · {source.store ?? '—'} · {source.environment}</p>
                 </li>
               ))}
             </ul>
