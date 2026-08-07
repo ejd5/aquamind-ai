@@ -2,19 +2,16 @@
  * AQWELIA — Cached API client.
  *
  * Wraps the existing `api` client (src/lib/api-client.ts) with an IndexedDB
- * cache layer. The strategy is "network-first, cache-fallback":
+ * cache layer. The default strategy is "network-first, cache-fallback":
  *
  *   1. Try the network request.
  *   2. On success → write to cache → return fresh data with `stale: false`.
  *   3. On failure → read from cache → return stale data with `stale: true`
  *      (or `{ data: null, stale: false, error }` if nothing is cached).
  *
- * The cache key is the request path. TTLs are configurable per endpoint
- * category (see `CACHE_TTL`).
- *
- * Usage:
- *   const { data, stale, error } = await offlineApi.dashboard()
- *   if (stale) showOfflineBanner()
+ * Billing/subscription is intentionally different: it is NETWORK-ONLY and
+ * fail-closed. A cached plan must never be treated as authoritative after a
+ * purchase, restore, logout or account switch.
  */
 
 import { api } from '@/lib/api-client'
@@ -34,7 +31,6 @@ export const CACHE_TTL = {
   reminders: 5 * 60 * 1000, // 5 min
   equipment: 60 * 60 * 1000, // 1 hour
   inventory: 60 * 60 * 1000, // 1 hour
-  subscription: 60 * 60 * 1000, // 1 hour
   winterGuardian: 30 * 60 * 1000, // 30 min — weather-driven, refresh 2x/hour
   annualReview: 60 * 60 * 1000, // 1 hour — recomputed from history, slow-moving
 } as const
@@ -75,6 +71,22 @@ export async function apiGetCached<T>(
   }
 }
 
+/**
+ * Network-only GET for security/billing authority.
+ *
+ * It deliberately never reads IndexedDB. The caller can display a loading or
+ * reconciliation state, but it can never activate a plan from stale local data.
+ */
+export async function apiGetFresh<T>(path: string): Promise<CachedResult<T>> {
+  try {
+    const data = await api.get<T>(path)
+    return { data, stale: false }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Network error'
+    return { data: null, stale: false, error: message }
+  }
+}
+
 function withPool(path: string, poolId?: string | null) {
   return poolId ? `${path}&poolId=${encodeURIComponent(poolId)}` : path
 }
@@ -98,5 +110,5 @@ export const offlineApi = {
   guides: () => apiGetCached('/api/guides?v2', 'guides'),
   equipment: () => apiGetCached('/api/pool/equipment?v2', 'equipment'),
   inventory: () => apiGetCached('/api/pool/inventory?v2', 'inventory'),
-  subscription: () => apiGetCached('/api/subscription?v2', 'subscription'),
+  subscription: () => apiGetFresh('/api/subscription?v2'),
 }
