@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -6,11 +6,12 @@ const root = process.cwd()
 const read = (path: string) => readFileSync(join(root, path), 'utf8')
 
 describe('AQWELIA Wave A4 mobile auth and cookie hardening', () => {
-  it('declares the stable Staging and Production backend hosts as iOS App-Bound Domains', () => {
+  it('declares Staging, A4 branch and Production backend hosts as iOS App-Bound Domains', () => {
     const plist = read('ios/App/App/Info.plist')
 
     expect(plist).toContain('<key>WKAppBoundDomains</key>')
     expect(plist).toContain('<string>aqwelia-staging.vercel.app</string>')
+    expect(plist).toContain('<string>aqwelia-staging-git-fix-wave-a4-mobile-au-2b2425-ejd5s-projects.vercel.app</string>')
     expect(plist).toContain('<string>aqwelia-production.vercel.app</string>')
   })
 
@@ -77,5 +78,46 @@ describe('AQWELIA Wave A4 mobile auth and cookie hardening', () => {
     expect(paywall).toContain("!native && duration !== 'month'")
     expect(paywall).toContain('const storeUnavailable = native && !storeProduct?.priceString')
     expect(paywall).not.toContain('const productId = `aqwelia_${planId}_${DURATION_TO_PROVIDER[duration]}`')
+  })
+
+  it('ships a sandbox-only diagnostic surface without exposing it in normal builds', () => {
+    const subscription = read('src/mobile-app/settings/subscription/page.tsx')
+    const diagnosticsPath = 'src/mobile-app/settings/subscription/diagnostics/page.tsx'
+    const diagnostics = read(diagnosticsPath)
+
+    expect(existsSync(join(root, diagnosticsPath))).toBe(true)
+    expect(subscription).toContain("process.env.NEXT_PUBLIC_MOBILE_SANDBOX_DIAGNOSTICS === 'true'")
+    expect(subscription).toContain('href="/settings/subscription/diagnostics"')
+    expect(diagnostics).toContain('revenueCatIdentityBridge.snapshot()')
+    expect(diagnostics).toContain("api.get('/api/auth/me')")
+    expect(diagnostics).toContain("api.get<SubscriptionApiResponse>('/api/subscription')")
+    expect(diagnostics).toContain('products = await billing.getProducts()')
+    expect(diagnostics).not.toContain('NEXT_PUBLIC_REVENUECAT_IOS_KEY')
+    expect(diagnostics).not.toContain('NEXT_PUBLIC_REVENUECAT_ANDROID_KEY')
+  })
+
+  it('provides a safe preview-only server readiness probe for RevenueCat sandbox mode', () => {
+    const readiness = read('src/app/api/mobile/sandbox-readiness/route.ts')
+
+    expect(readiness).toContain("vercelEnvironment === 'production'")
+    expect(readiness).toContain("deploymentEnvironment === 'production'")
+    expect(readiness).toContain('getBillingAccessEnvironment()')
+    expect(readiness).toContain("process.env.BILLING_ALLOW_SANDBOX === 'true'")
+    expect(readiness).toContain("deploymentEnvironment === 'staging'")
+    expect(readiness).toContain("billingAccessEnvironment === 'sandbox'")
+  })
+
+  it('keeps pull-request CI separate from the one-shot Staging sandbox APK workflow', () => {
+    const workflow = read('.github/workflows/mobile-native-quality.yml')
+
+    expect(workflow).toContain("if: github.event_name == 'pull_request'")
+    expect(workflow).toContain('name: Android Staging sandbox APK')
+    expect(workflow).toContain("if: github.event_name == 'workflow_dispatch'")
+    expect(workflow).toContain("NEXT_PUBLIC_MOBILE_SANDBOX_DIAGNOSTICS: \"true\"")
+    expect(workflow).toContain('aqwelia-staging-git-fix-wave-a4-mobile-au-2b2425-ejd5s-projects.vercel.app')
+    expect(workflow).toContain('/api/mobile/sandbox-readiness')
+    expect(workflow).toContain('Refusing to build sandbox APK against Production')
+    expect(workflow).toContain('aqwelia-staging-sandbox.apk')
+    expect(workflow).toContain('manifest.json')
   })
 })
