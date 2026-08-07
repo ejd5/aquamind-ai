@@ -17,15 +17,14 @@
  * Server secrets that must NEVER appear in the bundle:
  *   REVENUECAT_API_KEY, REVENUECAT_WEBHOOK_SECRET, STRIPE_SECRET_KEY,
  *   STRIPE_WEBHOOK_SECRET, DATABASE_URL, NEXTAUTH_SECRET.
- *
- * Usage:
- *   NODE_ENV=production NEXT_PUBLIC_API_BASE_URL=... node scripts/mobile-env-preflight.mjs
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 const root = process.cwd()
-const profile = process.env.BUILD_PROFILE || process.env.NODE_ENV || 'production'
+const explicitProfile = process.env.BUILD_PROFILE || ''
+const profile = explicitProfile || process.env.NODE_ENV || 'production'
+const structuralCi = process.env.CI === 'true' && explicitProfile === ''
 const requiredPublic = [
   'NEXT_PUBLIC_API_BASE_URL',
   'NEXT_PUBLIC_REVENUECAT_IOS_KEY',
@@ -78,13 +77,10 @@ for (const name of requiredPublic) {
     (name === 'NEXT_PUBLIC_REVENUECAT_IOS_KEY' || name === 'NEXT_PUBLIC_REVENUECAT_ANDROID_KEY') &&
     /fixture|placeholder|example|changeme/i.test(value)
   ) {
-    // Fixture keys are allowed only in CI's structural build jobs, where the
-    // workflow does not set BUILD_PROFILE=staging/release. Real Staging/Release
-    // artifacts must fail closed.
-    if (/staging|release|production/i.test(profile)) {
-      errors.push(`${name} must not use a fixture/placeholder in ${profile}`)
+    if (structuralCi) {
+      warnings.push(`${name} is an allowed structural-CI fixture key`)
     } else {
-      warnings.push(`${name} is a CI fixture key (${profile})`)
+      errors.push(`${name} must not use a fixture/placeholder in ${profile}`)
     }
   }
 }
