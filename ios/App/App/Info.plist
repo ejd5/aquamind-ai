@@ -51,6 +51,12 @@
 	<string>AQWELIA lets you pick a pool water photo from your library for analysis.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>AQWELIA uses your location to provide local weather for your pool.</string>
+	<!-- CapacitorCookies: backend hosts used by the native Staging and Production builds. -->
+	<key>WKAppBoundDomains</key>
+	<array>
+		<string>aqwelia-staging.vercel.app</string>
+		<string>aqwelia-production.vercel.app</string>
+	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 </dict>
