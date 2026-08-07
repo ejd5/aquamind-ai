@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -191,3 +192,62 @@ jobs:
           path: /tmp/ios-build.log
           if-no-files-found: error
           retention-days: 7
+
+  android-sandbox:
+    name: Android Staging sandbox APK
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: staging
+    env:
+      DATABASE_URL: file:/tmp/aqwelia-mobile-staging.db
+      NEXTAUTH_SECRET: staging-build-only-not-used-by-mobile-runtime
+      NEXT_PUBLIC_API_BASE_URL: ${{ vars.AQWELIA_STAGING_API_BASE_URL }}
+      NEXT_PUBLIC_REVENUECAT_IOS_KEY: ${{ secrets.NEXT_PUBLIC_REVENUECAT_IOS_KEY || vars.NEXT_PUBLIC_REVENUECAT_IOS_KEY }}
+      NEXT_PUBLIC_REVENUECAT_ANDROID_KEY: ${{ secrets.NEXT_PUBLIC_REVENUECAT_ANDROID_KEY || vars.NEXT_PUBLIC_REVENUECAT_ANDROID_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.4"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@v3
+      - name: Validate real Staging mobile environment
+        run: |
+          set -euo pipefail
+          test -n "${NEXT_PUBLIC_API_BASE_URL:-}"
+          test -n "${NEXT_PUBLIC_REVENUECAT_IOS_KEY:-}"
+          test -n "${NEXT_PUBLIC_REVENUECAT_ANDROID_KEY:-}"
+          echo "${NEXT_PUBLIC_API_BASE_URL}" | grep -Eq '^https://'
+          echo "${NEXT_PUBLIC_REVENUECAT_IOS_KEY}" | grep -Eq '^appl_'
+          echo "${NEXT_PUBLIC_REVENUECAT_ANDROID_KEY}" | grep -Eq '^goog_'
+          case "${NEXT_PUBLIC_API_BASE_URL}" in
+            https://api.aqwelia.app|https://aqwelia-production.vercel.app)
+              echo 'Refusing to build sandbox APK against Production'
+              exit 1
+              ;;
+          esac
+          if echo "${NEXT_PUBLIC_REVENUECAT_IOS_KEY}${NEXT_PUBLIC_REVENUECAT_ANDROID_KEY}" | grep -q 'fixture'; then
+            echo 'Refusing fixture RevenueCat keys for sandbox APK'
+            exit 1
+          fi
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Generate Prisma clients
+        run: bun run db:generate:all
+      - name: Build mobile against Staging
+        run: bun run mobile:build
+      - name: Sync Android
+        run: npx cap sync android
+      - name: Build sandbox debug APK
+        run: cd android && ./gradlew assembleDebug --no-daemon
+      - name: Upload Staging sandbox APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqwelia-staging-sandbox-apk-${{ github.sha }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
