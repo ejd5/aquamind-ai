@@ -3,14 +3,14 @@
 /**
  * AQWELIA Wave A4 — secure mobile registration handoff.
  *
- * Registration is protected by Cloudflare Turnstile on the deployed AQWELIA
- * web origin. The static Capacitor bundle must not bypass that protection or
- * attempt to mint a production Turnstile token from its local WebView origin.
+ * The static Capacitor bundle cannot safely mint a Cloudflare Turnstile token
+ * from its local WebView origin. Registration is therefore performed on a
+ * dedicated HTTPS AQWELIA page in the system browser.
  *
- * We therefore open the hosted signup flow in the system browser and provide
- * a local callback path. Once the account is created, the hosted flow opens
- * the AQWELIA deep link and the native app resumes on its credentials screen,
- * which owns the Capacitor cookie/session lifecycle.
+ * That hosted page is intentionally credentials-only (no Google/Apple OAuth),
+ * so a newly-created mobile account can immediately sign in through the native
+ * credentials screen. Once registration succeeds, the hosted page returns to
+ * the installed app through aqwelia://auth/complete.
  */
 
 import { useState } from 'react'
@@ -20,7 +20,7 @@ import { Browser } from '@capacitor/browser'
 import { ExternalLink, Loader2, ShieldCheck } from 'lucide-react'
 import { apiUrl } from '@/lib/api-client'
 
-const MOBILE_AUTH_CALLBACK_PATH = '/auth/mobile-complete'
+const MOBILE_HOSTED_REGISTER_PATH = '/auth/mobile-register'
 
 export default function MobileRegisterPage() {
   const t = useTranslations('auth')
@@ -31,8 +31,7 @@ export default function MobileRegisterPage() {
     setOpening(true)
     setError(null)
     try {
-      const callbackUrl = encodeURIComponent(MOBILE_AUTH_CALLBACK_PATH)
-      const url = apiUrl(`/auth/signin?mode=signup&callbackUrl=${callbackUrl}`)
+      const url = apiUrl(MOBILE_HOSTED_REGISTER_PATH)
       if (!/^https:\/\//i.test(url)) throw new Error(t('errorGeneric'))
       await Browser.open({ url })
     } catch (cause) {
