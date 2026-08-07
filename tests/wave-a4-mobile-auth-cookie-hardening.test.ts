@@ -32,15 +32,25 @@ describe('AQWELIA Wave A4 mobile auth and cookie hardening', () => {
     expect(bridge).toContain("new Request(apiUrl(path), input)")
   })
 
-  it('does not bypass Turnstile from the static mobile registration bundle', () => {
+  it('routes static mobile registration to a hosted credentials-only Turnstile flow', () => {
     const register = read('src/mobile-app/auth/register/page.tsx')
+    const hosted = read('src/app/auth/mobile-register/page.tsx')
 
     expect(register).toContain("import { Browser } from '@capacitor/browser'")
-    expect(register).toContain("const MOBILE_AUTH_CALLBACK_PATH = '/auth/mobile-complete'")
-    expect(register).toContain('callbackUrl=${callbackUrl}')
+    expect(register).toContain("const MOBILE_HOSTED_REGISTER_PATH = '/auth/mobile-register'")
+    expect(register).toContain('apiUrl(MOBILE_HOSTED_REGISTER_PATH)')
     expect(register).toContain("/^https:\\/\\//i.test(url)")
     expect(register).not.toContain("fetch('/api/auth/register'")
     expect(register).not.toContain("signIn('credentials'")
+
+    expect(hosted).toContain('TurnstileWidget')
+    expect(hosted).toContain("fetch('/api/auth/register'")
+    expect(hosted).toContain("window.location.assign(COMPLETE_PATH)")
+    expect(hosted).toContain("const COMPLETE_PATH = '/auth/mobile-complete'")
+    expect(hosted).not.toContain("signIn(")
+    expect(hosted).not.toContain("handleOAuth")
+    expect(hosted).not.toContain("signInWithGoogle")
+    expect(hosted).not.toContain("signInWithApple")
   })
 
   it('returns secure hosted registration to the installed native app without transporting credentials', () => {
@@ -80,7 +90,16 @@ describe('AQWELIA Wave A4 mobile auth and cookie hardening', () => {
     expect(paywall).not.toContain('const productId = `aqwelia_${planId}_${DURATION_TO_PROVIDER[duration]}`')
   })
 
-  it('ships a sandbox-only diagnostic surface without exposing it in normal builds', () => {
+  it('keeps the canonical subscription projection network-only and never falls back to stale cache', () => {
+    const cache = read('src/lib/offline/api-cache.ts')
+
+    expect(cache).toContain('export async function apiGetFresh<T>')
+    expect(cache).toContain("subscription: () => apiGetFresh('/api/subscription?v2')")
+    expect(cache).not.toContain("subscription: () => apiGetCached('/api/subscription?v2'")
+    expect(cache).not.toContain('subscription: 60 * 60 * 1000')
+  })
+
+  it('ships a sandbox-only diagnostic surface without exposing secret key values', () => {
     const subscription = read('src/mobile-app/settings/subscription/page.tsx')
     const diagnosticsPath = 'src/mobile-app/settings/subscription/diagnostics/page.tsx'
     const diagnostics = read(diagnosticsPath)
@@ -92,6 +111,7 @@ describe('AQWELIA Wave A4 mobile auth and cookie hardening', () => {
     expect(diagnostics).toContain("api.get('/api/auth/me')")
     expect(diagnostics).toContain("api.get<SubscriptionApiResponse>('/api/subscription')")
     expect(diagnostics).toContain('products = await billing.getProducts()')
+    expect(diagnostics).toContain('entitlements = await billing.getEntitlements()')
     expect(diagnostics).not.toContain('NEXT_PUBLIC_REVENUECAT_IOS_KEY')
     expect(diagnostics).not.toContain('NEXT_PUBLIC_REVENUECAT_ANDROID_KEY')
   })
