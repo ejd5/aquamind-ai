@@ -8,6 +8,15 @@
  *
  * Disponibilité : available = quota - confirmed - reserved - safety_buffer.
  * Le quota n'est consommé qu'après vérification serveur du paiement.
+ *
+ * Sécurité :
+ *  - pays d'éligibilité = User.country (valeur serveur), jamais le paramètre
+ *    client ;
+ *  - idempotencyKey : une clé existante n'est réutilisée que si elle appartient
+ *    au même utilisateur ET correspond à la même offre/formule/plateforme ;
+ *  - échec sécurisé si la campagne est active sans secret de signature ;
+ *  - confirmation validée contre le pricing serveur (montants jamais dérivés du
+ *    client) et appliquée atomiquement aux quotas global ET par allocation.
  */
 
 import { randomUUID, createHash, createHmac } from 'crypto'
@@ -32,6 +41,9 @@ import { computeLaunchPricing, marketingConsistency, type LaunchPricing } from '
 import type { PlanId } from '@/lib/billing/plans'
 import { trackEventServer } from '@/lib/analytics-server'
 
+/** Client Prisma injectable (permet d'isoler la base SQLite d'un test). */
+export type LaunchDb = typeof db
+
 export type EligibilityReason =
   | 'CAMPAIGN_NOT_STARTED'
   | 'CAMPAIGN_ENDED'
@@ -42,12 +54,14 @@ export type EligibilityReason =
   | 'ALREADY_SUBSCRIBED'
   | 'OFFER_ALREADY_REDEEMED'
   | 'ACTIVE_RESERVATION_EXISTS'
+  | 'IDEMPOTENCY_KEY_CONFLICT'
   | 'PLAN_NOT_ELIGIBLE'
   | 'COUNTRY_NOT_ELIGIBLE'
   | 'PLATFORM_NOT_ELIGIBLE'
   | 'STORE_ACCOUNT_NOT_ELIGIBLE'
   | 'RISK_REVIEW_REQUIRED'
   | 'PRICE_CONFIGURATION_INVALID'
+  | 'SIGNING_SECRET_MISSING'
 
 export interface OfferView {
   code: string
@@ -63,10 +77,20 @@ export interface CampaignView {
   endsAt: string | null
 }
 
-/** Jeton signé, lié à user/variant/plan/platform/reservation. Hash seul stocké. */
+/**
+ * Jeton signé, lié à user/variant/plan/platform/reservation. Hash seul stocké.
+ * Échec sécurisé : aucun secret configuré → erreur explicite (jamais de fallback
+ * en clair). NEXTAUTH_SECRET sert de repli explicite en environnement.
+ */
 export function signReservationToken(payload: { reservationId: string; userId: string; offerCode: string; planId: string; platform: string; expiresAt: string }): string {
-  const secret = process.env.AQWELIA_LAUNCH_TOKEN_SECRET || process.env.NEXTAUTH_SECRET || 'launch-offers-dev-only'
+  const secret = requireSigningSecret()
   return createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex')
+}
+
+function requireSigningSecret(): string {
+  const secret = process.env.AQWELIA_LAUNCH_TOKEN_SECRET || process.env.NEXTAUTH_SECRET
+  if (!secret) throw new Error('launch_offers_signing_secret_missing')
+  return secret
 }
 
 export function hashReservationToken(token: string): string {
@@ -103,16 +127,16 @@ function parseJsonArray(raw: string | null | undefined): string[] {
 }
 
 /** Charge (ou crée à la demande) la campagne + variantes + allocations. */
-export async function loadCampaign(): Promise<{
-  campaign: NonNullable<Awaited<ReturnType<typeof db.promotionCampaign.findUnique>>>
-  variants: Awaited<ReturnType<typeof db.promotionVariant.findMany>>
-  allocations: Awaited<ReturnType<typeof db.promotionAllocation.findMany>>
+export async function loadCampaign(client: LaunchDb = db): Promise<{
+  campaign: NonNullable<Awaited<ReturnType<LaunchDb['promotionCampaign']['findUnique']>>>
+  variants: Awaited<ReturnType<LaunchDb['promotionVariant']['findMany']>>
+  allocations: Awaited<ReturnType<LaunchDb['promotionAllocation']['findMany']>>
 } | null> {
   if (!launchOffersEnabled()) return null
-  const campaign = await db.promotionCampaign.findUnique({ where: { code: launchCampaignCode() } })
+  const campaign = await client.promotionCampaign.findUnique({ where: { code: launchCampaignCode() } })
   if (!campaign) return null
-  const variants = await db.promotionVariant.findMany({ where: { campaignId: campaign.id } })
-  const allocations = await db.promotionAllocation.findMany({
+  const variants = await client.promotionVariant.findMany({ where: { campaignId: campaign.id } })
+  const allocations = await client.promotionAllocation.findMany({
     where: { variantId: { in: variants.map((v) => v.id) } },
   })
   return { campaign, variants, allocations }
@@ -136,7 +160,9 @@ function variantState(variant: { status: string }): boolean {
   return variant.status === 'ACTIVE'
 }
 
-function allocationFor(variants: Awaited<ReturnType<typeof db.promotionVariant.findMany>>, allocations: Awaited<ReturnType<typeof db.promotionAllocation.findMany>>, offerCode: string, platform: LaunchPlatform, planId: string) {
+type LoadedCampaign = NonNullable<Awaited<ReturnType<typeof loadCampaign>>>
+
+function allocationFor(variants: LoadedCampaign['variants'], allocations: LoadedCampaign['allocations'], offerCode: string, platform: LaunchPlatform, planId: string) {
   const variant = variants.find((v) => v.code === offerCode)
   if (!variant) return null
   const allocation = allocations.find((a) => a.variantId === variant.id && a.platform === platform && (a.planId === planId || a.planId === null))
@@ -147,14 +173,45 @@ function allocationAvailable(allocation: { quota: number; confirmedCount: number
   return allocation.quota - allocation.confirmedCount - allocation.reservedCount - allocation.safetyBuffer
 }
 
+/** Règles d'éligibilité communes (compte, pays serveur, abonnement, historique). */
+async function assertAccountEligibility(client: LaunchDb, campaignId: string, userId: string): Promise<EligibilityReason | null> {
+  const user = await client.user.findUnique({ where: { id: userId }, select: { id: true, role: true, country: true } })
+  if (!user) return 'ACCOUNT_NOT_VERIFIED'
+  if (launchExcludedRoles().includes(user.role)) return 'RISK_REVIEW_REQUIRED'
+  // Pays : uniquement la valeur enregistrée côté serveur (User.country), jamais
+  // le paramètre client (query/body) qui peut être falsifié.
+  if (launchEligibleCountries().length > 0 && !launchEligibleCountries().includes(user.country)) {
+    return 'COUNTRY_NOT_ELIGIBLE'
+  }
+  // N'a jamais eu d'abonnement payant.
+  const paidSub = await client.subscription.findFirst({
+    where: { userId, plan: { not: 'decouverte' } },
+    select: { id: true },
+  })
+  if (paidSub) return 'ALREADY_SUBSCRIBED'
+  // N'a jamais consommé la campagne.
+  const redeemed = await client.promotionRedemption.findUnique({
+    where: { campaignId_userId: { campaignId, userId } },
+    select: { id: true },
+  })
+  if (redeemed) return 'OFFER_ALREADY_REDEEMED'
+  // Réservation active existante.
+  const activeReservation = await client.promotionReservation.findFirst({
+    where: { campaignId, userId, status: 'ACTIVE' },
+    select: { id: true },
+  })
+  if (activeReservation) return 'ACTIVE_RESERVATION_EXISTS'
+  return null
+}
+
 export async function checkEligibility(args: {
   userId: string
   offerCode: string
   planId: string
   platform: string
   countryHint?: string
-}): Promise<{ eligible: boolean; reasonCode: EligibilityReason | null; offer: OfferView | null; campaign: CampaignView | null }> {
-  const c = await loadCampaign()
+}, client: LaunchDb = db): Promise<{ eligible: boolean; reasonCode: EligibilityReason | null; offer: OfferView | null; campaign: CampaignView | null }> {
+  const c = await loadCampaign(client)
   if (!c) return { eligible: false, reasonCode: 'CAMPAIGN_NOT_STARTED', offer: null, campaign: null }
   const { campaign, variants, allocations } = c
 
@@ -179,38 +236,8 @@ export async function checkEligibility(args: {
   if (args.offerCode === LAUNCH_OFFER_A_CODE && !consistency.labelA50) return { eligible: false, reasonCode: 'PRICE_CONFIGURATION_INVALID', offer: null, campaign: null }
   if (args.offerCode === LAUNCH_OFFER_B_CODE && !consistency.labelB3for2) return { eligible: false, reasonCode: 'PRICE_CONFIGURATION_INVALID', offer: null, campaign: null }
 
-  // Compte exclu.
-  const user = await db.user.findUnique({ where: { id: args.userId }, select: { id: true, role: true, country: true } })
-  if (!user) return { eligible: false, reasonCode: 'ACCOUNT_NOT_VERIFIED', offer: null, campaign: null }
-  if (launchExcludedRoles().includes(user.role)) return { eligible: false, reasonCode: 'RISK_REVIEW_REQUIRED', offer: null, campaign: null }
-
-  // Pays : uniquement le pays enregistré côté serveur (User.country), jamais le
-  // paramètre client (query/body) qui peut être falsifié. Le hint client ne
-  // sert qu'à l'affichage localisé du prix, pas à la décision d'éligibilité.
-  if (launchEligibleCountries().length > 0 && !launchEligibleCountries().includes(user.country)) {
-    return { eligible: false, reasonCode: 'COUNTRY_NOT_ELIGIBLE', offer: null, campaign: null }
-  }
-
-  // N'a jamais eu d'abonnement payant.
-  const paidSub = await db.subscription.findFirst({
-    where: { userId: args.userId, plan: { not: 'decouverte' } },
-    select: { id: true },
-  })
-  if (paidSub) return { eligible: false, reasonCode: 'ALREADY_SUBSCRIBED', offer: null, campaign: null }
-
-  // N'a jamais consommé la campagne.
-  const redeemed = await db.promotionRedemption.findUnique({
-    where: { campaignId_userId: { campaignId: campaign.id, userId: args.userId } },
-    select: { id: true },
-  })
-  if (redeemed) return { eligible: false, reasonCode: 'OFFER_ALREADY_REDEEMED', offer: null, campaign: null }
-
-  // Réservation active existante.
-  const activeReservation = await db.promotionReservation.findFirst({
-    where: { campaignId: campaign.id, userId: args.userId, status: 'ACTIVE' },
-    select: { id: true },
-  })
-  if (activeReservation) return { eligible: false, reasonCode: 'ACTIVE_RESERVATION_EXISTS', offer: null, campaign: null }
+  const accountReason = await assertAccountEligibility(client, campaign.id, args.userId)
+  if (accountReason) return { eligible: false, reasonCode: accountReason, offer: null, campaign: null }
 
   const allocation = allocationFor(variants, allocations, args.offerCode, args.platform as LaunchPlatform, args.planId)
   if (!allocation) return { eligible: false, reasonCode: 'ALLOCATION_EXHAUSTED', offer: null, campaign: null }
@@ -240,10 +267,13 @@ export type ReserveResult =
 
 /**
  * Crée une réservation atomique de 30 min.
- *  - UPDATE conditionnel atomique sur l'allocation (ne consomme que si une place
- *    est disponible) ;
+ *  - toutes les règles d'éligibilité s'appliquent (compte, pays serveur,
+ *    abonnement, historique, formulaire, plateforme, quotas) ;
+ *  - UPDATE conditionnel atomique sur l'allocation ;
  *  - insertion de la réservation (idempotence par idempotencyKey unique) ;
- *  - jeton signé, hash seul stocké.
+ *  - une idempotencyKey existante n'est réutilisée que si elle appartient au
+ *    même utilisateur ET correspond à la même offre/formule/plateforme ;
+ *  - jeton signé, hash seul stocké ; échec sécurisé si aucun secret.
  */
 export async function createReservation(args: {
   userId: string
@@ -252,16 +282,16 @@ export async function createReservation(args: {
   platform: string
   idempotencyKey: string
   countryHint?: string
-}): Promise<ReserveResult> {
+}, client: LaunchDb = db): Promise<ReserveResult> {
   if (!launchOffersEnabled()) return { ok: false, reasonCode: 'CAMPAIGN_NOT_STARTED' }
-
-  // Idempotence : une même clé retourne la réservation existante.
-  const existing = await db.promotionReservation.findUnique({ where: { idempotencyKey: args.idempotencyKey } })
-  if (existing) {
-    return { ok: true, reservationId: existing.id, reservationToken: signReservationToken({ reservationId: existing.id, userId: existing.userId, offerCode: existing.variantId, planId: existing.planId, platform: existing.platform, expiresAt: existing.expiresAt.toISOString() }), expiresAt: existing.expiresAt, offerCode: args.offerCode }
+  // Échec sécurisé : campagne active sans secret de signature.
+  try {
+    requireSigningSecret()
+  } catch {
+    return { ok: false, reasonCode: 'SIGNING_SECRET_MISSING' }
   }
 
-  const c = await loadCampaign()
+  const c = await loadCampaign(client)
   if (!c) return { ok: false, reasonCode: 'CAMPAIGN_NOT_STARTED' }
   const { campaign, variants, allocations } = c
 
@@ -272,26 +302,47 @@ export async function createReservation(args: {
   if (!variant || !variantState(variant)) return { ok: false, reasonCode: 'CAMPAIGN_ENDED' }
   if (!isLaunchPlatform(args.platform)) return { ok: false, reasonCode: 'PLATFORM_NOT_ELIGIBLE' }
 
-  // Pays : uniquement la valeur enregistrée côté serveur (User.country), jamais
-  // le paramètre client. Les hints (query/body) ne servent qu'à l'affichage.
-  const user = await db.user.findUnique({ where: { id: args.userId }, select: { id: true, role: true, country: true } })
-  if (!user) return { ok: false, reasonCode: 'ACCOUNT_NOT_VERIFIED' }
-  if (launchExcludedRoles().includes(user.role)) return { ok: false, reasonCode: 'RISK_REVIEW_REQUIRED' }
-  if (launchEligibleCountries().length > 0 && !launchEligibleCountries().includes(user.country)) {
-    return { ok: false, reasonCode: 'COUNTRY_NOT_ELIGIBLE' }
-  }
-
-  const allocation = allocationFor(variants, allocations, args.offerCode, args.platform as LaunchPlatform, args.planId)
-  if (!allocation) return { ok: false, reasonCode: 'ALLOCATION_EXHAUSTED' }
+  // Plan éligible (mêmes règles que checkEligibility).
+  const eligiblePlans = parseJsonArray(variant.eligiblePlanIds || campaign.eligiblePlanIds || null).length
+    ? parseJsonArray(variant.eligiblePlanIds || campaign.eligiblePlanIds || null)
+    : launchEligiblePlanIds()
+  if (!eligiblePlans.includes(args.planId)) return { ok: false, reasonCode: 'PLAN_NOT_ELIGIBLE' }
 
   const pricing = computeLaunchPricing(args.offerCode, args.planId as PlanId)
   if (!pricing) return { ok: false, reasonCode: 'PRICE_CONFIGURATION_INVALID' }
+
+  // Idempotence (AVANT les règles de compte) : une même clé ne doit être
+  // réutilisée que par le même utilisateur avec la même offre/formule/
+  // plateforme. Un replay légitime retourne la réservation existante ; une clé
+  // réutilisée par un autre utilisateur/contexte → conflit sans exposer.
+  const existing = await client.promotionReservation.findUnique({ where: { idempotencyKey: args.idempotencyKey } })
+  if (existing) {
+    const matches = existing.userId === args.userId
+      && existing.variantId === variant.id
+      && existing.planId === args.planId
+      && existing.platform === args.platform
+    if (!matches) return { ok: false, reasonCode: 'IDEMPOTENCY_KEY_CONFLICT' }
+    return {
+      ok: true,
+      reservationId: existing.id,
+      reservationToken: signReservationToken({ reservationId: existing.id, userId: existing.userId, offerCode: args.offerCode, planId: existing.planId, platform: existing.platform, expiresAt: existing.expiresAt.toISOString() }),
+      expiresAt: existing.expiresAt,
+      offerCode: args.offerCode,
+    }
+  }
+
+  // Compte + pays serveur + historique.
+  const accountReason = await assertAccountEligibility(client, campaign.id, args.userId)
+  if (accountReason) return { ok: false, reasonCode: accountReason }
+
+  const allocation = allocationFor(variants, allocations, args.offerCode, args.platform as LaunchPlatform, args.planId)
+  if (!allocation) return { ok: false, reasonCode: 'ALLOCATION_EXHAUSTED' }
 
   const now = new Date()
   const expiresAt = new Date(now.getTime() + launchReservationTtlSeconds() * 1000)
 
   try {
-    const result = await withBusyRetry(() => db.$transaction(async (tx) => {
+    const result = await withBusyRetry(() => client.$transaction(async (tx) => {
       // Nettoyage paresseux des réservations expirées de cette allocation.
       await tx.promotionReservation.updateMany({
         where: { allocationId: allocation.id, status: 'ACTIVE', expiresAt: { lt: now } },
@@ -343,22 +394,30 @@ export async function createReservation(args: {
     return { ok: true, reservationId: result.reservation.id, reservationToken: result.token, expiresAt: result.expiresAt, offerCode: args.offerCode }
   } catch (err: any) {
     if (err?.code === 'P2002') {
-      const existingNow = await db.promotionReservation.findUnique({ where: { idempotencyKey: args.idempotencyKey } })
-      if (existingNow) {
-        return { ok: true, reservationId: existingNow.id, reservationToken: signReservationToken({ reservationId: existingNow.id, userId: existingNow.userId, offerCode: existingNow.variantId, planId: existingNow.planId, platform: existingNow.platform, expiresAt: existingNow.expiresAt.toISOString() }), expiresAt: existingNow.expiresAt, offerCode: args.offerCode }
+      // Course sur la même idempotencyKey : vérifier l'appartenance avant de
+      // réutiliser, sinon conflit sans exposer.
+      const existingNow = await client.promotionReservation.findUnique({ where: { idempotencyKey: args.idempotencyKey } })
+      if (existingNow && existingNow.userId === args.userId && existingNow.variantId === variant.id && existingNow.planId === args.planId && existingNow.platform === args.platform) {
+        return {
+          ok: true,
+          reservationId: existingNow.id,
+          reservationToken: signReservationToken({ reservationId: existingNow.id, userId: existingNow.userId, offerCode: args.offerCode, planId: existingNow.planId, platform: existingNow.platform, expiresAt: existingNow.expiresAt.toISOString() }),
+          expiresAt: existingNow.expiresAt,
+          offerCode: args.offerCode,
+        }
       }
-      return { ok: false, reasonCode: 'ACTIVE_RESERVATION_EXISTS' }
+      return { ok: false, reasonCode: 'IDEMPOTENCY_KEY_CONFLICT' }
     }
     return { ok: false, reasonCode: 'RISK_REVIEW_REQUIRED', error: err?.message }
   }
 }
 
 /** Libère explicitement une réservation abandonnée (idempotente). */
-export async function releaseReservation(reservationId: string, userId: string): Promise<{ ok: boolean }> {
-  const reservation = await db.promotionReservation.findUnique({ where: { id: reservationId } })
+export async function releaseReservation(reservationId: string, userId: string, client: LaunchDb = db): Promise<{ ok: boolean }> {
+  const reservation = await client.promotionReservation.findUnique({ where: { id: reservationId } })
   if (!reservation || reservation.userId !== userId) return { ok: false }
   if (reservation.status !== 'ACTIVE') return { ok: true }
-  await db.$transaction(async (tx) => {
+  await withBusyRetry(() => client.$transaction(async (tx) => {
     await tx.promotionReservation.updateMany({
       where: { id: reservationId, status: 'ACTIVE' },
       data: { status: 'CANCELLED' },
@@ -367,28 +426,28 @@ export async function releaseReservation(reservationId: string, userId: string):
       where: { id: reservation.allocationId, reservedCount: { gt: 0 } },
       data: { reservedCount: { decrement: 1 } },
     })
-  })
+  }))
   void trackEventServer('launch_checkout_abandoned', { reservationId })
   return { ok: true }
 }
 
 /** Expire les réservations dépassées (job périodique ; le chemin de réservation nettoie aussi). */
-export async function expireDueReservations(limit = 500): Promise<number> {
+export async function expireDueReservations(limit = 500, client: LaunchDb = db): Promise<number> {
   const now = new Date()
-  const due = await db.promotionReservation.findMany({
+  const due = await client.promotionReservation.findMany({
     where: { status: 'ACTIVE', expiresAt: { lt: now } },
     take: limit,
     select: { id: true, allocationId: true },
   })
   if (due.length === 0) return 0
-  await db.$transaction(async (tx) => {
+  await withBusyRetry(() => client.$transaction(async (tx) => {
     for (const r of due) {
       const updated = await tx.promotionReservation.updateMany({ where: { id: r.id, status: 'ACTIVE' }, data: { status: 'EXPIRED' } })
       if (updated.count === 1) {
         await tx.promotionAllocation.updateMany({ where: { id: r.allocationId, reservedCount: { gt: 0 } }, data: { reservedCount: { decrement: 1 } } })
       }
     }
-  })
+  }))
   return due.length
 }
 
@@ -398,8 +457,11 @@ export type ConfirmResult =
 
 /**
  * Consomme le quota après vérification serveur du paiement (idempotent).
+ *  - montants validés contre le pricing serveur (plans.ts) — jamais dérivés du
+ *    client ;
  *  - contrainte unique (provider, providerTransactionId) et (campaignId, userId) ;
- *  - réserve la récompense puis met à jour compteurs + statut de réservation ;
+ *  - application atomique des quotas GLOBAL (campaign.confirmedCount vs
+ *    totalQuota) ET par allocation (allocation.confirmedCount vs quota) ;
  *  - confirmation tardive → marquée LATE_CONFIRMATION (droit honoré, alerte).
  */
 export async function confirmRedemption(args: {
@@ -414,10 +476,10 @@ export async function confirmRedemption(args: {
   paidAmountMinor: number
   normalAmountMinor: number
   currency?: string
-}): Promise<ConfirmResult> {
+}, client: LaunchDb = db): Promise<ConfirmResult> {
   if (!launchOffersEnabled()) return { ok: false, reasonCode: 'CAMPAIGN_NOT_STARTED' }
 
-  const c = await loadCampaign()
+  const c = await loadCampaign(client)
   if (!c) return { ok: false, reasonCode: 'CAMPAIGN_NOT_STARTED' }
   const { campaign, variants, allocations } = c
   const variant = variants.find((v) => v.code === args.offerCode)
@@ -425,8 +487,16 @@ export async function confirmRedemption(args: {
   const allocation = allocationFor(variants, allocations, args.offerCode, args.platform as LaunchPlatform, args.planId)
   if (!allocation) return { ok: false, reasonCode: 'ALLOCATION_EXHAUSTED' }
 
+  // Montants = pricing serveur uniquement. Une valeur différente (fournie par le
+  // client ou incohérente avec le catalogue) est rejetée.
+  const pricing = computeLaunchPricing(args.offerCode, args.planId as PlanId)
+  if (!pricing) return { ok: false, reasonCode: 'PRICE_CONFIGURATION_INVALID' }
+  if (args.normalAmountMinor !== pricing.renewalMinor || args.paidAmountMinor !== pricing.dueNowMinor) {
+    return { ok: false, reasonCode: 'PRICE_CONFIGURATION_INVALID', error: 'amount_mismatch_server_pricing' }
+  }
+
   try {
-    const result = await withBusyRetry(() => db.$transaction(async (tx) => {
+    const result = await withBusyRetry(() => client.$transaction(async (tx) => {
       // Idempotence fournisseur : déjà traitée → succès sans nouvel effet.
       const existing = await tx.promotionRedemption.findUnique({
         where: { providerTransactionId: args.providerTransactionId },
@@ -434,7 +504,7 @@ export async function confirmRedemption(args: {
       if (existing) return { ok: true as const, redemptionId: existing.id, alreadyProcessed: true, lateConfirmation: false }
 
       // Réservation : consomme si ACTIVE ; confirmation tardive si EXPIRED/ABSENTE.
-      let reservation: Awaited<ReturnType<typeof db.promotionReservation.findUnique>> = null
+      let reservation: Awaited<ReturnType<LaunchDb['promotionReservation']['findUnique']>> = null
       let lateConfirmation = false
       if (args.reservationId) {
         reservation = await tx.promotionReservation.findUnique({ where: { id: args.reservationId } })
@@ -450,6 +520,27 @@ export async function confirmRedemption(args: {
       })
       if (dup) return { ok: false as const, reasonCode: 'OFFER_ALREADY_REDEEMED' as EligibilityReason }
 
+      // Quota par allocation : claim atomique conditionnel.
+      const allocClaim = await tx.promotionAllocation.updateMany({
+        where: { id: allocation.id, confirmedCount: { lt: allocation.quota } },
+        data: { confirmedCount: { increment: 1 } },
+      })
+      if (allocClaim.count === 0) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
+
+      // Quota global : claim atomique conditionnel. Si le global est épuisé,
+      // on rembourse le claim d'allocation (même transaction).
+      const globalClaim = await tx.promotionCampaign.updateMany({
+        where: { id: campaign.id, confirmedCount: { lt: campaign.totalQuota } },
+        data: { confirmedCount: { increment: 1 } },
+      })
+      if (globalClaim.count === 0) {
+        await tx.promotionAllocation.updateMany({
+          where: { id: allocation.id, confirmedCount: { gt: 0 } },
+          data: { confirmedCount: { decrement: 1 } },
+        })
+        return { ok: false as const, reasonCode: 'QUOTA_EXHAUSTED' as EligibilityReason }
+      }
+
       const redemption = await tx.promotionRedemption.create({
         data: {
           campaignId: campaign.id,
@@ -462,9 +553,9 @@ export async function confirmRedemption(args: {
           provider: args.provider,
           providerTransactionId: args.providerTransactionId,
           providerOriginalTransactionId: args.providerOriginalTransactionId,
-          normalAmountMinor: args.normalAmountMinor,
-          paidAmountMinor: args.paidAmountMinor,
-          discountAmountMinor: args.normalAmountMinor - args.paidAmountMinor,
+          normalAmountMinor: pricing.renewalMinor,
+          paidAmountMinor: pricing.dueNowMinor,
+          discountAmountMinor: pricing.renewalMinor - pricing.dueNowMinor,
           currency: args.currency || 'EUR',
           status: 'CONFIRMED',
           confirmedAt: new Date(),
@@ -472,11 +563,6 @@ export async function confirmRedemption(args: {
         },
       })
 
-      // Compteurs atomiques.
-      await tx.promotionAllocation.update({
-        where: { id: allocation.id },
-        data: { confirmedCount: { increment: 1 } },
-      })
       if (reservation) {
         await tx.promotionReservation.updateMany({
           where: { id: reservation.id, status: 'ACTIVE' },

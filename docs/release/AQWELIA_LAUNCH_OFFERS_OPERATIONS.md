@@ -22,8 +22,13 @@ fournisseurs et la recette de vérification.
 | Unicité interplateforme | `@@unique([campaignId, userId])` sur `PromotionRedemption` |
 | Réservation 30 min | `expiresAt = now + AQWELIA_LAUNCH_RESERVATION_TTL` (défaut 1800s) ; confirmation tardive honorée + marquée |
 | Admin audité | Toutes les actions écrivent `PromotionAuditLog` ; réallocation bornée par `confirmed + reserved` et quota global |
-| Pays vérifié serveur | L'éligibilité pays lit **uniquement `User.country`** (valeur enregistrée côté serveur). Le paramètre `country` client (query/body) est ignoré pour la décision ; il ne sert jamais à décider seul l'éligibilité commerciale |
+| Pays vérifié serveur | L'éligibilité pays lit **uniquement `User.country`** (valeur enregistrée côté serveur, non modifiable par l'utilisateur). Le paramètre `country` client (query/body) est ignoré pour la décision ; il ne sert jamais à décider seul l'éligibilité commerciale |
 | Idempotence paiement | `@@unique([provider, providerTransactionId])` : un même paiement/webhook/identifiant ne consomme jamais deux places ; doublon → `alreadyProcessed` |
+| Idempotence réservation | Une `idempotencyKey` existante n'est réutilisée que si elle appartient au même utilisateur ET correspond à la même offre/formule/plateforme ; sinon `IDEMPOTENCY_KEY_CONFLICT` sans exposer la réservation |
+| Éligibilité complète | `createReservation` applique toutes les règles (compte vérifié, pays serveur, ancien abonnement payant, offre déjà consommée, réservation active, formule, plateforme, quotas) |
+| Échec sécurisé sans secret | Campagne active sans `AQWELIA_LAUNCH_TOKEN_SECRET`/`NEXTAUTH_SECRET` → `SIGNING_SECRET_MISSING` (aucun fallback en clair) |
+| Montants serveur | `confirmRedemption` valide les montants contre le pricing serveur (plans.ts) ; valeur différente → `PRICE_CONFIGURATION_INVALID` |
+| Quota global atomique | Confirmation (y compris tardive) applique atomiquement le quota **global** (`campaign.confirmedCount` vs `totalQuota`) ET **par allocation** (`allocation.confirmedCount` vs `quota`) ; dépassement annulé dans la même transaction |
 
 ## Activation (propriétaire)
 
@@ -49,7 +54,7 @@ fournisseurs et la recette de vérification.
 DATABASE_URL="file:./db/test.db" bunx prisma migrate deploy
 bun run db:generate:all
 
-# 2. Tests campagne
+# 2. Tests campagne (base SQLite dédiée + isolée, client Prisma injecté)
 DATABASE_URL="file:./db/test.db" bunx vitest run tests/aqwelia-launch-offers.test.ts
 
 # 3. Garde-fous globaux

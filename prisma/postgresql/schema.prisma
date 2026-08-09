@@ -592,6 +592,7 @@ model PromotionCampaign {
   name                        String
   status                      String   @default("DRAFT") // DRAFT | SCHEDULED | ACTIVE | PAUSED | EXHAUSTED | ENDED
   totalQuota                  Int      @default(500)
+  confirmedCount              Int      @default(0)
   startsAt                    DateTime?
   endsAt                      DateTime?
   reservationTtlSeconds       Int      @default(1800)
