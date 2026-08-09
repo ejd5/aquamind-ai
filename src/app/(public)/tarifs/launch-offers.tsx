@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { checkEligibility } from '@/lib/launch-offers/service'
@@ -25,6 +26,7 @@ import { LaunchOfferCheckoutButton } from '@/components/launch/launch-offer-chec
  * limitée, jamais confondues dans la grille standard.
  */
 export async function LaunchOffersSection() {
+  const t = await getTranslations('tarifs')
   if (!launchOffersEnabled()) return null
   await seedCampaign()
 
@@ -34,24 +36,23 @@ export async function LaunchOffersSection() {
   // Visiteur non connecté : bloc marketing sans éligibilité calculée.
   if (!session?.user?.id) {
     return (
-      <section aria-label="Offres de lancement" className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
+      <section aria-label={t('launchEyebrow')} className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
         <div className="glass-card rounded-3xl border border-gold/25 bg-gradient-to-br from-gold/[0.08] via-transparent to-teal-700/[0.06] p-6 sm:p-10">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="section-label">Offre de lancement</p>
+              <p className="section-label">{t('launchEyebrow')}</p>
               <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
-                Édition limitée de lancement
+                {t('launchTitle')}
               </h2>
               <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
-                −50&nbsp;% la première période et «&nbsp;3&nbsp;mois au prix de 2&nbsp;» pour les premiers inscrits.
-                Connectez-vous pour découvrir votre éligibilité.
+                {t('launchGuestIntro')}
               </p>
             </div>
             <Link
               href={`/auth/signin?callbackUrl=/tarifs`}
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-gold to-teal-700 px-6 py-3 text-sm font-bold text-white shadow-lg transition-all hover:scale-[1.03]"
             >
-              Se connecter
+              {t('launchGuestCta')}
             </Link>
           </div>
         </div>
@@ -68,8 +69,8 @@ export async function LaunchOffersSection() {
   const cards = [
     {
       code: LAUNCH_OFFER_A_CODE,
-      title: '−50 % la première période',
-      subtitle: 'Puis renouvellement au tarif mensuel',
+      title: t('launchA50Title'),
+      subtitle: t('launchA50Sub'),
       eligible: offerA.eligible,
       reasonCode: offerA.reasonCode,
       pricing: offerA.offer?.pricing ?? null,
@@ -77,8 +78,8 @@ export async function LaunchOffersSection() {
     },
     {
       code: LAUNCH_OFFER_B_CODE,
-      title: '3 mois au prix de 2',
-      subtitle: 'Puis renouvellement au tarif trimestriel',
+      title: t('launchB32Title'),
+      subtitle: t('launchB32Sub'),
       eligible: offerB.eligible,
       reasonCode: offerB.reasonCode,
       pricing: offerB.offer?.pricing ?? null,
@@ -87,14 +88,14 @@ export async function LaunchOffersSection() {
   ]
 
   return (
-    <section aria-label="Offres de lancement" className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
+    <section aria-label={t('launchEyebrow')} className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
       <div className="mb-8 text-center">
-        <p className="section-label">Offre de lancement</p>
+        <p className="section-label">{t('launchEyebrow')}</p>
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Édition limitée de lancement
+          {t('launchTitle')}
         </h2>
         <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground">
-          Offre exclusive et limitée. Les places affichées sont les places réellement disponibles.
+          {t('launchSubtitle')}
         </p>
       </div>
 
@@ -111,7 +112,7 @@ export async function LaunchOffersSection() {
               className="glass-card relative flex flex-col overflow-hidden rounded-3xl border border-gold/25 p-6 sm:p-8"
             >
               <span className="absolute right-4 top-4 rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-gold">
-                Offre de lancement
+                {t('launchBadge')}
               </span>
 
               <h3 className="font-display text-2xl font-black tracking-tight">{card.title}</h3>
@@ -119,7 +120,7 @@ export async function LaunchOffersSection() {
 
               {showRemaining && remaining !== null && remaining > 0 && (
                 <p className="mt-3 inline-flex w-fit items-center rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-200">
-                  Plus que {remaining} place{remaining > 1 ? 's' : ''}
+                  {remaining > 1 ? t('launchRemainingPlural', { count: remaining }) : t('launchRemaining', { count: remaining })}
                 </p>
               )}
 
@@ -129,23 +130,24 @@ export async function LaunchOffersSection() {
                     <span className="font-display text-4xl font-black leading-none tracking-tight">
                       {(price.dueNowMinor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                     </span>
-                    <span className="pb-1 text-xs text-muted-foreground">à payer maintenant</span>
+                    <span className="pb-1 text-xs text-muted-foreground">{t('launchPaidNow')}</span>
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Puis {(price.renewalMinor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} € /{' '}
-                    {price.renewalPeriod === 'P1M' ? 'mois' : 'trimestre'}
+                    {price.renewalPeriod === 'P1M'
+                      ? t('launchThenMonthly', { price: (price.renewalMinor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) })
+                      : t('launchThenQuarterly', { price: (price.renewalMinor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) })}
                   </p>
                 </div>
               ) : (
                 <div className="mt-5 border-y border-border/60 py-5 text-sm text-muted-foreground">
-                  Tarification indisponible
+                  {t('launchPriceUnavailable')}
                 </div>
               )}
 
               <div className="mt-auto pt-6">
                 {exhausted ? (
                   <span className="inline-flex w-full items-center justify-center rounded-2xl border border-border bg-muted/30 px-5 py-3 text-sm font-bold text-muted-foreground">
-                    Offre épuisée
+                    {t('launchExhausted')}
                   </span>
                 ) : card.eligible ? (
                   <LaunchOfferCheckoutButton
@@ -155,7 +157,7 @@ export async function LaunchOffersSection() {
                   />
                 ) : (
                   <span className="inline-flex w-full items-center justify-center rounded-2xl border border-border bg-muted/30 px-5 py-3 text-sm font-bold text-muted-foreground">
-                    {reasonLabel(card.reasonCode)}
+                    {reasonLabel(card.reasonCode, t)}
                   </span>
                 )}
               </div>
@@ -167,14 +169,16 @@ export async function LaunchOffersSection() {
   )
 }
 
-function reasonLabel(reason: string | null): string {
+type T = Awaited<ReturnType<typeof getTranslations>>
+
+function reasonLabel(reason: string | null, t: T): string {
   switch (reason) {
-    case 'OFFER_ALREADY_REDEEMED': return 'Vous avez déjà profité de cette offre'
-    case 'ACTIVE_RESERVATION_EXISTS': return 'Vous avez déjà une réservation en cours'
-    case 'ALREADY_SUBSCRIBED': return 'Offre réservée aux nouveaux abonnés'
-    case 'COUNTRY_NOT_ELIGIBLE': return 'Offre non disponible dans votre pays'
-    case 'QUOTA_EXHAUSTED': return 'Offre épuisée'
-    case 'ALLOCATION_EXHAUSTED': return 'Offre épuisée'
-    default: return 'Offre non disponible'
+    case 'OFFER_ALREADY_REDEEMED': return t('launchReasonRedeemed')
+    case 'ACTIVE_RESERVATION_EXISTS': return t('launchReasonActiveReservation')
+    case 'ALREADY_SUBSCRIBED': return t('launchReasonSubscribed')
+    case 'COUNTRY_NOT_ELIGIBLE': return t('launchReasonCountry')
+    case 'QUOTA_EXHAUSTED': return t('launchReasonQuota')
+    case 'ALLOCATION_EXHAUSTED': return t('launchReasonQuota')
+    default: return t('launchReasonDefault')
   }
 }

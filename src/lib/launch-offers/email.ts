@@ -30,12 +30,12 @@ export function renderLaunchOfferConfirmationEmail(data: {
 }): { subject: string; html: string } {
   const firstName = data.userName ? data.userName.split(' ')[0] : ''
   const planLabel = PLAN_LABEL[data.planId] || data.planId
-  const period = data.renewalPeriod === 'P1M' ? 'mois' : 'trimestre'
+  const period = data.renewalPeriod === 'P1M' ? 'month' : 'quarter'
   const offerTitle = data.offerCode === 'LAUNCH50_MONTHLY'
-    ? '−50 % la première période'
-    : '3 mois au prix de 2'
+    ? '-50% for the first period'
+    : '3 months for the price of 2'
 
-  const subject = `Votre offre de lancement ${planLabel} est active`
+  const subject = `Your ${planLabel} launch offer is active`
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -43,16 +43,16 @@ export function renderLaunchOfferConfirmationEmail(data: {
 <body style="margin:0;padding:0;background:#f4f6f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1a2b3c;">
   <div style="max-width:560px;margin:0 auto;padding:24px;">
     <div style="background:#ffffff;border-radius:12px;padding:32px;box-shadow:0 4px 16px rgba(0,59,74,0.08);">
-      <h1 style="margin:0 0 16px;font-size:22px;color:#003B4A;">Votre offre de lancement est active</h1>
-      <p style="margin:0 0 8px;">Bonjour${firstName ? ` ${escapeHtml(firstName)}` : ''}, votre offre <strong>${escapeHtml(offerTitle)}</strong> sur le forfait <strong>${escapeHtml(planLabel)}</strong> est activée.</p>
+      <h1 style="margin:0 0 16px;font-size:22px;color:#003B4A;">Your launch offer is active</h1>
+      <p style="margin:0 0 8px;">Hello${firstName ? ` ${escapeHtml(firstName)}` : ''}, your <strong>${escapeHtml(offerTitle)}</strong> offer on the <strong>${escapeHtml(planLabel)}</strong> plan is now active.</p>
       <div style="margin:16px 0;padding:16px;background:#f0f9f4;border-radius:8px;">
-        <p style="margin:0 0 6px;"><strong>Payé maintenant :</strong> ${formatMinor(data.paidMinor)}</p>
-        <p style="margin:0 0 6px;"><strong>Puis :</strong> ${formatMinor(data.renewalMinor)} / ${period}</p>
-        <p style="margin:0;">Paiement sécurisé par Stripe.</p>
+        <p style="margin:0 0 6px;"><strong>Paid now:</strong> ${formatMinor(data.paidMinor)}</p>
+        <p style="margin:0 0 6px;"><strong>Then:</strong> ${formatMinor(data.renewalMinor)} / ${period}</p>
+        <p style="margin:0;">Secure payment by Stripe.</p>
       </div>
-      <p style="margin:0 0 16px;">Vous pouvez gérer votre abonnement depuis votre compte AQWELIA.</p>
-      <a href="https://aqwelia.app" style="display:inline-block;background:#b08d3e;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Commencer</a>
-      <p style="margin:16px 0 0;color:#6b7280;font-size:12px;">Une question ? Répondez à cet email ou écrivez à contact@aqwelia.app.</p>
+      <p style="margin:0 0 16px;">You can manage your subscription from your AQWELIA account.</p>
+      <a href="https://aqwelia.app" style="display:inline-block;background:#b08d3e;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Get started</a>
+      <p style="margin:16px 0 0;color:#6b7280;font-size:12px;">A question? Reply to this email or write to contact@aqwelia.app.</p>
     </div>
   </div>
 </body>
