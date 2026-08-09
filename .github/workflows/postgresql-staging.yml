@@ -10,6 +10,7 @@ on:
       - 'src/lib/db.ts'
       - 'src/lib/database-provider.ts'
       - 'tests/postgresql.test.mjs'
+      - 'tests/aqwelia-launch-offers-postgresql.test.mjs'
       - 'tests/run-postgresql-runtime-smoke.sh'
       - 'tests/seed-migration-fixture.mjs'
       - 'tests/verify-postgresql-migration.mjs'
