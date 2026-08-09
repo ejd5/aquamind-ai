@@ -46,7 +46,27 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await prisma?.$disconnect()
+  // Nettoyage complet : le workflow postgresql-staging.yml exécute ensuite une
+  // migration SQLite→PostgreSQL qui exige une cible VIDE (assertTargetEmpty).
+  // Ce test crée campagne + variantes + allocations + 100 utilisateurs +
+  // réservations : tout doit être supprimé.
+  try {
+    if (prisma) {
+      const c = await prisma.promotionCampaign.findUnique({ where: { code: 'AQWELIA_LAUNCH_2026' } })
+      if (c) {
+        await prisma.promotionAuditLog.deleteMany({ where: { campaignId: c.id } })
+        await prisma.promotionRedemption.deleteMany({ where: { campaignId: c.id } })
+        await prisma.promotionReservation.deleteMany({ where: { campaignId: c.id } })
+        await prisma.promotionVariant.deleteMany({ where: { campaignId: c.id } })
+        await prisma.promotionCampaign.deleteMany({ where: { id: c.id } })
+      }
+      if (prefix) {
+        await prisma.user.deleteMany({ where: { email: { startsWith: `${prefix}-` } } })
+      }
+    }
+  } finally {
+    await prisma?.$disconnect()
+  }
 })
 
 describe('atomic reservation concurrency on PostgreSQL (1 slot, 100 requests)', () => {
