@@ -48,6 +48,9 @@ model User {
   subscriptions            Subscription[]
   // Wave A2: canonical billing identities owned by this user.
   billingIdentities        BillingIdentity[]
+  // AQWELIA Launch offers (campagne v1.0).
+  launchReservations       PromotionReservation[]
+  launchRedemptions        PromotionRedemption[]
   analyticsEvents          AnalyticsEvent[]
   recommendationExecutions RecommendationExecution[]
   recommendationOutcomes   RecommendationOutcome[]
@@ -573,6 +576,151 @@ model BillingEvent {
   @@index([userId])
   @@index([result])
   @@index([nextRetryAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AQWELIA Launch offers (campagne "Offres de lancement", spec v1.0 — 2026-08-09)
+// -----------------------------------------------------------------------------
+// Autorité centrale : éligibilité, quotas, réservations, consommation. Les
+// montants sont TOUJOURS en unités mineures entières (cents) et dérivés du
+// catalogue (plans.ts) ou des stores — jamais codés en dur. Flags de campagne
+// désactivés jusqu'aux identifiants fournisseurs réels.
+// Statuts en String (convention du dépôt, cohérent avec Subscription.status).
+model PromotionCampaign {
+  id                          String   @id @default(cuid())
+  code                        String   @unique // ex: AQWELIA_LAUNCH_2026
+  name                        String
+  status                      String   @default("DRAFT") // DRAFT | SCHEDULED | ACTIVE | PAUSED | EXHAUSTED | ENDED
+  totalQuota                  Int      @default(500)
+  startsAt                    DateTime?
+  endsAt                      DateTime?
+  reservationTtlSeconds       Int      @default(1800)
+  exactRemainingThresholdRatio Float   @default(0.25)
+  eligibleCountries            String? // JSON array
+  eligiblePlanIds              String? // JSON array
+  version                     Int      @default(0)
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  variants     PromotionVariant[]
+  reservations PromotionReservation[]
+  redemptions  PromotionRedemption[]
+  auditLogs    PromotionAuditLog[]
+}
+
+model PromotionVariant {
+  id                String   @id @default(cuid())
+  campaignId        String
+  code              String // LAUNCH50_MONTHLY | LAUNCH3FOR2_QUARTERLY
+  status            String   @default("ACTIVE") // ACTIVE | PAUSED | ENDED
+  quota             Int // 300 | 200
+  billingPeriod     String // P1M | P3M
+  discountKind      String // PERCENT_ONCE | AMOUNT_ONCE
+  discountValue     Int // 50 (percent) ou montant en cents
+  eligiblePlanIds   String? // JSON array (optionnel : plans autorisés)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  campaign     PromotionCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  allocations  PromotionAllocation[]
+  reservations PromotionReservation[]
+  redemptions  PromotionRedemption[]
+
+  @@unique([campaignId, code])
+}
+
+model PromotionAllocation {
+  id             String   @id @default(cuid())
+  variantId      String
+  platform       String // WEB | IOS | ANDROID
+  planId         String? // null = tous les plans éligibles de la variante
+  quota          Int
+  confirmedCount Int      @default(0)
+  reservedCount  Int      @default(0)
+  safetyBuffer   Int      @default(0)
+  providerLimit  Int?
+  version        Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  variant      PromotionVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  reservations PromotionReservation[]
+  redemptions  PromotionRedemption[]
+
+  @@unique([variantId, platform, planId])
+}
+
+model PromotionReservation {
+  id                 String    @id @default(cuid())
+  campaignId         String
+  variantId          String
+  allocationId       String
+  userId             String
+  planId             String
+  platform           String // WEB | IOS | ANDROID
+  status             String    @default("ACTIVE") // ACTIVE | CONSUMED | EXPIRED | CANCELLED
+  expiresAt          DateTime
+  idempotencyKey     String    @unique
+  providerCheckoutId String?
+  signedTokenHash    String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  campaign   PromotionCampaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  variant    PromotionVariant   @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  allocation PromotionAllocation @relation(fields: [allocationId], references: [id], onDelete: Cascade)
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  redemptions PromotionRedemption[]
+
+  @@index([campaignId, userId, status])
+  @@index([expiresAt])
+}
+
+model PromotionRedemption {
+  id                          String   @id @default(cuid())
+  campaignId                  String
+  variantId                   String
+  allocationId                String
+  reservationId               String?
+  userId                      String
+  subscriptionId              String?
+  planId                      String
+  platform                    String // WEB | IOS | ANDROID
+  provider                    String // STRIPE | APPLE | GOOGLE
+  providerTransactionId       String   @unique
+  providerOriginalTransactionId String?
+  normalAmountMinor           Int // prix standard (cents)
+  paidAmountMinor             Int // prix payé (cents)
+  discountAmountMinor         Int // différence (cents)
+  currency                    String   @default("EUR")
+  status                      String   @default("CONFIRMED") // CONFIRMED | REFUNDED | CHARGEBACK | REVOKED | TECHNICAL_CANCEL
+  confirmedAt                 DateTime?
+  metadata                    String? // JSON (ex: late_confirmation)
+  createdAt                   DateTime @default(now())
+
+  campaign   PromotionCampaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  variant    PromotionVariant   @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  allocation PromotionAllocation @relation(fields: [allocationId], references: [id], onDelete: Cascade)
+  reservation PromotionReservation? @relation(fields: [reservationId], references: [id])
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, userId])
+  @@index([provider, providerTransactionId])
+}
+
+model PromotionAuditLog {
+  id         String   @id @default(cuid())
+  campaignId String
+  actor      String
+  action     String
+  before     String?
+  after      String?
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  campaign PromotionCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, createdAt])
 }
 
 // Événements analytics (funnel, rétention)
