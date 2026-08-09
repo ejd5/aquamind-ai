@@ -125,3 +125,59 @@ export async function reallocate(args: {
   ])
   return { ok: true }
 }
+
+/**
+ * Remise de place (spec §3 — remboursements et annulations).
+ *
+ * Par défaut, un remboursement/annulation à la demande du client ne remet PAS
+ * la place (anti-abus). Une remise de place est réservée aux cas administratifs
+ * (doublon technique, capture double, annulation imputable à AQWELIA) et doit
+ * être explicitement validée par un admin. Action auditée.
+ */
+export async function restoreRedemptionSlot(args: {
+  redemptionId: string
+  actor: string
+  reason: string
+}, client: LaunchDb = db): Promise<{ ok: boolean; error?: string }> {
+  if (!launchOffersEnabled()) return { ok: false, error: 'campaign_disabled' }
+  const redemption = await client.promotionRedemption.findUnique({
+    where: { id: args.redemptionId },
+    include: { campaign: true, allocation: true },
+  })
+  if (!redemption) return { ok: false, error: 'redemption_not_found' }
+  // Ne remet la place qu'une fois : statut CONFIRMED uniquement.
+  if (redemption.status !== 'CONFIRMED') {
+    return { ok: false, error: 'redemption_not_restorable' }
+  }
+
+  const campaign = redemption.campaign
+  const allocation = redemption.allocation
+  if (!campaign || !allocation) return { ok: false, error: 'campaign_not_found' }
+
+  // Décrémente atomiquement (jamais en dessous de 0).
+  await client.$transaction([
+    client.promotionAllocation.updateMany({
+      where: { id: allocation.id, confirmedCount: { gt: 0 } },
+      data: { confirmedCount: { decrement: 1 } },
+    }),
+    client.promotionCampaign.updateMany({
+      where: { id: campaign.id, confirmedCount: { gt: 0 } },
+      data: { confirmedCount: { decrement: 1 } },
+    }),
+    client.promotionRedemption.update({
+      where: { id: redemption.id },
+      data: { status: 'TECHNICAL_CANCEL' },
+    }),
+    client.promotionAuditLog.create({
+      data: {
+        campaignId: campaign.id,
+        actor: args.actor,
+        action: 'restore_slot',
+        before: JSON.stringify({ redemptionId: redemption.id, status: redemption.status }),
+        after: JSON.stringify({ redemptionId: redemption.id, status: 'TECHNICAL_CANCEL' }),
+        reason: args.reason,
+      },
+    }),
+  ])
+  return { ok: true }
+}

@@ -6,6 +6,8 @@ import {
   getPlanFromStripePriceId,
 } from '@/lib/billing/plans'
 import { db } from '@/lib/db'
+import { handleLaunchCheckoutSession, markLaunchRedemptionRefunded } from '@/lib/launch-offers/webhook'
+import { sendLaunchOfferConfirmationEmailForSession } from '@/lib/launch-offers/email'
 
 export async function handleStripeEvent(event: any): Promise<HandlerResult> {
   const providerEventAt = new Date(event.created * 1000)
@@ -79,6 +81,15 @@ export async function handleStripeEvent(event: any): Promise<HandlerResult> {
         expiresAt: currentPeriodEnd,
       })
       if (transition.skipped) return { result: 'ignored', reason: 'out_of_order' }
+
+      // Offres de lancement : si la session porte les metadata de campagne,
+      // consomme le quota atomiquement (montants du pricing serveur) et
+      // déclenche l'email de confirmation. Un échec de campagne ne remonte
+      // jamais comme échec du webhook (Stripe ne doit pas réessayer).
+      const launch = await handleLaunchCheckoutSession(cs)
+      if (launch.handled && !launch.alreadyProcessed) {
+        void sendLaunchOfferConfirmationEmailForSession(cs)
+      }
       break
     }
 
@@ -295,6 +306,10 @@ export async function handleStripeEvent(event: any): Promise<HandlerResult> {
         expiresAt: new Date(),
       })
       if (transition.skipped) return { result: 'ignored', reason: 'out_of_order' }
+
+      // Campagne : un remboursement intégral marque la redemption REFUNDED
+      // (la place N'EST PAS remise automatiquement — remise admin auditée).
+      await markLaunchRedemptionRefunded({ userId: sub.userId })
       break
     }
 

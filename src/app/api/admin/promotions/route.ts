@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { getCampaignAdmin, setCampaignStatus, reallocate, seedCampaign } from '@/lib/launch-offers/admin'
+import { getCampaignAdmin, setCampaignStatus, reallocate, restoreRedemptionSlot, seedCampaign } from '@/lib/launch-offers/admin'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -40,6 +40,15 @@ export async function PATCH(req: NextRequest) {
       newQuota: Number(body.newQuota),
       actor: admin,
       reason: body.reason,
+    })
+    if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 })
+    return NextResponse.json({ ok: true }, { status: 200 })
+  }
+  if (body.action === 'restore_slot') {
+    const result = await restoreRedemptionSlot({
+      redemptionId: body.redemptionId || '',
+      actor: admin,
+      reason: body.reason || 'admin restore',
     })
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 })
     return NextResponse.json({ ok: true }, { status: 200 })
