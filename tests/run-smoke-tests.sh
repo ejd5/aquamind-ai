@@ -122,7 +122,10 @@ export WTTR_IN_BASE_URL="http://127.0.0.1:${WEATHER_PORT}"
 # ── 6b. Start dev server ─────────────────────────────────────────────────────
 echo ""
 echo "=== 4b. Start dev server on port $PORT ==="
-NODE_OPTIONS="--max-old-space-size=1024" \
+# Le `next dev` restart quand la mémoire approche du seuil ; sous la charge de
+# la suite complète, 1024 Mo devient trop juste et provoque des ECONNREFUSED
+# pendant le redémarrage. Les runners CI disposent de RAM bien supérieure.
+NODE_OPTIONS="--max-old-space-size=3072" \
   node node_modules/.bin/next dev -H 127.0.0.1 -p "$PORT" > "$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
 echo "Server PID: $SERVER_PID"
@@ -142,6 +145,31 @@ for i in $(seq 1 60); do
     exit 1
   fi
   sleep 1
+done
+
+# ── 7b. Pre-warm public pages (lazy compilation) ─────────────────────────────
+echo ""
+echo "=== 5b. Pre-warm public pages (cold compile `next dev`) ==="
+# `next dev` compile les routes paresseusement. Sous la charge de la suite, la
+# compilation à froid d'une page lourde peut dépasser le timeout du test. On
+# déclenche cette compilation AVANT le run pour mesurer des réponses réelles.
+# Un échec ici est bloquant : une page réellement en erreur doit échouer le run.
+for page in /tarifs /faq /pro /care /growth /business /academy; do
+  for attempt in 1 2 3; do
+    HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 120 "${BASE_URL}${page}" 2>/dev/null || echo "000")
+    if [ "$HTTP" = "200" ]; then
+      echo "  ✅ ${page} (attempt ${attempt})"
+      break
+    fi
+    if [ "$attempt" = "3" ]; then
+      echo "  ❌ ${page} — HTTP ${HTTP} après 3 tentatives" >&2
+      echo "=== Server log (last 60 lines) ===" >&2
+      tail -60 "$SERVER_LOG" 2>/dev/null >&2 || true
+      exit 1
+    fi
+    echo "  ⚠️  ${page} — HTTP ${HTTP} (tentative ${attempt}), nouvelle tentative"
+    sleep 2
+  done
 done
 
 # ── 8. Run smoke tests ───────────────────────────────────────────────────────
