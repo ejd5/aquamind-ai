@@ -667,6 +667,12 @@ model PromotionReservation {
   status             String    @default("ACTIVE") // ACTIVE | CONSUMED | EXPIRED | CANCELLED
   expiresAt          DateTime
   idempotencyKey     String    @unique
+  // Clé nullable unique d'unicité d'une réservation ACTIVE par (campaignId, userId) :
+  // renseignée à la création (statut ACTIVE), supprimée atomiquement lors des
+  // transitions EXPIRED / CANCELLED / CONSUMED. Garantit UNE SEULE réservation
+  // active par utilisateur et par campagne, même entre offres/plateformes/
+  // allocations et face aux requêtes concurrentes.
+  activeUserKey      String?   @unique
   providerCheckoutId String?
   signedTokenHash    String?
   createdAt          DateTime  @default(now())

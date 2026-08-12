@@ -188,6 +188,37 @@ function allocationAvailable(allocation: { quota: number; confirmedCount: number
   return allocation.quota - allocation.confirmedCount - allocation.reservedCount - allocation.safetyBuffer
 }
 
+/** Clé d'unicité d'une réservation ACTIVE par (campaignId, userId). */
+export function activeUserKeyFor(campaignId: string, userId: string): string {
+  return `u:${userId}:c:${campaignId}`
+}
+
+/**
+ * Expire les réservations ACTIVE périmées (expiresAt < now) d'une campagne pour
+ * un utilisateur, DANS la transaction : transition EXPIRED + décrément CAS
+ * versionné de chaque allocation concernée + libération de la clé d'unicité.
+ * Retourne le nombre d'expirations effectives. Conflit → AllocationVersionConflict.
+ */
+async function expireUserReservationsInTx(tx: any, campaignId: string, userId: string, now: Date): Promise<number> {
+  const due = await tx.promotionReservation.findMany({
+    where: { campaignId, userId, status: 'ACTIVE', expiresAt: { lt: now } },
+    select: { id: true, allocationId: true },
+  })
+  for (const r of due) {
+    const updated = await tx.promotionReservation.updateMany({
+      where: { id: r.id, status: 'ACTIVE', expiresAt: { lt: now } },
+      data: { status: 'EXPIRED', activeUserKey: null },
+    })
+    if (updated.count === 1) {
+      const fresh = await freshAllocation(tx, r.allocationId)
+      if (!fresh) throw new AllocationVersionConflict()
+      const decOk = await casAllocation(tx, fresh, { reservedCount: { decrement: 1 } })
+      if (!decOk) throw new AllocationVersionConflict()
+    }
+  }
+  return due.length
+}
+
 /** Relecture de l'allocation DANS la transaction (état frais, jamais capturé avant). */
 async function freshAllocation(tx: any, allocationId: string): Promise<{
   id: string
@@ -258,9 +289,10 @@ async function assertAccountEligibility(client: LaunchDb, campaignId: string, us
     select: { id: true },
   })
   if (redeemed) return 'OFFER_ALREADY_REDEEMED'
-  // Réservation active existante.
+  // Réservation active existante : une réservation périmée (expiresAt < now)
+  // ne bloque PAS (elle sera expirée par le nettoyage dans la transaction).
   const activeReservation = await client.promotionReservation.findFirst({
-    where: { campaignId, userId, status: 'ACTIVE' },
+    where: { campaignId, userId, status: 'ACTIVE', expiresAt: { gte: new Date() } },
     select: { id: true },
   })
   if (activeReservation) return 'ACTIVE_RESERVATION_EXISTS'
@@ -406,20 +438,41 @@ export async function createReservation(args: {
 
   try {
     const result = await withBusyRetry(() => client.$transaction(async (tx) => {
+      // Relire la campagne DANS la transaction (P2#3) : une pause/fin peut être
+      // intervenue après `campaignState`. CAS/fence sur campaign.version et
+      // status ACTIVE pour sérialiser avec setCampaignStatus.
+      const freshCampaign = await tx.promotionCampaign.findUnique({
+        where: { code: launchCampaignCode() },
+        select: { id: true, status: true, startsAt: true, endsAt: true, version: true },
+      })
+      if (!freshCampaign) return { ok: false as const, reasonCode: 'CAMPAIGN_NOT_STARTED' as EligibilityReason }
+      const freshState = campaignState(freshCampaign)
+      if (freshState) return { ok: false as const, reasonCode: freshState }
+
+      // Expire d'ABORD les réservations périmées de CET utilisateur (P1#2) :
+      // une réservation ACTIVE avec expiresAt < now ne bloque plus une nouvelle
+      // tentative (l'ancienne place est libérée + clé d'unicité supprimée).
+      await expireUserReservationsInTx(tx, campaign.id, args.userId, now)
+
       // Relecture FRAÎCHE de l'allocation dans la transaction (jamais la valeur
       // capturée avant) : un reallocate concurrent peut avoir changé quota/version.
       const fresh = await freshAllocation(tx, allocation.id)
       if (!fresh) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
 
-      // Nettoyage paresseux des réservations expirées de cette allocation.
-      // Le statut ET le compteur évoluent dans la même transaction : chaque
-      // transition réelle ACTIVE → EXPIRED décrémente reservedCount d'exactement
-      // une place (garde-fou gte pour ne jamais produire un compteur négatif).
-      // Un second nettoyage ne trouve plus de ligne ACTIVE expirée → aucun
-      // décrément supplémentaire.
+      // Unicité d'UNIQUE réservation ACTIVE par (campaignId, userId) : après
+      // expiration des périmées, toute réservation encore ACTIVE est réellement
+      // active (expiresAt >= now) et bloque.
+      const stillActive = await tx.promotionReservation.findFirst({
+        where: { campaignId: campaign.id, userId: args.userId, status: 'ACTIVE' },
+        select: { id: true },
+      })
+      if (stillActive) return { ok: false as const, reasonCode: 'ACTIVE_RESERVATION_EXISTS' as EligibilityReason }
+
+      // Nettoyage paresseux des réservations expirées de cette allocation
+      // (autres utilisateurs). Statut ET compteur dans la même transaction.
       const expired = await tx.promotionReservation.updateMany({
         where: { allocationId: allocation.id, status: 'ACTIVE', expiresAt: { lt: now } },
-        data: { status: 'EXPIRED' },
+        data: { status: 'EXPIRED', activeUserKey: null },
       })
       if (expired.count > 0) {
         // CAS avec version : si une réallocation est intervenue, le CAS échoue
@@ -459,6 +512,7 @@ export async function createReservation(args: {
           status: 'ACTIVE',
           expiresAt,
           idempotencyKey: args.idempotencyKey,
+          activeUserKey: activeUserKeyFor(campaign.id, args.userId),
         },
       })
 
@@ -480,8 +534,9 @@ export async function createReservation(args: {
       return { ok: false, reasonCode: 'ALLOCATION_EXHAUSTED', error: 'allocation_conflict' }
     }
     if (err?.code === 'P2002') {
-      // Course sur la même idempotencyKey : vérifier l'appartenance avant de
-      // réutiliser, sinon conflit sans exposer.
+      // Conflit d'unicité : soit l'idempotencyKey (replay), soit la clé
+      // activeUserKey (une réservation ACTIVE concurrente). On distingue les
+      // deux précisément.
       const existingNow = await client.promotionReservation.findUnique({ where: { idempotencyKey: args.idempotencyKey } })
       if (existingNow && existingNow.userId === args.userId && existingNow.variantId === variant.id && existingNow.planId === args.planId && existingNow.platform === args.platform) {
         return {
@@ -492,7 +547,9 @@ export async function createReservation(args: {
           offerCode: args.offerCode,
         }
       }
-      return { ok: false, reasonCode: 'IDEMPOTENCY_KEY_CONFLICT' }
+      // Sinon : conflit activeUserKey (réservation ACTIVE concurrente d'une
+      // autre requête) → refus explicite.
+      return { ok: false, reasonCode: 'ACTIVE_RESERVATION_EXISTS' }
     }
     return { ok: false, reasonCode: 'RISK_REVIEW_REQUIRED', error: err?.message }
   }
@@ -511,7 +568,7 @@ export async function releaseReservation(reservationId: string, userId: string, 
       // est ciblée.
       const cancelled = await tx.promotionReservation.updateMany({
         where: { id: reservationId, status: 'ACTIVE' },
-        data: { status: 'CANCELLED' },
+        data: { status: 'CANCELLED', activeUserKey: null },
       })
       if (cancelled.count === 1) {
         // Relecture FRAÎCHE + CAS (version/quota/compteurs) : une réallocation
@@ -542,7 +599,7 @@ export async function expireDueReservations(limit = 500, client: LaunchDb = db):
   if (due.length === 0) return 0
   await withBusyRetry(() => client.$transaction(async (tx) => {
     for (const r of due) {
-      const updated = await tx.promotionReservation.updateMany({ where: { id: r.id, status: 'ACTIVE' }, data: { status: 'EXPIRED' } })
+      const updated = await tx.promotionReservation.updateMany({ where: { id: r.id, status: 'ACTIVE' }, data: { status: 'EXPIRED', activeUserKey: null } })
       if (updated.count === 1) {
         // Relecture FRAÎCHE + CAS (version/quota/compteurs) : une réallocation
         // concurrente invalide le décrément → rollback.
@@ -626,6 +683,13 @@ export async function confirmRedemption(args: {
   if (args.normalAmountMinor !== pricing.renewalMinor || args.paidAmountMinor !== pricing.dueNowMinor) {
     return { ok: false, reasonCode: 'PRICE_CONFIGURATION_INVALID', error: 'amount_mismatch_server_pricing' }
   }
+  // Devise (P2#4) : normalisée en majuscules ; si absente, la devise serveur du
+  // pricing est utilisée ; sinon EXIGENCE exacte currency === pricing.currency.
+  // Toute autre devise est refusée AVANT la transaction (aucune mutation).
+  const normalizedCurrency = (args.currency || pricing.currency).trim().toUpperCase()
+  if (normalizedCurrency !== pricing.currency) {
+    return { ok: false, reasonCode: 'PRICE_CONFIGURATION_INVALID', error: 'currency_mismatch_server_pricing' }
+  }
 
   try {
     const result = await withBusyRetry(() => client.$transaction(async (tx) => {
@@ -651,7 +715,8 @@ export async function confirmRedemption(args: {
           existing.variantId === variant.id &&
           existing.allocationId === allocation.id &&
           existing.planId === args.planId &&
-          existing.platform === args.platform
+          existing.platform === args.platform &&
+          existing.currency === normalizedCurrency
         if (!ctxOk) {
           // Le même ID existe chez un autre contexte (collision de fournisseur,
           // webhook malformé, rejeu avec mauvais user/offre) → refus sûr.
@@ -708,7 +773,7 @@ export async function confirmRedemption(args: {
             // allocationId (jamais la réservation d'un autre utilisateur).
             const expired = await tx.promotionReservation.updateMany({
               where: { id: reservation.id, status: 'ACTIVE', expiresAt: { lt: now } },
-              data: { status: 'EXPIRED' },
+              data: { status: 'EXPIRED', activeUserKey: null },
             })
             if (expired.count === 1) {
               // Décrément versionné via CAS : une réallocation concurrente
@@ -744,7 +809,7 @@ export async function confirmRedemption(args: {
         // attendue, aucun quota n'est consommé.
         const transitioned = await tx.promotionReservation.updateMany({
           where: { id: reservation.id, status: 'ACTIVE', expiresAt: { gte: now } },
-          data: { status: 'CONSUMED' },
+          data: { status: 'CONSUMED', activeUserKey: null },
         })
         if (transitioned.count !== 1) {
           // Réservation plus active (expirée entre-temps) → confirmation tardive :
@@ -752,7 +817,7 @@ export async function confirmRedemption(args: {
           // ACTIVE → EXPIRED + décrément unique via CAS versionné).
           const expired = await tx.promotionReservation.updateMany({
             where: { id: reservation.id, status: 'ACTIVE', expiresAt: { lt: now } },
-            data: { status: 'EXPIRED' },
+            data: { status: 'EXPIRED', activeUserKey: null },
           })
           if (expired.count === 1) {
             const freshNow = await freshAllocation(tx, reservation.allocationId)
@@ -817,7 +882,7 @@ export async function confirmRedemption(args: {
           normalAmountMinor: pricing.renewalMinor,
           paidAmountMinor: pricing.dueNowMinor,
           discountAmountMinor: pricing.renewalMinor - pricing.dueNowMinor,
-          currency: args.currency || 'EUR',
+          currency: normalizedCurrency,
           status: 'CONFIRMED',
           confirmedAt: new Date(),
           metadata: lateConfirmation ? JSON.stringify({ late_confirmation: true }) : null,
@@ -859,7 +924,8 @@ export async function confirmRedemption(args: {
           raced.variantId === variant.id &&
           raced.allocationId === allocation.id &&
           raced.planId === args.planId &&
-          raced.platform === args.platform
+          raced.platform === args.platform &&
+          raced.currency === normalizedCurrency
         if (ctxOk) return { ok: true, redemptionId: raced.id, alreadyProcessed: true, lateConfirmation: false }
         return { ok: false, reasonCode: 'PAYMENT_CONTEXT_MISMATCH' }
       }

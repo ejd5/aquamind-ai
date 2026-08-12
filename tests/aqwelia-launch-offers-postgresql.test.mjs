@@ -399,4 +399,86 @@ describe('P1 #2/#3/#4 — true concurrency on PostgreSQL', () => {
     expect(after.reservedCount).toBeGreaterThanOrEqual(0)
     expect(after.confirmedCount).toBeGreaterThanOrEqual(0)
   }, 60_000)
+
+  it('two concurrent reservations for the SAME user (different keys/allocations) → exactly one ACTIVE', async () => {
+    await resetPromotionData(prisma, prefix)
+    const { createReservation } = await import('@/lib/launch-offers/service')
+    const { LAUNCH_OFFER_A_CODE, LAUNCH_OFFER_B_CODE } = await import('@/lib/launch-offers/config')
+    const { setCampaignStatus } = await import('@/lib/launch-offers/admin')
+    await setCampaignStatus('ACTIVE', 'pg-test', undefined, prisma)
+
+    const variantA = await prisma.promotionVariant.findFirst({ where: { code: LAUNCH_OFFER_A_CODE } })
+    const allocWebA = await prisma.promotionAllocation.findFirst({ where: { variantId: variantA.id, platform: 'WEB', planId: null } })
+    const variantB = await prisma.promotionVariant.findFirst({ where: { code: LAUNCH_OFFER_B_CODE } })
+    const allocIosB = await prisma.promotionAllocation.findFirst({ where: { variantId: variantB.id, platform: 'IOS', planId: null } })
+    await prisma.promotionAllocation.updateMany({ data: { reservedCount: 0, confirmedCount: 0 } })
+
+    const u = await freshUser(prisma, prefix, 70)
+    // Barrière : DEUX réservations réellement concurrentes, mêmes utilisateur,
+    // clés distinctes et allocations distinctes (offre A WEB + offre B IOS).
+    const barrier = {}
+    const gate = new Promise((r) => { barrier.release = r })
+    let r1
+    let r2
+    const runA = (async () => { await gate; r1 = await createReservation({ userId: u.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', idempotencyKey: `${prefix}-same-a-${randomUUID()}` }, prisma) })()
+    const runB = (async () => { await gate; r2 = await createReservation({ userId: u.id, offerCode: LAUNCH_OFFER_B_CODE, planId: 'oasis', platform: 'IOS', idempotencyKey: `${prefix}-same-b-${randomUUID()}` }, prisma) })()
+    barrier.release()
+    await Promise.all([runA, runB])
+
+    // Exactement une ACTIVE.
+    const active = await prisma.promotionReservation.count({ where: { userId: u.id, status: 'ACTIVE' } })
+    expect(active).toBe(1)
+    const ok = [r1, r2].filter((r) => r.ok).length
+    expect(ok).toBe(1)
+    const failed = [r1, r2].find((r) => !r.ok)
+    // Refus sûr : soit la clé d'unicité activeUserKey (concurrent ACTIVE), soit
+    // une course d'allocation — jamais une double réservation.
+    if (failed && !failed.ok) {
+      expect(['ACTIVE_RESERVATION_EXISTS', 'ALLOCATION_EXHAUSTED']).toContain(failed.reasonCode)
+    }
+
+    // reservedCount total augmenté d'UNE seule place.
+    const a = await prisma.promotionAllocation.findUnique({ where: { id: allocWebA.id } })
+    const b = await prisma.promotionAllocation.findUnique({ where: { id: allocIosB.id } })
+    expect(a.reservedCount + b.reservedCount).toBe(1)
+    expect(a.reservedCount + a.confirmedCount + a.safetyBuffer).toBeLessThanOrEqual(a.quota)
+    expect(b.reservedCount + b.confirmedCount + b.safetyBuffer).toBeLessThanOrEqual(b.quota)
+  }, 60_000)
+
+  it('setCampaignStatus(PAUSED) vs createReservation — both commit orders, no partial state', async () => {
+    await resetPromotionData(prisma, prefix)
+    const { createReservation } = await import('@/lib/launch-offers/service')
+    const { setCampaignStatus } = await import('@/lib/launch-offers/admin')
+    const { LAUNCH_OFFER_A_CODE } = await import('@/lib/launch-offers/config')
+    await setCampaignStatus('ACTIVE', 'pg-test', undefined, prisma)
+    const variantA = await prisma.promotionVariant.findFirst({ where: { code: LAUNCH_OFFER_A_CODE } })
+    const allocWebA = await prisma.promotionAllocation.findFirst({ where: { variantId: variantA.id, platform: 'WEB', planId: null } })
+    await prisma.promotionAllocation.update({ where: { id: allocWebA.id }, data: { quota: 2, reservedCount: 0, confirmedCount: 0 } })
+
+    // Ordre de commit 1 : PAUSED gagne → aucune réservation créée.
+    const u1 = await freshUser(prisma, prefix, 80)
+    const p1 = await setCampaignStatus('PAUSED', 'pg-test', undefined, prisma)
+    expect(p1.ok).toBe(true)
+    const r1 = await createReservation({ userId: u1.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', idempotencyKey: `${prefix}-paused-1-${randomUUID()}` }, prisma)
+    expect(r1.ok).toBe(false)
+    if (!r1.ok) expect(r1.reasonCode).toBe('CAMPAIGN_PAUSED')
+    let active1 = await prisma.promotionReservation.count({ where: { userId: u1.id, status: 'ACTIVE' } })
+    expect(active1).toBe(0)
+
+    // Ordre de commit 2 : réservation gagne avant la pause → reste valide.
+    const u2 = await freshUser(prisma, prefix, 81)
+    await setCampaignStatus('ACTIVE', 'pg-test', undefined, prisma)
+    const r2 = await createReservation({ userId: u2.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', idempotencyKey: `${prefix}-paused-2-${randomUUID()}` }, prisma)
+    expect(r2.ok).toBe(true)
+    const paused = await setCampaignStatus('PAUSED', 'pg-test', undefined, prisma)
+    expect(paused.ok).toBe(true)
+    const afterPause = await prisma.promotionReservation.findUnique({ where: { id: r2.ok ? r2.reservationId : '' } })
+    expect(afterPause.status).toBe('ACTIVE')
+
+    // Aucun état intermédiaire : une seule réservation ACTIVE au total.
+    const activeAll = await prisma.promotionReservation.count({ where: { status: 'ACTIVE' } })
+    expect(activeAll).toBe(1)
+    const alloc = await prisma.promotionAllocation.findUnique({ where: { id: allocWebA.id } })
+    expect(alloc.reservedCount).toBe(1)
+  }, 60_000)
 })
