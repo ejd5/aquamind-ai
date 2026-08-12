@@ -27,6 +27,11 @@ model User {
   role             String   @default("user") // user | pro | business | admin
   locale           String   @default("fr")
   country          String   @default("FR")
+  // Vérification du pays par une source serveur fiable (ex. paiement / adresse
+  // de facturation). `null` = pays non vérifié → inéligible aux restrictions
+  // régionales. `countrySource` indique l'origine de la valeur vérifiée.
+  countryVerifiedAt DateTime?
+  countrySource     String?
   timezone         String   @default("Europe/Paris")
   consentMarketing Boolean  @default(false)
   consentAnalytics Boolean  @default(false)
@@ -662,6 +667,12 @@ model PromotionReservation {
   status             String    @default("ACTIVE") // ACTIVE | CONSUMED | EXPIRED | CANCELLED
   expiresAt          DateTime
   idempotencyKey     String    @unique
+  // Clé nullable unique d'unicité d'une réservation ACTIVE par (campaignId, userId) :
+  // renseignée à la création (statut ACTIVE), supprimée atomiquement lors des
+  // transitions EXPIRED / CANCELLED / CONSUMED. Garantit UNE SEULE réservation
+  // active par utilisateur et par campagne, même entre offres/plateformes/
+  // allocations et face aux requêtes concurrentes.
+  activeUserKey      String?   @unique
   providerCheckoutId String?
   signedTokenHash    String?
   createdAt          DateTime  @default(now())
@@ -688,7 +699,7 @@ model PromotionRedemption {
   planId                      String
   platform                    String // WEB | IOS | ANDROID
   provider                    String // STRIPE | APPLE | GOOGLE
-  providerTransactionId       String   @unique
+  providerTransactionId       String
   providerOriginalTransactionId String?
   normalAmountMinor           Int // prix standard (cents)
   paidAmountMinor             Int // prix payé (cents)
@@ -706,7 +717,7 @@ model PromotionRedemption {
   user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([campaignId, userId])
-  @@index([provider, providerTransactionId])
+  @@unique([provider, providerTransactionId])
 }
 
 model PromotionAuditLog {

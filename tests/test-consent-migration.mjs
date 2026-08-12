@@ -164,11 +164,18 @@ async function scenarioB() {
     console.log('  Step 2: Creating pre-migration data...')
     const c = await getClient(dbUrl)
     try {
-      const owner = await c.user.create({ data: { email: `owner-${db}@test.com`, name: 'Owner', role: 'admin', passwordHash: 'test' } })
+      // Insertion SQL brut : à ce stade seule la baseline est déployée et le
+      // client généré (schéma complet) attend des colonnes plus récentes
+      // (ex. User.countryVerifiedAt) inexistantes ici.
+      const ownerId = `usr-${db}`
+      await c.$executeRawUnsafe(
+        `INSERT INTO "User" ("id", "email", "passwordHash", "name", "role", "updatedAt")
+         VALUES ('${ownerId}', 'owner-${db}@test.com', 'test', 'Owner', 'admin', NOW())`
+      )
       const organizationId = `org-${randomUUID()}`
       await c.$executeRawUnsafe(
         `INSERT INTO "Organization" ("id", "type", "name", "ownerId", "updatedAt")
-         VALUES ('${organizationId}', 'growth', 'OB-${db}', '${owner.id}', NOW())`
+         VALUES ('${organizationId}', 'growth', 'OB-${db}', '${ownerId}', NOW())`
       )
       const org = { id: organizationId }
       await c.$executeRawUnsafe(
@@ -204,7 +211,7 @@ async function scenarioB() {
 
       await c.$executeRawUnsafe(`DELETE FROM "Lead" WHERE "organizationId" = '${org.id}'`)
       await c.organization.delete({ where: { id: org.id } })
-      await c.user.delete({ where: { id: owner.id } })
+      await c.user.delete({ where: { id: ownerId } })
     } finally { await c.$disconnect() }
   } finally {
     dropDb(db); console.log(`  Dropped: ${db}`)

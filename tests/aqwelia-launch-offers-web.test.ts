@@ -67,7 +67,8 @@ vi.mock('@/lib/stripe', () => ({
 
 async function makeUser(): Promise<string> {
   userSeq += 1
-  const u = await testDb.user.create({ data: { email: `${prefix}-u${userSeq}@aqwelia.test`, passwordHash: 'x' } })
+  // Pays FR vérifié côté serveur (le backend final exige countryVerifiedAt).
+  const u = await testDb.user.create({ data: { email: `${prefix}-u${userSeq}@aqwelia.test`, passwordHash: 'x', country: 'FR', countryVerifiedAt: new Date(), countrySource: 'test' } })
   return u.id
 }
 
