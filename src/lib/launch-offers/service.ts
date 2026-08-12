@@ -302,7 +302,7 @@ async function expireUserReservationsInTx(tx: any, campaignId: string, userId: s
 }
 
 /** Relecture de l'allocation DANS la transaction (état frais, jamais capturé avant). */
-async function freshAllocation(tx: any, allocationId: string): Promise<{
+export async function freshAllocation(tx: any, allocationId: string): Promise<{
   id: string
   quota: number
   confirmedCount: number
@@ -322,7 +322,7 @@ async function freshAllocation(tx: any, allocationId: string): Promise<{
  * Retourne false si un concurrent (réallocation/réservation/confirmation) a
  * modifié l'allocation entre la relecture et la mutation.
  */
-async function casAllocation(tx: any, alloc: {
+export async function casAllocation(tx: any, alloc: {
   id: string
   quota: number
   confirmedCount: number
