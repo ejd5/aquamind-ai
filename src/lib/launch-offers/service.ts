@@ -111,6 +111,14 @@ export class AllocationVersionConflict extends Error {
   }
 }
 
+/** Conflit de version de campagne (fence CAS status/version échoué) : rollback. */
+export class CampaignVersionConflict extends Error {
+  constructor() {
+    super('launch_campaign_version_conflict')
+    this.name = 'CampaignVersionConflict'
+  }
+}
+
 /**
  * Relance les transactions sur verrou transitoire SQLite (équivalent d'une file
  * de priorité en prod PG) ET sur conflit de version d'allocation : après un
@@ -123,7 +131,7 @@ async function withBusyRetry<T>(fn: () => Promise<T>, attempts = 8, delayMs = 25
       return await fn()
     } catch (err) {
       lastErr = err
-      const retryable = isBusyError(err) || err instanceof AllocationVersionConflict
+      const retryable = isBusyError(err) || err instanceof AllocationVersionConflict || err instanceof CampaignVersionConflict
       if (!retryable || i === attempts - 1) throw err
       await new Promise((r) => setTimeout(r, delayMs))
     }
@@ -186,6 +194,45 @@ function allocationFor(variants: LoadedCampaign['variants'], allocations: Loaded
 
 function allocationAvailable(allocation: { quota: number; confirmedCount: number; reservedCount: number; safetyBuffer: number }): number {
   return allocation.quota - allocation.confirmedCount - allocation.reservedCount - allocation.safetyBuffer
+}
+
+/**
+ * Fence de campagne DANS la transaction : sérialise createReservation avec
+ * setCampaignStatus pour qu'aucune réservation ne soit créée si une pause/fin a
+ * committé entre la relecture et le claim.
+ *
+ * - PostgreSQL : verrou de ligne `SELECT … FOR UPDATE` sur la campagne. La
+ *   réservation attend qu'un setCampaignStatus concurrent committe, puis relit
+ *   le statut frais ; sans incrément de version par réservation (pas de
+ *   thrashing entre réservations concurrentes).
+ * - SQLite (tests) : pas de concurrence réelle ; CAS incrémenté sur version.
+ *
+ * Retourne true si la campagne est toujours ACTIVE sous le verrou ; sinon false
+ * (le caller refuse). Lève CampaignVersionConflict en cas d'incohérence.
+ */
+async function fenceCampaignActive(tx: any, freshCampaign: { id: string; status: string; version: number }): Promise<boolean> {
+  // Détection du provider depuis le client Prisma injecté (fonctionne dans les
+  // tests PG qui passent leur propre client, sans dépendre de DATABASE_PROVIDER).
+  const activeProvider = tx?._engineConfig?.activeProvider
+  const isPostgres = activeProvider === 'postgresql' || process.env.DATABASE_PROVIDER === 'postgresql'
+  if (isPostgres) {
+    // Verrou de ligne : bloque jusqu'à ce qu'un setCampaignStatus concurrent
+    // committe, puis relit l'état réel.
+    await tx.$queryRawUnsafe(`SELECT id FROM "PromotionCampaign" WHERE "id" = '${freshCampaign.id}' FOR UPDATE`)
+    const locked = await tx.promotionCampaign.findUnique({
+      where: { id: freshCampaign.id },
+      select: { status: true },
+    })
+    return locked?.status === 'ACTIVE'
+  }
+  // SQLite : CAS incrémenté (statut ACTIVE + version) — pas de thrashing car les
+  // transactions SQLite sont sérialisées.
+  const res = await tx.promotionCampaign.updateMany({
+    where: { id: freshCampaign.id, status: 'ACTIVE', version: freshCampaign.version },
+    data: { version: { increment: 1 } },
+  })
+  if (res.count === 1) return true
+  throw new CampaignVersionConflict()
 }
 
 /** Clé d'unicité d'une réservation ACTIVE par (campaignId, userId). */
@@ -449,6 +496,12 @@ export async function createReservation(args: {
       const freshState = campaignState(freshCampaign)
       if (freshState) return { ok: false as const, reasonCode: freshState }
 
+      // Fence : sérialise avec setCampaignStatus (verrou PG / CAS SQLite). Si
+      // PAUSED/ENDED a committé entre la relecture et le claim → aucune
+      // réservation ni compteur créé.
+      const fenceOk = await fenceCampaignActive(tx, freshCampaign)
+      if (!fenceOk) return { ok: false as const, reasonCode: 'CAMPAIGN_PAUSED' as EligibilityReason }
+
       // Expire d'ABORD les réservations périmées de CET utilisateur (P1#2) :
       // une réservation ACTIVE avec expiresAt < now ne bloque plus une nouvelle
       // tentative (l'ancienne place est libérée + clé d'unicité supprimée).
@@ -529,6 +582,11 @@ export async function createReservation(args: {
     void trackEventServer('launch_offer_reservation_created', { campaign: campaign.code, variant: args.offerCode, plan: args.planId, platform: args.platform })
     return { ok: true, reservationId: result.reservation.id, reservationToken: result.token, expiresAt: result.expiresAt, offerCode: args.offerCode }
   } catch (err: any) {
+    if (err instanceof CampaignVersionConflict) {
+      // Après épuisement des tentatives bornées : la campagne a changé trop
+      // souvent (pause/end race). Refus sûr, aucun compteur modifié.
+      return { ok: false, reasonCode: 'CAMPAIGN_PAUSED', error: 'campaign_conflict' }
+    }
     if (err instanceof AllocationVersionConflict) {
       // Après épuisement des tentatives bornées : l'état a changé trop souvent.
       return { ok: false, reasonCode: 'ALLOCATION_EXHAUSTED', error: 'allocation_conflict' }

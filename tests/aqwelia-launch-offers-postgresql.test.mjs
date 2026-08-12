@@ -481,4 +481,58 @@ describe('P1 #2/#3/#4 — true concurrency on PostgreSQL', () => {
     const alloc = await prisma.promotionAllocation.findUnique({ where: { id: allocWebA.id } })
     expect(alloc.reservedCount).toBe(1)
   }, 60_000)
+
+  it('setCampaignStatus(PAUSED) racing createReservation (barrier + Promise.all): pause wins → no reservation/no counter; reservation wins → stays valid', async () => {
+    await resetPromotionData(prisma, prefix)
+    const { createReservation } = await import('@/lib/launch-offers/service')
+    const { setCampaignStatus } = await import('@/lib/launch-offers/admin')
+    const { LAUNCH_OFFER_A_CODE } = await import('@/lib/launch-offers/config')
+    await setCampaignStatus('ACTIVE', 'pg-test', undefined, prisma)
+    const variantA = await prisma.promotionVariant.findFirst({ where: { code: LAUNCH_OFFER_A_CODE } })
+    const allocWebA = await prisma.promotionAllocation.findFirst({ where: { variantId: variantA.id, platform: 'WEB', planId: null } })
+    await prisma.promotionAllocation.update({ where: { id: allocWebA.id }, data: { quota: 2, reservedCount: 0, confirmedCount: 0 } })
+
+    // VRAIE course avec barrière : PAUSED vs createReservation partent ensemble.
+    // Le fence CAS sur (campaign.id, status ACTIVE, version) garantit qu'une
+    // pause qui commit AVANT le claim de capacité annule la réservation.
+    const u = await freshUser(prisma, prefix, 90)
+    const barrier = {}
+    const gate = new Promise((r) => { barrier.release = r })
+    let pauseRes
+    let reserveRes
+    const runPause = (async () => {
+      await gate
+      pauseRes = await setCampaignStatus('PAUSED', 'pg-test', undefined, prisma)
+    })()
+    const runReserve = (async () => {
+      await gate
+      reserveRes = await createReservation({ userId: u.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', idempotencyKey: `${prefix}-race-pause-${randomUUID()}` }, prisma)
+    })()
+    barrier.release()
+    await Promise.all([runPause, runReserve])
+
+    // Après la course : la campagne est PAUSÉE.
+    const camp = await prisma.promotionCampaign.findFirst({ where: { code: 'AQWELIA_LAUNCH_2026' } })
+    expect(camp.status).toBe('PAUSED')
+
+    if (pauseRes.ok && reserveRes.ok) {
+      // La réservation a committé AVANT la pause → reste valide (aucun état partiel).
+      const res = await prisma.promotionReservation.findFirst({ where: { userId: u.id } })
+      expect(res.status).toBe('ACTIVE')
+      const alloc = await prisma.promotionAllocation.findUnique({ where: { id: allocWebA.id } })
+      expect(alloc.reservedCount).toBe(1)
+      expect(alloc.reservedCount + alloc.confirmedCount + alloc.safetyBuffer).toBeLessThanOrEqual(alloc.quota)
+    } else {
+      // La pause a gagné la course (ou le fence a annulé la réservation) :
+      // AUCUNE réservation, AUCUN compteur modifié.
+      const count = await prisma.promotionReservation.count({ where: { userId: u.id } })
+      expect(count).toBe(0)
+      const alloc = await prisma.promotionAllocation.findUnique({ where: { id: allocWebA.id } })
+      expect(alloc.reservedCount).toBe(0)
+      expect(alloc.confirmedCount).toBe(0)
+      if (reserveRes && !reserveRes.ok) {
+        expect(['CAMPAIGN_PAUSED', 'CAMPAIGN_NOT_STARTED', 'CAMPAIGN_ENDED']).toContain(reserveRes.reasonCode)
+      }
+    }
+  }, 60_000)
 })
