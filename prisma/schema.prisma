@@ -31,6 +31,11 @@ model User {
   role             String   @default("user") // user | pro | business | admin
   locale           String   @default("fr")
   country          String   @default("FR")
+  // Vérification du pays par une source serveur fiable (ex. paiement / adresse
+  // de facturation). `null` = pays non vérifié → inéligible aux restrictions
+  // régionales. `countrySource` indique l'origine de la valeur vérifiée.
+  countryVerifiedAt DateTime?
+  countrySource     String?
   timezone         String   @default("Europe/Paris")
   consentMarketing Boolean  @default(false)
   consentAnalytics Boolean  @default(false)

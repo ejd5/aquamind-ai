@@ -77,7 +77,7 @@ describe('atomic reservation concurrency on PostgreSQL (1 slot, 100 requests)', 
     // 100 utilisateurs distincts (un seul essai chacun) → 1 place unique.
     const users = []
     for (let i = 0; i < 100; i += 1) {
-      const u = await prisma.user.create({ data: { email: `${prefix}-u${i}@aqwelia.test`, passwordHash: 'x' } })
+      const u = await prisma.user.create({ data: { email: `${prefix}-u${i}@aqwelia.test`, passwordHash: 'x', country: 'FR', countryVerifiedAt: new Date(), countrySource: 'test' } })
       users.push(u.id)
     }
 
@@ -113,7 +113,7 @@ async function resetPromotionData(prisma, prefix) {
 }
 
 async function freshUser(prisma, prefix, n) {
-  return prisma.user.create({ data: { email: `${prefix}-c${n}-${randomUUID()}@aqwelia.test`, passwordHash: 'x' } })
+  return prisma.user.create({ data: { email: `${prefix}-c${n}-${randomUUID()}@aqwelia.test`, passwordHash: 'x', country: 'FR', countryVerifiedAt: new Date(), countrySource: 'test' } })
 }
 
 describe('P1 #2/#3/#4 — true concurrency on PostgreSQL', () => {
@@ -229,5 +229,83 @@ describe('P1 #2/#3/#4 — true concurrency on PostgreSQL', () => {
     }
     const campaign = await prisma.promotionCampaign.findFirst({ where: { code: 'AQWELIA_LAUNCH_2026' } })
     expect(campaign.confirmedCount).toBe(2)
+  }, 60_000)
+
+  it('concurrent reallocations never drop quota below floor, never exceed limits, one audit per success', async () => {
+    await resetPromotionData(prisma, prefix)
+    const { reallocate } = await import('@/lib/launch-offers/admin')
+    const { createReservation, confirmRedemption } = await import('@/lib/launch-offers/service')
+    const { LAUNCH_OFFER_A_CODE, LAUNCH_OFFER_B_CODE } = await import('@/lib/launch-offers/config')
+    // seed est déjà fait par beforeAll (campagne présente). On réactive la campagne.
+    const { setCampaignStatus } = await import('@/lib/launch-offers/admin')
+    await setCampaignStatus('ACTIVE', 'pg-test', undefined, prisma)
+
+    const variantA = await prisma.promotionVariant.findFirst({ where: { code: LAUNCH_OFFER_A_CODE } })
+    const allocWebA = await prisma.promotionAllocation.findFirst({ where: { variantId: variantA.id, platform: 'WEB', planId: null } })
+    const allocIosA = await prisma.promotionAllocation.findFirst({ where: { variantId: variantA.id, platform: 'IOS', planId: null } })
+    await prisma.promotionAllocation.update({ where: { id: allocWebA.id }, data: { quota: 180, reservedCount: 0, confirmedCount: 0 } })
+
+    // Réallocation concurrente : 2 tentatives sur la MÊME allocation.
+    const [r1, r2] = await Promise.all([
+      reallocate({ variantCode: LAUNCH_OFFER_A_CODE, platform: 'WEB', newQuota: 170, actor: 'a' }, prisma),
+      reallocate({ variantCode: LAUNCH_OFFER_A_CODE, platform: 'WEB', newQuota: 160, actor: 'b' }, prisma),
+    ])
+    const okCount = [r1, r2].filter((r) => r.ok).length
+    // Au moins une réussit ; les deux peuvent réussir séquentiellement car chaque
+    // relecture est dans sa propre transaction, mais jamais de quota < plancher
+    // ni de dépassement. Le CAS sur campaign.version empêche un état incohérent.
+    expect(okCount).toBeGreaterThanOrEqual(1)
+    const allocAfter = await prisma.promotionAllocation.findUnique({ where: { id: allocWebA.id } })
+    const finalQuota = allocAfter.quota
+    expect([160, 170]).toContain(finalQuota)
+    // Jamais sous le plancher (0 confirmé + 0 réservé → 0).
+    expect(finalQuota).toBeGreaterThanOrEqual(0)
+
+    // Un seul audit par mutation réussie.
+    const audits = await prisma.promotionAuditLog.findMany({ where: { action: 'reallocate' } })
+    expect(audits).toHaveLength(okCount)
+
+    // Réallocation concurrente avec réservation active : impossible de baisser
+    // sous le plancher (1 réservé).
+    const holder = await freshUser(prisma, prefix, 30)
+    const res = await createReservation({ userId: holder.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', idempotencyKey: `${prefix}-realloc-holder-${randomUUID()}` }, prisma)
+    expect(res.ok).toBe(true)
+    await prisma.promotionAllocation.update({ where: { id: allocIosA.id }, data: { quota: 1, reservedCount: 1, confirmedCount: 0 } })
+    const low = await reallocate({ variantCode: LAUNCH_OFFER_A_CODE, platform: 'IOS', newQuota: 0, actor: 'c' }, prisma)
+    expect(low.ok).toBe(false)
+    expect(low.error).toContain('cannot_set_below')
+    const iosAfter = await prisma.promotionAllocation.findUnique({ where: { id: allocIosA.id } })
+    expect(iosAfter.quota).toBe(1)
+
+    // Réallocation concurrente avec confirmation : le quota ne descend jamais
+    // sous confirmedCount. Libère d'abord la réservation du holder (la capacité
+    // IOS redevient non réservée), puis confirme.
+    const { releaseReservation } = await import('@/lib/launch-offers/service')
+    const released = await releaseReservation(res.reservationId, holder.id, prisma)
+    expect(released.ok).toBe(true)
+    const confirmer = await freshUser(prisma, prefix, 31)
+    const confirm = await confirmRedemption({ userId: confirmer.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', provider: 'APPLE', providerTransactionId: `${prefix}-realloc-confirm-${randomUUID()}`, paidAmountMinor: 350, normalAmountMinor: 699 }, prisma)
+    expect(confirm.ok).toBe(true)
+    // Le plancher est désormais 1 (confirmed) → 0 est refusé.
+    const low2 = await reallocate({ variantCode: LAUNCH_OFFER_A_CODE, platform: 'IOS', newQuota: 0, actor: 'd' }, prisma)
+    expect(low2.ok).toBe(false)
+    expect(low2.error).toContain('cannot_set_below')
+    const iosAfter2 = await prisma.promotionAllocation.findUnique({ where: { id: allocIosA.id } })
+    expect(iosAfter2.confirmedCount).toBe(1)
+    expect(iosAfter2.quota).toBeGreaterThanOrEqual(1)
+
+    // Réallocations parallèles de DEUX allocations différentes : les deux
+    // peuvent réussir sans s'annuler (CAS sur version de campagne sérialise mais
+    // autorise les deux si la version n'a pas bougé entre lectures — PG
+    // sérialisable les sérialise proprement).
+    const variantB = await prisma.promotionVariant.findFirst({ where: { code: LAUNCH_OFFER_B_CODE } })
+    const allocWebB = await prisma.promotionAllocation.findFirst({ where: { variantId: variantB.id, platform: 'WEB', planId: null } })
+    const [ra, rb] = await Promise.all([
+      reallocate({ variantCode: LAUNCH_OFFER_A_CODE, platform: 'IOS', newQuota: 5, actor: 'e' }, prisma),
+      reallocate({ variantCode: LAUNCH_OFFER_B_CODE, platform: 'WEB', newQuota: 110, actor: 'f' }, prisma),
+    ])
+    expect([ra.ok, rb.ok].filter(Boolean).length).toBeGreaterThanOrEqual(1)
+    void allocWebB
+    void variantB
   }, 60_000)
 })

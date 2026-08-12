@@ -49,10 +49,13 @@ let dbDir: string
 let dbFile: string
 let testDb: LaunchDb
 
-/** Utilisateur dédié pour un test (indépendance totale entre tests). */
+/** Utilisateur dédié pour un test (indépendance totale entre tests), pays FR
+ * vérifié côté serveur (par défaut, la plupart des tests supposent FR éligible). */
 async function makeUser(): Promise<string> {
   userSeq += 1
-  const u = await testDb.user.create({ data: { email: `${prefix}-u${userSeq}@aqwelia.test`, passwordHash: 'x' } })
+  const u = await testDb.user.create({
+    data: { email: `${prefix}-u${userSeq}@aqwelia.test`, passwordHash: 'x', country: 'FR', countryVerifiedAt: new Date(), countrySource: 'test' },
+  })
   return u.id
 }
 
@@ -143,7 +146,8 @@ describe('eligibility codes', () => {
     const ok = await checkEligibility({ userId, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', countryHint: 'ZZ' }, testDb)
     expect(ok.eligible).toBe(true)
 
-    const excludedUser = await testDb.user.create({ data: { email: `${prefix}-excl-${Date.now()}@aqwelia.test`, passwordHash: 'x', country: 'XX' } })
+    // Pays XX vérifié côté serveur → refusé (le hint FR client ne prime pas).
+    const excludedUser = await testDb.user.create({ data: { email: `${prefix}-excl-${Date.now()}@aqwelia.test`, passwordHash: 'x', country: 'XX', countryVerifiedAt: new Date(), countrySource: 'test' } })
     try {
       const blocked = await checkEligibility({ userId: excludedUser.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', countryHint: 'FR' }, testDb)
       expect(blocked.eligible).toBe(false)
@@ -168,7 +172,7 @@ describe('eligibility codes', () => {
   })
 
   it('account with a paid subscription is not eligible', async () => {
-    const u = await testDb.user.create({ data: { email: `${prefix}-paid-${Date.now()}@aqwelia.test`, passwordHash: 'x' } })
+    const u = await testDb.user.create({ data: { email: `${prefix}-paid-${Date.now()}@aqwelia.test`, passwordHash: 'x', country: 'FR', countryVerifiedAt: new Date(), countrySource: 'test' } })
     try {
       await testDb.subscription.create({
         data: { userId: u.id, plan: 'oasis', status: 'ACTIVE', provider: 'stripe', startedAt: new Date() },
@@ -324,10 +328,10 @@ describe('redemption (quota consumption)', () => {
     const before = campaign!.confirmedCount
 
     const key = `${prefix}-global-${randomUUID()}`
-    const r = await createReservation({ userId, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'ANDROID', idempotencyKey: key }, testDb)
+    const r = await createReservation({ userId, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', idempotencyKey: key }, testDb)
     expect(r.ok).toBe(true)
     const c = await confirmRedemption({
-      userId, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'ANDROID',
+      userId, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS',
       provider: 'APPLE', providerTransactionId: `${prefix}-global-tx-${randomUUID()}`,
       paidAmountMinor: 350, normalAmountMinor: 699,
     }, testDb)
@@ -339,17 +343,17 @@ describe('redemption (quota consumption)', () => {
   it('a user who already redeemed cannot redeem again (global uniqueness)', async () => {
     const userId = await makeUser()
     const key = `${prefix}-unique-${randomUUID()}`
-    const r = await createReservation({ userId, offerCode: LAUNCH_OFFER_B_CODE, planId: 'oasis', platform: 'ANDROID', idempotencyKey: key }, testDb)
+    const r = await createReservation({ userId, offerCode: LAUNCH_OFFER_B_CODE, planId: 'oasis', platform: 'IOS', idempotencyKey: key }, testDb)
     expect(r.ok).toBe(true)
     const c1 = await confirmRedemption({
-      userId, offerCode: LAUNCH_OFFER_B_CODE, planId: 'oasis', platform: 'ANDROID',
+      userId, offerCode: LAUNCH_OFFER_B_CODE, planId: 'oasis', platform: 'IOS',
       provider: 'APPLE', providerTransactionId: `${prefix}-unique-tx1-${randomUUID()}`,
       paidAmountMinor: 1398, normalAmountMinor: 1999,
     }, testDb)
     expect(c1.ok).toBe(true)
 
     const c2 = await confirmRedemption({
-      userId, offerCode: LAUNCH_OFFER_B_CODE, planId: 'oasis', platform: 'ANDROID',
+      userId, offerCode: LAUNCH_OFFER_B_CODE, planId: 'oasis', platform: 'IOS',
       provider: 'APPLE', providerTransactionId: `${prefix}-unique-tx2-${randomUUID()}`,
       paidAmountMinor: 1398, normalAmountMinor: 1999,
     }, testDb)

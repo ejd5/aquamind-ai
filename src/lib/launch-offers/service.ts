@@ -175,15 +175,22 @@ function allocationAvailable(allocation: { quota: number; confirmedCount: number
   return allocation.quota - allocation.confirmedCount - allocation.reservedCount - allocation.safetyBuffer
 }
 
-/** Règles d'éligibilité communes (compte, pays serveur, abonnement, historique). */
+/** Règles d'éligibilité communes (compte, pays serveur vérifié, abonnement, historique). */
 async function assertAccountEligibility(client: LaunchDb, campaignId: string, userId: string): Promise<EligibilityReason | null> {
-  const user = await client.user.findUnique({ where: { id: userId }, select: { id: true, role: true, country: true } })
+  const user = await client.user.findUnique({
+    where: { id: userId },
+    select: { id: true, role: true, country: true, countryVerifiedAt: true },
+  })
   if (!user) return 'ACCOUNT_NOT_VERIFIED'
   if (launchExcludedRoles().includes(user.role)) return 'RISK_REVIEW_REQUIRED'
-  // Pays : uniquement la valeur enregistrée côté serveur (User.country), jamais
-  // le paramètre client (query/body) qui peut être falsifié.
-  if (launchEligibleCountries().length > 0 && !launchEligibleCountries().includes(user.country)) {
-    return 'COUNTRY_NOT_ELIGIBLE'
+  // Pays : SEULEMENT une valeur vérifiée côté serveur (User.countryVerifiedAt
+  // non null). La valeur par défaut FR (jamais vérifiée) n'est pas une preuve :
+  // les inscriptions credentials/OAuth ne renseignent aucun pays fiable, donc
+  // tout compte sans preuve serveur est INÉLIGIBLE (échec fermé). Aucun pays
+  // provenant du body/query/session/client n'est accepté.
+  if (launchEligibleCountries().length > 0) {
+    if (!user.countryVerifiedAt) return 'COUNTRY_NOT_ELIGIBLE'
+    if (!launchEligibleCountries().includes(user.country)) return 'COUNTRY_NOT_ELIGIBLE'
   }
   // N'a jamais eu d'abonnement payant.
   const paidSub = await client.subscription.findFirst({
@@ -533,6 +540,17 @@ export async function confirmRedemption(args: {
   const { campaign, variants, allocations } = c
   const variant = variants.find((v) => v.code === args.offerCode)
   if (!variant) return { ok: false, reasonCode: 'CAMPAIGN_ENDED' }
+
+  // Correspondance fournisseur → plateforme (P2#4) : STRIPE→WEB, APPLE→IOS,
+  // GOOGLE→ANDROID. Imposée AVANT la sélection de l'allocation et avant toute
+  // mutation : toute autre combinaison est refusée sans redemption ni changement
+  // de compteur (provenance de paiement incohérente → ne pas consommer le quota
+  // du mauvais canal).
+  const providerPlatform: Record<'STRIPE' | 'APPLE' | 'GOOGLE', string> = { STRIPE: 'WEB', APPLE: 'IOS', GOOGLE: 'ANDROID' }
+  if (providerPlatform[args.provider] !== args.platform) {
+    return { ok: false, reasonCode: 'PLATFORM_NOT_ELIGIBLE' }
+  }
+
   const allocation = allocationFor(variants, allocations, args.offerCode, args.platform as LaunchPlatform, args.planId)
   if (!allocation) return { ok: false, reasonCode: 'ALLOCATION_EXHAUSTED' }
 

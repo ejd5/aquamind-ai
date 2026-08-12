@@ -32,7 +32,9 @@ let testDb: LaunchDb
 
 async function makeUser(): Promise<string> {
   userSeq += 1
-  const u = await testDb.user.create({ data: { email: `${prefix}-u${userSeq}@aqwelia.test`, passwordHash: 'x' } })
+  const u = await testDb.user.create({
+    data: { email: `${prefix}-u${userSeq}@aqwelia.test`, passwordHash: 'x', country: 'FR', countryVerifiedAt: new Date(), countrySource: 'test' },
+  })
   return u.id
 }
 
@@ -307,9 +309,10 @@ describe('P2 #4 — payment idempotency is provider+transaction scoped and conte
     const u1 = await makeUser()
     const u2 = await makeUser()
     const tx = `${prefix}-p24b-${randomUUID()}`
+    // APPLE → IOS, GOOGLE → ANDROID (mapping fournisseur/plateforme valide).
     const c1 = await confirmRedemption({ userId: u1, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', provider: 'APPLE', providerTransactionId: tx, ...amountA() }, testDb)
     expect(c1.ok).toBe(true)
-    const c2 = await confirmRedemption({ userId: u2, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', provider: 'GOOGLE', providerTransactionId: tx, ...amountA() }, testDb)
+    const c2 = await confirmRedemption({ userId: u2, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'ANDROID', provider: 'GOOGLE', providerTransactionId: tx, ...amountA() }, testDb)
     // Identité composite (GOOGLE, tx) ≠ (APPLE, tx) → nouvelle redemption.
     expect(c2.ok).toBe(true)
     if (c2.ok) expect(c2.alreadyProcessed).toBe(false)
@@ -350,10 +353,18 @@ describe('P2 #4 — payment idempotency is provider+transaction scoped and conte
     expect(c2.ok).toBe(false)
     if (!c2.ok) expect(c2.reasonCode).toBe('PAYMENT_CONTEXT_MISMATCH')
 
-    // Même ID mais plateforme différente → refus sûr.
-    const c3 = await confirmRedemption({ userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', provider: 'STRIPE', providerTransactionId: tx, ...amountA() }, testDb)
+    // Même ID mais fournisseur/plateforme différent (APPLE+IOS vs STRIPE+WEB) →
+    // identité composite distincte, mais même user → unicité campagne/user refuse
+    // (OFFER_ALREADY_REDEEMED) ou refus de contexte → dans les deux cas, refus sûr.
+    const c3 = await confirmRedemption({ userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', provider: 'APPLE', providerTransactionId: tx, ...amountA() }, testDb)
     expect(c3.ok).toBe(false)
-    if (!c3.ok) expect(c3.reasonCode).toBe('PAYMENT_CONTEXT_MISMATCH')
+    if (!c3.ok) expect(c3.reasonCode).toBe('OFFER_ALREADY_REDEEMED')
+
+    // Une combinaison fournisseur/plateforme invalide (STRIPE+IOS) est refusée
+    // AVANT toute sélection d'allocation.
+    const bad = await confirmRedemption({ userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', provider: 'STRIPE', providerTransactionId: `${tx}-x`, ...amountA() }, testDb)
+    expect(bad.ok).toBe(false)
+    if (!bad.ok) expect(bad.reasonCode).toBe('PLATFORM_NOT_ELIGIBLE')
 
     const after = await testDb.promotionAllocation.findUnique({ where: { id: allocA.id } })
     expect(after!.confirmedCount).toBe(1)
@@ -361,5 +372,7 @@ describe('P2 #4 — payment idempotency is provider+transaction scoped and conte
     expect(allocB.confirmedCount).toBe(0)
     const allocIOS = await allocOf(LAUNCH_OFFER_A_CODE, 'IOS')
     expect(allocIOS.confirmedCount).toBe(0)
+    const allocAndroid = await allocOf(LAUNCH_OFFER_A_CODE, 'ANDROID')
+    expect(allocAndroid.confirmedCount).toBe(0)
   })
 })
