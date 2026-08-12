@@ -62,6 +62,7 @@ export type EligibilityReason =
   | 'RISK_REVIEW_REQUIRED'
   | 'PRICE_CONFIGURATION_INVALID'
   | 'SIGNING_SECRET_MISSING'
+  | 'RESERVATION_MISMATCH'
 
 export interface OfferView {
   code: string
@@ -344,10 +345,21 @@ export async function createReservation(args: {
   try {
     const result = await withBusyRetry(() => client.$transaction(async (tx) => {
       // Nettoyage paresseux des réservations expirées de cette allocation.
-      await tx.promotionReservation.updateMany({
+      // Le statut ET le compteur évoluent dans la même transaction : chaque
+      // transition réelle ACTIVE → EXPIRED décrémente reservedCount d'exactement
+      // une place (garde-fou gte pour ne jamais produire un compteur négatif).
+      // Un second nettoyage ne trouve plus de ligne ACTIVE expirée → aucun
+      // décrément supplémentaire.
+      const expired = await tx.promotionReservation.updateMany({
         where: { allocationId: allocation.id, status: 'ACTIVE', expiresAt: { lt: now } },
         data: { status: 'EXPIRED' },
       })
+      if (expired.count > 0) {
+        await tx.promotionAllocation.updateMany({
+          where: { id: allocation.id, reservedCount: { gte: expired.count } },
+          data: { reservedCount: { decrement: expired.count } },
+        })
+      }
       // Recalcul fiable des compteurs depuis les lignes (pas seulement les caches).
       const activeReservations = await tx.promotionReservation.count({ where: { allocationId: allocation.id, status: 'ACTIVE' } })
       const confirmed = await tx.promotionRedemption.count({ where: { allocationId: allocation.id } })
@@ -418,14 +430,20 @@ export async function releaseReservation(reservationId: string, userId: string, 
   if (!reservation || reservation.userId !== userId) return { ok: false }
   if (reservation.status !== 'ACTIVE') return { ok: true }
   await withBusyRetry(() => client.$transaction(async (tx) => {
-    await tx.promotionReservation.updateMany({
+    // La transition ACTIVE → CANCELLED gâte le décrément : une réservation déjà
+    // expirée, consommée ou annulée (par un traitement concurrent) ne décrémente
+    // jamais une seconde fois, et c'est bien l'allocation de la réservation qui
+    // est ciblée.
+    const cancelled = await tx.promotionReservation.updateMany({
       where: { id: reservationId, status: 'ACTIVE' },
       data: { status: 'CANCELLED' },
     })
-    await tx.promotionAllocation.updateMany({
-      where: { id: reservation.allocationId, reservedCount: { gt: 0 } },
-      data: { reservedCount: { decrement: 1 } },
-    })
+    if (cancelled.count === 1) {
+      await tx.promotionAllocation.updateMany({
+        where: { id: reservation.allocationId, reservedCount: { gt: 0 } },
+        data: { reservedCount: { decrement: 1 } },
+      })
+    }
   }))
   void trackEventServer('launch_checkout_abandoned', { reservationId })
   return { ok: true }
@@ -454,6 +472,22 @@ export async function expireDueReservations(limit = 500, client: LaunchDb = db):
 export type ConfirmResult =
   | { ok: true; redemptionId: string; alreadyProcessed: boolean; lateConfirmation: boolean }
   | { ok: false; reasonCode: EligibilityReason | 'ALREADY_PROCESSED'; error?: string }
+
+/**
+ * Abandon d'une transaction interactive avec un code métier précis.
+ *
+ * Un simple `return` dans un `$transaction` interactif COMMIT les écritures déjà
+ * effectuées ; seul un throw déclenche le rollback. Les rejets métier qui
+ * surviennent APRÈS une écriture (ex. transition de réservation) doivent donc
+ * lever cette erreur pour annuler proprement la transaction sans laisser
+ * d'état partiel, tout en remontant le bon code de raison.
+ */
+class TxAbort extends Error {
+  constructor(readonly reasonCode: EligibilityReason) {
+    super(reasonCode)
+    this.name = 'TxAbort'
+  }
+}
 
 /**
  * Consomme le quota après vérification serveur du paiement (idempotent).
@@ -503,12 +537,31 @@ export async function confirmRedemption(args: {
       })
       if (existing) return { ok: true as const, redemptionId: existing.id, alreadyProcessed: true, lateConfirmation: false }
 
-      // Réservation : consomme si ACTIVE ; confirmation tardive si EXPIRED/ABSENTE.
+      // Réservation : validation COMPLÈTE du contexte avant toute mutation de
+      // quota (P1#5). La réservation doit appartenir au payeur et correspondre
+      // exactement à la campagne, la variante, l'allocation, la formule et la
+      // plateforme réellement payées.
       let reservation: Awaited<ReturnType<LaunchDb['promotionReservation']['findUnique']>> = null
       let lateConfirmation = false
       if (args.reservationId) {
         reservation = await tx.promotionReservation.findUnique({ where: { id: args.reservationId } })
-        if (!reservation || reservation.userId !== args.userId || reservation.status === 'CANCELLED') {
+        if (!reservation) {
+          return { ok: false as const, reasonCode: 'ACTIVE_RESERVATION_EXISTS' as EligibilityReason }
+        }
+        const ctxOk =
+          reservation.userId === args.userId &&
+          reservation.campaignId === campaign.id &&
+          reservation.variantId === variant.id &&
+          reservation.allocationId === allocation.id &&
+          reservation.planId === args.planId &&
+          reservation.platform === args.platform
+        if (!ctxOk) {
+          // Erreur métier sûre : aucun quota consommé, aucun compteur modifié,
+          // aucune donnée d'un autre utilisateur révélée.
+          return { ok: false as const, reasonCode: 'RESERVATION_MISMATCH' as EligibilityReason }
+        }
+        // Statut admissible : ACTIVE (conversion) ou EXPIRED (tardif).
+        if (reservation.status === 'CANCELLED' || reservation.status === 'CONSUMED') {
           return { ok: false as const, reasonCode: 'ACTIVE_RESERVATION_EXISTS' as EligibilityReason }
         }
         if (reservation.status === 'EXPIRED' || reservation.expiresAt < new Date()) lateConfirmation = true
@@ -520,26 +573,66 @@ export async function confirmRedemption(args: {
       })
       if (dup) return { ok: false as const, reasonCode: 'OFFER_ALREADY_REDEEMED' as EligibilityReason }
 
-      // Quota par allocation : claim atomique conditionnel.
-      const allocClaim = await tx.promotionAllocation.updateMany({
-        where: { id: allocation.id, confirmedCount: { lt: allocation.quota } },
-        data: { confirmedCount: { increment: 1 } },
-      })
-      if (allocClaim.count === 0) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
+      const now = new Date()
+      const isActiveReservation = reservation?.status === 'ACTIVE' && reservation.expiresAt >= now
+      let useUnreservedPath = false
 
-      // Quota global : claim atomique conditionnel. Si le global est épuisé,
-      // on rembourse le claim d'allocation (même transaction).
+      if (isActiveReservation && reservation) {
+        // CHEMIN 1 — Conversion de la réservation ACTIVE appartenant au payeur :
+        // sa propre place réservée devient confirmée. AUCUNE place libre
+        // supplémentaire n'est réclamée. La transition ACTIVE → CONSUMED est
+        // effectuée D'ABORD (atomicité) : si elle n'affecte pas la réservation
+        // attendue, aucun quota n'est consommé.
+        const transitioned = await tx.promotionReservation.updateMany({
+          where: { id: reservation.id, status: 'ACTIVE', expiresAt: { gte: now } },
+          data: { status: 'CONSUMED' },
+        })
+        if (transitioned.count !== 1) {
+          // Réservation plus active (expirée entre-temps) → confirmation tardive
+          // via le chemin « capacité non réservée ».
+          lateConfirmation = true
+          useUnreservedPath = true
+        } else {
+          // Conversion 1:1 : +1 confirmé / -1 réservé en UNE instruction
+          // atomique, bornée par le quota d'allocation et l'existence d'une
+          // place réservée. Un échec abandonne la transaction (la transition
+          // ACTIVE → CONSUMED est alors annulée par le rollback).
+          const allocClaim = await tx.promotionAllocation.updateMany({
+            where: { id: allocation.id, confirmedCount: { lt: allocation.quota }, reservedCount: { gt: 0 } },
+            data: { confirmedCount: { increment: 1 }, reservedCount: { decrement: 1 } },
+          })
+          if (allocClaim.count === 0) throw new TxAbort('ALLOCATION_EXHAUSTED')
+        }
+      } else {
+        useUnreservedPath = true
+      }
+
+      // CHEMIN 2 — Confirmation sans réservation active (absente) ou tardive :
+      // consomme UNIQUEMENT une capacité réellement non réservée. On recalcule
+      // les compteurs depuis les lignes (confirmed + active reserved), puis on
+      // réclame la place via un CAS atomique sur ces valeurs exactes : la
+      // capacité détenue par une réservation active d'un autre client est
+      // toujours préservée, et deux confirmations concurrentes ne peuvent jamais
+      // dépasser le quota.
+      if (useUnreservedPath) {
+        const confirmedNow = await tx.promotionRedemption.count({ where: { allocationId: allocation.id } })
+        const reservedNow = await tx.promotionReservation.count({ where: { allocationId: allocation.id, status: 'ACTIVE' } })
+        const available = allocation.quota - confirmedNow - reservedNow - allocation.safetyBuffer
+        if (available <= 0) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
+        const allocClaim = await tx.promotionAllocation.updateMany({
+          where: { id: allocation.id, confirmedCount: confirmedNow, reservedCount: reservedNow },
+          data: { confirmedCount: { increment: 1 } },
+        })
+        if (allocClaim.count === 0) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
+      }
+
+      // Quota global : claim atomique conditionnel. En cas d'échec, la
+      // transaction entière est annulée (claims + transition réservation).
       const globalClaim = await tx.promotionCampaign.updateMany({
         where: { id: campaign.id, confirmedCount: { lt: campaign.totalQuota } },
         data: { confirmedCount: { increment: 1 } },
       })
-      if (globalClaim.count === 0) {
-        await tx.promotionAllocation.updateMany({
-          where: { id: allocation.id, confirmedCount: { gt: 0 } },
-          data: { confirmedCount: { decrement: 1 } },
-        })
-        return { ok: false as const, reasonCode: 'QUOTA_EXHAUSTED' as EligibilityReason }
-      }
+      if (globalClaim.count === 0) throw new TxAbort('QUOTA_EXHAUSTED')
 
       const redemption = await tx.promotionRedemption.create({
         data: {
@@ -563,16 +656,6 @@ export async function confirmRedemption(args: {
         },
       })
 
-      if (reservation) {
-        await tx.promotionReservation.updateMany({
-          where: { id: reservation.id, status: 'ACTIVE' },
-          data: { status: 'CONSUMED' },
-        })
-        await tx.promotionAllocation.updateMany({
-          where: { id: allocation.id, reservedCount: { gt: 0 } },
-          data: { reservedCount: { decrement: 1 } },
-        })
-      }
       return { ok: true as const, redemptionId: redemption.id, alreadyProcessed: false, lateConfirmation }
     }))
 
@@ -580,6 +663,7 @@ export async function confirmRedemption(args: {
     void trackEventServer(result.lateConfirmation ? 'launch_purchase_late_confirmation' : 'launch_purchase_confirmed', { campaign: campaign.code, variant: args.offerCode, plan: args.planId, platform: args.platform, provider: args.provider })
     return { ok: true, redemptionId: result.redemptionId, alreadyProcessed: result.alreadyProcessed, lateConfirmation: result.lateConfirmation }
   } catch (err: any) {
+    if (err instanceof TxAbort) return { ok: false, reasonCode: err.reasonCode }
     if (err?.code === 'P2002') return { ok: false, reasonCode: 'ALREADY_PROCESSED', error: 'duplicate' }
     return { ok: false, reasonCode: 'RISK_REVIEW_REQUIRED', error: err?.message }
   }
