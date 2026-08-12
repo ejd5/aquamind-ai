@@ -8,7 +8,7 @@
  *
  * Base SQLite dédiée + client Prisma dédié, injecté dans admin/service.
  */
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest'
 import { execSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { mkdtempSync, rmSync } from 'node:fs'
@@ -29,6 +29,14 @@ let userSeq = 0
 let dbDir: string
 let dbFile: string
 let testDb: LaunchDb
+
+// Analytics capturées pour vérifier qu'aucun replay n'émet de nouvelle analytics.
+const analyticsEvents: string[] = []
+vi.mock('@/lib/analytics-server', () => ({
+  trackEventServer: async (eventName: string) => {
+    analyticsEvents.push(eventName)
+  },
+}))
 
 async function makeUser(): Promise<string> {
   userSeq += 1
@@ -230,5 +238,117 @@ describe('P2 #4 — currency must match server pricing', () => {
     const allocs = await testDb.promotionAllocation.findMany()
     expect(allocs.reduce((s, a) => s + a.confirmedCount, 0)).toBe(1) // seulement le EUR vide
     expect(allocs.reduce((s, a) => s + a.reservedCount, 0)).toBe(0)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dernière revue Codex — P1 : capacité bloquée par une réservation expirée
+// d'un AUTRE utilisateur, libérée lors d'une confirmation sans réservation.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('last review P1 — confirmation without reservation frees expired capacity of another user', () => {
+  async function allocOf(offerCode: string, platform: string) {
+    const v = await testDb.promotionVariant.findFirst({ where: { code: offerCode } })
+    const a = await testDb.promotionAllocation.findFirst({ where: { variantId: v!.id, platform, planId: null } })
+    return a!
+  }
+
+  it('confirmation accepted after freeing an expired reservation owned by another user', async () => {
+    await setup()
+    // Allocation WEB A : le holder réserve (reservedCount=1), puis on réduit le
+    // quota à 1 pour simuler une allocation « pleine ».
+    const allocWeb = await allocOf(LAUNCH_OFFER_A_CODE, 'WEB')
+    const holder = await makeUser()
+    const r = await createReservation({ userId: holder, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', idempotencyKey: `${prefix}-lastp1-${randomUUID()}` }, testDb)
+    expect(r.ok).toBe(true)
+    await testDb.promotionAllocation.update({ where: { id: allocWeb.id }, data: { quota: 1 } })
+    // Expire la réservation du holder SANS nettoyage (statut ACTIVE conservé,
+    // expiresAt passé, reservedCount=1) — l'allocation semble pleine.
+    await testDb.promotionReservation.update({ where: { id: r.ok ? r.reservationId : '' }, data: { expiresAt: new Date(Date.now() - 1000) } })
+
+    // Confirmation payée SANS réservation par un autre utilisateur : l'allocation
+    // semble pleine (reservedCount=1) mais la réservation expirée doit être
+    // libérée dans la transaction AVANT le calcul de capacité.
+    const payer = await makeUser()
+    const c = await confirmRedemption({
+      userId: payer, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB',
+      provider: 'STRIPE', providerTransactionId: `${prefix}-lastp1-tx-${randomUUID()}`,
+      paidAmountMinor: 350, normalAmountMinor: 699, currency: 'EUR',
+    }, testDb)
+    expect(c.ok).toBe(true)
+
+    // Ancienne réservation EXPIRED, clé libérée, reservedCount 0, confirmedCount 1.
+    const oldRes = await testDb.promotionReservation.findUnique({ where: { id: r.ok ? r.reservationId : '' } })
+    expect(oldRes?.status).toBe('EXPIRED')
+    expect(oldRes?.activeUserKey).toBeNull()
+    const after = await testDb.promotionAllocation.findUnique({ where: { id: allocWeb.id } })
+    expect(after!.reservedCount).toBe(0)
+    expect(after!.confirmedCount).toBe(1)
+    // Aucun dépassement.
+    expect(after!.confirmedCount + after!.reservedCount + after!.safetyBuffer).toBeLessThanOrEqual(after!.quota)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dernière revue Codex — P2 : analytics uniquement sur nouvelle redemption ;
+// replays (trouvée + course P2002) restituent lateConfirmation stockée.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('last review P2 — analytics only on new redemption; replays restore stored lateConfirmation', () => {
+  async function allocOf(offerCode: string, platform: string) {
+    const v = await testDb.promotionVariant.findFirst({ where: { code: offerCode } })
+    const a = await testDb.promotionAllocation.findFirst({ where: { variantId: v!.id, platform, planId: null } })
+    return a!
+  }
+
+  it('first payment emits analytics; exact replay emits none', async () => {
+    await setup()
+    analyticsEvents.length = 0
+    const u = await makeUser()
+    const tx = `${prefix}-an-${randomUUID()}`
+    const c1 = await confirmRedemption({ userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: tx, paidAmountMinor: 350, normalAmountMinor: 699, currency: 'EUR' }, testDb)
+    expect(c1.ok).toBe(true)
+    // 1 analytics sur la 1re confirmation.
+    expect(analyticsEvents.filter((e) => e === 'launch_purchase_confirmed')).toHaveLength(1)
+
+    const c2 = await confirmRedemption({ userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: tx, paidAmountMinor: 350, normalAmountMinor: 699, currency: 'EUR' }, testDb)
+    expect(c2.ok).toBe(true)
+    if (c2.ok) expect(c2.alreadyProcessed).toBe(true)
+    // Replay : AUCUNE seconde analytics.
+    expect(analyticsEvents.filter((e) => e === 'launch_purchase_confirmed')).toHaveLength(1)
+  })
+
+  it('replay of a late confirmation returns alreadyProcessed=true AND lateConfirmation=true, no analytics', async () => {
+    await setup()
+    analyticsEvents.length = 0
+    // Confirmation tardive : réservation ACTIVE expirée appartenant au payeur.
+    const u = await makeUser()
+    const allocWeb = await allocOf(LAUNCH_OFFER_A_CODE, 'WEB')
+    const r = await createReservation({ userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', idempotencyKey: `${prefix}-lastp2-${randomUUID()}` }, testDb)
+    expect(r.ok).toBe(true)
+    await testDb.promotionReservation.update({ where: { id: r.ok ? r.reservationId : '' }, data: { expiresAt: new Date(Date.now() - 1000) } })
+
+    const tx = `${prefix}-anlate-${randomUUID()}`
+    const c1 = await confirmRedemption({
+      userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB',
+      provider: 'STRIPE', providerTransactionId: tx, reservationId: r.ok ? r.reservationId : undefined,
+      paidAmountMinor: 350, normalAmountMinor: 699, currency: 'EUR',
+    }, testDb)
+    expect(c1.ok).toBe(true)
+    if (c1.ok) expect(c1.lateConfirmation).toBe(true)
+    expect(analyticsEvents.filter((e) => e === 'launch_purchase_late_confirmation')).toHaveLength(1)
+
+    // Replay exact : alreadyProcessed=true ET lateConfirmation=true, sans analytics.
+    const c2 = await confirmRedemption({
+      userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB',
+      provider: 'STRIPE', providerTransactionId: tx, reservationId: r.ok ? r.reservationId : undefined,
+      paidAmountMinor: 350, normalAmountMinor: 699, currency: 'EUR',
+    }, testDb)
+    expect(c2.ok).toBe(true)
+    if (c2.ok) {
+      expect(c2.alreadyProcessed).toBe(true)
+      expect(c2.lateConfirmation).toBe(true)
+    }
+    expect(analyticsEvents.filter((e) => e === 'launch_purchase_late_confirmation')).toHaveLength(1)
   })
 })

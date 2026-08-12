@@ -149,6 +149,17 @@ function parseJsonArray(raw: string | null | undefined): string[] {
   }
 }
 
+/** Lit `late_confirmation` depuis le metadata JSON d'une redemption. */
+function redemptionLateConfirmation(metadata: string | null): boolean {
+  if (!metadata) return false
+  try {
+    const parsed = JSON.parse(metadata)
+    return parsed?.late_confirmation === true
+  } catch {
+    return false
+  }
+}
+
 /** Charge (ou crée à la demande) la campagne + variantes + allocations. */
 export async function loadCampaign(client: LaunchDb = db): Promise<{
   campaign: NonNullable<Awaited<ReturnType<LaunchDb['promotionCampaign']['findUnique']>>>
@@ -238,6 +249,30 @@ async function fenceCampaignActive(tx: any, freshCampaign: { id: string; status:
 /** Clé d'unicité d'une réservation ACTIVE par (campaignId, userId). */
 export function activeUserKeyFor(campaignId: string, userId: string): string {
   return `u:${userId}:c:${campaignId}`
+}
+
+/**
+ * Expire DANS la transaction toutes les réservations ACTIVE périmées d'une
+ * allocation (quel que soit leur propriétaire) : transition EXPIRED + libération
+ * de la clé d'unicité + décrément reservedCount exactement du nombre de
+ * transitions réellement effectuées, via CAS versionné. Conflit → rollback.
+ */
+async function expireAllocationReservationsInTx(tx: any, allocationId: string, now: Date): Promise<void> {
+  const due = await tx.promotionReservation.findMany({
+    where: { allocationId, status: 'ACTIVE', expiresAt: { lt: now } },
+    select: { id: true },
+  })
+  if (due.length === 0) return
+  const updated = await tx.promotionReservation.updateMany({
+    where: { allocationId, status: 'ACTIVE', expiresAt: { lt: now } },
+    data: { status: 'EXPIRED', activeUserKey: null },
+  })
+  if (updated.count > 0) {
+    const fresh = await freshAllocation(tx, allocationId)
+    if (!fresh) throw new AllocationVersionConflict()
+    const decOk = await casAllocation(tx, fresh, { reservedCount: { decrement: updated.count } })
+    if (!decOk) throw new AllocationVersionConflict()
+  }
 }
 
 /**
@@ -780,7 +815,10 @@ export async function confirmRedemption(args: {
           // webhook malformé, rejeu avec mauvais user/offre) → refus sûr.
           return { ok: false as const, reasonCode: 'PAYMENT_CONTEXT_MISMATCH' as EligibilityReason }
         }
-        return { ok: true as const, redemptionId: existing.id, alreadyProcessed: true, lateConfirmation: false }
+        // Replay idempotent : restitue la valeur lateConfirmation stockée (jamais
+        // false systématiquement pour une confirmation tardive déjà traitée).
+        const storedLate = redemptionLateConfirmation(existing.metadata)
+        return { ok: true as const, redemptionId: existing.id, alreadyProcessed: true, lateConfirmation: storedLate }
       }
 
       const now = new Date()
@@ -901,8 +939,21 @@ export async function confirmRedemption(args: {
         // CHEMIN 2 — Confirmation sans réservation active (absente), réservation
         // EXPIRED, ou réservation ACTIVE récemment expirée (transition faite
         // plus haut) : consomme UNIQUEMENT une capacité réellement non réservée.
-        // On relit l'allocation fraîche + compteurs depuis les lignes — la
-        // réservation expirée n'est plus ACTIVE donc plus comptée dans
+        //
+        // Pour une confirmation SANS réservation fournie, expire d'abord, DANS la
+        // transaction, toutes les réservations ACTIVE périmées de CETTE allocation
+        // (même appartenant à un autre utilisateur) : elles libèrent exactement
+        // leur place (EXPIRED + clé null + décrément CAS versionné) avant tout
+        // calcul de capacité. Conflit CAS → rollback + retry.
+        // (Les confirmations tardives AVEC réservation gèrent déjà l'expiration de
+        // leur propre réservation dans le bloc réservation — pas de ré-expiration
+        // de groupe pour éviter une course entre deux transactions concurrentes.)
+        if (!args.reservationId) {
+          await expireAllocationReservationsInTx(tx, allocation.id, now)
+        }
+
+        // On relit l'allocation fraîche (après expiration) + compteurs depuis les
+        // lignes — la réservation expirée n'est plus ACTIVE donc plus comptée dans
         // reservedNow — puis on réclame la place via un CAS atomique versionné
         // (quota/version/compteurs) : la capacité détenue par une réservation
         // active d'un autre client est toujours préservée, et deux confirmations
@@ -961,7 +1012,11 @@ export async function confirmRedemption(args: {
     }))
 
     if (!result.ok) return { ok: false, reasonCode: result.reasonCode }
-    void trackEventServer(result.lateConfirmation ? 'launch_purchase_late_confirmation' : 'launch_purchase_confirmed', { campaign: campaign.code, variant: args.offerCode, plan: args.planId, platform: args.platform, provider: args.provider })
+    // Analytics uniquement pour une nouvelle redemption — jamais sur un replay
+    // (alreadyProcessed === true) : un webhook dupliqué ne doit pas ré-émettre.
+    if (!result.alreadyProcessed) {
+      void trackEventServer(result.lateConfirmation ? 'launch_purchase_late_confirmation' : 'launch_purchase_confirmed', { campaign: campaign.code, variant: args.offerCode, plan: args.planId, platform: args.platform, provider: args.provider })
+    }
     return { ok: true, redemptionId: result.redemptionId, alreadyProcessed: result.alreadyProcessed, lateConfirmation: result.lateConfirmation }
   } catch (err: any) {
     if (err instanceof AllocationVersionConflict) {
@@ -984,7 +1039,10 @@ export async function confirmRedemption(args: {
           raced.planId === args.planId &&
           raced.platform === args.platform &&
           raced.currency === normalizedCurrency
-        if (ctxOk) return { ok: true, redemptionId: raced.id, alreadyProcessed: true, lateConfirmation: false }
+        if (ctxOk) {
+          const storedLate = redemptionLateConfirmation(raced.metadata)
+          return { ok: true, redemptionId: raced.id, alreadyProcessed: true, lateConfirmation: storedLate }
+        }
         return { ok: false, reasonCode: 'PAYMENT_CONTEXT_MISMATCH' }
       }
       return { ok: false, reasonCode: 'ALREADY_PROCESSED', error: 'duplicate' }
