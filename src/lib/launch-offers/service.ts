@@ -103,7 +103,19 @@ function isBusyError(err: any): boolean {
   return err?.code === 'SQLITE_BUSY' || /SQLITE_BUSY|database is locked|Database is locked/i.test(String(err?.message || ''))
 }
 
-/** Relance les transactions sur verrou transitoire SQLite (équivalent d'une file de priorité en prod PG). */
+/** Conflit d'allocation (CAS version/quota/compteurs échoué) : rollback + relecture fraîche. */
+export class AllocationVersionConflict extends Error {
+  constructor() {
+    super('launch_allocation_version_conflict')
+    this.name = 'AllocationVersionConflict'
+  }
+}
+
+/**
+ * Relance les transactions sur verrou transitoire SQLite (équivalent d'une file
+ * de priorité en prod PG) ET sur conflit de version d'allocation : après un
+ * rollback, l'état frais est relu lors de la tentative suivante (borné).
+ */
 async function withBusyRetry<T>(fn: () => Promise<T>, attempts = 8, delayMs = 25): Promise<T> {
   let lastErr: unknown
   for (let i = 0; i < attempts; i += 1) {
@@ -111,7 +123,8 @@ async function withBusyRetry<T>(fn: () => Promise<T>, attempts = 8, delayMs = 25
       return await fn()
     } catch (err) {
       lastErr = err
-      if (!isBusyError(err) || i === attempts - 1) throw err
+      const retryable = isBusyError(err) || err instanceof AllocationVersionConflict
+      if (!retryable || i === attempts - 1) throw err
       await new Promise((r) => setTimeout(r, delayMs))
     }
   }
@@ -173,6 +186,47 @@ function allocationFor(variants: LoadedCampaign['variants'], allocations: Loaded
 
 function allocationAvailable(allocation: { quota: number; confirmedCount: number; reservedCount: number; safetyBuffer: number }): number {
   return allocation.quota - allocation.confirmedCount - allocation.reservedCount - allocation.safetyBuffer
+}
+
+/** Relecture de l'allocation DANS la transaction (état frais, jamais capturé avant). */
+async function freshAllocation(tx: any, allocationId: string): Promise<{
+  id: string
+  quota: number
+  confirmedCount: number
+  reservedCount: number
+  safetyBuffer: number
+  version: number
+} | null> {
+  return tx.promotionAllocation.findUnique({
+    where: { id: allocationId },
+    select: { id: true, quota: true, confirmedCount: true, reservedCount: true, safetyBuffer: true, version: true },
+  })
+}
+
+/**
+ * CAS atomique sur l'allocation : inclut id, quota, version, confirmedCount et
+ * reservedCount dans le prédicat et incrémente `version` avec toute mutation.
+ * Retourne false si un concurrent (réallocation/réservation/confirmation) a
+ * modifié l'allocation entre la relecture et la mutation.
+ */
+async function casAllocation(tx: any, alloc: {
+  id: string
+  quota: number
+  confirmedCount: number
+  reservedCount: number
+  version: number
+}, data: { quota?: number; confirmedCount?: { increment: number } | { decrement: number }; reservedCount?: { increment: number } | { decrement: number } }): Promise<boolean> {
+  const res = await tx.promotionAllocation.updateMany({
+    where: {
+      id: alloc.id,
+      quota: alloc.quota,
+      version: alloc.version,
+      confirmedCount: alloc.confirmedCount,
+      reservedCount: alloc.reservedCount,
+    },
+    data: { ...data, version: { increment: 1 } },
+  })
+  return res.count === 1
 }
 
 /** Règles d'éligibilité communes (compte, pays serveur vérifié, abonnement, historique). */
@@ -352,6 +406,11 @@ export async function createReservation(args: {
 
   try {
     const result = await withBusyRetry(() => client.$transaction(async (tx) => {
+      // Relecture FRAÎCHE de l'allocation dans la transaction (jamais la valeur
+      // capturée avant) : un reallocate concurrent peut avoir changé quota/version.
+      const fresh = await freshAllocation(tx, allocation.id)
+      if (!fresh) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
+
       // Nettoyage paresseux des réservations expirées de cette allocation.
       // Le statut ET le compteur évoluent dans la même transaction : chaque
       // transition réelle ACTIVE → EXPIRED décrémente reservedCount d'exactement
@@ -363,31 +422,31 @@ export async function createReservation(args: {
         data: { status: 'EXPIRED' },
       })
       if (expired.count > 0) {
-        // Le décrément doit affecter exactement l'allocation attendue ; sinon
-        // l'état est incohérent → échec sûr (rollback de la transaction).
-        const dec = await tx.promotionAllocation.updateMany({
-          where: { id: allocation.id, reservedCount: { gte: expired.count } },
-          data: { reservedCount: { decrement: expired.count } },
-        })
-        if (dec.count !== 1) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
+        // CAS avec version : si une réallocation est intervenue, le CAS échoue
+        // → exception → rollback complet (le return COMMITTERAIT l'expiration).
+        const decOk = await casAllocation(tx, fresh, { reservedCount: { decrement: expired.count } })
+        if (!decOk) throw new AllocationVersionConflict()
+        // Relecture fraîche après le décrément (version incrémentée).
+        const afterClean = await freshAllocation(tx, allocation.id)
+        if (!afterClean) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
+        // Recalcul fiable des compteurs depuis les lignes (pas seulement les caches).
+        const activeReservationsAfter = await tx.promotionReservation.count({ where: { allocationId: allocation.id, status: 'ACTIVE' } })
+        const confirmedAfter = await tx.promotionRedemption.count({ where: { allocationId: allocation.id } })
+        const availableAfter = afterClean.quota - confirmedAfter - activeReservationsAfter - afterClean.safetyBuffer
+        if (availableAfter <= 0) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
+        // Claim atomique avec CAS (version fraîche post-nettoyage).
+        const claimed = await casAllocation(tx, afterClean, { reservedCount: { increment: 1 } })
+        if (!claimed) throw new AllocationVersionConflict()
+      } else {
+        // Aucun nettoyage : relecture fraîche + compteurs depuis les lignes.
+        const activeReservations = await tx.promotionReservation.count({ where: { allocationId: allocation.id, status: 'ACTIVE' } })
+        const confirmed = await tx.promotionRedemption.count({ where: { allocationId: allocation.id } })
+        const available = fresh.quota - confirmed - activeReservations - fresh.safetyBuffer
+        if (available <= 0) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
+        // Claim atomique avec CAS incluant quota+version+compteurs.
+        const claimed = await casAllocation(tx, fresh, { reservedCount: { increment: 1 } })
+        if (!claimed) throw new AllocationVersionConflict()
       }
-      // Recalcul fiable des compteurs depuis les lignes (pas seulement les caches).
-      const activeReservations = await tx.promotionReservation.count({ where: { allocationId: allocation.id, status: 'ACTIVE' } })
-      const confirmed = await tx.promotionRedemption.count({ where: { allocationId: allocation.id } })
-
-      const available = allocation.quota - confirmed - activeReservations - allocation.safetyBuffer
-      if (available <= 0) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
-
-      // Claim atomique (sécurité supplémentaire, même prédicat).
-      const claimed = await tx.promotionAllocation.updateMany({
-        where: {
-          id: allocation.id,
-          confirmedCount: confirmed,
-          reservedCount: activeReservations,
-        },
-        data: { reservedCount: { increment: 1 } },
-      })
-      if (claimed.count === 0) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
 
       const reservation = await tx.promotionReservation.create({
         data: {
@@ -416,6 +475,10 @@ export async function createReservation(args: {
     void trackEventServer('launch_offer_reservation_created', { campaign: campaign.code, variant: args.offerCode, plan: args.planId, platform: args.platform })
     return { ok: true, reservationId: result.reservation.id, reservationToken: result.token, expiresAt: result.expiresAt, offerCode: args.offerCode }
   } catch (err: any) {
+    if (err instanceof AllocationVersionConflict) {
+      // Après épuisement des tentatives bornées : l'état a changé trop souvent.
+      return { ok: false, reasonCode: 'ALLOCATION_EXHAUSTED', error: 'allocation_conflict' }
+    }
     if (err?.code === 'P2002') {
       // Course sur la même idempotencyKey : vérifier l'appartenance avant de
       // réutiliser, sinon conflit sans exposer.
@@ -451,17 +514,17 @@ export async function releaseReservation(reservationId: string, userId: string, 
         data: { status: 'CANCELLED' },
       })
       if (cancelled.count === 1) {
-        // Le décrément doit affecter exactement l'allocation de la réservation ;
-        // sinon état incohérent → échec sûr (rollback).
-        const dec = await tx.promotionAllocation.updateMany({
-          where: { id: reservation.allocationId, reservedCount: { gt: 0 } },
-          data: { reservedCount: { decrement: 1 } },
-        })
-        if (dec.count !== 1) throw new Error('launch_reservation_counter_inconsistent')
+        // Relecture FRAÎCHE + CAS (version/quota/compteurs) : une réallocation
+        // concurrente invalide le décrément → rollback.
+        const fresh = await freshAllocation(tx, reservation.allocationId)
+        if (!fresh) throw new AllocationVersionConflict()
+        const decOk = await casAllocation(tx, fresh, { reservedCount: { decrement: 1 } })
+        if (!decOk) throw new AllocationVersionConflict()
       }
     }))
-  } catch {
+  } catch (err: any) {
     // Échec sûr : la transaction a été annulée (aucune mutation partielle).
+    if (err instanceof AllocationVersionConflict) return { ok: false }
     return { ok: false }
   }
   void trackEventServer('launch_checkout_abandoned', { reservationId })
@@ -481,10 +544,12 @@ export async function expireDueReservations(limit = 500, client: LaunchDb = db):
     for (const r of due) {
       const updated = await tx.promotionReservation.updateMany({ where: { id: r.id, status: 'ACTIVE' }, data: { status: 'EXPIRED' } })
       if (updated.count === 1) {
-        // Le décrément doit affecter exactement l'allocation de la réservation ;
-        // sinon état incohérent → échec sûr (rollback de toute la transaction).
-        const dec = await tx.promotionAllocation.updateMany({ where: { id: r.allocationId, reservedCount: { gt: 0 } }, data: { reservedCount: { decrement: 1 } } })
-        if (dec.count !== 1) throw new Error('launch_reservation_counter_inconsistent')
+        // Relecture FRAÎCHE + CAS (version/quota/compteurs) : une réallocation
+        // concurrente invalide le décrément → rollback.
+        const fresh = await freshAllocation(tx, r.allocationId)
+        if (!fresh) throw new AllocationVersionConflict()
+        const decOk = await casAllocation(tx, fresh, { reservedCount: { decrement: 1 } })
+        if (!decOk) throw new AllocationVersionConflict()
       }
     }
   }))
@@ -564,6 +629,11 @@ export async function confirmRedemption(args: {
 
   try {
     const result = await withBusyRetry(() => client.$transaction(async (tx) => {
+      // Relecture FRAÎCHE de l'allocation dans la transaction (jamais la valeur
+      // capturée avant) : un reallocate concurrent peut avoir changé quota/version.
+      const fresh = await freshAllocation(tx, allocation.id)
+      if (!fresh) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
+
       // Idempotence fournisseur (P2#4) : l'identité est composite
       // (provider, providerTransactionId). Une redemption existante n'est
       // réutilisée comme `alreadyProcessed` QUE si elle correspond au même
@@ -641,13 +711,12 @@ export async function confirmRedemption(args: {
               data: { status: 'EXPIRED' },
             })
             if (expired.count === 1) {
-              const dec = await tx.promotionAllocation.updateMany({
-                where: { id: reservation.allocationId, reservedCount: { gt: 0 } },
-                data: { reservedCount: { decrement: 1 } },
-              })
-              // Le décrément attendu doit affecter exactement l'allocation de la
-              // réservation ; sinon état incohérent → échec sûr (rollback).
-              if (dec.count !== 1) throw new TxAbort('ALLOCATION_EXHAUSTED')
+              // Décrément versionné via CAS : une réallocation concurrente
+              // invalide la mutation → rollback.
+              const freshNow = await freshAllocation(tx, reservation.allocationId)
+              if (!freshNow) throw new AllocationVersionConflict()
+              const decOk = await casAllocation(tx, freshNow, { reservedCount: { decrement: 1 } })
+              if (!decOk) throw new AllocationVersionConflict()
             }
             // expired.count === 0 → un traitement concurrent a déjà expiré la
             // réservation : aucun décrément supplémentaire.
@@ -680,30 +749,28 @@ export async function confirmRedemption(args: {
         if (transitioned.count !== 1) {
           // Réservation plus active (expirée entre-temps) → confirmation tardive :
           // même traitement que la confirmation tardive directe (transition
-          // ACTIVE → EXPIRED + décrément unique) puis chemin capacité libre.
+          // ACTIVE → EXPIRED + décrément unique via CAS versionné).
           const expired = await tx.promotionReservation.updateMany({
             where: { id: reservation.id, status: 'ACTIVE', expiresAt: { lt: now } },
             data: { status: 'EXPIRED' },
           })
           if (expired.count === 1) {
-            const dec = await tx.promotionAllocation.updateMany({
-              where: { id: reservation.allocationId, reservedCount: { gt: 0 } },
-              data: { reservedCount: { decrement: 1 } },
-            })
-            if (dec.count !== 1) throw new TxAbort('ALLOCATION_EXHAUSTED')
+            const freshNow = await freshAllocation(tx, reservation.allocationId)
+            if (!freshNow) throw new AllocationVersionConflict()
+            const decOk = await casAllocation(tx, freshNow, { reservedCount: { decrement: 1 } })
+            if (!decOk) throw new AllocationVersionConflict()
           }
           lateConfirmation = true
           useUnreservedPath = true
         } else {
           // Conversion 1:1 : +1 confirmé / -1 réservé en UNE instruction
-          // atomique, bornée par le quota d'allocation et l'existence d'une
-          // place réservée. Un échec abandonne la transaction (la transition
-          // ACTIVE → CONSUMED est alors annulée par le rollback).
-          const allocClaim = await tx.promotionAllocation.updateMany({
-            where: { id: allocation.id, confirmedCount: { lt: allocation.quota }, reservedCount: { gt: 0 } },
-            data: { confirmedCount: { increment: 1 }, reservedCount: { decrement: 1 } },
-          })
-          if (allocClaim.count !== 1) throw new TxAbort('ALLOCATION_EXHAUSTED')
+          // atomique avec CAS (version/quota/compteurs). Un concurrent
+          // (réallocation/réservation) invalide la mutation → rollback de la
+          // transition ACTIVE → CONSUMED.
+          const freshNow = await freshAllocation(tx, allocation.id)
+          if (!freshNow) throw new AllocationVersionConflict()
+          const allocOk = await casAllocation(tx, freshNow, { confirmedCount: { increment: 1 }, reservedCount: { decrement: 1 } })
+          if (!allocOk) throw new AllocationVersionConflict()
         }
       }
 
@@ -711,21 +778,20 @@ export async function confirmRedemption(args: {
         // CHEMIN 2 — Confirmation sans réservation active (absente), réservation
         // EXPIRED, ou réservation ACTIVE récemment expirée (transition faite
         // plus haut) : consomme UNIQUEMENT une capacité réellement non réservée.
-        // On recalcule les compteurs depuis les lignes (confirmed + active
-        // reserved) — la réservation expirée n'est plus ACTIVE donc plus comptée
-        // dans reservedNow — puis on réclame la place via un CAS atomique sur ces
-        // valeurs exactes : la capacité détenue par une réservation active d'un
-        // autre client est toujours préservée, et deux confirmations concurrentes
-        // ne peuvent jamais dépasser le quota.
+        // On relit l'allocation fraîche + compteurs depuis les lignes — la
+        // réservation expirée n'est plus ACTIVE donc plus comptée dans
+        // reservedNow — puis on réclame la place via un CAS atomique versionné
+        // (quota/version/compteurs) : la capacité détenue par une réservation
+        // active d'un autre client est toujours préservée, et deux confirmations
+        // concurrentes ne peuvent jamais dépasser le quota.
+        const freshNow = await freshAllocation(tx, allocation.id)
+        if (!freshNow) throw new AllocationVersionConflict()
         const confirmedNow = await tx.promotionRedemption.count({ where: { allocationId: allocation.id } })
         const reservedNow = await tx.promotionReservation.count({ where: { allocationId: allocation.id, status: 'ACTIVE' } })
-        const available = allocation.quota - confirmedNow - reservedNow - allocation.safetyBuffer
+        const available = freshNow.quota - confirmedNow - reservedNow - freshNow.safetyBuffer
         if (available <= 0) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
-        const allocClaim = await tx.promotionAllocation.updateMany({
-          where: { id: allocation.id, confirmedCount: confirmedNow, reservedCount: reservedNow },
-          data: { confirmedCount: { increment: 1 } },
-        })
-        if (allocClaim.count !== 1) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
+        const allocOk = await casAllocation(tx, freshNow, { confirmedCount: { increment: 1 } })
+        if (!allocOk) throw new AllocationVersionConflict()
       }
 
       // Quota global : claim atomique conditionnel. En cas d'échec, la
@@ -775,6 +841,10 @@ export async function confirmRedemption(args: {
     void trackEventServer(result.lateConfirmation ? 'launch_purchase_late_confirmation' : 'launch_purchase_confirmed', { campaign: campaign.code, variant: args.offerCode, plan: args.planId, platform: args.platform, provider: args.provider })
     return { ok: true, redemptionId: result.redemptionId, alreadyProcessed: result.alreadyProcessed, lateConfirmation: result.lateConfirmation }
   } catch (err: any) {
+    if (err instanceof AllocationVersionConflict) {
+      // Après épuisement des tentatives bornées : l'état a changé trop souvent.
+      return { ok: false, reasonCode: 'ALLOCATION_EXHAUSTED', error: 'allocation_conflict' }
+    }
     if (err instanceof TxAbort) return { ok: false, reasonCode: err.reasonCode }
     if (err?.code === 'P2002') {
       // Course sur la clé composite (provider, providerTransactionId) : relire
