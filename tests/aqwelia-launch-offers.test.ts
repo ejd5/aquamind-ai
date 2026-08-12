@@ -398,6 +398,12 @@ async function allocOf(offerCode: string, platform: string) {
 function amountA() { return { paidAmountMinor: 350, normalAmountMinor: 699 } }
 function amountB() { return { paidAmountMinor: 1398, normalAmountMinor: 1999 } }
 
+async function snapshot(allocId: string) {
+  const alloc = await testDb.promotionAllocation.findUnique({ where: { id: allocId } })
+  const res = await testDb.promotionReservation.findMany({ where: { allocationId: allocId } })
+  return { reservedCount: alloc!.reservedCount, confirmedCount: alloc!.confirmedCount, statuses: res.map((x) => x.status) }
+}
+
 describe('P1 #2 — lazy expiration syncs reservedCount', () => {
   it('an expired reservation frees exactly one slot (lazy cleanup decrements)', async () => {
     const userA = await makeUser()
@@ -669,12 +675,6 @@ describe('P1 #4 — reservedCount decremented only on a real ACTIVE transition',
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('P1 #5 — reservation must match the paid offer', () => {
-  async function snapshot(allocId: string) {
-    const alloc = await testDb.promotionAllocation.findUnique({ where: { id: allocId } })
-    const res = await testDb.promotionReservation.findMany({ where: { allocationId: allocId } })
-    return { reservedCount: alloc!.reservedCount, confirmedCount: alloc!.confirmedCount, statuses: res.map((x) => x.status) }
-  }
-
   it('a correct reservation is confirmed', async () => {
     const u = await makeUser()
     const r = await createReservation({ userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', idempotencyKey: `${prefix}-p5-ok-${randomUUID()}` }, testDb)
@@ -756,5 +756,226 @@ describe('P1 #5 — reservation must match the paid offer', () => {
     if (!c.ok) expect(c.reasonCode).toBe('RESERVATION_MISMATCH')
     const after = await snapshot(alloc.id)
     expect(after).toEqual(before)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Confirmation tardive DIRECTE (webhook Stripe appelle confirmRedemption sans
+// passe par expireDueReservations) — reproduit le défaut bloquant.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('direct late confirmation (status ACTIVE, expiresAt in the past)', () => {
+  // Crée une réservation puis met UNIQUEMENT expiresAt dans le passé (statut
+  // reste ACTIVE). N'appelle JAMAIS expireDueReservations : c'est précisément le
+  // chemin défaillant à reproduire.
+  async function reserveAndExpireClock(userId: string, offerCode: string, platform: 'WEB' | 'IOS') {
+    const r = await createReservation({ userId, offerCode, planId: 'oasis', platform, idempotencyKey: `${prefix}-dlc-${randomUUID()}` }, testDb)
+    expect(r.ok).toBe(true)
+    if (!r.ok) throw new Error('reservation failed')
+    await testDb.promotionReservation.update({ where: { id: r.reservationId }, data: { expiresAt: new Date(Date.now() - 1000) } })
+    return r.reservationId
+  }
+
+  it('succeeds directly, converts to CONSUMED, reservedCount 0, confirmedCount 1 (multi-slot)', async () => {
+    const u = await makeUser()
+    const alloc = await allocOf(LAUNCH_OFFER_A_CODE, 'IOS')
+    const reservationId = await reserveAndExpireClock(u, LAUNCH_OFFER_A_CODE, 'IOS')
+
+    const c = await confirmRedemption({
+      userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS',
+      provider: 'APPLE', providerTransactionId: `${prefix}-dlc-tx1-${randomUUID()}`, reservationId,
+      ...amountA(),
+    }, testDb)
+    expect(c.ok).toBe(true)
+    if (c.ok) expect(c.lateConfirmation).toBe(true)
+
+    const res = await testDb.promotionReservation.findUnique({ where: { id: reservationId } })
+    expect(res?.status).toBe('CONSUMED')
+    const after = await testDb.promotionAllocation.findUnique({ where: { id: alloc.id } })
+    expect(after!.reservedCount).toBe(0)
+    expect(after!.confirmedCount).toBe(1)
+    const campaign = await testDb.promotionCampaign.findFirst({ where: { code: 'AQWELIA_LAUNCH_2026' } })
+    expect(campaign!.confirmedCount).toBe(1)
+    const red = await testDb.promotionRedemption.findFirst({ where: { userId: u } })
+    expect(red).not.toBeNull()
+  })
+
+  it('succeeds on a single-slot allocation (no ALLOCATION_EXHAUSTED)', async () => {
+    const u = await makeUser()
+    const alloc = await allocOf(LAUNCH_OFFER_A_CODE, 'WEB') // quota 1
+    const reservationId = await reserveAndExpireClock(u, LAUNCH_OFFER_A_CODE, 'WEB')
+
+    const c = await confirmRedemption({
+      userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB',
+      provider: 'STRIPE', providerTransactionId: `${prefix}-dlc-tx2-${randomUUID()}`, reservationId,
+      ...amountA(),
+    }, testDb)
+    expect(c.ok).toBe(true)
+    if (c.ok) expect(c.lateConfirmation).toBe(true)
+
+    const res = await testDb.promotionReservation.findUnique({ where: { id: reservationId } })
+    expect(res?.status).toBe('CONSUMED')
+    const after = await testDb.promotionAllocation.findUnique({ where: { id: alloc.id } })
+    expect(after!.reservedCount).toBe(0)
+    expect(after!.confirmedCount).toBe(1)
+  })
+
+  it('another user active reservation stays protected and untouched', async () => {
+    const lateUser = await makeUser()
+    const holder = await makeUser()
+    const alloc = await allocOf(LAUNCH_OFFER_A_CODE, 'IOS')
+    // Rétablit le quota IOS (un test P1#3 précédent l'avait réduit à 1).
+    await testDb.promotionAllocation.update({ where: { id: alloc.id }, data: { quota: 75, reservedCount: 0, confirmedCount: 0 } })
+    // Le détenteur et lateUser réservent tous les deux (2 réservations ACTIVE).
+    const rLate = await createReservation({ userId: lateUser, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', idempotencyKey: `${prefix}-dlc-l-${randomUUID()}` }, testDb)
+    expect(rLate.ok).toBe(true)
+    const lateReservationId = rLate.ok ? rLate.reservationId : ''
+    const rHolder = await createReservation({ userId: holder, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', idempotencyKey: `${prefix}-dlc-h-${randomUUID()}` }, testDb)
+    expect(rHolder.ok).toBe(true)
+    const holderReservationId = rHolder.ok ? rHolder.reservationId : ''
+    // On expire UNIQUEMENT la réservation de lateUser à l'horloge (statut ACTIVE
+    // conservé, compteur toujours incluant cette réservation) — sans nettoyage.
+    await testDb.promotionReservation.update({ where: { id: lateReservationId }, data: { expiresAt: new Date(Date.now() - 1000) } })
+    let before = await testDb.promotionAllocation.findUnique({ where: { id: alloc.id } })
+    expect(before!.reservedCount).toBe(2) // lateUser (ACTIVE expirée) + holder (ACTIVE)
+
+    const c = await confirmRedemption({
+      userId: lateUser, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS',
+      provider: 'APPLE', providerTransactionId: `${prefix}-dlc-tx3-${randomUUID()}`, reservationId: lateReservationId,
+      ...amountA(),
+    }, testDb)
+    expect(c.ok).toBe(true)
+    if (c.ok) expect(c.lateConfirmation).toBe(true)
+
+    // La réservation du lateUser est CONSUMED, celle du holder reste ACTIVE.
+    const lateRes = await testDb.promotionReservation.findUnique({ where: { id: lateReservationId } })
+    expect(lateRes?.status).toBe('CONSUMED')
+    const holderRes = await testDb.promotionReservation.findUnique({ where: { id: holderReservationId } })
+    expect(holderRes?.status).toBe('ACTIVE')
+
+    const after = await testDb.promotionAllocation.findUnique({ where: { id: alloc.id } })
+    // -1 réservé (lateUser) +1 confirmé ; la place du holder reste réservée.
+    expect(after!.reservedCount).toBe(1)
+    expect(after!.confirmedCount).toBe(1)
+    void before
+  })
+
+  it('repeated late confirmation never double-decrements or double-creates', async () => {
+    const u = await makeUser()
+    const alloc = await allocOf(LAUNCH_OFFER_A_CODE, 'IOS')
+    const reservationId = await reserveAndExpireClock(u, LAUNCH_OFFER_A_CODE, 'IOS')
+    const txId = `${prefix}-dlc-tx4-${randomUUID()}`
+
+    const c1 = await confirmRedemption({
+      userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS',
+      provider: 'APPLE', providerTransactionId: txId, reservationId,
+      ...amountA(),
+    }, testDb)
+    expect(c1.ok).toBe(true)
+
+    // Même providerTransactionId → alreadyProcessed, aucun nouvel effet.
+    const c2 = await confirmRedemption({
+      userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS',
+      provider: 'APPLE', providerTransactionId: txId, reservationId,
+      ...amountA(),
+    }, testDb)
+    expect(c2.ok).toBe(true)
+    if (c2.ok) expect(c2.alreadyProcessed).toBe(true)
+
+    // Un NOUVEAU providerTransactionId avec la même réservation CONSUMED → refus.
+    const c3 = await confirmRedemption({
+      userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS',
+      provider: 'APPLE', providerTransactionId: `${prefix}-dlc-tx4b-${randomUUID()}`, reservationId,
+      ...amountA(),
+    }, testDb)
+    expect(c3.ok).toBe(false)
+    if (!c3.ok) expect(c3.reasonCode).toBe('ACTIVE_RESERVATION_EXISTS')
+
+    const after = await testDb.promotionAllocation.findUnique({ where: { id: alloc.id } })
+    expect(after!.reservedCount).toBe(0)
+    expect(after!.confirmedCount).toBe(1)
+    const redCount = await testDb.promotionRedemption.count({ where: { userId: u } })
+    expect(redCount).toBe(1)
+  })
+
+  it('wrong campaign reservation → refused, no state or counter changed', async () => {
+    const u = await makeUser()
+    const alloc = await allocOf(LAUNCH_OFFER_A_CODE, 'IOS')
+    // Campagne étrangère : crée une autre campagne + variante + allocation + réservation.
+    const otherCampaign = await testDb.promotionCampaign.create({
+      data: { code: `OTHER_LAUNCH_${Date.now()}`, name: 'Other', status: 'ACTIVE', totalQuota: 100 },
+    })
+    const otherVariant = await testDb.promotionVariant.create({
+      data: { campaignId: otherCampaign.id, code: LAUNCH_OFFER_A_CODE, quota: 100, billingPeriod: 'P1M', discountKind: 'PERCENT_ONCE', discountValue: 50 },
+    })
+    const otherAlloc = await testDb.promotionAllocation.create({
+      data: { variantId: otherVariant.id, platform: 'IOS', planId: null, quota: 100 },
+    })
+    const otherReservation = await testDb.promotionReservation.create({
+      data: { campaignId: otherCampaign.id, variantId: otherVariant.id, allocationId: otherAlloc.id, userId: u, planId: 'oasis', platform: 'IOS', status: 'ACTIVE', expiresAt: new Date(Date.now() + 60_000), idempotencyKey: `${prefix}-dlc-other-${randomUUID()}` },
+    })
+
+    const before = await snapshot(alloc.id)
+    const c = await confirmRedemption({
+      userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS',
+      provider: 'APPLE', providerTransactionId: `${prefix}-dlc-othertx-${randomUUID()}`, reservationId: otherReservation.id,
+      ...amountA(),
+    }, testDb)
+    expect(c.ok).toBe(false)
+    if (!c.ok) expect(c.reasonCode).toBe('RESERVATION_MISMATCH')
+    const after = await snapshot(alloc.id)
+    expect(after).toEqual(before)
+
+    await testDb.promotionReservation.deleteMany({ where: { id: otherReservation.id } })
+    await testDb.promotionAllocation.deleteMany({ where: { id: otherAlloc.id } })
+    await testDb.promotionVariant.deleteMany({ where: { id: otherVariant.id } })
+    await testDb.promotionCampaign.deleteMany({ where: { id: otherCampaign.id } })
+  })
+
+  it('wrong allocationId (same platform, mismatched allocation) → refused, no change', async () => {
+    const u = await makeUser()
+    const allocIOS = await allocOf(LAUNCH_OFFER_A_CODE, 'IOS')
+    const allocAndroid = await allocOf(LAUNCH_OFFER_A_CODE, 'ANDROID')
+    // Réservation pointant vers l'allocation IOS mais plateforme ANDROID
+    // (allocationId incohérent avec la plateforme) → allocationId != celui dérivé.
+    const variant = await testDb.promotionVariant.findFirst({ where: { code: LAUNCH_OFFER_A_CODE } })
+    const weird = await testDb.promotionReservation.create({
+      data: { campaignId: (await testDb.promotionCampaign.findFirst({ where: { code: 'AQWELIA_LAUNCH_2026' } }))!.id, variantId: variant!.id, allocationId: allocIOS.id, userId: u, planId: 'oasis', platform: 'ANDROID', status: 'ACTIVE', expiresAt: new Date(Date.now() + 60_000), idempotencyKey: `${prefix}-dlc-alloc-${randomUUID()}` },
+    })
+
+    const beforeIOS = await snapshot(allocIOS.id)
+    const beforeAndroid = await snapshot(allocAndroid.id)
+    const c = await confirmRedemption({
+      userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'ANDROID',
+      provider: 'GOOGLE', providerTransactionId: `${prefix}-dlc-alloctx-${randomUUID()}`, reservationId: weird.id,
+      ...amountA(),
+    }, testDb)
+    expect(c.ok).toBe(false)
+    if (!c.ok) expect(c.reasonCode).toBe('RESERVATION_MISMATCH')
+    expect(await snapshot(allocIOS.id)).toEqual(beforeIOS)
+    expect(await snapshot(allocAndroid.id)).toEqual(beforeAndroid)
+
+    await testDb.promotionReservation.deleteMany({ where: { id: weird.id } })
+  })
+
+  it('unexpected reservation status → safe refusal, no quota consumed', async () => {
+    const u = await makeUser()
+    const alloc = await allocOf(LAUNCH_OFFER_A_CODE, 'IOS')
+    const reservationId = await reserveAndExpireClock(u, LAUNCH_OFFER_A_CODE, 'IOS')
+    // Statut inattendu : CANCELLED (réservation ni ACTIVE ni EXPIRED).
+    await testDb.promotionReservation.update({ where: { id: reservationId }, data: { status: 'CANCELLED' } })
+
+    const before = await snapshot(alloc.id)
+    const c = await confirmRedemption({
+      userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS',
+      provider: 'APPLE', providerTransactionId: `${prefix}-dlc-unexpected-${randomUUID()}`, reservationId,
+      ...amountA(),
+    }, testDb)
+    expect(c.ok).toBe(false)
+    if (!c.ok) expect(c.reasonCode).toBe('ACTIVE_RESERVATION_EXISTS')
+    const after = await snapshot(alloc.id)
+    expect(after).toEqual(before)
+    const campaign = await testDb.promotionCampaign.findFirst({ where: { code: 'AQWELIA_LAUNCH_2026' } })
+    expect(campaign!.confirmedCount).toBe(0)
   })
 })

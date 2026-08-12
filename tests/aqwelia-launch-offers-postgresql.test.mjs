@@ -177,4 +177,57 @@ describe('P1 #2/#3/#4 — true concurrency on PostgreSQL', () => {
     expect(alloc.confirmedCount).toBeLessThanOrEqual(alloc.quota)
     expect(alloc.reservedCount).toBeGreaterThanOrEqual(0)
   }, 60_000)
+
+  it('direct late confirmations under concurrency: no double-decrement, no negative, no overbooking', async () => {
+    await resetPromotionData(prisma, prefix)
+    const { createReservation, confirmRedemption } = await import('@/lib/launch-offers/service')
+    const { LAUNCH_OFFER_A_CODE } = await import('@/lib/launch-offers/config')
+    const variant = await prisma.promotionVariant.findFirst({ where: { code: LAUNCH_OFFER_A_CODE } })
+    const allocIOS = await prisma.promotionAllocation.findFirst({ where: { variantId: variant.id, platform: 'IOS', planId: null } })
+    await prisma.promotionAllocation.update({ where: { id: allocIOS.id }, data: { quota: 2, reservedCount: 0, confirmedCount: 0 } })
+
+    // Deux réservations ACTIVE, chacune expirée UNIQUEMENT à l'horloge (statut
+    // conservé ACTIVE, compteur incluant toujours ces réservations). On
+    // n'appelle JAMAIS expireDueReservations : confirmRedemption doit gérer la
+    // transition d'expiration de façon autonome.
+    const users = [await freshUser(prisma, prefix, 6), await freshUser(prisma, prefix, 7)]
+    const reservations = []
+    for (const u of users) {
+      const r = await createReservation({ userId: u.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', idempotencyKey: `${prefix}-dlc-${u.id}-${randomUUID()}` }, prisma)
+      expect(r.ok).toBe(true)
+      reservations.push(r.reservationId)
+    }
+    await prisma.promotionReservation.updateMany({ where: { id: { in: reservations } }, data: { expiresAt: new Date(Date.now() - 1000) } })
+    let alloc = await prisma.promotionAllocation.findUnique({ where: { id: allocIOS.id } })
+    expect(alloc.reservedCount).toBe(2)
+
+    // Deux confirmations tardives DIRECTES simultanées.
+    const [d1, d2] = await Promise.all([
+      confirmRedemption({ userId: users[0].id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', provider: 'APPLE', providerTransactionId: `${prefix}-dlc1-${randomUUID()}`, reservationId: reservations[0], paidAmountMinor: 350, normalAmountMinor: 699 }, prisma),
+      confirmRedemption({ userId: users[1].id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', provider: 'APPLE', providerTransactionId: `${prefix}-dlc2-${randomUUID()}`, reservationId: reservations[1], paidAmountMinor: 350, normalAmountMinor: 699 }, prisma),
+    ])
+
+    const ok = [d1, d2].filter((c) => c.ok).length
+    // Les deux ont des réservations distinctes expirées : les deux devraient
+    // réussir (chaque transition libère SA place puis consomme une place libre).
+    expect(ok).toBe(2)
+    if (d1.ok) expect(d1.lateConfirmation).toBe(true)
+    if (d2.ok) expect(d2.lateConfirmation).toBe(true)
+
+    alloc = await prisma.promotionAllocation.findUnique({ where: { id: allocIOS.id } })
+    // Chaque réservation expirée est décrémentée exactement une fois, puis chaque
+    // confirmation consomme une place → reservedCount 0, confirmedCount 2.
+    expect(alloc.reservedCount).toBe(0)
+    expect(alloc.confirmedCount).toBe(2)
+    expect(alloc.reservedCount).toBeGreaterThanOrEqual(0)
+    expect(alloc.confirmedCount + alloc.reservedCount + alloc.safetyBuffer).toBeLessThanOrEqual(alloc.quota)
+
+    // Les deux réservations sont dans un état final cohérent (CONSUMED).
+    for (const rid of reservations) {
+      const res = await prisma.promotionReservation.findUnique({ where: { id: rid } })
+      expect(res.status).toBe('CONSUMED')
+    }
+    const campaign = await prisma.promotionCampaign.findFirst({ where: { code: 'AQWELIA_LAUNCH_2026' } })
+    expect(campaign.confirmedCount).toBe(2)
+  }, 60_000)
 })
