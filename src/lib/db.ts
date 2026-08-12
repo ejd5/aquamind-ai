@@ -21,7 +21,11 @@ function createDatabaseClient(): DatabaseClient {
     return new PostgresqlPrismaClient({ log }) as DatabaseClient
   }
 
-  return new SqlitePrismaClient({ log })
+  // SQLite n'autorise qu'une transaction interactive à la fois ; sous charge
+  // concurrente (tests, smoke), un maxWait plus généreux évite les timeouts
+  // de pool tout en restant borné.
+  const transactionOptions = { maxWait: 8_000, timeout: 30_000 }
+  return new SqlitePrismaClient({ log, transactionOptions })
 }
 
 const provider = process.env.DATABASE_PROVIDER || 'sqlite'
