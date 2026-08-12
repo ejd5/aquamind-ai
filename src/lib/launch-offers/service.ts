@@ -63,6 +63,7 @@ export type EligibilityReason =
   | 'PRICE_CONFIGURATION_INVALID'
   | 'SIGNING_SECRET_MISSING'
   | 'RESERVATION_MISMATCH'
+  | 'PAYMENT_CONTEXT_MISMATCH'
 
 export interface OfferView {
   code: string
@@ -545,11 +546,31 @@ export async function confirmRedemption(args: {
 
   try {
     const result = await withBusyRetry(() => client.$transaction(async (tx) => {
-      // Idempotence fournisseur : déjà traitée → succès sans nouvel effet.
+      // Idempotence fournisseur (P2#4) : l'identité est composite
+      // (provider, providerTransactionId). Une redemption existante n'est
+      // réutilisée comme `alreadyProcessed` QUE si elle correspond au même
+      // provider, utilisateur, campagne, variante/offre, allocation, plan,
+      // plateforme et contexte de réservation compatible. Toute différence est
+      // un refus sûr sans aucune mutation de quota.
       const existing = await tx.promotionRedemption.findUnique({
-        where: { providerTransactionId: args.providerTransactionId },
+        where: { provider_providerTransactionId: { provider: args.provider, providerTransactionId: args.providerTransactionId } },
       })
-      if (existing) return { ok: true as const, redemptionId: existing.id, alreadyProcessed: true, lateConfirmation: false }
+      if (existing) {
+        const ctxOk =
+          existing.provider === args.provider &&
+          existing.userId === args.userId &&
+          existing.campaignId === campaign.id &&
+          existing.variantId === variant.id &&
+          existing.allocationId === allocation.id &&
+          existing.planId === args.planId &&
+          existing.platform === args.platform
+        if (!ctxOk) {
+          // Le même ID existe chez un autre contexte (collision de fournisseur,
+          // webhook malformé, rejeu avec mauvais user/offre) → refus sûr.
+          return { ok: false as const, reasonCode: 'PAYMENT_CONTEXT_MISMATCH' as EligibilityReason }
+        }
+        return { ok: true as const, redemptionId: existing.id, alreadyProcessed: true, lateConfirmation: false }
+      }
 
       const now = new Date()
 
@@ -737,7 +758,25 @@ export async function confirmRedemption(args: {
     return { ok: true, redemptionId: result.redemptionId, alreadyProcessed: result.alreadyProcessed, lateConfirmation: result.lateConfirmation }
   } catch (err: any) {
     if (err instanceof TxAbort) return { ok: false, reasonCode: err.reasonCode }
-    if (err?.code === 'P2002') return { ok: false, reasonCode: 'ALREADY_PROCESSED', error: 'duplicate' }
+    if (err?.code === 'P2002') {
+      // Course sur la clé composite (provider, providerTransactionId) : relire
+      // la redemption et valider le contexte avant de retourner alreadyProcessed.
+      const raced = await client.promotionRedemption.findUnique({
+        where: { provider_providerTransactionId: { provider: args.provider, providerTransactionId: args.providerTransactionId } },
+      })
+      if (raced) {
+        const ctxOk =
+          raced.userId === args.userId &&
+          raced.campaignId === c!.campaign.id &&
+          raced.variantId === variant.id &&
+          raced.allocationId === allocation.id &&
+          raced.planId === args.planId &&
+          raced.platform === args.platform
+        if (ctxOk) return { ok: true, redemptionId: raced.id, alreadyProcessed: true, lateConfirmation: false }
+        return { ok: false, reasonCode: 'PAYMENT_CONTEXT_MISMATCH' }
+      }
+      return { ok: false, reasonCode: 'ALREADY_PROCESSED', error: 'duplicate' }
+    }
     return { ok: false, reasonCode: 'RISK_REVIEW_REQUIRED', error: err?.message }
   }
 }

@@ -5,11 +5,14 @@
  * Garde-fous :
  *   - impossible de définir un quota < confirmed + active_reserved ;
  *   - la réallocation ne déplace que les places non consommées et non réservées ;
- *   - jamais de changement silencieux de quota global.
+ *   - jamais de changement silencieux de quota global ;
+ *   - la somme des allocations d'une variante ne dépasse jamais son quota ;
+ *   - les agrégats de quotas sont limités à la campagne courante ;
+ *   - seedCampaign est atomique (campagne + variantes + allocations dans une
+ *     seule transaction, idempotent face aux initialisations concurrentes).
  */
 
 import { db } from '@/lib/db'
-import { randomUUID } from 'crypto'
 import type { LaunchDb } from './service'
 import {
   launchOffersEnabled,
@@ -17,43 +20,80 @@ import {
   launchTotalQuota,
   launchQuotaA,
   launchQuotaB,
-  launchAllocationDefaults,
+  computeLaunchAllocationSplit,
   launchEligibleCountries,
   launchEligiblePlanIds,
 } from './config'
 
-/** Crée la campagne + variantes + allocations si absentes (idempotent). */
+const VARIANTS = [
+  { code: 'LAUNCH50_MONTHLY', quota: () => launchQuotaA(), billingPeriod: 'P1M', discountKind: 'PERCENT_ONCE', discountValue: 50 },
+  { code: 'LAUNCH3FOR2_QUARTERLY', quota: () => launchQuotaB(), billingPeriod: 'P3M', discountKind: 'AMOUNT_ONCE', discountValue: 0 },
+] as const
+
+const PLATFORMS = ['WEB', 'IOS', 'ANDROID'] as const
+
+/**
+ * Crée la campagne + variantes + allocations dans UNE SEULE transaction.
+ *
+ * - aucun graphe partiel possible : tout ou rien ;
+ * - deux initialisations concurrentes : le second échec P2002 (code unique) est
+ *   converti en résultat idempotent `{ created: false }` ;
+ * - après création, vérifie que le graphe attendu est complet.
+ */
 export async function seedCampaign(client: LaunchDb = db): Promise<{ created: boolean }> {
   const existing = await client.promotionCampaign.findUnique({ where: { code: launchCampaignCode() } })
   if (existing) return { created: false }
 
-  const campaign = await client.promotionCampaign.create({
-    data: {
-      code: launchCampaignCode(),
-      name: 'Offres de lancement AQWELIA',
-      status: 'DRAFT',
-      totalQuota: launchTotalQuota(),
-      confirmedCount: 0,
-      eligibleCountries: JSON.stringify(launchEligibleCountries()),
-      eligiblePlanIds: JSON.stringify(launchEligiblePlanIds()),
-    },
-  })
-
-  const variants = [
-    { code: 'LAUNCH50_MONTHLY', quota: launchQuotaA(), billingPeriod: 'P1M', discountKind: 'PERCENT_ONCE', discountValue: 50 },
-    { code: 'LAUNCH3FOR2_QUARTERLY', quota: launchQuotaB(), billingPeriod: 'P3M', discountKind: 'AMOUNT_ONCE', discountValue: 0 },
-  ]
-  for (const v of variants) {
-    const variant = await client.promotionVariant.create({ data: { campaignId: campaign.id, ...v } })
-    const alloc = launchAllocationDefaults()[v.code]
-    for (const platform of ['WEB', 'IOS', 'ANDROID'] as const) {
-      const quota = alloc[platform.toLowerCase() as keyof typeof alloc]
-      await client.promotionAllocation.create({
-        data: { variantId: variant.id, platform, planId: null, quota },
+  try {
+    await client.$transaction(async (tx) => {
+      const campaign = await tx.promotionCampaign.create({
+        data: {
+          code: launchCampaignCode(),
+          name: 'Offres de lancement AQWELIA',
+          status: 'DRAFT',
+          totalQuota: launchTotalQuota(),
+          confirmedCount: 0,
+          eligibleCountries: JSON.stringify(launchEligibleCountries()),
+          eligiblePlanIds: JSON.stringify(launchEligiblePlanIds()),
+        },
       })
+
+      for (const v of VARIANTS) {
+        const variantQuota = v.quota()
+        const variant = await tx.promotionVariant.create({
+          data: {
+            campaignId: campaign.id,
+            code: v.code,
+            quota: variantQuota,
+            billingPeriod: v.billingPeriod,
+            discountKind: v.discountKind,
+            discountValue: v.discountValue,
+          },
+        })
+        // Allocations dérivées du quota réel de la variante (jamais le split
+        // fixe 300/200) : la somme des allocations === quota de la variante.
+        const split = computeLaunchAllocationSplit(v.code, variantQuota)
+        for (const platform of PLATFORMS) {
+          await tx.promotionAllocation.create({
+            data: { variantId: variant.id, platform, planId: null, quota: split[platform.toLowerCase() as 'web' | 'ios' | 'android'] },
+          })
+        }
+      }
+    })
+
+    // Vérifie que le graphe attendu est complet (2 variantes, 6 allocations).
+    const c = await client.promotionCampaign.findUnique({ where: { code: launchCampaignCode() }, include: { variants: { include: { allocations: true } } } })
+    const complete = c !== null && c.variants.length === VARIANTS.length && c.variants.flatMap((v) => v.allocations).length === VARIANTS.length * PLATFORMS.length
+    if (!complete) return { created: false }
+    return { created: true }
+  } catch (err: any) {
+    // Course d'initialisation : la campagne (ou une contrainte unique) a déjà
+    // été créée par un concurrent → résultat idempotent, pas une erreur durable.
+    if (err?.code === 'P2002') {
+      return { created: false }
     }
+    throw err
   }
-  return { created: true }
 }
 
 export async function getCampaignAdmin(client: LaunchDb = db) {
@@ -84,7 +124,11 @@ export async function setCampaignStatus(status: string, actor: string, reason?: 
 
 /**
  * Réallocation sûre : ne déplace que les places non confirmées et non réservées.
- * Garde-fou : impossible de réduire sous confirmed + active_reserved.
+ * Garde-fous :
+ *   - impossible de réduire sous confirmed + active_reserved ;
+ *   - la somme des allocations de la variante ne dépasse jamais `variant.quota` ;
+ *   - le total des allocations de la campagne ne dépasse jamais `campaign.totalQuota`
+ *     (agrégation limitée aux variantes de la campagne courante).
  */
 export async function reallocate(args: {
   variantCode: string
@@ -105,8 +149,21 @@ export async function reallocate(args: {
   if (args.newQuota < floor) {
     return { ok: false, error: `cannot_set_below_${floor}` }
   }
-  // Ne jamais dépasser le quota global de la campagne.
-  const totalAllocations = await client.promotionAllocation.aggregate({ _sum: { quota: true } })
+
+  // Garde-fou variante : la somme des allocations de cette variante ne doit
+  // jamais dépasser `variant.quota`.
+  const variantAllocs = await client.promotionAllocation.findMany({ where: { variantId: variant.id } })
+  const variantSum = variantAllocs.reduce((s, a) => s + a.quota, 0)
+  const variantNewSum = variantSum - allocation.quota + args.newQuota
+  if (variantNewSum > variant.quota) return { ok: false, error: 'exceeds_variant_quota' }
+
+  // Garde-fou campagne : agrégation limitée AUX variantes de la campagne
+  // courante (une ancienne campagne ne doit jamais influencer la réallocation).
+  const variantIds = (await client.promotionVariant.findMany({ where: { campaignId: campaign.id }, select: { id: true } })).map((v) => v.id)
+  const totalAllocations = await client.promotionAllocation.aggregate({
+    where: { variantId: { in: variantIds } },
+    _sum: { quota: true },
+  })
   const newTotal = (totalAllocations._sum.quota ?? 0) - allocation.quota + args.newQuota
   if (newTotal > campaign.totalQuota) return { ok: false, error: 'exceeds_global_quota' }
 

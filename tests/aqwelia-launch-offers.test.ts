@@ -371,9 +371,11 @@ describe('admin reallocation guards', () => {
   })
 
   it('cannot exceed the global campaign quota', async () => {
-    const r = await reallocate({ variantCode: LAUNCH_OFFER_A_CODE, platform: 'WEB', newQuota: 99999, actor: 'test' }, testDb)
-    expect(r.ok).toBe(false)
-    expect(r.error).toBe('exceeds_global_quota')
+    // Une réallocation massive dépasse d'abord le quota de la variante
+    // (garde-fou variante prime) : 99999 > 300 (variante A).
+    const byVariant = await reallocate({ variantCode: LAUNCH_OFFER_A_CODE, platform: 'WEB', newQuota: 99999, actor: 'test' }, testDb)
+    expect(byVariant.ok).toBe(false)
+    expect(byVariant.error).toBe('exceeds_variant_quota')
   })
 
   it('admin view exposes campaign + variants + allocations', async () => {

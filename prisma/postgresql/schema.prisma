@@ -688,7 +688,7 @@ model PromotionRedemption {
   planId                      String
   platform                    String // WEB | IOS | ANDROID
   provider                    String // STRIPE | APPLE | GOOGLE
-  providerTransactionId       String   @unique
+  providerTransactionId       String
   providerOriginalTransactionId String?
   normalAmountMinor           Int // prix standard (cents)
   paidAmountMinor             Int // prix payé (cents)
@@ -706,7 +706,7 @@ model PromotionRedemption {
   user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([campaignId, userId])
-  @@index([provider, providerTransactionId])
+  @@unique([provider, providerTransactionId])
 }
 
 model PromotionAuditLog {
