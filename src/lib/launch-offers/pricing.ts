@@ -56,7 +56,10 @@ export function computeLaunchPricing(offerCode: string, planId: PlanId): LaunchP
       offerCode,
       planId,
       currency: 'EUR',
-      dueNowMinor: Math.round(p * 0.5),
+      // Stripe applique un coupon de 50 % au montant en centimes et arrondit
+      // la remise au centime supérieur. Pour un prix impair (ex. 699), le
+      // total encaissé est donc 349 et non 350.
+      dueNowMinor: p - Math.round(p * 0.5),
       renewalMinor: p,
       renewalPeriod: 'P1M',
     }
