@@ -502,8 +502,9 @@ export async function createReservation(args: {
 
   // Idempotence (AVANT les règles de compte) : une même clé ne doit être
   // réutilisée que par le même utilisateur avec la même offre/formule/
-  // plateforme. Un replay légitime retourne la réservation existante ; une clé
-  // réutilisée par un autre utilisateur/contexte → conflit sans exposer.
+  // plateforme. Un replay légitime retourne la réservation existante UNIQUEMENT
+  // si elle est encore ACTIVE et non expirée ; sinon la clé est liée à une
+  // réservation devenue inutilisable → conflit.
   const existing = await client.promotionReservation.findUnique({ where: { idempotencyKey: args.idempotencyKey } })
   if (existing) {
     const matches = existing.userId === args.userId
@@ -511,6 +512,8 @@ export async function createReservation(args: {
       && existing.planId === args.planId
       && existing.platform === args.platform
     if (!matches) return { ok: false, reasonCode: 'IDEMPOTENCY_KEY_CONFLICT' }
+    const replayUsable = existing.status === 'ACTIVE' && existing.expiresAt >= new Date()
+    if (!replayUsable) return { ok: false, reasonCode: 'IDEMPOTENCY_KEY_CONFLICT' }
     return {
       ok: true,
       reservationId: existing.id,
@@ -560,6 +563,8 @@ export async function createReservation(args: {
           && inTxExisting.planId === args.planId
           && inTxExisting.platform === args.platform
         if (!matches) return { ok: false as const, reasonCode: 'IDEMPOTENCY_KEY_CONFLICT' as EligibilityReason }
+        const replayUsable = inTxExisting.status === 'ACTIVE' && inTxExisting.expiresAt >= now
+        if (!replayUsable) return { ok: false as const, reasonCode: 'IDEMPOTENCY_KEY_CONFLICT' as EligibilityReason }
         const token = signReservationToken({ reservationId: inTxExisting.id, userId: inTxExisting.userId, offerCode: args.offerCode, planId: inTxExisting.planId, platform: inTxExisting.platform, expiresAt: inTxExisting.expiresAt.toISOString() })
         return { ok: true as const, reservation: inTxExisting, token, expiresAt: inTxExisting.expiresAt }
       }
@@ -659,6 +664,9 @@ export async function createReservation(args: {
       // deux précisément.
       const existingNow = await client.promotionReservation.findUnique({ where: { idempotencyKey: args.idempotencyKey } })
       if (existingNow && existingNow.userId === args.userId && existingNow.variantId === variant.id && existingNow.planId === args.planId && existingNow.platform === args.platform) {
+        // Replay uniquement si la réservation est encore ACTIVE et non expirée.
+        const replayUsable = existingNow.status === 'ACTIVE' && existingNow.expiresAt >= new Date()
+        if (!replayUsable) return { ok: false, reasonCode: 'IDEMPOTENCY_KEY_CONFLICT' }
         return {
           ok: true,
           reservationId: existingNow.id,

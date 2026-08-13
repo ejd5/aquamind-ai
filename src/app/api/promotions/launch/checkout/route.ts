@@ -10,9 +10,11 @@ export const dynamic = 'force-dynamic'
 
 /**
  * POST /api/promotions/launch/checkout
- * Body: { offerCode, planId, platform?, idempotencyKey }
+ * Body: { offerCode, planId, idempotencyKey }
  * Authentifié. Crée une réservation atomique 30 min puis une session Stripe
  * Checkout. Prix et éligibilité résolus exclusivement côté serveur.
+ * La plateforme est TOUJOURS WEB (le checkout de cette route est web/Stripe) :
+ * body.platform est ignoré.
  */
 export async function POST(req: NextRequest) {
   if (!launchOffersEnabled()) {
@@ -24,7 +26,7 @@ export async function POST(req: NextRequest) {
   }
   const locale = pickLocale(req)
 
-  let body: { offerCode?: string; planId?: string; platform?: string; idempotencyKey?: string }
+  let body: { offerCode?: string; planId?: string; idempotencyKey?: string }
   try {
     body = await req.json()
   } catch {
@@ -33,7 +35,7 @@ export async function POST(req: NextRequest) {
 
   const offerCode = body.offerCode || ''
   const planId = body.planId || ''
-  const platform = body.platform || 'WEB'
+  const platform = 'WEB'
   const idempotencyKey = body.idempotencyKey || ''
 
   if (!offerCode || !planId || !idempotencyKey) {

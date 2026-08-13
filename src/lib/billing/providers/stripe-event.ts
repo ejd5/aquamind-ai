@@ -85,20 +85,28 @@ export async function handleStripeEvent(event: any): Promise<HandlerResult> {
       const transitionSkipped = transition.skipped
 
       // Offres de lancement : si la session porte les metadata de campagne,
-      // consomme le quota atomiquement (montants du pricing serveur). Un échec
-      // de campagne ne remonte jamais comme échec du webhook.
+      // consomme le quota atomiquement (montants du pricing serveur).
       const launch = await handleLaunchCheckoutSession(cs)
       if (launch.handled) {
         // Email uniquement pour une NOUVELLE redemption (jamais sur replay).
+        // On ATTEND la fin de l'envoi avant d'acquitter le webhook (commentaire 4).
         if (!launch.alreadyProcessed) {
-          void sendLaunchOfferConfirmationEmailForSession(cs)
+          await sendLaunchOfferConfirmationEmailForSession(cs)
         }
         // Campagne traitée : on n'ignore pas l'événement même si l'abonnement
         // était out-of-order (la réservation a été consommée).
         break
       }
 
-      // Session non-campagne : le skip de transition reste un out_of_order.
+      // Échec TECHNIQUE (retryable) : lever une exception pour marquer l'événement
+      // en échec dans processEventIdempotently et permettre à Stripe de le
+      // renvoyer. Ne pas transformer un vrai quota épuisé (non retryable) en retry.
+      if (launch.retryable) {
+        throw new Error(`launch_campaign_confirmation_retryable: ${launch.reason}`)
+      }
+
+      // Session non-campagne (ou rejet métier définitif) : le skip de transition
+      // reste un out_of_order.
       if (transitionSkipped) return { result: 'ignored', reason: 'out_of_order' }
       break
     }
@@ -315,11 +323,16 @@ export async function handleStripeEvent(event: any): Promise<HandlerResult> {
         providerEventAt,
         expiresAt: new Date(),
       })
-      if (transition.skipped) return { result: 'ignored', reason: 'out_of_order' }
+      // Le skip ne concerne QUE la transition d'abonnement (événement ancien).
+      // La redemption de campagne doit TOUJOURS passer REFUNDED pour un
+      // remboursement intégral — sans restituer automatiquement la place.
+      const transitionSkipped = transition.skipped
 
       // Campagne : un remboursement intégral marque la redemption REFUNDED
       // (la place N'EST PAS remise automatiquement — remise admin auditée).
       await markLaunchRedemptionRefunded({ userId: sub.userId })
+
+      if (transitionSkipped) return { result: 'ignored', reason: 'out_of_order' }
       break
     }
 

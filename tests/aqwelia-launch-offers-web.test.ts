@@ -15,7 +15,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest'
 import { execSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PrismaClient } from '@prisma/client'
@@ -103,12 +103,18 @@ vi.mock('@/lib/billing/transition', () => ({
 // (test de désordre), handleLaunchCheckoutSession retourne handled:true pour
 // prouver que la campagne est confirmée malgré le skip ; sinon délègue au réel.
 const launchWebhookCalls: number[] = []
-const skipCheckoutControl: { active: boolean } = { active: false }
+const skipCheckoutControl: { active: boolean; retryable: boolean; businessFail: boolean } = { active: false, retryable: false, businessFail: false }
 vi.mock('@/lib/launch-offers/webhook', async (importOriginal) => {
   const actual: any = await importOriginal()
   return {
     ...actual,
     handleLaunchCheckoutSession: async (...args: any[]) => {
+      if (skipCheckoutControl.businessFail) {
+        return { handled: false, reason: 'QUOTA_EXHAUSTED' }
+      }
+      if (skipCheckoutControl.retryable) {
+        return { handled: false, reason: 'allocation_conflict', retryable: true }
+      }
       if (skipCheckoutControl.active) {
         launchWebhookCalls.push(args[0]?.id || 'unknown')
         return { handled: true, alreadyProcessed: false }
@@ -126,8 +132,11 @@ async function makeUser(): Promise<string> {
 }
 
 beforeAll(async () => {
-  dbDir = mkdtempSync(join(tmpdir(), 'aqwelia-launch-web-'))
-  dbFile = join(dbDir, 'test.db')
+  // Utilise la base pointée par DATABASE_URL (le fichier de la commande vitest)
+  // pour que testDb et le `db` global (utilisé par handleStripeEvent) partagent
+  // la même base.
+  dbFile = process.env.DATABASE_URL?.replace(/^file:/, '') || join(tmpdir(), 'aqwelia-launch-web-test.db')
+  dbDir = ''
   execSync(`bunx prisma db push --skip-generate --accept-data-loss`, {
     env: { ...process.env, DATABASE_URL: `file:${dbFile}` },
     stdio: 'pipe',
@@ -152,7 +161,8 @@ afterEach(async () => {
 
 afterAll(async () => {
   await testDb.$disconnect()
-  rmSync(dbDir, { recursive: true, force: true })
+  // dbDir est vide quand on utilise la base DATABASE_URL (pas de mkdtemp).
+  if (dbDir) rmSync(dbDir, { recursive: true, force: true })
 })
 
 describe('server-side Stripe mapping', () => {
@@ -292,6 +302,47 @@ describe('createLaunchCheckoutSession', () => {
     expect(stripeSessionCalls.length).toBe(0)
     const allocB = await testDb.promotionAllocation.findFirst({ where: { platform: 'WEB', planId: null } })
     expect(allocB!.reservedCount).toBe(0)
+  })
+
+  it('checkout replay refused when the reservation was cancelled (coupon missing then configured); a new key works', async () => {
+    const userId = await makeUser()
+    const key = `${prefix}-cancel-${randomUUID()}`
+
+    // 1er appel : coupon absent → STRIPE_NOT_CONFIGURED, réservation annulée.
+    vi.stubEnv('AQWELIA_LAUNCH_STRIPE_COUPON_LAUNCH50_MONTHLY', '')
+    try {
+      const r1 = await createLaunchCheckoutSession({
+        userId, userEmail: 'u@aqwelia.test', offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis',
+        idempotencyKey: key, origin: 'http://localhost:3000',
+      }, testDb)
+      expect(r1.ok).toBe(false)
+      if (!r1.ok) expect(r1.reasonCode).toBe('STRIPE_NOT_CONFIGURED')
+    } finally {
+      vi.unstubAllEnvs()
+    }
+    // La réservation liée à la clé est CANCELLED.
+    const cancelled = await testDb.promotionReservation.findUnique({ where: { idempotencyKey: key } })
+    expect(cancelled?.status).toBe('CANCELLED')
+
+    // Retry avec la MÊME clé (coupon maintenant configuré) : refus — la clé est
+    // liée à une réservation devenue inutilisable, aucune session Stripe.
+    const r2 = await createLaunchCheckoutSession({
+      userId, userEmail: 'u@aqwelia.test', offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis',
+      idempotencyKey: key, origin: 'http://localhost:3000',
+    }, testDb)
+    expect(r2.ok).toBe(false)
+    if (!r2.ok) expect(r2.reasonCode).toBe('IDEMPOTENCY_KEY_CONFLICT')
+    expect(stripeSessionCalls.length).toBe(0)
+    // Aucun quota repris.
+    const alloc = await testDb.promotionAllocation.findFirst({ where: { platform: 'WEB', planId: null } })
+    expect(alloc!.reservedCount).toBe(0)
+
+    // Une NOUVELLE clé fonctionne.
+    const r3 = await createLaunchCheckoutSession({
+      userId, userEmail: 'u@aqwelia.test', offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis',
+      idempotencyKey: `${key}-new`, origin: 'http://localhost:3000',
+    }, testDb)
+    expect(r3.ok).toBe(true)
   })
 
   it('checkout is idempotent: two concurrent calls + sequential replay → same reservation/session/URL, one session created', async () => {
@@ -473,6 +524,95 @@ describe('handleStripeEvent — out-of-order webhooks still confirm the campaign
     } finally {
       transitionControl.skipped = false
       skipCheckoutControl.active = false
+    }
+  })
+
+  it('retryable confirmation failure → handler rejects (event not acknowledged)', async () => {
+    const { handleStripeEvent } = await import('@/lib/billing/providers/stripe-event')
+    transitionControl.skipped = false
+
+    // Échec TECHNIQUE retryable (allocation_conflict) → handleStripeEvent lève
+    // (l'événement n'est pas acquitté, Stripe le renverra).
+    skipCheckoutControl.retryable = true
+    try {
+      const session = {
+        id: `cs_retry_${randomUUID().replace(/-/g, '')}`,
+        payment_status: 'paid',
+        amount_total: 350,
+        payment_intent: `pi_retry_${randomUUID().replace(/-/g, '')}`,
+        client_reference_id: 'user_retry',
+        subscription: 'sub_retry',
+        metadata: { campaignCode: 'AQWELIA_LAUNCH_2026', offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB' },
+      }
+      const event = { id: `evt_retry_${randomUUID().replace(/-/g, '')}`, type: 'checkout.session.completed', created: Math.floor(Date.now() / 1000), data: { object: session } }
+      await expect(handleStripeEvent(event)).rejects.toThrow(/launch_campaign_confirmation_retryable/)
+    } finally {
+      skipCheckoutControl.retryable = false
+    }
+  })
+
+  it('non-retryable (business) failure is not thrown: handleStripeEvent does not reject', async () => {
+    const { handleStripeEvent } = await import('@/lib/billing/providers/stripe-event')
+    transitionControl.skipped = false
+    // Échec MÉTIER définitif (quota épuisé sans erreur technique) → non-retryable.
+    skipCheckoutControl.businessFail = true
+    try {
+      const session = {
+        id: `cs_noretry_${randomUUID().replace(/-/g, '')}`,
+        payment_status: 'paid',
+        amount_total: 350,
+        payment_intent: `pi_noretry_${randomUUID().replace(/-/g, '')}`,
+        client_reference_id: 'user_noretry',
+        subscription: 'sub_noretry',
+        metadata: { campaignCode: 'AQWELIA_LAUNCH_2026', offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB' },
+      }
+      const event = { id: `evt_noretry_${randomUUID().replace(/-/g, '')}`, type: 'checkout.session.completed', created: Math.floor(Date.now() / 1000), data: { object: session } }
+      const result = await handleStripeEvent(event)
+      // Pas de throw (rejet métier → événement acquitté), pas de retry.
+      expect(result?.result !== 'ignored').toBe(true)
+    } finally {
+      skipCheckoutControl.businessFail = false
+    }
+  })
+
+  it('full refund older than a recent subscription event → redemption REFUNDED even when transition skipped, quota unchanged', async () => {
+    const userId = await makeUser()
+    // Crée une redemption CONFIRMED.
+    const session = { id: `cs_${randomUUID().replace(/-/g, '')}`, payment_status: 'paid', amount_total: 350, payment_intent: `pi_${randomUUID().replace(/-/g, '')}`, client_reference_id: userId, metadata: { campaignCode: 'AQWELIA_LAUNCH_2026', offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB' } }
+    const { handleLaunchCheckoutSession } = await import('@/lib/launch-offers/webhook')
+    const h = await handleLaunchCheckoutSession(session, testDb)
+    expect(h.handled).toBe(true)
+    const campaignBefore = await testDb.promotionCampaign.findFirst({ where: { code: 'AQWELIA_LAUNCH_2026' } })
+    expect(campaignBefore!.confirmedCount).toBe(1)
+
+    // charge.refunded intégral, transition ABONNEMENT ancienne (skipped).
+    transitionControl.skipped = true
+    skipCheckoutControl.active = false
+    skipCheckoutControl.retryable = false
+    try {
+      const { handleStripeEvent } = await import('@/lib/billing/providers/stripe-event')
+      const charge = {
+        id: `ch_${randomUUID().replace(/-/g, '')}`,
+        amount: 350,
+        amount_refunded: 350,
+        customer: 'cus_refund',
+        payment_intent: `pi_${randomUUID().replace(/-/g, '')}`,
+        metadata: {},
+      }
+      // Simulation : subscription liée au user.
+      await testDb.subscription.create({ data: { userId, plan: 'oasis', status: 'active', provider: 'stripe', startedAt: new Date(), stripeCustomerId: 'cus_refund', stripeSubscriptionId: 'sub_refund' } })
+      const event = { id: `evt_refund_${randomUUID().replace(/-/g, '')}`, type: 'charge.refunded', created: Math.floor(Date.now() / 1000) - 7200, data: { object: charge } }
+      const result = await handleStripeEvent(event)
+
+      // La redemption passe REFUNDED malgré le skip de transition d'abonnement.
+      const redemption = await testDb.promotionRedemption.findFirst({ where: { userId } })
+      expect(redemption?.status).toBe('REFUNDED')
+      // La place n'est PAS restituée automatiquement (quota inchangé).
+      const campaignAfter = await testDb.promotionCampaign.findFirst({ where: { code: 'AQWELIA_LAUNCH_2026' } })
+      expect(campaignAfter!.confirmedCount).toBe(1)
+      void result
+    } finally {
+      transitionControl.skipped = false
     }
   })
 })

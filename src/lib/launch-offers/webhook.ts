@@ -24,14 +24,30 @@ import type { PlanId } from '@/lib/billing/plans'
 
 export type LaunchWebhookResult =
   | { handled: true; redemptionId?: string; alreadyProcessed?: boolean; lateConfirmation?: boolean }
-  | { handled: false; reason: string }
+  | { handled: false; reason: string; retryable?: boolean }
 
 const OFFER_CODES = new Set([LAUNCH_OFFER_A_CODE, LAUNCH_OFFER_B_CODE])
 
 /**
+ * Distingue un échec technique (à retenter) d'un rejet métier définitif.
+ * Sont retryables :
+ *   - RISK_REVIEW_REQUIRED avec une erreur technique ;
+ *   - ALLOCATION_EXHAUSTED avec error === 'allocation_conflict' (conflit CAS) ;
+ *   - toute exception de base de données / conflit interne.
+ */
+function isRetryableRedemptionFailure(result: { ok: false; reasonCode: string; error?: string }): boolean {
+  if (result.reasonCode === 'RISK_REVIEW_REQUIRED' && !!result.error) return true
+  if (result.reasonCode === 'ALLOCATION_EXHAUSTED' && result.error === 'allocation_conflict') return true
+  // Conflits internes (CampaignVersionConflict, TxAbort non-métier) remontent en
+  // RISK_REVIEW_REQUIRED avec message → déjà couvert ; sinon non-retryable.
+  return false
+}
+
+/**
  * Traite une session Checkout Stripe qui porte les metadata de la campagne.
- * Retourne `{ handled: false }` si la session n'appartient pas à la campagne
- * (l'appelant ne doit alors PAS considérer le webhook comme un échec).
+ * Retourne `{ handled: false, retryable: true }` pour un échec technique (à
+ * réessayer) ; `{ handled: false }` sans retryable pour une session non-campagne
+ * ou un rejet métier définitif.
  */
 export async function handleLaunchCheckoutSession(checkoutSession: any, client: LaunchDb = db): Promise<LaunchWebhookResult> {
   const meta = checkoutSession?.metadata || {}
@@ -77,9 +93,11 @@ export async function handleLaunchCheckoutSession(checkoutSession: any, client: 
   }, client)
 
   if (!result.ok) {
-    // Un doublon technique est déjà traité (succès) ; les autres raisons sont
-    // des rejets métier (offre déjà consommée, quota épuisé) → à ne pas
-    // considérer comme un échec du webhook (Stripe ne doit pas réessayer).
+    // Rejet métier définitif (offre déjà consommée, vrai quota épuisé sans
+    // erreur technique, etc.) → non retryable. Échec technique → retryable.
+    if (isRetryableRedemptionFailure(result)) {
+      return { handled: false, reason: result.reasonCode ?? 'redemption_rejected', retryable: true }
+    }
     return { handled: false, reason: result.reasonCode ?? 'redemption_rejected' }
   }
 
