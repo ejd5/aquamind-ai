@@ -275,7 +275,7 @@ describe('redemption (quota consumption)', () => {
     const c1 = await confirmRedemption({
       userId, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB',
       provider: 'STRIPE', providerTransactionId: txId, reservationId: r.ok ? r.reservationId : undefined,
-      paidAmountMinor: 350, normalAmountMinor: 699,
+      paidAmountMinor: 349, normalAmountMinor: 699,
     }, testDb)
     expect(c1.ok).toBe(true)
     if (c1.ok) expect(c1.alreadyProcessed).toBe(false)
@@ -283,7 +283,7 @@ describe('redemption (quota consumption)', () => {
     const c2 = await confirmRedemption({
       userId, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB',
       provider: 'STRIPE', providerTransactionId: txId, reservationId: r.ok ? r.reservationId : undefined,
-      paidAmountMinor: 350, normalAmountMinor: 699,
+      paidAmountMinor: 349, normalAmountMinor: 699,
     }, testDb)
     expect(c2.ok).toBe(true)
     if (c2.ok) expect(c2.alreadyProcessed).toBe(true)
@@ -314,7 +314,7 @@ describe('redemption (quota consumption)', () => {
     const c = await confirmRedemption({
       userId, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB',
       provider: 'STRIPE', providerTransactionId: `${prefix}-late-tx-${randomUUID()}`, reservationId: r.ok ? r.reservationId : undefined,
-      paidAmountMinor: 350, normalAmountMinor: 699,
+      paidAmountMinor: 349, normalAmountMinor: 699,
     }, testDb)
     expect(c.ok).toBe(true)
     if (c.ok) expect(c.lateConfirmation).toBe(true)
@@ -333,7 +333,7 @@ describe('redemption (quota consumption)', () => {
     const c = await confirmRedemption({
       userId, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS',
       provider: 'APPLE', providerTransactionId: `${prefix}-global-tx-${randomUUID()}`,
-      paidAmountMinor: 350, normalAmountMinor: 699,
+      paidAmountMinor: 349, normalAmountMinor: 699,
     }, testDb)
     expect(c.ok).toBe(true)
     const after = await testDb.promotionCampaign.findFirst({ where: { code: 'AQWELIA_LAUNCH_2026' } })
@@ -401,7 +401,7 @@ async function allocOf(offerCode: string, platform: string) {
   return a!
 }
 
-function amountA() { return { paidAmountMinor: 350, normalAmountMinor: 699 } }
+function amountA() { return { paidAmountMinor: 349, normalAmountMinor: 699 } }
 function amountB() { return { paidAmountMinor: 1398, normalAmountMinor: 1999 } }
 
 async function snapshot(allocId: string) {
