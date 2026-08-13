@@ -111,7 +111,7 @@ describe('pricing & marketing consistency (prices derived from plans.ts)', () =>
     const b = computeLaunchPricing(LAUNCH_OFFER_B_CODE, 'oasis')!
     expect(monthlyMinor('oasis')).toBe(699)
     expect(quarterlyMinor('oasis')).toBe(1999)
-    expect(a.dueNowMinor).toBe(350) // 699 * 0.5 = 349.5 → 350
+    expect(a.dueNowMinor).toBe(349) // Stripe : 699 - round(699 * 0.5) = 349
     expect(a.renewalMinor).toBe(699)
     expect(a.renewalPeriod).toBe('P1M')
     expect(b.dueNowMinor).toBe(1398) // 2 × 699
@@ -137,7 +137,7 @@ describe('eligibility codes', () => {
     const userId = await makeUser()
     const r = await checkEligibility({ userId, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB' }, testDb)
     expect(r.eligible).toBe(true)
-    expect(r.offer?.pricing?.dueNowMinor).toBe(350)
+    expect(r.offer?.pricing?.dueNowMinor).toBe(349)
     expect(r.offer?.availability.state).toBe('AVAILABLE')
   })
 
