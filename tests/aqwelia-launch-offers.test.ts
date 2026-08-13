@@ -735,11 +735,11 @@ describe('P1 #5 — reservation must match the paid offer', () => {
     const r = await createReservation({ userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', idempotencyKey: `${prefix}-p5-p-${randomUUID()}` }, testDb)
     expect(r.ok).toBe(true)
     const before = await snapshot(alloc.id)
-    // Montants wellness (OFFER A) : dueNow 550, renewal 1099.
+    // Montants wellness (OFFER A) : Stripe encaisse 549, renouvellement 1099.
     const c = await confirmRedemption({
       userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'wellness', platform: 'IOS',
       provider: 'APPLE', providerTransactionId: `${prefix}-p5-ptx-${randomUUID()}`, reservationId: r.ok ? r.reservationId : undefined,
-      paidAmountMinor: 550, normalAmountMinor: 1099,
+      paidAmountMinor: 549, normalAmountMinor: 1099,
     }, testDb)
     expect(c.ok).toBe(false)
     if (!c.ok) expect(c.reasonCode).toBe('RESERVATION_MISMATCH')
