@@ -4601,7 +4601,30 @@
     "partnerTitle": "No time to maintain it yourself?",
     "partnerBody": "You do not have to do everything. An AQWELIA partner can handle physical work while using your history, analyses and AQWELIA action plans.",
     "partnerCta": "Discover AQWELIA partners",
-    "choiceSourceNote": "Indicative comparison: hardware and professional prices vary by country, pool and contract. Always request a detailed quote."
+    "choiceSourceNote": "Indicative comparison: hardware and professional prices vary by country, pool and contract. Always request a detailed quote.",
+    "launchEyebrow": "Oferta de lanzamiento",
+    "launchTitle": "Edición limitada de lanzamiento",
+    "launchSubtitle": "Oferta exclusiva y limitada. Las plazas mostradas son las realmente disponibles.",
+    "launchGuestIntro": "-50 % el primer período y «3 meses por el precio de 2» para los primeros inscritos. Conéctate para descubrir tu elegibilidad.",
+    "launchGuestCta": "Iniciar sesión",
+    "launchA50Title": "-50 % el primer período",
+    "launchA50Sub": "Luego renovación al precio mensual",
+    "launchB32Title": "3 meses por el precio de 2",
+    "launchB32Sub": "Luego renovación al precio trimestral",
+    "launchPaidNow": "a pagar ahora",
+    "launchThenMonthly": "Luego {price} / mes",
+    "launchThenQuarterly": "Luego {price} / trimestre",
+    "launchPriceUnavailable": "Precio no disponible",
+    "launchExhausted": "Oferta agotada",
+    "launchRemaining": "Solo quedan {count} plaza",
+    "launchRemainingPlural": "Solo quedan {count} plazas",
+    "launchReasonRedeemed": "Ya has disfrutado de esta oferta",
+    "launchReasonActiveReservation": "Ya tienes una reserva en curso",
+    "launchReasonSubscribed": "Oferta solo para nuevos suscriptores",
+    "launchReasonCountry": "Oferta no disponible en tu país",
+    "launchReasonQuota": "Oferta agotada",
+    "launchReasonDefault": "Oferta no disponible",
+    "launchBadge": "Oferta de lanzamiento"
   },
   "aPropos": {
     "metaTitle": "Acerca de — AQWELIA, Aqua + Bienestar + IA",
@@ -7222,5 +7245,13 @@
     "dataCta": "See full policy",
     "redirectCta": "Continue to the page",
     "redirectNow": "Redirect now"
+  },
+  "launch": {
+    "checkoutPending": "Creando pago…",
+    "unavailable": "Oferta no disponible",
+    "retry": "Inténtelo más tarde",
+    "sessionNotFound": "No se encontró la sesión de pago.",
+    "genericError": "Ocurrió un error. Inténtelo de nuevo.",
+    "cta": "Aprovechar la oferta"
   }
 }

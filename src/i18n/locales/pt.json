@@ -4603,7 +4603,30 @@
     "partnerTitle": "No time to maintain it yourself?",
     "partnerBody": "You do not have to do everything. An AQWELIA partner can handle physical work while using your history, analyses and AQWELIA action plans.",
     "partnerCta": "Discover AQWELIA partners",
-    "choiceSourceNote": "Indicative comparison: hardware and professional prices vary by country, pool and contract. Always request a detailed quote."
+    "choiceSourceNote": "Indicative comparison: hardware and professional prices vary by country, pool and contract. Always request a detailed quote.",
+    "launchEyebrow": "Oferta de lançamento",
+    "launchTitle": "Edição limitada de lançamento",
+    "launchSubtitle": "Oferta exclusiva e limitada. As vagas exibidas são as realmente disponíveis.",
+    "launchGuestIntro": "-50 % no primeiro período e «3 meses pelo preço de 2» para os primeiros inscritos. Entre para descobrir sua elegibilidade.",
+    "launchGuestCta": "Entrar",
+    "launchA50Title": "-50 % no primeiro período",
+    "launchA50Sub": "Depois renovação ao preço mensal",
+    "launchB32Title": "3 meses pelo preço de 2",
+    "launchB32Sub": "Depois renovação ao preço trimestral",
+    "launchPaidNow": "a pagar agora",
+    "launchThenMonthly": "Depois {price} / mês",
+    "launchThenQuarterly": "Depois {price} / trimestre",
+    "launchPriceUnavailable": "Preço indisponível",
+    "launchExhausted": "Oferta esgotada",
+    "launchRemaining": "Só {count} vaga",
+    "launchRemainingPlural": "Só {count} vagas",
+    "launchReasonRedeemed": "Você já aproveitou esta oferta",
+    "launchReasonActiveReservation": "Você já tem uma reserva em andamento",
+    "launchReasonSubscribed": "Oferta apenas para novos assinantes",
+    "launchReasonCountry": "Oferta não disponível no seu país",
+    "launchReasonQuota": "Oferta esgotada",
+    "launchReasonDefault": "Oferta não disponível",
+    "launchBadge": "Oferta de lançamento"
   },
   "aPropos": {
     "metaTitle": "Sobre — AQWELIA, Aqua + Well + AI",
@@ -7224,5 +7247,13 @@
     "dataCta": "See full policy",
     "redirectCta": "Continue to the page",
     "redirectNow": "Redirect now"
+  },
+  "launch": {
+    "checkoutPending": "Criando pagamento…",
+    "unavailable": "Oferta indisponível",
+    "retry": "Tente novamente mais tarde",
+    "sessionNotFound": "Sessão de pagamento não encontrada.",
+    "genericError": "Ocorreu um erro. Tente novamente.",
+    "cta": "Aproveitar a oferta"
   }
 }

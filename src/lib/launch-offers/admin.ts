@@ -14,6 +14,7 @@
 
 import { db } from '@/lib/db'
 import type { LaunchDb } from './service'
+import { freshAllocation, casAllocation } from './service'
 import {
   launchOffersEnabled,
   launchCampaignCode,
@@ -237,6 +238,88 @@ export async function reallocate(args: {
   } catch (err: any) {
     if (err?.message === 'launch_campaign_version_conflict') {
       return { ok: false, error: 'conflict_reallocate_retry' }
+    }
+    throw err
+  }
+}
+
+/**
+ * Remise de place (spec §3 — remboursements et annulations).
+ *
+ * Par défaut, un remboursement/annulation à la demande du client ne remet PAS
+ * la place (anti-abus). Une remise de place est réservée aux cas administratifs
+ * (doublon technique, capture double, annulation imputable à AQWELIA) et doit
+ * être explicitement validée par un admin. Action auditée.
+ *
+ * ATOMICITÉ : toute la logique se déroule dans UNE transaction interactive —
+ * relecture, transition conditionnelle CONFIRMED → TECHNICAL_CANCEL (count===1),
+ * décréments (CAS versionné de l'allocation + campagne) et audit. Deux appels
+ * concurrents sur la même redemption : un seul obtient count===1, l'autre voit
+ * TECHNICAL_CANCEL → redemption_not_restorable sans mutation ni audit.
+ */
+export async function restoreRedemptionSlot(args: {
+  redemptionId: string
+  actor: string
+  reason: string
+}, client: LaunchDb = db): Promise<{ ok: boolean; error?: string }> {
+  if (!launchOffersEnabled()) return { ok: false, error: 'campaign_disabled' }
+
+  try {
+    const result = await client.$transaction(async (tx) => {
+      // Relire la redemption DANS la transaction (état courant).
+      const redemption = await tx.promotionRedemption.findUnique({
+        where: { id: args.redemptionId },
+      })
+      if (!redemption) return { ok: false as const, error: 'redemption_not_found' }
+      if (redemption.status !== 'CONFIRMED') {
+        return { ok: false as const, error: 'redemption_not_restorable' }
+      }
+
+      // Transition conditionnelle atomique : un seul appel gagne count===1.
+      const transitioned = await tx.promotionRedemption.updateMany({
+        where: { id: redemption.id, status: 'CONFIRMED' },
+        data: { status: 'TECHNICAL_CANCEL' },
+      })
+      if (transitioned.count !== 1) {
+        // Un concurrent a déjà traité → aucun décrément ni audit.
+        return { ok: false as const, error: 'redemption_not_restorable' }
+      }
+
+      // Décrément de l'allocation : CAS versionné (version, compteurs, incrément).
+      const allocation = await freshAllocation(tx, redemption.allocationId)
+      if (!allocation) throw new Error('launch_restore_allocation_missing')
+      const allocOk = await casAllocation(tx, allocation, { confirmedCount: { decrement: 1 } })
+      if (!allocOk) throw new Error('launch_restore_allocation_conflict')
+
+      // Décrément de la campagne : exactement une fois, jamais en dessous de 0.
+      const campaignDec = await tx.promotionCampaign.updateMany({
+        where: { id: redemption.campaignId, confirmedCount: { gt: 0 } },
+        data: { confirmedCount: { decrement: 1 } },
+      })
+      if (campaignDec.count !== 1) throw new Error('launch_restore_campaign_conflict')
+
+      // Audit uniquement après le succès de toutes les mutations (même transaction).
+      await tx.promotionAuditLog.create({
+        data: {
+          campaignId: redemption.campaignId,
+          actor: args.actor,
+          action: 'restore_slot',
+          before: JSON.stringify({ redemptionId: redemption.id, status: 'CONFIRMED' }),
+          after: JSON.stringify({ redemptionId: redemption.id, status: 'TECHNICAL_CANCEL' }),
+          reason: args.reason,
+        },
+      })
+
+      return { ok: true as const }
+    })
+
+    if (!result.ok) return { ok: false, error: result.error }
+    return { ok: true }
+  } catch (err: any) {
+    // Conflit de version d'allocation ou campagne → rollback complet (aucune
+    // mutation partielle, aucun audit).
+    if (err?.message?.startsWith('launch_restore_')) {
+      return { ok: false, error: 'restore_conflict' }
     }
     throw err
   }

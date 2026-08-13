@@ -4976,7 +4976,30 @@
     "partnerTitle": "No time to maintain it yourself?",
     "partnerBody": "You do not have to do everything. An AQWELIA partner can handle physical work while using your history, analyses and AQWELIA action plans.",
     "partnerCta": "Discover AQWELIA partners",
-    "choiceSourceNote": "Indicative comparison: hardware and professional prices vary by country, pool and contract. Always request a detailed quote."
+    "choiceSourceNote": "Indicative comparison: hardware and professional prices vary by country, pool and contract. Always request a detailed quote.",
+    "launchEyebrow": "Launch offer",
+    "launchTitle": "Limited launch edition",
+    "launchSubtitle": "Exclusive and limited. The places shown are the places actually available.",
+    "launchGuestIntro": "-50% for the first period and \"3 months for the price of 2\" for early subscribers. Sign in to discover your eligibility.",
+    "launchGuestCta": "Sign in",
+    "launchA50Title": "-50% for the first period",
+    "launchA50Sub": "Then renews at the monthly price",
+    "launchB32Title": "3 months for the price of 2",
+    "launchB32Sub": "Then renews at the quarterly price",
+    "launchPaidNow": "due now",
+    "launchThenMonthly": "Then {price} / month",
+    "launchThenQuarterly": "Then {price} / quarter",
+    "launchPriceUnavailable": "Pricing unavailable",
+    "launchExhausted": "Offer sold out",
+    "launchRemaining": "Only {count} spot left",
+    "launchRemainingPlural": "Only {count} spots left",
+    "launchReasonRedeemed": "You have already used this offer",
+    "launchReasonActiveReservation": "You already have an active reservation",
+    "launchReasonSubscribed": "Offer for new subscribers only",
+    "launchReasonCountry": "Offer not available in your country",
+    "launchReasonQuota": "Offer sold out",
+    "launchReasonDefault": "Offer unavailable",
+    "launchBadge": "Launch offer"
   },
   "aPropos": {
     "metaTitle": "About — AQWELIA, Aqua + Well + AI",
@@ -7571,5 +7594,13 @@
       "newBadge": "New",
       "demoBadge": "Demo"
     }
+  },
+  "launch": {
+    "checkoutPending": "Creating payment…",
+    "unavailable": "Offer unavailable",
+    "retry": "Please try again later",
+    "sessionNotFound": "Payment session not found.",
+    "genericError": "Something went wrong. Please try again.",
+    "cta": "Claim the offer"
   }
 }

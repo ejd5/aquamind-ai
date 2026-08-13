@@ -535,4 +535,78 @@ describe('P1 #2/#3/#4 — true concurrency on PostgreSQL', () => {
       }
     }
   }, 60_000)
+
+  it('two concurrent restoreRedemptionSlot on the same redemption: exactly one succeeds, counters decremented once, one audit, no negative', async () => {
+    await resetPromotionData(prisma, prefix)
+    const { restoreRedemptionSlot } = await import('@/lib/launch-offers/admin')
+    const { createReservation, confirmRedemption } = await import('@/lib/launch-offers/service')
+    const { LAUNCH_OFFER_A_CODE } = await import('@/lib/launch-offers/config')
+    const { setCampaignStatus } = await import('@/lib/launch-offers/admin')
+    await setCampaignStatus('ACTIVE', 'pg-test', undefined, prisma)
+
+    const variant = await prisma.promotionVariant.findFirst({ where: { code: LAUNCH_OFFER_A_CODE } })
+    const allocWeb = await prisma.promotionAllocation.findFirst({ where: { variantId: variant.id, platform: 'WEB', planId: null } })
+    await prisma.promotionAllocation.update({ where: { id: allocWeb.id }, data: { quota: 2, reservedCount: 0, confirmedCount: 0 } })
+
+    // Crée une redemption CONFIRMED.
+    const u = await freshUser(prisma, prefix, 95)
+    const confirm = await confirmRedemption({ userId: u.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-restore-cf-${randomUUID()}`, paidAmountMinor: 350, normalAmountMinor: 699, currency: 'EUR' }, prisma)
+    expect(confirm.ok).toBe(true)
+    const redemption = await prisma.promotionRedemption.findFirst({ where: { userId: u.id } })
+    expect(redemption.status).toBe('CONFIRMED')
+    const campaign = await prisma.promotionCampaign.findFirst({ where: { code: 'AQWELIA_LAUNCH_2026' } })
+    expect(campaign.confirmedCount).toBe(1)
+    let allocBefore = await prisma.promotionAllocation.findUnique({ where: { id: allocWeb.id } })
+    expect(allocBefore.confirmedCount).toBe(1)
+
+    // DEUX appels concurrents sur la MÊME redemption.
+    const barrier = {}
+    const gate = new Promise((r) => { barrier.release = r })
+    let r1
+    let r2
+    const runA = (async () => { await gate; r1 = await restoreRedemptionSlot({ redemptionId: redemption.id, actor: 'a', reason: 'race' }, prisma) })()
+    const runB = (async () => { await gate; r2 = await restoreRedemptionSlot({ redemptionId: redemption.id, actor: 'b', reason: 'race' }, prisma) })()
+    barrier.release()
+    await Promise.all([runA, runB])
+
+    // Exactement un succès.
+    const ok = [r1, r2].filter((r) => r.ok).length
+    expect(ok).toBe(1)
+    const failed = [r1, r2].find((r) => !r.ok)
+    if (failed && !failed.ok) expect(failed.error).toBe('redemption_not_restorable')
+
+    // Compteurs décrémentés une seule fois, jamais négatifs.
+    const redAfter = await prisma.promotionRedemption.findUnique({ where: { id: redemption.id } })
+    expect(redAfter.status).toBe('TECHNICAL_CANCEL')
+    const allocAfter = await prisma.promotionAllocation.findUnique({ where: { id: allocWeb.id } })
+    expect(allocAfter.confirmedCount).toBe(0)
+    expect(allocAfter.confirmedCount).toBeGreaterThanOrEqual(0)
+    const campAfter = await prisma.promotionCampaign.findFirst({ where: { code: 'AQWELIA_LAUNCH_2026' } })
+    expect(campAfter.confirmedCount).toBe(0)
+    expect(campAfter.confirmedCount).toBeGreaterThanOrEqual(0)
+
+    // Un seul audit.
+    const audits = await prisma.promotionAuditLog.findMany({ where: { action: 'restore_slot' } })
+    expect(audits).toHaveLength(1)
+
+    // Un second appel séquentiel → redemption_not_restorable, sans mutation ni audit.
+    const third = await restoreRedemptionSlot({ redemptionId: redemption.id, actor: 'c', reason: 'again' }, prisma)
+    expect(third.ok).toBe(false)
+    if (!third.ok) expect(third.error).toBe('redemption_not_restorable')
+    const auditsAfter = await prisma.promotionAuditLog.findMany({ where: { action: 'restore_slot' } })
+    expect(auditsAfter).toHaveLength(1)
+    const allocFinal = await prisma.promotionAllocation.findUnique({ where: { id: allocWeb.id } })
+    expect(allocFinal.confirmedCount).toBe(0)
+
+    // Après restauration, la place libérée est réutilisable par un autre
+    // utilisateur : TECHNICAL_CANCEL n'est PAS compté dans la capacité.
+    const newUser = await freshUser(prisma, prefix, 96)
+    const res = await createReservation({ userId: newUser.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', idempotencyKey: `${prefix}-after-restore-${randomUUID()}` }, prisma)
+    expect(res.ok).toBe(true)
+    const allocAfterReserve = await prisma.promotionAllocation.findUnique({ where: { id: allocWeb.id } })
+    expect(allocAfterReserve.reservedCount).toBe(1)
+    expect(allocAfterReserve.confirmedCount).toBe(0)
+    // Invariant de capacité.
+    expect(allocAfterReserve.reservedCount + allocAfterReserve.confirmedCount + allocAfterReserve.safetyBuffer).toBeLessThanOrEqual(allocAfterReserve.quota)
+  }, 60_000)
 })

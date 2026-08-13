@@ -208,6 +208,18 @@ function allocationAvailable(allocation: { quota: number; confirmedCount: number
 }
 
 /**
+ * Compte les redemptions qui consomment ENCORE une place pour la capacité :
+ * exclut `TECHNICAL_CANCEL` (la place a été restituée par une remise admin) ;
+ * conserve les remboursements ordinaires dans le quota (règle anti-abus : un
+ * remboursement client ne remet pas la place automatiquement).
+ */
+async function countCapacityRedemptions(tx: any, allocationId: string): Promise<number> {
+  return tx.promotionRedemption.count({
+    where: { allocationId, status: { not: 'TECHNICAL_CANCEL' } },
+  })
+}
+
+/**
  * Fence de campagne DANS la transaction : sérialise createReservation avec
  * setCampaignStatus pour qu'aucune réservation ne soit créée si une pause/fin a
  * committé entre la relecture et le claim.
@@ -302,7 +314,7 @@ async function expireUserReservationsInTx(tx: any, campaignId: string, userId: s
 }
 
 /** Relecture de l'allocation DANS la transaction (état frais, jamais capturé avant). */
-async function freshAllocation(tx: any, allocationId: string): Promise<{
+export async function freshAllocation(tx: any, allocationId: string): Promise<{
   id: string
   quota: number
   confirmedCount: number
@@ -322,7 +334,7 @@ async function freshAllocation(tx: any, allocationId: string): Promise<{
  * Retourne false si un concurrent (réallocation/réservation/confirmation) a
  * modifié l'allocation entre la relecture et la mutation.
  */
-async function casAllocation(tx: any, alloc: {
+export async function casAllocation(tx: any, alloc: {
   id: string
   quota: number
   confirmedCount: number
@@ -439,7 +451,7 @@ export async function checkEligibility(args: {
 }
 
 export type ReserveResult =
-  | { ok: true; reservationId: string; reservationToken: string; expiresAt: Date; offerCode: string }
+  | { ok: true; reservationId: string; reservationToken: string; expiresAt: Date; offerCode: string; providerCheckoutId?: string | null }
   | { ok: false; reasonCode: EligibilityReason; error?: string }
 
 /**
@@ -490,8 +502,9 @@ export async function createReservation(args: {
 
   // Idempotence (AVANT les règles de compte) : une même clé ne doit être
   // réutilisée que par le même utilisateur avec la même offre/formule/
-  // plateforme. Un replay légitime retourne la réservation existante ; une clé
-  // réutilisée par un autre utilisateur/contexte → conflit sans exposer.
+  // plateforme. Un replay légitime retourne la réservation existante UNIQUEMENT
+  // si elle est encore ACTIVE et non expirée ; sinon la clé est liée à une
+  // réservation devenue inutilisable → conflit.
   const existing = await client.promotionReservation.findUnique({ where: { idempotencyKey: args.idempotencyKey } })
   if (existing) {
     const matches = existing.userId === args.userId
@@ -499,12 +512,15 @@ export async function createReservation(args: {
       && existing.planId === args.planId
       && existing.platform === args.platform
     if (!matches) return { ok: false, reasonCode: 'IDEMPOTENCY_KEY_CONFLICT' }
+    const replayUsable = existing.status === 'ACTIVE' && existing.expiresAt >= new Date()
+    if (!replayUsable) return { ok: false, reasonCode: 'IDEMPOTENCY_KEY_CONFLICT' }
     return {
       ok: true,
       reservationId: existing.id,
       reservationToken: signReservationToken({ reservationId: existing.id, userId: existing.userId, offerCode: args.offerCode, planId: existing.planId, platform: existing.platform, expiresAt: existing.expiresAt.toISOString() }),
       expiresAt: existing.expiresAt,
       offerCode: args.offerCode,
+      providerCheckoutId: existing.providerCheckoutId,
     }
   }
 
@@ -536,6 +552,22 @@ export async function createReservation(args: {
       // réservation ni compteur créé.
       const fenceOk = await fenceCampaignActive(tx, freshCampaign)
       if (!fenceOk) return { ok: false as const, reasonCode: 'CAMPAIGN_PAUSED' as EligibilityReason }
+
+      // Re-vérification idempotencyKey DANS la transaction (gère la course entre
+      // deux appels concurrents avec la même clé) : si la réservation existe,
+      // retourner la même réservation sans ré-appliquer l'éligibilité.
+      const inTxExisting = await tx.promotionReservation.findUnique({ where: { idempotencyKey: args.idempotencyKey } })
+      if (inTxExisting) {
+        const matches = inTxExisting.userId === args.userId
+          && inTxExisting.variantId === variant.id
+          && inTxExisting.planId === args.planId
+          && inTxExisting.platform === args.platform
+        if (!matches) return { ok: false as const, reasonCode: 'IDEMPOTENCY_KEY_CONFLICT' as EligibilityReason }
+        const replayUsable = inTxExisting.status === 'ACTIVE' && inTxExisting.expiresAt >= now
+        if (!replayUsable) return { ok: false as const, reasonCode: 'IDEMPOTENCY_KEY_CONFLICT' as EligibilityReason }
+        const token = signReservationToken({ reservationId: inTxExisting.id, userId: inTxExisting.userId, offerCode: args.offerCode, planId: inTxExisting.planId, platform: inTxExisting.platform, expiresAt: inTxExisting.expiresAt.toISOString() })
+        return { ok: true as const, reservation: inTxExisting, token, expiresAt: inTxExisting.expiresAt }
+      }
 
       // Expire d'ABORD les réservations périmées de CET utilisateur (P1#2) :
       // une réservation ACTIVE avec expiresAt < now ne bloque plus une nouvelle
@@ -572,7 +604,7 @@ export async function createReservation(args: {
         if (!afterClean) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
         // Recalcul fiable des compteurs depuis les lignes (pas seulement les caches).
         const activeReservationsAfter = await tx.promotionReservation.count({ where: { allocationId: allocation.id, status: 'ACTIVE' } })
-        const confirmedAfter = await tx.promotionRedemption.count({ where: { allocationId: allocation.id } })
+        const confirmedAfter = await countCapacityRedemptions(tx, allocation.id)
         const availableAfter = afterClean.quota - confirmedAfter - activeReservationsAfter - afterClean.safetyBuffer
         if (availableAfter <= 0) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
         // Claim atomique avec CAS (version fraîche post-nettoyage).
@@ -581,7 +613,7 @@ export async function createReservation(args: {
       } else {
         // Aucun nettoyage : relecture fraîche + compteurs depuis les lignes.
         const activeReservations = await tx.promotionReservation.count({ where: { allocationId: allocation.id, status: 'ACTIVE' } })
-        const confirmed = await tx.promotionRedemption.count({ where: { allocationId: allocation.id } })
+        const confirmed = await countCapacityRedemptions(tx, allocation.id)
         const available = fresh.quota - confirmed - activeReservations - fresh.safetyBuffer
         if (available <= 0) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }
         // Claim atomique avec CAS incluant quota+version+compteurs.
@@ -615,7 +647,7 @@ export async function createReservation(args: {
 
     if (!result.ok) return { ok: false, reasonCode: result.reasonCode }
     void trackEventServer('launch_offer_reservation_created', { campaign: campaign.code, variant: args.offerCode, plan: args.planId, platform: args.platform })
-    return { ok: true, reservationId: result.reservation.id, reservationToken: result.token, expiresAt: result.expiresAt, offerCode: args.offerCode }
+    return { ok: true, reservationId: result.reservation.id, reservationToken: result.token, expiresAt: result.expiresAt, offerCode: args.offerCode, providerCheckoutId: result.reservation.providerCheckoutId }
   } catch (err: any) {
     if (err instanceof CampaignVersionConflict) {
       // Après épuisement des tentatives bornées : la campagne a changé trop
@@ -632,12 +664,16 @@ export async function createReservation(args: {
       // deux précisément.
       const existingNow = await client.promotionReservation.findUnique({ where: { idempotencyKey: args.idempotencyKey } })
       if (existingNow && existingNow.userId === args.userId && existingNow.variantId === variant.id && existingNow.planId === args.planId && existingNow.platform === args.platform) {
+        // Replay uniquement si la réservation est encore ACTIVE et non expirée.
+        const replayUsable = existingNow.status === 'ACTIVE' && existingNow.expiresAt >= new Date()
+        if (!replayUsable) return { ok: false, reasonCode: 'IDEMPOTENCY_KEY_CONFLICT' }
         return {
           ok: true,
           reservationId: existingNow.id,
           reservationToken: signReservationToken({ reservationId: existingNow.id, userId: existingNow.userId, offerCode: args.offerCode, planId: existingNow.planId, platform: existingNow.platform, expiresAt: existingNow.expiresAt.toISOString() }),
           expiresAt: existingNow.expiresAt,
           offerCode: args.offerCode,
+          providerCheckoutId: existingNow.providerCheckoutId,
         }
       }
       // Sinon : conflit activeUserKey (réservation ACTIVE concurrente d'une
@@ -960,7 +996,7 @@ export async function confirmRedemption(args: {
         // concurrentes ne peuvent jamais dépasser le quota.
         const freshNow = await freshAllocation(tx, allocation.id)
         if (!freshNow) throw new AllocationVersionConflict()
-        const confirmedNow = await tx.promotionRedemption.count({ where: { allocationId: allocation.id } })
+        const confirmedNow = await countCapacityRedemptions(tx, allocation.id)
         const reservedNow = await tx.promotionReservation.count({ where: { allocationId: allocation.id, status: 'ACTIVE' } })
         const available = freshNow.quota - confirmedNow - reservedNow - freshNow.safetyBuffer
         if (available <= 0) return { ok: false as const, reasonCode: 'ALLOCATION_EXHAUSTED' as EligibilityReason }

@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/accordion'
 import { getTranslations } from 'next-intl/server'
 import { PricingExplorer } from './pricing-explorer'
+import { LaunchOffersSection } from './launch-offers'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('tarifs')
@@ -107,6 +108,9 @@ export default async function TarifsPage() {
           <div className="gold-divider mt-12" />
         </div>
       </section>
+
+      {/* Offres de lancement (édition limitée, distinctes de Découverte) */}
+      <LaunchOffersSection />
 
       {/* Interactive pricing explorer (client island) */}
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">

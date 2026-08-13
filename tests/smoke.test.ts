@@ -280,9 +280,29 @@ describe('Smoke — Public pages accessible', () => {
     '/academy',
   ]
 
+  // Le serveur `next dev` compile les routes paresseusement (cold compile). Sous
+  // la charge de la suite complète, il peut transitoirement fermer une connexion
+  // (UND_ERR_SOCKET) lors de la compilation à froid d'une page lourde. On relance
+  // un nombre borné de fois (petit délai) pour distinguer ce flutter transitoire
+  // d'un vrai statut non-200 (qui, lui, échoue immédiatement et définitivement).
+  const fetchWithRetry = async (url: string, attempts = 3): Promise<Response> => {
+    let lastErr: unknown
+    for (let i = 0; i < attempts; i += 1) {
+      try {
+        const res = await fetch(url)
+        // Un statut HTTP non-200 est définitif — pas de retry.
+        return res
+      } catch (err) {
+        lastErr = err
+        if (i < attempts - 1) await new Promise((r) => setTimeout(r, 500))
+      }
+    }
+    throw lastErr
+  }
+
   for (const page of publicPages) {
     it(`GET ${page} — returns 200`, async () => {
-      const res = await fetch(`${BASE}${page}`)
+      const res = await fetchWithRetry(`${BASE}${page}`)
       expect(res.status).toBe(200)
     })
   }
