@@ -539,7 +539,7 @@ describe('P1 #2/#3/#4 — true concurrency on PostgreSQL', () => {
   it('two concurrent restoreRedemptionSlot on the same redemption: exactly one succeeds, counters decremented once, one audit, no negative', async () => {
     await resetPromotionData(prisma, prefix)
     const { restoreRedemptionSlot } = await import('@/lib/launch-offers/admin')
-    const { confirmRedemption } = await import('@/lib/launch-offers/service')
+    const { createReservation, confirmRedemption } = await import('@/lib/launch-offers/service')
     const { LAUNCH_OFFER_A_CODE } = await import('@/lib/launch-offers/config')
     const { setCampaignStatus } = await import('@/lib/launch-offers/admin')
     await setCampaignStatus('ACTIVE', 'pg-test', undefined, prisma)
@@ -597,5 +597,16 @@ describe('P1 #2/#3/#4 — true concurrency on PostgreSQL', () => {
     expect(auditsAfter).toHaveLength(1)
     const allocFinal = await prisma.promotionAllocation.findUnique({ where: { id: allocWeb.id } })
     expect(allocFinal.confirmedCount).toBe(0)
+
+    // Après restauration, la place libérée est réutilisable par un autre
+    // utilisateur : TECHNICAL_CANCEL n'est PAS compté dans la capacité.
+    const newUser = await freshUser(prisma, prefix, 96)
+    const res = await createReservation({ userId: newUser.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', idempotencyKey: `${prefix}-after-restore-${randomUUID()}` }, prisma)
+    expect(res.ok).toBe(true)
+    const allocAfterReserve = await prisma.promotionAllocation.findUnique({ where: { id: allocWeb.id } })
+    expect(allocAfterReserve.reservedCount).toBe(1)
+    expect(allocAfterReserve.confirmedCount).toBe(0)
+    // Invariant de capacité.
+    expect(allocAfterReserve.reservedCount + allocAfterReserve.confirmedCount + allocAfterReserve.safetyBuffer).toBeLessThanOrEqual(allocAfterReserve.quota)
   }, 60_000)
 })

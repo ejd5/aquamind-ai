@@ -22,8 +22,8 @@ import { LAUNCH_OFFER_A_CODE, LAUNCH_OFFER_B_CODE } from './config'
 export interface LaunchStripeConfig {
   /** Price ID Stripe de l'abonnement sous-jacent (mensuel ou trimestriel). */
   priceId: string
-  /** Coupon Stripe appliqué à la première facture (optionnel). */
-  couponId?: string
+  /** Coupon Stripe appliqué à la première facture — OBLIGATOIRE pour une offre. */
+  couponId: string
   /** Montant dû immédiatement (cents) — depuis le pricing serveur. */
   dueNowMinor: number
   /** Montant de renouvellement (cents) — depuis le pricing serveur. */
@@ -34,8 +34,10 @@ export interface LaunchStripeConfig {
 
 /**
  * Résout la configuration Stripe d'une offre de lancement pour un forfait.
- * Retourne null si le forfait n'est pas vendu dans la durée requise ou si le
- * price ID du catalogue n'est pas configuré.
+ * Retourne null si le forfait n'est pas vendu dans la durée requise, si le
+ * price ID du catalogue n'est pas configuré, ou si le COUPON Stripe est absent
+ * ou vide (aucune session sans coupon : l'offre ne doit jamais être émise à
+ * plein tarif).
  */
 export function getLaunchStripeConfig(offerCode: string, planId: PlanId): LaunchStripeConfig | null {
   const pricing = computeLaunchPricing(offerCode, planId)
@@ -48,12 +50,15 @@ export function getLaunchStripeConfig(offerCode: string, planId: PlanId): Launch
   const priceId = STRIPE_PRICES[productId] || ''
   if (!priceId) return null
 
-  let couponId: string | undefined
+  // Coupon OBLIGATOIRE : lu depuis la variable dédiée de l'offre, trimé.
+  let raw: string | undefined
   if (offerCode === LAUNCH_OFFER_A_CODE) {
-    couponId = process.env.AQWELIA_LAUNCH_STRIPE_COUPON_LAUNCH50_MONTHLY || undefined
+    raw = process.env.AQWELIA_LAUNCH_STRIPE_COUPON_LAUNCH50_MONTHLY
   } else if (offerCode === LAUNCH_OFFER_B_CODE) {
-    couponId = process.env.AQWELIA_LAUNCH_STRIPE_COUPON_LAUNCH3FOR2_QUARTERLY || undefined
+    raw = process.env.AQWELIA_LAUNCH_STRIPE_COUPON_LAUNCH3FOR2_QUARTERLY
   }
+  const couponId = raw?.trim() ?? ''
+  if (!couponId) return null
 
   return {
     priceId,

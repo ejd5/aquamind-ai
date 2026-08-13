@@ -80,16 +80,26 @@ export async function handleStripeEvent(event: any): Promise<HandlerResult> {
         currentPeriodEnd,
         expiresAt: currentPeriodEnd,
       })
-      if (transition.skipped) return { result: 'ignored', reason: 'out_of_order' }
+      // Le skip ne concerne QUE la transition d'abonnement (événement ancien) ;
+      // la confirmation de campagne est TOUJOURS traitée pour une session payée.
+      const transitionSkipped = transition.skipped
 
       // Offres de lancement : si la session porte les metadata de campagne,
-      // consomme le quota atomiquement (montants du pricing serveur) et
-      // déclenche l'email de confirmation. Un échec de campagne ne remonte
-      // jamais comme échec du webhook (Stripe ne doit pas réessayer).
+      // consomme le quota atomiquement (montants du pricing serveur). Un échec
+      // de campagne ne remonte jamais comme échec du webhook.
       const launch = await handleLaunchCheckoutSession(cs)
-      if (launch.handled && !launch.alreadyProcessed) {
-        void sendLaunchOfferConfirmationEmailForSession(cs)
+      if (launch.handled) {
+        // Email uniquement pour une NOUVELLE redemption (jamais sur replay).
+        if (!launch.alreadyProcessed) {
+          void sendLaunchOfferConfirmationEmailForSession(cs)
+        }
+        // Campagne traitée : on n'ignore pas l'événement même si l'abonnement
+        // était out-of-order (la réservation a été consommée).
+        break
       }
+
+      // Session non-campagne : le skip de transition reste un out_of_order.
+      if (transitionSkipped) return { result: 'ignored', reason: 'out_of_order' }
       break
     }
 

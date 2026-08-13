@@ -26,12 +26,16 @@ import { createLaunchCheckoutSession } from '@/lib/launch-offers/checkout'
 import { handleLaunchCheckoutSession, markLaunchRedemptionRefunded } from '@/lib/launch-offers/webhook'
 import { LAUNCH_OFFER_A_CODE, LAUNCH_OFFER_B_CODE } from '@/lib/launch-offers/config'
 
-process.env.AQWELIA_LAUNCH_OFFERS_ENABLED = 'true'
-process.env.AQWELIA_LAUNCH_TOKEN_SECRET = 'web-test-token-secret'
-process.env.STRIPE_PRICE_OASIS_MONTHLY = 'price_oasis_monthly_test'
-process.env.STRIPE_PRICE_OASIS_QUARTERLY = 'price_oasis_quarterly_test'
-process.env.AQWELIA_LAUNCH_STRIPE_COUPON_LAUNCH50_MONTHLY = 'coupon_50_test'
-process.env.AQWELIA_LAUNCH_STRIPE_COUPON_LAUNCH3FOR2_QUARTERLY = 'coupon_3for2_test'
+// Les env sont définis AVANT tout import de module (vi.hoisted) pour que
+// plans.ts lise STRIPE_PRICE_OASIS_* correctement (getPlanFromStripePriceId).
+vi.hoisted(() => {
+  process.env.AQWELIA_LAUNCH_OFFERS_ENABLED = 'true'
+  process.env.AQWELIA_LAUNCH_TOKEN_SECRET = 'web-test-token-secret'
+  process.env.STRIPE_PRICE_OASIS_MONTHLY = 'price_oasis_monthly_test'
+  process.env.STRIPE_PRICE_OASIS_QUARTERLY = 'price_oasis_quarterly_test'
+  process.env.AQWELIA_LAUNCH_STRIPE_COUPON_LAUNCH50_MONTHLY = 'coupon_50_test'
+  process.env.AQWELIA_LAUNCH_STRIPE_COUPON_LAUNCH3FOR2_QUARTERLY = 'coupon_3for2_test'
+})
 
 const prefix = `launch-web-${Date.now()}`
 let userSeq = 0
@@ -41,6 +45,8 @@ let testDb: LaunchDb
 
 // Capture des sessions Stripe créées (pour assertion sur coupon + metadata).
 const stripeSessionCalls: any[] = []
+// Map sessionId → session (pour replay via retrieve).
+const mockSessions: Record<string, any> = {}
 
 // vi.mock est hoisté au-dessus des `process.env = ...` ; on lit donc env de façon
 // paresseuse via un Proxy pour STRIPE_PRICES.
@@ -56,14 +62,61 @@ vi.mock('@/lib/stripe', () => ({
   getStripe: () => ({
     checkout: {
       sessions: {
-        create: async (opts: any) => {
+        create: async (opts: any, extra?: { idempotencyKey?: string }) => {
+          // Déduplication Stripe réelle : même clé d'idempotence → même session.
+          if (extra?.idempotencyKey && mockSessions[extra.idempotencyKey]) {
+            return mockSessions[extra.idempotencyKey]
+          }
           stripeSessionCalls.push(opts)
-          return { id: 'cs_test_mock', url: 'https://checkout.stripe.com/cs_test_mock' }
+          const session = { id: `cs_test_mock_${stripeSessionCalls.length}`, url: `https://checkout.stripe.com/cs_test_mock_${stripeSessionCalls.length}` }
+          if (extra?.idempotencyKey) mockSessions[extra.idempotencyKey] = session
+          mockSessions[session.id] = session
+          return session
+        },
+        retrieve: async (id: string) => {
+          return mockSessions[id] || null
         },
       },
     },
+    subscriptions: {
+      retrieve: async (id: string) => ({
+        id,
+        status: 'active',
+        items: { data: [{ price: { id: 'price_oasis_monthly_test' } }] },
+        customer: 'cus_test',
+      }),
+    },
   }),
 }))
+
+// Contrôle de applyTransition pour tester le webhook désordonné.
+const transitionControl: { skipped: boolean } = { skipped: false }
+vi.mock('@/lib/billing/transition', () => ({
+  applyTransition: async () => ({
+    skipped: transitionControl.skipped,
+    ...(transitionControl.skipped ? {} : { subscription: { id: 'mock_sub' } }),
+  }),
+}))
+
+// Contrôle applyTransition (webhook désordonné) + mock conditionnel de
+// handleLaunchCheckoutSession : quand transitionControl.skipCheckout est true
+// (test de désordre), handleLaunchCheckoutSession retourne handled:true pour
+// prouver que la campagne est confirmée malgré le skip ; sinon délègue au réel.
+const launchWebhookCalls: number[] = []
+const skipCheckoutControl: { active: boolean } = { active: false }
+vi.mock('@/lib/launch-offers/webhook', async (importOriginal) => {
+  const actual: any = await importOriginal()
+  return {
+    ...actual,
+    handleLaunchCheckoutSession: async (...args: any[]) => {
+      if (skipCheckoutControl.active) {
+        launchWebhookCalls.push(args[0]?.id || 'unknown')
+        return { handled: true, alreadyProcessed: false }
+      }
+      return actual.handleLaunchCheckoutSession(...args)
+    },
+  }
+})
 
 async function makeUser(): Promise<string> {
   userSeq += 1
@@ -89,6 +142,8 @@ beforeAll(async () => {
 })
 
 afterEach(async () => {
+  stripeSessionCalls.length = 0
+  for (const k of Object.keys(mockSessions)) delete mockSessions[k]
   await testDb.promotionReservation.deleteMany({})
   await testDb.promotionRedemption.deleteMany({})
   await testDb.promotionAllocation.updateMany({ data: { reservedCount: 0, confirmedCount: 0 } })
@@ -138,7 +193,7 @@ describe('createLaunchCheckoutSession', () => {
 
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.sessionId).toBe('cs_test_mock')
+      expect(result.sessionId).toBe('cs_test_mock_1')
       const opts = stripeSessionCalls[stripeSessionCalls.length - 1]
       expect(opts.mode).toBe('subscription')
       expect(opts.line_items[0].price).toBe('price_oasis_monthly_test')
@@ -148,7 +203,7 @@ describe('createLaunchCheckoutSession', () => {
       expect(opts.metadata.reservationId).toBe(result.reservationId)
       // La réservation est liée à la session.
       const res = await testDb.promotionReservation.findUnique({ where: { id: result.reservationId } })
-      expect(res?.providerCheckoutId).toBe('cs_test_mock')
+      expect(res?.providerCheckoutId).toBe('cs_test_mock_1')
       // La place est réservée (reservedCount=1).
       const alloc = await testDb.promotionAllocation.findFirst({ where: { platform: 'WEB', planId: null } })
       expect(alloc!.reservedCount).toBe(1)
@@ -199,6 +254,75 @@ describe('createLaunchCheckoutSession', () => {
     } finally {
       vi.unstubAllEnvs()
     }
+  })
+
+  it('coupon absent or empty → STRIPE_NOT_CONFIGURED, no Stripe session, reservation released (both offers)', async () => {
+    // Offre A : coupon absent.
+    const uA = await makeUser()
+    vi.stubEnv('AQWELIA_LAUNCH_STRIPE_COUPON_LAUNCH50_MONTHLY', '')
+    try {
+      const rA = await createLaunchCheckoutSession({
+        userId: uA, userEmail: 'u@aqwelia.test', offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis',
+        idempotencyKey: `${prefix}-nocup-a-${randomUUID()}`, origin: 'http://localhost:3000',
+      }, testDb)
+      expect(rA.ok).toBe(false)
+      if (!rA.ok) expect(rA.reasonCode).toBe('STRIPE_NOT_CONFIGURED')
+    } finally {
+      vi.unstubAllEnvs()
+    }
+    // Aucune session Stripe créée.
+    expect(stripeSessionCalls.length).toBe(0)
+    // Réservation libérée.
+    const allocA = await testDb.promotionAllocation.findFirst({ where: { platform: 'WEB', planId: null } })
+    expect(allocA!.reservedCount).toBe(0)
+
+    // Offre B : coupon vide (espace).
+    const uB = await makeUser()
+    vi.stubEnv('AQWELIA_LAUNCH_STRIPE_COUPON_LAUNCH3FOR2_QUARTERLY', '   ')
+    try {
+      const rB = await createLaunchCheckoutSession({
+        userId: uB, userEmail: 'u@aqwelia.test', offerCode: LAUNCH_OFFER_B_CODE, planId: 'oasis',
+        idempotencyKey: `${prefix}-nocup-b-${randomUUID()}`, origin: 'http://localhost:3000',
+      }, testDb)
+      expect(rB.ok).toBe(false)
+      if (!rB.ok) expect(rB.reasonCode).toBe('STRIPE_NOT_CONFIGURED')
+    } finally {
+      vi.unstubAllEnvs()
+    }
+    expect(stripeSessionCalls.length).toBe(0)
+    const allocB = await testDb.promotionAllocation.findFirst({ where: { platform: 'WEB', planId: null } })
+    expect(allocB!.reservedCount).toBe(0)
+  })
+
+  it('checkout is idempotent: two concurrent calls + sequential replay → same reservation/session/URL, one session created', async () => {
+    const userId = await makeUser()
+    const key = `${prefix}-idem-${randomUUID()}`
+    const args = { userId, userEmail: 'u@aqwelia.test', offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', idempotencyKey: key, origin: 'http://localhost:3000' }
+
+    // Deux appels concurrents.
+    const [r1, r2] = await Promise.all([
+      createLaunchCheckoutSession(args, testDb),
+      createLaunchCheckoutSession(args, testDb),
+    ])
+    expect(r1.ok).toBe(true)
+    expect(r2.ok).toBe(true)
+    if (r1.ok && r2.ok) {
+      expect(r1.reservationId).toBe(r2.reservationId)
+      expect(r1.sessionId).toBe(r2.sessionId)
+      expect(r1.url).toBe(r2.url)
+    }
+
+    // Replay séquentiel → même résultat, aucune nouvelle session Stripe.
+    const before = stripeSessionCalls.length
+    const r3 = await createLaunchCheckoutSession(args, testDb)
+    expect(r3.ok).toBe(true)
+    if (r3.ok && r1.ok) {
+      expect(r3.reservationId).toBe(r1.reservationId)
+      expect(r3.sessionId).toBe(r1.sessionId)
+      expect(r3.url).toBe(r1.url)
+    }
+    // Une seule session créée au total (le replay réutilise via retrieve).
+    expect(stripeSessionCalls.length).toBe(before)
   })
 })
 
@@ -316,5 +440,39 @@ describe('admin restore slot (audited) + refunds', () => {
     // La place n'est PAS remise automatiquement.
     const campaign = await testDb.promotionCampaign.findFirst({ where: { code: 'AQWELIA_LAUNCH_2026' } })
     expect(campaign!.confirmedCount).toBe(1)
+  })
+})
+
+describe('handleStripeEvent — out-of-order webhooks still confirm the campaign', () => {
+  it('recent invoice.paid before an older paid checkout.session.completed → campaign still confirmed (skip only the subscription transition)', async () => {
+    const { handleStripeEvent } = await import('@/lib/billing/providers/stripe-event')
+    launchWebhookCalls.length = 0
+
+    // Événement ANCIEN : applyTransition retourne skipped (out_of_order). La
+    // session porte les metadata de campagne → handleLaunchCheckoutSession doit
+    // quand même être appelé (le skip ne concerne que l'abonnement).
+    transitionControl.skipped = true
+    skipCheckoutControl.active = true
+    try {
+      const session = {
+        id: `cs_ooo_${randomUUID().replace(/-/g, '')}`,
+        payment_status: 'paid',
+        amount_total: 350,
+        payment_intent: `pi_ooo_${randomUUID().replace(/-/g, '')}`,
+        client_reference_id: 'user_ooo',
+        subscription: 'sub_ooo',
+        metadata: { campaignCode: 'AQWELIA_LAUNCH_2026', offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB' },
+      }
+      const event = { id: `evt_ooo_${randomUUID().replace(/-/g, '')}`, type: 'checkout.session.completed', created: Math.floor(Date.now() / 1000) - 3600, data: { object: session } }
+      const result = await handleStripeEvent(event)
+
+      // handleLaunchCheckoutSession a été appelé malgré le skip de transition,
+      // et l'événement n'est PAS ignoré en out_of_order.
+      expect(launchWebhookCalls.length).toBeGreaterThanOrEqual(1)
+      expect(result?.result !== 'ignored').toBe(true)
+    } finally {
+      transitionControl.skipped = false
+      skipCheckoutControl.active = false
+    }
   })
 })
