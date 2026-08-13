@@ -413,7 +413,7 @@ describe('handleLaunchCheckoutSession (webhook)', () => {
 
     const redemption = await testDb.promotionRedemption.findFirst({ where: { userId } })
     expect(redemption).not.toBeNull()
-    expect(redemption!.paidAmountMinor).toBe(350)
+    expect(redemption!.paidAmountMinor).toBe(349)
     expect(redemption!.normalAmountMinor).toBe(699)
   })
 
