@@ -4979,7 +4979,30 @@
     "partnerTitle": "Pas le temps d'entretenir vous-même ?",
     "partnerBody": "L'objectif n'est pas de vous forcer à tout faire. Un partenaire AQWELIA peut assurer les interventions physiques tout en s'appuyant sur votre historique, vos analyses et les plans d'action AQWELIA.",
     "partnerCta": "Découvrir les partenaires AQWELIA",
-    "choiceSourceNote": "Comparaison indicative : les prix et prestations des matériels et professionnels varient selon le pays, le bassin et le contrat. Demandez toujours un devis détaillé."
+    "choiceSourceNote": "Comparaison indicative : les prix et prestations des matériels et professionnels varient selon le pays, le bassin et le contrat. Demandez toujours un devis détaillé.",
+    "launchEyebrow": "Offre de lancement",
+    "launchTitle": "Édition limitée de lancement",
+    "launchSubtitle": "Offre exclusive et limitée. Les places affichées sont les places réellement disponibles.",
+    "launchGuestIntro": "−50 % la première période et « 3 mois au prix de 2 » pour les premiers inscrits. Connectez-vous pour découvrir votre éligibilité.",
+    "launchGuestCta": "Se connecter",
+    "launchA50Title": "−50 % la première période",
+    "launchA50Sub": "Puis renouvellement au tarif mensuel",
+    "launchB32Title": "3 mois au prix de 2",
+    "launchB32Sub": "Puis renouvellement au tarif trimestriel",
+    "launchPaidNow": "à payer maintenant",
+    "launchThenMonthly": "Puis {price} / mois",
+    "launchThenQuarterly": "Puis {price} / trimestre",
+    "launchPriceUnavailable": "Tarification indisponible",
+    "launchExhausted": "Offre épuisée",
+    "launchRemaining": "Plus que {count} place",
+    "launchRemainingPlural": "Plus que {count} places",
+    "launchReasonRedeemed": "Vous avez déjà profité de cette offre",
+    "launchReasonActiveReservation": "Vous avez déjà une réservation en cours",
+    "launchReasonSubscribed": "Offre réservée aux nouveaux abonnés",
+    "launchReasonCountry": "Offre non disponible dans votre pays",
+    "launchReasonQuota": "Offre épuisée",
+    "launchReasonDefault": "Offre non disponible",
+    "launchBadge": "Offre de lancement"
   },
   "aPropos": {
     "metaTitle": "À propos — AQWELIA, Aqua + Well + IA",
@@ -7574,5 +7597,13 @@
       "newBadge": "Nouveau",
       "demoBadge": "Démonstration"
     }
+  },
+  "launch": {
+    "checkoutPending": "Création du paiement…",
+    "unavailable": "Offre non disponible",
+    "retry": "Réessayez plus tard",
+    "sessionNotFound": "La session de paiement est introuvable.",
+    "genericError": "Une erreur est survenue. Réessayez.",
+    "cta": "Profiter de l'offre"
   }
 }
