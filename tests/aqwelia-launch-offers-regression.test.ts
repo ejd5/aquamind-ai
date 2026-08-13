@@ -44,7 +44,7 @@ async function allocOf(offerCode: string, platform: string) {
   return a!
 }
 
-function amountA() { return { paidAmountMinor: 350, normalAmountMinor: 699 } }
+function amountA() { return { paidAmountMinor: 349, normalAmountMinor: 699 } }
 
 beforeAll(async () => {
   dbDir = mkdtempSync(join(tmpdir(), 'aqwelia-launch-regr-'))
