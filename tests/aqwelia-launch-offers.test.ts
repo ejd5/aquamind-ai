@@ -111,7 +111,7 @@ describe('pricing & marketing consistency (prices derived from plans.ts)', () =>
     const b = computeLaunchPricing(LAUNCH_OFFER_B_CODE, 'oasis')!
     expect(monthlyMinor('oasis')).toBe(699)
     expect(quarterlyMinor('oasis')).toBe(1999)
-    expect(a.dueNowMinor).toBe(350) // 699 * 0.5 = 349.5 → 350
+    expect(a.dueNowMinor).toBe(349) // Stripe : 699 - round(699 * 0.5) = 349
     expect(a.renewalMinor).toBe(699)
     expect(a.renewalPeriod).toBe('P1M')
     expect(b.dueNowMinor).toBe(1398) // 2 × 699
@@ -137,7 +137,7 @@ describe('eligibility codes', () => {
     const userId = await makeUser()
     const r = await checkEligibility({ userId, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB' }, testDb)
     expect(r.eligible).toBe(true)
-    expect(r.offer?.pricing?.dueNowMinor).toBe(350)
+    expect(r.offer?.pricing?.dueNowMinor).toBe(349)
     expect(r.offer?.availability.state).toBe('AVAILABLE')
   })
 
@@ -275,7 +275,7 @@ describe('redemption (quota consumption)', () => {
     const c1 = await confirmRedemption({
       userId, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB',
       provider: 'STRIPE', providerTransactionId: txId, reservationId: r.ok ? r.reservationId : undefined,
-      paidAmountMinor: 350, normalAmountMinor: 699,
+      paidAmountMinor: 349, normalAmountMinor: 699,
     }, testDb)
     expect(c1.ok).toBe(true)
     if (c1.ok) expect(c1.alreadyProcessed).toBe(false)
@@ -283,7 +283,7 @@ describe('redemption (quota consumption)', () => {
     const c2 = await confirmRedemption({
       userId, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB',
       provider: 'STRIPE', providerTransactionId: txId, reservationId: r.ok ? r.reservationId : undefined,
-      paidAmountMinor: 350, normalAmountMinor: 699,
+      paidAmountMinor: 349, normalAmountMinor: 699,
     }, testDb)
     expect(c2.ok).toBe(true)
     if (c2.ok) expect(c2.alreadyProcessed).toBe(true)
@@ -314,7 +314,7 @@ describe('redemption (quota consumption)', () => {
     const c = await confirmRedemption({
       userId, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB',
       provider: 'STRIPE', providerTransactionId: `${prefix}-late-tx-${randomUUID()}`, reservationId: r.ok ? r.reservationId : undefined,
-      paidAmountMinor: 350, normalAmountMinor: 699,
+      paidAmountMinor: 349, normalAmountMinor: 699,
     }, testDb)
     expect(c.ok).toBe(true)
     if (c.ok) expect(c.lateConfirmation).toBe(true)
@@ -333,7 +333,7 @@ describe('redemption (quota consumption)', () => {
     const c = await confirmRedemption({
       userId, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS',
       provider: 'APPLE', providerTransactionId: `${prefix}-global-tx-${randomUUID()}`,
-      paidAmountMinor: 350, normalAmountMinor: 699,
+      paidAmountMinor: 349, normalAmountMinor: 699,
     }, testDb)
     expect(c.ok).toBe(true)
     const after = await testDb.promotionCampaign.findFirst({ where: { code: 'AQWELIA_LAUNCH_2026' } })
@@ -401,7 +401,7 @@ async function allocOf(offerCode: string, platform: string) {
   return a!
 }
 
-function amountA() { return { paidAmountMinor: 350, normalAmountMinor: 699 } }
+function amountA() { return { paidAmountMinor: 349, normalAmountMinor: 699 } }
 function amountB() { return { paidAmountMinor: 1398, normalAmountMinor: 1999 } }
 
 async function snapshot(allocId: string) {
@@ -735,11 +735,11 @@ describe('P1 #5 — reservation must match the paid offer', () => {
     const r = await createReservation({ userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', idempotencyKey: `${prefix}-p5-p-${randomUUID()}` }, testDb)
     expect(r.ok).toBe(true)
     const before = await snapshot(alloc.id)
-    // Montants wellness (OFFER A) : dueNow 550, renewal 1099.
+    // Montants wellness (OFFER A) : Stripe encaisse 549, renouvellement 1099.
     const c = await confirmRedemption({
       userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'wellness', platform: 'IOS',
       provider: 'APPLE', providerTransactionId: `${prefix}-p5-ptx-${randomUUID()}`, reservationId: r.ok ? r.reservationId : undefined,
-      paidAmountMinor: 550, normalAmountMinor: 1099,
+      paidAmountMinor: 549, normalAmountMinor: 1099,
     }, testDb)
     expect(c.ok).toBe(false)
     if (!c.ok) expect(c.reasonCode).toBe('RESERVATION_MISMATCH')

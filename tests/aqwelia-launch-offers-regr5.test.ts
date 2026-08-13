@@ -46,7 +46,7 @@ async function makeUser(): Promise<string> {
   return u.id
 }
 
-function amountA() { return { paidAmountMinor: 350, normalAmountMinor: 699, currency: 'EUR' } }
+function amountA() { return { paidAmountMinor: 349, normalAmountMinor: 699, currency: 'EUR' } }
 
 beforeAll(async () => {
   dbDir = mkdtempSync(join(tmpdir(), 'aqwelia-launch-regr5-'))
@@ -203,9 +203,9 @@ describe('P2 #4 — currency must match server pricing', () => {
     await setup()
     const u1 = await makeUser()
     const u2 = await makeUser()
-    const c1 = await confirmRedemption({ userId: u1, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-cur-eur-${randomUUID()}`, paidAmountMinor: 350, normalAmountMinor: 699, currency: 'EUR' }, testDb)
+    const c1 = await confirmRedemption({ userId: u1, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-cur-eur-${randomUUID()}`, paidAmountMinor: 349, normalAmountMinor: 699, currency: 'EUR' }, testDb)
     expect(c1.ok).toBe(true)
-    const c2 = await confirmRedemption({ userId: u2, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-cur-lower-${randomUUID()}`, paidAmountMinor: 350, normalAmountMinor: 699, currency: 'eur' }, testDb)
+    const c2 = await confirmRedemption({ userId: u2, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-cur-lower-${randomUUID()}`, paidAmountMinor: 349, normalAmountMinor: 699, currency: 'eur' }, testDb)
     expect(c2.ok).toBe(true)
     const red = await testDb.promotionRedemption.findFirst({ where: { userId: u2 } })
     expect(red?.currency).toBe('EUR')
@@ -214,7 +214,7 @@ describe('P2 #4 — currency must match server pricing', () => {
   it('USD with same amounts is refused, no mutation', async () => {
     await setup()
     const u = await makeUser()
-    const c = await confirmRedemption({ userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-cur-usd-${randomUUID()}`, paidAmountMinor: 350, normalAmountMinor: 699, currency: 'USD' }, testDb)
+    const c = await confirmRedemption({ userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-cur-usd-${randomUUID()}`, paidAmountMinor: 349, normalAmountMinor: 699, currency: 'USD' }, testDb)
     expect(c.ok).toBe(false)
     if (!c.ok) expect(c.reasonCode).toBe('PRICE_CONFIGURATION_INVALID')
     const allocs = await testDb.promotionAllocation.findMany()
@@ -226,11 +226,11 @@ describe('P2 #4 — currency must match server pricing', () => {
   it('empty currency falls back to server EUR; invalid/garbage is refused safely', async () => {
     await setup()
     const uEmpty = await makeUser()
-    const cEmpty = await confirmRedemption({ userId: uEmpty, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-cur-empty-${randomUUID()}`, paidAmountMinor: 350, normalAmountMinor: 699, currency: '' }, testDb)
+    const cEmpty = await confirmRedemption({ userId: uEmpty, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-cur-empty-${randomUUID()}`, paidAmountMinor: 349, normalAmountMinor: 699, currency: '' }, testDb)
     expect(cEmpty.ok).toBe(true)
 
     const uBad = await makeUser()
-    const cBad = await confirmRedemption({ userId: uBad, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-cur-bad-${randomUUID()}`, paidAmountMinor: 350, normalAmountMinor: 699, currency: 'XXX' }, testDb)
+    const cBad = await confirmRedemption({ userId: uBad, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-cur-bad-${randomUUID()}`, paidAmountMinor: 349, normalAmountMinor: 699, currency: 'XXX' }, testDb)
     expect(cBad.ok).toBe(false)
     if (!cBad.ok) expect(cBad.reasonCode).toBe('PRICE_CONFIGURATION_INVALID')
 
@@ -273,7 +273,7 @@ describe('last review P1 — confirmation without reservation frees expired capa
     const c = await confirmRedemption({
       userId: payer, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB',
       provider: 'STRIPE', providerTransactionId: `${prefix}-lastp1-tx-${randomUUID()}`,
-      paidAmountMinor: 350, normalAmountMinor: 699, currency: 'EUR',
+      paidAmountMinor: 349, normalAmountMinor: 699, currency: 'EUR',
     }, testDb)
     expect(c.ok).toBe(true)
 
@@ -306,12 +306,12 @@ describe('last review P2 — analytics only on new redemption; replays restore s
     analyticsEvents.length = 0
     const u = await makeUser()
     const tx = `${prefix}-an-${randomUUID()}`
-    const c1 = await confirmRedemption({ userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: tx, paidAmountMinor: 350, normalAmountMinor: 699, currency: 'EUR' }, testDb)
+    const c1 = await confirmRedemption({ userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: tx, paidAmountMinor: 349, normalAmountMinor: 699, currency: 'EUR' }, testDb)
     expect(c1.ok).toBe(true)
     // 1 analytics sur la 1re confirmation.
     expect(analyticsEvents.filter((e) => e === 'launch_purchase_confirmed')).toHaveLength(1)
 
-    const c2 = await confirmRedemption({ userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: tx, paidAmountMinor: 350, normalAmountMinor: 699, currency: 'EUR' }, testDb)
+    const c2 = await confirmRedemption({ userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: tx, paidAmountMinor: 349, normalAmountMinor: 699, currency: 'EUR' }, testDb)
     expect(c2.ok).toBe(true)
     if (c2.ok) expect(c2.alreadyProcessed).toBe(true)
     // Replay : AUCUNE seconde analytics.
@@ -332,7 +332,7 @@ describe('last review P2 — analytics only on new redemption; replays restore s
     const c1 = await confirmRedemption({
       userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB',
       provider: 'STRIPE', providerTransactionId: tx, reservationId: r.ok ? r.reservationId : undefined,
-      paidAmountMinor: 350, normalAmountMinor: 699, currency: 'EUR',
+      paidAmountMinor: 349, normalAmountMinor: 699, currency: 'EUR',
     }, testDb)
     expect(c1.ok).toBe(true)
     if (c1.ok) expect(c1.lateConfirmation).toBe(true)
@@ -342,7 +342,7 @@ describe('last review P2 — analytics only on new redemption; replays restore s
     const c2 = await confirmRedemption({
       userId: u, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB',
       provider: 'STRIPE', providerTransactionId: tx, reservationId: r.ok ? r.reservationId : undefined,
-      paidAmountMinor: 350, normalAmountMinor: 699, currency: 'EUR',
+      paidAmountMinor: 349, normalAmountMinor: 699, currency: 'EUR',
     }, testDb)
     expect(c2.ok).toBe(true)
     if (c2.ok) {

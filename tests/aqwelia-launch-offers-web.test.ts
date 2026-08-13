@@ -171,7 +171,7 @@ describe('server-side Stripe mapping', () => {
     expect(a).not.toBeNull()
     expect(a!.priceId).toBe('price_oasis_monthly_test')
     expect(a!.couponId).toBe('coupon_50_test')
-    expect(a!.dueNowMinor).toBe(350)
+    expect(a!.dueNowMinor).toBe(349)
     expect(a!.renewalMinor).toBe(699)
     expect(a!.renewalPeriod).toBe('P1M')
 
@@ -382,7 +382,7 @@ describe('handleLaunchCheckoutSession (webhook)', () => {
     return {
       id: `cs_${randomUUID().replace(/-/g, '')}`,
       payment_status: 'paid',
-      amount_total: 350,
+      amount_total: 349,
       payment_intent: `pi_${randomUUID().replace(/-/g, '')}`,
       client_reference_id: over.userId,
       metadata: {
@@ -413,7 +413,7 @@ describe('handleLaunchCheckoutSession (webhook)', () => {
 
     const redemption = await testDb.promotionRedemption.findFirst({ where: { userId } })
     expect(redemption).not.toBeNull()
-    expect(redemption!.paidAmountMinor).toBe(350)
+    expect(redemption!.paidAmountMinor).toBe(349)
     expect(redemption!.normalAmountMinor).toBe(699)
   })
 
@@ -453,7 +453,7 @@ describe('handleLaunchCheckoutSession (webhook)', () => {
 describe('admin restore slot (audited) + refunds', () => {
   it('restores a slot only once, decrementing global + allocation quota, with audit', async () => {
     const userId = await makeUser()
-    const session = { id: `cs_${randomUUID().replace(/-/g, '')}`, payment_status: 'paid', amount_total: 350, payment_intent: `pi_${randomUUID().replace(/-/g, '')}`, client_reference_id: userId, metadata: { campaignCode: 'AQWELIA_LAUNCH_2026', offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB' } }
+    const session = { id: `cs_${randomUUID().replace(/-/g, '')}`, payment_status: 'paid', amount_total: 349, payment_intent: `pi_${randomUUID().replace(/-/g, '')}`, client_reference_id: userId, metadata: { campaignCode: 'AQWELIA_LAUNCH_2026', offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB' } }
     const h = await handleLaunchCheckoutSession(session, testDb)
     expect(h.handled).toBe(true)
 
@@ -480,7 +480,7 @@ describe('admin restore slot (audited) + refunds', () => {
 
   it('a full refund marks the redemption REFUNDED without restoring the slot', async () => {
     const userId = await makeUser()
-    const session = { id: `cs_${randomUUID().replace(/-/g, '')}`, payment_status: 'paid', amount_total: 350, payment_intent: `pi_${randomUUID().replace(/-/g, '')}`, client_reference_id: userId, metadata: { campaignCode: 'AQWELIA_LAUNCH_2026', offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB' } }
+    const session = { id: `cs_${randomUUID().replace(/-/g, '')}`, payment_status: 'paid', amount_total: 349, payment_intent: `pi_${randomUUID().replace(/-/g, '')}`, client_reference_id: userId, metadata: { campaignCode: 'AQWELIA_LAUNCH_2026', offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB' } }
     const h = await handleLaunchCheckoutSession(session, testDb)
     expect(h.handled).toBe(true)
 
@@ -508,7 +508,7 @@ describe('handleStripeEvent — out-of-order webhooks still confirm the campaign
       const session = {
         id: `cs_ooo_${randomUUID().replace(/-/g, '')}`,
         payment_status: 'paid',
-        amount_total: 350,
+        amount_total: 349,
         payment_intent: `pi_ooo_${randomUUID().replace(/-/g, '')}`,
         client_reference_id: 'user_ooo',
         subscription: 'sub_ooo',
@@ -538,7 +538,7 @@ describe('handleStripeEvent — out-of-order webhooks still confirm the campaign
       const session = {
         id: `cs_retry_${randomUUID().replace(/-/g, '')}`,
         payment_status: 'paid',
-        amount_total: 350,
+        amount_total: 349,
         payment_intent: `pi_retry_${randomUUID().replace(/-/g, '')}`,
         client_reference_id: 'user_retry',
         subscription: 'sub_retry',
@@ -560,7 +560,7 @@ describe('handleStripeEvent — out-of-order webhooks still confirm the campaign
       const session = {
         id: `cs_noretry_${randomUUID().replace(/-/g, '')}`,
         payment_status: 'paid',
-        amount_total: 350,
+        amount_total: 349,
         payment_intent: `pi_noretry_${randomUUID().replace(/-/g, '')}`,
         client_reference_id: 'user_noretry',
         subscription: 'sub_noretry',
@@ -578,7 +578,7 @@ describe('handleStripeEvent — out-of-order webhooks still confirm the campaign
   it('full refund older than a recent subscription event → redemption REFUNDED even when transition skipped, quota unchanged', async () => {
     const userId = await makeUser()
     // Crée une redemption CONFIRMED.
-    const session = { id: `cs_${randomUUID().replace(/-/g, '')}`, payment_status: 'paid', amount_total: 350, payment_intent: `pi_${randomUUID().replace(/-/g, '')}`, client_reference_id: userId, metadata: { campaignCode: 'AQWELIA_LAUNCH_2026', offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB' } }
+    const session = { id: `cs_${randomUUID().replace(/-/g, '')}`, payment_status: 'paid', amount_total: 349, payment_intent: `pi_${randomUUID().replace(/-/g, '')}`, client_reference_id: userId, metadata: { campaignCode: 'AQWELIA_LAUNCH_2026', offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB' } }
     const { handleLaunchCheckoutSession } = await import('@/lib/launch-offers/webhook')
     const h = await handleLaunchCheckoutSession(session, testDb)
     expect(h.handled).toBe(true)

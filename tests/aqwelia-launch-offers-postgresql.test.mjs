@@ -128,8 +128,8 @@ describe('P1 #2/#3/#4 — true concurrency on PostgreSQL', () => {
     const a = await freshUser(prisma, prefix, 1)
     const b = await freshUser(prisma, prefix, 2)
     const [c1, c2] = await Promise.all([
-      confirmRedemption({ userId: a.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-rc1-${randomUUID()}`, paidAmountMinor: 350, normalAmountMinor: 699 }, prisma),
-      confirmRedemption({ userId: b.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-rc2-${randomUUID()}`, paidAmountMinor: 350, normalAmountMinor: 699 }, prisma),
+      confirmRedemption({ userId: a.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-rc1-${randomUUID()}`, paidAmountMinor: 349, normalAmountMinor: 699 }, prisma),
+      confirmRedemption({ userId: b.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-rc2-${randomUUID()}`, paidAmountMinor: 349, normalAmountMinor: 699 }, prisma),
     ])
     const ok = [c1, c2].filter((c) => c.ok).length
     expect(ok).toBe(1)
@@ -203,8 +203,8 @@ describe('P1 #2/#3/#4 — true concurrency on PostgreSQL', () => {
 
     // Deux confirmations tardives DIRECTES simultanées.
     const [d1, d2] = await Promise.all([
-      confirmRedemption({ userId: users[0].id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', provider: 'APPLE', providerTransactionId: `${prefix}-dlc1-${randomUUID()}`, reservationId: reservations[0], paidAmountMinor: 350, normalAmountMinor: 699 }, prisma),
-      confirmRedemption({ userId: users[1].id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', provider: 'APPLE', providerTransactionId: `${prefix}-dlc2-${randomUUID()}`, reservationId: reservations[1], paidAmountMinor: 350, normalAmountMinor: 699 }, prisma),
+      confirmRedemption({ userId: users[0].id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', provider: 'APPLE', providerTransactionId: `${prefix}-dlc1-${randomUUID()}`, reservationId: reservations[0], paidAmountMinor: 349, normalAmountMinor: 699 }, prisma),
+      confirmRedemption({ userId: users[1].id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'IOS', provider: 'APPLE', providerTransactionId: `${prefix}-dlc2-${randomUUID()}`, reservationId: reservations[1], paidAmountMinor: 349, normalAmountMinor: 699 }, prisma),
     ])
 
     const ok = [d1, d2].filter((c) => c.ok).length
@@ -344,7 +344,7 @@ describe('P1 #2/#3/#4 — true concurrency on PostgreSQL', () => {
     let reallocRes
     const runConfirm = (async () => {
       await gate
-      confirmRes = await confirmRedemption({ userId: holder.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-race-cf-${randomUUID()}`, reservationId: res.reservationId, paidAmountMinor: 350, normalAmountMinor: 699 }, prisma)
+      confirmRes = await confirmRedemption({ userId: holder.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-race-cf-${randomUUID()}`, reservationId: res.reservationId, paidAmountMinor: 349, normalAmountMinor: 699 }, prisma)
     })()
     const runRealloc = (async () => {
       await gate
@@ -385,7 +385,7 @@ describe('P1 #2/#3/#4 — true concurrency on PostgreSQL', () => {
     let reallocRes
     const runConfirm = (async () => {
       await gate
-      confirmRes = await confirmRedemption({ userId: payer.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-race-nr-${randomUUID()}`, paidAmountMinor: 350, normalAmountMinor: 699 }, prisma)
+      confirmRes = await confirmRedemption({ userId: payer.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-race-nr-${randomUUID()}`, paidAmountMinor: 349, normalAmountMinor: 699 }, prisma)
     })()
     const runRealloc = (async () => {
       await gate
@@ -550,7 +550,7 @@ describe('P1 #2/#3/#4 — true concurrency on PostgreSQL', () => {
 
     // Crée une redemption CONFIRMED.
     const u = await freshUser(prisma, prefix, 95)
-    const confirm = await confirmRedemption({ userId: u.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-restore-cf-${randomUUID()}`, paidAmountMinor: 350, normalAmountMinor: 699, currency: 'EUR' }, prisma)
+    const confirm = await confirmRedemption({ userId: u.id, offerCode: LAUNCH_OFFER_A_CODE, planId: 'oasis', platform: 'WEB', provider: 'STRIPE', providerTransactionId: `${prefix}-restore-cf-${randomUUID()}`, paidAmountMinor: 349, normalAmountMinor: 699, currency: 'EUR' }, prisma)
     expect(confirm.ok).toBe(true)
     const redemption = await prisma.promotionRedemption.findFirst({ where: { userId: u.id } })
     expect(redemption.status).toBe('CONFIRMED')
