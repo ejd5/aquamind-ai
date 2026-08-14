@@ -72,6 +72,7 @@ export async function GET(req: NextRequest) {
       unit: profile.unit,
       treatmentType: profile.treatmentType,
       saltSystem: profile.saltSystem,
+      confirmedFields: profile.confirmedFields,
     },
   )
 

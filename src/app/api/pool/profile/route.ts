@@ -4,7 +4,11 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { PLANS, DEFAULT_PLAN, canAccess, type PlanId } from '@/lib/pool/freemium'
-import { invalidProfileFields } from '@/lib/pool/onboarding-form'
+import {
+  validateProfileBody,
+  deriveConfirmedFields,
+  parseConfirmedFields,
+} from '@/lib/pool/onboarding-form'
 
 export const runtime = 'nodejs'
 
@@ -78,18 +82,20 @@ export async function POST(req: NextRequest) {
       'Ma piscine'
     )
 
-    // ── Enum whitelist validation ────────────────────────────────────────
-    // Reject unknown/out-of-range business values instead of silently
-    // persisting them as user truth (defense-in-depth, mirrors schema enums).
-    const invalid = invalidProfileFields(body)
-    if (invalid.length) {
+    // ── Business validation (mirrors client controls; never trust client) ─
+    const validationErrors = validateProfileBody(body, { partial: false })
+    if (validationErrors.length) {
       const msg = await translate(
         locale,
         'pool.invalidField',
         'Valeur invalide pour le champ {field}'
       )
       return NextResponse.json(
-        { error: msg.replace('{field}', invalid.join(', ')), code: 'INVALID_FIELD', fields: invalid },
+        {
+          error: msg.replace('{field}', validationErrors.map((e) => e.field).join(', ')),
+          code: 'INVALID_PROFILE',
+          errors: validationErrors,
+        },
         { status: 400 }
       )
     }
@@ -154,35 +160,76 @@ export async function POST(req: NextRequest) {
     )
     if (limitError) return NextResponse.json(limitError, { status: 400 })
 
-    const data = {
+    // ── Build the create payload ────────────────────────────────────────
+    // P0-1: only persist fields the client explicitly sent. Fields that were
+    // not confirmed are left to the DB technical defaults, and `confirmedFields`
+    // records exactly which business values are user-confirmed truth. The
+    // recommendation engine must consult confirmedFields before treating a
+    // stored value as user input.
+    const confirmedFields = deriveConfirmedFields(body)
+    const data: {
+      userId: string
+      name?: string
+      volume?: number
+      unit?: string
+      waterBodyType?: string
+      shape?: string
+      surfaceType?: string
+      treatmentType?: string
+      filterType?: string
+      pumpType?: string | null
+      saltSystem?: boolean
+      region?: string | null
+      sunExposure?: string
+      covered?: boolean
+      usageLevel?: string
+      spaSeats?: number
+      spaTempTarget?: number | null
+      spaUsageFreq?: string | null
+      spaBrand?: string | null
+      manufacturerSaltMin?: number | null
+      manufacturerSaltMax?: number | null
+      manufacturerChlorineMax?: number | null
+      confirmedFields: string | null
+    } = {
       userId,
-      name: body.name || defaultPoolName,
-      volume: Number(body.volume) || 40,
-      unit: body.unit === 'gal' ? 'gal' : 'm3',
-      shape: body.shape || 'rectangular',
-      surfaceType: body.surfaceType || 'liner',
-      treatmentType: body.treatmentType || 'chlorine',
-      filterType: body.filterType || 'sand',
-      pumpType: body.pumpType || null,
-      saltSystem: !!body.saltSystem,
-      manufacturerSaltMin,
-      manufacturerSaltMax,
-      manufacturerChlorineMax,
-      region: body.region || null,
-      sunExposure: body.sunExposure || 'medium',
-      covered: !!body.covered,
-      usageLevel: body.usageLevel || 'medium',
-      waterBodyType: body.waterBodyType || 'pool',
-      spaSeats:
-        body.spaSeats != null && body.spaSeats !== ''
-          ? Number(body.spaSeats)
-          : null,
-      spaTempTarget: Number.isFinite(spaTempTarget) ? spaTempTarget : null,
-      spaUsageFreq: spaUsageFreq || null,
-      spaBrand: body.spaBrand || null,
+      confirmedFields: confirmedFields.length ? JSON.stringify(confirmedFields) : null,
     }
 
-    const profile = await db.poolProfile.create({ data })
+    if (body.name !== undefined) data.name = typeof body.name === 'string' ? body.name.trim() : body.name
+    if (body.volume !== undefined) data.volume = Number(body.volume)
+    if (body.unit !== undefined) data.unit = body.unit === 'gal' ? 'gal' : 'm3'
+    if (body.waterBodyType !== undefined) data.waterBodyType = body.waterBodyType
+    if (body.shape !== undefined) data.shape = body.shape
+    if (body.surfaceType !== undefined) data.surfaceType = body.surfaceType
+    if (body.treatmentType !== undefined) data.treatmentType = body.treatmentType
+    if (body.filterType !== undefined) data.filterType = body.filterType
+    if (body.pumpType !== undefined) data.pumpType = body.pumpType || null
+    if (typeof body.saltSystem === 'boolean') {
+      data.saltSystem = body.saltSystem
+    } else if (body.treatmentType !== undefined) {
+      // Keep saltSystem consistent with the confirmed treatment type.
+      data.saltSystem = body.treatmentType === 'salt'
+    }
+    if (body.region !== undefined) data.region = body.region || null
+    if (body.sunExposure !== undefined) data.sunExposure = body.sunExposure
+    if (typeof body.covered === 'boolean') data.covered = body.covered
+    if (body.usageLevel !== undefined) data.usageLevel = body.usageLevel
+    if (body.spaSeats != null && body.spaSeats !== '') data.spaSeats = Number(body.spaSeats)
+    if (Number.isFinite(spaTempTarget)) data.spaTempTarget = spaTempTarget
+    if (spaUsageFreq) data.spaUsageFreq = spaUsageFreq
+    if (body.spaBrand != null) data.spaBrand = body.spaBrand
+    if (manufacturerSaltMin !== null) data.manufacturerSaltMin = manufacturerSaltMin
+    if (manufacturerSaltMax !== null) data.manufacturerSaltMax = manufacturerSaltMax
+    if (manufacturerChlorineMax !== null) data.manufacturerChlorineMax = manufacturerChlorineMax
+
+    // Legacy default for the pool display name (safe: only used when the client
+    // didn't send a name — the onboarding always sends one).
+    if (data.name === undefined) data.name = defaultPoolName
+    // volume is NOT NULL in the schema with no default: validation (partial:false)
+    // above guarantees body.volume is present and finite — assert for Prisma.
+    const createData = data as unknown as { volume: number } & typeof data
+    const profile = await db.poolProfile.create({ data: createData })
     return NextResponse.json({ profile, profiles: [profile] }, { status: 201 })
   } catch (e) {
     return NextResponse.json(
@@ -218,18 +265,39 @@ export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json()
 
-    // ── Enum whitelist validation ────────────────────────────────────────
-    const invalid = invalidProfileFields(body)
-    if (invalid.length) {
+    // ── Business validation (mirrors client controls; never trust client) ─
+    const validationErrors = validateProfileBody(body, { partial: true })
+    if (validationErrors.length) {
       const msg = await translate(
         locale,
         'pool.invalidField',
         'Valeur invalide pour le champ {field}'
       )
       return NextResponse.json(
-        { error: msg.replace('{field}', invalid.join(', ')), code: 'INVALID_FIELD', fields: invalid },
+        {
+          error: msg.replace('{field}', validationErrors.map((e) => e.field).join(', ')),
+          code: 'INVALID_PROFILE',
+          errors: validationErrors,
+        },
         { status: 400 }
       )
+    }
+
+    // ── Feature gate — spa_support on transition (P0-3) ─────────────────
+    // Any transition toward waterBodyType spa|both must re-run the same
+    // spa_support authorization as creation. Otherwise a user could create a
+    // pool then PATCH waterBodyType='spa' to bypass the gate.
+    const nextWaterBodyType = body.waterBodyType ?? existing.waterBodyType
+    if (nextWaterBodyType === 'spa' || nextWaterBodyType === 'both') {
+      const { planId, status, expiresAt } = await getUserPlanInfo(userId)
+      const spaGate = canAccess(planId, status, 'spa_support', undefined, expiresAt)
+      if (!spaGate.allowed) {
+        const msg = await translate(locale, 'gates.spa_support', 'Support spa requis')
+        return NextResponse.json(
+          { error: msg, code: 'SPA_NOT_SUPPORTED', ctaPlan: spaGate.ctaPlan },
+          { status: 403 }
+        )
+      }
     }
 
     const spaTempTarget =
@@ -241,7 +309,7 @@ export async function PATCH(req: NextRequest) {
     const spaUsageFreq = body.spaUsageFreq ?? body.spaUsageFrequency ?? undefined
 
     const data: Record<string, unknown> = {}
-    if (typeof body.name === 'string') data.name = body.name
+    if (typeof body.name === 'string') data.name = body.name.trim()
     if (body.volume != null) data.volume = Number(body.volume)
     if (body.unit === 'gal' || body.unit === 'm3') data.unit = body.unit
     if (body.shape) data.shape = body.shape
@@ -255,12 +323,25 @@ export async function PATCH(req: NextRequest) {
     if (typeof body.covered === 'boolean') data.covered = body.covered
     if (body.usageLevel) data.usageLevel = body.usageLevel
     if (body.waterBodyType) data.waterBodyType = body.waterBodyType
+    // Transition spa/both → pool : les champs spa perdent leur sens — on les
+    // réinitialise plutôt que de laisser des valeurs orphelines.
+    if (body.waterBodyType === 'pool') {
+      data.spaSeats = null
+      data.spaTempTarget = null
+      data.spaUsageFreq = null
+      data.spaBrand = null
+    }
     if (body.spaSeats != null && body.spaSeats !== '')
       data.spaSeats = Number(body.spaSeats)
     if (spaTempTarget !== undefined && Number.isFinite(spaTempTarget))
       data.spaTempTarget = spaTempTarget
     if (spaUsageFreq !== undefined) data.spaUsageFreq = spaUsageFreq
     if (body.spaBrand != null) data.spaBrand = body.spaBrand
+
+    // P0-1: keep the union of previously confirmed fields + newly provided ones.
+    const mergedConfirmed = new Set(parseConfirmedFields(existing))
+    for (const field of deriveConfirmedFields(body)) mergedConfirmed.add(field)
+    data.confirmedFields = mergedConfirmed.size ? JSON.stringify([...mergedConfirmed]) : null
 
     const nextSaltMin = Object.prototype.hasOwnProperty.call(body, 'manufacturerSaltMin')
       ? optionalNonNegative(body.manufacturerSaltMin)

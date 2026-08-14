@@ -15,6 +15,7 @@
  * category label is exposed via `categoryLabelKey` (`restock.categoryLabel.<c>`)
  * so the UI can call `t(categoryLabelKey)` for display.
  */
+import { isPoolFieldConfirmed } from './onboarding-form'
 
 export interface ProductInventoryInput {
   id: string
@@ -40,6 +41,8 @@ export interface PoolProfileInputLite {
   unit: string // m3 | gal
   treatmentType: string // chlorine | salt | bromine | active_oxygen | other
   saltSystem: boolean
+  /** Fields the user explicitly confirmed (P0-1). */
+  confirmedFields?: string | null
 }
 
 export type RestockUrgency = 'low' | 'medium' | 'high'
@@ -175,7 +178,10 @@ export function calculateRestockNeeds(
   // Normalize pool volume to m³ (1 gal ≈ 0.003785 m³).
   const volumeM3 = pool.unit === 'gal' ? pool.volume * 0.003785 : pool.volume
   // Salt-only adjustment: if salt pool, ignore salt consumption unless treatmentType is salt.
-  const isSaltPool = pool.saltSystem || pool.treatmentType === 'salt'
+  // P0-1: only trust the treatment as a salt pool when the user confirmed it —
+  // a technical DB default (treatmentType='chlorine') must not imply "not salt".
+  const saltConfirmed = isPoolFieldConfirmed(pool, 'treatmentType') || isPoolFieldConfirmed(pool, 'saltSystem')
+  const isSaltPool = saltConfirmed && (pool.saltSystem || pool.treatmentType === 'salt')
 
   const items: RestockItem[] = inventory.map((p) => {
     const baseRate = WEEKLY_CONSUMPTION_PER_M3[p.category] ?? WEEKLY_CONSUMPTION_PER_M3.other

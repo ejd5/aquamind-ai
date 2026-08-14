@@ -1144,7 +1144,9 @@
     "defaultProfileCreatedTitle": "Standardprofil erstellt",
     "defaultProfileCreatedDesc": "Sie können es später bearbeiten.",
     "cannotCreateDefault": "Standardprofil konnte nicht erstellt werden",
-    "bottomNote": "Ihre Daten bleiben auf Ihrem Gerät. Sie können alles später bearbeiten."
+    "bottomNote": "Ihre Daten bleiben auf Ihrem Gerät. Sie können alles später bearbeiten.",
+    "editorSpaLocked": "Erweitern Sie Ihren Plan auf Spa oder Complete, um einen Spa hinzuzufügen.",
+    "spaBrandPlaceholder": "Marke wählen"
   },
   "settings": {
     "title": "Einstellungen & Datenschutz",

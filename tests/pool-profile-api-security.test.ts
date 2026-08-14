@@ -145,9 +145,24 @@ describe('POST /api/pool/profile', () => {
     }))
     expect(res.status).toBe(400)
     const data = await res.json()
-    expect(data.code).toBe('INVALID_FIELD')
-    expect(data.fields).toContain('treatmentType')
+    expect(data.code).toBe('INVALID_PROFILE')
+    expect(data.errors.some((e: { field: string }) => e.field === 'treatmentType')).toBe(true)
     expect(dbMock.poolProfile.create).not.toHaveBeenCalled()
+  })
+
+  it('server rejects invalid volume (0 / negative / NaN)', async () => {
+    for (const volume of [0, -5, 'abc', NaN]) {
+      const res = await POST(makeReq('POST', 'http://localhost/api/pool/profile', { name: 'Piscine', volume }))
+      expect(res.status).toBe(400)
+      const data = await res.json()
+      expect(data.errors.some((e: { field: string }) => e.field === 'volume')).toBe(true)
+    }
+    expect(dbMock.poolProfile.create).not.toHaveBeenCalled()
+  })
+
+  it('server rejects invalid unit', async () => {
+    const res = await POST(makeReq('POST', 'http://localhost/api/pool/profile', { name: 'Piscine', volume: 40, unit: 'litres' }))
+    expect(res.status).toBe(400)
   })
 
   it('creates a pool from a scoped onboarding payload', async () => {
@@ -161,6 +176,29 @@ describe('POST /api/pool/profile', () => {
     expect(arg.userId).toBe('user-1')
     expect(arg.treatmentType).toBe('salt')
     expect(arg.saltSystem).toBe(true)
+  })
+
+  it('P0-1 unconfirmed fields are NOT persisted as user truth (no server-side business defaults)', async () => {
+    const res = await POST(makeReq('POST', 'http://localhost/api/pool/profile', {
+      name: 'Ma piscine', volume: 40, unit: 'm3', waterBodyType: 'pool',
+    }))
+    expect(res.status).toBe(201)
+    const arg = dbMock.poolProfile.create.mock.calls[0][0].data
+    // The server must NOT inject business defaults for unconfirmed fields:
+    expect(arg.treatmentType).toBeUndefined()
+    expect(arg.filterType).toBeUndefined()
+    expect(arg.sunExposure).toBeUndefined()
+    expect(arg.usageLevel).toBeUndefined()
+    expect(arg.shape).toBeUndefined()
+    expect(arg.surfaceType).toBeUndefined()
+    expect(arg.covered).toBeUndefined()
+    // confirmedFields records ONLY what the user actually sent:
+    const confirmed = JSON.parse(arg.confirmedFields)
+    expect(confirmed).toContain('name')
+    expect(confirmed).toContain('volume')
+    expect(confirmed).not.toContain('treatmentType')
+    expect(confirmed).not.toContain('filterType')
+    expect(confirmed).not.toContain('sunExposure')
   })
 })
 
@@ -194,6 +232,65 @@ describe('PATCH /api/pool/profile', () => {
     const res = await PATCH(makeReq('PATCH', 'http://localhost/api/pool/profile?id=pool-1', { filterType: 'plasma' }))
     expect(res.status).toBe(400)
     expect(dbMock.poolProfile.update).not.toHaveBeenCalled()
+  })
+
+  it('rejects invalid volume (0 / negative / non-numeric)', async () => {
+    for (const volume of [0, -5, 'abc']) {
+      const res = await PATCH(makeReq('PATCH', 'http://localhost/api/pool/profile?id=pool-1', { volume }))
+      expect(res.status).toBe(400)
+      expect(dbMock.poolProfile.update).not.toHaveBeenCalled()
+    }
+  })
+
+  it('P0-3 pool → spa via PATCH without entitlement = 403 SPA_NOT_SUPPORTED', async () => {
+    dbMock.subscription.findFirst.mockResolvedValue(null) // free plan
+    const res = await PATCH(makeReq('PATCH', 'http://localhost/api/pool/profile?id=pool-1', {
+      waterBodyType: 'spa',
+    }))
+    expect(res.status).toBe(403)
+    const data = await res.json()
+    expect(data.code).toBe('SPA_NOT_SUPPORTED')
+    expect(dbMock.poolProfile.update).not.toHaveBeenCalled()
+  })
+
+  it('P0-3 pool → spa via PATCH WITH entitlement = allowed', async () => {
+    dbMock.subscription.findFirst.mockResolvedValue({
+      plan: 'spa365',
+      status: 'active',
+      expiresAt: new Date(Date.now() + 86400000),
+    })
+    const res = await PATCH(makeReq('PATCH', 'http://localhost/api/pool/profile?id=pool-1', {
+      waterBodyType: 'spa', spaSeats: 4, spaTemperature: 37, spaUsageFrequency: 'high',
+    }))
+    expect(res.status).toBe(200)
+    expect(dbMock.poolProfile.update).toHaveBeenCalledTimes(1)
+  })
+
+  it('P0-3 editing an existing spa pool requires entitlement too', async () => {
+    dbMock.poolProfile.findFirst.mockResolvedValue({ ...baseProfile, waterBodyType: 'spa' })
+    dbMock.subscription.findFirst.mockResolvedValue(null) // downgraded
+    const res = await PATCH(makeReq('PATCH', 'http://localhost/api/pool/profile?id=pool-1', {
+      name: 'Mon spa',
+    }))
+    expect(res.status).toBe(403)
+    const data = await res.json()
+    expect(data.code).toBe('SPA_NOT_SUPPORTED')
+    expect(dbMock.poolProfile.update).not.toHaveBeenCalled()
+  })
+
+  it('P0-1 PATCH keeps confirmedFields union (existing + newly provided)', async () => {
+    dbMock.poolProfile.findFirst.mockResolvedValue({
+      ...baseProfile,
+      confirmedFields: JSON.stringify(['name', 'volume', 'treatmentType']),
+    })
+    const res = await PATCH(makeReq('PATCH', 'http://localhost/api/pool/profile?id=pool-1', {
+      filterType: 'glass',
+    }))
+    expect(res.status).toBe(200)
+    const data = dbMock.poolProfile.update.mock.calls[0][0].data
+    const confirmed = JSON.parse(data.confirmedFields)
+    expect(confirmed).toContain('filterType')
+    expect(confirmed).toContain('treatmentType') // preserved
   })
 
   it('updates allowed fields and returns the refreshed profile', async () => {

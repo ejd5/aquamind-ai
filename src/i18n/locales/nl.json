@@ -1144,7 +1144,9 @@
     "defaultProfileCreatedTitle": "Standaardprofiel aangemaakt",
     "defaultProfileCreatedDesc": "U kunt het later bewerken.",
     "cannotCreateDefault": "Kan standaardprofiel niet aanmaken",
-    "bottomNote": "Uw gegevens blijven op uw apparaat. U kunt later alles bewerken."
+    "bottomNote": "Uw gegevens blijven op uw apparaat. U kunt later alles bewerken.",
+    "editorSpaLocked": "Upgrade naar een Spa- of Complete-plan om een spa toe te voegen.",
+    "spaBrandPlaceholder": "Kies een merk"
   },
   "settings": {
     "title": "Instellingen & privacy",

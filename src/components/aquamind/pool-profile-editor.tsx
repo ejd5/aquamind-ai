@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Droplets, Loader2, Check } from 'lucide-react'
+import { Droplets, Loader2, Check, Lock, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { api } from '@/lib/api-client'
+import { SPA_SPECIFICS, SPA_BRANDS } from '@/lib/pool/spa-data'
 
 interface PoolProfileData {
   id: string
@@ -39,6 +40,11 @@ interface PoolProfileData {
   covered: boolean
   usageLevel: string
   waterBodyType: string
+  spaSeats: number | null
+  spaTempTarget: number | null
+  spaUsageFreq: string | null
+  spaBrand: string | null
+  confirmedFields?: string | null
 }
 
 interface PoolProfileEditorDialogProps {
@@ -71,9 +77,19 @@ export function PoolProfileEditorDialog({
   const t = useTranslations('onboarding')
   const tp = useTranslations('pool')
   const tc = useTranslations('common')
+  const tspa = useTranslations('spa')
+  const tspaData = useTranslations('spaData')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [profile, setProfile] = useState<PoolProfileData | null>(null)
+  // spa entitlement — the editor must not offer spa/both to users without it.
+  const [spaAllowed, setSpaAllowed] = useState(false)
+
+  const SPA_USAGE_LEVELS = [
+    { value: 'low', label: t('spaUsageLow'), desc: t('spaUsageLowDesc') },
+    { value: 'medium', label: t('spaUsageMedium'), desc: t('spaUsageMediumDesc') },
+    { value: 'high', label: t('spaUsageHigh'), desc: t('spaUsageHighDesc') },
+  ]
 
   const SHAPES = [
     { value: 'rectangular', label: t('shapeRectangular') },
@@ -120,10 +136,16 @@ export function PoolProfileEditorDialog({
   const load = useCallback(async (id: string) => {
     setLoading(true)
     try {
-      const data = await api.get<{ profile: PoolProfileData | null }>(
-        `/api/pool/profile?id=${encodeURIComponent(id)}`
-      )
-      setProfile(data.profile)
+      const [profileData, subData] = await Promise.all([
+        api.get<{ profile: PoolProfileData | null }>(
+          `/api/pool/profile?id=${encodeURIComponent(id)}`
+        ),
+        api.get<{ access?: { effectiveLimits?: { spaSupport?: boolean } } }>(
+          '/api/subscription'
+        ).catch(() => null),
+      ])
+      setProfile(profileData.profile)
+      setSpaAllowed(!!subData?.access?.effectiveLimits?.spaSupport)
     } catch (e) {
       toast({
         title: t('errorTitle'),
@@ -148,10 +170,12 @@ export function PoolProfileEditorDialog({
     if (!profile) return
     setSaving(true)
     try {
+      const isSpa = profile.waterBodyType === 'spa' || profile.waterBodyType === 'both'
       await api.patch(`/api/pool/profile?id=${encodeURIComponent(profile.id)}`, {
         name: profile.name,
         volume: Number(profile.volume),
         unit: profile.unit,
+        waterBodyType: profile.waterBodyType,
         shape: profile.shape,
         surfaceType: profile.surfaceType,
         treatmentType: profile.treatmentType,
@@ -162,6 +186,15 @@ export function PoolProfileEditorDialog({
         sunExposure: profile.sunExposure,
         usageLevel: profile.usageLevel,
         covered: profile.covered,
+        // spa fields (sent only for spa/both)
+        ...(isSpa
+          ? {
+              spaSeats: profile.spaSeats ?? SPA_SPECIFICS.seatsRange.min,
+              spaTemperature: profile.spaTempTarget ?? SPA_SPECIFICS.temperatureRange.ideal,
+              spaUsageFrequency: profile.spaUsageFreq || 'medium',
+              spaBrand: profile.spaBrand || '',
+            }
+          : {}),
       })
       toast({ title: tp('poolUpdated') })
       onOpenChange(false)
@@ -178,6 +211,16 @@ export function PoolProfileEditorDialog({
   }
 
   const isSpa = profile?.waterBodyType === 'spa' || profile?.waterBodyType === 'both'
+  const WATER_BODY_OPTIONS = [
+    { value: 'pool', label: t('pool'), emoji: '🏊' },
+    // spa/both are gated by entitlement — never offer to users without it.
+    ...(spaAllowed
+      ? [
+          { value: 'spa' as const, label: t('spa'), emoji: '♨️' },
+          { value: 'both' as const, label: t('both'), emoji: '🌊' },
+        ]
+      : []),
+  ]
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -205,6 +248,45 @@ export function PoolProfileEditorDialog({
 
         {!loading && profile && (
           <div className="grid gap-4">
+            {/* Water body type — spa/both only with entitlement (P1). */}
+            <div className="space-y-1.5">
+              <Label>{t('poolType')}</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {WATER_BODY_OPTIONS.map((opt) => {
+                  const active = profile.waterBodyType === opt.value
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => update('waterBodyType', opt.value)}
+                      className={`flex flex-col items-center gap-1 rounded-xl border px-3 py-3 text-xs font-semibold transition-all ${
+                        active
+                          ? 'border-gold/60 bg-gold/10 text-gold shadow-sm'
+                          : 'border-border bg-background hover:border-gold/30'
+                      }`}
+                    >
+                      <span className="text-xl" aria-hidden="true">
+                        {opt.emoji}
+                      </span>
+                      {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+              {!spaAllowed && (profile.waterBodyType === 'spa' || profile.waterBodyType === 'both') && (
+                <div className="mt-1 flex items-start gap-2 rounded-lg border border-gold/30 bg-gold/5 p-2.5 text-[11px] text-gold-foreground">
+                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold" />
+                  <span>
+                    <strong className="text-gold">{t('spaPremiumLead')}</strong>{' '}
+                    {t('spaPremiumBody')}
+                  </span>
+                </div>
+              )}
+              {!spaAllowed && !isSpa && (
+                <p className="mt-1 text-[11px] text-muted-foreground">{t('editorSpaLocked')}</p>
+              )}
+            </div>
+
             <div className="space-y-1.5">
               <Label htmlFor="edit-pool-name">
                 {isSpa ? t('spaName') : t('poolName')}
@@ -401,6 +483,100 @@ export function PoolProfileEditorDialog({
                 <p className="text-[11px] text-muted-foreground">{t('coveredDesc')}</p>
               </div>
             </label>
+
+            {isSpa && (
+              <div className="space-y-3 rounded-xl border border-gold/20 bg-gold/[0.04] p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-gold">
+                  {t('spaDetailsTitle')}
+                </p>
+
+                <div className="space-y-1.5">
+                  <Label className="flex items-center gap-1.5 text-xs">
+                    <Droplets className="h-3.5 w-3.5 text-gold" />
+                    {tspaData(SPA_SPECIFICS.seatsRange.labelKey)} : <strong className="text-gold">{profile.spaSeats ?? SPA_SPECIFICS.seatsRange.min}</strong>
+                  </Label>
+                  <input
+                    type="range"
+                    min={SPA_SPECIFICS.seatsRange.min}
+                    max={SPA_SPECIFICS.seatsRange.max}
+                    step={1}
+                    value={profile.spaSeats ?? SPA_SPECIFICS.seatsRange.min}
+                    onChange={(e) => update('spaSeats', Number(e.target.value))}
+                    className="w-full accent-[oklch(0.45_0.12_195)]"
+                  />
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                    <span>{SPA_SPECIFICS.seatsRange.min} {t('placesSuffix')}</span>
+                    <span>{SPA_SPECIFICS.seatsRange.max} {t('placesSuffix')}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="flex items-center gap-1.5 text-xs">
+                    <Sparkles className="h-3.5 w-3.5 text-gold" />
+                    {tspa('temperature')} : <strong className="text-gold">{profile.spaTempTarget ?? SPA_SPECIFICS.temperatureRange.ideal}°C</strong>
+                  </Label>
+                  <input
+                    type="range"
+                    min={SPA_SPECIFICS.temperatureRange.min}
+                    max={SPA_SPECIFICS.temperatureRange.max}
+                    step={1}
+                    value={profile.spaTempTarget ?? SPA_SPECIFICS.temperatureRange.ideal}
+                    onChange={(e) => update('spaTempTarget', Number(e.target.value))}
+                    className="w-full accent-[oklch(0.45_0.12_195)]"
+                  />
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                    <span>{SPA_SPECIFICS.temperatureRange.min}°C</span>
+                    <span>{t('idealTemp')} {SPA_SPECIFICS.temperatureRange.ideal}°C</span>
+                    <span>{SPA_SPECIFICS.temperatureRange.max}°C</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="flex items-center gap-1.5 text-xs">
+                    <Droplets className="h-3.5 w-3.5 text-gold" />
+                    {tspa('usageFreq')}
+                  </Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {SPA_USAGE_LEVELS.map((u) => (
+                      <button
+                        key={u.value}
+                        type="button"
+                        onClick={() => update('spaUsageFreq', u.value)}
+                        className={`flex flex-col items-center rounded-lg border px-2 py-2 text-center transition-all ${
+                          profile.spaUsageFreq === u.value
+                            ? 'border-gold/60 bg-gold/10 shadow-sm'
+                            : 'border-border bg-background hover:border-gold/30'
+                        }`}
+                      >
+                        <span className={`text-xs font-semibold ${profile.spaUsageFreq === u.value ? 'text-gold' : ''}`}>
+                          {u.label}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">{u.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">{tspa('brand')}</Label>
+                  <Select
+                    value={profile.spaBrand || ''}
+                    onValueChange={(v) => update('spaBrand', v)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={t('spaBrandPlaceholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SPA_BRANDS.map((b) => (
+                        <SelectItem key={b.id} value={b.name}>
+                          {b.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
 
             <div className="mt-2 flex justify-end gap-2">
               <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={saving}>

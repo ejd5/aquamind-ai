@@ -1262,7 +1262,9 @@
     "defaultProfileCreatedDesc": "Vous pourrez le modifier plus tard.",
     "cannotCreateDefault": "Impossible de créer le profil par défaut",
     "bottomNote": "Vos données restent sur votre appareil. Vous pourrez tout modifier plus tard.",
-    "authRequiredRedirect": "Vous devez être connecté pour sauvegarder. Redirection..."
+    "authRequiredRedirect": "Vous devez être connecté pour sauvegarder. Redirection...",
+    "editorSpaLocked": "Passez à un plan Spa ou Complete pour ajouter un spa.",
+    "spaBrandPlaceholder": "Choisir une marque"
   },
   "settings": {
     "title": "Paramètres et confidentialité",

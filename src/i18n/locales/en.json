@@ -1260,7 +1260,9 @@
     "defaultProfileCreatedDesc": "You can edit it later.",
     "cannotCreateDefault": "Unable to create default profile",
     "bottomNote": "Your data stays on your device. You can edit everything later.",
-    "authRequiredRedirect": "You must be signed in to save. Redirecting..."
+    "authRequiredRedirect": "You must be signed in to save. Redirecting...",
+    "editorSpaLocked": "Upgrade to a Spa or Complete plan to add a spa.",
+    "spaBrandPlaceholder": "Choose a brand"
   },
   "settings": {
     "title": "Settings & privacy",

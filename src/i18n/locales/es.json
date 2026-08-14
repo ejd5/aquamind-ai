@@ -1142,7 +1142,9 @@
     "defaultProfileCreatedTitle": "Perfil por defecto creado",
     "defaultProfileCreatedDesc": "Puede editarlo más tarde.",
     "cannotCreateDefault": "No se ha podido crear el perfil por defecto",
-    "bottomNote": "Sus datos se quedan en su dispositivo. Puede editarlo todo más tarde."
+    "bottomNote": "Sus datos se quedan en su dispositivo. Puede editarlo todo más tarde.",
+    "editorSpaLocked": "Actualice a un plan Spa o Complete para añadir un spa.",
+    "spaBrandPlaceholder": "Elegir una marca"
   },
   "settings": {
     "title": "Ajustes y privacidad",

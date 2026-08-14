@@ -255,36 +255,6 @@ export function Onboarding({ onDone, addMode, onCancel }: OnboardingProps) {
     }
   }
 
-  async function skip() {
-    setSaving(true)
-    try {
-      const res = await fetch('/api/pool/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: t('defaultPoolName'),
-          volume: 40,
-          unit: 'm3',
-          shape: 'rectangular',
-          surfaceType: 'liner',
-          treatmentType: 'chlorine',
-          filterType: 'sand',
-          saltSystem: false,
-          sunExposure: 'medium',
-          usageLevel: 'medium',
-          covered: false,
-        }),
-      })
-      if (!res.ok) throw new Error(t('errorTitle'))
-      toast({ title: t('defaultProfileCreatedTitle'), description: t('defaultProfileCreatedDesc') })
-      onDone()
-    } catch {
-      toast({ title: t('errorTitle'), description: t('cannotCreateDefault'), variant: 'destructive' })
-    } finally {
-      setSaving(false)
-    }
-  }
-
   const progress = (step / 4) * 100
 
   return (
@@ -789,16 +759,6 @@ export function Onboarding({ onDone, addMode, onCancel }: OnboardingProps) {
             )}
 
             <div className="flex items-center gap-2">
-              {!addMode && (
-                <button
-                  onClick={skip}
-                  disabled={saving}
-                  className="text-xs font-medium text-muted-foreground underline-offset-2 hover:underline disabled:opacity-50"
-                >
-                  {tc('skip')}
-                </button>
-              )}
-
               {step < 4 ? (
                 <Button
                   onClick={next}

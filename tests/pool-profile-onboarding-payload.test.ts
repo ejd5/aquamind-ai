@@ -10,6 +10,10 @@ import { describe, it, expect } from 'vitest'
 import {
   buildPoolProfileCreateBody,
   invalidProfileFields,
+  validateProfileBody,
+  deriveConfirmedFields,
+  parseConfirmedFields,
+  isPoolFieldConfirmed,
   type OnboardingForm,
 } from '@/lib/pool/onboarding-form'
 
@@ -120,15 +124,97 @@ describe('buildPoolProfileCreateBody — only confirmed steps are persisted', ()
     expect(body.treatmentType).toBeUndefined()
   })
 
-  it('skip() default profile path still sends an explicit full body', () => {
-    // Represents the "default profile" shortcut — user explicitly chose defaults.
-    const body = buildPoolProfileCreateBody(makeForm(), new Set([1, 2, 3, 4]))
-    expect(body.volume).toBe(40)
-    expect(body.treatmentType).toBe('chlorine')
-    expect(body.filterType).toBe('sand')
-    expect(body.sunExposure).toBe('medium')
-    expect(body.usageLevel).toBe('medium')
-    expect(body.covered).toBe(false)
+  it('P0-2 « Passer » ne crée AUCUNE fausse donnée métier (pas de chlore/sable/medium)', () => {
+    // "Passer" était supprimé de l'onboarding : plus aucun chemin ne POSTe un
+    // profil « par défaut » (40m³ + chlorine + sand + medium…) comme si c'était
+    // un choix utilisateur. Un payload strictement limité à l'étape 1 ne doit
+    // contenir AUCUN champ des étapes 2-4 (traitement, filtration, climat).
+    const body = buildPoolProfileCreateBody(makeForm(), new Set([1]))
+    expect(body.treatmentType).toBeUndefined()
+    expect(body.filterType).toBeUndefined()
+    expect(body.saltSystem).toBeUndefined()
+    expect(body.sunExposure).toBeUndefined()
+    expect(body.usageLevel).toBeUndefined()
+    expect(body.covered).toBeUndefined()
+    expect(body.region).toBeUndefined()
+    expect(body.pumpType).toBeUndefined()
+  })
+})
+
+describe('P0-1 confirmedFields — la vérité métier ne vient que des champs confirmés', () => {
+  it('deriveConfirmedFields list UNIQUEMENT les champs présents dans le body', () => {
+    const confirmed = deriveConfirmedFields({
+      name: 'Ma piscine',
+      volume: 40,
+      unit: 'm3',
+      waterBodyType: 'pool',
+      treatmentType: 'salt',
+    })
+    expect(confirmed).toContain('name')
+    expect(confirmed).toContain('volume')
+    expect(confirmed).toContain('treatmentType')
+    // Jamais inventé : filterType / sunExposure / usageLevel absents → non confirmés
+    expect(confirmed).not.toContain('filterType')
+    expect(confirmed).not.toContain('sunExposure')
+    expect(confirmed).not.toContain('usageLevel')
+    expect(confirmed).not.toContain('covered')
+  })
+
+  it('deriveConfirmedFields mappe les alias spa (spaTemperature → spaTempTarget)', () => {
+    const confirmed = deriveConfirmedFields({ spaTemperature: 37, spaUsageFrequency: 'high' })
+    expect(confirmed).toContain('spaTempTarget')
+    expect(confirmed).toContain('spaUsageFreq')
+  })
+
+  it('parseConfirmedFields / isPoolFieldConfirmed distinguent confirmé vs défaut technique', () => {
+    const stored = { confirmedFields: JSON.stringify(['name', 'volume', 'treatmentType']) }
+    expect(parseConfirmedFields(stored)).toEqual(['name', 'volume', 'treatmentType'])
+    expect(isPoolFieldConfirmed(stored, 'treatmentType')).toBe(true)
+    // filterType a un défaut DB 'sand' mais n'est PAS confirmé → faux
+    expect(isPoolFieldConfirmed(stored, 'filterType')).toBe(false)
+
+    // NULL / invalide → aucun champ confirmé
+    expect(parseConfirmedFields({ confirmedFields: null })).toEqual([])
+    expect(parseConfirmedFields({ confirmedFields: 'not-json' })).toEqual([])
+  })
+})
+
+describe('validateProfileBody — validation serveur (jamais confiance au client)', () => {
+  it('rejette volume <= 0, NaN, non numérique', () => {
+    expect(validateProfileBody({ name: 'Piscine', volume: 0 }).some((e) => e.field === 'volume')).toBe(true)
+    expect(validateProfileBody({ name: 'Piscine', volume: -5 }).some((e) => e.field === 'volume')).toBe(true)
+    expect(validateProfileBody({ name: 'Piscine', volume: 'abc' }).some((e) => e.field === 'volume')).toBe(true)
+    expect(validateProfileBody({ name: 'Piscine', volume: NaN }).some((e) => e.field === 'volume')).toBe(true)
+  })
+
+  it('rejette nom vide', () => {
+    expect(validateProfileBody({ name: '', volume: 40 }).some((e) => e.field === 'name')).toBe(true)
+    expect(validateProfileBody({ name: '   ', volume: 40 }).some((e) => e.field === 'name')).toBe(true)
+  })
+
+  it('rejette unité invalide', () => {
+    expect(validateProfileBody({ name: 'Piscine', volume: 40, unit: 'litres' }).some((e) => e.field === 'unit')).toBe(true)
+  })
+
+  it('rejette valeurs enum hors whitelist', () => {
+    const errs = validateProfileBody({ name: 'Piscine', volume: 40, treatmentType: 'laser' })
+    expect(errs.some((e) => e.field === 'treatmentType')).toBe(true)
+  })
+
+  it('rejette température spa hors limites métier (28-40°C)', () => {
+    expect(validateProfileBody({ name: 'Spa', volume: 1.5, waterBodyType: 'spa', spaTemperature: 50 }).some((e) => e.field === 'spaTempTarget')).toBe(true)
+    expect(validateProfileBody({ name: 'Spa', volume: 1.5, waterBodyType: 'spa', spaTemperature: 20 }).some((e) => e.field === 'spaTempTarget')).toBe(true)
+    expect(validateProfileBody({ name: 'Spa', volume: 1.5, waterBodyType: 'spa', spaTemperature: 37 }).some((e) => e.field === 'spaTempTarget')).toBe(false)
+  })
+
+  it('rejette places spa hors limites (2-8)', () => {
+    expect(validateProfileBody({ name: 'Spa', volume: 1.5, waterBodyType: 'spa', spaSeats: 12 }).some((e) => e.field === 'spaSeats')).toBe(true)
+    expect(validateProfileBody({ name: 'Spa', volume: 1.5, waterBodyType: 'spa', spaSeats: 4 }).some((e) => e.field === 'spaSeats')).toBe(false)
+  })
+
+  it('POST (non-partiel) exige name + volume', () => {
+    expect(validateProfileBody({}).some((e) => e.field === 'name')).toBe(true)
+    expect(validateProfileBody({}).some((e) => e.field === 'volume')).toBe(true)
   })
 })
 
