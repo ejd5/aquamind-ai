@@ -167,6 +167,7 @@ export async function GET(req: NextRequest) {
           sunExposure: profile.sunExposure,
           covered: profile.covered,
           usageLevel: profile.usageLevel,
+          confirmedFields: profile.confirmedFields,
         }
       : null
 

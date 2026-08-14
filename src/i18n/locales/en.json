@@ -1126,6 +1126,7 @@
     "purchasePendingDesc": "Your purchase was received. AQWELIA is finalizing the sync with the store."
   },
   "onboarding": {
+    "notProvided": "Not provided",
     "welcome": "Welcome to AQWELIA",
     "welcomePrefix": "Welcome to",
     "configurationTime": "Setup in 2 minutes",
@@ -3176,6 +3177,7 @@
     "tag_equilibrage": "Balancing"
   },
   "diagnosticActionPlan": {
+    "volumeMissing": "Pool volume not provided — set it in your pool profile to get a precise dosage.",
     "urgencyCritical": "Urgent",
     "urgencyImportant": "Important",
     "urgencyModerate": "Watch",

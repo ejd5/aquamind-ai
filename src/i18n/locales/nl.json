@@ -1011,6 +1011,7 @@
     "purchasePendingDesc": "Uw aankoop is ontvangen. AQWELIA voltooit de synchronisatie met de winkel."
   },
   "onboarding": {
+    "notProvided": "Niet opgegeven",
     "welcome": "Welkom bij AQWELIA",
     "step1": "Uw zwembad",
     "step2": "Behandeling",
@@ -3059,6 +3060,7 @@
     "tag_equilibrage": "Balancering"
   },
   "diagnosticActionPlan": {
+    "volumeMissing": "Zwembadvolume niet opgegeven — geef het op in uw zwembadprofiel voor een precieze dosering.",
     "urgencyCritical": "Dringend",
     "urgencyImportant": "Belangrijk",
     "urgencyModerate": "In de gaten houden",

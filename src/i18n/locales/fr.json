@@ -1128,6 +1128,7 @@
     "purchasePendingDesc": "Votre achat a été reçu. AQWELIA finalise la synchronisation avec la boutique."
   },
   "onboarding": {
+    "notProvided": "Non renseigné",
     "welcome": "Bienvenue sur AQWELIA",
     "welcomePrefix": "Bienvenue sur",
     "configurationTime": "Configuration en 2 minutes",
@@ -3178,6 +3179,7 @@
     "tag_equilibrage": "Équilibrage"
   },
   "diagnosticActionPlan": {
+    "volumeMissing": "Volume du bassin non renseigné — renseignez-le dans votre profil pour obtenir un dosage précis.",
     "urgencyCritical": "Urgent",
     "urgencyImportant": "Important",
     "urgencyModerate": "À surveiller",

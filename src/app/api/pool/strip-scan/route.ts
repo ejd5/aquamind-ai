@@ -17,6 +17,7 @@ import {
   calculateLsiAssessment,
 } from '@/lib/pool/water-balance'
 import { normalizeImageForAi, SecureImageError } from '@/lib/images/secure-image'
+import { isPoolFieldConfirmed } from '@/lib/pool/onboarding-form'
 
 export const runtime = 'nodejs'
 
@@ -259,6 +260,7 @@ export async function POST(req: NextRequest) {
               manufacturerSaltMin: profile.manufacturerSaltMin ?? null,
               manufacturerSaltMax: profile.manufacturerSaltMax ?? null,
               manufacturerChlorineMax: profile.manufacturerChlorineMax ?? null,
+              volumeConfirmed: isPoolFieldConfirmed(profile, 'volume'),
             } as any,
             locale,
             // Strip scans carry no instrumented provenance: confidence unadjusted.

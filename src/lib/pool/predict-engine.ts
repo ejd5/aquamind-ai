@@ -12,6 +12,7 @@
 
 import type { WeatherData } from './weather-engine'
 import type { VolumeUnit } from './units'
+import { isPoolFieldConfirmed } from './onboarding-form'
 
 export interface WaterTest {
   ph: number
@@ -36,6 +37,8 @@ export interface PoolProfileLike {
   sunExposure: string
   covered: boolean
   usageLevel: string
+  /** Fields the user explicitly confirmed (P0-1). */
+  confirmedFields?: string | null
 }
 
 export type RiskLevel = 'low' | 'medium' | 'high'
@@ -397,7 +400,11 @@ export function predictProblems(
   }
 
   // ─── Bonus : profil exposition forte + usage intensif ──────────────────
-  if (profile && profile.sunExposure === 'high' && profile.usageLevel === 'high' && latest.freeChlorine != null && latest.freeChlorine < 2) {
+  // P0-1: only a USER-CONFIRMED sunExposure/usageLevel may drive this
+  // recommendation — a technical DB default must not imply "high demand".
+  const sunConfirmed = profile && isPoolFieldConfirmed(profile, 'sunExposure')
+  const usageConfirmed = profile && isPoolFieldConfirmed(profile, 'usageLevel')
+  if (profile && sunConfirmed && usageConfirmed && profile.sunExposure === 'high' && profile.usageLevel === 'high' && latest.freeChlorine != null && latest.freeChlorine < 2) {
     predictions.push({
       id: 'high_usage_chlorine_demand',
       category: 'chlorine_depletion',

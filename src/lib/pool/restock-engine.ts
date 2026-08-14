@@ -64,6 +64,12 @@ export interface RestockItem {
   urgency: RestockUrgency
   /** Optional Care deeplink (UI fills the host). */
   carePath: string
+  /**
+   * P0-2: true when the pool volume is NOT user-confirmed. Consumption-based
+   * estimates are then suppressed (0 / never runs out / no order qty) — an old
+   * technical volume must never silently drive a precise restock quantity.
+   */
+  volumeUnconfirmed?: boolean
 }
 
 export interface RestockAssessment {
@@ -177,6 +183,10 @@ export function calculateRestockNeeds(
 
   // Normalize pool volume to m³ (1 gal ≈ 0.003785 m³).
   const volumeM3 = pool.unit === 'gal' ? pool.volume * 0.003785 : pool.volume
+  // P0-2: only a USER-CONFIRMED volume may drive precise restock estimates.
+  // An old technical value must never silently produce a precise order qty.
+  const volumeConfirmed = isPoolFieldConfirmed(pool, 'volume')
+  const usableVolume = volumeConfirmed && Number.isFinite(volumeM3) && volumeM3 > 0 ? volumeM3 : 0
   // Salt-only adjustment: if salt pool, ignore salt consumption unless treatmentType is salt.
   // P0-1: only trust the treatment as a salt pool when the user confirmed it —
   // a technical DB default (treatmentType='chlorine') must not imply "not salt".
@@ -199,7 +209,7 @@ export function calculateRestockNeeds(
         : 1
 
     const weeklyConsumption =
-      baseRate * volumeM3 * multiplier * saltFactor * tabletConversion
+      baseRate * usableVolume * multiplier * saltFactor * tabletConversion
 
     // Days remaining = current qty / weekly consumption × 7
     const daysRemaining =
@@ -219,9 +229,10 @@ export function calculateRestockNeeds(
       weeklyConsumption:
         Math.round(weeklyConsumption * 100) / 100,
       daysRemaining,
-      recommendedOrderQty: recommendedOrderQty(weeklyConsumption),
+      recommendedOrderQty: volumeConfirmed ? recommendedOrderQty(weeklyConsumption) : 0,
       urgency,
       carePath: carePath(p.category),
+      volumeUnconfirmed: !volumeConfirmed,
     }
   })
 

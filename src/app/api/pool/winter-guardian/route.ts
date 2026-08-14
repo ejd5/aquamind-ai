@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { getWinterStatus, refineSpringBudget } from '@/lib/pool/winter-guardian'
+import { isPoolFieldConfirmed } from '@/lib/pool/onboarding-form'
 import type { WeatherData } from '@/lib/pool/weather-engine'
 
 export const runtime = 'nodejs'
@@ -159,8 +160,9 @@ export async function GET(req: Request) {
 
   const status = getWinterStatus(profileLite, weather, lastTestLite)
 
-  // Refine the spring budget with the actual pool volume
-  if (profile?.volume) {
+  // Refine the spring budget with the actual pool volume (P0-2: only a
+  // user-confirmed volume is used — an old technical value is ignored).
+  if (profile && isPoolFieldConfirmed(profile, 'volume') && profile.volume) {
     status.springBudgetEstimate = refineSpringBudget(profile.volume)
   }
 

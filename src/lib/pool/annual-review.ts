@@ -15,6 +15,8 @@
 //   - GET /api/pool/annual-review  (server route, persists nothing)
 //   - <AnnualReviewWidget />       (dashboard card)
 
+import { isPoolFieldConfirmed } from './onboarding-form'
+
 export interface AnnualReviewWaterTest {
   createdAt: Date | string
   status?: string | null
@@ -52,6 +54,8 @@ export interface AnnualReviewProfile {
   volume?: number | null
   treatmentType?: string | null
   waterBodyType?: string | null
+  /** Fields the user explicitly confirmed (P0-1). */
+  confirmedFields?: string | null
 }
 
 export interface AnnualReview {
@@ -174,7 +178,9 @@ export function generateAnnualReview(
     recommendations.push('annualReview.recos.manyDiagnostics')
     recommendationsFr.push('Plusieurs diagnostics photo : surveillez les algues dès le printemps.')
   }
-  if (profile?.treatmentType === 'chlorine' && incidents > 2) {
+  // P0-1: only a USER-CONFIRMED treatmentType may drive this recommendation —
+  // an old technical default (treatmentType='chlorine') must not imply "chlorine pool".
+  if (isPoolFieldConfirmed(profile ?? {}, 'treatmentType') && profile?.treatmentType === 'chlorine' && incidents > 2) {
     recommendations.push('annualReview.recos.considerSalt')
     recommendationsFr.push('Plusieurs incidents avec chlore : l\'électrolyse au sel pourrait simplifier l\'entretien.')
   }

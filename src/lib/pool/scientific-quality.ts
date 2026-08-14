@@ -49,6 +49,12 @@ export interface ScientificProfileInput {
   treatmentType?: string | null
   saltSystem?: boolean
   waterBodyType?: string | null
+  /**
+   * P0-2: false when the user has NOT confirmed `volume` (a technical DB value
+   * must not be treated as a real, dosage-eligible pool volume). Undefined
+   * keeps the legacy behaviour for existing callers.
+   */
+  volumeConfirmed?: boolean
 }
 
 export interface ScientificQualityAssessment {
@@ -171,7 +177,10 @@ export function assessScientificQuality(
   if (weights.cyanuricAcid && test.cyanuricAcid == null) limitations.add('missing_cyanuric_acid')
   if (invalidFields.length > 0) limitations.add('invalid_measurement')
 
-  const validVolume = Number.isFinite(profile.volume) && profile.volume > 0
+  const validVolume =
+    profile.volumeConfirmed !== false &&
+    Number.isFinite(profile.volume) &&
+    profile.volume > 0
   if (!validVolume) limitations.add('invalid_pool_volume')
 
   const validFree = isScientificallyValidMeasurement('freeChlorine', test.freeChlorine)

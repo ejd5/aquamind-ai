@@ -89,6 +89,7 @@ export async function GET(req: Request) {
         volume: profile.volume,
         treatmentType: profile.treatmentType,
         waterBodyType: profile.waterBodyType,
+        confirmedFields: profile.confirmedFields,
       }
     : null
 

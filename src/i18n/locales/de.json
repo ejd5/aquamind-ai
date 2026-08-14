@@ -1011,6 +1011,7 @@
     "purchasePendingDesc": "Ihr Kauf wurde erhalten. AQWELIA schließt die Synchronisierung mit dem Store ab."
   },
   "onboarding": {
+    "notProvided": "Nicht angegeben",
     "welcome": "Willkommen bei AQWELIA",
     "step1": "Ihr Pool",
     "step2": "Behandlung",
@@ -3059,6 +3060,7 @@
     "tag_equilibrage": "Ausgleich"
   },
   "diagnosticActionPlan": {
+    "volumeMissing": "Bassenvolumen nicht angegeben — geben Sie es in Ihrem Pool-Profil an, um eine präzise Dosis zu erhalten.",
     "urgencyCritical": "Dringend",
     "urgencyImportant": "Wichtig",
     "urgencyModerate": "Beobachten",

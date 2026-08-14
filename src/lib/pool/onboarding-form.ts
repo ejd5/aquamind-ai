@@ -106,6 +106,51 @@ export function isPoolFieldConfirmed(
   return parseConfirmedFields(profile).includes(field)
 }
 
+/** Editor (short) names → storage/API aliases accepted by PATCH /api/pool/profile. */
+const PATCH_FIELD_ALIASES: Record<string, string> = {
+  spaTempTarget: 'spaTemperature',
+  spaUsageFreq: 'spaUsageFrequency',
+}
+
+/**
+ * Build a PATCH body for /api/pool/profile from ONLY the fields the user
+ * actually touched in the editor session (`dirty`). Untouched fields — even
+ * if the stored row holds an old technical DB default — are NEVER forwarded,
+ * so the server never records them as confirmed. Optional text fields are
+ * sent as '' (the server stores null) when the user explicitly edits them.
+ */
+export function buildPoolProfilePatchBody(
+  profile: Record<string, unknown>,
+  dirty: Iterable<string>,
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {}
+  for (const key of dirty) {
+    const storageKey = PATCH_FIELD_ALIASES[key] ?? key
+    const value = profile[key]
+    if (storageKey === 'pumpType' || storageKey === 'region' || storageKey === 'spaBrand') {
+      body[storageKey] = (value as string) || ''
+      continue
+    }
+    if (value !== undefined) body[storageKey] = value
+  }
+  return body
+}
+
+/**
+ * The pool volume that may drive a PRECISE dosage or recommendation.
+ * Returns null when the user has not explicitly confirmed `volume` — an old
+ * technical value (e.g. volume=40 from a legacy flow) must never silently
+ * produce a precise quantity.
+ */
+export function confirmedPoolVolume(profile: {
+  volume?: number | null
+  confirmedFields?: string | null
+}): number | null {
+  if (!isPoolFieldConfirmed(profile, 'volume')) return null
+  const v = Number(profile.volume)
+  return Number.isFinite(v) && v > 0 ? v : null
+}
+
 export interface OnboardingForm {
   name: string
   waterBodyType: WaterBodyType

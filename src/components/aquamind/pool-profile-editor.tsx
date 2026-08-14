@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { api } from '@/lib/api-client'
+import { buildPoolProfilePatchBody, parseConfirmedFields } from '@/lib/pool/onboarding-form'
 import { SPA_SPECIFICS, SPA_BRANDS } from '@/lib/pool/spa-data'
 
 interface PoolProfileData {
@@ -82,6 +83,12 @@ export function PoolProfileEditorDialog({
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [profile, setProfile] = useState<PoolProfileData | null>(null)
+  // P0-1 (Round 3): the editor must NEVER turn old technical DB defaults into
+  // confirmed user choices. `confirmed` = fields the user explicitly validated
+  // in the past; `dirty` = fields actually touched in THIS session. Only dirty
+  // fields are PATCHed, so untouched/unconfirmed values stay unconfirmed.
+  const [confirmed, setConfirmed] = useState<ReadonlySet<string>>(new Set())
+  const [dirty, setDirty] = useState<ReadonlySet<string>>(new Set())
   // spa entitlement — the editor must not offer spa/both to users without it.
   const [spaAllowed, setSpaAllowed] = useState(false)
 
@@ -145,6 +152,8 @@ export function PoolProfileEditorDialog({
         ).catch(() => null),
       ])
       setProfile(profileData.profile)
+      setConfirmed(new Set(parseConfirmedFields(profileData.profile ?? {})))
+      setDirty(new Set())
       setSpaAllowed(!!subData?.access?.effectiveLimits?.spaSupport)
     } catch (e) {
       toast({
@@ -164,38 +173,28 @@ export function PoolProfileEditorDialog({
 
   const update = <K extends keyof PoolProfileData>(key: K, value: PoolProfileData[K]) => {
     setProfile((p) => (p ? { ...p, [key]: value } : p))
+    setDirty((d) => new Set(d).add(key))
   }
+
+  // A field only counts as "already validated" when the user confirmed it.
+  const isConfirmed = useCallback(
+    (field: string) => confirmed.has(field),
+    [confirmed],
+  )
 
   const handleSave = async () => {
     if (!profile) return
+    // P0-1 (Round 3): PATCH ONLY the fields the user actually touched in this
+    // session. An untouched unconfirmed technical default must never become a
+    // confirmed user choice just because the user clicked Enregistrer.
+    const body = buildPoolProfilePatchBody(profile as unknown as Record<string, unknown>, dirty)
+    if (Object.keys(body).length === 0) {
+      onOpenChange(false)
+      return
+    }
     setSaving(true)
     try {
-      const isSpa = profile.waterBodyType === 'spa' || profile.waterBodyType === 'both'
-      await api.patch(`/api/pool/profile?id=${encodeURIComponent(profile.id)}`, {
-        name: profile.name,
-        volume: Number(profile.volume),
-        unit: profile.unit,
-        waterBodyType: profile.waterBodyType,
-        shape: profile.shape,
-        surfaceType: profile.surfaceType,
-        treatmentType: profile.treatmentType,
-        saltSystem: profile.treatmentType === 'salt',
-        filterType: profile.filterType,
-        pumpType: profile.pumpType || '',
-        region: profile.region || '',
-        sunExposure: profile.sunExposure,
-        usageLevel: profile.usageLevel,
-        covered: profile.covered,
-        // spa fields (sent only for spa/both)
-        ...(isSpa
-          ? {
-              spaSeats: profile.spaSeats ?? SPA_SPECIFICS.seatsRange.min,
-              spaTemperature: profile.spaTempTarget ?? SPA_SPECIFICS.temperatureRange.ideal,
-              spaUsageFrequency: profile.spaUsageFreq || 'medium',
-              spaBrand: profile.spaBrand || '',
-            }
-          : {}),
-      })
+      await api.patch(`/api/pool/profile?id=${encodeURIComponent(profile.id)}`, body)
       toast({ title: tp('poolUpdated') })
       onOpenChange(false)
       onSaved?.()
@@ -253,7 +252,7 @@ export function PoolProfileEditorDialog({
               <Label>{t('poolType')}</Label>
               <div className="grid grid-cols-3 gap-2">
                 {WATER_BODY_OPTIONS.map((opt) => {
-                  const active = profile.waterBodyType === opt.value
+                  const active = isConfirmed('waterBodyType') && profile.waterBodyType === opt.value
                   return (
                     <button
                       key={opt.value}
@@ -273,6 +272,9 @@ export function PoolProfileEditorDialog({
                   )
                 })}
               </div>
+              {!isConfirmed('waterBodyType') && (
+                <p className="mt-1 text-[11px] text-muted-foreground">{t('notProvided')}</p>
+              )}
               {!spaAllowed && (profile.waterBodyType === 'spa' || profile.waterBodyType === 'both') && (
                 <div className="mt-1 flex items-start gap-2 rounded-lg border border-gold/30 bg-gold/5 p-2.5 text-[11px] text-gold-foreground">
                   <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold" />
@@ -294,6 +296,7 @@ export function PoolProfileEditorDialog({
               <Input
                 id="edit-pool-name"
                 value={profile.name}
+                placeholder={isConfirmed('name') ? undefined : t('notProvided')}
                 onChange={(e) => update('name', e.target.value)}
               />
             </div>
@@ -306,15 +309,19 @@ export function PoolProfileEditorDialog({
                   type="number"
                   min="0.1"
                   step={isSpa ? '0.1' : '1'}
-                  value={profile.volume}
+                  value={isConfirmed('volume') ? profile.volume : ''}
+                  placeholder={isConfirmed('volume') ? undefined : t('notProvided')}
                   onChange={(e) => update('volume', Number(e.target.value))}
                 />
               </div>
               <div className="space-y-1.5">
                 <Label>{t('unit')}</Label>
-                <Select value={profile.unit} onValueChange={(v) => update('unit', v)}>
+                <Select
+                  value={isConfirmed('unit') ? profile.unit : undefined}
+                  onValueChange={(v) => update('unit', v)}
+                >
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue placeholder={t('notProvided')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="m3">{t('unitM3')}</SelectItem>
@@ -335,7 +342,7 @@ export function PoolProfileEditorDialog({
                         type="button"
                         onClick={() => update('shape', s.value)}
                         className={`rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
-                          profile.shape === s.value
+                          isConfirmed('shape') && profile.shape === s.value
                             ? 'border-gold/60 bg-gold/10 text-gold shadow-sm'
                             : 'border-border bg-background hover:border-gold/30'
                         }`}
@@ -344,6 +351,9 @@ export function PoolProfileEditorDialog({
                       </button>
                     ))}
                   </div>
+                  {!isConfirmed('shape') && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">{t('notProvided')}</p>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -355,7 +365,7 @@ export function PoolProfileEditorDialog({
                         type="button"
                         onClick={() => update('surfaceType', s.value)}
                         className={`rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
-                          profile.surfaceType === s.value
+                          isConfirmed('surfaceType') && profile.surfaceType === s.value
                             ? 'border-gold/60 bg-gold/10 text-gold shadow-sm'
                             : 'border-border bg-background hover:border-gold/30'
                         }`}
@@ -364,6 +374,9 @@ export function PoolProfileEditorDialog({
                       </button>
                     ))}
                   </div>
+                  {!isConfirmed('surfaceType') && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">{t('notProvided')}</p>
+                  )}
                 </div>
               </>
             )}
@@ -380,7 +393,7 @@ export function PoolProfileEditorDialog({
                       update('saltSystem', tr.value === 'salt')
                     }}
                     className={`rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
-                      profile.treatmentType === tr.value
+                      isConfirmed('treatmentType') && profile.treatmentType === tr.value
                         ? 'border-gold/60 bg-gold/10 text-gold shadow-sm'
                         : 'border-border bg-background hover:border-gold/30'
                     }`}
@@ -389,6 +402,9 @@ export function PoolProfileEditorDialog({
                   </button>
                 ))}
               </div>
+              {!isConfirmed('treatmentType') && (
+                <p className="mt-1 text-[11px] text-muted-foreground">{t('notProvided')}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -400,7 +416,7 @@ export function PoolProfileEditorDialog({
                     type="button"
                     onClick={() => update('filterType', f.value)}
                     className={`rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
-                      profile.filterType === f.value
+                      isConfirmed('filterType') && profile.filterType === f.value
                         ? 'border-gold/60 bg-gold/10 text-gold shadow-sm'
                         : 'border-border bg-background hover:border-gold/30'
                     }`}
@@ -409,6 +425,9 @@ export function PoolProfileEditorDialog({
                   </button>
                 ))}
               </div>
+              {!isConfirmed('filterType') && (
+                <p className="mt-1 text-[11px] text-muted-foreground">{t('notProvided')}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -416,8 +435,8 @@ export function PoolProfileEditorDialog({
               <Input
                 id="edit-pool-pump"
                 value={profile.pumpType || ''}
+                placeholder={isConfirmed('pumpType') ? t('pumpPlaceholder') : t('notProvided')}
                 onChange={(e) => update('pumpType', e.target.value)}
-                placeholder={t('pumpPlaceholder')}
               />
             </div>
 
@@ -426,8 +445,8 @@ export function PoolProfileEditorDialog({
               <Input
                 id="edit-pool-region"
                 value={profile.region || ''}
+                placeholder={isConfirmed('region') ? t('cityPlaceholder') : t('notProvided')}
                 onChange={(e) => update('region', e.target.value)}
-                placeholder={t('cityPlaceholder')}
               />
             </div>
 
@@ -440,7 +459,7 @@ export function PoolProfileEditorDialog({
                     type="button"
                     onClick={() => update('sunExposure', s.value)}
                     className={`rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
-                      profile.sunExposure === s.value
+                      isConfirmed('sunExposure') && profile.sunExposure === s.value
                         ? 'border-gold/60 bg-gold/10 text-gold shadow-sm'
                         : 'border-border bg-background hover:border-gold/30'
                     }`}
@@ -449,6 +468,9 @@ export function PoolProfileEditorDialog({
                   </button>
                 ))}
               </div>
+              {!isConfirmed('sunExposure') && (
+                <p className="mt-1 text-[11px] text-muted-foreground">{t('notProvided')}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -460,7 +482,7 @@ export function PoolProfileEditorDialog({
                     type="button"
                     onClick={() => update('usageLevel', u.value)}
                     className={`rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
-                      profile.usageLevel === u.value
+                      isConfirmed('usageLevel') && profile.usageLevel === u.value
                         ? 'border-gold/60 bg-gold/10 text-gold shadow-sm'
                         : 'border-border bg-background hover:border-gold/30'
                     }`}
@@ -469,6 +491,9 @@ export function PoolProfileEditorDialog({
                   </button>
                 ))}
               </div>
+              {!isConfirmed('usageLevel') && (
+                <p className="mt-1 text-[11px] text-muted-foreground">{t('notProvided')}</p>
+              )}
             </div>
 
             <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-background p-3">
@@ -483,6 +508,9 @@ export function PoolProfileEditorDialog({
                 <p className="text-[11px] text-muted-foreground">{t('coveredDesc')}</p>
               </div>
             </label>
+            {!isConfirmed('covered') && (
+              <p className="-mt-2 text-[11px] text-muted-foreground">{t('notProvided')}</p>
+            )}
 
             {isSpa && (
               <div className="space-y-3 rounded-xl border border-gold/20 bg-gold/[0.04] p-3">

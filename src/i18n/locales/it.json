@@ -1009,6 +1009,7 @@
     "purchasePendingDesc": "Abbiamo ricevuto il tuo acquisto. AQWELIA sta completando la sincronizzazione con il negozio."
   },
   "onboarding": {
+    "notProvided": "Non indicato",
     "welcome": "Benvenuto in AQWELIA",
     "step1": "La tua piscina",
     "step2": "Trattamento",
@@ -3057,6 +3058,7 @@
     "tag_equilibrage": "Equilibratura"
   },
   "diagnosticActionPlan": {
+    "volumeMissing": "Volume della piscina non indicato — indicarlo nel profilo per ottenere un dosaggio preciso.",
     "urgencyCritical": "Urgente",
     "urgencyImportant": "Importante",
     "urgencyModerate": "Da monitorare",

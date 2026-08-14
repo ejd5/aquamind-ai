@@ -293,6 +293,47 @@ describe('PATCH /api/pool/profile', () => {
     expect(confirmed).toContain('treatmentType') // preserved
   })
 
+  it('P0-1 Round 3: PATCH du SEUL name ne confirme pas treatmentType/filterType/sunExposure', async () => {
+    // Legacy profile: only name+volume confirmed; technical defaults stored.
+    dbMock.poolProfile.findFirst.mockResolvedValue({
+      ...baseProfile,
+      treatmentType: 'chlorine',
+      filterType: 'sand',
+      sunExposure: 'medium',
+      confirmedFields: JSON.stringify(['name', 'volume']),
+    })
+    const res = await PATCH(makeReq('PATCH', 'http://localhost/api/pool/profile?id=pool-1', {
+      name: 'Ma piscine sud',
+    }))
+    expect(res.status).toBe(200)
+    const data = dbMock.poolProfile.update.mock.calls[0][0].data
+    const confirmed = JSON.parse(data.confirmedFields)
+    expect(confirmed).toEqual(['name', 'volume'])
+    expect(confirmed).not.toContain('treatmentType')
+    expect(confirmed).not.toContain('filterType')
+    expect(confirmed).not.toContain('sunExposure')
+    expect(confirmed).not.toContain('usageLevel')
+  })
+
+  it('P0-1 Round 3: un champ non confirmé est confirmé explicitement par un PATCH ciblé', async () => {
+    dbMock.poolProfile.findFirst.mockResolvedValue({
+      ...baseProfile,
+      confirmedFields: JSON.stringify(['name', 'volume']),
+    })
+    const res = await PATCH(makeReq('PATCH', 'http://localhost/api/pool/profile?id=pool-1', {
+      treatmentType: 'salt',
+      saltSystem: true,
+    }))
+    expect(res.status).toBe(200)
+    const data = dbMock.poolProfile.update.mock.calls[0][0].data
+    const confirmed = JSON.parse(data.confirmedFields)
+    expect(confirmed).toContain('treatmentType')
+    expect(confirmed).toContain('saltSystem')
+    // still not the untouched ones
+    expect(confirmed).not.toContain('filterType')
+    expect(confirmed).not.toContain('sunExposure')
+  })
+
   it('updates allowed fields and returns the refreshed profile', async () => {
     const res = await PATCH(makeReq('PATCH', 'http://localhost/api/pool/profile?id=pool-1', {
       name: 'Piscine sud', volume: 55, filterType: 'glass', sunExposure: 'high',
