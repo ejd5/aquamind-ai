@@ -195,7 +195,7 @@ export function MobileAppShell({ initialPresetQuestion, onBackToLanding }: Mobil
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <OfflineBanner />
-      <MobileHeader profile={profile} onBackToLanding={onBackToLanding} />
+      <MobileHeader profile={profile} onBackToLanding={onBackToLanding} onNavigate={handleScreenChange} />
 
       <main className="mobile-scroll flex-1">
         {activeScreen === 'home' && (
@@ -230,7 +230,7 @@ export function MobileAppShell({ initialPresetQuestion, onBackToLanding }: Mobil
         )}
 
         {activeScreen === 'profile' && (
-          <ProfileScreen profile={profile} onBackToLanding={onBackToLanding} />
+          <ProfileScreen profile={profile} onBackToLanding={onBackToLanding} onProfileChanged={fetchProfile} />
         )}
       </main>
 

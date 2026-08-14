@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { PLANS, DEFAULT_PLAN, canAccess, type PlanId } from '@/lib/pool/freemium'
+import { invalidProfileFields } from '@/lib/pool/onboarding-form'
 
 export const runtime = 'nodejs'
 
@@ -76,6 +77,22 @@ export async function POST(req: NextRequest) {
       'common.defaultPoolName',
       'Ma piscine'
     )
+
+    // ── Enum whitelist validation ────────────────────────────────────────
+    // Reject unknown/out-of-range business values instead of silently
+    // persisting them as user truth (defense-in-depth, mirrors schema enums).
+    const invalid = invalidProfileFields(body)
+    if (invalid.length) {
+      const msg = await translate(
+        locale,
+        'pool.invalidField',
+        'Valeur invalide pour le champ {field}'
+      )
+      return NextResponse.json(
+        { error: msg.replace('{field}', invalid.join(', ')), code: 'INVALID_FIELD', fields: invalid },
+        { status: 400 }
+      )
+    }
 
     // ── Plan limit check ────────────────────────────────────────────────
     // Découverte = 1 pool max, Oasis/Wellness = 3 pools max.
@@ -200,6 +217,21 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = await req.json()
+
+    // ── Enum whitelist validation ────────────────────────────────────────
+    const invalid = invalidProfileFields(body)
+    if (invalid.length) {
+      const msg = await translate(
+        locale,
+        'pool.invalidField',
+        'Valeur invalide pour le champ {field}'
+      )
+      return NextResponse.json(
+        { error: msg.replace('{field}', invalid.join(', ')), code: 'INVALID_FIELD', fields: invalid },
+        { status: 400 }
+      )
+    }
+
     const spaTempTarget =
       body.spaTempTarget != null
         ? Number(body.spaTempTarget)

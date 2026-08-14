@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { SPA_SPECIFICS } from '@/lib/pool/spa-data'
+import { buildPoolProfileCreateBody, type OnboardingForm } from '@/lib/pool/onboarding-form'
 import { useTranslations } from 'next-intl'
 
 interface OnboardingProps {
@@ -45,6 +46,9 @@ export function Onboarding({ onDone, addMode, onCancel }: OnboardingProps) {
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
   const [locating, setLocating] = useState(false)
+  // Steps the user actually confirmed (walked through and validated).
+  // Step 1 is always considered confirmed by the wizard itself.
+  const [confirmedSteps, setConfirmedSteps] = useState<Set<number>>(new Set([1]))
   const [form, setForm] = useState({
     name: t('defaultPoolName'),
     waterBodyType: 'pool' as WaterBodyType,
@@ -214,6 +218,8 @@ export function Onboarding({ onDone, addMode, onCancel }: OnboardingProps) {
         return
       }
     }
+    // Record that the user genuinely validated this step.
+    setConfirmedSteps((prev) => new Set(prev).add(step))
     setStep((s) => Math.min(4, s + 1))
   }
 
@@ -224,11 +230,11 @@ export function Onboarding({ onDone, addMode, onCancel }: OnboardingProps) {
   async function save() {
     setSaving(true)
     try {
-      const body = {
-        ...form,
-        volume: Number(form.volume),
-        saltSystem: form.treatmentType === 'salt' || form.saltSystem,
-      }
+      // Confirm step 4 (final) then build the payload from ONLY the steps
+      // the user actually walked through. Fields of unvisited steps are
+      // omitted so server-side defaults stay the source of truth.
+      const finalSteps = new Set(confirmedSteps).add(step)
+      const body = buildPoolProfileCreateBody(form, finalSteps)
       const res = await fetch('/api/pool/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

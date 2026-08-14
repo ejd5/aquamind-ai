@@ -1388,7 +1388,9 @@
     "manageMultiDesc": "Select the provider to manage in its portal.",
     "manageStripe": "Manage my Stripe subscription",
     "manageApple": "Manage my Apple subscription",
-    "manageGoogle": "Manage my Google subscription"
+    "manageGoogle": "Manage my Google subscription",
+    "poolTitle": "My pool",
+    "poolEditBtn": "Edit"
   },
   "auth": {
     "backHome": "Back to home",
@@ -3414,7 +3416,8 @@
       "profileVersionLine": "AQWELIA Pro · v1.0.0-mobile",
       "profileArqweliaAria": "ARQWELIA — Your future pool",
       "profileArqweliaDesc": "Imagine your future pool with AI",
-      "profileNewBadge": "New"
+      "profileNewBadge": "New",
+      "profileEditPoolAria": "Edit my pool"
     }
   },
   "metadata": {
@@ -4694,7 +4697,11 @@
     "switchPool": "Switch pool",
     "activePool": "Active pool",
     "addModeTitle": "Add a pool",
-    "addModeSubtitle": "Enter the details of your new pool. It will be added to your list."
+    "addModeSubtitle": "Enter the details of your new pool. It will be added to your list.",
+    "poolUpdated": "Pool updated",
+    "editPoolTitle": "My pool",
+    "editPoolDesc": "View and edit your pool details.",
+    "invalidField": "Invalid value for field {field}"
   },
   "pdfReport": {
     "title": "AQWELIA Water Report",

@@ -35,6 +35,7 @@ import { ModuleReminders } from './module-reminders'
 import { ModulePaywall } from './module-paywall'
 import { ModuleBrain } from '@/components/brain/module-brain'
 import { EmergencyMode } from './emergency-mode'
+import { PoolProfileEditorDialog } from './pool-profile-editor'
 import {
   Sheet,
   SheetContent,
@@ -104,6 +105,7 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
   const [moreOpen, setMoreOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [addingPool, setAddingPool] = useState(false)
+  const [editingPoolId, setEditingPoolId] = useState<string | null>(null)
 
   const NAV: NavItem[] = [
     { id: 'today', label: t('today'), short: t('home'), icon: Home, primary: true },
@@ -293,9 +295,22 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
         onSwitchPool={handleSwitchPool}
         onAddPool={handleAddPool}
         onDeletePool={handleDeletePool}
+        onEditPool={() => setEditingPoolId(profile?.id ?? null)}
         activeTab={activeTab}
         onNavigate={navigate}
         onBackToLanding={onBackToLanding}
+      />
+
+      <PoolProfileEditorDialog
+        open={editingPoolId !== null}
+        poolId={editingPoolId}
+        onOpenChange={(open) => {
+          if (!open) setEditingPoolId(null)
+        }}
+        onSaved={() => {
+          setEditingPoolId(null)
+          fetchProfile()
+        }}
       />
 
       <div className="mx-auto flex w-full max-w-7xl flex-1 gap-0 px-0 sm:px-6">

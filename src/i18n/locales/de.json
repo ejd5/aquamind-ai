@@ -1271,7 +1271,9 @@
     "manageMultiDesc": "Wählen Sie den Anbieter im entsprechenden Portal.",
     "manageStripe": "Mein Stripe-Abonnement verwalten",
     "manageApple": "Mein Apple-Abonnement verwalten",
-    "manageGoogle": "Mein Google-Abonnement verwalten"
+    "manageGoogle": "Mein Google-Abonnement verwalten",
+    "poolTitle": "Mein Pool",
+    "poolEditBtn": "Bearbeiten"
   },
   "auth": {
     "backHome": "Zurück zur Startseite",
@@ -3294,7 +3296,8 @@
       "profilePrivacyData": "Datenschutz & Daten",
       "profileHelpSupport": "Hilfe & Support",
       "profileFaqContact": "FAQ + Kontakt",
-      "profileVersionLine": "AQWELIA Pro · v1.0.0-mobile"
+      "profileVersionLine": "AQWELIA Pro · v1.0.0-mobile",
+      "profileEditPoolAria": "Meinen Pool bearbeiten"
     }
   },
   "metadata": {
@@ -4321,7 +4324,11 @@
     "switchPool": "Pool wechseln",
     "activePool": "Aktiver Pool",
     "addModeTitle": "Pool hinzufügen",
-    "addModeSubtitle": "Geben Sie die Daten Ihres neuen Pools ein. Er wird zu Ihrer Liste hinzugefügt."
+    "addModeSubtitle": "Geben Sie die Daten Ihres neuen Pools ein. Er wird zu Ihrer Liste hinzugefügt.",
+    "poolUpdated": "Pool aktualisiert",
+    "editPoolTitle": "Mein Pool",
+    "editPoolDesc": "Pool-Details anzeigen und bearbeiten.",
+    "invalidField": "Ungültiger Wert für Feld {field}"
   },
   "pdfReport": {
     "title": "AQWELIA Wasserbericht",

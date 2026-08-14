@@ -1269,7 +1269,9 @@
     "manageMultiDesc": "Seleziona il fornitore da gestire nel relativo portale.",
     "manageStripe": "Gestisci il mio abbonamento Stripe",
     "manageApple": "Gestisci il mio abbonamento Apple",
-    "manageGoogle": "Gestisci il mio abbonamento Google"
+    "manageGoogle": "Gestisci il mio abbonamento Google",
+    "poolTitle": "La mia piscina",
+    "poolEditBtn": "Modifica"
   },
   "auth": {
     "backHome": "Torna alla home",
@@ -3292,7 +3294,8 @@
       "profilePrivacyData": "Riservatezza e dati",
       "profileHelpSupport": "Aiuto e supporto",
       "profileFaqContact": "FAQ + contatto",
-      "profileVersionLine": "AQWELIA Pro · v1.0.0-mobile"
+      "profileVersionLine": "AQWELIA Pro · v1.0.0-mobile",
+      "profileEditPoolAria": "Modifica la mia piscina"
     }
   },
   "metadata": {
@@ -4319,7 +4322,11 @@
     "switchPool": "Cambia piscina",
     "activePool": "Piscina attiva",
     "addModeTitle": "Aggiungi una piscina",
-    "addModeSubtitle": "Inserisci i dati della tua nuova piscina. Verrà aggiunta alla tua lista."
+    "addModeSubtitle": "Inserisci i dati della tua nuova piscina. Verrà aggiunta alla tua lista.",
+    "poolUpdated": "Piscina aggiornata",
+    "editPoolTitle": "La mia piscina",
+    "editPoolDesc": "Consulta e modifica i dettagli della tua piscina.",
+    "invalidField": "Valore non valido per il campo {field}"
   },
   "pdfReport": {
     "title": "Rapporto acqua AQWELIA",
