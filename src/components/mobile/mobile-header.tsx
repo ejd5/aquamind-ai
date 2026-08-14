@@ -6,6 +6,7 @@ import { signOutWithBillingCleanup } from '@/lib/billing/sign-out'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
+import { poolVolumeLabel } from '@/lib/pool/onboarding-form'
 import type { PoolProfileLite, MobileScreen } from './types'
 
 interface MobileHeaderProps {
@@ -79,15 +80,16 @@ export function MobileHeader({ profile, onBackToLanding, onNavigate }: MobileHea
               type="button"
               onClick={() => onNavigate?.('profile')}
               className="glass-pill flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium text-foreground/90 active:border-gold/40"
-              title={`${profile.name} — ${profile.volume} ${profile.unit === 'm3' ? 'm³' : 'gal'}`}
-              aria-label={`${profile.name} — ${profile.volume} ${profile.unit === 'm3' ? 'm³' : 'gal'}`}
+              title={poolVolumeLabel(profile) ? `${profile.name} — ${poolVolumeLabel(profile)}` : profile.name}
+              aria-label={poolVolumeLabel(profile) ? `${profile.name} — ${poolVolumeLabel(profile)}` : profile.name}
             >
               <Droplets className="h-3.5 w-3.5 text-primary" aria-hidden />
               <span className="max-w-[80px] truncate">{profile.name}</span>
-              <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold text-gold">
-                {profile.volume}
-                {profile.unit === 'm3' ? ' m³' : ' gal'}
-              </span>
+              {poolVolumeLabel(profile) && (
+                <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold text-gold">
+                  {poolVolumeLabel(profile)}
+                </span>
+              )}
             </button>
           ) : null}
 
