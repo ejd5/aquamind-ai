@@ -20,7 +20,7 @@ import {
 import { ModulePaywall } from '../../aquamind/module-paywall'
 import { PoolProfileEditorDialog } from '../../aquamind/pool-profile-editor'
 import { isArqweliaLot1Enabled } from '@/lib/features'
-import { poolVolumeLabel } from '@/lib/pool/onboarding-form'
+import { poolVolumeLabel, isPoolFieldConfirmed } from '@/lib/pool/onboarding-form'
 import type { PoolProfileLite } from '../../aquamind/app-shell'
 
 interface ProfileScreenProps {
@@ -74,8 +74,9 @@ export function ProfileScreen({ profile, onBackToLanding, onProfileChanged }: Pr
               {profile
                 ? [
                     poolVolumeLabel(profile),
-                    `${profile.treatmentType}${profile.saltSystem ? ` · ${tScr('profileElectrolysisSalt')}` : ''}`,
-                  ].filter(Boolean).join(' · ')
+                    isPoolFieldConfirmed(profile, 'treatmentType') ? profile.treatmentType : '',
+                    isPoolFieldConfirmed(profile, 'saltSystem') && profile.saltSystem ? tScr('profileElectrolysisSalt') : '',
+                  ].filter(Boolean).join(' · ') || tScr('profileConfigureToStart')
                 : tScr('profileConfigureToStart')}
             </p>
           </div>

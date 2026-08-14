@@ -13,6 +13,7 @@ import {
   poolVolumeLabel,
   buildPoolProfilePatchBody,
   deriveConfirmedFields,
+  isPoolFieldConfirmed,
 } from '@/lib/pool/onboarding-form'
 
 const profile = {
@@ -44,6 +45,42 @@ describe('BUG 1 — poolVolumeLabel gate (header / pill)', () => {
       confirmedFields: JSON.stringify(['name', 'volume', 'unit']),
     })
     expect(label).toBe('48 m³')
+  })
+
+  it('P0-1: volume confirmé MAIS unité non confirmée => AUCUN « 48 m³ » (label vide)', () => {
+    const label = poolVolumeLabel({
+      ...profile,
+      confirmedFields: JSON.stringify(['name', 'volume']),
+    })
+    expect(label).toBe('')
+    expect(label).not.toContain('48')
+    expect(label).not.toContain('m³')
+  })
+
+  it('P0-1: volume+unit confirmés => « 48 m³ » affiché', () => {
+    const label = poolVolumeLabel({
+      ...profile,
+      confirmedFields: JSON.stringify(['volume', 'unit']),
+    })
+    expect(label).toBe('48 m³')
+  })
+
+  it('P0-1: volume confirmé en gallons + unité non confirmée => AUCUN « 48 gal »', () => {
+    const label = poolVolumeLabel({
+      ...profile,
+      unit: 'gal',
+      confirmedFields: JSON.stringify(['name', 'volume']),
+    })
+    expect(label).toBe('')
+  })
+
+  it('P0-1: volume+unit confirmés en gallons => « 48 gal » affiché', () => {
+    const label = poolVolumeLabel({
+      ...profile,
+      unit: 'gal',
+      confirmedFields: JSON.stringify(['volume', 'unit']),
+    })
+    expect(label).toBe('48 gal')
   })
 
   it('volume confirmé en gallons => « 48 gal »', () => {
@@ -125,5 +162,73 @@ describe('BUG 2 — region non confirmé jamais PATCHé ni affiché', () => {
     // Both headers must use the gating helper, never the raw volume+unit.
     expect(header).toContain('poolVolumeLabel(profile)')
     expect(mobileHeader).toContain('poolVolumeLabel(profile)')
+  })
+})
+
+describe('P0-2 — résumé mobile ProfileScreen (treatmentType / saltSystem)', () => {
+  const stored = {
+    ...profile,
+    treatmentType: 'salt',
+    saltSystem: true,
+  }
+
+  it('treatmentType DB présent mais non confirmé => n’est pas « affiché » (helper gate)', () => {
+    // The rendering rule: only a confirmed treatmentType is shown.
+    expect(
+      isPoolFieldConfirmed({ ...stored, confirmedFields: JSON.stringify(['name']) }, 'treatmentType'),
+    ).toBe(false)
+    // And a confirmed saltSystem must be the gate for the "électrolyse" label.
+    expect(
+      isPoolFieldConfirmed({ ...stored, confirmedFields: JSON.stringify(['name']) }, 'saltSystem'),
+    ).toBe(false)
+  })
+
+  it('treatmentType confirmé => affiché (gate passe)', () => {
+    expect(
+      isPoolFieldConfirmed(
+        { ...stored, confirmedFields: JSON.stringify(['name', 'treatmentType']) },
+        'treatmentType',
+      ),
+    ).toBe(true)
+  })
+
+  it('saltSystem DB présent mais non confirmé => électrolyse non affichée', () => {
+    expect(
+      isPoolFieldConfirmed({ ...stored, confirmedFields: JSON.stringify(['name']) }, 'saltSystem'),
+    ).toBe(false)
+  })
+
+  it('saltSystem confirmé => comportement normal', () => {
+    expect(
+      isPoolFieldConfirmed(
+        { ...stored, confirmedFields: JSON.stringify(['name', 'saltSystem']) },
+        'saltSystem',
+      ),
+    ).toBe(true)
+  })
+
+  it('contrat UI: profile-screen utilise isPoolFieldConfirmed et ne rend jamais les valeurs brutes', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'src/components/mobile/screens/profile-screen.tsx'),
+      'utf8',
+    )
+    expect(source).toContain("isPoolFieldConfirmed(profile, 'treatmentType')")
+    expect(source).toContain("isPoolFieldConfirmed(profile, 'saltSystem')")
+    // The old bug rendered `profile.treatmentType` directly in the summary.
+    expect(source).not.toContain('profile.treatmentType} ·')
+    // The old bug rendered `profile.saltSystem ?` directly (without confirmation).
+    expect(source).not.toMatch(/`\$\{profile\.saltSystem \?/)
+  })
+
+  it('aucun champ confirmé => le résumé retombe sur un texte neutre (pas d’ancienne valeur technique)', () => {
+    // PoolProfileLite carries confirmedFields; with only name confirmed, both
+    // volume and treatment/salt gates fail → the summary falls back to the
+    // neutral "profileConfigureToStart" copy.
+    const confirmed = ['name']
+    const hasBusinessData =
+      poolVolumeLabel({ ...stored, confirmedFields: JSON.stringify(confirmed) }) !== '' ||
+      isPoolFieldConfirmed({ ...stored, confirmedFields: JSON.stringify(confirmed) }, 'treatmentType') ||
+      isPoolFieldConfirmed({ ...stored, confirmedFields: JSON.stringify(confirmed) }, 'saltSystem')
+    expect(hasBusinessData).toBe(false)
   })
 })
