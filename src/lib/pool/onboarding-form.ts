@@ -166,8 +166,9 @@ export function poolVolumeLabel(profile: {
   if (!isPoolFieldConfirmed(profile, 'unit')) return ''
   const v = Number(profile.volume)
   if (!Number.isFinite(v) || v <= 0) return ''
-  const unit = profile.unit === 'm3' ? ' m³' : profile.unit === 'gal' ? ' gal' : ''
-  return `${v}${unit}`
+  // A confirmed-but-invalid unit must never produce a bare "48" label.
+  if (profile.unit !== 'm3' && profile.unit !== 'gal') return ''
+  return `${v}${profile.unit === 'm3' ? ' m³' : ' gal'}`
 }
 
 export interface OnboardingForm {

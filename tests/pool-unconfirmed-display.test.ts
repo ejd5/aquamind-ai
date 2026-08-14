@@ -65,6 +65,43 @@ describe('BUG 1 — poolVolumeLabel gate (header / pill)', () => {
     expect(label).toBe('48 m³')
   })
 
+  it('P0-1 Round 3: unit confirmée mais invalide (« litres ») => AUCUN « 48 » (label vide)', () => {
+    const label = poolVolumeLabel({
+      ...profile,
+      unit: 'litres',
+      confirmedFields: JSON.stringify(['volume', 'unit']),
+    })
+    expect(label).toBe('')
+    expect(label).not.toContain('48')
+  })
+
+  it('P0-1 Round 3: unit confirmée mais vide ("") => label vide', () => {
+    const label = poolVolumeLabel({
+      ...profile,
+      unit: '',
+      confirmedFields: JSON.stringify(['volume', 'unit']),
+    })
+    expect(label).toBe('')
+  })
+
+  it('P0-1 Round 3: m3 confirmé => « 48 m³ » conservé', () => {
+    const label = poolVolumeLabel({
+      ...profile,
+      unit: 'm3',
+      confirmedFields: JSON.stringify(['volume', 'unit']),
+    })
+    expect(label).toBe('48 m³')
+  })
+
+  it('P0-1 Round 3: gal confirmé => « 48 gal » conservé', () => {
+    const label = poolVolumeLabel({
+      ...profile,
+      unit: 'gal',
+      confirmedFields: JSON.stringify(['volume', 'unit']),
+    })
+    expect(label).toBe('48 gal')
+  })
+
   it('P0-1: volume confirmé en gallons + unité non confirmée => AUCUN « 48 gal »', () => {
     const label = poolVolumeLabel({
       ...profile,
