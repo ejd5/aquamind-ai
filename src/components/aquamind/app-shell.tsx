@@ -81,6 +81,8 @@ export interface PoolProfileLite {
   unit: string
   treatmentType: string
   saltSystem: boolean
+  /** Fields the user explicitly confirmed (P0-1). Null/absent → nothing confirmed. */
+  confirmedFields?: string | null
 }
 
 export interface AppShellProps {

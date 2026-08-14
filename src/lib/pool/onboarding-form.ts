@@ -151,6 +151,26 @@ export function confirmedPoolVolume(profile: {
   return Number.isFinite(v) && v > 0 ? v : null
 }
 
+/**
+ * Display label for a pool's volume (header/pill). Returns an EMPTY string when
+ * `volume` OR `unit` is not user-confirmed or invalid — an old technical value
+ * (e.g. volume=48 from a legacy flow) must never be shown to the user as real,
+ * and the unit is business data too (both must be confirmed).
+ */
+export function poolVolumeLabel(profile: {
+  volume?: number | null
+  unit?: string | null
+  confirmedFields?: string | null
+}): string {
+  if (!isPoolFieldConfirmed(profile, 'volume')) return ''
+  if (!isPoolFieldConfirmed(profile, 'unit')) return ''
+  const v = Number(profile.volume)
+  if (!Number.isFinite(v) || v <= 0) return ''
+  // A confirmed-but-invalid unit must never produce a bare "48" label.
+  if (profile.unit !== 'm3' && profile.unit !== 'gal') return ''
+  return `${v}${profile.unit === 'm3' ? ' m³' : ' gal'}`
+}
+
 export interface OnboardingForm {
   name: string
   waterBodyType: WaterBodyType

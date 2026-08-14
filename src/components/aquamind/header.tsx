@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { getDefaultPoolNameKey, getDefaultAccountNameKey } from '@/lib/pool/default-names'
+import { poolVolumeLabel } from '@/lib/pool/onboarding-form'
 import type { TabId, PoolProfileLite } from './app-shell'
 import { FamilyManager } from './family-manager'
 
@@ -138,10 +139,11 @@ export function Header({
               >
                 <Droplets className="h-3.5 w-3.5 text-primary" />
                 <span className="hidden sm:inline">{displayPoolName(profile.name)}</span>
-                <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold text-gold">
-                  {profile.volume}
-                  {profile.unit === 'm3' ? ' m³' : ' gal'}
-                </span>
+                {poolVolumeLabel(profile) && (
+                  <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold text-gold">
+                    {poolVolumeLabel(profile)}
+                  </span>
+                )}
                 {(hasMultiplePools || canAddPool) && (
                   <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${poolOpen ? 'rotate-180' : ''}`} />
                 )}
@@ -171,9 +173,11 @@ export function Header({
                             >
                               <Droplets className={`h-3.5 w-3.5 ${isActive ? 'text-gold' : 'text-muted-foreground'}`} />
                               <span className="flex-1 truncate">{displayPoolName(p.name)}</span>
-                              <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
-                                {p.volume}{p.unit === 'm3' ? ' m³' : ' gal'}
-                              </span>
+                              {poolVolumeLabel(p) && (
+                                <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
+                                  {poolVolumeLabel(p)}
+                                </span>
+                              )}
                               {isActive && <Check className="h-3.5 w-3.5 text-gold" />}
                             </button>
                             {hasMultiplePools && onDeletePool && (

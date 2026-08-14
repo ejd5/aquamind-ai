@@ -444,7 +444,7 @@ export function PoolProfileEditorDialog({
               <Label htmlFor="edit-pool-region">{t('cityLabel')}</Label>
               <Input
                 id="edit-pool-region"
-                value={profile.region || ''}
+                value={isConfirmed('region') ? profile.region || '' : ''}
                 placeholder={isConfirmed('region') ? t('cityPlaceholder') : t('notProvided')}
                 onChange={(e) => update('region', e.target.value)}
               />
