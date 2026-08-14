@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { clarityLabel, calculateClearWaterIndex } from '@/lib/pool/water-balance'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { generateScientificallyQualifiedActionPlan } from '@/lib/pool/scientific-action-plan'
+import { isPoolFieldConfirmed } from '@/lib/pool/onboarding-form'
 import {
   buildDashboardPlanView,
   buildDashboardSwim,
@@ -84,6 +85,7 @@ export async function GET(req: Request) {
           manufacturerSaltMin: profile.manufacturerSaltMin ?? null,
           manufacturerSaltMax: profile.manufacturerSaltMax ?? null,
           manufacturerChlorineMax: profile.manufacturerChlorineMax ?? null,
+          volumeConfirmed: isPoolFieldConfirmed(profile, 'volume'),
         } as any,
         locale,
         latestTest.measuredAt

@@ -20,6 +20,8 @@ interface HeaderProps {
   onAddPool?: () => void
   /** Called when the user clicks the trash icon next to a pool in the switcher. */
   onDeletePool?: (id: string) => void
+  /** Called when the user clicks the pool pill with a single pool (opens the pool profile editor). */
+  onEditPool?: () => void
   activeTab: TabId
   onNavigate: (tab: TabId) => void
   onBackToLanding?: () => void
@@ -32,6 +34,7 @@ export function Header({
   onSwitchPool,
   onAddPool,
   onDeletePool,
+  onEditPool,
   activeTab,
   onNavigate,
   onBackToLanding,
@@ -127,7 +130,7 @@ export function Header({
                   if (hasMultiplePools || canAddPool) {
                     setPoolOpen((v) => !v)
                   } else {
-                    onNavigate('maintenance')
+                    onEditPool?.()
                   }
                 }}
                 className="glass-pill flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-foreground/90 transition-colors hover:border-gold/40"

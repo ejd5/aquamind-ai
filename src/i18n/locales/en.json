@@ -1126,6 +1126,7 @@
     "purchasePendingDesc": "Your purchase was received. AQWELIA is finalizing the sync with the store."
   },
   "onboarding": {
+    "notProvided": "Not provided",
     "welcome": "Welcome to AQWELIA",
     "welcomePrefix": "Welcome to",
     "configurationTime": "Setup in 2 minutes",
@@ -1260,7 +1261,9 @@
     "defaultProfileCreatedDesc": "You can edit it later.",
     "cannotCreateDefault": "Unable to create default profile",
     "bottomNote": "Your data stays on your device. You can edit everything later.",
-    "authRequiredRedirect": "You must be signed in to save. Redirecting..."
+    "authRequiredRedirect": "You must be signed in to save. Redirecting...",
+    "editorSpaLocked": "Upgrade to a Spa or Complete plan to add a spa.",
+    "spaBrandPlaceholder": "Choose a brand"
   },
   "settings": {
     "title": "Settings & privacy",
@@ -1388,7 +1391,9 @@
     "manageMultiDesc": "Select the provider to manage in its portal.",
     "manageStripe": "Manage my Stripe subscription",
     "manageApple": "Manage my Apple subscription",
-    "manageGoogle": "Manage my Google subscription"
+    "manageGoogle": "Manage my Google subscription",
+    "poolTitle": "My pool",
+    "poolEditBtn": "Edit"
   },
   "auth": {
     "backHome": "Back to home",
@@ -3172,6 +3177,7 @@
     "tag_equilibrage": "Balancing"
   },
   "diagnosticActionPlan": {
+    "volumeMissing": "Pool volume not provided — set it in your pool profile to get a precise dosage.",
     "urgencyCritical": "Urgent",
     "urgencyImportant": "Important",
     "urgencyModerate": "Watch",
@@ -3414,7 +3420,8 @@
       "profileVersionLine": "AQWELIA Pro · v1.0.0-mobile",
       "profileArqweliaAria": "ARQWELIA — Your future pool",
       "profileArqweliaDesc": "Imagine your future pool with AI",
-      "profileNewBadge": "New"
+      "profileNewBadge": "New",
+      "profileEditPoolAria": "Edit my pool"
     }
   },
   "metadata": {
@@ -4694,7 +4701,11 @@
     "switchPool": "Switch pool",
     "activePool": "Active pool",
     "addModeTitle": "Add a pool",
-    "addModeSubtitle": "Enter the details of your new pool. It will be added to your list."
+    "addModeSubtitle": "Enter the details of your new pool. It will be added to your list.",
+    "poolUpdated": "Pool updated",
+    "editPoolTitle": "My pool",
+    "editPoolDesc": "View and edit your pool details.",
+    "invalidField": "Invalid value for field {field}"
   },
   "pdfReport": {
     "title": "AQWELIA Water Report",

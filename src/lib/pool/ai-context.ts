@@ -2,6 +2,7 @@
 // Injecte profil + dernière mesure + plan d'action dans les prompts.
 
 import { VolumeUnit } from './units'
+import { isPoolFieldConfirmed } from './onboarding-form'
 
 export interface PoolProfileLike {
   name: string
@@ -13,6 +14,8 @@ export interface PoolProfileLike {
   sunExposure: string
   covered: boolean
   usageLevel: string
+  /** Fields the user explicitly confirmed (P0-1). Undefined/empty → unknown. */
+  confirmedFields?: string | null
 }
 
 export interface WaterTestLike {
@@ -36,6 +39,26 @@ const TREATMENT_LABELS: Record<string, string> = {
   other: 'Autre',
 }
 
+const UNKNOWN = 'non renseigné'
+
+// P0-1: only treat a business value as user truth when it was confirmed.
+// A technical DB default (e.g. treatmentType='chlorine') must not be passed
+// to the model as if the user had chosen it.
+function businessValue(profile: PoolProfileLike, field: string, fallback: string): string {
+  return isPoolFieldConfirmed(profile, field) ? fallback : UNKNOWN
+}
+
+// P0-2: a volume stored by an old flow (e.g. 40 m³ as a technical value) must
+// never be presented to the AI as the real pool volume. Only a confirmed
+// volume is shown; otherwise the context says "non renseigné".
+function volumeValue(profile: PoolProfileLike): string {
+  if (!isPoolFieldConfirmed(profile, 'volume')) return UNKNOWN
+  const unit = isPoolFieldConfirmed(profile, 'unit')
+    ? profile.unit === 'gal' ? 'gal' : 'm³'
+    : UNKNOWN
+  return `${profile.volume} ${unit}`
+}
+
 export function buildPoolContext(profile: PoolProfileLike | null, latestTest: WaterTestLike | null): string {
   if (!profile) {
     return `CONTEXTE: Aucun profil piscine configuré. Les conseils restent GÉNÉRIQUES. Invite l'utilisateur à créer son profil pour un dosage personnalisé.`
@@ -44,13 +67,13 @@ export function buildPoolContext(profile: PoolProfileLike | null, latestTest: Wa
   const lines: string[] = [
     `CONTEXTE PISCINE:`,
     `- Nom: ${profile.name}`,
-    `- Volume: ${profile.volume} ${profile.unit === 'gal' ? 'gal' : 'm³'}`,
-    `- Traitement: ${TREATMENT_LABELS[profile.treatmentType] || profile.treatmentType}`,
-    `- Filtre: ${profile.filterType}`,
-    `- Électrolyseur sel: ${profile.saltSystem ? 'oui' : 'non'}`,
-    `- Ensoleillement: ${profile.sunExposure}`,
-    `- Couvert: ${profile.covered ? 'oui' : 'non'}`,
-    `- Usage: ${profile.usageLevel}`,
+    `- Volume: ${volumeValue(profile)}`,
+    `- Traitement: ${businessValue(profile, 'treatmentType', TREATMENT_LABELS[profile.treatmentType] || profile.treatmentType)}`,
+    `- Filtre: ${businessValue(profile, 'filterType', profile.filterType)}`,
+    `- Électrolyseur sel: ${businessValue(profile, 'saltSystem', profile.saltSystem ? 'oui' : 'non')}`,
+    `- Ensoleillement: ${businessValue(profile, 'sunExposure', profile.sunExposure)}`,
+    `- Couvert: ${businessValue(profile, 'covered', profile.covered ? 'oui' : 'non')}`,
+    `- Usage: ${businessValue(profile, 'usageLevel', profile.usageLevel)}`,
   ]
 
   if (latestTest) {

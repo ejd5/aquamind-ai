@@ -6,11 +6,13 @@ import { signOutWithBillingCleanup } from '@/lib/billing/sign-out'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import type { PoolProfileLite } from './types'
+import type { PoolProfileLite, MobileScreen } from './types'
 
 interface MobileHeaderProps {
   profile: PoolProfileLite | null
   onBackToLanding?: () => void
+  /** Navigate to a mobile screen (used by the pool pill to open Profil). */
+  onNavigate?: (screen: MobileScreen) => void
 }
 
 /**
@@ -20,7 +22,7 @@ interface MobileHeaderProps {
  * Gold divider line at the bottom (matches desktop Header).
  * Touch targets ≥ 44px. No hover effects (mobile-only).
  */
-export function MobileHeader({ profile, onBackToLanding }: MobileHeaderProps) {
+export function MobileHeader({ profile, onBackToLanding, onNavigate }: MobileHeaderProps) {
   const t = useTranslations('nav')
   const { data: session } = useSession()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -73,9 +75,12 @@ export function MobileHeader({ profile, onBackToLanding }: MobileHeaderProps) {
         {/* Right: profile pill (pool name + volume) + user avatar */}
         <div className="flex items-center gap-2">
           {profile ? (
-            <div
-              className="glass-pill flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium text-foreground/90"
+            <button
+              type="button"
+              onClick={() => onNavigate?.('profile')}
+              className="glass-pill flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium text-foreground/90 active:border-gold/40"
               title={`${profile.name} — ${profile.volume} ${profile.unit === 'm3' ? 'm³' : 'gal'}`}
+              aria-label={`${profile.name} — ${profile.volume} ${profile.unit === 'm3' ? 'm³' : 'gal'}`}
             >
               <Droplets className="h-3.5 w-3.5 text-primary" aria-hidden />
               <span className="max-w-[80px] truncate">{profile.name}</span>
@@ -83,7 +88,7 @@ export function MobileHeader({ profile, onBackToLanding }: MobileHeaderProps) {
                 {profile.volume}
                 {profile.unit === 'm3' ? ' m³' : ' gal'}
               </span>
-            </div>
+            </button>
           ) : null}
 
           {/* User avatar + menu */}

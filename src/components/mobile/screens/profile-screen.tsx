@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 
@@ -14,8 +15,10 @@ import {
   HelpCircle,
   Sparkles,
   ExternalLink,
+  Pencil,
 } from 'lucide-react'
 import { ModulePaywall } from '../../aquamind/module-paywall'
+import { PoolProfileEditorDialog } from '../../aquamind/pool-profile-editor'
 import { isArqweliaLot1Enabled } from '@/lib/features'
 import type { PoolProfileLite } from '../../aquamind/app-shell'
 
@@ -24,21 +27,25 @@ interface ProfileScreenProps {
   profile: PoolProfileLite | null
   /** Back to landing page (used by the "Paramètres" link list). */
   onBackToLanding?: () => void
+  /** Refetch the profile after a successful edit. */
+  onProfileChanged?: () => void
 }
 
 /**
  * Mobile "Profil" screen — combines:
  *   1. A profile summary card (pool name, volume, treatment type, salt system)
+ *      with an edit action opening the pool profile fiche.
  *   2. `<ModulePaywall />` for subscription management
  *   3. A "Paramètres" section with quick links (notifications, privacy, help)
  *
  * The settings links are placeholders — actual settings pages will be added
  * in a later lot.
  */
-export function ProfileScreen({ profile, onBackToLanding }: ProfileScreenProps) {
+export function ProfileScreen({ profile, onBackToLanding, onProfileChanged }: ProfileScreenProps) {
   const tNav = useTranslations('nav')
   const tScr = useTranslations('mobile.screens')
   const tHl = useTranslations('modules.healthLog')
+  const [editorOpen, setEditorOpen] = useState(false)
 
   return (
     <div className="mobile-scroll px-4 pb-24 pt-4">
@@ -68,8 +75,28 @@ export function ProfileScreen({ profile, onBackToLanding }: ProfileScreenProps) 
                 : tScr('profileConfigureToStart')}
             </p>
           </div>
+          {profile && (
+            <button
+              type="button"
+              onClick={() => setEditorOpen(true)}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gold/40 bg-gold/10 text-gold transition-colors active:bg-gold/20"
+              aria-label={tScr('profileEditPoolAria')}
+            >
+              <Pencil className="h-4 w-4" aria-hidden />
+            </button>
+          )}
         </div>
       </section>
+
+      <PoolProfileEditorDialog
+        open={editorOpen}
+        poolId={profile?.id ?? null}
+        onOpenChange={setEditorOpen}
+        onSaved={() => {
+          setEditorOpen(false)
+          onProfileChanged?.()
+        }}
+      />
 
       {/* Subscription management */}
       <section className="mb-5" aria-label={tScr('profileAriaSubscription')}>

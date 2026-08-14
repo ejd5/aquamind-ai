@@ -80,6 +80,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { toast } from '@/hooks/use-toast'
+import { PoolProfileEditorDialog } from '@/components/aquamind/pool-profile-editor'
 import {
   Crown,
   RefreshCw,
@@ -101,6 +102,7 @@ import {
   MapPin,
   Ruler,
   RotateCcw,
+  Droplets,
 } from 'lucide-react'
 
 const APP_VERSION = 'v1.0.0'
@@ -150,6 +152,11 @@ export default function SettingsPage() {
     resetToCountryDefaults,
   } = usePreferences()
   const [showCustomUnits, setShowCustomUnits] = useState(false)
+
+  // Pool profile — "Mon bassin" section (fiche + édition).
+  const [poolId, setPoolId] = useState<string | null>(null)
+  const [poolSummary, setPoolSummary] = useState<string | null>(null)
+  const [poolEditorOpen, setPoolEditorOpen] = useState(false)
 
   // Redirect to signin if unauthenticated.
   useEffect(() => {
@@ -201,6 +208,19 @@ export default function SettingsPage() {
       })
       .catch(() => { /* keep defaults */ })
       .finally(() => { if (!cancelled) setPrefsLoaded(true) })
+
+    // Pool profile — active pool for the "Mon bassin" fiche.
+    fetch('/api/pool/profile', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.profile) return
+        const p = data.profile
+        setPoolId(p.id)
+        setPoolSummary(
+          `${p.volume} ${p.unit === 'm3' ? 'm³' : 'gal'} · ${p.name}`
+        )
+      })
+      .catch(() => { /* no pool yet — section hidden */ })
 
     return () => { cancelled = true }
   }, [status])
@@ -483,6 +503,43 @@ export default function SettingsPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
+            {/* ───────── 1.5 Mon bassin — fiche & édition PoolProfile ───────── */}
+            {poolId && (
+              <SettingsCard
+                icon={<Droplets className="h-4 w-4" />}
+                title={t('poolTitle')}
+                description={poolSummary || ''}
+              >
+                <Button
+                  onClick={() => setPoolEditorOpen(true)}
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full"
+                >
+                  {t('poolEditBtn')}
+                </Button>
+              </SettingsCard>
+            )}
+
+            <PoolProfileEditorDialog
+              open={poolEditorOpen}
+              poolId={poolId}
+              onOpenChange={setPoolEditorOpen}
+              onSaved={() => {
+                setPoolEditorOpen(false)
+                // Refetch the summary after edit
+                fetch('/api/pool/profile', { credentials: 'include' })
+                  .then((r) => (r.ok ? r.json() : null))
+                  .then((data) => {
+                    if (!data?.profile) return
+                    const p = data.profile
+                    setPoolId(p.id)
+                    setPoolSummary(`${p.volume} ${p.unit === 'm3' ? 'm³' : 'gal'} · ${p.name}`)
+                  })
+                  .catch(() => {})
+              }}
+            />
 
             {/* ───────── 2. Restaurer mes achats ───────── */}
             <SettingsCard

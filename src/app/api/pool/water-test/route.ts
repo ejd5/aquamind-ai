@@ -12,6 +12,7 @@ import {
 } from '@/lib/pool/measurement-provenance'
 import { calculateClearWaterIndex, calculateLsiAssessment, lsiInterpretation } from '@/lib/pool/water-balance'
 import { assessScientificQuality } from '@/lib/pool/scientific-quality'
+import { isPoolFieldConfirmed } from '@/lib/pool/onboarding-form'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { trackEventServer } from '@/lib/analytics-server'
 import { requireFeatureAccess } from '@/lib/billing/gate'
@@ -119,6 +120,7 @@ export async function POST(req: NextRequest) {
       manufacturerSaltMin: profile?.manufacturerSaltMin ?? null,
       manufacturerSaltMax: profile?.manufacturerSaltMax ?? null,
       manufacturerChlorineMax: profile?.manufacturerChlorineMax ?? null,
+      volumeConfirmed: isPoolFieldConfirmed(profile ?? {}, 'volume'),
     }
     const contextualTargets = resolveContextualOperatingTargets({
       treatmentType: scientificProfile.treatmentType,

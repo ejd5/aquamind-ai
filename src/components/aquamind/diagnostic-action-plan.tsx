@@ -251,6 +251,9 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number, t: TFun
     poolVolume,
   )
   const flocculantMillilitres = Math.round(dosageInMillilitres(flocculantDose))
+  // P0-2: without a USER-CONFIRMED volume we never emit a precise dosage.
+  const hasVolume = poolVolume > 0
+  const volumeMissing = () => t('volumeMissing')
 
   if (hasGreenWater || hasAlgae) {
     return [
@@ -297,11 +300,13 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number, t: TFun
         instructions: [
           t('greenS3I1'),
           t('greenS3I2'),
-          t('greenS3I3', {
-            volume: poolVolume,
-            qty: shockGrams,
-            tablets: Math.max(1, Math.round(shockGrams / 20)),
-          }),
+          hasVolume
+            ? t('greenS3I3', {
+                volume: poolVolume,
+                qty: shockGrams,
+                tablets: Math.max(1, Math.round(shockGrams / 20)),
+              })
+            : volumeMissing(),
           t('greenS3I4'),
           t('greenS3I5'),
           t('greenS3I6'),
@@ -324,11 +329,13 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number, t: TFun
         instructions: [
           t('greenS4I1'),
           t('greenS4I2'),
-          t('greenS4I3', {
-            volume: poolVolume,
-            qty: antiAlgaeMillilitres,
-            liters: (antiAlgaeMillilitres / 1000).toFixed(2),
-          }),
+          hasVolume
+            ? t('greenS4I3', {
+                volume: poolVolume,
+                qty: antiAlgaeMillilitres,
+                liters: (antiAlgaeMillilitres / 1000).toFixed(2),
+              })
+            : volumeMissing(),
           t('greenS4I4'),
           t('greenS4I5'),
         ],
@@ -434,7 +441,9 @@ function generateSteps(diagnostic: DiagnosticResult, poolVolume: number, t: TFun
         instructions: [
           t('cloudyS3I1'),
           t('cloudyS3I2'),
-          t('cloudyS3I3', { volume: poolVolume, qty: flocculantMillilitres }),
+          hasVolume
+            ? t('cloudyS3I3', { volume: poolVolume, qty: flocculantMillilitres })
+            : volumeMissing(),
           t('cloudyS3I4'),
           t('cloudyS3I5'),
           t('cloudyS3I6'),
@@ -823,7 +832,10 @@ export function DiagnosticActionPlan({
 }: DiagnosticActionPlanProps) {
   const t = useTranslations('diagnosticActionPlan')
   const [steps, setSteps] = useState<ActionStep[]>([])
-  const [poolVolume, setPoolVolume] = useState<number>(40)
+  // P0-2: 0 = "no usable volume". A precise photo-diagnostic dosage requires a
+  // USER-CONFIRMED pool volume — never a fabricated default (e.g. 40 m³) nor an
+  // old technical value.
+  const [poolVolume, setPoolVolume] = useState<number>(0)
   const [poolVolumeLoaded, setPoolVolumeLoaded] = useState(false)
   const [latestWaterTest, setLatestWaterTest] = useState<WaterTestRow | null>(
     null,
@@ -844,15 +856,19 @@ export function DiagnosticActionPlan({
   // Fetch pool profile + latest water test on mount
   useEffect(() => {
     api
-      .get<{ profile: { volume?: number } | null }>(
+      .get<{ profile: { volume?: number; confirmedFields?: string | null } | null }>(
         `/api/pool/profile${activePoolId ? `?id=${encodeURIComponent(activePoolId)}` : ''}`,
       )
       .then((d) => {
+        // P0-2: only use the volume when the user explicitly confirmed it.
+        const confirmed = d?.profile?.confirmedFields
+        const confirmedVolume =
+          typeof confirmed === 'string' && confirmed.includes('"volume"')
         const v = d?.profile?.volume
-        if (typeof v === 'number' && v > 0) setPoolVolume(v)
+        if (confirmedVolume && typeof v === 'number' && v > 0) setPoolVolume(v)
       })
       .catch(() => {
-        /* keep default 40 m³ */
+        /* no usable volume → no precise dosage */
       })
       .finally(() => setPoolVolumeLoaded(true))
 

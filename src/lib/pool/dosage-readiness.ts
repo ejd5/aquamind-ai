@@ -70,7 +70,11 @@ export function assessDosageReadiness(
   test: ScientificTestInput,
   profile: DosageReadinessProfile,
 ): DosageReadiness {
-  if (!Number.isFinite(profile.volume) || profile.volume <= 0) {
+  // P0-2: a precise dosage REQUIRES a user-confirmed pool volume. An old
+  // technical value (e.g. 40 m³ from a legacy flow) must never produce a
+  // precise quantity — the dosage is not calculable until volume is confirmed.
+  const volumeValid = Number.isFinite(profile.volume) && profile.volume > 0
+  if (profile.volumeConfirmed === false || !volumeValid) {
     return result('not_calculable', ['invalid_pool_volume'])
   }
 

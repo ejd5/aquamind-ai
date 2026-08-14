@@ -1128,6 +1128,7 @@
     "purchasePendingDesc": "Votre achat a été reçu. AQWELIA finalise la synchronisation avec la boutique."
   },
   "onboarding": {
+    "notProvided": "Non renseigné",
     "welcome": "Bienvenue sur AQWELIA",
     "welcomePrefix": "Bienvenue sur",
     "configurationTime": "Configuration en 2 minutes",
@@ -1262,7 +1263,9 @@
     "defaultProfileCreatedDesc": "Vous pourrez le modifier plus tard.",
     "cannotCreateDefault": "Impossible de créer le profil par défaut",
     "bottomNote": "Vos données restent sur votre appareil. Vous pourrez tout modifier plus tard.",
-    "authRequiredRedirect": "Vous devez être connecté pour sauvegarder. Redirection..."
+    "authRequiredRedirect": "Vous devez être connecté pour sauvegarder. Redirection...",
+    "editorSpaLocked": "Passez à un plan Spa ou Complete pour ajouter un spa.",
+    "spaBrandPlaceholder": "Choisir une marque"
   },
   "settings": {
     "title": "Paramètres et confidentialité",
@@ -1390,7 +1393,9 @@
     "manageMultiDesc": "Sélectionnez le fournisseur à gérer dans le portail correspondant.",
     "manageStripe": "Gérer mon abonnement Stripe",
     "manageApple": "Gérer mon abonnement Apple",
-    "manageGoogle": "Gérer mon abonnement Google"
+    "manageGoogle": "Gérer mon abonnement Google",
+    "poolTitle": "Mon bassin",
+    "poolEditBtn": "Modifier"
   },
   "auth": {
     "backHome": "Retour à l'accueil",
@@ -3174,6 +3179,7 @@
     "tag_equilibrage": "Équilibrage"
   },
   "diagnosticActionPlan": {
+    "volumeMissing": "Volume du bassin non renseigné — renseignez-le dans votre profil pour obtenir un dosage précis.",
     "urgencyCritical": "Urgent",
     "urgencyImportant": "Important",
     "urgencyModerate": "À surveiller",
@@ -3416,7 +3422,8 @@
       "profileVersionLine": "AQWELIA Pro · v1.0.0-mobile",
       "profileArqweliaAria": "ARQWELIA — Votre future piscine",
       "profileArqweliaDesc": "Imaginez votre future piscine avec l'IA",
-      "profileNewBadge": "Nouveau"
+      "profileNewBadge": "Nouveau",
+      "profileEditPoolAria": "Modifier ma piscine"
     }
   },
   "metadata": {
@@ -4697,7 +4704,11 @@
     "switchPool": "Changer de piscine",
     "activePool": "Piscine active",
     "addModeTitle": "Ajouter une piscine",
-    "addModeSubtitle": "Renseignez les caractéristiques de votre nouvelle piscine. Elle s'ajoutera à votre liste."
+    "addModeSubtitle": "Renseignez les caractéristiques de votre nouvelle piscine. Elle s'ajoutera à votre liste.",
+    "poolUpdated": "Piscine mise à jour",
+    "editPoolTitle": "Ma piscine",
+    "editPoolDesc": "Consultez et modifiez les caractéristiques de votre bassin.",
+    "invalidField": "Valeur invalide pour le champ {field}"
   },
   "pdfReport": {
     "title": "Rapport d'eau AQWELIA",

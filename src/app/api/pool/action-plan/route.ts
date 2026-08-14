@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { generateScientificallyQualifiedActionPlan } from '@/lib/pool/scientific-action-plan'
 import type { MeasurementConfidenceInput } from '@/lib/pool/measurement-confidence'
+import { isPoolFieldConfirmed } from '@/lib/pool/onboarding-form'
 import { pickLocale, translate } from '@/lib/i18n-api'
 
 export const runtime = 'nodejs'
@@ -79,6 +80,7 @@ export async function POST(req: NextRequest) {
       manufacturerSaltMin: profile.manufacturerSaltMin ?? null,
       manufacturerSaltMax: profile.manufacturerSaltMax ?? null,
       manufacturerChlorineMax: profile.manufacturerChlorineMax ?? null,
+      volumeConfirmed: isPoolFieldConfirmed(profile, 'volume'),
     }
     // Use stored provenance (freshness / method / calibration) when the test row
     // carries it; inline values without provenance get the unadjusted confidence.

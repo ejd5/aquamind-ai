@@ -1011,6 +1011,7 @@
     "purchasePendingDesc": "Uw aankoop is ontvangen. AQWELIA voltooit de synchronisatie met de winkel."
   },
   "onboarding": {
+    "notProvided": "Niet opgegeven",
     "welcome": "Welkom bij AQWELIA",
     "step1": "Uw zwembad",
     "step2": "Behandeling",
@@ -1144,7 +1145,9 @@
     "defaultProfileCreatedTitle": "Standaardprofiel aangemaakt",
     "defaultProfileCreatedDesc": "U kunt het later bewerken.",
     "cannotCreateDefault": "Kan standaardprofiel niet aanmaken",
-    "bottomNote": "Uw gegevens blijven op uw apparaat. U kunt later alles bewerken."
+    "bottomNote": "Uw gegevens blijven op uw apparaat. U kunt later alles bewerken.",
+    "editorSpaLocked": "Upgrade naar een Spa- of Complete-plan om een spa toe te voegen.",
+    "spaBrandPlaceholder": "Kies een merk"
   },
   "settings": {
     "title": "Instellingen & privacy",
@@ -1271,7 +1274,9 @@
     "manageMultiDesc": "Selecteer de provider om te beheren in het bijbehorende portaal.",
     "manageStripe": "Mijn Stripe-abonnement beheren",
     "manageApple": "Mijn Apple-abonnement beheren",
-    "manageGoogle": "Mijn Google-abonnement beheren"
+    "manageGoogle": "Mijn Google-abonnement beheren",
+    "poolTitle": "Mijn zwembad",
+    "poolEditBtn": "Bewerken"
   },
   "auth": {
     "backHome": "Terug naar home",
@@ -3055,6 +3060,7 @@
     "tag_equilibrage": "Balancering"
   },
   "diagnosticActionPlan": {
+    "volumeMissing": "Zwembadvolume niet opgegeven — geef het op in uw zwembadprofiel voor een precieze dosering.",
     "urgencyCritical": "Dringend",
     "urgencyImportant": "Belangrijk",
     "urgencyModerate": "In de gaten houden",
@@ -3294,7 +3300,8 @@
       "profilePrivacyData": "Privacy & gegevens",
       "profileHelpSupport": "Hulp & support",
       "profileFaqContact": "FAQ + contact",
-      "profileVersionLine": "AQWELIA Pro · v1.0.0-mobile"
+      "profileVersionLine": "AQWELIA Pro · v1.0.0-mobile",
+      "profileEditPoolAria": "Mijn zwembad bewerken"
     }
   },
   "metadata": {
@@ -4321,7 +4328,11 @@
     "switchPool": "Wissel van zwembad",
     "activePool": "Actief zwembad",
     "addModeTitle": "Zwembad toevoegen",
-    "addModeSubtitle": "Vul de gegevens van uw nieuwe zwembad in. Het wordt aan uw lijst toegevoegd."
+    "addModeSubtitle": "Vul de gegevens van uw nieuwe zwembad in. Het wordt aan uw lijst toegevoegd.",
+    "poolUpdated": "Zwembad bijgewerkt",
+    "editPoolTitle": "Mijn zwembad",
+    "editPoolDesc": "Bekijk en bewerk de details van uw zwembad.",
+    "invalidField": "Ongeldige waarde voor veld {field}"
   },
   "pdfReport": {
     "title": "AQWELIA Waterrapport",
