@@ -127,6 +127,16 @@ export function buildPoolProfilePatchBody(
   for (const key of dirty) {
     const storageKey = PATCH_FIELD_ALIASES[key] ?? key
     const value = profile[key]
+    if (storageKey === 'volume') {
+      // The editor binds volume as a raw string (controlled number inputs must
+      // not round-trip through Number() while typing). Convert to a finite,
+      // strictly positive number here; empty/invalid inputs are NOT persisted.
+      if (value === '' || value === null || value === undefined) continue
+      const v = Number(value)
+      if (!Number.isFinite(v) || v <= 0) continue
+      body.volume = v
+      continue
+    }
     if (storageKey === 'pumpType' || storageKey === 'region' || storageKey === 'spaBrand') {
       body[storageKey] = (value as string) || ''
       continue

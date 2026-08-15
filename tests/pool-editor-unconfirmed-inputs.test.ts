@@ -92,6 +92,50 @@ describe('PR #93 — Enregistrer PATChe uniquement les champs touchés', () => {
   })
 })
 
+// ── PR #94: volume bound as a raw string (robust controlled number input) ──
+
+describe('PR #94 — volume string binding: conversion at save, never in onChange', () => {
+  it('volume saisi en string "48" => PATCH { volume: 48 } (converted at save)', () => {
+    const body = buildPoolProfilePatchBody(
+      { ...stored, volume: '48' },
+      new Set(['volume']),
+    )
+    expect(body).toEqual({ volume: 48 })
+  })
+
+  it('volume string + unit => PATCH { volume: 48, unit: "m3" }', () => {
+    const body = buildPoolProfilePatchBody(
+      { ...stored, volume: '48', unit: 'm3' },
+      new Set(['volume', 'unit']),
+    )
+    expect(body).toEqual({ volume: 48, unit: 'm3' })
+  })
+
+  it('volume vidé (string "") => PAS PATCHé (évite un 0 invalide)', () => {
+    const body = buildPoolProfilePatchBody(
+      { ...stored, volume: '' },
+      new Set(['volume']),
+    )
+    expect(body).not.toHaveProperty('volume')
+  })
+
+  it('volume invalide (string non numérique) => PAS PATCHé', () => {
+    const body = buildPoolProfilePatchBody(
+      { ...stored, volume: 'abc' },
+      new Set(['volume']),
+    )
+    expect(body).not.toHaveProperty('volume')
+  })
+
+  it('volume <= 0 => PAS PATCHé', () => {
+    const body = buildPoolProfilePatchBody(
+      { ...stored, volume: '0' },
+      new Set(['volume']),
+    )
+    expect(body).not.toHaveProperty('volume')
+  })
+})
+
 // ── Source contracts: interactive display uses isActive (confirmed || dirty) ──
 
 describe('PR #93 — rendu interactif basé sur isActive (confirmed || dirty)', () => {
@@ -106,9 +150,13 @@ describe('PR #93 — rendu interactif basé sur isActive (confirmed || dirty)', 
     expect(source).toMatch(/const isActive = useCallback\(\s*\(field: string\) => confirmed\.has\(field\) \|\| dirty\.has\(field\)/)
   })
 
-  it('volume : la valeur locale saisie reste visible pendant la session (value gated on isActive)', () => {
+  it('volume : la valeur locale saisie reste visible pendant la session (string value, no Number round-trip)', () => {
     const source = editor()
-    expect(source).toContain("value={isActive('volume') ? profile.volume : ''}")
+    // The volume input must bind the raw string and must NOT convert via
+    // Number() in onChange (that round-trip is what can drop keystrokes in
+    // real browsers). Conversion happens only at save (buildPoolProfilePatchBody).
+    expect(source).toContain("value={isActive('volume') ? String(profile.volume ?? '') : ''}")
+    expect(source).toContain("onChange={(e) => update('volume', e.target.value)}")
   })
 
   it('unit : la sélection locale reste visible pendant la session', () => {
