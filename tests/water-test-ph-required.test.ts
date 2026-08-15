@@ -114,6 +114,12 @@ describe('POST /api/pool/water-test — pH est REQUIS (PR #95)', () => {
     ['ph null', { ph: null }],
     ['ph "abc" (non numérique)', { ph: 'abc' }],
     ['ph absent', { freeChlorine: '2.0' }],
+    // PR #95 Round 2 — non-scalar / coercible types must never become a pH.
+    ['ph false', { ph: false }],
+    ['ph true', { ph: true }],
+    ['ph []', { ph: [] }],
+    ['ph [7.2]', { ph: [7.2] }],
+    ['ph {}', { ph: {} }],
   ]
 
   for (const [label, body] of invalidBodies) {
@@ -146,4 +152,15 @@ describe('POST /api/pool/water-test — pH est REQUIS (PR #95)', () => {
     const arg = dbMock.waterTest.create.mock.calls[0][0].data
     expect(arg.ph).toBe(7.2)
   })
+
+  // PR #95 Round 2 — scalar values (incl. 0) remain accepted; no range gate.
+  for (const value of [0, '0']) {
+    it(`ph ${JSON.stringify(value)} (scalaire) => accepté`, async () => {
+      vi.mocked(await import('@/lib/brain/access')).findOwnedPool.mockResolvedValue(validProfile as never)
+      const res = await POST(makeReq({ ph: value, poolId: 'pool-1' }))
+      expect(res.status).toBe(200)
+      const arg = dbMock.waterTest.create.mock.calls[0][0].data
+      expect(arg.ph).toBe(0)
+    })
+  }
 })
