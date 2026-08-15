@@ -215,8 +215,12 @@ export function ModuleWaterTest({ onNavigate, activePoolId }: Props) {
   }
 
   async function submit() {
-    const ph = Number(values.ph)
-    if (isNaN(ph)) {
+    // PR #95: pH is REQUIRED. Number('') === 0 and Number('   ') === 0 would
+    // pass a bare isNaN() check — an empty measure must NEVER become 0. Validate
+    // the raw string before any conversion, and before queuing offline.
+    const rawPh = values.ph.trim()
+    const ph = Number(rawPh)
+    if (rawPh === '' || !Number.isFinite(ph)) {
       toast({ title: t('phRequired'), description: t('phRequiredDesc'), variant: 'destructive' })
       return
     }
@@ -404,7 +408,7 @@ export function ModuleWaterTest({ onNavigate, activePoolId }: Props) {
 
             <Button
               onClick={submit}
-              disabled={saving || !values.ph}
+              disabled={saving}
               className="w-full bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30"
             >
               {saving ? (

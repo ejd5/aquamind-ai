@@ -68,14 +68,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Pool not found' }, { status: 404 })
     }
 
-    const ph = Number(body.ph)
-    if (isNaN(ph)) {
+    // P0 (PR #95): pH is REQUIRED. Number('') === 0, Number(null) === 0 and
+    // Number('   ') === 0 would pass a bare isNaN() check — an empty measure
+    // must NEVER become 0 and produce an analysis. Validate the raw value first.
+    const rawPh = body.ph
+    const phMissing =
+      rawPh === undefined ||
+      rawPh === null ||
+      (typeof rawPh === 'string' && rawPh.trim() === '')
+    if (phMissing) {
       const msg = await translate(
         locale,
         'common.errors.phRequired',
         'pH requis'
       )
-      return NextResponse.json({ error: msg }, { status: 400 })
+      return NextResponse.json({ error: msg, code: 'PH_REQUIRED' }, { status: 400 })
+    }
+    const ph = Number(rawPh)
+    if (!Number.isFinite(ph)) {
+      const msg = await translate(
+        locale,
+        'common.errors.phRequired',
+        'pH requis'
+      )
+      return NextResponse.json({ error: msg, code: 'PH_REQUIRED' }, { status: 400 })
     }
 
     const analysisTime = new Date()
