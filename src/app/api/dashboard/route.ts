@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { clarityLabel, calculateClearWaterIndex } from '@/lib/pool/water-balance'
+import { isInsufficientQualityScore } from '@/lib/pool/scientific-quality'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { generateScientificallyQualifiedActionPlan } from '@/lib/pool/scientific-action-plan'
 import { isPoolFieldConfirmed } from '@/lib/pool/onboarding-form'
@@ -61,8 +62,21 @@ export async function GET(req: Request) {
   let clarity: ReturnType<typeof clarityLabel> | null = null
 
   if (latestTest) {
-    clearWaterIndex = latestTest.clearWaterIndex || calculateClearWaterIndex(latestTest as any)
-    clarity = clarityLabel(clearWaterIndex)
+    // PR #96: a scientifically INSUFFICIENT assessment must never be presented
+    // as a complete global score ("Eau parfaite 100/100"). Keep the CWI
+    // internal, expose an explicit "Analyse partielle" state instead.
+    if (isInsufficientQualityScore((latestTest as { scientificQualityScore?: number | null }).scientificQualityScore)) {
+      clearWaterIndex = null
+      clarity = {
+        label: 'Analyse partielle',
+        labelKey: 'clarityPartial',
+        status: 'partial',
+        color: 'accent',
+      }
+    } else {
+      clearWaterIndex = latestTest.clearWaterIndex || calculateClearWaterIndex(latestTest as any)
+      clarity = clarityLabel(clearWaterIndex)
+    }
   }
 
   // Re-generate the FULL scientific plan from the latest test to get fresh

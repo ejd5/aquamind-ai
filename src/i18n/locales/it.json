@@ -1395,6 +1395,7 @@
     "diagnostic": "Diagnosi",
     "severity": {
       "low": "Tutto a posto",
+      "insufficient": "Analisi parziale",
       "medium": "Da controllare",
       "high": "Azione consigliata",
       "urgent": "Urgente"
@@ -1890,6 +1891,7 @@
       "statusWarning": "Attenzione",
       "statusCritical": "Critico",
       "balanced": "Bilanciato",
+      "partialAssessment": "Analisi parziale",
       "watch": "Da controllare",
       "actionRecommended": "Azione consigliata",
       "urgent": "Urgente",
@@ -3814,6 +3816,7 @@
     "iaTreatPhosphatesDetail": "Fosfati {phosphates} mg/L: nutrono le alghe. Usare un riduttore di fosfati.",
     "iaMaintainFiltrationHours": "Filtrare almeno {hours}h per distribuire bene i prodotti.",
     "iaMaintainFiltrationNormal": "Filtrazione normale (metà della temperatura dell'acqua in ore).",
+    "iaMaintainFiltrationNoTemp": "Filtrazione prudente: la durata dipende dalla temperatura dell'acqua. Registra la temperatura per una raccomandazione precisa.",
     "iaRetestHours": "Ripetere un test entro {hours}h per verificare l'effetto.",
     "iaRetestDefault": "Ripetere un test entro 24-48h.",
     "iaAdjustTacProduct": "TAC+",
@@ -3833,6 +3836,8 @@
     "dndNoAddStabilizer": "Non aggiungere stabilizzante: il livello è già troppo alto.",
     "diagBalanced": "La tua acqua è globalmente bilanciata (indice {cwi}/100). Mantieni il ritmo dei test e della filtrazione. Balneazione: {swim}.",
     "diagIssues": "Diagnosi ({sevLabel}) indice acqua limpida {cwi}/100. Punti da trattare: {issues}. Seguire il piano d'azione ordinato qui sotto. Balneazione: {swim}.",
+    "diagPartial": "pH nell'intervallo. Dati insufficienti per valutare l'equilibrio globale dell'acqua. Bagno: {swim}.",
+    "diagPartialIssues": "Anomalia rilevata: {issues}. Dati insufficienti per valutare l'equilibrio globale dell'acqua. Bagno: {swim}.",
     "sevLabelUrgent": "URGENTE",
     "sevLabelHigh": "Azione consigliata",
     "sevLabelMedium": "Da monitorare",

@@ -503,7 +503,19 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
               <CardTitle className="font-display text-lg">{t('globalQuality')}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-3 pt-2">
-              <Gauge value={cwi} label={clarity?.label || ''} color={clarityColor} />
+              {clarity?.status === 'partial' ? (
+                // PR #96: partial assessment → no global /100 number.
+                <div className="flex h-44 w-44 items-center justify-center">
+                  <div className="text-center">
+                    <span className="font-display text-4xl font-bold tracking-tight text-muted-foreground">—</span>
+                    <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      / 100
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <Gauge value={cwi} label={clarity?.label || ''} color={clarityColor} />
+              )}
               <div
                 className={`rounded-full bg-gradient-to-r ${clarityGrad} px-4 py-1.5 text-sm font-bold text-white shadow-md`}
               >

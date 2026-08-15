@@ -1397,6 +1397,7 @@
     "diagnostic": "Diagnose",
     "severity": {
       "low": "Alles in orde",
+      "insufficient": "Gedeeltelijke analyse",
       "medium": "Opvolgen",
       "high": "Actie aanbevolen",
       "urgent": "Dringend"
@@ -1892,6 +1893,7 @@
       "statusWarning": "Waarschuwing",
       "statusCritical": "Kritiek",
       "balanced": "In balans",
+      "partialAssessment": "Gedeeltelijke analyse",
       "watch": "Opvolgen",
       "actionRecommended": "Actie aanbevolen",
       "urgent": "Dringend",
@@ -3816,6 +3818,7 @@
     "iaTreatPhosphatesDetail": "Fosfaten {phosphates} mg/L: voeden algen. Een fosfaatverwijderaar gebruiken.",
     "iaMaintainFiltrationHours": "Minstens {hours}u filteren om de producten goed te verspreiden.",
     "iaMaintainFiltrationNormal": "Normale filtratie (helft van de watertemperatuur in uren).",
+    "iaMaintainFiltrationNoTemp": "Voorzichtig filteren: de duur hangt af van de watertemperatuur. Registreer de temperatuur voor een precieze aanbeveling.",
     "iaRetestHours": "Opnieuw testen binnen {hours}u om het effect te controleren.",
     "iaRetestDefault": "Opnieuw testen binnen 24-48u.",
     "iaAdjustTacProduct": "TAC+",
@@ -3835,6 +3838,8 @@
     "dndNoAddStabilizer": "Geen stabilisator toevoegen: het niveau is al te hoog.",
     "diagBalanced": "Uw water is over het algemeen gebalanceerd (index {cwi}/100). Houd het tempo van testen en filtratie aan. Zwemmen: {swim}.",
     "diagIssues": "Diagnose ({sevLabel}) helderwaterindex {cwi}/100. Punten om aan te pakken: {issues}. Volg het geordende actieplan hieronder. Zwemmen: {swim}.",
+    "diagPartial": "pH binnen het doelbereik. Onvoldoende gegevens om de algehele waterbalans te beoordelen. Baden: {swim}.",
+    "diagPartialIssues": "Afwijking gedetecteerd: {issues}. Onvoldoende gegevens om de algehele waterbalans te beoordelen. Baden: {swim}.",
     "sevLabelUrgent": "DRINGEND",
     "sevLabelHigh": "Actie aanbevolen",
     "sevLabelMedium": "In de gaten houden",

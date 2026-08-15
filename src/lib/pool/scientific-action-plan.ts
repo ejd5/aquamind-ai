@@ -41,6 +41,7 @@ import {
 } from './measurement-confidence'
 import {
   assessScientificQuality,
+  isInsufficientAssessment,
   type ScientificQualityAssessment,
   type ScientificTestInput,
 } from './scientific-quality'
@@ -106,6 +107,56 @@ function diagnosisSwimParam(status: ContextualSwimAssessment['status']): string 
 function numericEstimatedCost(value: string): number {
   const match = value.match(/[\d.]+/)
   return match ? Number.parseFloat(match[0]) : 0
+}
+
+// PR #96 — French fallback for the contextual swim status in the diagnosis
+// literals (the module prefers translation keys, these are only fallbacks).
+const SWIM_FR: Record<ContextualSwimAssessment['status'], string> = {
+  allowed: 'autorisée',
+  avoid: 'déconseillée',
+  forbidden: 'interdite',
+  unknown: 'à confirmer après mesures',
+}
+
+/**
+ * PR #96 — an INSUFFICIENT assessment must never be presented as a complete
+ * global water-balance conclusion. pH in target + insufficient data → explicit
+ * partial wording. pH out of target + insufficient data → the measured anomaly
+ * stays visible AND the partial wording is appended. No global CWI score is
+ * claimed in either case.
+ */
+function buildQualifiedDiagnosis(
+  plan: GeneratedActionPlan,
+  swimStatus: ContextualSwimAssessment['status'],
+  insufficient: boolean,
+): { diagnosis: string; diagnosisKey: string; diagnosisParams: Record<string, string | number> } {
+  const swim = diagnosisSwimParam(swimStatus)
+  const swimFr = SWIM_FR[swimStatus]
+  const hasIssues = plan.diagnosisKey === 'diagIssues'
+  if (!insufficient) {
+    return {
+      diagnosis: plan.diagnosis,
+      diagnosisKey: plan.diagnosisKey,
+      diagnosisParams: { ...plan.diagnosisParams, swim },
+    }
+  }
+  if (!hasIssues) {
+    return {
+      diagnosis: `pH dans la plage cible. Données insuffisantes pour évaluer l'équilibre global de l'eau. Baignade : ${swimFr}.`,
+      diagnosisKey: 'diagPartial',
+      diagnosisParams: { swim },
+    }
+  }
+  return {
+    diagnosis: `Anomalie détectée : ${plan.diagnosisParams.issues ?? ''}. Données insuffisantes pour évaluer l'équilibre global de l'eau. Baignade : ${swimFr}.`,
+    diagnosisKey: 'diagPartialIssues',
+    diagnosisParams: {
+      issues: plan.diagnosisParams.issues ?? '',
+      issueKeys: plan.diagnosisParams.issueKeys ?? '',
+      issueParams: plan.diagnosisParams.issueParams ?? '{}',
+      swim,
+    },
+  }
 }
 
 /**
@@ -188,13 +239,25 @@ export function generateScientificallyQualifiedActionPlan(
     0,
   )
 
+  // PR #96: an insufficient assessment must never read as a complete global
+  // balance conclusion, and its severity must not read as "Équilibrée".
+  const insufficient = isInsufficientAssessment(scientificQuality)
+  const qualifiedDiagnosis = buildQualifiedDiagnosis(
+    plan,
+    contextualSwimSafety.status,
+    insufficient,
+  )
+  const severity: GeneratedActionPlan['severity'] =
+    insufficient && plan.diagnosisKey === 'diagBalanced'
+      ? 'insufficient'
+      : severityForContextualSafety(plan.severity, contextualSwimSafety.status)
+
   return {
     ...plan,
-    diagnosisParams: {
-      ...plan.diagnosisParams,
-      swim: diagnosisSwimParam(contextualSwimSafety.status),
-    },
-    severity: severityForContextualSafety(plan.severity, contextualSwimSafety.status),
+    diagnosis: qualifiedDiagnosis.diagnosis,
+    diagnosisKey: qualifiedDiagnosis.diagnosisKey,
+    diagnosisParams: qualifiedDiagnosis.diagnosisParams,
+    severity,
     confidence: scientificConfidence.score,
     confidenceLevel: scientificConfidence.level,
     scientificQuality,

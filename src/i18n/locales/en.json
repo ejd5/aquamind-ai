@@ -26,6 +26,7 @@
     "iaTreatPhosphatesDetail": "Phosphates {phosphates} mg/L: feeds algae. Use a phosphate remover.",
     "iaMaintainFiltrationHours": "Filter at least {hours}h to distribute products well.",
     "iaMaintainFiltrationNormal": "Normal filtration (half the water temperature in hours).",
+    "iaMaintainFiltrationNoTemp": "Prudent filtration: duration depends on water temperature. Record the temperature for a precise recommendation.",
     "iaRetestHours": "Retest in {hours}h to check the effect.",
     "iaRetestDefault": "Retest in 24-48h.",
     "iaAdjustTacProduct": "TAC+",
@@ -45,6 +46,8 @@
     "dndNoAddStabilizer": "Do not add stabilizer: the level is already too high.",
     "diagBalanced": "Your water is generally balanced (index {cwi}/100). Maintain the testing and filtration pace. Swimming: {swim}.",
     "diagIssues": "Diagnosis ({sevLabel}) clear water index {cwi}/100. Issues to address: {issues}. Follow the ordered action plan below. Swimming: {swim}.",
+    "diagPartial": "pH within target. Insufficient data to assess the overall water balance. Bathing: {swim}.",
+    "diagPartialIssues": "Issue detected: {issues}. Insufficient data to assess the overall water balance. Bathing: {swim}.",
     "sevLabelUrgent": "URGENT",
     "sevLabelHigh": "Action recommended",
     "sevLabelMedium": "To monitor",
@@ -1514,6 +1517,7 @@
     "diagnostic": "Diagnostic",
     "severity": {
       "low": "All good",
+      "insufficient": "Partial analysis",
       "medium": "Watch",
       "high": "Action recommended",
       "urgent": "Urgent"
@@ -2009,6 +2013,7 @@
       "statusWarning": "Warning",
       "statusCritical": "Critical",
       "balanced": "Balanced",
+      "partialAssessment": "Partial analysis",
       "watch": "Watch",
       "actionRecommended": "Action recommended",
       "urgent": "Urgent",
