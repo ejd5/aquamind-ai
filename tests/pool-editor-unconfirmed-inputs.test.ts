@@ -158,4 +158,38 @@ describe('PR #93 — rendu interactif basé sur isActive (confirmed || dirty)', 
     // And they must reference the notProvided copy.
     expect(source).toContain("t('notProvided')")
   })
+
+  it('P0-1 Round 2: pumpType non confirmé => valeur DB non affichée (value vide)', () => {
+    const source = editor()
+    expect(source).toContain("value={isActive('pumpType') ? profile.pumpType || '' : ''}")
+  })
+
+  it('P0-1 Round 2: pumpType saisi volontairement => visible via dirty + PATCHable', () => {
+    const body = buildPoolProfilePatchBody(
+      { ...stored, pumpType: 'Pentair X' },
+      new Set(['pumpType']),
+    )
+    expect(body).toEqual({ pumpType: 'Pentair X' })
+  })
+
+  it('P0-2 Round 2: covered=true DB non confirmé => checkbox neutre (non cochée)', () => {
+    const source = editor()
+    expect(source).toContain("checked={isActive('covered') ? profile.covered : false}")
+  })
+
+  it('P0-2 Round 2: covered coché volontairement => nouvel état visible + PATCH covered seul', () => {
+    const body = buildPoolProfilePatchBody(
+      { ...stored, covered: true },
+      new Set(['covered']),
+    )
+    expect(body).toEqual({ covered: true })
+  })
+
+  it('P0-2 Round 2: covered décoché volontairement => PATCH { covered: false }', () => {
+    const body = buildPoolProfilePatchBody(
+      { ...stored, covered: false },
+      new Set(['covered']),
+    )
+    expect(body).toEqual({ covered: false })
+  })
 })

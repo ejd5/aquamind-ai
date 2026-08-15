@@ -437,7 +437,7 @@ export function PoolProfileEditorDialog({
               <Label htmlFor="edit-pool-pump">{t('pumpLabel')}</Label>
               <Input
                 id="edit-pool-pump"
-                value={profile.pumpType || ''}
+                value={isActive('pumpType') ? profile.pumpType || '' : ''}
                 placeholder={isActive('pumpType') ? t('pumpPlaceholder') : t('notProvided')}
                 onChange={(e) => update('pumpType', e.target.value)}
               />
@@ -502,7 +502,7 @@ export function PoolProfileEditorDialog({
             <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-background p-3">
               <input
                 type="checkbox"
-                checked={profile.covered}
+                checked={isActive('covered') ? profile.covered : false}
                 onChange={(e) => update('covered', e.target.checked)}
                 className="h-4 w-4 accent-[oklch(0.45_0.12_195)]"
               />
