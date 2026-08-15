@@ -28,7 +28,12 @@ import { SPA_SPECIFICS, SPA_BRANDS } from '@/lib/pool/spa-data'
 interface PoolProfileData {
   id: string
   name: string
-  volume: number
+  /**
+   * Bound as a raw string while the user types (controlled number inputs must
+   * not round-trip through Number() — it can drop keystrokes in real browsers).
+   * Converted to a finite number in buildPoolProfilePatchBody at save time.
+   */
+  volume: number | string
   unit: string
   shape: string
   surfaceType: string
@@ -312,9 +317,11 @@ export function PoolProfileEditorDialog({
                   type="number"
                   min="0.1"
                   step={isSpa ? '0.1' : '1'}
-                  value={isActive('volume') ? profile.volume : ''}
+                  value={isActive('volume') ? String(profile.volume ?? '') : ''}
                   placeholder={isActive('volume') ? undefined : t('notProvided')}
-                  onChange={(e) => update('volume', Number(e.target.value))}
+                  // Raw string onChange: keeps every keystroke visible. The
+                  // numeric conversion happens only in buildPoolProfilePatchBody.
+                  onChange={(e) => update('volume', e.target.value)}
                 />
               </div>
               <div className="space-y-1.5">
