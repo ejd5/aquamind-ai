@@ -181,10 +181,11 @@ describe('BUG 2 — region non confirmé jamais PATCHé ni affiché', () => {
       join(process.cwd(), 'src/components/aquamind/pool-profile-editor.tsx'),
       'utf8',
     )
-    // The region input value must be gated on isConfirmed('region') and fall
-    // back to an empty/neutral value (placeholder « Non renseigné »).
-    expect(source).toMatch(/isConfirmed\('region'\) \? profile\.region/)
-    expect(source).toContain(`placeholder={isConfirmed('region') ? t('cityPlaceholder') : t('notProvided')}`)
+    // The region input value must be gated on isActive('region') (confirmed ||
+    // dirty) and fall back to an empty/neutral value (placeholder « Non
+    // renseigné »). Unconfirmed + untouched → never shows the raw GPS value.
+    expect(source).toMatch(/isActive\('region'\) \? profile\.region/)
+    expect(source).toContain(`placeholder={isActive('region') ? t('cityPlaceholder') : t('notProvided')}`)
   })
 
   it('contrat UI: le header ne reconstruit PAS le volume brut sans confirmedFields', () => {
