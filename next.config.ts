@@ -30,6 +30,15 @@ const sharedConfig = {
 const webConfig: NextConfig = {
   ...sharedConfig,
   output: 'standalone',
+  // PR #97: the standalone file tracer copies sharp's JS entry points but DROPS
+  // the platform-native libvips binary (@img/sharp-libvips-*/lib/libvips-cpp*.so)
+  // that sharp's .node binding dlopens at runtime — causing
+  // "ERR_DLOPEN_FAILED: libvips-cpp.so... cannot open shared object file" on the
+  // Vercel linux-x64 runtime. Force-include every @img/sharp native package so
+  // the standalone output ships libvips for the build platform.
+  outputFileTracingIncludes: {
+    '/api/**/*': ['./node_modules/@img/**/*', './node_modules/sharp/**/*'],
+  },
   allowedDevOrigins: ['*.space-z.ai', 'localhost', '127.0.0.1', '21.0.8.23'],
   async headers() {
     return [
