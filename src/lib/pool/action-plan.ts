@@ -64,7 +64,7 @@ export interface GeneratedActionPlan {
   diagnosis: string
   diagnosisKey: string
   diagnosisParams: Record<string, string | number>
-  severity: 'low' | 'medium' | 'high' | 'urgent'
+  severity: 'low' | 'medium' | 'high' | 'urgent' | 'insufficient'
   confidence: number
   immediateActions: ActionItem[]
   chemicalDosages: ChemicalDosage[]
@@ -289,6 +289,16 @@ export function generateActionPlan(test: WaterTestInput, profile: PoolProfileInp
       detail: `Filtrer au moins ${maxFiltration}h pour bien répartir les produits.`,
       detailKey: 'iaMaintainFiltrationHours',
       detailParams: { hours: maxFiltration },
+    })
+  } else if (test.temperature == null) {
+    // PR #96: without a measured temperature, do NOT pretend to compute a
+    // temperature-dependent duration. Give a prudent, unnumbered recommendation.
+    actions.push({
+      order: actions.length + 1,
+      action: 'Maintenir la filtration',
+      actionKey: 'iaMaintainFiltration',
+      detail: 'Filtration prudente : la durée dépend de la température de l\'eau. Relevez la température pour une recommandation précise.',
+      detailKey: 'iaMaintainFiltrationNoTemp',
     })
   } else {
     actions.push({

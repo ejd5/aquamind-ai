@@ -30,6 +30,7 @@ import type { TabId } from './app-shell'
 import { offlineApi } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
+import { isInsufficientQualityScore } from '@/lib/pool/scientific-quality'
 import { StripScanner } from './strip-scanner'
 
 interface Props {
@@ -55,11 +56,14 @@ interface WaterTestRow {
   source: string
   note: string | null
   createdAt: string
+  /** PR #96 — scientific completeness of the assessment (0..1). */
+  scientificQualityScore?: number | null
+  scientificLimitations?: string | null
 }
 
 interface ActionPlanResult {
   diagnosis: string
-  severity: 'low' | 'medium' | 'high' | 'urgent'
+  severity: 'low' | 'medium' | 'high' | 'urgent' | 'insufficient'
   immediateActions: { order: number; action: string; detail: string; product?: string }[]
   chemicalDosages: {
     param: string
@@ -79,6 +83,8 @@ interface ActionPlanResult {
   doNotDo: string[]
   estimatedCost: string
   whenToCallProfessional: string | null
+  /** PR #96 — scientific quality of the assessment (level source of truth). */
+  scientificQuality?: { level?: string } | null
 }
 
 const FIELDS: { key: string; labelKey: string; placeholder: string; required?: boolean }[] = [
@@ -115,8 +121,16 @@ const STATUS_BADGE: Record<string, { labelKey: string; cls: string }> = {
   critical: { labelKey: 'statusCritical', cls: 'border-destructive/30 bg-destructive/10 text-destructive' },
 }
 
+// PR #96 — a scientifically INSUFFICIENT assessment must never read as
+// "Équilibrée" nor expose a global /100 score.
+const PARTIAL_BADGE: { labelKey: string; cls: string } = {
+  labelKey: 'partialAssessment',
+  cls: 'border-border bg-muted text-muted-foreground',
+}
+
 const SEVERITY_CONFIG: Record<string, { labelKey: string; cls: string }> = {
   low: { labelKey: 'balanced', cls: 'border-[oklch(0.7_0.15_155)]/30 bg-[oklch(0.7_0.15_155)]/10 text-[oklch(0.45_0.13_155)]' },
+  insufficient: { labelKey: 'partialAssessment', cls: 'border-border bg-muted text-muted-foreground' },
   medium: { labelKey: 'watch', cls: 'border-yellow-400/30 bg-yellow-400/10 text-yellow-700 dark:text-yellow-300' },
   high: { labelKey: 'actionRecommended', cls: 'border-orange-400/30 bg-orange-400/10 text-orange-700 dark:text-orange-300' },
   urgent: { labelKey: 'urgent', cls: 'border-destructive/30 bg-destructive/10 text-destructive' },
@@ -461,8 +475,23 @@ export function ModuleWaterTest({ onNavigate, activePoolId }: Props) {
                 {t('generatedPlan')}
               </CardTitle>
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline" className={SEVERITY_CONFIG[plan.severity]?.cls || ''}>
-                  {SEVERITY_CONFIG[plan.severity] ? t(SEVERITY_CONFIG[plan.severity].labelKey as any) : plan.severity}
+                {/* PR #96: an insufficient assessment must never show the
+                    "Équilibrée" severity badge. */}
+                <Badge
+                  variant="outline"
+                  className={
+                    (plan.severity === 'insufficient' ||
+                      plan.scientificQuality?.level === 'insufficient'
+                      ? SEVERITY_CONFIG.insufficient
+                      : SEVERITY_CONFIG[plan.severity])?.cls || ''
+                  }
+                >
+                  {t(
+                    (plan.severity === 'insufficient' ||
+                      plan.scientificQuality?.level === 'insufficient'
+                      ? SEVERITY_CONFIG.insufficient
+                      : SEVERITY_CONFIG[plan.severity])?.labelKey as any,
+                  )}
                 </Badge>
                 <Badge variant="outline" className="border-primary/30 bg-primary/5 text-primary">
                   {SWIM_LABEL_KEY[plan.swimSafety] ? t(SWIM_LABEL_KEY[plan.swimSafety] as any) : plan.swimSafety}
@@ -632,7 +661,10 @@ export function ModuleWaterTest({ onNavigate, activePoolId }: Props) {
           ) : (
             <div className="custom-scroll max-h-96 space-y-2 overflow-y-auto pr-1">
               {tests.map((row) => {
-                const st = STATUS_BADGE[row.status] || STATUS_BADGE.ok
+                // PR #96: insufficient data → "Analyse partielle", never the
+                // "Équilibrée" badge nor a global /100 score.
+                const insufficient = isInsufficientQualityScore(row.scientificQualityScore)
+                const st = insufficient ? PARTIAL_BADGE : (STATUS_BADGE[row.status] || STATUS_BADGE.ok)
                 return (
                   <div
                     key={row.id}
@@ -670,9 +702,11 @@ export function ModuleWaterTest({ onNavigate, activePoolId }: Props) {
                       <Badge variant="outline" className={st.cls}>
                         {t(st.labelKey as any)}
                       </Badge>
-                      <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold">
-                        {row.clearWaterIndex}/100
-                      </span>
+                      {!insufficient && (
+                        <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold">
+                          {row.clearWaterIndex}/100
+                        </span>
+                      )}
                       <button
                         onClick={() => removeTest(row.id)}
                         className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"

@@ -43,6 +43,7 @@ interface Props {
 
 const SEVERITY_CLS: Record<string, string> = {
   low: 'border-[oklch(0.7_0.15_155)]/30 bg-[oklch(0.7_0.15_155)]/10 text-[oklch(0.45_0.13_155)]',
+  insufficient: 'border-border bg-muted text-muted-foreground',
   medium: 'border-yellow-400/30 bg-yellow-400/10 text-yellow-700 dark:text-yellow-300',
   high: 'border-orange-400/30 bg-orange-400/10 text-orange-700 dark:text-orange-300',
   urgent: 'border-destructive/30 bg-destructive/10 text-destructive',

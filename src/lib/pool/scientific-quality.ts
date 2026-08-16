@@ -102,11 +102,39 @@ export function isScientificallyValidMeasurement(
   return value >= range.min && value <= range.max
 }
 
+/**
+ * The existing `insufficient` quality threshold (score < 0.4) used by
+ * qualityLevel(). A score below this means too many core measurements are
+ * missing to support a COMPLETE global water-balance conclusion.
+ */
+export const INSUFFICIENT_QUALITY_SCORE = 0.4
+
 function qualityLevel(score: number): ScientificQualityLevel {
   if (score >= 0.85) return 'high'
   if (score >= 0.65) return 'medium'
-  if (score >= 0.4) return 'low'
+  if (score >= INSUFFICIENT_QUALITY_SCORE) return 'low'
   return 'insufficient'
+}
+
+/**
+ * PR #96 — an assessment whose scientific quality level is `insufficient`
+ * (i.e. the existing score < 0.4 threshold) must NEVER be presented as a
+ * complete "globalement équilibrée / eau parfaite" conclusion. This reuses the
+ * project's existing quality level as the single source of truth. `null`
+ * (no assessment) fails closed.
+ */
+export function isInsufficientAssessment(
+  assessment: { level?: ScientificQualityLevel } | null | undefined,
+): boolean {
+  return assessment == null || assessment.level === 'insufficient'
+}
+
+/**
+ * Score-only fallback for stored rows (e.g. history) that only carry
+ * `scientificQualityScore`. Same existing threshold, no new scientific model.
+ */
+export function isInsufficientQualityScore(score: number | null | undefined): boolean {
+  return score == null || score < INSUFFICIENT_QUALITY_SCORE
 }
 
 function disinfectantField(profile: ScientificProfileInput): 'freeChlorine' | 'bromine' {

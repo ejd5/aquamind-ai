@@ -1397,6 +1397,7 @@
     "diagnostic": "Diagnose",
     "severity": {
       "low": "Alles in Ordnung",
+      "insufficient": "Teilanalyse",
       "medium": "Beobachten",
       "high": "Aktion empfohlen",
       "urgent": "Dringend"
@@ -1892,6 +1893,7 @@
       "statusWarning": "Warnung",
       "statusCritical": "Kritisch",
       "balanced": "Ausgeglichen",
+      "partialAssessment": "Teilanalyse",
       "watch": "Beobachten",
       "actionRecommended": "Aktion empfohlen",
       "urgent": "Dringend",
@@ -3816,6 +3818,7 @@
     "iaTreatPhosphatesDetail": "Phosphate {phosphates} mg/L: nähren Algen. Einen Phosphatentferner verwenden.",
     "iaMaintainFiltrationHours": "Mindestens {hours}h filtern, um die Produkte gut zu verteilen.",
     "iaMaintainFiltrationNormal": "Normale Filtration (Hälfte der Wassertemperatur in Stunden).",
+    "iaMaintainFiltrationNoTemp": "Vorsichtige Filtration: Die Dauer hängt von der Wassertemperatur ab. Temperatur erfassen für eine präzise Empfehlung.",
     "iaRetestHours": "In {hours}h erneut testen, um die Wirkung zu überprüfen.",
     "iaRetestDefault": "In 24-48h erneut testen.",
     "iaAdjustTacProduct": "TAC+",
@@ -3835,6 +3838,8 @@
     "dndNoAddStabilizer": "Keinen Stabilisator hinzufügen: der Wert ist bereits zu hoch.",
     "diagBalanced": "Ihr Wasser ist insgesamt ausgeglichen (Index {cwi}/100). Behalten Sie Test- und Filtrationsrhythmus bei. Baden: {swim}.",
     "diagIssues": "Diagnose ({sevLabel}) Kristallwasser-Index {cwi}/100. Zu behandelnde Punkte: {issues}. Folgen Sie dem nachstehenden geordneten Aktionsplan. Baden: {swim}.",
+    "diagPartial": "pH im Zielbereich. Unzureichende Daten zur Bewertung des gesamten Wasserhaushalts. Baden: {swim}.",
+    "diagPartialIssues": "Anomalie erkannt: {issues}. Unzureichende Daten zur Bewertung des gesamten Wasserhaushalts. Baden: {swim}.",
     "sevLabelUrgent": "DRINGEND",
     "sevLabelHigh": "Handlung empfohlen",
     "sevLabelMedium": "Zu überwachen",
