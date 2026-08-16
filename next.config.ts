@@ -34,10 +34,14 @@ const webConfig: NextConfig = {
   // the platform-native libvips binary (@img/sharp-libvips-*/lib/libvips-cpp*.so)
   // that sharp's .node binding dlopens at runtime — causing
   // "ERR_DLOPEN_FAILED: libvips-cpp.so... cannot open shared object file" on the
-  // Vercel linux-x64 runtime. Force-include every @img/sharp native package so
-  // the standalone output ships libvips for the build platform.
+  // Vercel linux-x64 runtime.
+  // PR #98: scope the tracing STRICTLY to the routes that actually import
+  // normalizeImageForAi (sharp). A broad '/api/**/*' glob pulls the native
+  // packages into every API route's trace, which pushed the Vercel deployment
+  // over the 12 Serverless Functions limit on the Hobby plan.
   outputFileTracingIncludes: {
-    '/api/**/*': ['./node_modules/@img/**/*', './node_modules/sharp/**/*'],
+    '/api/pool/strip-scan': ['./node_modules/@img/**/*', './node_modules/sharp/**/*'],
+    '/api/pool/photo-diagnostic': ['./node_modules/@img/**/*', './node_modules/sharp/**/*'],
   },
   allowedDevOrigins: ['*.space-z.ai', 'localhost', '127.0.0.1', '21.0.8.23'],
   async headers() {

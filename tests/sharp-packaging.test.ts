@@ -38,12 +38,19 @@ describe('PR #97 — sharp linux runtime packaging', () => {
     expect(pkg).toMatch(/"sharp": "\^0\.35/)
   })
 
-  it('next.config.ts forces the native @img packages into the standalone trace', () => {
+  it('next.config.ts scopes the native @img trace to the TWO sharp routes only', () => {
     const cfg = readFileSync(join(root, 'next.config.ts'), 'utf8')
     expect(cfg).toContain("output: 'standalone'")
     expect(cfg).toContain('outputFileTracingIncludes')
-    expect(cfg).toContain("'./node_modules/@img/**/*'")
-    expect(cfg).toContain("'./node_modules/sharp/**/*'")
+    // Both image routes must carry the native packages…
+    expect(cfg).toContain("'/api/pool/strip-scan': ['./node_modules/@img/**/*', './node_modules/sharp/**/*']")
+    expect(cfg).toContain("'/api/pool/photo-diagnostic': ['./node_modules/@img/**/*', './node_modules/sharp/**/*']")
+    // …and the tracing body must NOT contain the global '/api/**/*' glob, so
+    // every other API route does not pull the native sharp packages into its
+    // trace (the PR #98 Vercel function-count hotfix).
+    const body = cfg.slice(cfg.indexOf('outputFileTracingIncludes'))
+    expect(body).not.toContain("'/api/**/*'")
+    expect(body).not.toContain('/api/**')
   })
 
   it.skipIf(!STANDALONE_EXISTS)(
