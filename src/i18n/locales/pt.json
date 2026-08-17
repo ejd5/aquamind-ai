@@ -269,7 +269,8 @@
       "messageRequired": "Mensagem obrigatória",
       "testIdValuesRequired": "testId ou values obrigatório",
       "idRequired": "id obrigatório",
-      "idRequiredUpper": "ID obrigatório"
+      "idRequiredUpper": "ID obrigatório",
+      "poolNotFound": "Piscina não encontrada"
     }
   },
   "nav": {
@@ -1469,7 +1470,9 @@
     "tabPhotoPool": "Foto piscina",
     "tabStrip": "Tira reagente",
     "requalificationNeeded": "Plano a requalificar",
-    "requalificationNeededDesc": "Este plano não pode ser apresentado como plano atual. Execute uma regeneração científica ou introduza uma nova medição."
+    "requalificationNeededDesc": "Este plano não pode ser apresentado como plano atual. Execute uma regeneração científica ou introduza uma nova medição.",
+    "analysisUnreadable": "Resposta não interpretável",
+    "analysisUnreadableDesc": "A análise de IA não pôde ser estruturada. Tente uma foto mais nítida ou tente novamente."
   },
   "weather": {
     "locateMe": "Localizar-me",
@@ -5078,7 +5081,19 @@
     "savedFromDiagnosticDesc": "O teste de água foi guardado com os valores digitalizados.",
     "scanAnother": "Digitalizar outra tira",
     "diagnosticStripCta": "Digitalizar a minha tira",
-    "diagnosticStripCtaDesc": "A IA lê as almofadas de cor da sua tira e preenche automaticamente os valores do teste de água."
+    "diagnosticStripCtaDesc": "A IA lê as almofadas de cor da sua tira e preenche automaticamente os valores do teste de água.",
+    "scanTimeout": "Análise demasiado longa",
+    "scanTimeoutDesc": "A análise excedeu o tempo limite. Tente novamente ou use outra foto.",
+    "progressPrep": "A preparar a imagem…",
+    "progressRead": "A ler a tira de teste…",
+    "progressColor": "A analisar as cores…",
+    "progressCheck": "A verificar a coerência…",
+    "progressResult": "A gerar o resultado…",
+    "indicativeReading": "Leitura indicativa",
+    "indicativeReadingDesc": "Confiança média — verifique os valores antes de os utilizar.",
+    "guideStep1Illustration": "",
+    "guideStep2Illustration": "",
+    "guideStep3Illustration": ""
   },
   "gates": {
     "photo_scan_limit": "Limite mensal de {n} digitalizações atingido. Atualize para um plano superior para continuar."
@@ -7271,5 +7286,9 @@
     "sessionNotFound": "Sessão de pagamento não encontrada.",
     "genericError": "Ocorreu um erro. Tente novamente.",
     "cta": "Aproveitar a oferta"
+  },
+  "photoDiagnostic": {
+    "imageRequired": "Imagem base64 necessária",
+    "analysisFailed": "Análise falhada"
   }
 }

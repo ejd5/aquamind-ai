@@ -20,6 +20,9 @@ import { normalizeImageForAi, SecureImageError } from '@/lib/images/secure-image
 import { isPoolFieldConfirmed } from '@/lib/pool/onboarding-form'
 
 export const runtime = 'nodejs'
+// Vercel Hobby par défaut = 10s. La lecture de bandelette par vision peut
+// prendre 30-60s ; on monte explicitement le maxDuration (fix timeout).
+export const maxDuration = 60
 
 /**
  * AQWELIA StripScan™ — IA-powered pool/spa test strip scanner.
@@ -342,7 +345,8 @@ export async function POST(req: NextRequest) {
         { status: e.statusCode },
       )
     }
-    const msg = e instanceof Error ? e.message : 'Erreur'
+    // P0-A i18n : ne jamais renvoyer de message d'erreur brut anglais au client.
+    const msg = await translate(locale, 'stripScan.analysisFailed', "Échec de l'analyse")
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

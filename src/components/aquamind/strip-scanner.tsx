@@ -205,14 +205,30 @@ export function StripScanner({ open, onClose, onSave }: Props) {
       }
     } catch (e) {
       hapticError()
-      const msg = e instanceof ApiError ? e.message : e instanceof Error ? e.message : t('analysisFailed')
+      // P0-A / P0-B : un timeout réseau (fetch aborted / serverless killed) ne
+      // doit JAMAIS afficher le message brut anglais « The operation was aborted
+      // due to timeout ». On le traduit proprement + boutons réessayer / changer.
+      const isTimeout =
+        (e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError')) ||
+        (e instanceof DOMException && e.name === 'AbortError')
+      const msg = isTimeout
+        ? t('scanTimeout')
+        : e instanceof ApiError
+          ? e.message
+          : e instanceof Error
+            ? e.message
+            : t('analysisFailed')
       setError(msg)
       // If quota exceeded, the API returns 403 with quota info in body
       if (e instanceof ApiError && e.status === 403 && (e.body as any)?.quota) {
         setQuota((e.body as any).quota)
       }
       setStage('capture')
-      toast({ title: t('errorTitle'), description: msg, variant: 'destructive' })
+      toast({
+        title: t('errorTitle'),
+        description: isTimeout ? t('scanTimeoutDesc') : msg,
+        variant: 'destructive',
+      })
     }
   }, [image, isOnline, t])
 
@@ -235,11 +251,14 @@ export function StripScanner({ open, onClose, onSave }: Props) {
   }
 
   // ── Render helpers ────────────────────────────────────────────────────────
+  // Les étapes guidées acceptent désormais un slot `illustration` (future image
+  // pédagogique IA). La structure est prête : si `illustration` est fournie,
+  // le composant GuideStage l'affiche (image + titre + description + bullets).
   const guidedSteps = useMemo(
     () => [
-      { icon: Lightbulb, title: t('guideStep1Title'), text: t('guideStep1Text') },
-      { icon: Camera, title: t('guideStep2Title'), text: t('guideStep2Text') },
-      { icon: ScanLine, title: t('guideStep3Title'), text: t('guideStep3Text') },
+      { icon: Lightbulb, title: t('guideStep1Title'), text: t('guideStep1Text'), illustration: t('guideStep1Illustration') },
+      { icon: Camera, title: t('guideStep2Title'), text: t('guideStep2Text'), illustration: t('guideStep2Illustration') },
+      { icon: ScanLine, title: t('guideStep3Title'), text: t('guideStep3Text'), illustration: t('guideStep3Illustration') },
     ],
     [t]
   )
@@ -349,7 +368,7 @@ function GuideStage({
   onStart,
   t,
 }: {
-  steps: { icon: any; title: string; text: string }[]
+  steps: { icon: any; title: string; text: string; illustration?: string }[]
   guidedStep: number
   setGuidedStep: (n: number) => void
   onStart: () => void
@@ -376,6 +395,17 @@ function GuideStage({
             <p className="mt-0.5 text-sm text-muted-foreground">{Step.text}</p>
           </div>
         </div>
+        {/* Slot illustration pédagogique (visuel IA futur). Affiche l'image si
+            fournie ; sinon rend un cadre réservé discret et léger. */}
+        {Step.illustration && (
+          <div className="mt-3 overflow-hidden rounded-xl border border-gold/20 bg-background/60">
+            <img
+              src={Step.illustration}
+              alt={Step.title}
+              className="max-h-44 w-full object-cover"
+            />
+          </div>
+        )}
         {/* Progress dots */}
         <div className="mt-4 flex items-center gap-1.5">
           {steps.map((_, i) => (
@@ -557,8 +587,27 @@ function CaptureStage({
   )
 }
 
-// ── Analyzing stage (scan animation) ─────────────────────────────────────────
+// ── Analyzing stage (scan animation + états de progression) ────────────────
 function AnalyzingStage({ image, t }: { image: string | null; t: any }) {
+  // Progression dynamique des 5 étapes (P0) : chaque étape passe en "terminée"
+  // après un délai croissant, pour refléter l'avancement réel de l'analyse.
+  const STEPS = useMemo(
+    () => [
+      t('progressPrep'),
+      t('progressRead'),
+      t('progressColor'),
+      t('progressCheck'),
+      t('progressResult'),
+    ],
+    [t]
+  )
+  const [stepIdx, setStepIdx] = useState(0)
+  useEffect(() => {
+    if (stepIdx >= STEPS.length - 1) return
+    const id = setTimeout(() => setStepIdx((i) => i + 1), 2800)
+    return () => clearTimeout(id)
+  }, [stepIdx, STEPS.length])
+
   return (
     <div className="space-y-4">
       <div className="relative mx-auto max-w-md overflow-hidden rounded-2xl border border-gold/30">
@@ -585,18 +634,25 @@ function AnalyzingStage({ image, t }: { image: string | null; t: any }) {
       </div>
 
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">{t('analyzingStep1')}</span>
-          <CheckCircle2 className="h-3.5 w-3.5 text-[oklch(0.7_0.15_155)]" />
-        </div>
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">{t('analyzingStep2')}</span>
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-gold" />
-        </div>
-        <div className="flex items-center justify-between text-xs opacity-50">
-          <span className="text-muted-foreground">{t('analyzingStep3')}</span>
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-        </div>
+        {STEPS.map((label, i) => {
+          const done = i < stepIdx
+          const active = i === stepIdx
+          return (
+            <div
+              key={label}
+              className={`flex items-center justify-between text-xs transition-opacity ${active ? '' : done ? '' : 'opacity-45'}`}
+            >
+              <span className="text-muted-foreground">{label}</span>
+              {done ? (
+                <CheckCircle2 className="h-3.5 w-3.5 text-[oklch(0.7_0.15_155)]" />
+              ) : active ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-gold" />
+              ) : (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              )}
+            </div>
+          )
+        })}
       </div>
 
       <style jsx>{`
@@ -723,6 +779,15 @@ function ResultsStage({
         </div>
         {analysis.qualityNotes && (
           <p className="mt-1.5 text-[11px] text-muted-foreground">{analysis.qualityNotes}</p>
+        )}
+        {/* Lecture indicative quand la confiance globale est moyenne (P1) */}
+        {analysis.overallConfidence < 75 && (
+          <div className="mt-2 flex items-start gap-1.5 rounded-lg border border-yellow-400/30 bg-yellow-400/5 p-2 text-[11px] text-yellow-700 dark:text-yellow-300">
+            <Info className="mt-0.5 h-3 w-3 shrink-0" />
+            <p>
+              <strong>{t('indicativeReading')}</strong> {t('indicativeReadingDesc')}
+            </p>
+          </div>
         )}
       </div>
 

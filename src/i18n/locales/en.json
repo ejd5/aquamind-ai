@@ -155,7 +155,8 @@
       "messageRequired": "Message required",
       "testIdValuesRequired": "testId or values required",
       "idRequired": "id required",
-      "idRequiredUpper": "ID required"
+      "idRequiredUpper": "ID required",
+      "poolNotFound": "Pool not found"
     },
     "emergency": {
       "title": "I have a problem",
@@ -1589,7 +1590,9 @@
     "tabPhotoPool": "Pool photo",
     "tabStrip": "Test strip",
     "requalificationNeeded": "Plan needs requalification",
-    "requalificationNeededDesc": "This plan cannot be shown as the current plan. Run a scientific regeneration or enter a new measurement."
+    "requalificationNeededDesc": "This plan cannot be shown as the current plan. Run a scientific regeneration or enter a new measurement.",
+    "analysisUnreadable": "Unreadable response",
+    "analysisUnreadableDesc": "The AI analysis could not be structured. Try a sharper photo or retry."
   },
   "weather": {
     "locateMe": "Locate me",
@@ -5454,7 +5457,19 @@
     "diagnosticStripCtaDesc": "The AI reads the color pads on your strip and auto-fills the water test values.",
     "statusActionRequired": "⚠️ Action required",
     "statusWatch": "👀 Watch",
-    "statusBalanced": "✅ Water balanced"
+    "statusBalanced": "✅ Water balanced",
+    "scanTimeout": "Analysis took too long",
+    "scanTimeoutDesc": "The analysis timed out. Retry or use another photo.",
+    "progressPrep": "Preparing image…",
+    "progressRead": "Reading test strip…",
+    "progressColor": "Analyzing colours…",
+    "progressCheck": "Checking consistency…",
+    "progressResult": "Generating result…",
+    "indicativeReading": "Indicative reading",
+    "indicativeReadingDesc": "Medium confidence — double-check the values before using them.",
+    "guideStep1Illustration": "",
+    "guideStep2Illustration": "",
+    "guideStep3Illustration": ""
   },
   "gates": {
     "photo_scan_limit": "Monthly limit of {n} scans reached. Upgrade to a higher plan to continue."
@@ -7618,5 +7633,9 @@
     "sessionNotFound": "Payment session not found.",
     "genericError": "Something went wrong. Please try again.",
     "cta": "Claim the offer"
+  },
+  "photoDiagnostic": {
+    "imageRequired": "Base64 image required",
+    "analysisFailed": "Analysis failed"
   }
 }

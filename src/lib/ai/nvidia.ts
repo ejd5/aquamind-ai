@@ -39,6 +39,8 @@ function ensureApiKey(): string {
 /**
  * Vision chat completion — for photo diagnostic.
  * Accepts a prompt + base64 image, returns text response.
+ * Un seul retry automatique en cas de timeout réseau (AbortError) : l'appel est
+ * purement de lecture côté IA ; toute persistance a lieu après, donc sûr.
  */
 export async function nvidiaVision(
   prompt: string,
@@ -70,27 +72,40 @@ export async function nvidiaVision(
     stream: false,
   }
 
-  const res = await fetch(`${NVIDIA_BASE_URL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-      Accept: 'application/json',
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(60000), // 60s timeout for vision
-  })
+  const call = async (): Promise<VisionResult> => {
+    const res = await fetch(`${NVIDIA_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(60000), // 60s timeout for vision
+    })
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`NVIDIA API error ${res.status}: ${text.slice(0, 300)}`)
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      throw new Error(`NVIDIA API error ${res.status}: ${text.slice(0, 300)}`)
+    }
+
+    const data = await res.json()
+    const content = data?.choices?.[0]?.message?.content || ''
+    const usage = data?.usage
+
+    return { content, usage }
   }
 
-  const data = await res.json()
-  const content = data?.choices?.[0]?.message?.content || ''
-  const usage = data?.usage
-
-  return { content, usage }
+  try {
+    return await call()
+  } catch (e) {
+    const isTimeout = e instanceof Error && e.name === 'TimeoutError' || e instanceof DOMException && e.name === 'AbortError'
+    if (isTimeout) {
+      // Un seul retry : les modèles vision peuvent dépasser la première fenêtre.
+      return await call()
+    }
+    throw e
+  }
 }
 
 /**

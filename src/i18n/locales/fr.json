@@ -27,7 +27,6 @@
     "iaMaintainFiltrationHours": "Filtrer au moins {hours}h pour bien repartir les produits.",
     "iaMaintainFiltrationNormal": "Filtration normale (moitie de la temperature de l'eau en heures).",
     "iaMaintainFiltrationNoTemp": "Filtration prudente : la durée dépend de la température de l'eau. Relevez la température pour une recommandation précise.",
-    "iaMaintainFiltrationNoTemp": "Filtration prudente : la durée dépend de la température de l'eau. Relevez la température pour une recommandation précise.",
     "iaRetestHours": "Refaire un test dans {hours}h pour verifier l'effet.",
     "iaRetestDefault": "Refaire un test dans 24-48h.",
     "iaAdjustTacProduct": "TAC+",
@@ -47,8 +46,6 @@
     "dndNoAddStabilizer": "Ne pas ajouter de stabilisant : le niveau est deja trop eleve.",
     "diagBalanced": "Votre eau est globalement equilibree (indice {cwi}/100). Maintenez le rythme de tests et de filtration. Baignade : {swim}.",
     "diagIssues": "Diagnostic ({sevLabel}) indice eau claire {cwi}/100. Points a traiter : {issues}. Suivez le plan d'action ordonne ci-dessous. Baignade : {swim}.",
-    "diagPartial": "pH dans la plage cible. Données insuffisantes pour évaluer l'équilibre global de l'eau. Baignade : {swim}.",
-    "diagPartialIssues": "Anomalie détectée : {issues}. Données insuffisantes pour évaluer l'équilibre global de l'eau. Baignade : {swim}.",
     "diagPartial": "pH dans la plage cible. Données insuffisantes pour évaluer l'équilibre global de l'eau. Baignade : {swim}.",
     "diagPartialIssues": "Anomalie détectée : {issues}. Données insuffisantes pour évaluer l'équilibre global de l'eau. Baignade : {swim}.",
     "sevLabelUrgent": "URGENT",
@@ -158,7 +155,8 @@
       "messageRequired": "Message requis",
       "testIdValuesRequired": "testId ou values requis",
       "idRequired": "id requis",
-      "idRequiredUpper": "ID requis"
+      "idRequiredUpper": "ID requis",
+      "poolNotFound": "Piscine introuvable"
     },
     "emergency": {
       "title": "J'ai un problème",
@@ -1539,7 +1537,6 @@
     "severity": {
       "low": "Tout va bien",
       "insufficient": "Analyse partielle",
-      "insufficient": "Analyse partielle",
       "medium": "À surveiller",
       "high": "Action recommandée",
       "urgent": "Urgent"
@@ -1595,7 +1592,9 @@
     "tabPhotoPool": "Photo piscine",
     "tabStrip": "Bandelette",
     "requalificationNeeded": "Plan à requalifier",
-    "requalificationNeededDesc": "Ce plan ne peut pas être affiché comme plan actuel. Lancez une régénération scientifique ou saisissez une nouvelle mesure."
+    "requalificationNeededDesc": "Ce plan ne peut pas être affiché comme plan actuel. Lancez une régénération scientifique ou saisissez une nouvelle mesure.",
+    "analysisUnreadable": "Réponse non interprétable",
+    "analysisUnreadableDesc": "L'analyse IA n'a pas pu être structurée. Essayez une photo plus nette ou réessayez."
   },
   "weather": {
     "locateMe": "Me localiser",
@@ -2019,7 +2018,6 @@
       "statusWarning": "Attention",
       "statusCritical": "Critique",
       "balanced": "Équilibrée",
-      "partialAssessment": "Analyse partielle",
       "partialAssessment": "Analyse partielle",
       "watch": "À surveiller",
       "actionRecommended": "Action recommandée",
@@ -5462,7 +5460,19 @@
     "diagnosticStripCtaDesc": "L'IA lit les pads couleur de votre bandelette et remplit automatiquement les valeurs du test d'eau.",
     "statusActionRequired": "⚠️ Action requise",
     "statusWatch": "👀 À surveiller",
-    "statusBalanced": "✅ Eau équilibrée"
+    "statusBalanced": "✅ Eau équilibrée",
+    "scanTimeout": "Analyse trop longue",
+    "scanTimeoutDesc": "Le délai d'analyse est dépassé. Réessayez ou changez de photo.",
+    "progressPrep": "Préparation de l’image…",
+    "progressRead": "Lecture de la bandelette…",
+    "progressColor": "Analyse des couleurs…",
+    "progressCheck": "Vérification de cohérence…",
+    "progressResult": "Génération du résultat…",
+    "indicativeReading": "Lecture indicative",
+    "indicativeReadingDesc": "Confiance moyenne — vérifiez les valeurs avant de les utiliser.",
+    "guideStep1Illustration": "",
+    "guideStep2Illustration": "",
+    "guideStep3Illustration": ""
   },
   "gates": {
     "photo_scan_limit": "Limite de {n} scans/mois atteinte. Passez à un plan supérieur pour continuer."
@@ -7626,5 +7636,9 @@
     "sessionNotFound": "La session de paiement est introuvable.",
     "genericError": "Une erreur est survenue. Réessayez.",
     "cta": "Profiter de l'offre"
+  },
+  "photoDiagnostic": {
+    "imageRequired": "Image base64 requise",
+    "analysisFailed": "Analyse impossible"
   }
 }

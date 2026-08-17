@@ -269,7 +269,8 @@
       "messageRequired": "Bericht vereist",
       "testIdValuesRequired": "testId of values vereist",
       "idRequired": "id vereist",
-      "idRequiredUpper": "ID vereist"
+      "idRequiredUpper": "ID vereist",
+      "poolNotFound": "Zwembad niet gevonden"
     }
   },
   "nav": {
@@ -1469,7 +1470,9 @@
     "tabPhotoPool": "Zwembadfoto",
     "tabStrip": "Teststrook",
     "requalificationNeeded": "Plan moet worden herbeoordeeld",
-    "requalificationNeededDesc": "Dit plan kan niet als huidig plan worden getoond. Voer een wetenschappelijke regeneratie uit of voer een nieuwe meting in."
+    "requalificationNeededDesc": "Dit plan kan niet als huidig plan worden getoond. Voer een wetenschappelijke regeneratie uit of voer een nieuwe meting in.",
+    "analysisUnreadable": "Antwoord niet leesbaar",
+    "analysisUnreadableDesc": "De AI-analyse kon niet worden gestructureerd. Probeer een scherpere foto of probeer het opnieuw."
   },
   "weather": {
     "locateMe": "Mij lokaliseren",
@@ -5078,7 +5081,19 @@
     "savedFromDiagnosticDesc": "De watertest is opgeslagen met de gescande waarden.",
     "scanAnother": "Andere strook scannen",
     "diagnosticStripCta": "Mijn teststrook scannen",
-    "diagnosticStripCtaDesc": "De AI leest de kleurvelden van uw strook en vult automatisch de waarden van de watertest in."
+    "diagnosticStripCtaDesc": "De AI leest de kleurvelden van uw strook en vult automatisch de waarden van de watertest in.",
+    "scanTimeout": "Analyse duurde te lang",
+    "scanTimeoutDesc": "Het tijdslimiet van de analyse is overschreden. Probeer opnieuw of gebruik een andere foto.",
+    "progressPrep": "Afbeelding voorbereiden…",
+    "progressRead": "Teststrip lezen…",
+    "progressColor": "Kleuren analyseren…",
+    "progressCheck": "Consistentie controleren…",
+    "progressResult": "Resultaat genereren…",
+    "indicativeReading": "Indicatieve meting",
+    "indicativeReadingDesc": "Gemiddeld vertrouwen — controleer de waarden voor gebruik.",
+    "guideStep1Illustration": "",
+    "guideStep2Illustration": "",
+    "guideStep3Illustration": ""
   },
   "gates": {
     "photo_scan_limit": "Maandelijkse limiet van {n} scans bereikt. Upgrade naar een hoger abonnement om door te gaan."
@@ -7271,5 +7286,9 @@
     "sessionNotFound": "Betaalsessie niet gevonden.",
     "genericError": "Er is een fout opgetreden. Probeer het opnieuw.",
     "cta": "Profiteer van het aanbod"
+  },
+  "photoDiagnostic": {
+    "imageRequired": "Base64-afbeelding vereist",
+    "analysisFailed": "Analyse mislukt"
   }
 }
