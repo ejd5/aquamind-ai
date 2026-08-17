@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
+// Round 2 contract: language-neutral assets, app-owned branding and i18n copy.
 const ROOT = process.cwd()
 const stripAssets = [
   '/guides/stripscan/stripscan-guide-1-prepare.svg',
