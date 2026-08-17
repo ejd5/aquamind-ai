@@ -11,7 +11,7 @@
  * inset.
  */
 import Link from 'next/link'
-import { Sparkles, ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from "lucide-react"
 import { Footer } from '@/components/aquamind/footer'
 import { getTranslations } from 'next-intl/server'
 
@@ -53,18 +53,8 @@ export default async function BusinessLayout({
             <img
               src="/branding/aqwelia-logo-main.png"
               alt="AQWELIA"
-              className="h-10 w-auto object-contain"
+              className="h-12 w-auto object-contain"
             />
-            <div className="leading-tight">
-              <div className="font-display text-base font-bold tracking-tight">
-                <span className="aqua-text-gradient">AQWELIA</span>{' '}
-                <span className="text-gold">Business</span>
-              </div>
-              <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                {t('badgePro')}
-              </div>
-            </div>
-            <Sparkles className="h-3.5 w-3.5 text-gold" />
           </Link>
 
           {/* Desktop nav */}

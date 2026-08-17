@@ -71,20 +71,10 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
           {/* Logo */}
           <button
             onClick={() => scrollToId('top')}
-            className="flex items-center gap-2.5"
+            className="flex items-center"
             aria-label={t('headerAriaLogo')}
           >
-            <div className="relative">
-          <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="h-16 w-auto object-contain" />
-            </div>
-            <div className="leading-tight">
-              <div className="flex items-center gap-1.5 text-lg font-bold tracking-tight">
-                <span className="aqua-text-gradient">AQWELIA</span>
-              </div>
-              <div className="hidden text-[11px] uppercase tracking-[0.22em] text-muted-foreground sm:block">
-                {t('headerCopilote')}
-              </div>
-            </div>
+            <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="h-20 w-auto object-contain" />
           </button>
 
           {/* Desktop nav links */}
@@ -259,16 +249,8 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
           {/* Top row: Brand (left) + Disclaimer (centered) */}
           <div className="mb-8 flex flex-col items-start gap-6 md:flex-row md:items-start md:justify-between">
             {/* Brand — left */}
-            <div className="flex items-center gap-2.5 shrink-0">
-              <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="h-16 w-auto object-contain" />
-              <div>
-                <div className="font-display text-base font-bold tracking-tight text-white [text-shadow:_0_1px_2px_rgb(0_0_0),_0_-1px_2px_rgb(0_0_0),_1px_0_2px_rgb(0_0_0),_-1px_0_2px_rgb(0_0_0)]">
-                  <span className="aqua-text-gradient">AQWELIA</span>
-                </div>
-                <div className="text-[10px] uppercase tracking-[0.22em] text-white font-bold [text-shadow:_0_1px_2px_rgb(0_0_0),_0_-1px_2px_rgb(0_0_0),_1px_0_2px_rgb(0_0_0),_-1px_0_2px_rgb(0_0_0)]">
-                  {t('footerTagline2')}
-                </div>
-              </div>
+            <div className="flex items-center shrink-0">
+              <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="h-20 w-auto object-contain" />
             </div>
 
             {/* Disclaimer — centered */}

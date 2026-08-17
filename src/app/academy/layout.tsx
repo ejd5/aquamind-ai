@@ -15,7 +15,7 @@
  * requires login (handled client-side via the academy API routes).
  */
 import Link from 'next/link'
-import { Sparkles, ArrowLeft, GraduationCap } from 'lucide-react'
+import { Sparkles, ArrowLeft } from "lucide-react"
 import { Footer } from '@/components/aquamind/footer'
 import { getTranslations } from 'next-intl/server'
 import { BreadcrumbListSchema } from '@/components/seo/structured-data'
@@ -61,17 +61,7 @@ export default async function AcademyLayout({ children }: { children: React.Reac
 
           {/* Brand */}
           <Link href="/academy" className="flex items-center gap-2" aria-label="AQWELIA Academy">
-            <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="h-10 w-auto object-contain" />
-            <div className="leading-tight">
-              <div className="font-display text-base font-bold tracking-tight">
-                <span className="aqua-text-gradient">AQWELIA</span>{' '}
-                <span className="text-gold">Academy</span>
-              </div>
-              <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                {t('badgeAcademy')}
-              </div>
-            </div>
-            <GraduationCap className="h-3.5 w-3.5 text-gold" />
+            <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="h-12 w-auto object-contain" />
           </Link>
 
           {/* Desktop nav */}

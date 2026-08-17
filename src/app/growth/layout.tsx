@@ -10,7 +10,7 @@
  * backdrop-blur, font-display). Respects the iOS safe-area-top inset.
  */
 import Link from 'next/link'
-import { Sparkles, ArrowLeft, TrendingUp } from 'lucide-react'
+import { Sparkles, ArrowLeft } from "lucide-react"
 import { Footer } from '@/components/aquamind/footer'
 import { getTranslations } from 'next-intl/server'
 
@@ -51,17 +51,7 @@ export default async function GrowthLayout({
             className="flex items-center gap-2"
             aria-label="AQWELIA Growth OS"
           >
-            <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="h-10 w-auto object-contain" />
-            <div className="leading-tight">
-              <div className="font-display text-base font-bold tracking-tight">
-                <span className="aqua-text-gradient">AQWELIA</span>{' '}
-                <span className="text-gold">Growth OS</span>
-              </div>
-              <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                {t('badgeGrowthOS')}
-              </div>
-            </div>
-            <TrendingUp className="h-3.5 w-3.5 text-gold" />
+            <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="h-12 w-auto object-contain" />
           </Link>
 
           {/* Desktop nav */}

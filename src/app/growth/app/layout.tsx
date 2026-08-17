@@ -92,18 +92,8 @@ export default async function GrowthAppLayout({
             <img
               src="/branding/aqwelia-logo-main.png"
               alt="AQWELIA"
-              className="h-9 w-auto object-contain"
+              className="h-12 w-auto object-contain"
             />
-            <div className="leading-tight">
-              <div className="font-display text-base font-bold tracking-tight">
-                <span className="aqua-text-gradient">AQWELIA</span>{' '}
-                <span className="text-gold">Growth OS</span>
-              </div>
-              <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                {t('brandTagline')}
-              </div>
-            </div>
-            <TrendingUp className="h-3.5 w-3.5 text-gold" />
           </Link>
 
           {/* Organization name + sign out */}

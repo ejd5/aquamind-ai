@@ -10,18 +10,7 @@
  */
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import {
-  ArrowRight,
-  ArrowLeft,
-  Sparkles,
-  BadgeDollarSign,
-  ClipboardCheck,
-  Link2,
-  Users,
-  ShieldCheck,
-  Handshake,
-  Gift,
-} from 'lucide-react'
+import { ArrowRight, ArrowLeft, Sparkles, BadgeDollarSign, ClipboardCheck, Link2, Users, ShieldCheck, Handshake } from "lucide-react"
 import { getTranslations } from 'next-intl/server'
 import { Footer } from '@/components/aquamind/footer'
 
@@ -70,17 +59,7 @@ export default async function AffiliationPage() {
             <span className="hidden sm:inline">{t('ctaBackPartners')}</span>
           </Link>
           <Link href="/partenaires" className="flex items-center gap-2" aria-label="AQWELIA Partenaires">
-            <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="h-10 w-auto object-contain" />
-            <div className="leading-tight">
-              <div className="font-display text-base font-bold tracking-tight">
-                <span className="aqua-text-gradient">AQWELIA</span>{' '}
-                <span className="text-gold">{t('affiliationBrandSuffix')}</span>
-              </div>
-              <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                {t('affiliationBadge')}
-              </div>
-            </div>
-            <Gift className="h-4 w-4 text-gold" />
+            <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="h-12 w-auto object-contain" />
           </Link>
           <Link
             href="/partenaires/piscinistes#postuler"
