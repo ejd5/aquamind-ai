@@ -1473,7 +1473,16 @@
     "requalificationNeededDesc": "Dieser Plan kann nicht als aktueller Plan angezeigt werden. Führen Sie eine wissenschaftliche Neugenerierung durch oder geben Sie eine neue Messung ein.",
     "analysisUnreadable": "Antwort nicht lesbar",
     "analysisUnreadableDesc": "Die KI-Analyse konnte nicht strukturiert werden. Verwenden Sie ein schärferes Foto oder versuchen Sie es erneut.",
-    "analysisTimeout": "Die Analyse dauerte zu lange. Versuchen Sie es erneut oder machen Sie ein schärferes Foto."
+    "analysisTimeout": "Die Analyse dauerte zu lange. Versuchen Sie es erneut oder machen Sie ein schärferes Foto.",
+    "photoGuideMode": "Geführter Fotomodus",
+    "photoGuideStep1Title": "Gesamtansicht",
+    "photoGuideStep1Text": "Machen Sie ein weites Foto, das den gesamten Pool und seine Umgebung zeigt.",
+    "photoGuideStep2Title": "Nahaufnahme des Problems",
+    "photoGuideStep2Text": "Gehen Sie näher an den betroffenen Bereich heran, damit die Details klar sichtbar sind.",
+    "photoGuideStep3Title": "Endgültiger Bildausschnitt",
+    "photoGuideStep3Text": "Zentrieren Sie den zu analysierenden Bereich in einem scharfen, gut beleuchteten Bild.",
+    "photoGuidePrevious": "Zurück",
+    "photoGuideNext": "Weiter"
   },
   "weather": {
     "locateMe": "Mich lokalisieren",

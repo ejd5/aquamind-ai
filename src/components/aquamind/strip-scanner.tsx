@@ -259,9 +259,9 @@ export function StripScanner({ open, onClose, onSave }: Props) {
   // le composant GuideStage l'affiche (image + titre + description + bullets).
   const guidedSteps = useMemo(
     () => [
-      { icon: Lightbulb, title: t('guideStep1Title'), text: t('guideStep1Text'), illustration: t('guideStep1Illustration') || '/guides/stripscan/stripscan-guide-1-prepare.svg' },
-      { icon: Camera, title: t('guideStep2Title'), text: t('guideStep2Text'), illustration: t('guideStep2Illustration') || '/guides/stripscan/stripscan-guide-2-lighting.svg' },
-      { icon: ScanLine, title: t('guideStep3Title'), text: t('guideStep3Text'), illustration: t('guideStep3Illustration') || '/guides/stripscan/stripscan-guide-3-align.svg' },
+      { icon: Lightbulb, title: t('guideStep1Title'), text: t('guideStep1Text'), illustration: '/guides/stripscan/stripscan-guide-1-prepare.svg' },
+      { icon: Camera, title: t('guideStep2Title'), text: t('guideStep2Text'), illustration: '/guides/stripscan/stripscan-guide-2-lighting.svg' },
+      { icon: ScanLine, title: t('guideStep3Title'), text: t('guideStep3Text'), illustration: '/guides/stripscan/stripscan-guide-3-align.svg' },
     ],
     [t]
   )
@@ -401,11 +401,17 @@ function GuideStage({
         {/* Slot illustration pédagogique (visuel IA futur). Affiche l'image si
             fournie ; sinon rend un cadre réservé discret et léger. */}
         {Step.illustration && (
-          <div className="mt-3 overflow-hidden rounded-xl border border-gold/20 bg-background/60">
+          <div className="relative mt-3 overflow-hidden rounded-xl border border-gold/20 bg-background/60">
             <img
               src={Step.illustration}
               alt={Step.title}
-              className="max-h-44 w-full object-cover"
+              className="h-44 w-full object-contain p-2 sm:h-48"
+            />
+            <img
+              src="/branding/aqwelia-logo-main.png"
+              alt=""
+              aria-hidden="true"
+              className="pointer-events-none absolute bottom-2 right-2 h-7 w-auto object-contain opacity-80"
             />
           </div>
         )}
