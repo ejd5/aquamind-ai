@@ -259,9 +259,9 @@ export function StripScanner({ open, onClose, onSave }: Props) {
   // le composant GuideStage l'affiche (image + titre + description + bullets).
   const guidedSteps = useMemo(
     () => [
-      { icon: Lightbulb, title: t('guideStep1Title'), text: t('guideStep1Text'), illustration: t('guideStep1Illustration') },
-      { icon: Camera, title: t('guideStep2Title'), text: t('guideStep2Text'), illustration: t('guideStep2Illustration') },
-      { icon: ScanLine, title: t('guideStep3Title'), text: t('guideStep3Text'), illustration: t('guideStep3Illustration') },
+      { icon: Lightbulb, title: t('guideStep1Title'), text: t('guideStep1Text'), illustration: t('guideStep1Illustration') || '/guides/stripscan/stripscan-guide-1-prepare.svg' },
+      { icon: Camera, title: t('guideStep2Title'), text: t('guideStep2Text'), illustration: t('guideStep2Illustration') || '/guides/stripscan/stripscan-guide-2-lighting.svg' },
+      { icon: ScanLine, title: t('guideStep3Title'), text: t('guideStep3Text'), illustration: t('guideStep3Illustration') || '/guides/stripscan/stripscan-guide-3-align.svg' },
     ],
     [t]
   )

@@ -391,6 +391,31 @@ export function ModuleDiagnostic({ activePoolId }: ModuleDiagnosticProps) {
               ))}
             </div>
 
+            {/* Language-neutral visual guidance. Text remains native next-intl content
+                in all supported locales; these images are supplemental/decorative. */}
+            <div
+              className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0"
+              aria-hidden="true"
+            >
+              {[
+                '/guides/photo-diagnostic/photo-diagnostic-guide-1-overview.svg',
+                '/guides/photo-diagnostic/photo-diagnostic-guide-2-closeup.svg',
+                '/guides/photo-diagnostic/photo-diagnostic-guide-3-frame.svg',
+              ].map((src) => (
+                <div
+                  key={src}
+                  className="min-w-[44%] snap-start overflow-hidden rounded-xl border border-gold/20 bg-background/60 sm:min-w-0"
+                >
+                  <img
+                    src={src}
+                    alt=""
+                    loading="lazy"
+                    className="aspect-square w-full object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+
             {!image ? (
               <div className="space-y-3">
                 {/* Native camera buttons (iOS/Android only) */}
