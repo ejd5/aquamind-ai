@@ -94,20 +94,10 @@ export default async function ProAppLayout({
             aria-label="AQWELIA Pro"
           >
             <img
-              src="/logo-aqwelia-web.png"
+              src="/branding/aqwelia-logo-main.png"
               alt="AQWELIA"
-              className="h-9 w-auto object-contain"
+              className="h-12 w-auto object-contain"
             />
-            <div className="hidden leading-tight sm:block">
-              <div className="font-display text-base font-bold tracking-tight">
-                <span className="aqua-text-gradient">AQWELIA</span>{' '}
-                <span className="text-gold">Pro</span>
-              </div>
-              <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                {t('brandTagline')}
-              </div>
-            </div>
-            <Sparkles className="hidden h-3.5 w-3.5 text-gold sm:block" />
           </Link>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">

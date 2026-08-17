@@ -12,7 +12,6 @@
  * font-display, backdrop-blur). Respects the iOS safe-area-top inset.
  */
 import Link from 'next/link'
-import { Sparkles } from 'lucide-react'
 import { headers } from 'next/headers'
 import { Footer } from '@/components/aquamind/footer'
 import { getTranslations } from 'next-intl/server'
@@ -38,11 +37,7 @@ export default async function PublicLayout({ children }: { children: React.React
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
             {/* Brand */}
             <Link href="/" className="flex items-center gap-2" aria-label="AQWELIA">
-              <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-10 w-auto object-contain" />
-              <span className="font-display text-base font-bold tracking-tight">
-                <span className="aqua-text-gradient">AQWELIA</span>
-              </span>
-              <Sparkles className="h-3.5 w-3.5 text-gold" />
+              <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="h-12 w-auto object-contain" />
             </Link>
 
             {/* Desktop nav */}

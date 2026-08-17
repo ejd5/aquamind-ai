@@ -47,7 +47,6 @@ export function Header({
   const menuRef = useRef<HTMLDivElement>(null)
   const poolRef = useRef<HTMLDivElement>(null)
   const t = useTranslations('nav')
-  const tl = useTranslations('landing')
   const tc = useTranslations('common')
   const tp = useTranslations('pool')
   const tfam = useTranslations('family')
@@ -85,27 +84,20 @@ export function Header({
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
 
       <div className="mx-auto flex h-32 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center gap-2.5">
-          {/* AQWELIA logo — standalone, no frame, no background */}
-          <img
-            src="/logo-aqwelia-web.png"
-            alt="AQWELIA"
-            className="h-24 w-auto object-contain"
-          />
-
-          <div className="leading-tight">
-            <div className="flex items-center gap-1.5 text-base font-bold tracking-tight">
-              <button onClick={() => onNavigate('today')} className="hover:opacity-80">
-                <span className="aqua-text-gradient">AQWELIA</span>
-              </button>
-              <span className="ml-0.5 rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-gold">
-                {t('pro')}
-              </span>
-            </div>
-            <div className="hidden text-[10px] uppercase tracking-[0.22em] text-muted-foreground sm:block">
-              {tl('headerCopilote')}
-            </div>
-          </div>
+        <div className="flex items-center">
+          {/* AQWELIA logo master — seule marque visible, détourée, sans texte adjacent */}
+          <button
+            type="button"
+            onClick={() => onNavigate('today')}
+            className="rounded-lg transition-opacity hover:opacity-80"
+            aria-label="AQWELIA"
+          >
+            <img
+              src="/branding/aqwelia-logo-main.png"
+              alt="AQWELIA"
+              className="h-28 w-auto object-contain"
+            />
+          </button>
         </div>
 
         {/* Top nav removed — sidebar (desktop) and bottom nav (mobile) handle navigation.

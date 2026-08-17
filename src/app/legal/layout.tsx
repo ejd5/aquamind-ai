@@ -7,7 +7,7 @@
  * accents, font-display) and respects the iOS safe-area-top inset.
  */
 import Link from 'next/link'
-import { Sparkles, ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from "lucide-react"
 import { Footer } from '@/components/aquamind/footer'
 import { getTranslations } from 'next-intl/server'
 
@@ -28,12 +28,8 @@ export default async function LegalLayout({ children }: { children: React.ReactN
 
           <Link href="/" className="flex items-center gap-2.5">
             <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg shadow-md shadow-primary/30">
-              <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-16 w-auto object-contain" />
+              <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="h-20 w-auto object-contain" />
             </div>
-            <span className="font-display text-base font-bold tracking-tight">
-              <span className="aqua-text-gradient">AQWELIA</span>
-            </span>
-            <Sparkles className="h-3 w-3 text-gold" />
           </Link>
         </div>
       </header>

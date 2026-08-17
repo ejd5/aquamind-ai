@@ -76,7 +76,7 @@ export default function MobileEntryPage() {
     <main className="safe-area-top flex min-h-screen items-center justify-center px-5 py-10">
       <section className="w-full max-w-sm rounded-3xl border border-border/60 bg-card p-6 text-center shadow-xl">
         <img
-          src="/logo-aqwelia-web.png"
+          src="/branding/aqwelia-logo-main.png"
           alt="AQWELIA"
           className="mx-auto h-16 w-auto object-contain"
         />

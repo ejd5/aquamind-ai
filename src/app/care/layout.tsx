@@ -12,7 +12,7 @@
  * inset.
  */
 import Link from 'next/link'
-import { Sparkles, ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from "lucide-react"
 import { Footer } from '@/components/aquamind/footer'
 import { getTranslations } from 'next-intl/server'
 
@@ -45,17 +45,7 @@ export default async function CareLayout({ children }: { children: React.ReactNo
             className="flex items-center gap-2"
             aria-label="AQWELIA Care"
           >
-            <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-10 w-auto object-contain" />
-            <div className="leading-tight">
-              <div className="font-display text-base font-bold tracking-tight">
-                <span className="aqua-text-gradient">AQWELIA</span>{' '}
-                <span className="text-gold">Care</span>
-              </div>
-              <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                {t('badgeComingSoon')}
-              </div>
-            </div>
-            <Sparkles className="h-3.5 w-3.5 text-gold" />
+            <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="h-12 w-auto object-contain" />
           </Link>
 
           {/* Desktop nav */}

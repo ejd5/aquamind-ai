@@ -159,12 +159,9 @@ export default function AuthPage() {
         <div className="mb-8 text-center">
           <div className="mb-4 inline-flex items-center justify-center">
             <div className="relative">
-              <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-16 w-auto object-contain" />
+              <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="h-16 w-auto object-contain" />
             </div>
           </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight">
-            <span className="aqua-text-gradient">AQWELIA</span>
-          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === 'signin' ? t('loginTitle') : t('signupTitle')}
           </p>

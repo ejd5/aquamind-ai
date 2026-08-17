@@ -1,6 +1,6 @@
 'use client'
 
-import { Sparkles, Droplets } from 'lucide-react'
+import { Droplets } from "lucide-react"
 import { useSession } from 'next-auth/react'
 import { signOutWithBillingCleanup } from '@/lib/billing/sign-out'
 import { useState, useEffect, useRef } from 'react'
@@ -44,32 +44,20 @@ export function MobileHeader({ profile, onBackToLanding, onNavigate }: MobileHea
       className="mobile-header sticky top-0 z-40 w-full border-b border-border/40 bg-background/85 backdrop-blur-xl"
     >
       <div className="flex h-14 items-center justify-between px-4">
-        {/* Left: logo + wordmark + Pro badge */}
+        {/* Left: logo icon (seule marque visible) */}
         <button
           type="button"
           onClick={onBackToLanding}
-          className="flex items-center gap-2.5 rounded-lg py-1 pr-2"
+          className="flex items-center rounded-lg py-1 pr-2"
           aria-label={t('backToLanding')}
         >
-          {/* Logo icon with gold gradient ring (32x32) */}
-          <div className="relative">
-          <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg shadow-md shadow-primary/25">
-              <img
-                src="/logo-aqwelia-web.png"
-                alt="AQWELIA"
-                className="h-8 w-8 object-cover"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5 leading-none">
-            <span className="aqua-text-gradient text-base font-bold tracking-tight">
-              AQWELIA
-            </span>
-            <span className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.16em] text-gold">
-              {t('pro')}
-            </span>
-            <Sparkles className="ml-0.5 h-3 w-3 text-gold" aria-hidden />
+          {/* Logo icon with gold gradient ring */}
+          <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg shadow-md shadow-primary/25">
+            <img
+              src="/branding/aqwelia-icon-a.png"
+              alt="AQWELIA"
+              className="h-10 w-10 object-contain"
+            />
           </div>
         </button>
 
