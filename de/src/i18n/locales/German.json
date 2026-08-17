@@ -155,7 +155,8 @@
       "messageRequired": "Message requis",
       "testIdValuesRequired": "testId ou values requis",
       "idRequired": "id requis",
-      "idRequiredUpper": "ID requis"
+      "idRequiredUpper": "ID requis",
+      "poolNotFound": "Piscine introuvable"
     },
     "emergency": {
       "title": "J'ai un problème",
@@ -1591,7 +1592,10 @@
     "tabPhotoPool": "Photo piscine",
     "tabStrip": "Bandelette",
     "requalificationNeeded": "Plan à requalifier",
-    "requalificationNeededDesc": "Ce plan ne peut pas être affiché comme plan actuel. Lancez une régénération scientifique ou saisissez une nouvelle mesure."
+    "requalificationNeededDesc": "Ce plan ne peut pas être affiché comme plan actuel. Lancez une régénération scientifique ou saisissez une nouvelle mesure.",
+    "analysisUnreadable": "Réponse non interprétable",
+    "analysisUnreadableDesc": "L'analyse IA n'a pas pu être structurée. Essayez une photo plus nette ou réessayez.",
+    "analysisTimeout": "L’analyse a pris trop de temps. Réessayez ou prenez une photo plus nette."
   },
   "weather": {
     "locateMe": "Me localiser",
@@ -5457,7 +5461,19 @@
     "diagnosticStripCtaDesc": "L'IA lit les pads couleur de votre bandelette et remplit automatiquement les valeurs du test d'eau.",
     "statusActionRequired": "⚠️ Action requise",
     "statusWatch": "👀 À surveiller",
-    "statusBalanced": "✅ Eau équilibrée"
+    "statusBalanced": "✅ Eau équilibrée",
+    "scanTimeout": "Analyse trop longue",
+    "scanTimeoutDesc": "Le délai d'analyse est dépassé. Réessayez ou changez de photo.",
+    "progressPrep": "Préparation de l’image…",
+    "progressRead": "Lecture de la bandelette…",
+    "progressColor": "Analyse des couleurs…",
+    "progressCheck": "Vérification de cohérence…",
+    "progressResult": "Génération du résultat…",
+    "indicativeReading": "Lecture indicative",
+    "indicativeReadingDesc": "Confiance moyenne — vérifiez les valeurs avant de les utiliser.",
+    "guideStep1Illustration": "",
+    "guideStep2Illustration": "",
+    "guideStep3Illustration": ""
   },
   "gates": {
     "photo_scan_limit": "Limite de {n} scans/mois atteinte. Passez à un plan supérieur pour continuer."
@@ -7621,5 +7637,10 @@
     "sessionNotFound": "La session de paiement est introuvable.",
     "genericError": "Une erreur est survenue. Réessayez.",
     "cta": "Profiter de l'offre"
+  },
+  "photoDiagnostic": {
+    "imageRequired": "Image base64 requise",
+    "analysisFailed": "Analyse impossible",
+    "timeout": "L’analyse a pris trop de temps. Réessayez ou prenez une photo plus nette."
   }
 }
