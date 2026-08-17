@@ -269,7 +269,8 @@
       "messageRequired": "Mensaje requerido",
       "testIdValuesRequired": "testId o values requerido",
       "idRequired": "id requerido",
-      "idRequiredUpper": "ID requerido"
+      "idRequiredUpper": "ID requerido",
+      "poolNotFound": "Piscina no encontrada"
     }
   },
   "nav": {
@@ -1467,7 +1468,10 @@
     "tabPhotoPool": "Foto piscina",
     "tabStrip": "Tira reactiva",
     "requalificationNeeded": "Plan por recalificar",
-    "requalificationNeededDesc": "Este plan no puede mostrarse como plan actual. Ejecuta una regeneración científica o introduce una nueva medición."
+    "requalificationNeededDesc": "Este plan no puede mostrarse como plan actual. Ejecuta una regeneración científica o introduce una nueva medición.",
+    "analysisUnreadable": "Respuesta no interpretable",
+    "analysisUnreadableDesc": "El análisis de IA no pudo estructurarse. Pruebe una foto más nítida o reintente.",
+    "analysisTimeout": "El análisis tardó demasiado. Reintente o tome una foto más nítida."
   },
   "weather": {
     "locateMe": "Ubicarme",
@@ -5076,7 +5080,19 @@
     "savedFromDiagnosticDesc": "La prueba de agua se guardó con los valores escaneados.",
     "scanAnother": "Escanear otra tira",
     "diagnosticStripCta": "Escanear mi tira reactiva",
-    "diagnosticStripCtaDesc": "La IA lee las almohadillas de color de su tira y rellena automáticamente los valores de la prueba de agua."
+    "diagnosticStripCtaDesc": "La IA lee las almohadillas de color de su tira y rellena automáticamente los valores de la prueba de agua.",
+    "scanTimeout": "Análisis demasiado largo",
+    "scanTimeoutDesc": "El análisis ha superado el tiempo límite. Reintente o use otra foto.",
+    "progressPrep": "Preparando la imagen…",
+    "progressRead": "Leyendo la tira reactiva…",
+    "progressColor": "Analizando colores…",
+    "progressCheck": "Comprobando coherencia…",
+    "progressResult": "Generando resultado…",
+    "indicativeReading": "Lectura indicativa",
+    "indicativeReadingDesc": "Confianza media: verifique los valores antes de usarlos.",
+    "guideStep1Illustration": "",
+    "guideStep2Illustration": "",
+    "guideStep3Illustration": ""
   },
   "gates": {
     "photo_scan_limit": "Límite mensual de {n} escaneos alcanzado. Actualice a un plan superior para continuar."
@@ -7269,5 +7285,10 @@
     "sessionNotFound": "No se encontró la sesión de pago.",
     "genericError": "Ocurrió un error. Inténtelo de nuevo.",
     "cta": "Aprovechar la oferta"
+  },
+  "photoDiagnostic": {
+    "imageRequired": "Imagen base64 requerida",
+    "analysisFailed": "Análisis fallido",
+    "timeout": "El análisis tardó demasiado. Reintente o tome una foto más nítida."
   }
 }

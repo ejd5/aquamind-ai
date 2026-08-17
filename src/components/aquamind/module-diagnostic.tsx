@@ -236,9 +236,16 @@ export function ModuleDiagnostic({ activePoolId }: ModuleDiagnosticProps) {
       loadHistory()
     } catch (e) {
       hapticError()
+      // Round 2 (4/4) : timeout serveur 504/code "timeout" → message FR propre.
+      const serverTimeout =
+        (e as any)?.status === 504 || (e as any)?.body?.code === 'timeout'
+      const isTimeout =
+        serverTimeout ||
+        (e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError')) ||
+        (typeof DOMException !== 'undefined' && e instanceof DOMException && e.name === 'AbortError')
       toast({
         title: t('errorTitle'),
-        description: e instanceof Error ? e.message : t('analysisFailed'),
+        description: isTimeout ? t('analysisTimeout') : e instanceof Error ? e.message : t('analysisFailed'),
         variant: 'destructive',
       })
     } finally {
@@ -506,6 +513,17 @@ export function ModuleDiagnostic({ activePoolId }: ModuleDiagnosticProps) {
               </div>
             ) : (
               <div className="space-y-4" data-ai-generated="true">
+                {/* P0-A : réponse non structurée du modèle → fallback localisé,
+                    jamais un pavé anglais brut. */}
+                {(result as any).fallbackRaw && (
+                  <div className="rounded-xl border border-yellow-400/30 bg-yellow-400/5 p-3 text-xs text-yellow-700 dark:text-yellow-300">
+                    <p className="flex items-center gap-1.5 font-semibold">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      {t('analysisUnreadable')}
+                    </p>
+                    <p className="mt-0.5 opacity-80">{t('analysisUnreadableDesc')}</p>
+                  </div>
+                )}
                 {/* Confidence */}
                 {typeof result.confidence === 'number' && (
                   <div>

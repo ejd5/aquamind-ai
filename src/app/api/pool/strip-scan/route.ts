@@ -20,6 +20,9 @@ import { normalizeImageForAi, SecureImageError } from '@/lib/images/secure-image
 import { isPoolFieldConfirmed } from '@/lib/pool/onboarding-form'
 
 export const runtime = 'nodejs'
+// Vercel Hobby par défaut = 10s. La lecture de bandelette par vision peut
+// prendre 30-60s ; on monte explicitement le maxDuration (fix timeout).
+export const maxDuration = 60
 
 /**
  * AQWELIA StripScan™ — IA-powered pool/spa test strip scanner.
@@ -342,7 +345,21 @@ export async function POST(req: NextRequest) {
         { status: e.statusCode },
       )
     }
-    const msg = e instanceof Error ? e.message : 'Erreur'
+    // Round 2 (4/4) : timeout réel → code structuré "timeout" + 504, reconnu par
+    // le client (scanTimeout / scanTimeoutDesc). Jamais de texte anglais brut.
+    const isTimeout =
+      (e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError')) ||
+      (typeof DOMException !== 'undefined' && e instanceof DOMException && e.name === 'AbortError')
+    if (isTimeout) {
+      const msg = await translate(
+        locale,
+        'stripScan.scanTimeout',
+        "L'analyse a pris trop de temps. Réessayez ou changez de photo.",
+      )
+      return NextResponse.json({ error: msg, code: 'timeout' }, { status: 504 })
+    }
+    // P0-A i18n : ne jamais renvoyer de message d'erreur brut anglais au client.
+    const msg = await translate(locale, 'stripScan.analysisFailed', "Échec de l'analyse")
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

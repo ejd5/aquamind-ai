@@ -269,7 +269,8 @@
       "messageRequired": "Nachricht erforderlich",
       "testIdValuesRequired": "testId oder values erforderlich",
       "idRequired": "id erforderlich",
-      "idRequiredUpper": "ID erforderlich"
+      "idRequiredUpper": "ID erforderlich",
+      "poolNotFound": "Pool nicht gefunden"
     }
   },
   "nav": {
@@ -1469,7 +1470,10 @@
     "tabPhotoPool": "Poolfoto",
     "tabStrip": "Teststreifen",
     "requalificationNeeded": "Plan muss neu bewertet werden",
-    "requalificationNeededDesc": "Dieser Plan kann nicht als aktueller Plan angezeigt werden. Führen Sie eine wissenschaftliche Neugenerierung durch oder geben Sie eine neue Messung ein."
+    "requalificationNeededDesc": "Dieser Plan kann nicht als aktueller Plan angezeigt werden. Führen Sie eine wissenschaftliche Neugenerierung durch oder geben Sie eine neue Messung ein.",
+    "analysisUnreadable": "Antwort nicht lesbar",
+    "analysisUnreadableDesc": "Die KI-Analyse konnte nicht strukturiert werden. Verwenden Sie ein schärferes Foto oder versuchen Sie es erneut.",
+    "analysisTimeout": "Die Analyse dauerte zu lange. Versuchen Sie es erneut oder machen Sie ein schärferes Foto."
   },
   "weather": {
     "locateMe": "Mich lokalisieren",
@@ -5078,7 +5082,19 @@
     "savedFromDiagnosticDesc": "Der Wassertest wurde mit den gescannten Werten gespeichert.",
     "scanAnother": "Anderen Streifen scannen",
     "diagnosticStripCta": "Meinen Teststreifen scannen",
-    "diagnosticStripCtaDesc": "Die KI liest die Farbfelder Ihres Streifens und füllt automatisch die Werte des Wassertests aus."
+    "diagnosticStripCtaDesc": "Die KI liest die Farbfelder Ihres Streifens und füllt automatisch die Werte des Wassertests aus.",
+    "scanTimeout": "Analyse dauerte zu lange",
+    "scanTimeoutDesc": "Das Zeitlimit der Analyse wurde überschritten. Erneut versuchen oder anderes Foto verwenden.",
+    "progressPrep": "Bild wird vorbereitet…",
+    "progressRead": "Teststreifen wird gelesen…",
+    "progressColor": "Farben werden analysiert…",
+    "progressCheck": "Konsistenz wird geprüft…",
+    "progressResult": "Ergebnis wird erstellt…",
+    "indicativeReading": "Indikative Messung",
+    "indicativeReadingDesc": "Mittlere Sicherheit — Werte vor der Verwendung überprüfen.",
+    "guideStep1Illustration": "",
+    "guideStep2Illustration": "",
+    "guideStep3Illustration": ""
   },
   "gates": {
     "photo_scan_limit": "Monatliches Limit von {n} Scans erreicht. Upgrade auf einen höheren Plan, um fortzufahren."
@@ -7271,5 +7287,10 @@
     "sessionNotFound": "Zahlungssitzung nicht gefunden.",
     "genericError": "Ein Fehler ist aufgetreten. Bitte erneut versuchen.",
     "cta": "Angebot nutzen"
+  },
+  "photoDiagnostic": {
+    "imageRequired": "Base64-Bild erforderlich",
+    "analysisFailed": "Analyse fehlgeschlagen",
+    "timeout": "Die Analyse dauerte zu lange. Versuchen Sie es erneut oder machen Sie ein schärferes Foto."
   }
 }

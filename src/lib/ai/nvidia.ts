@@ -39,7 +39,33 @@ function ensureApiKey(): string {
 /**
  * Vision chat completion — for photo diagnostic.
  * Accepts a prompt + base64 image, returns text response.
+ *
+ * Round 2 (4/4) — budget TOTAL borné :
+ *   - budget global NVIDIA ≤ 50 s (strictement < maxDuration Vercel = 60 s) ;
+ *   - 2 fenêtres de ~25 s chacune maximum (premier essai + UN retry) ;
+ *   - le retry n'a lieu que pour un timeout/abort réellement retryable ;
+ *   - jamais 2 × 60 s ; jamais plus de 2 fetch ; pas de boucle.
+ * L'appel est purement de lecture côté IA ; toute persistance a lieu après, sûr.
  */
+
+const VISION_TOTAL_BUDGET_MS = 50_000
+const VISION_PER_CALL_MS = 25_000
+const VISION_MAX_FETCH = 2
+
+function isRetryableTimeout(e: unknown): boolean {
+  if (e instanceof Error && e.name === 'TimeoutError') return true
+  if (typeof DOMException !== 'undefined' && e instanceof DOMException && e.name === 'AbortError') {
+    return true
+  }
+  return false
+}
+
+/** Délai restant du budget global, plafonné à perCallMs. */
+function remainingBudget(deadline: number): number {
+  const left = deadline - Date.now()
+  return Math.max(0, Math.min(VISION_PER_CALL_MS, left))
+}
+
 export async function nvidiaVision(
   prompt: string,
   imageDataUrl: string,
@@ -70,27 +96,60 @@ export async function nvidiaVision(
     stream: false,
   }
 
-  const res = await fetch(`${NVIDIA_BASE_URL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-      Accept: 'application/json',
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(60000), // 60s timeout for vision
-  })
+  const deadline = Date.now() + VISION_TOTAL_BUDGET_MS
+  let attempts = 0
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`NVIDIA API error ${res.status}: ${text.slice(0, 300)}`)
+  for (;;) {
+    attempts++
+    const timeoutMs = remainingBudget(deadline)
+    if (timeoutMs <= 0) {
+      const err = new Error('NVIDIA vision: global time budget exhausted')
+      err.name = 'TimeoutError'
+      throw err
+    }
+
+    const call = async (): Promise<VisionResult> => {
+      const res = await fetch(`${NVIDIA_BASE_URL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(timeoutMs),
+      })
+
+      if (!res.ok) {
+        // 4xx = erreur non retryable (pas de retry).
+        const text = await res.text().catch(() => '')
+        const err = new Error(`NVIDIA API error ${res.status}: ${text.slice(0, 300)}`)
+        ;(err as Error & { status?: number }).status = res.status
+        throw err
+      }
+
+      const data = await res.json()
+      const content = data?.choices?.[0]?.message?.content || ''
+      const usage = data?.usage
+
+      return { content, usage }
+    }
+
+    try {
+      return await call()
+    } catch (e) {
+      // Retry UNIQUEMENT pour un timeout/abort retryable, si budget restant.
+      const errStatus = (e as { status?: number })?.status
+      const retryable = isRetryableTimeout(e)
+      const mayRetry = retryable && attempts < VISION_MAX_FETCH && remainingBudget(deadline) > 0
+      if (!retryable || errStatus != null) {
+        // Erreur HTTP (4xx/5xx) : ne pas retry, préserver l'erreur serveur.
+        throw e
+      }
+      if (!mayRetry) throw e
+      // continue → retry borné
+    }
   }
-
-  const data = await res.json()
-  const content = data?.choices?.[0]?.message?.content || ''
-  const usage = data?.usage
-
-  return { content, usage }
 }
 
 /**
