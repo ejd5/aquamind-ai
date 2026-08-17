@@ -5,6 +5,7 @@ import { nvidiaVision } from '@/lib/ai/nvidia'
 import { db } from '@/lib/db'
 import { VISION_DIAGNOSTIC_PROMPT, getVisionLanguageInstruction } from '@/lib/pool/ai-context'
 import { normalizePhotoDiagnostic } from '@/lib/pool/photo-diagnostic-normalize'
+import { extractStructuredJson } from '@/lib/pool/extract-structured-json'
 import { pickLocale, translate } from '@/lib/i18n-api'
 import { trackEventServer } from '@/lib/analytics-server'
 import { findOwnedPool } from '@/lib/brain/access'
@@ -78,17 +79,13 @@ export async function POST(req: NextRequest) {
 
     const zai = await nvidiaVision(prompt, normalized.dataUrl)
     const content = zai.content || ''
-    let parsed: any = null
-    try {
-      const m = content.match(/\{[\s\S]*\}/)
-      parsed = m ? JSON.parse(m[0]) : null
-    } catch {
-      parsed = null
-    }
+    // Round 2 : parsing robuste (fences markdown, texte parasite, objets
+    // imbriqués) — remplace la regex gloutonne. Retourne null sans throw.
+    const parsed = extractStructuredJson(content)
 
     // P0-A i18n : normalise + localise la sortie du modèle (jamais d'anglais
     // brut en locale fr ; fallback localisé si la réponse n'est pas structurée).
-    const diag = normalizePhotoDiagnostic(parsed, locale, content)
+    const diag = normalizePhotoDiagnostic(parsed, locale, content, typeHint)
 
     const saved = await db.photoDiagnostic.create({
       data: {
@@ -133,6 +130,20 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     if (e instanceof SecureImageError) {
       return NextResponse.json({ error: e.message, code: 'invalid_image' }, { status: e.statusCode })
+    }
+    // Round 2 (4/4) : timeout NVIDIA / budget épuisé → code structuré "timeout"
+    // pour que le client affiche un message FR propre (jamais le texte brut
+    // anglais « The operation was aborted due to timeout »).
+    const isTimeout =
+      (e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError')) ||
+      (typeof DOMException !== 'undefined' && e instanceof DOMException && e.name === 'AbortError')
+    if (isTimeout) {
+      const msg = await translate(
+        locale,
+        'photoDiagnostic.timeout',
+        "L'analyse a pris trop de temps. Réessayez ou prenez une photo plus nette.",
+      )
+      return NextResponse.json({ error: msg, code: 'timeout' }, { status: 504 })
     }
     const msg = await translate(locale, 'photoDiagnostic.analysisFailed', 'Analyse impossible')
     return NextResponse.json({ error: msg }, { status: 500 })

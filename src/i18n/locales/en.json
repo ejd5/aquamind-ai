@@ -1592,7 +1592,8 @@
     "requalificationNeeded": "Plan needs requalification",
     "requalificationNeededDesc": "This plan cannot be shown as the current plan. Run a scientific regeneration or enter a new measurement.",
     "analysisUnreadable": "Unreadable response",
-    "analysisUnreadableDesc": "The AI analysis could not be structured. Try a sharper photo or retry."
+    "analysisUnreadableDesc": "The AI analysis could not be structured. Try a sharper photo or retry.",
+    "analysisTimeout": "The analysis took too long. Retry or take a sharper photo."
   },
   "weather": {
     "locateMe": "Locate me",
@@ -7636,6 +7637,7 @@
   },
   "photoDiagnostic": {
     "imageRequired": "Base64 image required",
-    "analysisFailed": "Analysis failed"
+    "analysisFailed": "Analysis failed",
+    "timeout": "The analysis took too long. Retry or take a sharper photo."
   }
 }

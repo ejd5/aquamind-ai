@@ -236,9 +236,16 @@ export function ModuleDiagnostic({ activePoolId }: ModuleDiagnosticProps) {
       loadHistory()
     } catch (e) {
       hapticError()
+      // Round 2 (4/4) : timeout serveur 504/code "timeout" → message FR propre.
+      const serverTimeout =
+        (e as any)?.status === 504 || (e as any)?.body?.code === 'timeout'
+      const isTimeout =
+        serverTimeout ||
+        (e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError')) ||
+        (typeof DOMException !== 'undefined' && e instanceof DOMException && e.name === 'AbortError')
       toast({
         title: t('errorTitle'),
-        description: e instanceof Error ? e.message : t('analysisFailed'),
+        description: isTimeout ? t('analysisTimeout') : e instanceof Error ? e.message : t('analysisFailed'),
         variant: 'destructive',
       })
     } finally {

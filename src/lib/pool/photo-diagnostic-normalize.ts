@@ -146,46 +146,79 @@ export interface NormalizedPhotoDiagnostic {
 /**
  * Normalise la sortie du modèle pour la locale active. Ne mute jamais la
  * structure d'entrée ; renvoie un objet propre prêt à être persister/affiché.
+ *
+ * @param parsed objet JSON structuré extrait de la réponse (ou null si invalide)
+ * @param locale locale active (défaut 'fr')
+ * @param rawContent réponse brute (non utilisée comme contenu structuré)
+ * @param typeHint hint utilisateur pour le type d'image — conservé en fallback
+ *   canonique si le modèle ne fournit pas d'imageType exploitable.
  */
 export function normalizePhotoDiagnostic(
   parsed: Record<string, unknown> | null,
   locale = 'fr',
   rawContent = '',
+  typeHint?: string | null,
 ): NormalizedPhotoDiagnostic {
+  // Round 2 (3/4) : imageType strict — trim + lowercase + alias canonique,
+  // puis fallback sur un typeHint valide, sinon "unknown".
   const imageTypeRaw =
     typeof parsed?.imageType === 'string'
-      ? parsed.imageType.toLowerCase()
+      ? parsed.imageType.trim().toLowerCase()
       : ''
+  const hintedRaw = typeof typeHint === 'string' ? typeHint.trim().toLowerCase() : ''
   const imageType: CanonicalImageType =
-    IMAGE_TYPE_ALIASES[imageTypeRaw] ?? 'unknown'
+    IMAGE_TYPE_ALIASES[imageTypeRaw] ??
+    IMAGE_TYPE_ALIASES[hintedRaw] ??
+    'unknown'
 
   const toStrList = (v: unknown): string[] =>
     Array.isArray(v)
-      ? v.filter((x): x is string => typeof x === 'string').map((x) => x.trim()).filter(Boolean)
+      ? v
+          .filter((x): x is string => typeof x === 'string')
+          .map((x) => x.trim())
+          .filter((x) => x.length > 0)
       : []
 
   const strOrNull = (v: unknown): string | null =>
     typeof v === 'string' && v.trim() ? v.trim() : null
 
+  // Round 2 (3/4) : confidence strictement clampée 0..1. NaN / Infinity /
+  // négatif / >1 sont ramenés dans le domaine. Aucun undefined/NaN dans le
+  // contrat normalisé.
+  let confidence = 0
+  const rawConf = parsed?.confidence
+  if (typeof rawConf === 'number' && Number.isFinite(rawConf)) {
+    confidence = Math.max(0, Math.min(1, rawConf))
+  } else if (typeof rawConf === 'string' && rawConf.trim() !== '') {
+    const n = Number(rawConf)
+    if (Number.isFinite(n)) confidence = Math.max(0, Math.min(1, n))
+  }
+
   const fallbackRaw = !parsed
+
+  // P0-A i18n (Round 2) : la traduction du dictionnaire EN→FR ne s'applique
+  // QUE lorsque la locale active est "fr". Une requête EN/ES/PT/DE/IT/NL ne
+  // doit JAMAIS recevoir artificiellement des morceaux de français : on préserve
+  // alors le texte renvoyé par le modèle.
+  const localize = locale === 'fr'
+  const localizeString = (s: string | null): string | null =>
+    s == null ? null : localize ? translateFrPhrase(s) : s
 
   let userFriendlySummary = strOrNull(parsed?.userFriendlySummary)
   if (fallbackRaw) {
-    // Fallback localisé : on ne laisse JAMAIS un pavé anglais brut s'afficher.
+    // Fallback sécurisé : on ne laisse JAMAIS un pavé brut s'afficher comme résumé.
     userFriendlySummary = null
   } else {
-    userFriendlySummary = translateFrPhrase(userFriendlySummary ?? '') || null
+    userFriendlySummary = localizeString(userFriendlySummary) || null
   }
 
   return {
     imageType,
     detectedIssues: translateStrings(toStrList(parsed?.detectedIssues), locale),
     probableIssues: translateStrings(toStrList(parsed?.probableIssues), locale),
-    confidence: Number(parsed?.confidence) || 0,
+    confidence,
     missingData: translateStrings(toStrList(parsed?.missingData), locale),
-    recommendedNextStep: strOrNull(parsed?.recommendedNextStep)
-      ? translateFrPhrase(strOrNull(parsed?.recommendedNextStep) as string)
-      : null,
+    recommendedNextStep: localizeString(strOrNull(parsed?.recommendedNextStep)),
     safetyWarnings: translateStrings(toStrList(parsed?.safetyWarnings), locale),
     userFriendlySummary,
     fallbackRaw,

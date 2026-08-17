@@ -1472,7 +1472,8 @@
     "requalificationNeeded": "Plano a requalificar",
     "requalificationNeededDesc": "Este plano não pode ser apresentado como plano atual. Execute uma regeneração científica ou introduza uma nova medição.",
     "analysisUnreadable": "Resposta não interpretável",
-    "analysisUnreadableDesc": "A análise de IA não pôde ser estruturada. Tente uma foto mais nítida ou tente novamente."
+    "analysisUnreadableDesc": "A análise de IA não pôde ser estruturada. Tente uma foto mais nítida ou tente novamente.",
+    "analysisTimeout": "A análise demorou demasiado. Tente novamente ou tire uma foto mais nítida."
   },
   "weather": {
     "locateMe": "Localizar-me",
@@ -7289,6 +7290,7 @@
   },
   "photoDiagnostic": {
     "imageRequired": "Imagem base64 necessária",
-    "analysisFailed": "Análise falhada"
+    "analysisFailed": "Análise falhada",
+    "timeout": "A análise demorou demasiado. Tente novamente ou tire uma foto mais nítida."
   }
 }

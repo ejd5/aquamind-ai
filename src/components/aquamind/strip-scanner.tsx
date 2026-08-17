@@ -205,10 +205,13 @@ export function StripScanner({ open, onClose, onSave }: Props) {
       }
     } catch (e) {
       hapticError()
-      // P0-A / P0-B : un timeout réseau (fetch aborted / serverless killed) ne
-      // doit JAMAIS afficher le message brut anglais « The operation was aborted
-      // due to timeout ». On le traduit proprement + boutons réessayer / changer.
+      // P0-A / P0-B : un timeout (fetch aborted / serverless kill / 504 serveur
+      // avec code "timeout") ne doit JAMAIS afficher le message brut anglais
+      // « The operation was aborted due to timeout ». On le traduit proprement.
+      const serverTimeout =
+        e instanceof ApiError && (e.status === 504 || (e.body as { code?: string })?.code === 'timeout')
       const isTimeout =
+        serverTimeout ||
         (e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError')) ||
         (e instanceof DOMException && e.name === 'AbortError')
       const msg = isTimeout

@@ -1470,7 +1470,8 @@
     "requalificationNeeded": "Plan por recalificar",
     "requalificationNeededDesc": "Este plan no puede mostrarse como plan actual. Ejecuta una regeneración científica o introduce una nueva medición.",
     "analysisUnreadable": "Respuesta no interpretable",
-    "analysisUnreadableDesc": "El análisis de IA no pudo estructurarse. Pruebe una foto más nítida o reintente."
+    "analysisUnreadableDesc": "El análisis de IA no pudo estructurarse. Pruebe una foto más nítida o reintente.",
+    "analysisTimeout": "El análisis tardó demasiado. Reintente o tome una foto más nítida."
   },
   "weather": {
     "locateMe": "Ubicarme",
@@ -7287,6 +7288,7 @@
   },
   "photoDiagnostic": {
     "imageRequired": "Imagen base64 requerida",
-    "analysisFailed": "Análisis fallido"
+    "analysisFailed": "Análisis fallido",
+    "timeout": "El análisis tardó demasiado. Reintente o tome una foto más nítida."
   }
 }

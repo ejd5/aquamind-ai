@@ -1472,7 +1472,8 @@
     "requalificationNeeded": "Plan muss neu bewertet werden",
     "requalificationNeededDesc": "Dieser Plan kann nicht als aktueller Plan angezeigt werden. Führen Sie eine wissenschaftliche Neugenerierung durch oder geben Sie eine neue Messung ein.",
     "analysisUnreadable": "Antwort nicht lesbar",
-    "analysisUnreadableDesc": "Die KI-Analyse konnte nicht strukturiert werden. Verwenden Sie ein schärferes Foto oder versuchen Sie es erneut."
+    "analysisUnreadableDesc": "Die KI-Analyse konnte nicht strukturiert werden. Verwenden Sie ein schärferes Foto oder versuchen Sie es erneut.",
+    "analysisTimeout": "Die Analyse dauerte zu lange. Versuchen Sie es erneut oder machen Sie ein schärferes Foto."
   },
   "weather": {
     "locateMe": "Mich lokalisieren",
@@ -7289,6 +7290,7 @@
   },
   "photoDiagnostic": {
     "imageRequired": "Base64-Bild erforderlich",
-    "analysisFailed": "Analyse fehlgeschlagen"
+    "analysisFailed": "Analyse fehlgeschlagen",
+    "timeout": "Die Analyse dauerte zu lange. Versuchen Sie es erneut oder machen Sie ein schärferes Foto."
   }
 }

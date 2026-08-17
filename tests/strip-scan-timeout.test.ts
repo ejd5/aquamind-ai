@@ -21,41 +21,78 @@ describe('strip-scan route — maxDuration serverless (fix timeout)', () => {
     expect(src).toContain("stripScan.analysisFailed")
     expect(src).not.toMatch(/const msg = e instanceof Error \? e\.message/)
   })
+
+  it('la route répond 504 + code timeout pour un vrai timeout serveur', () => {
+    const src = readFileSync(join(root, 'src/app/api/pool/strip-scan/route.ts'), 'utf8')
+    expect(src).toContain("code: 'timeout'")
+    expect(src).toContain('stripScan.scanTimeout')
+    expect(src).toContain('status: 504')
+  })
 })
 
-describe('nvidia vision — retry borné sur timeout', () => {
+describe('nvidia vision — budget borné + retry strict', () => {
   let calls = 0
   const realFetch = globalThis.fetch
 
   beforeEach(() => {
     calls = 0
-    globalThis.fetch = (async () => {
-      calls += 1
-      const err = new DOMException('The operation was aborted', 'AbortError')
-      throw err
-    }) as typeof fetch
+    process.env.NVIDIA_API_KEY = 'test-key'
   })
 
   afterEach(() => {
     globalThis.fetch = realFetch
+    delete process.env.NVIDIA_API_KEY
   })
 
-  it('un timeout → un retry automatique puis échec propre (pas de boucle infinie)', async () => {
-    process.env.NVIDIA_API_KEY = 'test-key'
+  it('budget total < maxDuration=60s : 2 fenêtres de ≤ 25s, jamais 2×60s', () => {
+    const src = readFileSync(join(root, 'src/lib/ai/nvidia.ts'), 'utf8')
+    expect(src).toContain('VISION_TOTAL_BUDGET_MS = 50_000')
+    expect(src).toContain('VISION_PER_CALL_MS = 25_000')
+    expect(src).toContain('VISION_MAX_FETCH = 2')
+    // Aucune fenêtre unique de 60s dans le client vision.
+    expect(src).not.toContain('AbortSignal.timeout(60000)')
+  })
+
+  it('maximum 2 fetch, pas de boucle (timeout → 1 retry puis échec)', async () => {
+    globalThis.fetch = (async () => {
+      calls += 1
+      throw new DOMException('The operation was aborted', 'AbortError')
+    }) as typeof fetch
     const { nvidiaVision } = await import('@/lib/ai/nvidia')
-    await expect(
-      nvidiaVision('prompt', 'data:image/jpeg;base64,xxx'),
-    ).rejects.toThrow()
-    // 1 appel initial + 1 retry = 2 fetch max, pas plus.
+    await expect(nvidiaVision('p', 'data:image/jpeg;base64,x')).rejects.toThrow()
     expect(calls).toBe(2)
-    delete process.env.NVIDIA_API_KEY
+  })
+
+  it('PAS de retry sur erreur HTTP 4xx', async () => {
+    globalThis.fetch = (async () => {
+      calls += 1
+      return new Response('{"error":"bad request"}', {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }) as typeof fetch
+    const { nvidiaVision } = await import('@/lib/ai/nvidia')
+    await expect(nvidiaVision('p', 'data:image/jpeg;base64,x')).rejects.toThrow()
+    // 1 seul appel : un 400 n'est pas retryable.
+    expect(calls).toBe(1)
+  })
+
+  it('PAS de retry sur erreur 5xx non-timeout', async () => {
+    globalThis.fetch = (async () => {
+      calls += 1
+      return new Response('boom', { status: 503 })
+    }) as typeof fetch
+    const { nvidiaVision } = await import('@/lib/ai/nvidia')
+    await expect(nvidiaVision('p', 'data:image/jpeg;base64,x')).rejects.toThrow()
+    expect(calls).toBe(1)
   })
 })
 
 describe('strip-scanner UI — message de timeout localisé', () => {
-  it('le composant gère TimeoutError / AbortError avec une clé i18n dédiée', () => {
+  it('le composant gère TimeoutError / AbortError + timeout serveur 504/code timeout', () => {
     const src = readFileSync(join(root, 'src/components/aquamind/strip-scanner.tsx'), 'utf8')
     expect(src).toContain("e.name === 'TimeoutError' || e.name === 'AbortError'")
+    expect(src).toContain("e.status === 504 || (e.body as { code?: string })?.code === 'timeout'")
     expect(src).toContain("t('scanTimeout')")
     expect(src).toContain("t('scanTimeoutDesc')")
   })
