@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { Loader2, Lock, Mail } from 'lucide-react'
+import { CheckCircle2, Loader2, Lock, Mail } from 'lucide-react'
 import { api, apiUrl } from '@/lib/api-client'
 
 type CsrfResponse = { csrfToken?: string }
@@ -11,11 +11,13 @@ type AuthCallbackResponse = { url?: string }
 
 export default function MobileSigninPage() {
   const router = useRouter()
+  const params = useSearchParams()
   const t = useTranslations('auth')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const registered = params.get('registered') === '1'
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -78,6 +80,16 @@ export default function MobileSigninPage() {
           />
           <h1 className="mt-4 font-display text-2xl font-bold">{t('loginTitle')}</h1>
         </div>
+
+        {registered ? (
+          <p
+            role="status"
+            className="mt-6 flex items-start gap-2 rounded-xl border border-primary/25 bg-primary/5 p-3 text-sm text-foreground"
+          >
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+            <span>{t('registered')}</span>
+          </p>
+        ) : null}
 
         <form className="mt-7 space-y-4" onSubmit={handleSubmit}>
           <label className="block text-xs font-semibold text-muted-foreground">

@@ -22,6 +22,17 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.aqwelia.app.auth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>aqwelia</string>
+			</array>
+		</dict>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -51,6 +62,13 @@
 	<string>AQWELIA lets you pick a pool water photo from your library for analysis.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>AQWELIA uses your location to provide local weather for your pool.</string>
+	<!-- CapacitorCookies: stable backend hosts used by Launch R1 Staging and Production builds. -->
+	<key>WKAppBoundDomains</key>
+	<array>
+		<string>aqwelia-staging.vercel.app</string>
+		<string>aqwelia-staging-git-release-aqwelia-launch-ejd5s-projects.vercel.app</string>
+		<string>aqwelia-production.vercel.app</string>
+	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 </dict>

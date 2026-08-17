@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * AQWELIA Wave A3 — mobile subscription management + restore.
+ * AQWELIA Wave A3/A4 — mobile subscription management + restore.
  *
  *   - Restore follows the server-only contract (none / pending / converged);
  *     the plan displayed after convergence comes from /api/subscription, never
@@ -10,11 +10,13 @@
  *     user picks a provider explicitly when several are administrable (no
  *     arbitrary provider selection).
  *   - signOut clears the RevenueCat identity BEFORE the NextAuth session ends.
+ *   - Sandbox builds expose a dedicated read-only diagnostics screen.
  */
 
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { Loader2, RefreshCw, ShieldCheck } from 'lucide-react'
+import { Activity, Loader2, RefreshCw, ShieldCheck } from 'lucide-react'
 import { MobileSubHeader } from '@/components/mobile/mobile-sub-header'
 import { billing } from '@/lib/billing'
 import { resolveSubscriptionManagementTargets } from '@/lib/billing/management-targets'
@@ -23,6 +25,8 @@ import { toast } from '@/hooks/use-toast'
 import type { SubscriptionApiResponse } from '@/lib/billing/types'
 
 type Target = 'stripe' | 'apple' | 'google'
+
+const SANDBOX_DIAGNOSTICS = process.env.NEXT_PUBLIC_MOBILE_SANDBOX_DIAGNOSTICS === 'true'
 
 export default function MobileSubscriptionPage() {
   const t = useTranslations('settings')
@@ -128,6 +132,16 @@ export default function MobileSubscriptionPage() {
             </button>
           ))}
         </section>
+
+        {SANDBOX_DIAGNOSTICS ? (
+          <Link
+            href="/settings/subscription/diagnostics"
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-primary/40 bg-primary/5 px-5 text-sm font-semibold text-primary"
+          >
+            <Activity className="h-4 w-4" />
+            Sandbox diagnostics
+          </Link>
+        ) : null}
       </div>
     </main>
   )
