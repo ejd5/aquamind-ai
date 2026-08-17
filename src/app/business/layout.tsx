@@ -51,7 +51,7 @@ export default async function BusinessLayout({
             aria-label="AQWELIA Business"
           >
             <img
-              src="/logo-aqwelia-web.png"
+              src="/branding/aqwelia-logo-main.png"
               alt="AQWELIA"
               className="h-10 w-auto object-contain"
             />

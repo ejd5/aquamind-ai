@@ -90,7 +90,7 @@ export default async function GrowthAppLayout({
             aria-label="AQWELIA Growth OS"
           >
             <img
-              src="/logo-aqwelia-web.png"
+              src="/branding/aqwelia-logo-main.png"
               alt="AQWELIA"
               className="h-9 w-auto object-contain"
             />

@@ -50,7 +50,7 @@ export function OrganizationSchema() {
         '@id': `${SITE_URL}/#organization`,
         name: 'AQWELIA',
         url: SITE_URL,
-        logo: `${SITE_URL}/logo-aqwelia-web.png`,
+        logo: `${SITE_URL}/branding/aqwelia-logo-main.png`,
         description:
           'AQWELIA is the AI copilot for pool & spa water quality — diagnostic, action plans, reminders, and savings tracking.',
         foundingDate: '2024',

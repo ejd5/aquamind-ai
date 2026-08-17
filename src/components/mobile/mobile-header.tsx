@@ -55,7 +55,7 @@ export function MobileHeader({ profile, onBackToLanding, onNavigate }: MobileHea
           <div className="relative">
           <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg shadow-md shadow-primary/25">
               <img
-                src="/logo-aqwelia-web.png"
+                src="/branding/aqwelia-icon-a.png"
                 alt="AQWELIA"
                 className="h-8 w-8 object-cover"
               />

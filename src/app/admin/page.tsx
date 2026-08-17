@@ -50,7 +50,7 @@ export default function AdminPage() {
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <img
-              src="/logo-aqwelia-web.png"
+              src="/branding/aqwelia-icon-a.png"
               alt=""
               className="h-8 w-8 rounded-lg"
             />

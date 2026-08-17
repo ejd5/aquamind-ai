@@ -88,7 +88,7 @@ export function Header({
         <div className="flex items-center gap-2.5">
           {/* AQWELIA logo — standalone, no frame, no background */}
           <img
-            src="/logo-aqwelia-web.png"
+            src="/branding/aqwelia-logo-main.png"
             alt="AQWELIA"
             className="h-24 w-auto object-contain"
           />

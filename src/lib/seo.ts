@@ -132,7 +132,7 @@ export const SITE_METADATA = {
   name: 'AQWELIA',
   tagline: 'L\'eau qui va bien, par l\'intelligence.',
   url: SITE_URL,
-  logo: `${SITE_URL}/logo-aqwelia-web.png`,
+  logo: `${SITE_URL}/branding/aqwelia-logo-main.png`,
   ogImage: `${SITE_URL}${DEFAULT_OG_IMAGE}`,
   twitter: TWITTER_HANDLE,
 } as const

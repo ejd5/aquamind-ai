@@ -70,7 +70,7 @@ export default async function AffiliationPage() {
             <span className="hidden sm:inline">{t('ctaBackPartners')}</span>
           </Link>
           <Link href="/partenaires" className="flex items-center gap-2" aria-label="AQWELIA Partenaires">
-            <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-10 w-auto object-contain" />
+            <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="h-10 w-auto object-contain" />
             <div className="leading-tight">
               <div className="font-display text-base font-bold tracking-tight">
                 <span className="aqua-text-gradient">AQWELIA</span>{' '}

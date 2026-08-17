@@ -159,6 +159,6 @@ export default async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|icon.png|icon-aqwelia-48.png|apple-touch-icon.png|robots.txt|api/auth|.*\\..*).*)',
+    '/((?!_next/static|_next/image|favicon.ico|icon.png|apple-touch-icon.png|robots.txt|api/auth|.*\\..*).*)',
   ],
 }

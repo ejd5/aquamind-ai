@@ -72,7 +72,7 @@ export default function MobileSigninPage() {
       <section className="w-full max-w-sm rounded-3xl border border-border/60 bg-card p-6 shadow-xl">
         <div className="text-center">
           <img
-            src="/logo-aqwelia-web.png"
+            src="/branding/aqwelia-logo-main.png"
             alt="AQWELIA"
             className="mx-auto h-16 w-auto object-contain"
           />

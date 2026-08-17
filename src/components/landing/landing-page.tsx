@@ -75,7 +75,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
             aria-label={t('headerAriaLogo')}
           >
             <div className="relative">
-          <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-16 w-auto object-contain" />
+          <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="h-16 w-auto object-contain" />
             </div>
             <div className="leading-tight">
               <div className="flex items-center gap-1.5 text-lg font-bold tracking-tight">
@@ -260,7 +260,7 @@ export function LandingPage({ hasProfile, onEnterApp }: LandingPageProps) {
           <div className="mb-8 flex flex-col items-start gap-6 md:flex-row md:items-start md:justify-between">
             {/* Brand — left */}
             <div className="flex items-center gap-2.5 shrink-0">
-              <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="h-16 w-auto object-contain" />
+              <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="h-16 w-auto object-contain" />
               <div>
                 <div className="font-display text-base font-bold tracking-tight text-white [text-shadow:_0_1px_2px_rgb(0_0_0),_0_-1px_2px_rgb(0_0_0),_1px_0_2px_rgb(0_0_0),_-1px_0_2px_rgb(0_0_0)]">
                   <span className="aqua-text-gradient">AQWELIA</span>

@@ -50,7 +50,7 @@ export default function MobileRegisterPage() {
   return (
     <main className="safe-area-top flex min-h-screen items-center justify-center px-5 py-10">
       <section className="w-full max-w-sm rounded-3xl border border-border/60 bg-card p-6 shadow-xl">
-        <img src="/logo-aqwelia-web.png" alt="AQWELIA" className="mx-auto h-14 w-auto object-contain" />
+        <img src="/branding/aqwelia-logo-main.png" alt="AQWELIA" className="mx-auto h-14 w-auto object-contain" />
         <h1 className="mt-4 text-center text-lg font-bold">{t('signUp')}</h1>
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-3">
