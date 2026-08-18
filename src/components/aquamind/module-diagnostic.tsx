@@ -145,9 +145,16 @@ export function ModuleDiagnostic({ activePoolId }: ModuleDiagnosticProps) {
   const [history, setHistory] = useState<SavedDiagnostic[]>([])
   const [loadingHistory, setLoadingHistory] = useState(true)
   const [activeTab, setActiveTab] = useState<'photo' | 'strip'>('photo')
+  const [photoGuideStep, setPhotoGuideStep] = useState(0)
   const [scannerOpen, setScannerOpen] = useState(false)
   const [stripSaved, setStripSaved] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const photoGuideSteps = [
+    { src: '/guides/photo-diagnostic/photo-diagnostic-guide-1-overview.png', title: t('photoGuideStep1Title'), text: t('photoGuideStep1Text') },
+    { src: '/guides/photo-diagnostic/photo-diagnostic-guide-2-closeup.png', title: t('photoGuideStep2Title'), text: t('photoGuideStep2Text') },
+    { src: '/guides/photo-diagnostic/photo-diagnostic-guide-3-frame.png', title: t('photoGuideStep3Title'), text: t('photoGuideStep3Text') },
+  ] as const
+  const activePhotoGuide = photoGuideSteps[photoGuideStep]
   const queueAction = useOfflineStore((s) => s.queueAction)
   const isOnline = useOfflineStore((s) => s.isOnline)
 
@@ -389,6 +396,42 @@ export function ModuleDiagnostic({ activePoolId }: ModuleDiagnosticProps) {
                   {t(tp.labelKey as any)}
                 </button>
               ))}
+            </div>
+
+            <div className="rounded-2xl border border-gold/20 bg-gradient-to-br from-gold/5 to-transparent p-3">
+              <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wide text-gold">
+                <span>{t('photoGuideMode')}</span>
+                <span className="text-muted-foreground">{photoGuideStep + 1}/{photoGuideSteps.length}</span>
+              </div>
+              <div className="relative mt-2 overflow-hidden rounded-xl border border-gold/20 bg-background/60">
+                <img
+                  src={activePhotoGuide.src}
+                  alt={activePhotoGuide.title}
+                  className="h-36 w-full object-contain p-2 sm:h-40"
+                />
+                <img
+                  src="/branding/aqwelia-logo-main.png"
+                  alt=""
+                  aria-hidden="true"
+                  className="pointer-events-none absolute bottom-2 right-2 h-6 w-auto object-contain opacity-80"
+                />
+              </div>
+              <div className="mt-2">
+                <p className="font-display text-sm font-bold">{activePhotoGuide.title}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{activePhotoGuide.text}</p>
+              </div>
+              <div className="mt-3 flex items-center gap-2">
+                {photoGuideStep > 0 && (
+                  <Button type="button" variant="outline" size="sm" onClick={() => setPhotoGuideStep((n) => Math.max(0, n - 1))}>
+                    {t('photoGuidePrevious')}
+                  </Button>
+                )}
+                {photoGuideStep < photoGuideSteps.length - 1 && (
+                  <Button type="button" size="sm" className="ml-auto" onClick={() => setPhotoGuideStep((n) => Math.min(photoGuideSteps.length - 1, n + 1))}>
+                    {t('photoGuideNext')}
+                  </Button>
+                )}
+              </div>
             </div>
 
             {!image ? (

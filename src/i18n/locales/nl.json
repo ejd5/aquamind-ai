@@ -1473,7 +1473,16 @@
     "requalificationNeededDesc": "Dit plan kan niet als huidig plan worden getoond. Voer een wetenschappelijke regeneratie uit of voer een nieuwe meting in.",
     "analysisUnreadable": "Antwoord niet leesbaar",
     "analysisUnreadableDesc": "De AI-analyse kon niet worden gestructureerd. Probeer een scherpere foto of probeer het opnieuw.",
-    "analysisTimeout": "De analyse duurde te lang. Probeer het opnieuw of maak een scherpere foto."
+    "analysisTimeout": "De analyse duurde te lang. Probeer het opnieuw of maak een scherpere foto.",
+    "photoGuideMode": "Begeleide fotomodus",
+    "photoGuideStep1Title": "Overzicht",
+    "photoGuideStep1Text": "Maak een brede foto waarop het hele zwembad en de omgeving zichtbaar zijn.",
+    "photoGuideStep2Title": "Close-up van het probleem",
+    "photoGuideStep2Text": "Ga dichter naar het probleemgebied zodat de details duidelijk zichtbaar zijn.",
+    "photoGuideStep3Title": "Definitieve kadrering",
+    "photoGuideStep3Text": "Plaats het te analyseren gebied centraal in een scherpe, goed belichte foto.",
+    "photoGuidePrevious": "Vorige",
+    "photoGuideNext": "Volgende"
   },
   "weather": {
     "locateMe": "Mij lokaliseren",

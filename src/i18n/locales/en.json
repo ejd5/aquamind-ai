@@ -1593,7 +1593,16 @@
     "requalificationNeededDesc": "This plan cannot be shown as the current plan. Run a scientific regeneration or enter a new measurement.",
     "analysisUnreadable": "Unreadable response",
     "analysisUnreadableDesc": "The AI analysis could not be structured. Try a sharper photo or retry.",
-    "analysisTimeout": "The analysis took too long. Retry or take a sharper photo."
+    "analysisTimeout": "The analysis took too long. Retry or take a sharper photo.",
+    "photoGuideMode": "Guided photo mode",
+    "photoGuideStep1Title": "Overview",
+    "photoGuideStep1Text": "Take a wide photo showing the whole pool and its surroundings.",
+    "photoGuideStep2Title": "Problem close-up",
+    "photoGuideStep2Text": "Move closer to the affected area so the details are clearly visible.",
+    "photoGuideStep3Title": "Final framing",
+    "photoGuideStep3Text": "Center the area to analyze in a sharp, well-lit image.",
+    "photoGuidePrevious": "Previous",
+    "photoGuideNext": "Next"
   },
   "weather": {
     "locateMe": "Locate me",

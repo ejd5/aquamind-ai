@@ -1473,7 +1473,16 @@
     "requalificationNeededDesc": "Este plano não pode ser apresentado como plano atual. Execute uma regeneração científica ou introduza uma nova medição.",
     "analysisUnreadable": "Resposta não interpretável",
     "analysisUnreadableDesc": "A análise de IA não pôde ser estruturada. Tente uma foto mais nítida ou tente novamente.",
-    "analysisTimeout": "A análise demorou demasiado. Tente novamente ou tire uma foto mais nítida."
+    "analysisTimeout": "A análise demorou demasiado. Tente novamente ou tire uma foto mais nítida.",
+    "photoGuideMode": "Modo de foto guiado",
+    "photoGuideStep1Title": "Vista geral",
+    "photoGuideStep1Text": "Tire uma foto ampla mostrando toda a piscina e o ambiente ao redor.",
+    "photoGuideStep2Title": "Close-up do problema",
+    "photoGuideStep2Text": "Aproxime-se da área afetada para mostrar claramente os detalhes.",
+    "photoGuideStep3Title": "Enquadramento final",
+    "photoGuideStep3Text": "Centralize a área a analisar numa imagem nítida e bem iluminada.",
+    "photoGuidePrevious": "Anterior",
+    "photoGuideNext": "Seguinte"
   },
   "weather": {
     "locateMe": "Localizar-me",
