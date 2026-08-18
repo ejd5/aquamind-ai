@@ -1678,7 +1678,18 @@
       "392": "Onweer met sneeuw",
       "395": "Zwaar onweer met sneeuw",
       "undefined": "Ongedefinieerd"
-    }
+    },
+    "summaryUnavailable": "Weergegevens beschikbaar. De geavanceerde analyse van de impact op uw zwembad is voorbehouden aan het Premium-plan.",
+    "premiumAnalysis": "Geavanceerde AQWELIA-weeranalyse",
+    "premiumAnalysisTitle": "Weersimpact op uw zwembad",
+    "premiumAnalysisDesc": "Ontgrendel slimme analyse: algenrisico, weersimpact, filtratie, waarschuwingen en advies op maat van uw zwembad.",
+    "premiumFeatureAlgae": "Algenrisico in realtime geschat",
+    "premiumFeatureImpact": "Gedetailleerde weersimpact op uw zwembad",
+    "premiumFeatureFiltration": "Aanbevolen filtratieduur",
+    "premiumFeatureAlerts": "Waarschuwingen voor storm, hitte, uv en regen",
+    "premiumFeatureTest": "Gerichte testaanbevelingen",
+    "premiumFeatureSwim": "Geschat zwemcomfort",
+    "premiumCta": "Ontdek de Premium-plannen"
   },
   "admin": {
     "title": "AQWELIA Admin",

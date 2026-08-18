@@ -317,7 +317,7 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
 
       <div className="mx-auto flex w-full max-w-7xl flex-1 gap-0 px-0 sm:px-6">
         {/* Desktop sidebar */}
-        <aside className="custom-scroll sticky top-32 hidden h-[calc(100vh-8rem)] w-56 shrink-0 overflow-y-auto border-r border-border/40 py-6 pr-4 md:block">
+        <aside className="custom-scroll sticky top-32 hidden h-[calc(100vh-8rem)] w-72 shrink-0 overflow-y-auto border-r border-border/40 py-6 pr-5 md:block">
           <nav className="space-y-1">
             {NAV.map((item) => {
               const active = activeTab === item.id
@@ -349,7 +349,7 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
                   >
                     <Icon className="h-4 w-4" />
                   </span>
-                  <span className="truncate">{item.label}</span>
+                  <span className="min-w-0 flex-1 whitespace-normal text-left leading-tight">{item.label}</span>
                   {isPremium && (
                     <Sparkles className="ml-auto h-3 w-3 text-gold" />
                   )}

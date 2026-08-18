@@ -1678,7 +1678,18 @@
       "392": "Gewitter mit Schnee",
       "395": "Schweres Gewitter mit Schnee",
       "undefined": "Undefiniert"
-    }
+    },
+    "summaryUnavailable": "Wetterdaten verfügbar. Die erweiterte Analyse ihrer Auswirkungen auf Ihren Pool ist dem Premium-Plan vorbehalten.",
+    "premiumAnalysis": "Erweiterte AQWELIA-Wetteranalyse",
+    "premiumAnalysisTitle": "Wetterauswirkung auf Ihren Pool",
+    "premiumAnalysisDesc": "Schalten Sie die intelligente Analyse frei: Algenrisiko, Wetterauswirkung, Filterung, Warnungen und auf Ihren Pool zugeschnittene Tipps.",
+    "premiumFeatureAlgae": "Algenrisiko in Echtzeit geschätzt",
+    "premiumFeatureImpact": "Detaillierte Wetterauswirkung auf Ihren Pool",
+    "premiumFeatureFiltration": "Empfohlene Filterdauer",
+    "premiumFeatureAlerts": "Warnungen vor Sturm, Hitze, UV und Regen",
+    "premiumFeatureTest": "Gezielte Testempfehlungen",
+    "premiumFeatureSwim": "Geschätzter Badekomfort",
+    "premiumCta": "Premium-Pläne entdecken"
   },
   "admin": {
     "title": "AQWELIA Admin",

@@ -1798,7 +1798,18 @@
       "392": "Thunderstorm with snow",
       "395": "Severe thunderstorm with snow",
       "undefined": "Undefined"
-    }
+    },
+    "summaryUnavailable": "Weather data available. The advanced analysis of its impact on your pool is reserved for the Premium plan.",
+    "premiumAnalysis": "AQWELIA advanced weather analysis",
+    "premiumAnalysisTitle": "Weather impact on your pool",
+    "premiumAnalysisDesc": "Unlock smart analysis: algae risk, weather impact, filtration, alerts and advice adapted to your pool.",
+    "premiumFeatureAlgae": "Real-time estimated algae risk",
+    "premiumFeatureImpact": "Detailed weather impact on your pool",
+    "premiumFeatureFiltration": "Recommended filtration duration",
+    "premiumFeatureAlerts": "Storm, heat, UV and rain alerts",
+    "premiumFeatureTest": "Targeted testing recommendations",
+    "premiumFeatureSwim": "Estimated swim comfort",
+    "premiumCta": "Discover Premium plans"
   },
   "admin": {
     "title": "AQWELIA Admin",

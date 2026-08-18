@@ -1676,7 +1676,18 @@
       "392": "Temporale con neve",
       "395": "Temporale forte con neve",
       "undefined": "Indefinito"
-    }
+    },
+    "summaryUnavailable": "Dati meteo disponibili. L'analisi avanzata del loro impatto sulla vostra piscina è riservata al piano Premium.",
+    "premiumAnalysis": "Analisi meteo avanzata AQWELIA",
+    "premiumAnalysisTitle": "Impatto meteo sulla vostra piscina",
+    "premiumAnalysisDesc": "Sbloccate l'analisi intelligente: rischio alghe, impatto meteo, filtrazione, allerte e consigli adattati alla vostra piscina.",
+    "premiumFeatureAlgae": "Rischio alghe stimato in tempo reale",
+    "premiumFeatureImpact": "Impatto meteo dettagliato sulla vostra piscina",
+    "premiumFeatureFiltration": "Durata di filtrazione consigliata",
+    "premiumFeatureAlerts": "Allerte tempesta, caldo, UV e pioggia",
+    "premiumFeatureTest": "Raccomandazioni di test mirate",
+    "premiumFeatureSwim": "Comfort di balneazione stimato",
+    "premiumCta": "Scopri i piani Premium"
   },
   "admin": {
     "title": "AQWELIA Admin",

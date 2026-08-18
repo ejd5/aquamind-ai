@@ -85,7 +85,9 @@ interface Assessment {
 
 interface WeatherResponse {
   weather: WeatherData
-  assessment: Assessment
+  /** null pour les comptes sans la feature weather_advanced (voir route API). */
+  assessment: Assessment | null
+  upgradeRequired?: boolean
   lastTestDaysAgo: number
   error?: string
 }
@@ -344,9 +346,11 @@ export function ModuleWeather({ onNavigate }: Props) {
   }
 
   const { weather, assessment } = data
-  const topAlert = assessment.alerts[0]
-  const algae = ALGAE_CFG[assessment.algaeRisk]
-  const swim = SWIM_CFG[assessment.swimComfort]
+  // P0 crash fix : assessment peut être null (feature gate weather_advanced).
+  // On ne déréférence JAMAIS assessment sans garde.
+  const hasAssessment = assessment !== null
+  const algae = hasAssessment ? ALGAE_CFG[assessment.algaeRisk] : null
+  const swim = hasAssessment ? SWIM_CFG[assessment.swimComfort] : null
 
   return (
     <div className="space-y-5">
@@ -411,8 +415,8 @@ export function ModuleWeather({ onNavigate }: Props) {
         </CardContent>
       </Card>
 
-      {/* Test recommended banner */}
-      {assessment.testRecommended && (
+      {/* Test recommended banner (avancé — uniquement si assessment dispo) */}
+      {hasAssessment && assessment.testRecommended && (
         <Card className="border-gold/40 bg-gold/5">
           <CardContent className="flex flex-col items-start gap-3 py-4 sm:flex-row sm:items-center">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold/15">
@@ -467,12 +471,13 @@ export function ModuleWeather({ onNavigate }: Props) {
               </div>
             </div>
             <p className="mt-3 rounded-lg border border-border/40 bg-background/40 p-2.5 text-xs leading-relaxed text-foreground/80">
-              {t(assessment.summaryKey as any, assessment.summaryParams)}
+              {hasAssessment ? t(assessment.summaryKey as any, assessment.summaryParams) : t('summaryUnavailable')}
             </p>
           </CardContent>
         </Card>
 
-        {/* Right column: swim + algae */}
+        {/* Right column: swim + algae (avancé — uniquement si assessment dispo) */}
+        {hasAssessment && swim && algae && (
         <div className="space-y-4">
           <Card className="glass-card">
             <CardHeader className="pb-2">
@@ -510,10 +515,11 @@ export function ModuleWeather({ onNavigate }: Props) {
             </CardContent>
           </Card>
         </div>
+        )}
       </div>
 
-      {/* Weather alerts — the differentiator */}
-      {assessment.alerts.length > 0 && (
+      {/* Weather alerts — the differentiator (avancé) */}
+      {hasAssessment && assessment.alerts.length > 0 && (
         <Card className="glass-card">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 font-display text-base">
@@ -563,7 +569,8 @@ export function ModuleWeather({ onNavigate }: Props) {
         </Card>
       )}
 
-      {/* Filtration recommandée */}
+      {/* Filtration recommandée (avancé) */}
+      {hasAssessment && (
       <Card className="glass-card">
         <CardHeader className="pb-2">
           <CardDescription className="flex items-center gap-1.5">
@@ -587,6 +594,50 @@ export function ModuleWeather({ onNavigate }: Props) {
           </div>
         </CardContent>
       </Card>
+      )}
+
+      {/* Analyse météo avancée AQWELIA — carte Premium (visible quand la
+          feature weather_advanced n'est pas disponible sur le plan) */}
+      {!hasAssessment && (
+        <Card className="border-gold/40 bg-gradient-to-br from-gold/10 to-transparent">
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-gold" />
+              {t('premiumAnalysis')}
+            </CardDescription>
+            <CardTitle className="font-display text-base">{t('premiumAnalysisTitle')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs leading-relaxed text-muted-foreground">{t('premiumAnalysisDesc')}</p>
+            <ul className="space-y-1.5 text-xs text-foreground/80">
+              {[
+                t('premiumFeatureAlgae'),
+                t('premiumFeatureImpact'),
+                t('premiumFeatureFiltration'),
+                t('premiumFeatureAlerts'),
+                t('premiumFeatureTest'),
+                t('premiumFeatureSwim'),
+              ].map((f) => (
+                <li key={f} className="flex items-start gap-2">
+                  <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-gold" aria-hidden="true" />
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
+            {onNavigate && (
+              <Button
+                size="sm"
+                onClick={() => onNavigate('paywall')}
+                className="bg-gradient-to-r from-gold to-[oklch(0.65_0.11_195)] text-[oklch(0.99_0.01_195)] shadow-md shadow-gold/30"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                {t('premiumCta')}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* 3-day forecast */}
       <Card className="glass-card">
