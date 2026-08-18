@@ -115,6 +115,53 @@ describe('PR #104 R2 — desktop shell full-width', () => {
   })
 })
 
+describe('PR #104 R3 — header desktop aligné à gauche', () => {
+  it('le conteneur header desktop n’utilise plus la contrainte centrée (max-w-7xl / mx-auto)', () => {
+    const src = read('src/components/aquamind/header.tsx')
+    // Le wrapper du header (juste après <header>) n'a plus max-w-7xl ni mx-auto.
+    const headerIdx = src.indexOf('<header className="sticky')
+    expect(headerIdx).toBeGreaterThan(-1)
+    const wrapperIdx = src.indexOf('<div className="flex h-32', headerIdx)
+    expect(wrapperIdx).toBeGreaterThan(-1)
+    const wrapperLine = src.slice(headerIdx).split('\n').find((l) => l.includes('h-32 items-center justify-between')) || ''
+    expect(wrapperLine).not.toContain('max-w-7xl')
+    expect(wrapperLine).not.toContain('mx-auto')
+  })
+
+  it('le header est full-width sur desktop et aligné sur le shell (px-3 sm:px-6)', () => {
+    const src = read('src/components/aquamind/header.tsx')
+    expect(src).toContain('flex h-32 items-center justify-between px-3 sm:px-6')
+  })
+
+  it('le logo AQWELIA reste en tête (zone gauche du header)', () => {
+    const src = read('src/components/aquamind/header.tsx')
+    // Le logo est le premier élément du wrapper (gauche), la nav/avatar à droite.
+    const logoIdx = src.indexOf('/branding/aqwelia-logo-main.png')
+    const navIdx = src.indexOf('flex items-center gap-2')
+    expect(logoIdx).toBeGreaterThan(-1)
+    expect(navIdx).toBeGreaterThan(logoIdx)
+  })
+
+  it('la navigation / avatar droite reste présente', () => {
+    const src = read('src/components/aquamind/header.tsx')
+    expect(src).toContain('flex items-center gap-2')
+    expect(src).toContain('onBackToLanding &&')
+    expect(src).toContain('userMenuAria')
+  })
+
+  it('la sidebar desktop reste inchangée (w-72, hidden md:block)', () => {
+    const shell = read('src/components/aquamind/app-shell.tsx')
+    expect(shell).toContain('hidden h-[calc(100vh-8rem)] w-72 shrink-0')
+  })
+
+  it('la météo reste inchangée (assessment nullable + garde hasAssessment)', () => {
+    const src = read('src/components/aquamind/module-weather.tsx')
+    expect(src).toMatch(/assessment: Assessment \| null/)
+    expect(src).toContain('const hasAssessment = assessment !== null')
+    expect(src).toContain("{!hasAssessment && (")
+  })
+})
+
 describe('PR #104 — i18n premium weather', () => {
   it('toutes les locales définissent les clés premium weather', () => {
     for (const locale of ['fr', 'en', 'es', 'pt', 'de', 'it', 'nl']) {
