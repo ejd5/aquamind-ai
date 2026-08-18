@@ -1800,7 +1800,18 @@
       "392": "Orage neige",
       "395": "Fort orage neige",
       "undefined": "Indéterminé"
-    }
+    },
+    "summaryUnavailable": "Données météo disponibles. L'analyse avancée de l'impact sur votre piscine est réservée au plan Premium.",
+    "premiumAnalysis": "Analyse météo avancée AQWELIA",
+    "premiumAnalysisTitle": "Impact météo sur votre piscine",
+    "premiumAnalysisDesc": "Débloquez l'analyse intelligente : risque d'algues, impact météo, filtration, alertes et conseils adaptés à votre bassin.",
+    "premiumFeatureAlgae": "Risque d’algues estimé en temps réel",
+    "premiumFeatureImpact": "Impact météo détaillé sur votre piscine",
+    "premiumFeatureFiltration": "Durée de filtration recommandée",
+    "premiumFeatureAlerts": "Alertes orage, chaleur, UV et pluie",
+    "premiumFeatureTest": "Recommandations de test ciblées",
+    "premiumFeatureSwim": "Confort de baignade estimé",
+    "premiumCta": "Découvrir les plans Premium"
   },
   "admin": {
     "title": "AQWELIA Admin",
