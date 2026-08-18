@@ -150,9 +150,9 @@ export function ModuleDiagnostic({ activePoolId }: ModuleDiagnosticProps) {
   const [stripSaved, setStripSaved] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const photoGuideSteps = [
-    { src: '/guides/photo-diagnostic/photo-diagnostic-guide-1-overview.svg', title: t('photoGuideStep1Title'), text: t('photoGuideStep1Text') },
-    { src: '/guides/photo-diagnostic/photo-diagnostic-guide-2-closeup.svg', title: t('photoGuideStep2Title'), text: t('photoGuideStep2Text') },
-    { src: '/guides/photo-diagnostic/photo-diagnostic-guide-3-frame.svg', title: t('photoGuideStep3Title'), text: t('photoGuideStep3Text') },
+    { src: '/guides/photo-diagnostic/photo-diagnostic-guide-1-overview.png', title: t('photoGuideStep1Title'), text: t('photoGuideStep1Text') },
+    { src: '/guides/photo-diagnostic/photo-diagnostic-guide-2-closeup.png', title: t('photoGuideStep2Title'), text: t('photoGuideStep2Text') },
+    { src: '/guides/photo-diagnostic/photo-diagnostic-guide-3-frame.png', title: t('photoGuideStep3Title'), text: t('photoGuideStep3Text') },
   ] as const
   const activePhotoGuide = photoGuideSteps[photoGuideStep]
   const queueAction = useOfflineStore((s) => s.queueAction)

@@ -108,12 +108,12 @@ describe('strip-scanner UI — message de timeout localisé', () => {
 
   it('la structure d’intégration des visuels des 3 étapes guidées est prête (assets /guides/)', () => {
     const src = readFileSync(join(root, 'src/components/aquamind/strip-scanner.tsx'), 'utf8')
-    // PR #102 : les 3 étapes guident vers des assets SVG language-neutral
-    // (aucun texte/logo incrusté), le texte reste fourni par i18n, et le logo
-    // AQWELIA officiel est superposé par le composant depuis /branding/.
-    expect(src).toContain("illustration: '/guides/stripscan/stripscan-guide-1-prepare.svg'")
-    expect(src).toContain("illustration: '/guides/stripscan/stripscan-guide-2-lighting.svg'")
-    expect(src).toContain("illustration: '/guides/stripscan/stripscan-guide-3-align.svg'")
+    // PR #102 : les 3 étapes guident vers les PNG originaux validés, language-
+    // neutral (aucun texte/logo incrusté), le texte reste fourni par i18n, et
+    // le logo AQWELIA officiel est superposé par le composant depuis /branding/.
+    expect(src).toContain("illustration: '/guides/stripscan/stripscan-guide-1-prepare.png'")
+    expect(src).toContain("illustration: '/guides/stripscan/stripscan-guide-2-lighting.png'")
+    expect(src).toContain("illustration: '/guides/stripscan/stripscan-guide-3-align.png'")
     // Titres/textes toujours issus des traductions i18n (jamais hardcodés).
     expect(src).toContain("t('guideStep1Title')")
     expect(src).toContain("t('guideStep2Title')")

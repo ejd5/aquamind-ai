@@ -2,27 +2,46 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-// Round 2 contract: language-neutral assets, app-owned branding and i18n copy.
+// Round 3 contract: the six ORIGINAL validated PNG visuals are the source of
+// truth. Language-neutral, no embedded text/logo, app-owned branding + i18n.
 const ROOT = process.cwd()
 const stripAssets = [
+  '/guides/stripscan/stripscan-guide-1-prepare.png',
+  '/guides/stripscan/stripscan-guide-2-lighting.png',
+  '/guides/stripscan/stripscan-guide-3-align.png',
+] as const
+const photoAssets = [
+  '/guides/photo-diagnostic/photo-diagnostic-guide-1-overview.png',
+  '/guides/photo-diagnostic/photo-diagnostic-guide-2-closeup.png',
+  '/guides/photo-diagnostic/photo-diagnostic-guide-3-frame.png',
+] as const
+const allAssets = [...stripAssets, ...photoAssets]
+const legacySvg = [
   '/guides/stripscan/stripscan-guide-1-prepare.svg',
   '/guides/stripscan/stripscan-guide-2-lighting.svg',
   '/guides/stripscan/stripscan-guide-3-align.svg',
-] as const
-const photoAssets = [
   '/guides/photo-diagnostic/photo-diagnostic-guide-1-overview.svg',
   '/guides/photo-diagnostic/photo-diagnostic-guide-2-closeup.svg',
   '/guides/photo-diagnostic/photo-diagnostic-guide-3-frame.svg',
-] as const
+]
 
 describe('AQWELIA guided visual assets', () => {
-  it('ships six language-neutral SVG illustrations without embedded text', () => {
-    for (const asset of [...stripAssets, ...photoAssets]) {
+  it('ships the six original validated PNG visuals', () => {
+    for (const asset of allAssets) {
       const path = join(ROOT, 'public', asset.replace(/^\//, ''))
       expect(existsSync(path)).toBe(true)
-      const svg = readFileSync(path, 'utf8')
-      expect(svg).not.toContain('<text')
-      expect(svg).not.toContain('AQWELIA')
+    }
+  })
+
+  it('no legacy SVG guide is still referenced anywhere', () => {
+    for (const f of ['src/components/aquamind/strip-scanner.tsx', 'src/components/aquamind/module-diagnostic.tsx']) {
+      const src = readFileSync(join(ROOT, f), 'utf8')
+      for (const svg of legacySvg) {
+        expect(src).not.toContain(svg)
+      }
+    }
+    for (const svg of legacySvg) {
+      expect(existsSync(join(ROOT, 'public', svg.replace(/^\//, '')))).toBe(false)
     }
   })
 
