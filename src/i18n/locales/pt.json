@@ -1678,7 +1678,18 @@
       "392": "Tempestade com neve",
       "395": "Tempestade forte com neve",
       "undefined": "Indefinido"
-    }
+    },
+    "summaryUnavailable": "Dados meteorológicos disponíveis. A análise avançada do seu impacto na sua piscina está reservada ao plano Premium.",
+    "premiumAnalysis": "Análise meteorológica avançada AQWELIA",
+    "premiumAnalysisTitle": "Impacto meteorológico na sua piscina",
+    "premiumAnalysisDesc": "Desbloqueie a análise inteligente: risco de algas, impacto meteorológico, filtração, alertas e conselhos adaptados à sua piscina.",
+    "premiumFeatureAlgae": "Risco de algas estimado em tempo real",
+    "premiumFeatureImpact": "Impacto meteorológico detalhado na sua piscina",
+    "premiumFeatureFiltration": "Duração de filtração recomendada",
+    "premiumFeatureAlerts": "Alertas de tempestade, calor, UV e chuva",
+    "premiumFeatureTest": "Recomendações de teste específicas",
+    "premiumFeatureSwim": "Conforto de banho estimado",
+    "premiumCta": "Descobrir os planos Premium"
   },
   "admin": {
     "title": "AQWELIA Admin",

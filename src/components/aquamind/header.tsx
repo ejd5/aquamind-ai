@@ -83,7 +83,9 @@ export function Header({
       {/* Subtle gold line at the bottom */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
 
-      <div className="mx-auto flex h-32 max-w-7xl items-center justify-between px-4 sm:px-6">
+      {/* Full-width header (PR #104 R3) : aligné sur le shell desktop, le logo
+          part du même bord que la sidebar. Même padding que le shell (px-3 sm:px-6). */}
+      <div className="flex h-32 items-center justify-between px-3 sm:px-6">
         <div className="flex items-center">
           {/* AQWELIA logo master — seule marque visible, détourée, sans texte adjacent */}
           <button
