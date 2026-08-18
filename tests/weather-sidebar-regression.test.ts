@@ -83,6 +83,38 @@ describe('PR #104 — sidebar desktop élargie', () => {
   })
 })
 
+describe('PR #104 R2 — desktop shell full-width', () => {
+  it('le conteneur shell desktop ne centre plus dans max-w-7xl', () => {
+    const src = read('src/components/aquamind/app-shell.tsx')
+    // Le conteneur réel du shell (ligne du div juste avant <aside>) n'a plus
+    // ni max-w-7xl ni mx-auto dans sa className.
+    const asideIdx = src.indexOf('<aside')
+    expect(asideIdx).toBeGreaterThan(-1)
+    const divLine = src.slice(0, asideIdx).split('\n').filter((l) => l.includes('flex-1 gap-0')).pop() || ''
+    expect(divLine).not.toContain('max-w-7xl')
+    expect(divLine).not.toContain('mx-auto')
+    expect(divLine).toContain('w-full')
+  })
+
+  it('le conteneur shell desktop est full-width (flex w-full, pas de max-width)', () => {
+    const src = read('src/components/aquamind/app-shell.tsx')
+    expect(src).toMatch(/className="flex w-full flex-1 gap-0 px-3 sm:px-6"/)
+  })
+
+  it('le contenu principal reste flex-1 + min-w-0 (profite de l’espace libéré)', () => {
+    const src = read('src/components/aquamind/app-shell.tsx')
+    expect(src).toContain('<main className="min-w-0 flex-1 px-4 py-6 pb-28 sm:px-6 md:pb-10">')
+  })
+
+  it('la sidebar desktop reste w-72 sans truncate', () => {
+    const src = read('src/components/aquamind/app-shell.tsx')
+    expect(src).toContain('w-72')
+    expect(src).not.toContain('w-56')
+    expect(src).toContain('min-w-0 flex-1 whitespace-normal text-left leading-tight')
+    expect(src).not.toContain('truncate')
+  })
+})
+
 describe('PR #104 — i18n premium weather', () => {
   it('toutes les locales définissent les clés premium weather', () => {
     for (const locale of ['fr', 'en', 'es', 'pt', 'de', 'it', 'nl']) {
