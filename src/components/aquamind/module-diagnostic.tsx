@@ -39,6 +39,7 @@ import { offlineApi } from '@/lib/offline/api-cache'
 import { api } from '@/lib/api-client'
 import { useOfflineStore } from '@/lib/offline/offline-store'
 import { hapticSuccess, hapticError } from '@/lib/native/haptics'
+import { normalizePhotoDiagnostic } from '@/lib/pool/photo-diagnostic-normalize'
 import { DiagnosticActionPlan } from './diagnostic-action-plan'
 import { AITransparencyNotice } from '@/components/ai/ai-transparency-notice'
 import { StripScanner } from './strip-scanner'
@@ -409,12 +410,6 @@ export function ModuleDiagnostic({ activePoolId }: ModuleDiagnosticProps) {
                   alt={activePhotoGuide.title}
                   className="h-36 w-full object-contain p-2 sm:h-40"
                 />
-                <img
-                  src="/branding/aqwelia-logo-main.png"
-                  alt=""
-                  aria-hidden="true"
-                  className="pointer-events-none absolute bottom-2 right-2 h-6 w-auto object-contain opacity-80"
-                />
               </div>
               <div className="mt-2">
                 <p className="font-display text-sm font-bold">{activePhotoGuide.title}</p>
@@ -753,8 +748,27 @@ export function ModuleDiagnostic({ activePoolId }: ModuleDiagnosticProps) {
           ) : (
             <div className="custom-scroll max-h-96 space-y-2 overflow-y-auto pr-1">
               {history.map((d) => {
-                const detected = safeParse<string[]>(d.detectedIssues, [])
-                const summaryLower = (d.aiSummary || '').toLowerCase()
+                // Localise les anciens diagnostics sauvegardés à l'affichage
+                // (les champs EN "greenish water" → FR quand locale=fr).
+                // Les données DB ne sont jamais modifiées.
+                const localizedHistory = normalizePhotoDiagnostic(
+                  {
+                    imageType: d.type,
+                    detectedIssues: safeParse<string[]>(d.detectedIssues, []),
+                    probableIssues: safeParse<string[]>(d.probableIssues, []),
+                    confidence: d.confidence,
+                    missingData: safeParse<string[]>(d.missingData, []),
+                    recommendedNextStep: d.recommendedNextStep,
+                    safetyWarnings: safeParse<string[]>(d.safetyWarnings, []),
+                    userFriendlySummary: d.aiSummary,
+                  },
+                  locale,
+                  '',
+                  d.type,
+                )
+                const detected = localizedHistory.detectedIssues
+                const localizedSummary = localizedHistory.userFriendlySummary || ''
+                const summaryLower = (localizedSummary || d.aiSummary || '').toLowerCase()
                 const isResolved =
                   detected.length === 0 ||
                   isResolvedText(summaryLower)
@@ -763,20 +777,21 @@ export function ModuleDiagnostic({ activePoolId }: ModuleDiagnosticProps) {
                     key={d.id}
                     className="group flex items-start gap-3 rounded-xl border border-border/50 bg-background/60 p-3 transition-all hover:border-primary/30 hover:bg-primary/5"
                   >
-                    {/* Clickable area — reopen diagnostic */}
+                    {/* Clickable area — reopen diagnostic (localisé) */}
                     <button
                       onClick={() => {
-                        // Reopen this diagnostic: set image + result
+                        // Reopen this diagnostic: set image + result — utilise les
+                        // champs LOCALISÉS, jamais les anciens textes anglais bruts.
                         if (d.imageUrl) setImage(d.imageUrl)
                         setResult({
-                          imageType: d.type,
-                          detectedIssues: detected,
-                          probableIssues: safeParse<string[]>(d.probableIssues, []),
-                          confidence: d.confidence,
-                          missingData: safeParse<string[]>(d.missingData, []),
-                          recommendedNextStep: d.recommendedNextStep || undefined,
-                          safetyWarnings: safeParse<string[]>(d.safetyWarnings, []),
-                          userFriendlySummary: d.aiSummary,
+                          imageType: localizedHistory.imageType,
+                          detectedIssues: localizedHistory.detectedIssues,
+                          probableIssues: localizedHistory.probableIssues,
+                          confidence: localizedHistory.confidence,
+                          missingData: localizedHistory.missingData,
+                          recommendedNextStep: localizedHistory.recommendedNextStep || undefined,
+                          safetyWarnings: localizedHistory.safetyWarnings,
+                          userFriendlySummary: localizedHistory.userFriendlySummary || undefined,
                         })
                         setTypeHint(d.type)
                         window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -812,8 +827,8 @@ export function ModuleDiagnostic({ activePoolId }: ModuleDiagnosticProps) {
                           )}
                         </div>
                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                          {d.aiSummary && !isRefusalText(d.aiSummary)
-                            ? d.aiSummary
+                          {localizedSummary && !isRefusalText(localizedSummary)
+                            ? localizedSummary
                             : t('noAnalysis')}
                         </p>
                         {!isResolved && detected.length > 0 && (
@@ -868,8 +883,8 @@ export function ModuleDiagnostic({ activePoolId }: ModuleDiagnosticProps) {
                                 {d.type} · {new Date(d.createdAt).toLocaleDateString(locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                               </p>
                               <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                                {d.aiSummary && !isRefusalText(d.aiSummary)
-                                  ? d.aiSummary
+                                {localizedSummary && !isRefusalText(localizedSummary)
+                                  ? localizedSummary
                                   : t('noAnalysis')}
                               </p>
                             </div>

@@ -407,12 +407,6 @@ function GuideStage({
               alt={Step.title}
               className="h-44 w-full object-contain p-2 sm:h-48"
             />
-            <img
-              src="/branding/aqwelia-logo-main.png"
-              alt=""
-              aria-hidden="true"
-              className="pointer-events-none absolute bottom-2 right-2 h-7 w-auto object-contain opacity-80"
-            />
           </div>
         )}
         {/* Progress dots */}

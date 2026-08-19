@@ -45,20 +45,23 @@ describe('AQWELIA guided visual assets', () => {
     }
   })
 
-  it('uses object-contain and overlays the official AQWELIA logo in StripScan', () => {
+  it('uses object-contain WITHOUT a duplicate logo overlay in StripScan (PR #103)', () => {
     const source = readFileSync(join(ROOT, 'src/components/aquamind/strip-scanner.tsx'), 'utf8')
     for (const asset of stripAssets) expect(source).toContain(asset)
     expect(source).toContain('object-contain')
-    expect(source).toContain('/branding/aqwelia-logo-main.png')
+    // Les PNG contiennent déjà leur branding : aucun overlay logo n'est ajouté.
+    expect(source).not.toContain('/branding/aqwelia-logo-main.png')
   })
 
-  it('provides a translated 3-step Photo Diagnostic guide', () => {
+  it('provides a translated 3-step Photo Diagnostic guide without duplicate logo (PR #103)', () => {
     const source = readFileSync(join(ROOT, 'src/components/aquamind/module-diagnostic.tsx'), 'utf8')
     for (const asset of photoAssets) expect(source).toContain(asset)
     expect(source).toContain("t('photoGuideStep1Title')")
     expect(source).toContain("t('photoGuideStep2Title')")
     expect(source).toContain("t('photoGuideStep3Title')")
-    expect(source).toContain('/branding/aqwelia-logo-main.png')
+    // Pas d'overlay logo sur le guide photo (le dialogue de suppression garde
+    // l'icône A légitime, non testée ici).
+    expect(source).not.toContain('/branding/aqwelia-logo-main.png')
   })
 
   it('defines Photo Diagnostic guide copy in every supported locale', () => {
