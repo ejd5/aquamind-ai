@@ -181,7 +181,7 @@ function Gauge({ value, label, color }: { value: number; label: string; color: s
       </svg>
       <div className="absolute flex flex-col items-center">
         <span className="font-display text-4xl font-bold tracking-tight">{value}</span>
-        <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           / 100
         </span>
       </div>
@@ -462,7 +462,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
             {t('refresh')}
           </Button>
           {stale && (
-            <span className="text-[10px] italic text-muted-foreground">{t('cachedData')}</span>
+            <span className="text-[11px] italic text-muted-foreground">{t('cachedData')}</span>
           )}
         </div>
       </div>
@@ -476,8 +476,8 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
       {!latestTest ? (
         <Card className="glass-card">
           <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-gold shadow-lg shadow-primary/30">
-              <FlaskConical className="h-7 w-7 text-primary-foreground" />
+            <div className="icon-chip icon-chip-lagoon h-14 w-14 shadow-md shadow-lagoon/30">
+              <FlaskConical className="h-7 w-7" />
             </div>
             <div>
               <p className="font-display text-lg font-semibold">{t('noMeasureTitle')}</p>
@@ -487,7 +487,8 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
             </div>
             <Button
               onClick={() => onNavigate('water')}
-              className="bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-lg shadow-primary/20"
+              variant="aqua-gradient"
+              className="shadow-lg shadow-primary/20"
             >
               <FlaskConical className="h-4 w-4" />
               {t('firstMeasure')}
@@ -496,8 +497,8 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
         </Card>
       ) : (
         <div className="grid gap-5 lg:grid-cols-3">
-          {/* Clear-water gauge */}
-          <Card className="glass-card lg:col-span-1">
+          {/* NIVEAU 1 — Clear-water gauge (LAGON VIVANT: accent hairline card) */}
+          <Card className="card-accent-lagon lg:col-span-1">
             <CardHeader className="pb-2">
               <CardDescription>{t('clearWaterIndex')}</CardDescription>
               <CardTitle className="font-display text-lg">{t('globalQuality')}</CardTitle>
@@ -508,7 +509,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
                 <div className="flex h-44 w-44 items-center justify-center">
                   <div className="text-center">
                     <span className="font-display text-4xl font-bold tracking-tight text-muted-foreground">—</span>
-                    <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                       / 100
                     </span>
                   </div>
@@ -674,13 +675,38 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
         </div>
       )}
 
-      {/* Quick actions */}
+      {/* NIVEAU 2 — Quick actions (LAGON VIVANT: per-action personality,
+          icon-chips, tinted surfaces, soft lift + halo on hover) */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { icon: Camera, label: t('diagnose'), tab: 'diagnostic' as TabId, accent: 'from-primary/15 to-primary/5 text-primary' },
-          { icon: FlaskConical, label: t('enterMeasures'), tab: 'water' as TabId, accent: 'from-gold/15 to-gold/5 text-gold' },
-          { icon: Siren, label: t('emergency'), action: 'emergency', accent: 'from-destructive/15 to-destructive/5 text-destructive' },
-          { icon: MessageSquare, label: t('askAssistant'), tab: 'assistant' as TabId, accent: 'from-[oklch(0.7_0.15_155)]/15 to-[oklch(0.7_0.15_155)]/5 text-[oklch(0.45_0.13_155)]' },
+          {
+            icon: Camera,
+            label: t('diagnose'),
+            tab: 'diagnostic' as TabId,
+            chip: 'icon-chip icon-chip-lagoon',
+            card: 'border-lagoon/25 bg-gradient-to-br from-lagoon/10 via-card/70 to-transparent hover:border-lagoon/50 hover:shadow-[0_12px_28px_-14px_oklch(0.55_0.12_195/0.6)]',
+          },
+          {
+            icon: FlaskConical,
+            label: t('enterMeasures'),
+            tab: 'water' as TabId,
+            chip: 'icon-chip icon-chip-aqua',
+            card: 'border-aqua-vivid/25 bg-gradient-to-br from-aqua-vivid/10 via-card/70 to-transparent hover:border-aqua-vivid/50 hover:shadow-[0_12px_28px_-14px_oklch(0.62_0.11_190/0.55)]',
+          },
+          {
+            icon: Siren,
+            label: t('emergency'),
+            action: 'emergency',
+            chip: 'icon-chip bg-destructive/10 text-destructive',
+            card: 'border-destructive/25 bg-gradient-to-br from-destructive/10 via-card/70 to-transparent hover:border-destructive/50 hover:shadow-[0_12px_28px_-14px_oklch(0.58_0.22_27/0.5)]',
+          },
+          {
+            icon: MessageSquare,
+            label: t('askAssistant'),
+            tab: 'assistant' as TabId,
+            chip: 'icon-chip icon-chip-info',
+            card: 'border-info/25 bg-gradient-to-br from-info/10 via-card/70 to-transparent hover:border-info/50 hover:shadow-[0_12px_28px_-14px_oklch(0.60_0.11_230/0.5)]',
+          },
         ].map((a) => (
           <button
             key={a.label}
@@ -688,12 +714,12 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
               if (a.action === 'emergency') onOpenEmergency()
               else if (a.tab) onNavigate(a.tab)
             }}
-            className="group relative overflow-hidden rounded-xl border border-border/50 bg-card/60 p-3 text-left backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-gold/40 hover:shadow-lg hover:shadow-primary/5"
+            className={`group relative overflow-hidden rounded-xl border p-3 text-left backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 ${a.card}`}
           >
-            <div className={`mb-2 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${a.accent}`}>
-              <a.icon className="h-4 w-4" />
+            <div className={`mb-2 inline-flex h-10 w-10 items-center justify-center ${a.chip} transition-transform duration-200 group-hover:scale-[1.04]`}>
+              <a.icon className="h-[18px] w-[18px]" />
             </div>
-            <p className="text-xs font-semibold leading-tight">{a.label}</p>
+            <p className="text-[13px] font-semibold leading-tight">{a.label}</p>
           </button>
         ))}
       </div>
@@ -734,17 +760,17 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
                 return (
                   <div
                     key={m.key}
-                    className="rounded-xl border border-border/50 bg-background/60 p-3"
+                    className="rounded-xl border border-border/50 bg-background/70 p-3 transition-colors duration-200 hover:border-lagoon/25"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                         {m.label}
                       </span>
                       <span className={`h-1.5 w-1.5 rounded-full ${statusDotColor(status)}`} />
                     </div>
                     <p className="mt-1 font-display text-xl font-bold">
                       {has ? m.value : '—'}
-                      {has && m.unit && <span className="ml-0.5 text-[10px] text-muted-foreground">{m.unit}</span>}
+                      {has && m.unit && <span className="ml-0.5 text-[11px] text-muted-foreground">{m.unit}</span>}
                     </p>
                   </div>
                 )
@@ -775,7 +801,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
                         className="flex flex-1 flex-col items-center gap-1"
                         title={`pH ${t.ph} — ${new Date(t.createdAt).toLocaleDateString(locale)}`}
                       >
-                        <span className="text-[9px] font-medium text-muted-foreground">
+                        <span className="text-[11px] font-medium text-muted-foreground">
                           {t.ph.toFixed(1)}
                         </span>
                         <div
@@ -786,7 +812,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
                           }`}
                           style={{ height: `${h}%` }}
                         />
-                        <span className="text-[8px] text-muted-foreground">
+                        <span className="text-[10px] text-muted-foreground">
                           {new Date(t.createdAt).toLocaleDateString(locale, {
                             day: '2-digit',
                             month: '2-digit',
@@ -880,7 +906,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
                     <div className="flex items-center gap-2">
                       <Icon className="h-4 w-4" />
                       <p className="font-display text-sm font-bold">{trW(a.title, titleKey)}</p>
-                      <Badge variant="outline" className={`ml-auto text-[9px] uppercase tracking-wide ${cfg.cls}`}>
+                      <Badge variant="outline" className={`ml-auto text-[11px] uppercase tracking-wide ${cfg.cls}`}>
                         {a.severity}
                       </Badge>
                     </div>
@@ -953,12 +979,12 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
                   <div className="flex items-center gap-2">
                     <Bell className={`h-4 w-4 ${cfg.cls}`} />
                     <p className="font-display text-sm font-bold">{trReminder(r.title, titleKey, r.params)}</p>
-                    <Badge variant="outline" className={`ml-auto text-[9px] ${cfg.cls}`}>
+                    <Badge variant="outline" className={`ml-auto text-[11px] ${cfg.cls}`}>
                       {t(cfg.labelKey as any)}
                     </Badge>
                   </div>
                   <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{trReminder(r.detail, detailKey, r.params)}</p>
-                  <div className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <div className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground">
                     <Clock className="h-3 w-3" />
                     {r.dueInHours <= 0 ? t('now') : r.dueInHours < 24 ? t('inHours', { hours: r.dueInHours }) : t('inDays', { days: Math.round(r.dueInHours / 24) })}
                     <span className="ml-1 rounded-full bg-secondary/60 px-1.5 py-0.5 capitalize">{tReminderMod(`source.${REMINDER_SOURCE_KEY[r.source] || r.source}` as any)}</span>
@@ -1032,7 +1058,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
             className="glass-card rounded-xl p-3 text-left transition-all hover:-translate-y-0.5 hover:border-gold/40"
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {s.label}
               </span>
               <s.icon className="h-3.5 w-3.5 text-muted-foreground" />

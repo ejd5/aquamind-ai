@@ -81,25 +81,32 @@ const REQUIRED_PRIMITIVES = [
   '.icon-chip-aqua',
   '.icon-chip-coral',
   '.icon-chip-champagne',
+  '.icon-chip-info',
   '.dark .icon-chip-lagoon',
   '.dark .icon-chip-aqua',
   '.dark .icon-chip-coral',
   '.dark .icon-chip-champagne',
+  '.dark .icon-chip-info',
   '.halo-soft',
   '.btn-aqua-gradient',
   '.btn-champagne-gradient',
   '.dark .btn-champagne-gradient',
 ]
 
-// Opt-in guarantee: no existing screen must reference the new primitives yet.
+// Opt-in guarantee: LAGON VIVANT is applied progressively. Since PR #107 the
+// shell + dashboard intentionally use the foundation; every other module and
+// the mobile shell must remain untouched.
 const UNTOUCHED_SCREENS = [
-  'src/components/aquamind/module-dashboard.tsx',
-  'src/components/aquamind/app-shell.tsx',
   'src/components/aquamind/header.tsx',
+  'src/components/aquamind/module-diagnostic.tsx',
+  'src/components/aquamind/strip-scanner.tsx',
+  'src/components/aquamind/module-water-test.tsx',
+  'src/components/aquamind/module-weather.tsx',
+  'src/components/aquamind/module-guides.tsx',
   'src/components/aquamind/module-paywall.tsx',
   'src/components/mobile/bottom-tabs.tsx',
 ]
-const NEW_CLASS_MARKERS = ['card-accent-lagon', 'card-premium-champagne', 'app-bg-lagon', 'icon-chip', 'btn-aqua-gradient', 'btn-champagne-gradient']
+const NEW_CLASS_MARKERS = ['card-accent-lagon', 'card-premium-champagne', 'app-bg-lagon', 'icon-chip', 'btn-aqua-gradient', 'btn-champagne-gradient', 'icon-chip-info', 'icon-chip-lagoon', 'icon-chip-aqua', 'icon-chip-coral', 'icon-chip-champagne']
 
 describe('AQWELIA Lagon Vivant foundation', () => {
   it('maps every new token in the @theme inline block (Tailwind v4)', () => {

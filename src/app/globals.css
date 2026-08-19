@@ -662,6 +662,10 @@
   background: linear-gradient(135deg, oklch(0.84 0.07 85 / 0.50) 0%, oklch(0.78 0.08 80 / 0.35) 100%);
   color: var(--aqwelia-champagne-ink);
 }
+.icon-chip-info {
+  background: linear-gradient(135deg, oklch(0.84 0.08 230 / 0.45) 0%, oklch(0.78 0.09 230 / 0.30) 100%);
+  color: var(--aqwelia-info-ink);
+}
 .dark .icon-chip-lagoon {
   background: linear-gradient(135deg, oklch(0.55 0.09 190 / 0.35) 0%, oklch(0.45 0.08 190 / 0.25) 100%);
 }
@@ -673,6 +677,9 @@
 }
 .dark .icon-chip-champagne {
   background: linear-gradient(135deg, oklch(0.62 0.07 85 / 0.35) 0%, oklch(0.52 0.06 80 / 0.25) 100%);
+}
+.dark .icon-chip-info {
+  background: linear-gradient(135deg, oklch(0.60 0.08 230 / 0.35) 0%, oklch(0.50 0.07 230 / 0.25) 100%);
 }
 
 /* Soft halo on any element — uses currentColor (opt-in).

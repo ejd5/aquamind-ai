@@ -72,6 +72,38 @@ interface NavItem {
   short: string
   icon: typeof Home
   primary?: boolean
+  /** LAGON VIVANT — color family for the sidebar icon chip (coherent families). */
+  tone?: 'lagoon' | 'aqua' | 'info' | 'champagne'
+}
+
+/** LAGON VIVANT — per-tone classes for the desktop sidebar.
+    Full literal strings so Tailwind v4 scans them statically. */
+const TONE_CHIP_INACTIVE: Record<NonNullable<NavItem['tone']>, string> = {
+  lagoon: 'icon-chip icon-chip-lagoon group-hover:brightness-105',
+  aqua: 'icon-chip icon-chip-aqua group-hover:brightness-105',
+  info: 'icon-chip icon-chip-info group-hover:brightness-105',
+  champagne: 'icon-chip icon-chip-champagne group-hover:brightness-105',
+}
+
+const TONE_CHIP_ACTIVE: Record<NonNullable<NavItem['tone']>, string> = {
+  lagoon: 'icon-chip bg-gradient-to-br from-lagoon to-aqua-vivid text-night shadow-md shadow-lagoon/40 ring-1 ring-lagoon/30',
+  aqua: 'icon-chip bg-gradient-to-br from-aqua to-aqua-vivid text-night shadow-md shadow-aqua/40 ring-1 ring-aqua/30',
+  info: 'icon-chip bg-gradient-to-br from-info to-[oklch(0.78_0.10_230)] text-night shadow-md shadow-info/40 ring-1 ring-info/30',
+  champagne: 'icon-chip bg-gradient-to-br from-champagne to-[#E2C79A] text-night shadow-md shadow-champagne/40 ring-1 ring-champagne/30',
+}
+
+const TONE_ROW_ACTIVE: Record<NonNullable<NavItem['tone']>, string> = {
+  lagoon: 'bg-gradient-to-r from-lagoon/15 to-aqua-vivid/10 text-foreground shadow-sm ring-1 ring-lagoon/25',
+  aqua: 'bg-gradient-to-r from-aqua/20 to-aqua-vivid/10 text-foreground shadow-sm ring-1 ring-aqua/30',
+  info: 'bg-gradient-to-r from-info/15 to-info/5 text-foreground shadow-sm ring-1 ring-info/25',
+  champagne: 'bg-gradient-to-r from-champagne/20 to-champagne/5 text-foreground shadow-sm ring-1 ring-champagne/30',
+}
+
+const TONE_ROW_HOVER: Record<NonNullable<NavItem['tone']>, string> = {
+  lagoon: 'hover:bg-lagoon/10 hover:text-foreground',
+  aqua: 'hover:bg-aqua-vivid/10 hover:text-foreground',
+  info: 'hover:bg-info/10 hover:text-foreground',
+  champagne: 'hover:bg-champagne/10 hover:text-foreground',
 }
 
 export interface PoolProfileLite {
@@ -110,19 +142,19 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
   const [editingPoolId, setEditingPoolId] = useState<string | null>(null)
 
   const NAV: NavItem[] = [
-    { id: 'today', label: t('today'), short: t('home'), icon: Home, primary: true },
-    { id: 'diagnostic', label: t('diagnostic'), short: t('shortPhoto'), icon: Camera, primary: true },
-    { id: 'water', label: t('water'), short: t('shortWater'), icon: Droplets, primary: true },
-    { id: 'assistant', label: t('assistantIA'), short: t('shortIA'), icon: MessageSquare, primary: true },
-    { id: 'plan', label: t('plan'), short: t('shortPlan'), icon: ListChecks, primary: true },
-    { id: 'log', label: t('log'), short: t('shortLog'), icon: BookOpen, primary: true },
-    { id: 'maintenance', label: t('maintenanceLabel'), short: t('equipment'), icon: Wrench },
-    { id: 'weather', label: t('weather'), short: t('shortWeather'), icon: CloudSun },
-    { id: 'guides', label: t('guides'), short: t('shortGuides'), icon: BookOpen },
-    { id: 'reminders', label: t('reminders'), short: t('shortReminders'), icon: Bell },
-    { id: 'brain', label: t('brain'), short: t('shortBrain'), icon: BrainCircuit },
+    { id: 'today', label: t('today'), short: t('home'), icon: Home, primary: true, tone: 'lagoon' },
+    { id: 'diagnostic', label: t('diagnostic'), short: t('shortPhoto'), icon: Camera, primary: true, tone: 'aqua' },
+    { id: 'water', label: t('water'), short: t('shortWater'), icon: Droplets, primary: true, tone: 'lagoon' },
+    { id: 'assistant', label: t('assistantIA'), short: t('shortIA'), icon: MessageSquare, primary: true, tone: 'aqua' },
+    { id: 'plan', label: t('plan'), short: t('shortPlan'), icon: ListChecks, primary: true, tone: 'lagoon' },
+    { id: 'log', label: t('log'), short: t('shortLog'), icon: BookOpen, primary: true, tone: 'aqua' },
+    { id: 'maintenance', label: t('maintenanceLabel'), short: t('equipment'), icon: Wrench, tone: 'info' },
+    { id: 'weather', label: t('weather'), short: t('shortWeather'), icon: CloudSun, tone: 'info' },
+    { id: 'guides', label: t('guides'), short: t('shortGuides'), icon: BookOpen, tone: 'aqua' },
+    { id: 'reminders', label: t('reminders'), short: t('shortReminders'), icon: Bell, tone: 'info' },
+    { id: 'brain', label: t('brain'), short: t('shortBrain'), icon: BrainCircuit, tone: 'lagoon' },
     ...(isArqweliaLot1Enabled() ? [{ id: 'arqwelia' as TabId, label: t('arqwelia'), short: t('shortArqwelia'), icon: Bot }] : []),
-    { id: 'paywall', label: t('premium'), short: t('shortPremium'), icon: Crown },
+    { id: 'paywall', label: t('premium'), short: t('shortPremium'), icon: Crown, tone: 'champagne' },
   ]
   const PRIMARY_NAV = NAV.filter((n) => n.primary)
   const SECONDARY_NAV = NAV.filter((n) => !n.primary)
@@ -288,7 +320,7 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="app-bg-lagon flex min-h-screen flex-col bg-background">
       <OfflineBanner />
       <Header
         profile={profile}
@@ -331,30 +363,40 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
                 <button
                   key={item.id}
                   onClick={() => navigate(item.id)}
-                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                     active
-                      ? 'bg-gradient-to-r from-primary/15 to-gold/10 text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
-                  } ${isPremium ? 'border border-gold/30 hover:border-gold/50' : ''} ${isArqwelia ? 'border border-arq-aqua/20 hover:border-arq-aqua/40' : ''}`}
+                      ? item.tone
+                        ? TONE_ROW_ACTIVE[item.tone]
+                        : 'bg-gradient-to-r from-primary/15 to-gold/10 text-foreground shadow-sm'
+                      : item.tone
+                        ? `text-muted-foreground ${TONE_ROW_HOVER[item.tone]}`
+                        : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
+                  } ${isPremium ? 'border border-champagne/30 hover:border-champagne/60' : ''} ${isArqwelia ? 'border border-arq-aqua/20 hover:border-arq-aqua/40' : ''}`}
                 >
                   <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200 ${
                       active
                         ? isArqwelia
                           ? 'bg-gradient-to-br from-arq-aqua to-arq-navy-deep text-white shadow-md shadow-arq-aqua/30'
-                          : 'bg-gradient-to-br from-primary to-gold text-primary-foreground shadow-md shadow-primary/30'
+                          : isPremium
+                            ? TONE_CHIP_ACTIVE.champagne
+                            : item.tone
+                              ? TONE_CHIP_ACTIVE[item.tone]
+                              : 'bg-gradient-to-br from-primary to-gold text-primary-foreground shadow-md shadow-primary/30'
                         : isPremium
-                          ? 'bg-gold/10 text-gold'
+                          ? TONE_CHIP_INACTIVE.champagne
                           : isArqwelia
                             ? 'bg-arq-aqua/10 text-arq-aqua group-hover:bg-arq-aqua/20'
-                            : 'bg-secondary text-muted-foreground group-hover:text-foreground'
+                            : item.tone
+                              ? TONE_CHIP_INACTIVE[item.tone]
+                              : 'bg-secondary text-muted-foreground group-hover:text-foreground'
                     }`}
                   >
                     <Icon className="h-4 w-4" />
                   </span>
                   <span className="min-w-0 flex-1 whitespace-normal text-left leading-tight">{item.label}</span>
                   {isPremium && (
-                    <Sparkles className="ml-auto h-3 w-3 text-gold" />
+                    <Sparkles className="ml-auto h-3 w-3 text-champagne" />
                   )}
                   {item.id === 'arqwelia' && (
                     <span className="ml-auto rounded-full border border-arq-aqua/30 bg-arq-aqua/10 px-1.5 py-0.5 text-[9px] font-bold text-arq-aqua">
