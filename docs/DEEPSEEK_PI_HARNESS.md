@@ -2,12 +2,12 @@
 
 This repository is prepared to use Pi as the coding harness with DeepSeek V4.
 
-## 1. Install Pi on macOS
+## 1. Install Pi
 
 Choose one official installation method:
 
 ```bash
-npm install -g @mariozechner/pi-coding-agent
+npm install -g --ignore-scripts @earendil-works/pi-coding-agent
 ```
 
 or:
@@ -34,71 +34,48 @@ export DEEPSEEK_API_KEY="sk-REPLACE_WITH_YOUR_KEY"
 
 To persist it, add the export to your local `~/.zshrc`, then open a new terminal or run `source ~/.zshrc`.
 
-## 3. Configure DeepSeek V4 models for Pi
+## 3. DeepSeek is supported natively by Pi
 
-Create `~/.pi/agent/models.json` with:
-
-```json
-{
-  "providers": {
-    "deepseek": {
-      "baseUrl": "https://api.deepseek.com",
-      "api": "openai-completions",
-      "apiKey": "$DEEPSEEK_API_KEY",
-      "models": [
-        {
-          "id": "deepseek-v4-pro",
-          "name": "DeepSeek V4 Pro",
-          "contextWindow": 1000000,
-          "maxTokens": 384000,
-          "input": ["text"],
-          "reasoning": true,
-          "thinkingLevelMap": {
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": "high",
-            "xhigh": "max"
-          },
-          "compat": {
-            "requiresReasoningContentOnAssistantMessages": true,
-            "thinkingFormat": "deepseek"
-          }
-        },
-        {
-          "id": "deepseek-v4-flash",
-          "name": "DeepSeek V4 Flash",
-          "contextWindow": 1000000,
-          "maxTokens": 384000,
-          "input": ["text"],
-          "reasoning": true,
-          "thinkingLevelMap": {
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": "high",
-            "xhigh": "max"
-          },
-          "compat": {
-            "requiresReasoningContentOnAssistantMessages": true,
-            "thinkingFormat": "deepseek"
-          }
-        }
-      ]
-    }
-  }
-}
-```
-
-The project `.pi/settings.json` selects `deepseek-v4-pro` with maximum reasoning (`xhigh`) by default for AQWELIA code changes.
-
-## 4. Start the AQWELIA harness
+No manual `~/.pi/agent/models.json` is required. Pi detects DeepSeek automatically from the `DEEPSEEK_API_KEY` environment variable.
 
 From the repository root:
 
 ```bash
+cd /chemin/vers/aquamind-ai
 pi
 ```
+
+The project configuration `.pi/settings.json` then selects automatically:
+
+- provider = `deepseek`
+- model = `deepseek-v4-pro`
+- thinking = `max`
+
+You can verify or change the model inside Pi at any time with:
+
+```
+/model
+```
+
+and choose:
+
+- `deepseek-v4-pro`
+- `deepseek-v4-flash`
+
+Use V4 Pro for code changes, architecture, security, billing, migrations, CI failures and release decisions. For cheap read-only exploration or simple repository questions, switch with `/model` to `deepseek-v4-flash`, then switch back to Pro before implementing sensitive changes.
+
+## 4. Project trust
+
+On first launch inside the repository, Pi may ask you to trust the project.
+
+Approve the AQWELIA repository to allow loading:
+
+- `.pi/settings.json`
+- `.pi/skills/`
+
+`AGENTS.md` remains the repository rules context.
+
+## 5. Start the AQWELIA harness
 
 Pi automatically loads:
 
@@ -113,12 +90,6 @@ For a release/PR mission, use:
 ```
 
 then provide the task.
-
-## 5. Model strategy
-
-Use V4 Pro for code changes, architecture, security, billing, migrations, CI failures and release decisions.
-
-For cheap read-only exploration or simple repository questions, switch with `/model` to `deepseek-v4-flash`, then switch back to Pro before implementing sensitive changes.
 
 ## 6. Safety model
 
