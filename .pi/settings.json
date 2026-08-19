@@ -1,0 +1,7 @@
+{
+  "defaultProvider": "deepseek",
+  "defaultModel": "deepseek-v4-pro",
+  "defaultThinkingLevel": "max",
+  "hideThinkingBlock": true,
+  "enableSkillCommands": true
+}
