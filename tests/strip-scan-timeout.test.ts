@@ -108,9 +108,9 @@ describe('strip-scanner UI — message de timeout localisé', () => {
 
   it('la structure d’intégration des visuels des 3 étapes guidées est prête (assets /guides/)', () => {
     const src = readFileSync(join(root, 'src/components/aquamind/strip-scanner.tsx'), 'utf8')
-    // PR #102 : les 3 étapes guident vers les PNG originaux validés, language-
-    // neutral (aucun texte/logo incrusté), le texte reste fourni par i18n, et
-    // le logo AQWELIA officiel est superposé par le composant depuis /branding/.
+    // PR #102/#103 : les 3 étapes guident vers les PNG originaux validés
+    // (branding déjà présent dans les PNG, aucun overlay logo ajouté par l'UI),
+    // le texte reste fourni par i18n.
     expect(src).toContain("illustration: '/guides/stripscan/stripscan-guide-1-prepare.png'")
     expect(src).toContain("illustration: '/guides/stripscan/stripscan-guide-2-lighting.png'")
     expect(src).toContain("illustration: '/guides/stripscan/stripscan-guide-3-align.png'")
@@ -118,9 +118,9 @@ describe('strip-scanner UI — message de timeout localisé', () => {
     expect(src).toContain("t('guideStep1Title')")
     expect(src).toContain("t('guideStep2Title')")
     expect(src).toContain("t('guideStep3Title')")
-    // Rendu : object-contain (pas de recadrage) + logo officiel superposé.
+    // Rendu : object-contain (pas de recadrage) ; aucun overlay logo dupliqué.
     expect(src).toContain('Step.illustration && (')
     expect(src).toContain('object-contain')
-    expect(src).toContain('/branding/aqwelia-logo-main.png')
+    expect(src).not.toContain('/branding/aqwelia-logo-main.png')
   })
 })
