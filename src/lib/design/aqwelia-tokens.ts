@@ -9,6 +9,29 @@ export const aqweliaColors = {
   champagne: "#C6A56B",
 } as const;
 
+/**
+ * LAGON VIVANT — opt-in semantic tokens (foundation PR).
+ *
+ * Mirrors the `--aqwelia-*` variables declared in `src/app/globals.css`
+ * (light values). Additive only: the P6-DESIGN `aqweliaColors` palette and
+ * the legacy `--gold` token are preserved as-is.
+ */
+export const aqweliaLagonTokens = {
+  aquaVivid: "#22D8C8",
+  aquaVividInk: "#0A6E69",
+  lagoonInk: "#0A6E69",
+  coral: "#FF8A5C",
+  coralInk: "#9A3A12",
+  champagneInk: "#8A6A2F",
+  surfaceTint: "#EFFAF8",
+  success: "#16A34A",
+  successInk: "#0F5C2E",
+  warning: "#F59E0B",
+  warningInk: "#8A4A06",
+  info: "#0EA5E9",
+  infoInk: "#075985",
+} as const;
+
 export const aqweliaSpacing = {
   1: 4,
   2: 8,

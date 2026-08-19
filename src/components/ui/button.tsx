@@ -20,6 +20,14 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
+        /* LAGON VIVANT — opt-in gradient variants (foundation PR).
+           Styles live in .btn-aqua-gradient / .btn-champagne-gradient
+           (globals.css) so gradients, dark overrides and reduced-motion
+           stay token-driven. */
+        "aqua-gradient":
+          "btn-aqua-gradient font-semibold shadow-xs hover:brightness-105",
+        "champagne-gradient":
+          "btn-champagne-gradient font-semibold shadow-xs hover:brightness-105",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",

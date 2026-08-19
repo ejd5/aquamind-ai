@@ -59,6 +59,21 @@
   --color-silver: var(--aqwelia-silver);
   --color-ivory: var(--aqwelia-ivory);
   --color-champagne: var(--aqwelia-champagne);
+  /* LAGON VIVANT — opt-in semantic tokens (foundation PR, additive only).
+     Never remaps the legacy --gold token. */
+  --color-aqua-vivid: var(--aqwelia-aqua-vivid);
+  --color-aqua-vivid-ink: var(--aqwelia-aqua-vivid-ink);
+  --color-lagoon-ink: var(--aqwelia-lagoon-ink);
+  --color-coral: var(--aqwelia-coral);
+  --color-coral-ink: var(--aqwelia-coral-ink);
+  --color-champagne-ink: var(--aqwelia-champagne-ink);
+  --color-surface-tint: var(--aqwelia-surface-tint);
+  --color-success: var(--aqwelia-success);
+  --color-success-ink: var(--aqwelia-success-ink);
+  --color-warning: var(--aqwelia-warning);
+  --color-warning-ink: var(--aqwelia-warning-ink);
+  --color-info: var(--aqwelia-info);
+  --color-info-ink: var(--aqwelia-info-ink);
   --radius-aq-sm: var(--aqwelia-radius-sm);
   --radius-aq-md: var(--aqwelia-radius-md);
   --radius-aq-lg: var(--aqwelia-radius-lg);
@@ -158,6 +173,27 @@
   --aqwelia-silver: #A8BDC1;       /* muted neutral (borders, dividers) */
   --aqwelia-ivory: #FAFCFB;        /* warm off-white (cards, surfaces) */
   --aqwelia-champagne: #C6A56B;    /* premium gold accent (CTA, badges) */
+
+  /* ── LAGON VIVANT — foundation tokens (opt-in, additive only) ──
+     Vivid aqua, restrained coral, premium champagne ink, semantic
+     status colors and a tinted app surface. The legacy --gold token
+     is preserved as-is for backward compatibility. */
+  --aqwelia-aqua-vivid: #22D8C8;        /* saturated aqua accent (surfaces, chips, hairline) */
+  --aqwelia-aqua-vivid-ink: #0A6E69;    /* readable text on aqua-vivid tints (light) */
+  --aqwelia-lagoon-ink: #0A6E69;        /* readable text on lagoon tints (light) */
+  --aqwelia-coral: #FF8A5C;             /* warm accent — used sparingly */
+  --aqwelia-coral-ink: #9A3A12;         /* readable text on coral tints (light) */
+  --aqwelia-champagne-ink: #8A6A2F;     /* readable text on champagne tints (light) */
+  --aqwelia-surface-tint: #EFFAF8;      /* tinted app background base */
+  --aqwelia-success: #16A34A;           /* semantic success (water ok, done) */
+  --aqwelia-success-ink: #0F5C2E;
+  --aqwelia-warning: #F59E0B;           /* semantic warning (attention) */
+  --aqwelia-warning-ink: #8A4A06;
+  --aqwelia-info: #0EA5E9;              /* semantic info (neutral notice) */
+  --aqwelia-info-ink: #075985;
+  --aqwelia-hairline: linear-gradient(90deg, #18CFC3 0%, #22D8C8 55%, #72E8DF 100%);
+  --aqwelia-hairline-champagne: linear-gradient(90deg, #C6A56B 0%, #E2C79A 60%, #C6A56B 100%);
+  --aqwelia-glow-soft: 0 0 18px -6px rgba(24, 207, 195, 0.55);
 
   /* Spacing — border radii (separate from --radius shadcn/ui scale) */
   --aqwelia-radius-sm: 0.5rem;
@@ -276,6 +312,21 @@
   --aqwelia-silver: #6E8085;
   --aqwelia-ivory: #0F2A36;
   --aqwelia-champagne: #D8B97A;
+
+  /* LAGON VIVANT — dark overrides (foundation PR, additive only) */
+  --aqwelia-aqua-vivid: #3CE6D8;
+  --aqwelia-aqua-vivid-ink: #9FF5EC;
+  --aqwelia-lagoon-ink: #7DF2E8;
+  --aqwelia-coral: #FFA07A;
+  --aqwelia-coral-ink: #FFC4A8;
+  --aqwelia-champagne-ink: #E8CE9F;
+  --aqwelia-surface-tint: #0D222E;
+  --aqwelia-success: #3DD68C;
+  --aqwelia-success-ink: #A9F0CC;
+  --aqwelia-warning: #FBBF24;
+  --aqwelia-warning-ink: #FDE68A;
+  --aqwelia-info: #38BDF8;
+  --aqwelia-info-ink: #BAE6FD;
 }
 
 @layer base {
@@ -509,6 +560,158 @@
   .glow-pulse-anim,
   .rise-in {
     animation: none !important;
+  }
+}
+
+/* ===========================================================
+   LAGON VIVANT — opt-in foundation primitives (foundation PR)
+   Additive only: no existing screen uses these classes yet.
+   =========================================================== */
+
+/* Tinted app background with a discreet aurora wash (opt-in).
+   Use on the main content wrapper: <div className="app-bg-lagon">. */
+.app-bg-lagon {
+  background:
+    radial-gradient(58% 38% at 12% -2%, oklch(0.84 0.08 190 / 0.55) 0%, transparent 62%),
+    radial-gradient(46% 32% at 96% 8%, oklch(0.80 0.07 210 / 0.42) 0%, transparent 60%),
+    radial-gradient(70% 45% at 50% 108%, oklch(0.93 0.04 195 / 0.85) 0%, transparent 70%),
+    var(--aqwelia-surface-tint);
+}
+
+.dark .app-bg-lagon {
+  background:
+    radial-gradient(58% 38% at 12% -2%, oklch(0.42 0.06 190 / 0.35) 0%, transparent 62%),
+    radial-gradient(46% 32% at 96% 8%, oklch(0.40 0.06 215 / 0.30) 0%, transparent 60%),
+    radial-gradient(70% 45% at 50% 108%, oklch(0.30 0.04 200 / 0.55) 0%, transparent 70%),
+    var(--aqwelia-surface-tint);
+}
+
+/* Accent card — 2px lagoon→aqua hairline on top, soft aqua shadow.
+   Opt-in: <Card className="card-accent-lagon">. Note: overflow is
+   clipped so the hairline follows the card radius. */
+.card-accent-lagon {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, oklch(1 0.004 195) 0%, oklch(0.985 0.012 195) 100%);
+  border: 1px solid oklch(0.90 0.02 195);
+  box-shadow: var(--aqwelia-shadow-sm), 0 14px 34px -22px oklch(0.55 0.12 195 / 0.45);
+}
+.card-accent-lagon::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--aqwelia-hairline);
+}
+.dark .card-accent-lagon {
+  background: linear-gradient(180deg, oklch(0.24 0.03 200) 0%, oklch(0.21 0.028 200) 100%);
+  border: 1px solid oklch(1 0 0 / 0.14);
+  box-shadow: var(--aqwelia-shadow-md);
+}
+
+/* Premium card — champagne hairline + warm ivory surface.
+   Reserved for premium/value moments (paywall, Pro, upgrades). */
+.card-premium-champagne {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, oklch(0.99 0.012 90) 0%, oklch(0.975 0.015 90) 100%);
+  border: 1px solid oklch(0.86 0.04 85);
+  box-shadow: var(--aqwelia-shadow-sm), 0 14px 34px -22px oklch(0.62 0.08 85 / 0.5);
+}
+.card-premium-champagne::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--aqwelia-hairline-champagne);
+}
+.dark .card-premium-champagne {
+  background: linear-gradient(180deg, oklch(0.25 0.02 85) 0%, oklch(0.22 0.02 85) 100%);
+  border: 1px solid oklch(0.75 0.06 85 / 0.25);
+  box-shadow: var(--aqwelia-shadow-md);
+}
+
+/* Icon chip — saturated translucent chip for nav/module icons (opt-in).
+   Pair with a color modifier: icon-chip-lagoon | -aqua | -coral | -champagne. */
+.icon-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.30);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.icon-chip:hover { transform: translateY(-1px); }
+.icon-chip-lagoon {
+  background: linear-gradient(135deg, oklch(0.83 0.09 190 / 0.55) 0%, oklch(0.75 0.10 190 / 0.35) 100%);
+  color: var(--aqwelia-lagoon-ink);
+}
+.icon-chip-aqua {
+  background: linear-gradient(135deg, oklch(0.86 0.08 190 / 0.60) 0%, oklch(0.79 0.09 190 / 0.40) 100%);
+  color: var(--aqwelia-aqua-vivid-ink);
+}
+.icon-chip-coral {
+  background: linear-gradient(135deg, oklch(0.82 0.11 45 / 0.40) 0%, oklch(0.76 0.12 40 / 0.28) 100%);
+  color: var(--aqwelia-coral-ink);
+}
+.icon-chip-champagne {
+  background: linear-gradient(135deg, oklch(0.84 0.07 85 / 0.50) 0%, oklch(0.78 0.08 80 / 0.35) 100%);
+  color: var(--aqwelia-champagne-ink);
+}
+.dark .icon-chip-lagoon {
+  background: linear-gradient(135deg, oklch(0.55 0.09 190 / 0.35) 0%, oklch(0.45 0.08 190 / 0.25) 100%);
+}
+.dark .icon-chip-aqua {
+  background: linear-gradient(135deg, oklch(0.60 0.09 190 / 0.35) 0%, oklch(0.50 0.08 190 / 0.25) 100%);
+}
+.dark .icon-chip-coral {
+  background: linear-gradient(135deg, oklch(0.60 0.10 45 / 0.35) 0%, oklch(0.50 0.09 40 / 0.25) 100%);
+}
+.dark .icon-chip-champagne {
+  background: linear-gradient(135deg, oklch(0.62 0.07 85 / 0.35) 0%, oklch(0.52 0.06 80 / 0.25) 100%);
+}
+
+/* Soft halo on any element — uses currentColor (opt-in).
+   Example: <span className="halo-soft text-success" /> */
+.halo-soft {
+  box-shadow: 0 0 18px -6px currentColor;
+}
+
+/* Aqua gradient button — lagoon→aqua, deep-teal text (accessible).
+   Exposed as Button variant="aqua-gradient". */
+.btn-aqua-gradient {
+  color: var(--aqwelia-deep-teal);
+  background-image: linear-gradient(135deg, var(--aqwelia-aqua) 0%, var(--aqwelia-lagoon) 100%);
+  border: 1px solid oklch(0.55 0.11 190 / 0.50);
+  box-shadow: 0 6px 18px -8px oklch(0.55 0.12 195 / 0.55), inset 0 1px 0 oklch(1 0 0 / 0.35);
+}
+.btn-aqua-gradient:hover { filter: brightness(1.05); }
+.btn-aqua-gradient:active { filter: brightness(0.97); }
+
+/* Champagne premium button — reserved for premium/value moments.
+   Exposed as Button variant="champagne-gradient". */
+.btn-champagne-gradient {
+  color: var(--aqwelia-night);
+  background-image: linear-gradient(135deg, #E2C79A 0%, var(--aqwelia-champagne) 60%, #B89657 100%);
+  border: 1px solid oklch(0.70 0.08 85 / 0.55);
+  box-shadow: 0 6px 18px -8px oklch(0.60 0.09 85 / 0.50), inset 0 1px 0 oklch(1 0 0 / 0.40);
+}
+.btn-champagne-gradient:hover { filter: brightness(1.04); }
+.btn-champagne-gradient:active { filter: brightness(0.97); }
+.dark .btn-champagne-gradient { color: #1A1206; }
+
+/* Respect reduced motion for LAGON VIVANT primitives */
+@media (prefers-reduced-motion: reduce) {
+  .icon-chip,
+  .icon-chip:hover,
+  .btn-aqua-gradient,
+  .btn-champagne-gradient {
+    transform: none !important;
+    transition: none !important;
   }
 }
 

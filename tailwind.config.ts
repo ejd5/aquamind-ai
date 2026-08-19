@@ -64,6 +64,21 @@ const config: Config = {
                         silver: 'var(--aqwelia-silver)',
                         ivory: 'var(--aqwelia-ivory)',
                         champagne: 'var(--aqwelia-champagne)',
+                        /* LAGON VIVANT — opt-in semantic tokens (foundation PR).
+                           Mirrors the --color-* mappings in globals.css. */
+                        'aqua-vivid': 'var(--aqwelia-aqua-vivid)',
+                        'aqua-vivid-ink': 'var(--aqwelia-aqua-vivid-ink)',
+                        'lagoon-ink': 'var(--aqwelia-lagoon-ink)',
+                        coral: 'var(--aqwelia-coral)',
+                        'coral-ink': 'var(--aqwelia-coral-ink)',
+                        'champagne-ink': 'var(--aqwelia-champagne-ink)',
+                        'surface-tint': 'var(--aqwelia-surface-tint)',
+                        success: 'var(--aqwelia-success)',
+                        'success-ink': 'var(--aqwelia-success-ink)',
+                        warning: 'var(--aqwelia-warning)',
+                        'warning-ink': 'var(--aqwelia-warning-ink)',
+                        info: 'var(--aqwelia-info)',
+                        'info-ink': 'var(--aqwelia-info-ink)',
                         /* ARQWELIA — namespaced Lot 1 tokens (additive, additive only) */
                         'arq-navy': 'var(--arqwelia-navy)',
                         'arq-aqua': 'var(--arqwelia-aqua)',

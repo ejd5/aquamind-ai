@@ -17,6 +17,23 @@ const badgeVariants = cva(
           "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
           "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+        /* LAGON VIVANT — opt-in semantic tints (foundation PR).
+           Tinted translucent chips with readable ink text; contrast-safe
+           in light and dark mode via the --aqwelia-*-ink token overrides. */
+        lagoon:
+          "border-transparent bg-lagoon/15 text-lagoon-ink [a&]:hover:bg-lagoon/25",
+        aqua:
+          "border-transparent bg-aqua-vivid/15 text-aqua-vivid-ink [a&]:hover:bg-aqua-vivid/25",
+        coral:
+          "border-transparent bg-coral/15 text-coral-ink [a&]:hover:bg-coral/25",
+        champagne:
+          "border-transparent bg-champagne/20 text-champagne-ink [a&]:hover:bg-champagne/30",
+        success:
+          "border-transparent bg-success/15 text-success-ink [a&]:hover:bg-success/25",
+        warning:
+          "border-transparent bg-warning/15 text-warning-ink [a&]:hover:bg-warning/25",
+        info:
+          "border-transparent bg-info/15 text-info-ink [a&]:hover:bg-info/25",
       },
     },
     defaultVariants: {
