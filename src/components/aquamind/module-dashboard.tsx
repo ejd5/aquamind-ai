@@ -434,7 +434,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
         <div>
           <div className="flex items-center gap-2">
             <span className="section-label">{t('today')}</span>
-            <span className="h-px w-8 bg-gold/40" />
+            <span className="h-px w-8 bg-champagne/50" />
           </div>
           <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
             {t('title')}
@@ -474,21 +474,29 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
       <PredictionsWidget onAskAssistant={onAskAssistant} />
 
       {!latestTest ? (
-        <Card className="glass-card">
-          <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
-            <div className="icon-chip icon-chip-lagoon h-14 w-14 shadow-md shadow-lagoon/30">
-              <FlaskConical className="h-7 w-7" />
+        /* LAGON VIVANT ROUND 2 — premium onboarding composition.
+           Compact, halo lagon, glass panel, valued CTA. */
+        <Card className="hero-lagon">
+          <CardContent className="relative flex flex-col items-center gap-5 py-10 text-center sm:py-12">
+            <div className="glow-orb -left-12 -top-12 h-44 w-44 bg-aqua/40" aria-hidden />
+            <div className="glow-orb -bottom-14 -right-10 h-40 w-40 bg-lagoon/35" aria-hidden />
+            <div className="relative">
+              <div className="absolute -inset-6 rounded-full bg-gradient-to-br from-lagoon/35 via-aqua/25 to-transparent blur-xl" aria-hidden />
+              <div className="icon-chip icon-chip-lagoon relative h-16 w-16 shadow-lg shadow-lagoon/40 ring-1 ring-lagoon/30">
+                <FlaskConical className="h-8 w-8" />
+              </div>
             </div>
-            <div>
-              <p className="font-display text-lg font-semibold">{t('noMeasureTitle')}</p>
-              <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+            <div className="relative max-w-md">
+              <p className="font-display text-xl font-bold">{t('noMeasureTitle')}</p>
+              <p className="mt-1.5 text-sm text-muted-foreground">
                 {t('noMeasureDesc')}
               </p>
             </div>
             <Button
               onClick={() => onNavigate('water')}
               variant="aqua-gradient"
-              className="shadow-lg shadow-primary/20"
+              size="lg"
+              className="relative shadow-xl shadow-lagoon/40"
             >
               <FlaskConical className="h-4 w-4" />
               {t('firstMeasure')}
@@ -497,8 +505,8 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
         </Card>
       ) : (
         <div className="grid gap-5 lg:grid-cols-3">
-          {/* NIVEAU 1 — Clear-water gauge (LAGON VIVANT: accent hairline card) */}
-          <Card className="card-accent-lagon lg:col-span-1">
+          {/* NIVEAU 1 — Clear-water gauge (LAGON VIVANT: hero surface) */}
+          <Card className="hero-lagon lg:col-span-1">
             <CardHeader className="pb-2">
               <CardDescription>{t('clearWaterIndex')}</CardDescription>
               <CardTitle className="font-display text-lg">{t('globalQuality')}</CardTitle>
@@ -560,11 +568,11 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              {/* À faire maintenant */}
-              <Card className="glass-card">
+              {/* À faire maintenant — NIVEAU 2 (verre lagon + sparkle champagne) */}
+              <Card className="glass-card-lagon">
                 <CardHeader className="pb-2">
                   <CardDescription className="flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-gold" />
+                    <Sparkles className="h-3.5 w-3.5 text-champagne" />
                     {t('doNow')}
                   </CardDescription>
                   <CardTitle className="font-display text-base">{t('priority1')}</CardTitle>
@@ -619,8 +627,8 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
                 </CardContent>
               </Card>
 
-              {/* Prochain re-test */}
-              <Card className="glass-card">
+              {/* Prochain re-test — NIVEAU 2 */}
+              <Card className="glass-card-lagon">
                 <CardHeader className="pb-2">
                   <CardDescription className="flex items-center gap-1.5">
                     <Clock className="h-3.5 w-3.5 text-primary" />
@@ -684,28 +692,28 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
             label: t('diagnose'),
             tab: 'diagnostic' as TabId,
             chip: 'icon-chip icon-chip-lagoon',
-            card: 'border-lagoon/25 bg-gradient-to-br from-lagoon/10 via-card/70 to-transparent hover:border-lagoon/50 hover:shadow-[0_12px_28px_-14px_oklch(0.55_0.12_195/0.6)]',
+            card: 'border-lagoon/25 bg-gradient-to-br from-lagoon/15 via-card/70 to-transparent hover:border-lagoon/50 hover:shadow-[0_12px_28px_-14px_oklch(0.55_0.12_195/0.6)]',
           },
           {
             icon: FlaskConical,
             label: t('enterMeasures'),
             tab: 'water' as TabId,
             chip: 'icon-chip icon-chip-aqua',
-            card: 'border-aqua-vivid/25 bg-gradient-to-br from-aqua-vivid/10 via-card/70 to-transparent hover:border-aqua-vivid/50 hover:shadow-[0_12px_28px_-14px_oklch(0.62_0.11_190/0.55)]',
+            card: 'border-aqua-vivid/25 bg-gradient-to-br from-aqua-vivid/15 via-card/70 to-transparent hover:border-aqua-vivid/50 hover:shadow-[0_12px_28px_-14px_oklch(0.62_0.11_190/0.55)]',
           },
           {
             icon: Siren,
             label: t('emergency'),
             action: 'emergency',
             chip: 'icon-chip bg-destructive/10 text-destructive',
-            card: 'border-destructive/25 bg-gradient-to-br from-destructive/10 via-card/70 to-transparent hover:border-destructive/50 hover:shadow-[0_12px_28px_-14px_oklch(0.58_0.22_27/0.5)]',
+            card: 'border-destructive/25 bg-gradient-to-br from-destructive/15 via-card/70 to-transparent hover:border-destructive/50 hover:shadow-[0_12px_28px_-14px_oklch(0.58_0.22_27/0.5)]',
           },
           {
             icon: MessageSquare,
             label: t('askAssistant'),
             tab: 'assistant' as TabId,
             chip: 'icon-chip icon-chip-info',
-            card: 'border-info/25 bg-gradient-to-br from-info/10 via-card/70 to-transparent hover:border-info/50 hover:shadow-[0_12px_28px_-14px_oklch(0.60_0.11_230/0.5)]',
+            card: 'border-info/25 bg-gradient-to-br from-info/15 via-card/70 to-transparent hover:border-info/50 hover:shadow-[0_12px_28px_-14px_oklch(0.60_0.11_230/0.5)]',
           },
         ].map((a) => (
           <button
@@ -727,8 +735,8 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
       {/* Latest test summary + trend */}
       {latestTest && (
         <div className="grid gap-4 lg:grid-cols-3">
-          {/* Latest test summary */}
-          <Card className="glass-card lg:col-span-2">
+          {/* Latest test summary — NIVEAU 3 */}
+          <Card className="glass-card-lagon lg:col-span-2">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 font-display text-base">
@@ -778,8 +786,8 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
             </CardContent>
           </Card>
 
-          {/* Mini 7-day pH trend */}
-          <Card className="glass-card">
+          {/* Mini 7-day pH trend — NIVEAU 3 */}
+          <Card className="glass-card-lagon">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 font-display text-base">
                 <TrendingUp className="h-4 w-4 text-gold" />
@@ -879,8 +887,8 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
 
       {/* Météo & rappels preview */}
       <div className="grid gap-4 lg:grid-cols-2">
-        {/* Risque météo */}
-        <Card className="glass-card">
+        {/* Risque météo — NIVEAU 3 */}
+        <Card className="glass-card-lagon">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <CloudSun className="h-3.5 w-3.5 text-gold" />
@@ -948,8 +956,8 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
           </CardContent>
         </Card>
 
-        {/* Prochain rappel */}
-        <Card className="glass-card">
+        {/* Prochain rappel — NIVEAU 3 */}
+        <Card className="glass-card-lagon">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <Bell className="h-3.5 w-3.5 text-gold" />
@@ -1055,7 +1063,7 @@ export function ModuleDashboard({ onNavigate, onOpenEmergency, onAskAssistant, a
           <button
             key={s.label}
             onClick={s.action}
-            className="glass-card rounded-xl p-3 text-left transition-all hover:-translate-y-0.5 hover:border-gold/40"
+            className="glass-card-lagon rounded-xl p-3 text-left transition-all hover:-translate-y-0.5 hover:border-gold/40"
           >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">

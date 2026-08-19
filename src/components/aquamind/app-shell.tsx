@@ -93,10 +93,10 @@ const TONE_CHIP_ACTIVE: Record<NonNullable<NavItem['tone']>, string> = {
 }
 
 const TONE_ROW_ACTIVE: Record<NonNullable<NavItem['tone']>, string> = {
-  lagoon: 'bg-gradient-to-r from-lagoon/15 to-aqua-vivid/10 text-foreground shadow-sm ring-1 ring-lagoon/25',
-  aqua: 'bg-gradient-to-r from-aqua/20 to-aqua-vivid/10 text-foreground shadow-sm ring-1 ring-aqua/30',
-  info: 'bg-gradient-to-r from-info/15 to-info/5 text-foreground shadow-sm ring-1 ring-info/25',
-  champagne: 'bg-gradient-to-r from-champagne/20 to-champagne/5 text-foreground shadow-sm ring-1 ring-champagne/30',
+  lagoon: 'bg-gradient-to-r from-lagoon/20 to-aqua-vivid/15 text-foreground shadow-md ring-1 ring-lagoon/30',
+  aqua: 'bg-gradient-to-r from-aqua/25 to-aqua-vivid/15 text-foreground shadow-md ring-1 ring-aqua/35',
+  info: 'bg-gradient-to-r from-info/20 to-info/10 text-foreground shadow-md ring-1 ring-info/30',
+  champagne: 'bg-gradient-to-r from-champagne/25 to-champagne/10 text-foreground shadow-md ring-1 ring-champagne/40',
 }
 
 const TONE_ROW_HOVER: Record<NonNullable<NavItem['tone']>, string> = {
@@ -371,7 +371,7 @@ export function AppShell({ onBackToLanding }: AppShellProps) {
                       : item.tone
                         ? `text-muted-foreground ${TONE_ROW_HOVER[item.tone]}`
                         : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
-                  } ${isPremium ? 'border border-champagne/30 hover:border-champagne/60' : ''} ${isArqwelia ? 'border border-arq-aqua/20 hover:border-arq-aqua/40' : ''}`}
+                  } ${isPremium ? 'border border-champagne/40 bg-champagne/5 hover:border-champagne/70 hover:bg-champagne/10' : ''} ${isArqwelia ? 'border border-arq-aqua/20 hover:border-arq-aqua/40' : ''}`}
                 >
                   <span
                     className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200 ${

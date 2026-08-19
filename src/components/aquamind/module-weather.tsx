@@ -301,7 +301,7 @@ export function ModuleWeather({ onNavigate }: Props) {
     return (
       <div className="space-y-5">
         <Header t={t} />
-        <Card className="glass-card">
+        <Card className="glass-card-lagon">
           <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
             <AlertTriangle className="h-8 w-8 text-destructive" />
             <p className="font-display text-lg">{t('unavailableTitle')}</p>
@@ -371,7 +371,7 @@ export function ModuleWeather({ onNavigate }: Props) {
       />
 
       {/* Location controls : GPS + saisie manuelle */}
-      <Card className="glass-card">
+      <Card className="glass-card-lagon">
         <CardContent className="flex flex-col gap-3 py-3">
           <div className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4 text-gold" />
@@ -445,7 +445,7 @@ export function ModuleWeather({ onNavigate }: Props) {
       {/* Current conditions + swim comfort + algae */}
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Current */}
-        <Card className="glass-card lg:col-span-2">
+        <Card className="glass-card-lagon lg:col-span-2">
           <CardHeader className="pb-2">
             <CardDescription>{t('currentConditions')}</CardDescription>
             <CardTitle className="flex items-center justify-between font-display text-base">
@@ -479,7 +479,7 @@ export function ModuleWeather({ onNavigate }: Props) {
         {/* Right column: swim + algae (avancé — uniquement si assessment dispo) */}
         {hasAssessment && swim && algae && (
         <div className="space-y-4">
-          <Card className="glass-card">
+          <Card className="glass-card-lagon">
             <CardHeader className="pb-2">
               <CardDescription>{t('swimComfort')}</CardDescription>
               <CardTitle className="font-display text-base">{t('estimatedWater')}</CardTitle>
@@ -497,7 +497,7 @@ export function ModuleWeather({ onNavigate }: Props) {
             </CardContent>
           </Card>
 
-          <Card className="glass-card">
+          <Card className="glass-card-lagon">
             <CardHeader className="pb-2">
               <CardDescription className="flex items-center gap-1.5">
                 <Sparkles className="h-3.5 w-3.5 text-gold" />
@@ -520,7 +520,7 @@ export function ModuleWeather({ onNavigate }: Props) {
 
       {/* Weather alerts — the differentiator (avancé) */}
       {hasAssessment && assessment.alerts.length > 0 && (
-        <Card className="glass-card">
+        <Card className="glass-card-lagon">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 font-display text-base">
               <AlertTriangle className="h-4 w-4 text-gold" />
@@ -571,7 +571,7 @@ export function ModuleWeather({ onNavigate }: Props) {
 
       {/* Filtration recommandée (avancé) */}
       {hasAssessment && (
-      <Card className="glass-card">
+      <Card className="glass-card-lagon">
         <CardHeader className="pb-2">
           <CardDescription className="flex items-center gap-1.5">
             <Clock className="h-3.5 w-3.5 text-primary" />
@@ -640,7 +640,7 @@ export function ModuleWeather({ onNavigate }: Props) {
       )}
 
       {/* 3-day forecast */}
-      <Card className="glass-card">
+      <Card className="glass-card-lagon">
         <CardHeader className="pb-2">
           <CardTitle className="font-display text-base">{t('forecast3days')}</CardTitle>
         </CardHeader>

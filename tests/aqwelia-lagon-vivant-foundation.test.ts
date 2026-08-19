@@ -76,6 +76,13 @@ const REQUIRED_PRIMITIVES = [
   '.card-premium-champagne',
   '.card-premium-champagne::before',
   '.dark .card-premium-champagne',
+  /* ROUND 2 — perceptible premium surfaces */
+  '.glass-card-lagon',
+  '.dark .glass-card-lagon',
+  '.hero-lagon',
+  '.dark .hero-lagon',
+  '.glow-orb',
+  '.divider-lumineuse',
   '.icon-chip',
   '.icon-chip-lagoon',
   '.icon-chip-aqua',
@@ -94,19 +101,18 @@ const REQUIRED_PRIMITIVES = [
 ]
 
 // Opt-in guarantee: LAGON VIVANT is applied progressively. Since PR #107 the
-// shell + dashboard intentionally use the foundation; every other module and
-// the mobile shell must remain untouched.
+// shell, dashboard and the weather module surfaces use the foundation; every
+// other module and the mobile shell must remain untouched.
 const UNTOUCHED_SCREENS = [
   'src/components/aquamind/header.tsx',
   'src/components/aquamind/module-diagnostic.tsx',
   'src/components/aquamind/strip-scanner.tsx',
   'src/components/aquamind/module-water-test.tsx',
-  'src/components/aquamind/module-weather.tsx',
   'src/components/aquamind/module-guides.tsx',
   'src/components/aquamind/module-paywall.tsx',
   'src/components/mobile/bottom-tabs.tsx',
 ]
-const NEW_CLASS_MARKERS = ['card-accent-lagon', 'card-premium-champagne', 'app-bg-lagon', 'icon-chip', 'btn-aqua-gradient', 'btn-champagne-gradient', 'icon-chip-info', 'icon-chip-lagoon', 'icon-chip-aqua', 'icon-chip-coral', 'icon-chip-champagne']
+const NEW_CLASS_MARKERS = ['card-accent-lagon', 'card-premium-champagne', 'app-bg-lagon', 'icon-chip', 'btn-aqua-gradient', 'btn-champagne-gradient', 'icon-chip-info', 'icon-chip-lagoon', 'icon-chip-aqua', 'icon-chip-coral', 'icon-chip-champagne', 'glass-card-lagon', 'hero-lagon', 'glow-orb', 'divider-lumineuse']
 
 describe('AQWELIA Lagon Vivant foundation', () => {
   it('maps every new token in the @theme inline block (Tailwind v4)', () => {
@@ -157,6 +163,11 @@ describe('AQWELIA Lagon Vivant foundation', () => {
     expect(reducedBlock).toContain('.icon-chip')
     expect(reducedBlock).toContain('.btn-aqua-gradient')
     expect(reducedBlock).toContain('.btn-champagne-gradient')
+  })
+
+  it('keeps the glow-orb animation behind a motion-preference gate', () => {
+    expect(css).toContain('@media (prefers-reduced-motion: no-preference)')
+    expect(css).toContain('.glow-orb { animation: aqua-float 12s ease-in-out infinite; }')
   })
 
   it('is opt-in: no existing screen references the new primitives yet', () => {
