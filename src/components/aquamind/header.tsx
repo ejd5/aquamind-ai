@@ -79,7 +79,7 @@ export function Header({
 
   const hasMultiplePools = (pools?.length || 0) > 1
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gold/20 bg-background/40 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 w-full border-b border-gold/20 bg-background/55 shadow-[0_12px_32px_-24px_oklch(0.30_0.07_200/0.5)] backdrop-blur-2xl">
       {/* Subtle gold line at the bottom */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
 
