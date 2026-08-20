@@ -1620,3 +1620,104 @@ model ArqweliaPartnerWaitlist {
 
   @@index([postalCode])
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// ADMIN CONTROL PLANE V1
+// ───────────────────────────────────────────────────────────────────────────
+// Contenus marketing persistants pilotés depuis /admin. L'agentic PROPOSE,
+// l'humain VALIDE, le système EXÉCUTE — aucun publish automatique.
+// Les statuts sont des String (convention du dépôt, cohérent avec
+// PromotionCampaign.status / Subscription.status).
+// Toutes les mutations passent par le service admin-control et sont auditées
+// dans AdminAuditLog (jamais de secrets dans before/after).
+
+// Bannière promotionnelle — translations JSON 7 locales (fr,en,es,pt,de,it,nl).
+model AdminContentBanner {
+  id               String    @id @default(cuid())
+  internalName     String
+  status           String    @default("DRAFT") // DRAFT | SCHEDULED | PUBLISHED | PAUSED | ARCHIVED
+  translations     String    // JSON : { fr, en, es, pt, de, it, nl } — texte
+  variant          String    @default("LAGOON") // LAGOON | CHAMPAGNE | NIGHT
+  ctaTranslations  String?   // JSON 7 locales (libellés CTA)
+  ctaUrl           String?
+  targeting        String?   // JSON — voir resolveTargetingMatch (admin-control)
+  startAt          DateTime?
+  endAt            DateTime?
+  priority         Int       @default(0)
+  createdById      String?
+  updatedById      String?
+  approvedById     String?
+  approvedAt       DateTime?
+  version          Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([status])
+}
+
+// Popup promotionnelle — déclencheur + fréquence + ciblage.
+model AdminContentPopup {
+  id               String    @id @default(cuid())
+  internalName     String
+  status           String    @default("DRAFT") // DRAFT | SCHEDULED | PUBLISHED | PAUSED | ARCHIVED
+  translations     String    // JSON 7 locales : { title, body } par locale
+  imageUrl         String?
+  ctaTranslations  String?   // JSON 7 locales
+  ctaUrl           String?
+  trigger          String    @default("ON_LOAD") // ON_LOAD | ON_EXIT | AFTER_DIAGNOSTIC | AFTER_FIRST_TEST | MANUAL
+  frequency        String    @default("ONCE") // ONCE | PER_SESSION | REMIND_DAYS
+  reminderDays     Int       @default(0)
+  targeting        String?   // JSON
+  startAt          DateTime?
+  endAt            DateTime?
+  priority         Int       @default(0)
+  createdById      String?
+  updatedById      String?
+  approvedById     String?
+  approvedAt       DateTime?
+  version          Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([status])
+}
+
+// Journal d'audit du control plane. before/after en JSON, jamais de secrets.
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  actor      String
+  action     String   // BANNER_CREATED | BANNER_UPDATED | BANNER_ARCHIVED | POPUP_* | AGENT_PROPOSAL_* | ...
+  entityType String
+  entityId   String?
+  before     String?
+  after      String?
+  metadata   String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@index([createdAt])
+}
+
+// Proposition d'un agent AdminOps. JAMAIS publiée automatiquement :
+// DRAFT → NEEDS_REVIEW → APPROVED (humain) → EXECUTED (PR future, séparée).
+model AdminAgentProposal {
+  id               String    @id @default(cuid())
+  agent            String    // opportunityDetector | copyAssistant | targetingAdvisor | scheduler
+  type             String    // OPPORTUNITY | COPY | TARGETING | SCHEDULE
+  status           String    @default("NEEDS_REVIEW") // DRAFT | NEEDS_REVIEW | APPROVED | REJECTED | EXECUTED | EXPIRED
+  title            String
+  rationale        String
+  payload          String?   // JSON — ne contient JAMAIS de prix/billing/secrets
+  confidence       Float     @default(0)
+  riskLevel        String    @default("LOW") // LOW | MEDIUM | HIGH | BLOCKED
+  blockedReasons   String?   // JSON array — raisons de blocage guardrail
+  linkedEntityType String?
+  linkedEntityId   String?
+  createdAt        DateTime  @default(now())
+  reviewedAt       DateTime?
+  reviewedBy       String?
+  executedAt       DateTime?
+
+  @@index([status, createdAt])
+  @@index([agent, createdAt])
+}

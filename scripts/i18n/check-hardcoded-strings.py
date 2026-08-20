@@ -47,6 +47,10 @@ MULTILINGUAL_FILES = {
     # Each string has a corresponding featureKey. Will be removed when
     # legacy fallbacks are dropped (P1 i18n cleanup).
     'src/lib/billing/plans.ts',
+    # Admin agentic: French marketing content is generated DATA (proposal
+    # payloads stored in DB), not hardcoded UI strings — same rationale as
+    # module-diagnostic's multilingual AI output.
+    'src/lib/admin-agentic/agents.ts',
 }
 
 # Littéraux exacts autorisés, limités à un fichier spécifique.
