@@ -349,9 +349,11 @@ export async function listProposals(params: { status?: string; limit?: number } 
 
 /**
  * Revue HUMAINE : APPROVE ou REJECT.
- * V1 : APPROVE change UNIQUEMENT le statut en APPROVED (reviewedBy/At).
- * AUCUNE exécution/publication dans le même geste — la publication sera une
- * PR séparée (APPROVE puis PUBLISH).
+ * CAS ATOMIQUE : la condition de statut fait partie du WHERE de l'écriture
+ * (updateMany). Deux admins concurrents (APPROVE vs REJECT) : EXACTEMENT UNE
+ * écriture gagne ; l'autre reçoit un conflit. Une proposition BLOCKED reste
+ * impossible à APPROVE. V1 : APPROVE change UNIQUEMENT le statut (aucune
+ * exécution/publication — PR séparée : APPROVE puis PUBLISH).
  */
 export async function reviewProposal(
   id: string,
@@ -361,28 +363,37 @@ export async function reviewProposal(
   client: typeof db = db
 ) {
   return client.$transaction(async (tx) => {
-    const existing = await tx.adminAgentProposal.findUnique({ where: { id } })
-    if (!existing) return { ok: false as const, error: 'not_found' }
-    if (existing.status !== 'NEEDS_REVIEW') return { ok: false as const, error: 'invalid_status' }
-    if (existing.riskLevel === 'BLOCKED' && decision === 'APPROVE') {
-      return { ok: false as const, error: 'blocked_proposal' }
-    }
-
-    const updated = await tx.adminAgentProposal.update({
-      where: { id },
+    const result = await tx.adminAgentProposal.updateMany({
+      where: {
+        id,
+        status: 'NEEDS_REVIEW',
+        ...(decision === 'APPROVE' ? { riskLevel: { not: 'BLOCKED' } } : {}),
+      },
       data: {
         status: decision === 'APPROVE' ? 'APPROVED' : 'REJECTED',
         reviewedAt: new Date(),
         reviewedBy: reviewerId,
       },
     })
+
+    if (result.count === 0) {
+      const existing = await tx.adminAgentProposal.findUnique({ where: { id } })
+      if (!existing) return { ok: false as const, error: 'not_found' }
+      if (existing.riskLevel === 'BLOCKED' && decision === 'APPROVE') {
+        return { ok: false as const, error: 'blocked_proposal' }
+      }
+      return { ok: false as const, error: 'invalid_status' }
+    }
+
+    // Audit UNIQUEMENT pour l'écriture gagnante.
+    const updated = await tx.adminAgentProposal.findUniqueOrThrow({ where: { id } })
     await tx.adminAuditLog.create({
       data: {
         actor: reviewerId,
         action: decision === 'APPROVE' ? 'AGENT_PROPOSAL_APPROVED' : 'AGENT_PROPOSAL_REJECTED',
         entityType: 'AdminAgentProposal',
         entityId: id,
-        before: JSON.stringify({ status: existing.status }),
+        before: JSON.stringify({ status: 'NEEDS_REVIEW' }),
         after: JSON.stringify({ status: updated.status }),
         metadata: reason ? JSON.stringify({ reason }) : null,
       },

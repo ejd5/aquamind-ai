@@ -1876,7 +1876,8 @@
     "cpStatusRejected": "Afgewezen",
     "cpFlagArqweliaLot1": "ARQWELIA Lot 1 — visueel prototype + acquisitietrechter (zichtbaarheid nav/sitemap).",
     "cpFlagArqweliaDemo": "ARQWELIA — demomodus (badge “gesimuleerde analyse” + fixtures).",
-    "cpFlagLaunchOffers": "Lanceercampagne ingeschakeld (de engine blijft aangestuurd via /api/admin/promotions)."
+    "cpFlagLaunchOffers": "Lanceercampagne ingeschakeld (de engine blijft aangestuurd via /api/admin/promotions).",
+    "cpScheduleNeedsStart": "Inplannen vereist een startdatum (Start)."
   },
   "spa": {
     "title": "Spa & baden",

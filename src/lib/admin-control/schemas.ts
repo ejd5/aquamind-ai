@@ -68,13 +68,48 @@ export const targetingSchema = z
   })
   .strict()
 
-export const bannerPayloadSchema = z
+/** Chemin interne : commence par UN SEUL / (jamais //, jamais de schéma). */
+const INTERNAL_PATH_RE = /^\/(?!\/)[^\s]*$/
+/** URL absolue : uniquement HTTPS. */
+const HTTPS_URL_RE = /^https:\/\//i
+/** Schémas explicitement interdits (et tout schéma autre que https). */
+const BLOCKED_SCHEME_RE = /^(javascript|data|file|vbscript|ftp|mailto|tel|chrome):/i
+
+/**
+ * URL de CTA : chemin interne sûr OU https absolu. Refuse javascript:, data:,
+ * file:, ftp:, protocol-relative //evil… et tout schéma non autorisé.
+ */
+export const ctaUrlSchema = z
+  .string()
+  .max(500)
+  .refine((v) => v === '' || INTERNAL_PATH_RE.test(v) || (HTTPS_URL_RE.test(v) && !BLOCKED_SCHEME_RE.test(v)), {
+    message: 'ctaUrl must be an internal path or a valid HTTPS URL',
+  })
+
+/**
+ * URL d'image : asset interne sûr OU https absolu. Mêmes refus de schémas.
+ */
+export const imageUrlSchema = z
+  .string()
+  .max(500)
+  .refine((v) => v === '' || INTERNAL_PATH_RE.test(v) || (HTTPS_URL_RE.test(v) && !BLOCKED_SCHEME_RE.test(v)), {
+    message: 'imageUrl must be an internal asset path or a valid HTTPS URL',
+  })
+
+/** Les dates, si présentes toutes les deux, doivent être cohérentes. */
+function consistentDates(ctx: { startAt?: Date; endAt?: Date }, issue: (message: string) => void) {
+  if (ctx.startAt && ctx.endAt && ctx.endAt.getTime() <= ctx.startAt.getTime()) {
+    issue('endAt must be strictly after startAt')
+  }
+}
+
+const bannerPayloadObject = z
   .object({
     internalName,
     translations: translationsJsonSchema,
     variant: z.enum(BANNER_VARIANTS).default('LAGOON'),
     ctaTranslations: translationsJsonSchema.optional(),
-    ctaUrl: z.string().max(500).optional(),
+    ctaUrl: ctaUrlSchema.optional(),
     targeting: targetingSchema.optional(),
     startAt: z.coerce.date().optional(),
     endAt: z.coerce.date().optional(),
@@ -82,7 +117,11 @@ export const bannerPayloadSchema = z
   })
   .strict()
 
-export const popupPayloadSchema = z
+export const bannerPayloadSchema = bannerPayloadObject.superRefine((data, ctx) => {
+  consistentDates(data, (m) => ctx.addIssue({ code: 'custom', message: m, path: ['endAt'] }))
+})
+
+const popupPayloadObject = z
   .object({
     internalName,
     translations: z
@@ -96,9 +135,9 @@ export const popupPayloadSchema = z
         nl: z.object({ title: z.string().max(120), body: z.string().max(500) }),
       })
       .strict(),
-    imageUrl: z.string().max(500).optional(),
+    imageUrl: imageUrlSchema.optional(),
     ctaTranslations: translationsJsonSchema.optional(),
-    ctaUrl: z.string().max(500).optional(),
+    ctaUrl: ctaUrlSchema.optional(),
     trigger: z.enum(POPUP_TRIGGERS).default('ON_LOAD'),
     frequency: z.enum(POPUP_FREQUENCIES).default('ONCE'),
     reminderDays: z.number().int().min(0).max(90).default(0),
@@ -109,15 +148,29 @@ export const popupPayloadSchema = z
   })
   .strict()
 
-/** Patch partiel (update draft) — mêmes bornes, champs optionnels. */
-export const bannerPatchSchema = bannerPayloadSchema.partial().extend({
-  /** Optimistic concurrency : l'ancien client ne peut pas écraser une version récente. */
-  expectedVersion: z.number().int().nonnegative(),
+export const popupPayloadSchema = popupPayloadObject.superRefine((data, ctx) => {
+  consistentDates(data, (m) => ctx.addIssue({ code: 'custom', message: m, path: ['endAt'] }))
 })
 
-export const popupPatchSchema = popupPayloadSchema.partial().extend({
-  expectedVersion: z.number().int().nonnegative(),
-})
+/** Patch partiel (update draft) — mêmes bornes, champs optionnels. */
+export const bannerPatchSchema = bannerPayloadObject
+  .partial()
+  .extend({
+    /** Optimistic concurrency : l'ancien client ne peut pas écraser une version récente. */
+    expectedVersion: z.number().int().nonnegative(),
+  })
+  .superRefine((data, ctx) => {
+    consistentDates(data, (m) => ctx.addIssue({ code: 'custom', message: m, path: ['endAt'] }))
+  })
+
+export const popupPatchSchema = popupPayloadObject
+  .partial()
+  .extend({
+    expectedVersion: z.number().int().nonnegative(),
+  })
+  .superRefine((data, ctx) => {
+    consistentDates(data, (m) => ctx.addIssue({ code: 'custom', message: m, path: ['endAt'] }))
+  })
 
 export const bannerPublishSchema = z
   .object({
@@ -125,8 +178,16 @@ export const bannerPublishSchema = z
     status: z.enum(['PUBLISHED', 'SCHEDULED', 'PAUSED', 'ARCHIVED']),
     expectedVersion: z.number().int().nonnegative(),
     reason: z.string().min(3).max(300),
+    startAt: z.coerce.date().optional(),
+    endAt: z.coerce.date().optional(),
   })
   .strict()
+  .superRefine((data, ctx) => {
+    if (data.status === 'SCHEDULED' && !data.startAt) {
+      ctx.addIssue({ code: 'custom', message: 'SCHEDULED requires startAt', path: ['startAt'] })
+    }
+    consistentDates(data, (m) => ctx.addIssue({ code: 'custom', message: m, path: ['endAt'] }))
+  })
 
 export const popupPublishSchema = bannerPublishSchema
 

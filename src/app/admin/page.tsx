@@ -386,10 +386,20 @@ function BannerEditor({
       toast({ title: t('cpPublishReason'), variant: 'destructive' })
       return
     }
+    if (status === 'SCHEDULED' && !startAt) {
+      toast({ title: t('cpScheduleNeedsStart'), variant: 'destructive' })
+      return
+    }
     try {
       await apiFetch(`/api/admin/v1/banners/${banner.id}`, {
         method: 'POST',
-        body: JSON.stringify({ status, reason: reason.trim(), expectedVersion: banner.version }),
+        body: JSON.stringify({
+          status,
+          reason: reason.trim(),
+          expectedVersion: banner.version,
+          startAt: startAt ? new Date(startAt).toISOString() : undefined,
+          endAt: endAt ? new Date(endAt).toISOString() : undefined,
+        }),
       })
       toast({ title: status === 'ARCHIVED' ? t('cpArchived') : t('cpPublished') })
       onSaved()
@@ -724,10 +734,20 @@ function PopupEditor({
       toast({ title: t('cpPublishReason'), variant: 'destructive' })
       return
     }
+    if (status === 'SCHEDULED' && !startAt) {
+      toast({ title: t('cpScheduleNeedsStart'), variant: 'destructive' })
+      return
+    }
     try {
       await apiFetch(`/api/admin/v1/popups/${popup.id}`, {
         method: 'POST',
-        body: JSON.stringify({ status, reason: reason.trim(), expectedVersion: popup.version }),
+        body: JSON.stringify({
+          status,
+          reason: reason.trim(),
+          expectedVersion: popup.version,
+          startAt: startAt ? new Date(startAt).toISOString() : undefined,
+          endAt: endAt ? new Date(endAt).toISOString() : undefined,
+        }),
       })
       toast({ title: status === 'ARCHIVED' ? t('cpArchived') : t('cpPublished') })
       onSaved()

@@ -23,7 +23,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
   const result = await reviewProposal(id, parsed.data.decision, auth.userId, parsed.data.reason)
   if (!result.ok) {
-    const status = result.error === 'not_found' ? 404 : 400
+    // invalid_status = transition perdue face à un autre admin (409),
+    // blocked_proposal/not_found = refus sémantique (400/404).
+    const status = result.error === 'not_found' ? 404 : result.error === 'invalid_status' ? 409 : 400
     return NextResponse.json({ error: result.error }, { status })
   }
   return NextResponse.json({ proposal: result.proposal }, { status: 200 })

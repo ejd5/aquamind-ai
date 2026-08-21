@@ -189,17 +189,20 @@ export async function updateBannerDraft(
 ) {
   const data = bannerPatchSchema.parse(payload)
   return client.$transaction(async (tx) => {
-    const existing = await tx.adminContentBanner.findUnique({ where: { id } })
-    if (!existing) return { ok: false as const, error: 'not_found' }
-    if (existing.version !== data.expectedVersion) return { ok: false as const, error: 'stale_version' }
-    if (existing.status === 'ARCHIVED') return { ok: false as const, error: 'archived' }
-
-    const updated = await tx.adminContentBanner.update({
-      where: { id },
+    // CAS ATOMIQUE : la condition de version fait partie du WHERE de
+    // l'écriture (updateMany). Deux clients concurrents lisent la même
+    // version : UN SEUL updateMany renvoie count=1, l'autre count=0.
+    // Pas de lost update possible, pas d'audit fantôme.
+    const result = await tx.adminContentBanner.updateMany({
+      where: {
+        id,
+        version: data.expectedVersion,
+        status: { not: 'ARCHIVED' },
+      },
       data: {
-        internalName: data.internalName ?? existing.internalName,
+        internalName: data.internalName ?? undefined,
         translations: data.translations !== undefined ? JSON.stringify(data.translations) : undefined,
-        variant: data.variant ?? existing.variant,
+        variant: data.variant ?? undefined,
         ctaTranslations: data.ctaTranslations !== undefined ? JSON.stringify(data.ctaTranslations) : undefined,
         ctaUrl: data.ctaUrl !== undefined ? data.ctaUrl : undefined,
         targeting: data.targeting !== undefined ? JSON.stringify(data.targeting) : undefined,
@@ -210,14 +213,60 @@ export async function updateBannerDraft(
         version: { increment: 1 },
       },
     })
-    await audit(tx, actor, 'BANNER_UPDATED', 'AdminContentBanner', id, { version: existing.version, internalName: existing.internalName }, { version: updated.version, internalName: updated.internalName })
+
+    if (result.count === 0) {
+      const existing = await tx.adminContentBanner.findUnique({ where: { id } })
+      if (!existing) return { ok: false as const, error: 'not_found' }
+      if (existing.status === 'ARCHIVED') return { ok: false as const, error: 'archived' }
+      return { ok: false as const, error: 'stale_version' }
+    }
+
+    // Relecture du gagnant (l'écriture a réussi) puis audit DU GAGNANT SEUL.
+    const updated = await tx.adminContentBanner.findUniqueOrThrow({ where: { id } })
+    await audit(
+      tx,
+      actor,
+      'BANNER_UPDATED',
+      'AdminContentBanner',
+      id,
+      { version: data.expectedVersion },
+      { version: updated.version, internalName: updated.internalName },
+      { fields: Object.keys(data).filter((k) => k !== 'expectedVersion') }
+    )
     return { ok: true as const, banner: bannerView(updated as unknown as { [key: string]: unknown }) }
   })
 }
 
 /**
+ * Validation de readiness AVANT toute mutation de statut vers
+ * PUBLISHED/SCHEDULED. Aucune mutation, aucun incrément de version,
+ * aucun audit si refusée.
+ */
+function bannerPublishReadiness(banner: { translations: string; startAt: Date | null }): string | null {
+  const translations = JSON.parse(banner.translations) as Record<string, string>
+  if (!translations.fr || !translations.fr.trim()) return 'fr_translation_required'
+  for (const l of ['fr', 'en', 'es', 'pt', 'de', 'it', 'nl']) {
+    if (typeof translations[l] !== 'string') return 'locales_structure_required'
+  }
+  return null
+}
+
+function popupPublishReadiness(popup: { translations: string; startAt: Date | null }): string | null {
+  const translations = JSON.parse(popup.translations) as Record<string, { title?: string; body?: string }>
+  for (const l of ['fr', 'en', 'es', 'pt', 'de', 'it', 'nl']) {
+    const v = translations[l]
+    if (typeof v !== 'object' || v === null || typeof v.title !== 'string' || typeof v.body !== 'string') {
+      return 'locales_structure_required'
+    }
+  }
+  if (!translations.fr.title || !translations.fr.title.trim()) return 'fr_title_required'
+  if (!translations.fr.body || !translations.fr.body.trim()) return 'fr_body_required'
+  return null
+}
+
+/**
  * Action humaine EXPLICITE : publier / planifier / mettre en pause / archiver.
- * Les agents ne passent JAMAIS par ici.
+ * CAS atomique : la version fait partie du WHERE de l'écriture.
  */
 export async function setBannerStatus(
   id: string,
@@ -229,26 +278,46 @@ export async function setBannerStatus(
   return client.$transaction(async (tx) => {
     const existing = await tx.adminContentBanner.findUnique({ where: { id } })
     if (!existing) return { ok: false as const, error: 'not_found' }
-    if (existing.version !== data.expectedVersion) return { ok: false as const, error: 'stale_version' }
-    if (existing.status === 'ARCHIVED' && data.status !== 'ARCHIVED') return { ok: false as const, error: 'archived' }
 
-    const updated = await tx.adminContentBanner.update({
-      where: { id },
+    // Readiness AVANT mutation (aucun effet de bord si refusée).
+    if (data.status === 'PUBLISHED' || data.status === 'SCHEDULED') {
+      const readiness = bannerPublishReadiness(existing)
+      if (readiness) return { ok: false as const, error: readiness }
+    }
+
+    const result = await tx.adminContentBanner.updateMany({
+      where: {
+        id,
+        version: data.expectedVersion,
+        ...(data.status === 'ARCHIVED' ? {} : { status: { not: 'ARCHIVED' } }),
+      },
       data: {
         status: data.status,
-        approvedById: data.status === 'PUBLISHED' || data.status === 'SCHEDULED' ? actor.id : existing.approvedById,
-        approvedAt: data.status === 'PUBLISHED' || data.status === 'SCHEDULED' ? new Date() : existing.approvedAt,
+        ...(data.status === 'PUBLISHED' || data.status === 'SCHEDULED'
+          ? { approvedById: actor.id, approvedAt: new Date() }
+          : {}),
+        ...(data.startAt !== undefined ? { startAt: data.startAt } : {}),
+        ...(data.endAt !== undefined ? { endAt: data.endAt } : {}),
         updatedById: actor.id,
         version: { increment: 1 },
       },
     })
+
+    if (result.count === 0) {
+      const fresh = await tx.adminContentBanner.findUnique({ where: { id } })
+      if (!fresh) return { ok: false as const, error: 'not_found' }
+      if (fresh.status === 'ARCHIVED' && data.status !== 'ARCHIVED') return { ok: false as const, error: 'archived' }
+      return { ok: false as const, error: 'stale_version' }
+    }
+
+    const updated = await tx.adminContentBanner.findUniqueOrThrow({ where: { id } })
     await audit(
       tx,
       actor,
       data.status === 'ARCHIVED' ? 'BANNER_ARCHIVED' : 'BANNER_STATUS_CHANGED',
       'AdminContentBanner',
       id,
-      { status: existing.status, version: existing.version },
+      { status: existing.status, version: data.expectedVersion },
       { status: updated.status, version: updated.version },
       { reason: data.reason }
     )
@@ -305,22 +374,22 @@ export async function updatePopupDraft(
 ) {
   const data = popupPatchSchema.parse(payload)
   return client.$transaction(async (tx) => {
-    const existing = await tx.adminContentPopup.findUnique({ where: { id } })
-    if (!existing) return { ok: false as const, error: 'not_found' }
-    if (existing.version !== data.expectedVersion) return { ok: false as const, error: 'stale_version' }
-    if (existing.status === 'ARCHIVED') return { ok: false as const, error: 'archived' }
-
-    const updated = await tx.adminContentPopup.update({
-      where: { id },
+    // CAS ATOMIQUE : la version fait partie du WHERE de l'écriture.
+    const result = await tx.adminContentPopup.updateMany({
+      where: {
+        id,
+        version: data.expectedVersion,
+        status: { not: 'ARCHIVED' },
+      },
       data: {
-        internalName: data.internalName ?? existing.internalName,
+        internalName: data.internalName ?? undefined,
         translations: data.translations !== undefined ? JSON.stringify(data.translations) : undefined,
         imageUrl: data.imageUrl !== undefined ? data.imageUrl : undefined,
         ctaTranslations: data.ctaTranslations !== undefined ? JSON.stringify(data.ctaTranslations) : undefined,
         ctaUrl: data.ctaUrl !== undefined ? data.ctaUrl : undefined,
-        trigger: data.trigger ?? existing.trigger,
-        frequency: data.frequency ?? existing.frequency,
-        reminderDays: data.reminderDays ?? existing.reminderDays,
+        trigger: data.trigger ?? undefined,
+        frequency: data.frequency ?? undefined,
+        reminderDays: data.reminderDays ?? undefined,
         targeting: data.targeting !== undefined ? JSON.stringify(data.targeting) : undefined,
         startAt: data.startAt !== undefined ? data.startAt : undefined,
         endAt: data.endAt !== undefined ? data.endAt : undefined,
@@ -329,7 +398,25 @@ export async function updatePopupDraft(
         version: { increment: 1 },
       },
     })
-    await audit(tx, actor, 'POPUP_UPDATED', 'AdminContentPopup', id, { version: existing.version, internalName: existing.internalName }, { version: updated.version, internalName: updated.internalName })
+
+    if (result.count === 0) {
+      const existing = await tx.adminContentPopup.findUnique({ where: { id } })
+      if (!existing) return { ok: false as const, error: 'not_found' }
+      if (existing.status === 'ARCHIVED') return { ok: false as const, error: 'archived' }
+      return { ok: false as const, error: 'stale_version' }
+    }
+
+    const updated = await tx.adminContentPopup.findUniqueOrThrow({ where: { id } })
+    await audit(
+      tx,
+      actor,
+      'POPUP_UPDATED',
+      'AdminContentPopup',
+      id,
+      { version: data.expectedVersion },
+      { version: updated.version, internalName: updated.internalName },
+      { fields: Object.keys(data).filter((k) => k !== 'expectedVersion') }
+    )
     return { ok: true as const, popup: popupView(updated as unknown as { [key: string]: unknown }) }
   })
 }
@@ -344,26 +431,46 @@ export async function setPopupStatus(
   return client.$transaction(async (tx) => {
     const existing = await tx.adminContentPopup.findUnique({ where: { id } })
     if (!existing) return { ok: false as const, error: 'not_found' }
-    if (existing.version !== data.expectedVersion) return { ok: false as const, error: 'stale_version' }
-    if (existing.status === 'ARCHIVED' && data.status !== 'ARCHIVED') return { ok: false as const, error: 'archived' }
 
-    const updated = await tx.adminContentPopup.update({
-      where: { id },
+    // Readiness AVANT mutation (aucun effet de bord si refusée).
+    if (data.status === 'PUBLISHED' || data.status === 'SCHEDULED') {
+      const readiness = popupPublishReadiness(existing)
+      if (readiness) return { ok: false as const, error: readiness }
+    }
+
+    const result = await tx.adminContentPopup.updateMany({
+      where: {
+        id,
+        version: data.expectedVersion,
+        ...(data.status === 'ARCHIVED' ? {} : { status: { not: 'ARCHIVED' } }),
+      },
       data: {
         status: data.status,
-        approvedById: data.status === 'PUBLISHED' || data.status === 'SCHEDULED' ? actor.id : existing.approvedById,
-        approvedAt: data.status === 'PUBLISHED' || data.status === 'SCHEDULED' ? new Date() : existing.approvedAt,
+        ...(data.status === 'PUBLISHED' || data.status === 'SCHEDULED'
+          ? { approvedById: actor.id, approvedAt: new Date() }
+          : {}),
+        ...(data.startAt !== undefined ? { startAt: data.startAt } : {}),
+        ...(data.endAt !== undefined ? { endAt: data.endAt } : {}),
         updatedById: actor.id,
         version: { increment: 1 },
       },
     })
+
+    if (result.count === 0) {
+      const fresh = await tx.adminContentPopup.findUnique({ where: { id } })
+      if (!fresh) return { ok: false as const, error: 'not_found' }
+      if (fresh.status === 'ARCHIVED' && data.status !== 'ARCHIVED') return { ok: false as const, error: 'archived' }
+      return { ok: false as const, error: 'stale_version' }
+    }
+
+    const updated = await tx.adminContentPopup.findUniqueOrThrow({ where: { id } })
     await audit(
       tx,
       actor,
       data.status === 'ARCHIVED' ? 'POPUP_ARCHIVED' : 'POPUP_STATUS_CHANGED',
       'AdminContentPopup',
       id,
-      { status: existing.status, version: existing.version },
+      { status: existing.status, version: data.expectedVersion },
       { status: updated.status, version: updated.version },
       { reason: data.reason }
     )

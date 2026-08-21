@@ -1876,7 +1876,8 @@
     "cpStatusRejected": "Abgelehnt",
     "cpFlagArqweliaLot1": "ARQWELIA Lot 1 — visueller Prototyp + Akquise-Funnel (Nav-/Sitemap-Sichtbarkeit).",
     "cpFlagArqweliaDemo": "ARQWELIA — Demo-Modus (Badge „simulierte Analyse“ + Fixtures).",
-    "cpFlagLaunchOffers": "Launch-Kampagne aktiviert (die Engine bleibt über /api/admin/promotions gesteuert)."
+    "cpFlagLaunchOffers": "Launch-Kampagne aktiviert (die Engine bleibt über /api/admin/promotions gesteuert).",
+    "cpScheduleNeedsStart": "Die Planung erfordert ein Startdatum (Start)."
   },
   "spa": {
     "title": "Spa & Baden",
