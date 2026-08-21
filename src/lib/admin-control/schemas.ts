@@ -7,6 +7,7 @@
  * payloads d'écriture.
  */
 import { z } from 'zod'
+import { isValidAdminUrl } from './url-validation'
 
 export const ADMIN_LOCALES = ['fr', 'en', 'es', 'pt', 'de', 'it', 'nl'] as const
 export type AdminLocale = (typeof ADMIN_LOCALES)[number]
@@ -68,32 +69,26 @@ export const targetingSchema = z
   })
   .strict()
 
-/** Chemin interne : commence par UN SEUL / (jamais //, jamais de schéma). */
-const INTERNAL_PATH_RE = /^\/(?!\/)[^\s]*$/
-/** URL absolue : uniquement HTTPS. */
-const HTTPS_URL_RE = /^https:\/\//i
-/** Schémas explicitement interdits (et tout schéma autre que https). */
-const BLOCKED_SCHEME_RE = /^(javascript|data|file|vbscript|ftp|mailto|tel|chrome):/i
-
 /**
- * URL de CTA : chemin interne sûr OU https absolu. Refuse javascript:, data:,
- * file:, ftp:, protocol-relative //evil… et tout schéma non autorisé.
+ * URL de CTA : chemin interne sûr OU https absolu (parser WHATWG).
+ * Refuse javascript:, data:, file:, ftp:, protocol-relative, backslashes,
+ * credentials embarquées et tout schéma non autorisé.
  */
 export const ctaUrlSchema = z
   .string()
   .max(500)
-  .refine((v) => v === '' || INTERNAL_PATH_RE.test(v) || (HTTPS_URL_RE.test(v) && !BLOCKED_SCHEME_RE.test(v)), {
-    message: 'ctaUrl must be an internal path or a valid HTTPS URL',
+  .refine(isValidAdminUrl, {
+    message: 'ctaUrl must be a safe internal path or a valid HTTPS URL',
   })
 
 /**
- * URL d'image : asset interne sûr OU https absolu. Mêmes refus de schémas.
+ * URL d'image : asset interne sûr OU https absolu. Mêmes refus.
  */
 export const imageUrlSchema = z
   .string()
   .max(500)
-  .refine((v) => v === '' || INTERNAL_PATH_RE.test(v) || (HTTPS_URL_RE.test(v) && !BLOCKED_SCHEME_RE.test(v)), {
-    message: 'imageUrl must be an internal asset path or a valid HTTPS URL',
+  .refine(isValidAdminUrl, {
+    message: 'imageUrl must be a safe internal asset path or a valid HTTPS URL',
   })
 
 /** Les dates, si présentes toutes les deux, doivent être cohérentes. */

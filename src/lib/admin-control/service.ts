@@ -189,6 +189,13 @@ export async function updateBannerDraft(
 ) {
   const data = bannerPatchSchema.parse(payload)
   return client.$transaction(async (tx) => {
+    // Lecture de l'état existant pour la validation des dates EFFECTIVES.
+    // Cette lecture n'est PAS l'autorité de concurrence : le CAS updateMany
+    // ci-dessous (version DANS le WHERE) reste la seule écriture gagnante.
+    const existing = await tx.adminContentBanner.findUnique({ where: { id } })
+    if (!existing) return { ok: false as const, error: 'not_found' }
+    if (!effectiveDatesValid(data, existing)) return { ok: false as const, error: 'invalid_dates' }
+
     // CAS ATOMIQUE : la condition de version fait partie du WHERE de
     // l'écriture (updateMany). Deux clients concurrents lisent la même
     // version : UN SEUL updateMany renvoie count=1, l'autre count=0.
@@ -265,6 +272,24 @@ function popupPublishReadiness(popup: { translations: string; startAt: Date | nu
 }
 
 /**
+ * Validation des dates sur l'ÉTAT EFFECTIF (payload ∪ état existant).
+ * Un payload qui ne contient qu'une des deux dates ne peut pas produire un
+ * état final endAt <= startAt. Retourne false → refus 400 SANS mutation,
+ * SANS version++, SANS audit.
+ */
+function effectiveDatesValid(
+  payload: { startAt?: Date; endAt?: Date },
+  existing: { startAt: Date | null; endAt: Date | null }
+): boolean {
+  const effectiveStartAt = payload.startAt !== undefined ? payload.startAt : existing.startAt
+  const effectiveEndAt = payload.endAt !== undefined ? payload.endAt : existing.endAt
+  if (effectiveStartAt && effectiveEndAt) {
+    return effectiveEndAt.getTime() > effectiveStartAt.getTime()
+  }
+  return true
+}
+
+/**
  * Action humaine EXPLICITE : publier / planifier / mettre en pause / archiver.
  * CAS atomique : la version fait partie du WHERE de l'écriture.
  */
@@ -284,6 +309,9 @@ export async function setBannerStatus(
       const readiness = bannerPublishReadiness(existing)
       if (readiness) return { ok: false as const, error: readiness }
     }
+    // Dates EFFECTIVES : le payload combiné à l'état existant doit rester
+    // cohérent (endAt > startAt) quelle que soit la transition.
+    if (!effectiveDatesValid(data, existing)) return { ok: false as const, error: 'invalid_dates' }
 
     const result = await tx.adminContentBanner.updateMany({
       where: {
@@ -374,6 +402,10 @@ export async function updatePopupDraft(
 ) {
   const data = popupPatchSchema.parse(payload)
   return client.$transaction(async (tx) => {
+    const existing = await tx.adminContentPopup.findUnique({ where: { id } })
+    if (!existing) return { ok: false as const, error: 'not_found' }
+    if (!effectiveDatesValid(data, existing)) return { ok: false as const, error: 'invalid_dates' }
+
     // CAS ATOMIQUE : la version fait partie du WHERE de l'écriture.
     const result = await tx.adminContentPopup.updateMany({
       where: {
@@ -437,6 +469,8 @@ export async function setPopupStatus(
       const readiness = popupPublishReadiness(existing)
       if (readiness) return { ok: false as const, error: readiness }
     }
+    // Dates EFFECTIVES : cohérence endAt > startAt sur l'état final.
+    if (!effectiveDatesValid(data, existing)) return { ok: false as const, error: 'invalid_dates' }
 
     const result = await tx.adminContentPopup.updateMany({
       where: {
