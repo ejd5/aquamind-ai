@@ -152,12 +152,19 @@ describe('garde serveur /admin (layout)', () => {
     const src = readFileSync(join(process.cwd(), 'src/app/admin/layout.tsx'), 'utf8')
     expect(src).toContain('requireAdminFromDb()')
     expect(src).toContain("redirect('/auth/signin?callbackUrl=/admin')")
-    // Session absente → redirect ; tout autre cas non autorisé → 403.
+    // Session absente → redirect ; non-admin authentifié → VRAI 403 (forbidden()).
     expect(src).toContain("auth.reason === 'no-session'")
+    expect(src).toContain('forbidden()')
     expect(src).toContain('<>{children}</>')
     // Jamais de confiance dans le client : pas de localStorage ni de role depuis props.
     expect(src).not.toMatch(/localStorage\s*[.(]/)
-    expect(src).toContain("t('accessDeniedDesc')")
+  })
+
+  it('la page forbidden.tsx rend un 403 i18n avec le statut HTTP 403 (Next forbidden())', () => {
+    const forbiddenPage = readFileSync(join(process.cwd(), 'src/app/admin/forbidden.tsx'), 'utf8')
+    expect(forbiddenPage).toContain('getTranslations')
+    expect(forbiddenPage).toContain("t('accessDeniedDesc')")
+    expect(forbiddenPage).toContain('403')
   })
 
   it('la page admin ne lit plus le localStorage comme source canonique', () => {
