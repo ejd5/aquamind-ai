@@ -25,6 +25,13 @@ const sharedConfig = {
     ignoreBuildErrors: false,
   },
   reactStrictMode: true,
+  // Admin Control Plane: forbidden()/unauthorized() (next/navigation) render
+  // a VRAI statut HTTP 403 depuis les layouts serveur (voir
+  // src/app/admin/layout.tsx + forbidden.tsx). La décision admin reste
+  // canonique côté serveur (User.role relu en base).
+  experimental: {
+    authInterrupts: true,
+  },
 } satisfies NextConfig
 
 const webConfig: NextConfig = {
