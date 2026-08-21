@@ -1877,7 +1877,11 @@
     "cpFlagArqweliaLot1": "ARQWELIA Lot 1 — visueel prototype + acquisitietrechter (zichtbaarheid nav/sitemap).",
     "cpFlagArqweliaDemo": "ARQWELIA — demomodus (badge “gesimuleerde analyse” + fixtures).",
     "cpFlagLaunchOffers": "Lanceercampagne ingeschakeld (de engine blijft aangestuurd via /api/admin/promotions).",
-    "cpScheduleNeedsStart": "Inplannen vereist een startdatum (Start)."
+    "cpScheduleNeedsStart": "Inplannen vereist een startdatum (Start).",
+    "cpPromoName": "Naam",
+    "cpPromoStartsAt": "Start",
+    "cpPopupsEdit": "Popup bewerken",
+    "cpHumanReviewRequired": "Menselijke beoordeling vereist"
   },
   "spa": {
     "title": "Spa & baden",

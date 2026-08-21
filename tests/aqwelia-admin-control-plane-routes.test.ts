@@ -11,13 +11,16 @@
  * requireAdminFromDb et le service sont mockés : leur logique réelle est
  * couverte par aqwelia-admin-control-plane.test.ts (DB isolée).
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { requireAdminFromDb } from '@/lib/admin-auth'
 
 vi.mock('@/lib/admin-auth', () => ({ requireAdminFromDb: vi.fn() }))
+
+const promotionsDbHolder = vi.hoisted(() => ({ promotionCampaign: { findMany: vi.fn() } }))
+vi.mock('@/lib/db', () => ({ db: promotionsDbHolder }))
 vi.mock('@/lib/admin-control/service', () => ({
   listBanners: vi.fn().mockResolvedValue([]),
   createBannerDraft: vi.fn().mockResolvedValue({ id: 'b1', status: 'DRAFT', version: 0 }),
@@ -144,6 +147,91 @@ describe('route audit + flags', () => {
     const body = await res.json()
     expect(body.readOnly).toBe(true)
     expect(body.flags.every((f: { key: string }) => !/STRIPE|SECRET|DATABASE/.test(f.key))).toBe(true)
+  })
+})
+
+describe('route /api/admin/v1/promotions — READ ONLY strict', () => {
+  const MOCK_CAMPAIGNS = [
+    { code: 'AQWELIA_LAUNCH_2026', name: 'Offres de lancement AQWELIA', status: 'DRAFT', totalQuota: 500, confirmedCount: 0, startsAt: null, endsAt: null },
+    { code: 'ETE_2026', name: 'Campagne été', status: 'ACTIVE', totalQuota: 200, confirmedCount: 12, startsAt: '2026-06-01T00:00:00Z', endsAt: '2026-09-01T00:00:00Z' },
+  ]
+
+  beforeEach(() => {
+    promotionsDbHolder.promotionCampaign.findMany.mockReset()
+    promotionsDbHolder.promotionCampaign.findMany.mockResolvedValue(MOCK_CAMPAIGNS)
+    vi.mocked(requireAdminFromDb).mockReset()
+  })
+
+  it('1. admin → 200 avec { campaigns: [...] }', async () => {
+    vi.mocked(requireAdminFromDb).mockResolvedValue({ authorized: true, userId: 'a' } as never)
+    const mod = await import('@/app/api/admin/v1/promotions/route')
+    const res = await mod.GET()
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(Array.isArray(body.campaigns)).toBe(true)
+    expect(body.campaigns).toHaveLength(2)
+    expect(body.campaigns[0].code).toBe('AQWELIA_LAUNCH_2026')
+    expect(body.campaigns[0].status).toBe('DRAFT')
+    expect(body.campaigns[0].name).toBe('Offres de lancement AQWELIA')
+  })
+
+  it('2. non-admin → 403 ; 3. non-auth → 401', async () => {
+    const mod = await import('@/app/api/admin/v1/promotions/route')
+    vi.mocked(requireAdminFromDb).mockResolvedValue({ authorized: false, reason: 'not-admin' } as never)
+    expect((await mod.GET()).status).toBe(403)
+    vi.mocked(requireAdminFromDb).mockResolvedValue({ authorized: false, reason: 'no-session' } as never)
+    expect((await mod.GET()).status).toBe(401)
+  })
+
+  it('6. GET ne crée JAMAIS de campagne — findMany uniquement, aucun seed', async () => {
+    vi.mocked(requireAdminFromDb).mockResolvedValue({ authorized: true, userId: 'a' } as never)
+    const mod = await import('@/app/api/admin/v1/promotions/route')
+    await mod.GET()
+    expect(promotionsDbHolder.promotionCampaign.findMany).toHaveBeenCalledTimes(1)
+    // Le mock n'expose QUE findMany : une écriture (create/update) serait impossible.
+    expect(Object.keys(promotionsDbHolder.promotionCampaign)).toEqual(['findMany'])
+  })
+
+  it('7. GET ne modifie aucune campagne existante (select en lecture seule, aucun seed)', async () => {
+    const src = readFileSync(join(process.cwd(), 'src/app/api/admin/v1/promotions/route.ts'), 'utf8')
+    expect(src).not.toContain('seedCampaign')
+    expect(src).not.toContain('setCampaignStatus')
+    expect(src).not.toContain('reallocate')
+    expect(src).not.toContain('restoreRedemptionSlot')
+    expect(src).not.toMatch(/promotionCampaign\.(create|update|upsert|delete)/)
+    expect(src).toContain('select:')
+    expect(src).toContain('findMany')
+  })
+
+  it('8. aucune méthode POST/PATCH/DELETE exposée sur /api/admin/v1/promotions', async () => {
+    const src = readFileSync(join(process.cwd(), 'src/app/api/admin/v1/promotions/route.ts'), 'utf8')
+    expect(src).not.toMatch(/export async function (POST|PATCH|DELETE|PUT)/)
+    expect(src).toMatch(/export async function GET\(\)/)
+  })
+})
+
+describe('UI Promotions — READ ONLY réel', () => {
+  it('9. PromotionsSection appelle UNIQUEMENT /api/admin/v1/promotions', () => {
+    const page = readFileSync(join(process.cwd(), 'src/app/admin/page.tsx'), 'utf8')
+    expect(page).toContain("fetch('/api/admin/v1/promotions')")
+    // Aucune dépendance vers l'ancien endpoint mutation-capable dans la section.
+    expect(page).not.toMatch(/fetch\('\/api\/admin\/promotions'\)/)
+  })
+
+  it('10. aucun bouton d’action promo (activation/édition/quota/réallocation/restauration/suppression)', () => {
+    const page = readFileSync(join(process.cwd(), 'src/app/admin/page.tsx'), 'utf8')
+    const start = page.indexOf('function PromotionsSection')
+    const end = page.indexOf('function FlagsSection', start)
+    const section = page.slice(start, end)
+    expect(section).not.toContain('onClick')
+    expect(section).not.toContain('setCampaignStatus')
+    expect(section).not.toContain('reallocate')
+    expect(section).not.toContain('restore')
+    expect(section).not.toContain('<Button')
+    // Colonnes minimum présentes (code, nom, statut, quota, confirmations, début, fin).
+    for (const col of ['cpPromoCode', 'cpPromoName', 'cpPromoStatus', 'cpPromoQuota', 'cpPromoConfirmed', 'cpPromoStartsAt', 'cpPromoEndsAt']) {
+      expect(section, col).toContain(col)
+    }
   })
 })
 

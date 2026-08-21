@@ -1999,7 +1999,11 @@
     "cpFlagArqweliaLot1": "ARQWELIA Lot 1 — prototype visuel + tunnel acquisition (visibilité nav/sitemap).",
     "cpFlagArqweliaDemo": "ARQWELIA — mode démo (badge « analyse simulée » + fixtures).",
     "cpFlagLaunchOffers": "Campagne de lancement activée (le moteur reste piloté via /api/admin/promotions).",
-    "cpScheduleNeedsStart": "La planification exige une date de début (Début)."
+    "cpScheduleNeedsStart": "La planification exige une date de début (Début).",
+    "cpPromoName": "Nom",
+    "cpPromoStartsAt": "Début",
+    "cpPopupsEdit": "Modifier le popup",
+    "cpHumanReviewRequired": "Validation humaine requise"
   },
   "spa": {
     "title": "Spa & Baignade",

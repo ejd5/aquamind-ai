@@ -420,7 +420,7 @@ function BannerEditor({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-night/40 backdrop-blur-sm md:items-center md:p-6">
       <div className="custom-scroll max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-2xl border border-lagoon/20 bg-background p-5 md:rounded-2xl">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-display text-lg font-bold">{t('cpBannersEdit')}</h3>
+          <h3 className="font-display text-lg font-bold">{banner ? t('cpBannersEdit') : t('cpBannersCreate')}</h3>
           <Button size="sm" variant="ghost" onClick={onClose}>
             <XCircle className="h-4 w-4" />
           </Button>
@@ -652,7 +652,7 @@ function PopupsSection() {
               <div className="ml-auto">
                 <Button size="sm" variant="outline" onClick={() => setEditing(p)}>
                   <Eye className="h-3.5 w-3.5" />
-                  {t('cpBannersEdit')}
+                  {t('cpPopupsEdit')}
                 </Button>
               </div>
             </div>
@@ -760,7 +760,7 @@ function PopupEditor({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-night/40 backdrop-blur-sm md:items-center md:p-6">
       <div className="custom-scroll max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-2xl border border-lagoon/20 bg-background p-5 md:rounded-2xl">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-display text-lg font-bold">{t('cpPopupsTitle')}</h3>
+          <h3 className="font-display text-lg font-bold">{popup ? t('cpPopupsEdit') : t('cpPopupsCreate')}</h3>
           <Button size="sm" variant="ghost" onClick={onClose}>
             <XCircle className="h-4 w-4" />
           </Button>
@@ -896,18 +896,30 @@ function PopupEditor({
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   PROMOTIONS (READ ONLY) — le moteur existant reste la source de vérité
+   PROMOTIONS (READ ONLY V1) — le moteur existant reste la source de vérité.
+   Appelle UNIQUEMENT /api/admin/v1/promotions (endpoint strictement GET,
+   sans seed ni mutation).
    ──────────────────────────────────────────────────────────────────────────── */
+interface CampaignRow {
+  code: string
+  name: string
+  status: string
+  totalQuota: number
+  confirmedCount: number
+  startsAt: string | null
+  endsAt: string | null
+}
+
 function PromotionsSection() {
   const t = useTranslations('admin')
-  const [data, setData] = useState<{ campaigns?: Array<{ code: string; status: string; totalQuota: number; confirmedCount: number; endsAt: string | null }> } | null>(null)
-  const [error, setError] = useState(false)
+  const [campaigns, setCampaigns] = useState<CampaignRow[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/admin/promotions')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('ko'))))
-      .then((d) => setData(d))
-      .catch(() => setError(true))
+    fetch('/api/admin/v1/promotions')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((d: { campaigns?: CampaignRow[] }) => setCampaigns(d.campaigns ?? []))
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'unknown'))
   }, [])
 
   return (
@@ -916,42 +928,53 @@ function PromotionsSection() {
         <h2 className="font-display text-xl font-bold">{t('cpPromotionsTitle')}</h2>
         <p className="mt-1 text-xs text-muted-foreground">{t('cpPromotionsReadOnly')}</p>
       </div>
+
       {error && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center">
+          <p className="text-sm font-semibold text-destructive">{t('cpError')}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{error}</p>
+        </div>
+      )}
+
+      {!error && campaigns === null && <p className="text-sm text-muted-foreground">…</p>}
+
+      {!error && campaigns !== null && campaigns.length === 0 && (
         <div className="rounded-xl border border-dashed border-border/60 p-8 text-center text-sm text-muted-foreground">
           {t('cpPromotionsEmpty')}
         </div>
       )}
-      {!error && data?.campaigns && data.campaigns.length > 0 && (
+
+      {!error && campaigns !== null && campaigns.length > 0 && (
         <div className="glass-card-lagon overflow-x-auto rounded-xl">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-border/60 text-[11px] uppercase tracking-wide text-muted-foreground">
                 <th className="px-4 py-2">{t('cpPromoCode')}</th>
+                <th className="px-4 py-2">{t('cpPromoName')}</th>
                 <th className="px-4 py-2">{t('cpPromoStatus')}</th>
                 <th className="px-4 py-2">{t('cpPromoQuota')}</th>
                 <th className="px-4 py-2">{t('cpPromoConfirmed')}</th>
+                <th className="px-4 py-2">{t('cpPromoStartsAt')}</th>
                 <th className="px-4 py-2">{t('cpPromoEndsAt')}</th>
               </tr>
             </thead>
             <tbody>
-              {data.campaigns.map((c) => (
+              {campaigns.map((c) => (
                 <tr key={c.code} className="border-b border-border/40">
-                  <td className="px-4 py-2 font-medium">{c.code}</td>
+                  <td className="px-4 py-2 font-mono text-xs font-medium">{c.code}</td>
+                  <td className="px-4 py-2">{c.name}</td>
                   <td className="px-4 py-2">
-                    <Badge variant={(STATUS_BADGE[c.status] ?? 'outline') as never}>{c.status}</Badge>
+                    <Badge variant={(STATUS_BADGE[c.status] ?? 'outline') as never}>{t(statusKey(c.status) as never)}</Badge>
                   </td>
                   <td className="px-4 py-2">{c.totalQuota}</td>
                   <td className="px-4 py-2">{c.confirmedCount}</td>
+                  <td className="px-4 py-2 text-muted-foreground">{c.startsAt ? new Date(c.startsAt).toLocaleDateString() : '—'}</td>
                   <td className="px-4 py-2 text-muted-foreground">{c.endsAt ? new Date(c.endsAt).toLocaleDateString() : '—'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
-      )}
-      {!error && data?.campaigns && data.campaigns.length === 0 && (
-        <div className="rounded-xl border border-dashed border-border/60 p-8 text-center text-sm text-muted-foreground">
-          {t('cpPromotionsEmpty')}
+          {/* READ ONLY : aucun bouton d'activation/édition/quota/réallocation/restauration/suppression. */}
         </div>
       )}
     </div>
@@ -1118,6 +1141,9 @@ function AgenticSection({ filterStatus }: { filterStatus?: string }) {
               <span className="text-sm font-semibold">{p.title}</span>
               <Badge variant={(STATUS_BADGE[p.status] ?? 'outline') as never}>{t(statusKey(p.status) as never)}</Badge>
               {p.riskLevel === 'BLOCKED' && <Badge variant="destructive">{t('cpBlocked')}</Badge>}
+              {p.riskLevel !== 'BLOCKED' && p.blockedReasons?.includes('human_review_required') && (
+                <Badge variant="champagne">{t('cpHumanReviewRequired')}</Badge>
+              )}
             </div>
             <div className="mt-1.5 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
               <span>{t('cpAgentCol')}: {p.agent}</span>
@@ -1130,7 +1156,11 @@ function AgenticSection({ filterStatus }: { filterStatus?: string }) {
               {p.rationale}
             </p>
             {p.blockedReasons && p.blockedReasons.length > 0 && (
-              <p className="mt-1.5 text-xs text-destructive">{t('cpBlocked')}: {p.blockedReasons.join(', ')}</p>
+              <p className={`mt-1.5 text-xs ${p.riskLevel === 'BLOCKED' ? 'text-destructive' : 'text-champagne-ink'}`}>
+                {p.riskLevel === 'BLOCKED'
+                  ? `${t('cpBlocked')}: ${p.blockedReasons.filter((r) => r !== 'human_review_required').join(', ')}`
+                  : t('cpHumanReviewRequired')}
+              </p>
             )}
             {p.payload && (
               <pre className="mt-2 max-h-32 overflow-auto rounded-lg bg-night/5 p-2 text-[11px]">{JSON.stringify(p.payload, null, 2)}</pre>
