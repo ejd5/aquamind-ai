@@ -14,6 +14,7 @@
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { Footer } from '@/components/aquamind/footer'
+import { MarketingRuntime } from '@/components/admin-runtime/marketing-runtime'
 import { getTranslations } from 'next-intl/server'
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -31,6 +32,8 @@ export default async function PublicLayout({ children }: { children: React.React
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
+      <MarketingRuntime zone="LANDING" />
+
       {/* Top brand bar — hidden on ARQWELIA routes which render their own premium header */}
       {!isArqwelia && (
         <header className="safe-area-top sticky top-0 z-40 border-b border-gold/20 bg-background/85 backdrop-blur-2xl">
