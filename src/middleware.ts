@@ -14,7 +14,6 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { locales, defaultLocale, normalizeLocale } from '@/i18n/config'
-import { isAdminEmail } from '@/lib/admin'
 import { PRO_GPS_ENABLED } from '@/lib/features'
 
 /**
@@ -137,8 +136,12 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
-  // Admin pages are protected on the server. Never rely on a client-side
-  // password or localStorage flag: both are visible and modifiable by users.
+  // Admin pages: the middleware only gates on AUTHENTICATION. The canonical
+  // ADMIN decision is made server-side in src/app/admin/layout.tsx via
+  // requireAdminFromDb(), which re-reads User.role from the DB on every
+  // request. The legacy email allowlist must NOT be an additional access
+  // condition for the new Control Plane /admin (single source of truth: the
+  // DB role). No client-supplied role/email/query/payload is ever trusted.
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
     if (!token) {
@@ -146,12 +149,8 @@ export default async function middleware(req: NextRequest) {
       signin.searchParams.set('callbackUrl', pathname)
       return NextResponse.redirect(signin)
     }
-    if (!isAdminEmail(token.email)) {
-      return new NextResponse('Forbidden', {
-        status: 403,
-        headers: { 'Cache-Control': 'private, no-store' },
-      })
-    }
+    // Session présente → laisser passer. Le layout /admin refait la décision
+    // ADMIN (role DB) et rend 403 le cas échéant.
   }
 
   return res

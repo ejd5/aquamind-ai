@@ -1,70 +1,1267 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Switch } from '@/components/ui/switch'
-import { Button } from '@/components/ui/button'
-import { useToast } from '@/hooks/use-toast'
+/**
+ * AQWELIA — Admin Control Plane V1 · console /admin.
+ *
+ * Shell extensible : OVERVIEW / MARKETING (bannières, popups, promotions,
+ * annonces) / PRODUCT (flags sûrs, contenu) / AGENTIC / SYSTEM (audit, état).
+ *
+ * RÈGLE ABSOLUE : AGENT PROPOSE → HUMAIN VALIDE → SYSTÈME EXÉCUTE.
+ * Toutes les mutations partent vers des routes serveur qui revérifient le
+ * rôle admin en base ; le localStorage n'est JAMAIS une source canonique.
+ */
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import {
+  LayoutDashboard,
+  Megaphone,
+  PanelTop,
+  Gift,
+  BellRing,
+  Boxes,
+  Flag,
+  FileText,
+  Bot,
+  ListChecks,
+  History,
+  ScrollText,
+  Activity,
+  Sparkles,
+  Plus,
+  Trash2,
+  Eye,
+  CheckCircle2,
+  XCircle,
+  ShieldCheck,
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
+import { useToast } from '@/hooks/use-toast'
 import { signOutWithBillingCleanup } from '@/lib/billing/sign-out'
 
-type AdminTab = 'banner' | 'popup' | 'content' | 'analytics' | 'users'
+type SectionId =
+  | 'overview'
+  | 'banners'
+  | 'popups'
+  | 'promotions'
+  | 'announcements'
+  | 'flags'
+  | 'content'
+  | 'agentic'
+  | 'approvals'
+  | 'history'
+  | 'audit'
+  | 'system'
 
-interface BannerConfig {
-  enabled: boolean
-  text: string
-  bgColor: string
-  textColor: string
-  link: string
-  startDate: string
-  endDate: string
+const LOCALES = ['fr', 'en', 'es', 'pt', 'de', 'it', 'nl'] as const
+
+interface NavGroup {
+  labelKey: string
+  items: Array<{ id: SectionId; labelKey: string; icon: typeof LayoutDashboard }>
 }
 
-interface PopupConfig {
-  id: string
-  enabled: boolean
-  title: string
-  body: string
-  imageUrl: string
-  ctaText: string
-  ctaLink: string
-  trigger: 'on_load' | 'on_exit' | 'after_diagnostic' | 'manual'
-  frequency: 'once' | 'session' | 'always'
+const NAV_GROUPS: NavGroup[] = [
+  { labelKey: '', items: [{ id: 'overview', labelKey: 'navOverview', icon: LayoutDashboard }] },
+  {
+    labelKey: 'navMarketing',
+    items: [
+      { id: 'banners', labelKey: 'navBanners', icon: PanelTop },
+      { id: 'popups', labelKey: 'navPopups', icon: Gift },
+      { id: 'promotions', labelKey: 'navPromotions', icon: Megaphone },
+      { id: 'announcements', labelKey: 'navAnnouncements', icon: BellRing },
+    ],
+  },
+  {
+    labelKey: 'navProduct',
+    items: [
+      { id: 'flags', labelKey: 'navFlags', icon: Flag },
+      { id: 'content', labelKey: 'navContent', icon: FileText },
+    ],
+  },
+  {
+    labelKey: 'navAgentic',
+    items: [
+      { id: 'agentic', labelKey: 'navSuggestions', icon: Bot },
+      { id: 'approvals', labelKey: 'navApprovalQueue', icon: ListChecks },
+      { id: 'history', labelKey: 'navAgentHistory', icon: History },
+    ],
+  },
+  {
+    labelKey: 'navSystem',
+    items: [
+      { id: 'audit', labelKey: 'navAudit', icon: ScrollText },
+      { id: 'system', labelKey: 'navSystemStatus', icon: Activity },
+    ],
+  },
+]
+
+async function apiFetch<T = unknown>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    headers: { 'Content-Type': 'application/json' },
+    ...init,
+  })
+  const data = await res.json().catch(() => null)
+  if (!res.ok) {
+    throw new Error(data?.error || `HTTP ${res.status}`)
+  }
+  return data as T
 }
 
-export default function AdminPage() {
+const statusKey = (s: string) =>
+  ({ DRAFT: 'cpStatusDraft', SCHEDULED: 'cpStatusScheduled', PUBLISHED: 'cpStatusPublished', PAUSED: 'cpStatusPaused', ARCHIVED: 'cpStatusArchived', NEEDS_REVIEW: 'cpStatusNeedsReview', APPROVED: 'cpStatusApproved', REJECTED: 'cpStatusRejected' } as const)[s] ?? 'cpStatusDraft'
+
+const STATUS_BADGE: Record<string, string> = {
+  DRAFT: 'secondary',
+  SCHEDULED: 'info',
+  PUBLISHED: 'success',
+  PAUSED: 'warning',
+  ARCHIVED: 'outline',
+  NEEDS_REVIEW: 'warning',
+  APPROVED: 'success',
+  REJECTED: 'destructive',
+}
+
+function LocaleChips({ translations }: { translations: Record<string, unknown> }) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {LOCALES.map((l) => {
+        const v = translations?.[l]
+        const filled =
+          typeof v === 'string'
+            ? v.trim().length > 0
+            : typeof v === 'object' && v !== null
+              ? Object.values(v).some((x) => typeof x === 'string' && x.trim().length > 0)
+              : false
+        return (
+          <span
+            key={l}
+            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+              filled ? 'bg-success/15 text-success-ink' : 'bg-secondary text-muted-foreground'
+            }`}
+          >
+            {l}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   OVERVIEW
+   ──────────────────────────────────────────────────────────────────────────── */
+function OverviewSection({ onNavigate }: { onNavigate: (s: SectionId) => void }) {
   const t = useTranslations('admin')
-  const [activeTab, setActiveTab] = useState<AdminTab>('banner')
+  return (
+    <div className="space-y-5">
+      <div className="hero-lagon rounded-2xl p-6 sm:p-8">
+        <p className="section-label">{t('navOverview')}</p>
+        <h1 className="mt-1 font-display text-2xl font-bold sm:text-3xl">{t('overviewTitle')}</h1>
+        <p className="mt-2 max-w-xl text-sm text-muted-foreground">{t('overviewDesc')}</p>
+      </div>
 
-  const tabs: Array<{ id: AdminTab; label: string; icon: string }> = [
-    { id: 'banner', label: t('tabBanner'), icon: '📢' },
-    { id: 'popup', label: t('tabPopup'), icon: '🎁' },
-    { id: 'content', label: t('tabContent'), icon: '📝' },
-    { id: 'analytics', label: t('tabAnalytics'), icon: '📊' },
-    { id: 'users', label: t('tabUsers'), icon: '👥' },
-  ]
+      <div className="card-premium-champagne rounded-2xl p-5">
+        <p className="flex items-center gap-2 text-sm font-bold text-champagne-ink">
+          <ShieldCheck className="h-4 w-4" />
+          {t('overviewPrincipleTitle')}
+        </p>
+        <p className="mt-1.5 text-sm text-muted-foreground">{t('overviewPrincipleDesc')}</p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {(
+          [
+            { id: 'banners', label: t('navBanners'), icon: PanelTop, chip: 'icon-chip icon-chip-lagoon' },
+            { id: 'popups', label: t('navPopups'), icon: Gift, chip: 'icon-chip icon-chip-aqua' },
+            { id: 'promotions', label: t('navPromotions'), icon: Megaphone, chip: 'icon-chip icon-chip-info' },
+            { id: 'agentic', label: t('navAgentic'), icon: Bot, chip: 'icon-chip icon-chip-lagoon' },
+            { id: 'flags', label: t('navFlags'), icon: Flag, chip: 'icon-chip icon-chip-aqua' },
+            { id: 'audit', label: t('navAudit'), icon: ScrollText, chip: 'icon-chip icon-chip-info' },
+          ] as const
+        ).map((c) => (
+          <button
+            key={c.id}
+            onClick={() => onNavigate(c.id)}
+            className="glass-card-lagon flex items-center gap-3 rounded-xl p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+          >
+            <span className={`${c.chip} h-10 w-10`}>
+              <c.icon className="h-4 w-4" />
+            </span>
+            <span className="text-sm font-semibold">{c.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   BANNERS
+   ──────────────────────────────────────────────────────────────────────────── */
+interface BannerView {
+  id: string
+  internalName: string
+  status: string
+  translations: Record<string, string>
+  variant: string
+  ctaTranslations: Record<string, string> | null
+  ctaUrl: string | null
+  targeting: Record<string, unknown> | null
+  startAt: string | null
+  endAt: string | null
+  priority: number
+  version: number
+}
+
+function BannersSection() {
+  const t = useTranslations('admin')
+  const { toast } = useToast()
+  const [banners, setBanners] = useState<BannerView[] | null>(null)
+  const [editing, setEditing] = useState<BannerView | 'new' | null>(null)
+
+  const load = useCallback(async () => {
+    try {
+      const data = await apiFetch<{ banners: BannerView[] }>('/api/admin/v1/banners')
+      setBanners(data.banners)
+    } catch {
+      toast({ title: t('cpError'), variant: 'destructive' })
+    }
+  }, [t, toast])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load()
+  }, [load])
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Admin header */}
-      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <img
-              src="/branding/aqwelia-icon-a.png"
-              alt=""
-              className="h-10 w-10 rounded-lg"
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-display text-xl font-bold">{t('cpBannersTitle')}</h2>
+          <p className="text-xs text-muted-foreground">{t('bannerDescFull')}</p>
+        </div>
+        <Button variant="aqua-gradient" size="sm" onClick={() => setEditing('new')}>
+          <Plus className="h-4 w-4" />
+          {t('cpBannersCreate')}
+        </Button>
+      </div>
+
+      {banners === null && <p className="text-sm text-muted-foreground">…</p>}
+      {banners !== null && banners.length === 0 && (
+        <div className="rounded-xl border border-dashed border-border/60 p-8 text-center text-sm text-muted-foreground">
+          {t('cpBannersEmpty')}
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {banners?.map((b) => (
+          <div key={b.id} className="glass-card-lagon rounded-xl p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold">{b.internalName}</span>
+              <Badge variant={(STATUS_BADGE[b.status] ?? 'outline') as never}>{t(statusKey(b.status) as never)}</Badge>
+              <span className="text-[11px] text-muted-foreground">
+                v{b.version} · {t('cpPriority')}: {b.priority}
+              </span>
+              <div className="ml-auto flex items-center gap-1.5">
+                <Button size="sm" variant="outline" onClick={() => setEditing(b)}>
+                  <Eye className="h-3.5 w-3.5" />
+                  {t('cpBannersEdit')}
+                </Button>
+              </div>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <LocaleChips translations={b.translations} />
+              <span className="text-[11px] text-muted-foreground">
+                {b.translations ? Object.values(b.translations).filter((v) => v?.trim()).length : 0}/7 {t('cpLocalesComplete')}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {editing === 'new' && (
+        <BannerEditor
+          banner={null}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null)
+            load()
+          }}
+        />
+      )}
+      {editing !== null && editing !== 'new' && (
+        <BannerEditor
+          banner={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null)
+            load()
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function BannerEditor({
+  banner,
+  onClose,
+  onSaved,
+}: {
+  banner: BannerView | null
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const t = useTranslations('admin')
+  const { toast } = useToast()
+  const [internalName, setInternalName] = useState(banner?.internalName ?? '')
+  const [translations, setTranslations] = useState<Record<string, string>>(
+    banner?.translations ?? Object.fromEntries(LOCALES.map((l) => [l, '']))
+  )
+  const [variant, setVariant] = useState(banner?.variant ?? 'LAGOON')
+  const [ctaTranslations, setCtaTranslations] = useState<Record<string, string>>(
+    banner?.ctaTranslations ?? Object.fromEntries(LOCALES.map((l) => [l, '']))
+  )
+  const [ctaUrl, setCtaUrl] = useState(banner?.ctaUrl ?? '')
+  const [localesTarget, setLocalesTarget] = useState<string[]>(() => ((banner?.targeting as { locales?: string[] } | null)?.locales ?? []))
+  const [platformsTarget, setPlatformsTarget] = useState<string[]>(() => ((banner?.targeting as { platforms?: string[] } | null)?.platforms ?? []))
+  const [startAt, setStartAt] = useState(banner?.startAt?.slice(0, 10) ?? '')
+  const [endAt, setEndAt] = useState(banner?.endAt?.slice(0, 10) ?? '')
+  const [priority, setPriority] = useState(banner?.priority ?? 0)
+  const [reason, setReason] = useState('')
+
+  const buildTargeting = () => {
+    const targeting: Record<string, unknown> = {}
+    if (localesTarget.length) targeting.locales = localesTarget
+    if (platformsTarget.length) targeting.platforms = platformsTarget
+    return Object.keys(targeting).length ? targeting : undefined
+  }
+
+  const saveDraft = async () => {
+    try {
+      if (banner) {
+        await apiFetch(`/api/admin/v1/banners/${banner.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            internalName,
+            translations,
+            variant,
+            ctaTranslations,
+            ctaUrl: ctaUrl || undefined,
+            targeting: buildTargeting(),
+            startAt: startAt ? new Date(startAt).toISOString() : undefined,
+            endAt: endAt ? new Date(endAt).toISOString() : undefined,
+            priority,
+            expectedVersion: banner.version,
+          }),
+        })
+        toast({ title: t('cpSaved') })
+      } else {
+        await apiFetch('/api/admin/v1/banners', {
+          method: 'POST',
+          body: JSON.stringify({
+            internalName,
+            translations,
+            variant,
+            ctaTranslations,
+            ctaUrl: ctaUrl || undefined,
+            targeting: buildTargeting(),
+            startAt: startAt ? new Date(startAt).toISOString() : undefined,
+            endAt: endAt ? new Date(endAt).toISOString() : undefined,
+            priority,
+          }),
+        })
+        toast({ title: t('cpCreated') })
+      }
+      onSaved()
+    } catch (e) {
+      toast({ title: t('cpError'), description: e instanceof Error ? e.message : '', variant: 'destructive' })
+    }
+  }
+
+  const act = async (status: 'PUBLISHED' | 'SCHEDULED' | 'PAUSED' | 'ARCHIVED') => {
+    if (!banner) return
+    if (!reason.trim()) {
+      toast({ title: t('cpPublishReason'), variant: 'destructive' })
+      return
+    }
+    if (status === 'SCHEDULED' && !startAt) {
+      toast({ title: t('cpScheduleNeedsStart'), variant: 'destructive' })
+      return
+    }
+    try {
+      await apiFetch(`/api/admin/v1/banners/${banner.id}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          status,
+          reason: reason.trim(),
+          expectedVersion: banner.version,
+          startAt: startAt ? new Date(startAt).toISOString() : undefined,
+          endAt: endAt ? new Date(endAt).toISOString() : undefined,
+        }),
+      })
+      toast({ title: status === 'ARCHIVED' ? t('cpArchived') : t('cpPublished') })
+      onSaved()
+    } catch (e) {
+      toast({ title: t('cpError'), description: e instanceof Error ? e.message : '', variant: 'destructive' })
+    }
+  }
+
+  const previewText = translations.fr || translations.en || ''
+  const previewBg =
+    variant === 'CHAMPAGNE'
+      ? 'bg-gradient-to-r from-champagne to-[#E2C79A] text-night'
+      : variant === 'NIGHT'
+        ? 'bg-night text-ivory'
+        : 'bg-gradient-to-r from-lagoon to-aqua-vivid text-night'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-night/40 backdrop-blur-sm md:items-center md:p-6">
+      <div className="custom-scroll max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-2xl border border-lagoon/20 bg-background p-5 md:rounded-2xl">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="font-display text-lg font-bold">{banner ? t('cpBannersEdit') : t('cpBannersCreate')}</h3>
+          <Button size="sm" variant="ghost" onClick={onClose}>
+            <XCircle className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Preview */}
+        <div className="mb-4">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('cpPreview')}</p>
+          <div className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium ${previewBg}`}>
+            <span>{previewText || '—'}</span>
+            {ctaUrl && <span className="text-xs underline">{ctaTranslations.fr || '→'}</span>}
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          <div>
+            <label className="text-xs font-semibold">{t('cpInternalName')}</label>
+            <input
+              value={internalName}
+              onChange={(e) => setInternalName(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
             />
           </div>
-          <div className="flex items-center gap-3">
-            <a
-              href="/"
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div>
+              <label className="text-xs font-semibold">{t('cpVariant')}</label>
+              <select value={variant} onChange={(e) => setVariant(e.target.value)} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm">
+                <option value="LAGOON">LAGOON</option>
+                <option value="CHAMPAGNE">CHAMPAGNE</option>
+                <option value="NIGHT">NIGHT</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold">{t('cpPriority')}</label>
+              <input
+                type="number"
+                value={priority}
+                onChange={(e) => setPriority(Number(e.target.value))}
+                className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-1 text-xs font-semibold">
+              {t('cpTranslationsTitle')} ·{' '}
+              <span className="font-normal text-muted-foreground">
+                {Object.values(translations).filter((v) => v?.trim()).length}/7 {t('cpLocalesComplete')}
+              </span>
+            </p>
+            <div className="grid gap-1.5">
+              {LOCALES.map((l) => (
+                <div key={l} className="flex items-start gap-2">
+                  <span className="mt-2 w-7 text-[10px] font-bold uppercase text-muted-foreground">{l}</span>
+                  <textarea
+                    value={translations[l] ?? ''}
+                    onChange={(e) => setTranslations((p) => ({ ...p, [l]: e.target.value }))}
+                    rows={1}
+                    className="w-full rounded-lg border border-border px-3 py-1.5 text-sm"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold">{t('cpCtaUrl')}</label>
+            <input value={ctaUrl} onChange={(e) => setCtaUrl(e.target.value)} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm" />
+          </div>
+          <div className="grid gap-1.5">
+            {LOCALES.map((l) => (
+              <div key={l} className="flex items-center gap-2">
+                <span className="w-7 text-[10px] font-bold uppercase text-muted-foreground">{l}</span>
+                <input
+                  value={ctaTranslations[l] ?? ''}
+                  onChange={(e) => setCtaTranslations((p) => ({ ...p, [l]: e.target.value }))}
+                  placeholder={`CTA ${l}`}
+                  className="w-full rounded-lg border border-border px-3 py-1.5 text-sm"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <p className="mb-1 text-xs font-semibold">{t('cpTargetingTitle')}</p>
+            <div className="flex flex-wrap items-center gap-3">
+              {LOCALES.map((l) => (
+                <label key={l} className="flex items-center gap-1.5 text-xs">
+                  <Switch
+                    checked={localesTarget.includes(l)}
+                    onCheckedChange={(v) =>
+                      setLocalesTarget((p) => (v ? [...p, l] : p.filter((x) => x !== l)))
+                    }
+                  />
+                  {l.toUpperCase()}
+                </label>
+              ))}
+              {(['WEB', 'IOS', 'ANDROID'] as const).map((p) => (
+                <label key={p} className="flex items-center gap-1.5 text-xs">
+                  <Switch
+                    checked={platformsTarget.includes(p)}
+                    onCheckedChange={(v) =>
+                      setPlatformsTarget((prev) => (v ? [...prev, p] : prev.filter((x) => x !== p)))
+                    }
+                  />
+                  {p}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div>
+              <label className="text-xs font-semibold">{t('cpStartAt')}</label>
+              <input type="date" value={startAt} onChange={(e) => setStartAt(e.target.value)} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold">{t('cpEndAt')}</label>
+              <input type="date" value={endAt} onChange={(e) => setEndAt(e.target.value)} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm" />
+            </div>
+          </div>
+
+          {banner && (
+            <div>
+              <label className="text-xs font-semibold">{t('cpPublishReason')}</label>
+              <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('cpReasonPlaceholder')} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm" />
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button variant="aqua-gradient" size="sm" onClick={() => void saveDraft()}>
+              {t('cpSaveDraft')}
+            </Button>
+            {banner && (
+              <>
+                <Button size="sm" onClick={() => void act('PUBLISHED')}>
+                  {t('cpPublish')}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => void act('SCHEDULED')}>
+                  {t('cpSchedule')}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => void act('PAUSED')}>
+                  {t('cpPause')}
+                </Button>
+                <Button size="sm" variant="ghost" className="text-destructive" onClick={() => void act('ARCHIVED')}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {t('cpArchive')}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   POPUPS
+   ──────────────────────────────────────────────────────────────────────────── */
+interface PopupView {
+  id: string
+  internalName: string
+  status: string
+  translations: Record<string, { title: string; body: string }>
+  imageUrl: string | null
+  ctaTranslations: Record<string, string> | null
+  ctaUrl: string | null
+  trigger: string
+  frequency: string
+  reminderDays: number
+  targeting: Record<string, unknown> | null
+  startAt: string | null
+  endAt: string | null
+  priority: number
+  version: number
+}
+
+function PopupsSection() {
+  const t = useTranslations('admin')
+  const { toast } = useToast()
+  const [popups, setPopups] = useState<PopupView[] | null>(null)
+  const [editing, setEditing] = useState<PopupView | 'new' | null>(null)
+
+  const load = useCallback(async () => {
+    try {
+      const data = await apiFetch<{ popups: PopupView[] }>('/api/admin/v1/popups')
+      setPopups(data.popups)
+    } catch {
+      toast({ title: t('cpError'), variant: 'destructive' })
+    }
+  }, [t, toast])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load()
+  }, [load])
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-display text-xl font-bold">{t('cpPopupsTitle')}</h2>
+          <p className="text-xs text-muted-foreground">{t('popupDescFull')}</p>
+        </div>
+        <Button variant="aqua-gradient" size="sm" onClick={() => setEditing('new')}>
+          <Plus className="h-4 w-4" />
+          {t('cpPopupsCreate')}
+        </Button>
+      </div>
+
+      {popups === null && <p className="text-sm text-muted-foreground">…</p>}
+      {popups !== null && popups.length === 0 && (
+        <div className="rounded-xl border border-dashed border-border/60 p-8 text-center text-sm text-muted-foreground">
+          {t('cpPopupsEmpty')}
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {popups?.map((p) => (
+          <div key={p.id} className="glass-card-lagon rounded-xl p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold">{p.internalName}</span>
+              <Badge variant={(STATUS_BADGE[p.status] ?? 'outline') as never}>{t(statusKey(p.status) as never)}</Badge>
+              <span className="text-[11px] text-muted-foreground">
+                {p.trigger} · {p.frequency} · v{p.version}
+              </span>
+              <div className="ml-auto">
+                <Button size="sm" variant="outline" onClick={() => setEditing(p)}>
+                  <Eye className="h-3.5 w-3.5" />
+                  {t('cpPopupsEdit')}
+                </Button>
+              </div>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <LocaleChips translations={p.translations} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {editing === 'new' && <PopupEditor popup={null} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load() }} />}
+      {editing !== null && editing !== 'new' && <PopupEditor popup={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load() }} />}
+    </div>
+  )
+}
+
+function PopupEditor({
+  popup,
+  onClose,
+  onSaved,
+}: {
+  popup: PopupView | null
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const t = useTranslations('admin')
+  const { toast } = useToast()
+  const [internalName, setInternalName] = useState(popup?.internalName ?? '')
+  const [translations, setTranslations] = useState<Record<string, { title: string; body: string }>>(
+    popup?.translations ?? Object.fromEntries(LOCALES.map((l) => [l, { title: '', body: '' }]))
+  )
+  const [trigger, setTrigger] = useState(popup?.trigger ?? 'ON_LOAD')
+  const [frequency, setFrequency] = useState(popup?.frequency ?? 'ONCE')
+  const [reminderDays, setReminderDays] = useState(popup?.reminderDays ?? 0)
+  const [imageUrl, setImageUrl] = useState(popup?.imageUrl ?? '')
+  const [ctaTranslations, setCtaTranslations] = useState<Record<string, string>>(
+    popup?.ctaTranslations ?? Object.fromEntries(LOCALES.map((l) => [l, '']))
+  )
+  const [ctaUrl, setCtaUrl] = useState(popup?.ctaUrl ?? '')
+  const [startAt, setStartAt] = useState(popup?.startAt?.slice(0, 10) ?? '')
+  const [endAt, setEndAt] = useState(popup?.endAt?.slice(0, 10) ?? '')
+  const [priority, setPriority] = useState(popup?.priority ?? 0)
+  const [reason, setReason] = useState('')
+
+  const saveDraft = async () => {
+    const payload = {
+      internalName,
+      translations,
+      trigger,
+      frequency,
+      reminderDays,
+      imageUrl: imageUrl || undefined,
+      ctaTranslations,
+      ctaUrl: ctaUrl || undefined,
+      startAt: startAt ? new Date(startAt).toISOString() : undefined,
+      endAt: endAt ? new Date(endAt).toISOString() : undefined,
+      priority,
+    }
+    try {
+      if (popup) {
+        await apiFetch(`/api/admin/v1/popups/${popup.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ ...payload, expectedVersion: popup.version }),
+        })
+        toast({ title: t('cpSaved') })
+      } else {
+        await apiFetch('/api/admin/v1/popups', { method: 'POST', body: JSON.stringify(payload) })
+        toast({ title: t('cpCreated') })
+      }
+      onSaved()
+    } catch (e) {
+      toast({ title: t('cpError'), description: e instanceof Error ? e.message : '', variant: 'destructive' })
+    }
+  }
+
+  const act = async (status: 'PUBLISHED' | 'SCHEDULED' | 'PAUSED' | 'ARCHIVED') => {
+    if (!popup) return
+    if (!reason.trim()) {
+      toast({ title: t('cpPublishReason'), variant: 'destructive' })
+      return
+    }
+    if (status === 'SCHEDULED' && !startAt) {
+      toast({ title: t('cpScheduleNeedsStart'), variant: 'destructive' })
+      return
+    }
+    try {
+      await apiFetch(`/api/admin/v1/popups/${popup.id}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          status,
+          reason: reason.trim(),
+          expectedVersion: popup.version,
+          startAt: startAt ? new Date(startAt).toISOString() : undefined,
+          endAt: endAt ? new Date(endAt).toISOString() : undefined,
+        }),
+      })
+      toast({ title: status === 'ARCHIVED' ? t('cpArchived') : t('cpPublished') })
+      onSaved()
+    } catch (e) {
+      toast({ title: t('cpError'), description: e instanceof Error ? e.message : '', variant: 'destructive' })
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-night/40 backdrop-blur-sm md:items-center md:p-6">
+      <div className="custom-scroll max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-2xl border border-lagoon/20 bg-background p-5 md:rounded-2xl">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="font-display text-lg font-bold">{popup ? t('cpPopupsEdit') : t('cpPopupsCreate')}</h3>
+          <Button size="sm" variant="ghost" onClick={onClose}>
+            <XCircle className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="grid gap-3">
+          <div>
+            <label className="text-xs font-semibold">{t('cpInternalName')}</label>
+            <input value={internalName} onChange={(e) => setInternalName(e.target.value)} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm" />
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-3">
+            <div>
+              <label className="text-xs font-semibold">{t('cpTrigger')}</label>
+              <select value={trigger} onChange={(e) => setTrigger(e.target.value)} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm">
+                <option value="ON_LOAD">ON_LOAD</option>
+                <option value="ON_EXIT">ON_EXIT</option>
+                <option value="AFTER_DIAGNOSTIC">AFTER_DIAGNOSTIC</option>
+                <option value="AFTER_FIRST_TEST">AFTER_FIRST_TEST</option>
+                <option value="MANUAL">MANUAL</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold">{t('cpFrequency')}</label>
+              <select value={frequency} onChange={(e) => setFrequency(e.target.value)} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm">
+                <option value="ONCE">ONCE</option>
+                <option value="PER_SESSION">PER_SESSION</option>
+                <option value="REMIND_DAYS">REMIND_DAYS</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold">{t('cpReminderDays')}</label>
+              <input type="number" min={0} max={90} value={reminderDays} onChange={(e) => setReminderDays(Number(e.target.value))} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm" />
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-1 text-xs font-semibold">{t('cpTranslationsTitle')}</p>
+            <div className="space-y-2">
+              {LOCALES.map((l) => (
+                <div key={l} className="flex items-start gap-2">
+                  <span className="mt-2 w-7 text-[10px] font-bold uppercase text-muted-foreground">{l}</span>
+                  <div className="flex-1 space-y-1">
+                    <input
+                      value={translations[l]?.title ?? ''}
+                      onChange={(e) => setTranslations((p) => ({ ...p, [l]: { ...p[l], title: e.target.value } }))}
+                      placeholder={t('cpTitleLabel')}
+                      className="w-full rounded-lg border border-border px-3 py-1.5 text-sm"
+                    />
+                    <textarea
+                      value={translations[l]?.body ?? ''}
+                      onChange={(e) => setTranslations((p) => ({ ...p, [l]: { ...p[l], body: e.target.value } }))}
+                      placeholder={t('cpBodyLabel')}
+                      rows={1}
+                      className="w-full rounded-lg border border-border px-3 py-1.5 text-sm"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold">{t('cpImageUrl')}</label>
+            <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold">{t('cpCtaUrl')}</label>
+            <input value={ctaUrl} onChange={(e) => setCtaUrl(e.target.value)} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm" />
+          </div>
+          <div className="grid gap-1.5">
+            {LOCALES.map((l) => (
+              <div key={l} className="flex items-center gap-2">
+                <span className="w-7 text-[10px] font-bold uppercase text-muted-foreground">{l}</span>
+                <input
+                  value={ctaTranslations[l] ?? ''}
+                  onChange={(e) => setCtaTranslations((p) => ({ ...p, [l]: e.target.value }))}
+                  placeholder={`CTA ${l}`}
+                  className="w-full rounded-lg border border-border px-3 py-1.5 text-sm"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-3">
+            <div>
+              <label className="text-xs font-semibold">{t('cpStartAt')}</label>
+              <input type="date" value={startAt} onChange={(e) => setStartAt(e.target.value)} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold">{t('cpEndAt')}</label>
+              <input type="date" value={endAt} onChange={(e) => setEndAt(e.target.value)} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold">{t('cpPriority')}</label>
+              <input type="number" value={priority} onChange={(e) => setPriority(Number(e.target.value))} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm" />
+            </div>
+          </div>
+
+          {popup && (
+            <div>
+              <label className="text-xs font-semibold">{t('cpPublishReason')}</label>
+              <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('cpReasonPlaceholder')} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm" />
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button variant="aqua-gradient" size="sm" onClick={() => void saveDraft()}>
+              {t('cpSaveDraft')}
+            </Button>
+            {popup && (
+              <>
+                <Button size="sm" onClick={() => void act('PUBLISHED')}>
+                  {t('cpPublish')}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => void act('SCHEDULED')}>
+                  {t('cpSchedule')}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => void act('PAUSED')}>
+                  {t('cpPause')}
+                </Button>
+                <Button size="sm" variant="ghost" className="text-destructive" onClick={() => void act('ARCHIVED')}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {t('cpArchive')}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   PROMOTIONS (READ ONLY V1) — le moteur existant reste la source de vérité.
+   Appelle UNIQUEMENT /api/admin/v1/promotions (endpoint strictement GET,
+   sans seed ni mutation).
+   ──────────────────────────────────────────────────────────────────────────── */
+interface CampaignRow {
+  code: string
+  name: string
+  status: string
+  totalQuota: number
+  confirmedCount: number
+  startsAt: string | null
+  endsAt: string | null
+}
+
+function PromotionsSection() {
+  const t = useTranslations('admin')
+  const [campaigns, setCampaigns] = useState<CampaignRow[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/admin/v1/promotions')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((d: { campaigns?: CampaignRow[] }) => setCampaigns(d.campaigns ?? []))
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'unknown'))
+  }, [])
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="font-display text-xl font-bold">{t('cpPromotionsTitle')}</h2>
+        <p className="mt-1 text-xs text-muted-foreground">{t('cpPromotionsReadOnly')}</p>
+      </div>
+
+      {error && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center">
+          <p className="text-sm font-semibold text-destructive">{t('cpError')}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{error}</p>
+        </div>
+      )}
+
+      {!error && campaigns === null && <p className="text-sm text-muted-foreground">…</p>}
+
+      {!error && campaigns !== null && campaigns.length === 0 && (
+        <div className="rounded-xl border border-dashed border-border/60 p-8 text-center text-sm text-muted-foreground">
+          {t('cpPromotionsEmpty')}
+        </div>
+      )}
+
+      {!error && campaigns !== null && campaigns.length > 0 && (
+        <div className="glass-card-lagon overflow-x-auto rounded-xl">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-border/60 text-[11px] uppercase tracking-wide text-muted-foreground">
+                <th className="px-4 py-2">{t('cpPromoCode')}</th>
+                <th className="px-4 py-2">{t('cpPromoName')}</th>
+                <th className="px-4 py-2">{t('cpPromoStatus')}</th>
+                <th className="px-4 py-2">{t('cpPromoQuota')}</th>
+                <th className="px-4 py-2">{t('cpPromoConfirmed')}</th>
+                <th className="px-4 py-2">{t('cpPromoStartsAt')}</th>
+                <th className="px-4 py-2">{t('cpPromoEndsAt')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {campaigns.map((c) => (
+                <tr key={c.code} className="border-b border-border/40">
+                  <td className="px-4 py-2 font-mono text-xs font-medium">{c.code}</td>
+                  <td className="px-4 py-2">{c.name}</td>
+                  <td className="px-4 py-2">
+                    <Badge variant={(STATUS_BADGE[c.status] ?? 'outline') as never}>{t(statusKey(c.status) as never)}</Badge>
+                  </td>
+                  <td className="px-4 py-2">{c.totalQuota}</td>
+                  <td className="px-4 py-2">{c.confirmedCount}</td>
+                  <td className="px-4 py-2 text-muted-foreground">{c.startsAt ? new Date(c.startsAt).toLocaleDateString() : '—'}</td>
+                  <td className="px-4 py-2 text-muted-foreground">{c.endsAt ? new Date(c.endsAt).toLocaleDateString() : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {/* READ ONLY : aucun bouton d'activation/édition/quota/réallocation/restauration/suppression. */}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   FEATURE FLAGS (READ ONLY, allowlist produit sûr)
+   ──────────────────────────────────────────────────────────────────────────── */
+function FlagsSection() {
+  const t = useTranslations('admin')
+  const [flags, setFlags] = useState<Array<{ key: string; value: boolean; descriptionKey: string }> | null>(null)
+
+  useEffect(() => {
+    fetch('/api/admin/v1/flags')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('ko'))))
+      .then((d) => setFlags(d.flags))
+      .catch(() => setFlags([]))
+  }, [])
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="font-display text-xl font-bold">{t('cpFlagsTitle')}</h2>
+        <p className="mt-1 text-xs text-muted-foreground">{t('cpFlagsReadOnly')}</p>
+      </div>
+      <div className="glass-card-lagon overflow-x-auto rounded-xl">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-border/60 text-[11px] uppercase tracking-wide text-muted-foreground">
+              <th className="px-4 py-2">{t('cpFlagsKey')}</th>
+              <th className="px-4 py-2">{t('cpFlagsValue')}</th>
+              <th className="px-4 py-2">{t('cpFlagsDesc')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {flags?.map((f) => (
+              <tr key={f.key} className="border-b border-border/40">
+                <td className="px-4 py-2 font-mono text-xs">{f.key}</td>
+                <td className="px-4 py-2">
+                  <Badge variant={f.value ? 'success' : 'secondary'}>{f.value ? 'ON' : 'OFF'}</Badge>
+                </td>
+                <td className="px-4 py-2 text-xs text-muted-foreground">{t(f.descriptionKey as never)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   AGENTIC
+   ──────────────────────────────────────────────────────────────────────────── */
+interface ProposalView {
+  id: string
+  agent: string
+  type: string
+  status: string
+  title: string
+  rationale: string
+  payload: Record<string, unknown> | null
+  confidence: number
+  riskLevel: string
+  blockedReasons: string[] | null
+  createdAt: string
+}
+
+const SEASON_BY_MONTH = ['WINTER', 'WINTER', 'SPRING', 'SPRING', 'SPRING', 'SUMMER', 'SUMMER', 'SUMMER', 'AUTUMN', 'AUTUMN', 'AUTUMN', 'WINTER']
+
+function AgenticSection({ filterStatus }: { filterStatus?: string }) {
+  const t = useTranslations('admin')
+  const { toast } = useToast()
+  const [proposals, setProposals] = useState<ProposalView[] | null>(null)
+  const [intent, setIntent] = useState('')
+
+  const load = useCallback(async () => {
+    try {
+      const url = filterStatus ? `/api/admin/v1/agentic?status=${encodeURIComponent(filterStatus)}` : '/api/admin/v1/agentic'
+      const data = await apiFetch<{ proposals: ProposalView[] }>(url)
+      setProposals(data.proposals)
+    } catch {
+      toast({ title: t('cpAgenticError'), variant: 'destructive' })
+    }
+  }, [filterStatus, t, toast])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load()
+  }, [load])
+
+  const run = async (agent: string, input?: Record<string, unknown>) => {
+    try {
+      await apiFetch('/api/admin/v1/agentic', { method: 'POST', body: JSON.stringify({ agent, input }) })
+      toast({ title: t('cpRunOk') })
+      load()
+    } catch (e) {
+      toast({ title: t('cpAgenticError'), description: e instanceof Error ? e.message : '', variant: 'destructive' })
+    }
+  }
+
+  const review = async (id: string, decision: 'APPROVE' | 'REJECT') => {
+    try {
+      await apiFetch(`/api/admin/v1/agentic/${id}`, { method: 'POST', body: JSON.stringify({ decision }) })
+      toast({ title: t('cpReviewOk') })
+      load()
+    } catch (e) {
+      toast({ title: t('cpAgenticError'), description: e instanceof Error ? e.message : '', variant: 'destructive' })
+    }
+  }
+
+  const season = SEASON_BY_MONTH[new Date().getMonth()]
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="font-display text-xl font-bold">{t('cpAgenticTitle')}</h2>
+        <p className="mt-1 text-xs text-muted-foreground">{t('cpAgenticDesc')}</p>
+      </div>
+
+      <div className="card-premium-champagne rounded-xl p-4">
+        <p className="flex items-center gap-2 text-xs font-semibold text-champagne-ink">
+          <Sparkles className="h-3.5 w-3.5" />
+          {t('cpAgenticRule')}
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="min-w-52 flex-1">
+          <input
+            value={intent}
+            onChange={(e) => setIntent(e.target.value)}
+            placeholder={t('overviewDesc')}
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm"
+          />
+        </div>
+        <Button variant="aqua-gradient" size="sm" onClick={() => void run('opportunityDetector', { season, zone: 'APP' })}>
+          <Bot className="h-4 w-4" />
+          {t('cpAgentOpportunity')}
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => void run('copyAssistant', { intent: intent || undefined, locale: 'fr' })}>
+          {t('cpAgentCopy')}
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => void run('targetingAdvisor', { season, zone: 'APP' })}>
+          {t('cpAgentTargeting')}
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => void run('scheduler', { season })}>
+          {t('cpAgentSchedule')}
+        </Button>
+      </div>
+
+      {proposals === null && <p className="text-sm text-muted-foreground">…</p>}
+      {proposals !== null && proposals.length === 0 && (
+        <div className="rounded-xl border border-dashed border-border/60 p-8 text-center text-sm text-muted-foreground">
+          {t('cpAgenticEmpty')}
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {proposals?.map((p) => (
+          <div key={p.id} className="glass-card-lagon rounded-xl p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold">{p.title}</span>
+              <Badge variant={(STATUS_BADGE[p.status] ?? 'outline') as never}>{t(statusKey(p.status) as never)}</Badge>
+              {p.riskLevel === 'BLOCKED' && <Badge variant="destructive">{t('cpBlocked')}</Badge>}
+              {p.riskLevel !== 'BLOCKED' && p.blockedReasons?.includes('human_review_required') && (
+                <Badge variant="champagne">{t('cpHumanReviewRequired')}</Badge>
+              )}
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+              <span>{t('cpAgentCol')}: {p.agent}</span>
+              <span>{t('cpTypeCol')}: {p.type}</span>
+              <span>{t('cpConfidenceCol')}: {Math.round(p.confidence * 100)}%</span>
+              <span>{t('cpRiskCol')}: {p.riskLevel}</span>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              <span className="font-semibold text-foreground">{t('cpRationale')}: </span>
+              {p.rationale}
+            </p>
+            {p.blockedReasons && p.blockedReasons.length > 0 && (
+              <p className={`mt-1.5 text-xs ${p.riskLevel === 'BLOCKED' ? 'text-destructive' : 'text-champagne-ink'}`}>
+                {p.riskLevel === 'BLOCKED'
+                  ? `${t('cpBlocked')}: ${p.blockedReasons.filter((r) => r !== 'human_review_required').join(', ')}`
+                  : t('cpHumanReviewRequired')}
+              </p>
+            )}
+            {p.payload && (
+              <pre className="mt-2 max-h-32 overflow-auto rounded-lg bg-night/5 p-2 text-[11px]">{JSON.stringify(p.payload, null, 2)}</pre>
+            )}
+            {p.status === 'NEEDS_REVIEW' && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" variant="aqua-gradient" disabled={p.riskLevel === 'BLOCKED'} onClick={() => void review(p.id, 'APPROVE')}>
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  {t('cpApprove')}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => void review(p.id, 'REJECT')}>
+                  <XCircle className="h-3.5 w-3.5" />
+                  {t('cpReject')}
+                </Button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   AUDIT
+   ──────────────────────────────────────────────────────────────────────────── */
+function AuditSection() {
+  const t = useTranslations('admin')
+  const [logs, setLogs] = useState<Array<{ id: string; actor: string; action: string; entityType: string; entityId: string | null; createdAt: string }> | null>(null)
+
+  useEffect(() => {
+    fetch('/api/admin/v1/audit')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('ko'))))
+      .then((d) => setLogs(d.logs))
+      .catch(() => setLogs([]))
+  }, [])
+
+  return (
+    <div className="space-y-4">
+      <h2 className="font-display text-xl font-bold">{t('cpAuditTitle')}</h2>
+      {logs === null && <p className="text-sm text-muted-foreground">…</p>}
+      {logs !== null && logs.length === 0 && (
+        <div className="rounded-xl border border-dashed border-border/60 p-8 text-center text-sm text-muted-foreground">
+          {t('cpAuditEmpty')}
+        </div>
+      )}
+      <div className="space-y-2">
+        {logs?.map((l) => (
+          <div key={l.id} className="glass-card-lagon rounded-lg px-4 py-2.5 text-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-mono text-xs font-semibold text-lagoon-ink">{l.action}</span>
+              <span className="text-xs text-muted-foreground">{l.entityType}{l.entityId ? ` · ${l.entityId}` : ''}</span>
+              <span className="ml-auto text-[11px] text-muted-foreground">
+                {l.actor} · {new Date(l.createdAt).toLocaleString()}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   PLACEHOLDERS PRÉPARÉS (V2)
+   ──────────────────────────────────────────────────────────────────────────── */
+function PreparedPlaceholder({ title, desc }: { title: string; desc: string }) {
+  return (
+    <div className="space-y-4">
+      <h2 className="font-display text-xl font-bold">{title}</h2>
+      <div className="rounded-xl border border-dashed border-border/60 p-8 text-center text-sm text-muted-foreground">
+        {desc}
+      </div>
+    </div>
+  )
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   SHELL
+   ──────────────────────────────────────────────────────────────────────────── */
+export default function AdminPage() {
+  const t = useTranslations('admin')
+  const [section, setSection] = useState<SectionId>('overview')
+
+  return (
+    <div className="app-bg-lagon flex min-h-screen flex-col bg-background">
+      {/* Header console */}
+      <header className="sticky top-0 z-40 border-b border-lagoon/20 bg-background/70 shadow-[0_12px_32px_-24px_oklch(0.30_0.07_200/0.5)] backdrop-blur-2xl">
+        <div className="flex h-16 items-center justify-between px-3 sm:px-6">
+          <div className="flex items-center gap-2.5">
+            <img src="/branding/aqwelia-icon-a.png" alt="" className="h-9 w-9 rounded-lg" />
+            <span className="font-display text-lg font-bold">{t('overviewTitle')}</span>
+            <Badge variant="champagne" className="hidden sm:inline-flex">V1</Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <a href="/" className="glass-pill rounded-full px-3 py-1.5 text-xs font-medium text-foreground/90 transition-colors hover:border-gold/40 hover:text-gold">
               {t('viewSite')}
             </a>
             <button
               onClick={() => void signOutWithBillingCleanup({ callbackUrl: '/' })}
-              className="text-xs text-muted-foreground hover:text-foreground"
+              className="glass-pill rounded-full px-3 py-1.5 text-xs font-medium text-foreground/90 transition-colors hover:border-gold/40"
             >
               {t('signOut')}
             </button>
@@ -72,419 +1269,81 @@ export default function AdminPage() {
         </div>
       </header>
 
-      {/* Tab bar + content */}
-      <div className="mx-auto max-w-6xl px-4 py-6">
-        <div className="mb-6 flex flex-wrap gap-2">
-          {tabs.map((tab) => (
+      <div className="flex w-full flex-1">
+        {/* Sidebar desktop */}
+        <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 flex-col gap-5 overflow-y-auto border-r border-lagoon/15 px-3 py-6 md:flex">
+          {NAV_GROUPS.map((group, gi) => (
+            <nav key={gi} className="space-y-0.5">
+              {group.labelKey && (
+                <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  {t(group.labelKey as never)}
+                </p>
+              )}
+              {group.items.map((item) => {
+                const active = section === item.id
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setSection(item.id)}
+                    className={`group flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                      active
+                        ? 'bg-gradient-to-r from-lagoon/20 to-aqua-vivid/10 text-foreground shadow-sm ring-1 ring-lagoon/25'
+                        : 'text-muted-foreground hover:bg-lagoon/10 hover:text-foreground'
+                    }`}
+                  >
+                    <span
+                      className={`flex h-7 w-7 items-center justify-center rounded-lg ${
+                        active
+                          ? 'icon-chip icon-chip-lagoon shadow-sm'
+                          : 'bg-secondary text-muted-foreground group-hover:text-foreground'
+                      }`}
+                    >
+                      <item.icon className="h-3.5 w-3.5" />
+                    </span>
+                    {t(item.labelKey as never)}
+                  </button>
+                )
+              })}
+            </nav>
+          ))}
+        </aside>
+
+        {/* Main */}
+        <main className="min-w-0 flex-1 px-4 py-6 pb-24 sm:px-6 md:pb-10">
+          {section === 'overview' && <OverviewSection onNavigate={setSection} />}
+          {section === 'banners' && <BannersSection />}
+          {section === 'popups' && <PopupsSection />}
+          {section === 'promotions' && <PromotionsSection />}
+          {section === 'announcements' && (
+            <PreparedPlaceholder title={t('cpAnnouncementsTitle')} desc={t('cpAnnouncementsComingSoon')} />
+          )}
+          {section === 'flags' && <FlagsSection />}
+          {section === 'content' && <PreparedPlaceholder title={t('contentTitle')} desc={t('contentComingSoonFull')} />}
+          {section === 'agentic' && <AgenticSection />}
+          {section === 'approvals' && <AgenticSection filterStatus="NEEDS_REVIEW" />}
+          {section === 'history' && <AgenticSection />}
+          {section === 'audit' && <AuditSection />}
+          {section === 'system' && <PreparedPlaceholder title={t('cpSystemTitle')} desc={t('cpSystemComingSoon')} />}
+        </main>
+      </div>
+
+      {/* Nav mobile (tablette/mobile) */}
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-lagoon/20 bg-background/90 backdrop-blur-xl md:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="custom-scroll flex gap-1 overflow-x-auto px-2 py-1.5">
+          {NAV_GROUPS.flatMap((g) => g.items).map((item) => (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === tab.id
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary text-muted-foreground hover:text-foreground'
+              key={item.id}
+              onClick={() => setSection(item.id)}
+              className={`flex min-w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors ${
+                section === item.id ? 'bg-lagoon/15 text-lagoon-ink' : 'text-muted-foreground'
               }`}
             >
-              {tab.icon} {tab.label}
+              <item.icon className="h-3.5 w-3.5" />
+              {t(item.labelKey as never)}
             </button>
           ))}
         </div>
-
-        {activeTab === 'banner' && <BannerAdmin />}
-        {activeTab === 'popup' && <PopupAdmin />}
-        {activeTab === 'content' && <ContentAdmin />}
-        {activeTab === 'analytics' && <AnalyticsAdmin />}
-        {activeTab === 'users' && <UsersAdmin />}
-      </div>
-    </div>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Banner Admin — seasonal promotional banner                          */
-/* ------------------------------------------------------------------ */
-
-function BannerAdmin() {
-  const t = useTranslations('admin')
-  const { toast } = useToast()
-  const [banner, setBanner] = useState<BannerConfig>({
-    enabled: false,
-    text: t('bannerDefaultText'),
-    bgColor: '#004D5A',
-    textColor: '#FFFFFF',
-    link: '/settings',
-    startDate: '',
-    endDate: '',
-  })
-
-  useEffect(() => {
-    const saved = localStorage.getItem('aqwelia-banner')
-    if (saved) {
-      try {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setBanner(JSON.parse(saved))
-      } catch {
-        // ignore malformed
-      }
-    }
-  }, [])
-
-  function save() {
-    localStorage.setItem('aqwelia-banner', JSON.stringify(banner))
-    // Also save to API for server-side rendering (à venir)
-    toast({ title: t('bannerSavedToast') })
-  }
-
-  return (
-    <div className="space-y-4">
-      <h2 className="font-display text-lg font-bold">📢 {t('bannerTitle')}</h2>
-      <p className="text-sm text-muted-foreground">
-        {t('bannerDescFull')}
-      </p>
-
-      {/* Preview */}
-      <div
-        className="overflow-hidden rounded-xl"
-        style={{ backgroundColor: banner.bgColor }}
-      >
-        <div
-          className="flex items-center justify-between px-4 py-3"
-          style={{ color: banner.textColor }}
-        >
-          <span className="text-sm font-medium">{banner.text}</span>
-          {banner.link && (
-            <span className="text-xs underline">{t('learnMore')}</span>
-          )}
-        </div>
-      </div>
-
-      {/* Toggle */}
-      <div className="flex items-center gap-3">
-        <Switch
-          checked={banner.enabled}
-          onCheckedChange={(v) => setBanner({ ...banner, enabled: v })}
-        />
-        <span className="text-sm">{t('bannerEnable')}</span>
-      </div>
-
-      {/* Form */}
-      <div className="grid gap-3">
-        <label className="text-xs font-semibold">{t('bannerText')}</label>
-        <input
-          value={banner.text}
-          onChange={(e) => setBanner({ ...banner, text: e.target.value })}
-          className="rounded-lg border border-border px-3 py-2 text-sm"
-        />
-
-        <label className="text-xs font-semibold">{t('bannerBgColor')}</label>
-        <div className="flex gap-2">
-          <input
-            type="color"
-            value={banner.bgColor}
-            onChange={(e) => setBanner({ ...banner, bgColor: e.target.value })}
-            className="h-10 w-16 rounded-lg"
-          />
-          <input
-            value={banner.bgColor}
-            onChange={(e) => setBanner({ ...banner, bgColor: e.target.value })}
-            className="flex-1 rounded-lg border border-border px-3 py-2 text-sm"
-          />
-        </div>
-
-        <label className="text-xs font-semibold">{t('bannerTextColor')}</label>
-        <div className="flex gap-2">
-          <input
-            type="color"
-            value={banner.textColor}
-            onChange={(e) => setBanner({ ...banner, textColor: e.target.value })}
-            className="h-10 w-16 rounded-lg"
-          />
-          <input
-            value={banner.textColor}
-            onChange={(e) => setBanner({ ...banner, textColor: e.target.value })}
-            className="flex-1 rounded-lg border border-border px-3 py-2 text-sm"
-          />
-        </div>
-
-        <label className="text-xs font-semibold">{t('bannerLink')}</label>
-        <input
-          value={banner.link}
-          onChange={(e) => setBanner({ ...banner, link: e.target.value })}
-          placeholder="/settings, /auth/signin..."
-          className="rounded-lg border border-border px-3 py-2 text-sm"
-        />
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs font-semibold">{t('bannerStart')}</label>
-            <input
-              type="date"
-              value={banner.startDate}
-              onChange={(e) => setBanner({ ...banner, startDate: e.target.value })}
-              className="w-full rounded-lg border border-border px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-semibold">{t('bannerEnd')}</label>
-            <input
-              type="date"
-              value={banner.endDate}
-              onChange={(e) => setBanner({ ...banner, endDate: e.target.value })}
-              className="w-full rounded-lg border border-border px-3 py-2 text-sm"
-            />
-          </div>
-        </div>
-
-        <Button onClick={save} className="mt-2 w-fit">
-          {t('bannerSave')}
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Popup Admin — promotional popups                                    */
-/* ------------------------------------------------------------------ */
-
-function PopupAdmin() {
-  const t = useTranslations('admin')
-  const { toast } = useToast()
-  const [popups, setPopups] = useState<PopupConfig[]>([])
-
-  useEffect(() => {
-    const saved = localStorage.getItem('aqwelia-popups')
-    if (saved) {
-      try {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setPopups(JSON.parse(saved))
-      } catch {
-        // ignore
-      }
-    }
-  }, [])
-
-  function persist(next: PopupConfig[]) {
-    setPopups(next)
-    localStorage.setItem('aqwelia-popups', JSON.stringify(next))
-    toast({ title: t('popupsSavedToast') })
-  }
-
-  function saveAll() {
-    localStorage.setItem('aqwelia-popups', JSON.stringify(popups))
-    toast({ title: t('popupsSavedToast') })
-  }
-
-  function addPopup() {
-    persist([
-      ...popups,
-      {
-        id: Date.now().toString(),
-        enabled: false,
-        title: t('popupDefaultTitle'),
-        body: t('popupDefaultBody'),
-        imageUrl: '',
-        ctaText: t('popupDefaultCta'),
-        ctaLink: '/settings',
-        trigger: 'on_load',
-        frequency: 'once',
-      },
-    ])
-  }
-
-  function updatePopup(index: number, patch: Partial<PopupConfig>) {
-    const next = [...popups]
-    next[index] = { ...next[index], ...patch }
-    setPopups(next)
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-bold">🎁 {t('popupTitle')}</h2>
-        <Button onClick={addPopup} size="sm">
-          {t('popupAdd')}
-        </Button>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        {t('popupDescFull')}
-      </p>
-
-      {popups.length === 0 && (
-        <div className="rounded-xl border border-dashed border-border/50 p-8 text-center text-sm text-muted-foreground">
-          {t('popupNoPopups')}
-        </div>
-      )}
-
-      {popups.map((popup, i) => (
-        <div
-          key={popup.id}
-          className="space-y-3 rounded-xl border border-border/50 bg-background/60 p-4"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={popup.enabled}
-                onCheckedChange={(v) => {
-                  const next = [...popups]
-                  next[i] = { ...popup, enabled: v }
-                  persist(next)
-                }}
-              />
-              <span className="text-sm font-semibold">{popup.title}</span>
-            </div>
-            <button
-              onClick={() => persist(popups.filter((p) => p.id !== popup.id))}
-              className="text-xs text-destructive hover:underline"
-            >
-              {t('delete')}
-            </button>
-          </div>
-
-          <input
-            value={popup.title}
-            onChange={(e) => updatePopup(i, { title: e.target.value })}
-            placeholder={t('popupTitleLabel')}
-            className="w-full rounded-lg border border-border px-3 py-2 text-sm"
-          />
-          <textarea
-            value={popup.body}
-            onChange={(e) => updatePopup(i, { body: e.target.value })}
-            placeholder={t('popupBody')}
-            rows={2}
-            className="w-full rounded-lg border border-border px-3 py-2 text-sm"
-          />
-
-          <div className="grid grid-cols-2 gap-2">
-            <select
-              value={popup.trigger}
-              onChange={(e) =>
-                updatePopup(i, { trigger: e.target.value as PopupConfig['trigger'] })
-              }
-              className="rounded-lg border border-border px-3 py-2 text-sm"
-            >
-              <option value="on_load">{t('popupTriggerOnLoad')}</option>
-              <option value="on_exit">{t('popupTriggerOnExit')}</option>
-              <option value="after_diagnostic">{t('popupTriggerAfterDiagnostic')}</option>
-              <option value="manual">{t('popupTriggerManual')}</option>
-            </select>
-            <select
-              value={popup.frequency}
-              onChange={(e) =>
-                updatePopup(i, {
-                  frequency: e.target.value as PopupConfig['frequency'],
-                })
-              }
-              className="rounded-lg border border-border px-3 py-2 text-sm"
-            >
-              <option value="once">{t('popupFrequencyOnce')}</option>
-              <option value="session">{t('popupFrequencySession')}</option>
-              <option value="always">{t('popupFrequencyAlways')}</option>
-            </select>
-          </div>
-
-          <input
-            value={popup.imageUrl}
-            onChange={(e) => updatePopup(i, { imageUrl: e.target.value })}
-            placeholder={t('popupImagePlaceholder')}
-            className="w-full rounded-lg border border-border px-3 py-2 text-sm"
-          />
-
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              value={popup.ctaText}
-              onChange={(e) => updatePopup(i, { ctaText: e.target.value })}
-              placeholder={t('popupCtaText')}
-              className="rounded-lg border border-border px-3 py-2 text-sm"
-            />
-            <input
-              value={popup.ctaLink}
-              onChange={(e) => updatePopup(i, { ctaLink: e.target.value })}
-              placeholder={t('popupCtaLink')}
-              className="rounded-lg border border-border px-3 py-2 text-sm"
-            />
-          </div>
-
-          <Button onClick={saveAll} size="sm" variant="outline">
-            {t('popupSave')}
-          </Button>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Content Admin — placeholder                                         */
-/* ------------------------------------------------------------------ */
-
-function ContentAdmin() {
-  const t = useTranslations('admin')
-  return (
-    <div className="space-y-4">
-      <h2 className="font-display text-lg font-bold">📝 {t('contentTitle')}</h2>
-      <p className="text-sm text-muted-foreground">
-        {t('contentDesc')}
-      </p>
-      <div className="rounded-xl border border-dashed border-border/50 p-8 text-center text-sm text-muted-foreground">
-        {t('contentComingSoonFull')}
-      </div>
-    </div>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Analytics Admin — placeholder with KPI cards                        */
-/* ------------------------------------------------------------------ */
-
-function AnalyticsAdmin() {
-  const t = useTranslations('admin')
-  return (
-    <div className="space-y-4">
-      <h2 className="font-display text-lg font-bold">📊 {t('analyticsTitle')}</h2>
-      <p className="text-sm text-muted-foreground">
-        {t('analyticsDesc')}
-      </p>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="glass-card rounded-xl p-4">
-          <p className="text-2xl font-bold text-primary">—</p>
-          <p className="text-xs text-muted-foreground">{t('analyticsUsers')}</p>
-        </div>
-        <div className="glass-card rounded-xl p-4">
-          <p className="text-2xl font-bold text-primary">—</p>
-          <p className="text-xs text-muted-foreground">{t('analyticsDiagnostics')}</p>
-        </div>
-        <div className="glass-card rounded-xl p-4">
-          <p className="text-2xl font-bold text-primary">—</p>
-          <p className="text-xs text-muted-foreground">{t('analyticsTests')}</p>
-        </div>
-        <div className="glass-card rounded-xl p-4">
-          <p className="text-2xl font-bold text-primary">—</p>
-          <p className="text-xs text-muted-foreground">{t('analyticsSubs')}</p>
-        </div>
-      </div>
-      <div className="rounded-xl border border-dashed border-border/50 p-8 text-center text-sm text-muted-foreground">
-        {t('analyticsComingSoonFull')}
-      </div>
-    </div>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Users Admin — placeholder                                           */
-/* ------------------------------------------------------------------ */
-
-function UsersAdmin() {
-  const t = useTranslations('admin')
-  return (
-    <div className="space-y-4">
-      <h2 className="font-display text-lg font-bold">👥 {t('usersTitle')}</h2>
-      <p className="text-sm text-muted-foreground">
-        {t('usersDescFull')}
-      </p>
-      <div className="rounded-xl border border-dashed border-border/50 p-8 text-center text-sm text-muted-foreground">
-        {t('usersComingSoonFull')}
-      </div>
+      </nav>
     </div>
   )
 }
