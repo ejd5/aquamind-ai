@@ -2,7 +2,7 @@
 
 /**
  * AQWELIA — Admin Control Plane · ANNOUNCEMENTS + SYSTEM STATUS (PR111).
- * Ces composants remplacent les placeholders V2 du shell principal.
+ * Module fonctionnel du shell principal (annonces contextuelles).
  */
 
 /* ────────────────────────────────────────────────────────────────────────────
