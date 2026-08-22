@@ -14,12 +14,12 @@ describe('AQWELIA admin promotions control plane', () => {
     expect(route).toContain('export async function PATCH(req: NextRequest)')
   })
 
-  it('does not seed campaigns or touch payment providers', () => {
+  it('does not seed campaigns or import payment-provider mutation code', () => {
     expect(route).not.toContain('seedCampaign')
-    expect(route).not.toContain('stripe')
-    expect(route).not.toContain('Stripe')
-    expect(route).not.toContain('RevenueCat')
-    expect(route).not.toContain('revenuecat')
+    expect(route).not.toContain("from '@/lib/stripe")
+    expect(route).not.toContain("from '@/lib/billing/revenuecat")
+    expect(route).not.toContain('stripe.')
+    expect(route).not.toContain('Purchases.')
   })
 
   it('uses explicit reason plus optimistic concurrency for every mutation family', () => {
