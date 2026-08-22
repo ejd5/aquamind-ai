@@ -11,6 +11,7 @@
  * rôle admin en base ; le localStorage n'est JAMAIS une source canonique.
  */
 import { useCallback, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import {
   LayoutDashboard,
@@ -44,7 +45,6 @@ type SectionId =
   | 'overview'
   | 'banners'
   | 'popups'
-  | 'promotions'
   | 'announcements'
   | 'flags'
   | 'content'
@@ -58,7 +58,7 @@ const LOCALES = ['fr', 'en', 'es', 'pt', 'de', 'it', 'nl'] as const
 
 interface NavGroup {
   labelKey: string
-  items: Array<{ id: SectionId; labelKey: string; icon: typeof LayoutDashboard }>
+  items: Array<{ id: string; labelKey: string; icon: typeof LayoutDashboard; href?: string }>
 }
 
 const NAV_GROUPS: NavGroup[] = [
@@ -68,7 +68,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'banners', labelKey: 'navBanners', icon: PanelTop },
       { id: 'popups', labelKey: 'navPopups', icon: Gift },
-      { id: 'promotions', labelKey: 'navPromotions', icon: Megaphone },
+      { id: 'promotions', labelKey: 'navPromotions', icon: Megaphone, href: '/admin/promotions' },
       { id: 'announcements', labelKey: 'navAnnouncements', icon: BellRing },
     ],
   },
@@ -151,7 +151,7 @@ function LocaleChips({ translations }: { translations: Record<string, unknown> }
 /* ────────────────────────────────────────────────────────────────────────────
    OVERVIEW
    ──────────────────────────────────────────────────────────────────────────── */
-function OverviewSection({ onNavigate }: { onNavigate: (s: SectionId) => void }) {
+function OverviewSection({ onNavigate }: { onNavigate: (s: string) => void }) {
   const t = useTranslations('admin')
   return (
     <div className="space-y-5">
@@ -174,7 +174,7 @@ function OverviewSection({ onNavigate }: { onNavigate: (s: SectionId) => void })
           [
             { id: 'banners', label: t('navBanners'), icon: PanelTop, chip: 'icon-chip icon-chip-lagoon' },
             { id: 'popups', label: t('navPopups'), icon: Gift, chip: 'icon-chip icon-chip-aqua' },
-            { id: 'promotions', label: t('navPromotions'), icon: Megaphone, chip: 'icon-chip icon-chip-info' },
+            { id: 'promotions', label: t('navPromotions'), icon: Megaphone, chip: 'icon-chip icon-chip-info', href: '/admin/promotions' },
             { id: 'agentic', label: t('navAgentic'), icon: Bot, chip: 'icon-chip icon-chip-lagoon' },
             { id: 'flags', label: t('navFlags'), icon: Flag, chip: 'icon-chip icon-chip-aqua' },
             { id: 'audit', label: t('navAudit'), icon: ScrollText, chip: 'icon-chip icon-chip-info' },
@@ -896,92 +896,6 @@ function PopupEditor({
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   PROMOTIONS (READ ONLY V1) — le moteur existant reste la source de vérité.
-   Appelle UNIQUEMENT /api/admin/v1/promotions (endpoint strictement GET,
-   sans seed ni mutation).
-   ──────────────────────────────────────────────────────────────────────────── */
-interface CampaignRow {
-  code: string
-  name: string
-  status: string
-  totalQuota: number
-  confirmedCount: number
-  startsAt: string | null
-  endsAt: string | null
-}
-
-function PromotionsSection() {
-  const t = useTranslations('admin')
-  const [campaigns, setCampaigns] = useState<CampaignRow[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetch('/api/admin/v1/promotions')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((d: { campaigns?: CampaignRow[] }) => setCampaigns(d.campaigns ?? []))
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'unknown'))
-  }, [])
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="font-display text-xl font-bold">{t('cpPromotionsTitle')}</h2>
-        <p className="mt-1 text-xs text-muted-foreground">{t('cpPromotionsReadOnly')}</p>
-      </div>
-
-      {error && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center">
-          <p className="text-sm font-semibold text-destructive">{t('cpError')}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{error}</p>
-        </div>
-      )}
-
-      {!error && campaigns === null && <p className="text-sm text-muted-foreground">…</p>}
-
-      {!error && campaigns !== null && campaigns.length === 0 && (
-        <div className="rounded-xl border border-dashed border-border/60 p-8 text-center text-sm text-muted-foreground">
-          {t('cpPromotionsEmpty')}
-        </div>
-      )}
-
-      {!error && campaigns !== null && campaigns.length > 0 && (
-        <div className="glass-card-lagon overflow-x-auto rounded-xl">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-border/60 text-[11px] uppercase tracking-wide text-muted-foreground">
-                <th className="px-4 py-2">{t('cpPromoCode')}</th>
-                <th className="px-4 py-2">{t('cpPromoName')}</th>
-                <th className="px-4 py-2">{t('cpPromoStatus')}</th>
-                <th className="px-4 py-2">{t('cpPromoQuota')}</th>
-                <th className="px-4 py-2">{t('cpPromoConfirmed')}</th>
-                <th className="px-4 py-2">{t('cpPromoStartsAt')}</th>
-                <th className="px-4 py-2">{t('cpPromoEndsAt')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {campaigns.map((c) => (
-                <tr key={c.code} className="border-b border-border/40">
-                  <td className="px-4 py-2 font-mono text-xs font-medium">{c.code}</td>
-                  <td className="px-4 py-2">{c.name}</td>
-                  <td className="px-4 py-2">
-                    <Badge variant={(STATUS_BADGE[c.status] ?? 'outline') as never}>{t(statusKey(c.status) as never)}</Badge>
-                  </td>
-                  <td className="px-4 py-2">{c.totalQuota}</td>
-                  <td className="px-4 py-2">{c.confirmedCount}</td>
-                  <td className="px-4 py-2 text-muted-foreground">{c.startsAt ? new Date(c.startsAt).toLocaleDateString() : '—'}</td>
-                  <td className="px-4 py-2 text-muted-foreground">{c.endsAt ? new Date(c.endsAt).toLocaleDateString() : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {/* READ ONLY : aucun bouton d'activation/édition/quota/réallocation/restauration/suppression. */}
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
    FEATURE FLAGS (READ ONLY, allowlist produit sûr)
    ──────────────────────────────────────────────────────────────────────────── */
 function FlagsSection() {
@@ -1243,7 +1157,16 @@ function PreparedPlaceholder({ title, desc }: { title: string; desc: string }) {
    ──────────────────────────────────────────────────────────────────────────── */
 export default function AdminPage() {
   const t = useTranslations('admin')
+  const router = useRouter()
   const [section, setSection] = useState<SectionId>('overview')
+
+  const navigate = (target: string) => {
+    if (target === 'promotions') {
+      router.push('/admin/promotions')
+      return
+    }
+    setSection(target as SectionId)
+  }
 
   return (
     <div className="app-bg-lagon flex min-h-screen flex-col bg-background">
@@ -1284,7 +1207,7 @@ export default function AdminPage() {
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setSection(item.id)}
+                    onClick={() => (item.href ? router.push(item.href) : setSection(item.id as SectionId))}
                     className={`group flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
                       active
                         ? 'bg-gradient-to-r from-lagoon/20 to-aqua-vivid/10 text-foreground shadow-sm ring-1 ring-lagoon/25'
@@ -1310,10 +1233,9 @@ export default function AdminPage() {
 
         {/* Main */}
         <main className="min-w-0 flex-1 px-4 py-6 pb-24 sm:px-6 md:pb-10">
-          {section === 'overview' && <OverviewSection onNavigate={setSection} />}
+          {section === 'overview' && <OverviewSection onNavigate={navigate} />}
           {section === 'banners' && <BannersSection />}
           {section === 'popups' && <PopupsSection />}
-          {section === 'promotions' && <PromotionsSection />}
           {section === 'announcements' && (
             <PreparedPlaceholder title={t('cpAnnouncementsTitle')} desc={t('cpAnnouncementsComingSoon')} />
           )}
@@ -1333,7 +1255,7 @@ export default function AdminPage() {
           {NAV_GROUPS.flatMap((g) => g.items).map((item) => (
             <button
               key={item.id}
-              onClick={() => setSection(item.id)}
+              onClick={() => (item.href ? router.push(item.href) : setSection(item.id as SectionId))}
               className={`flex min-w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors ${
                 section === item.id ? 'bg-lagoon/15 text-lagoon-ink' : 'text-muted-foreground'
               }`}
