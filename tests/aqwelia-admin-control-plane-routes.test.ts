@@ -150,10 +150,22 @@ describe('route audit + flags', () => {
   })
 })
 
-describe('route /api/admin/v1/promotions — READ ONLY strict', () => {
+describe('route /api/admin/v1/promotions — V2 canonique (cockpit)', () => {
   const MOCK_CAMPAIGNS = [
-    { code: 'AQWELIA_LAUNCH_2026', name: 'Offres de lancement AQWELIA', status: 'DRAFT', totalQuota: 500, confirmedCount: 0, startsAt: null, endsAt: null },
-    { code: 'ETE_2026', name: 'Campagne été', status: 'ACTIVE', totalQuota: 200, confirmedCount: 12, startsAt: '2026-06-01T00:00:00Z', endsAt: '2026-09-01T00:00:00Z' },
+    {
+      id: 'c1',
+      code: 'AQWELIA_LAUNCH_2026',
+      name: 'Offres de lancement AQWELIA',
+      status: 'DRAFT',
+      totalQuota: 500,
+      confirmedCount: 0,
+      startsAt: null,
+      endsAt: null,
+      eligibleCountries: null,
+      eligiblePlanIds: null,
+      variants: [],
+      auditLogs: [],
+    },
   ]
 
   beforeEach(() => {
@@ -162,20 +174,19 @@ describe('route /api/admin/v1/promotions — READ ONLY strict', () => {
     vi.mocked(requireAdminFromDb).mockReset()
   })
 
-  it('1. admin → 200 avec { campaigns: [...] }', async () => {
+  it('GET admin → 200 avec { campaigns: [...] } incluant une campagne DRAFT', async () => {
     vi.mocked(requireAdminFromDb).mockResolvedValue({ authorized: true, userId: 'a' } as never)
     const mod = await import('@/app/api/admin/v1/promotions/route')
     const res = await mod.GET()
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(Array.isArray(body.campaigns)).toBe(true)
-    expect(body.campaigns).toHaveLength(2)
     expect(body.campaigns[0].code).toBe('AQWELIA_LAUNCH_2026')
     expect(body.campaigns[0].status).toBe('DRAFT')
-    expect(body.campaigns[0].name).toBe('Offres de lancement AQWELIA')
+    expect(body.campaigns[0].reservedCount).toBe(0)
   })
 
-  it('2. non-admin → 403 ; 3. non-auth → 401', async () => {
+  it('GET non-admin → 403 ; non-auth → 401', async () => {
     const mod = await import('@/app/api/admin/v1/promotions/route')
     vi.mocked(requireAdminFromDb).mockResolvedValue({ authorized: false, reason: 'not-admin' } as never)
     expect((await mod.GET()).status).toBe(403)
@@ -183,54 +194,58 @@ describe('route /api/admin/v1/promotions — READ ONLY strict', () => {
     expect((await mod.GET()).status).toBe(401)
   })
 
-  it('6. GET ne crée JAMAIS de campagne — findMany uniquement, aucun seed', async () => {
+  it('GET n’amorce JAMAIS de campagne (findMany seul, aucune écriture possible)', async () => {
     vi.mocked(requireAdminFromDb).mockResolvedValue({ authorized: true, userId: 'a' } as never)
     const mod = await import('@/app/api/admin/v1/promotions/route')
     await mod.GET()
     expect(promotionsDbHolder.promotionCampaign.findMany).toHaveBeenCalledTimes(1)
-    // Le mock n'expose QUE findMany : une écriture (create/update) serait impossible.
+    // Le mock n'expose QUE findMany : une écriture (create/update) serait impossible côté GET.
     expect(Object.keys(promotionsDbHolder.promotionCampaign)).toEqual(['findMany'])
+    const src = readFileSync(join(process.cwd(), 'src/app/api/admin/v1/promotions/route.ts'), 'utf8')
+    const getSrc = src.slice(src.indexOf('export async function GET'), src.indexOf('export async function PATCH'))
+    expect(getSrc).not.toContain('updateMany')
+    expect(getSrc).not.toContain('.create(')
+    expect(getSrc).not.toContain('seedCampaign')
   })
 
-  it('7. GET ne modifie aucune campagne existante (select en lecture seule, aucun seed)', async () => {
+  it('PATCH exposé uniquement (pilotage humain) — POST/DELETE/PUT interdits', async () => {
     const src = readFileSync(join(process.cwd(), 'src/app/api/admin/v1/promotions/route.ts'), 'utf8')
-    expect(src).not.toContain('seedCampaign')
-    expect(src).not.toContain('setCampaignStatus')
-    expect(src).not.toContain('reallocate')
-    expect(src).not.toContain('restoreRedemptionSlot')
-    expect(src).not.toMatch(/promotionCampaign\.(create|update|upsert|delete)/)
-    expect(src).toContain('select:')
-    expect(src).toContain('findMany')
-  })
-
-  it('8. aucune méthode POST/PATCH/DELETE exposée sur /api/admin/v1/promotions', async () => {
-    const src = readFileSync(join(process.cwd(), 'src/app/api/admin/v1/promotions/route.ts'), 'utf8')
-    expect(src).not.toMatch(/export async function (POST|PATCH|DELETE|PUT)/)
-    expect(src).toMatch(/export async function GET\(\)/)
+    expect(src).toMatch(/export async function PATCH\(/)
+    expect(src).not.toMatch(/export async function (POST|DELETE|PUT)/)
+    // PATCH refait le contrôle admin.
+    vi.mocked(requireAdminFromDb).mockResolvedValue({ authorized: false, reason: 'not-admin' } as never)
+    const mod = await import('@/app/api/admin/v1/promotions/route')
+    const req = new NextRequest('http://localhost/api/admin/v1/promotions', { method: 'PATCH', body: JSON.stringify({ action: 'campaign_update' }) })
+    expect((await mod.PATCH(req)).status).toBe(403)
+    vi.mocked(requireAdminFromDb).mockResolvedValue({ authorized: false, reason: 'no-session' } as never)
+    expect((await mod.PATCH(req)).status).toBe(401)
   })
 })
 
-describe('UI Promotions — READ ONLY réel', () => {
-  it('9. PromotionsSection appelle UNIQUEMENT /api/admin/v1/promotions', () => {
+describe('UI Promotions — cockpit canonique /admin/promotions', () => {
+  it('la nav principale pointe vers /admin/promotions (plus de section V1)', () => {
     const page = readFileSync(join(process.cwd(), 'src/app/admin/page.tsx'), 'utf8')
-    expect(page).toContain("fetch('/api/admin/v1/promotions')")
-    // Aucune dépendance vers l'ancien endpoint mutation-capable dans la section.
-    expect(page).not.toMatch(/fetch\('\/api\/admin\/promotions'\)/)
+    expect(page).toContain("href: '/admin/promotions'")
+    expect(page).toContain("router.push('/admin/promotions')")
+    // La section READ ONLY V1 a été retirée du shell.
+    expect(page).not.toContain('function PromotionsSection')
+    expect(page).not.toContain('CampaignRow')
   })
 
-  it('10. aucun bouton d’action promo (activation/édition/quota/réallocation/restauration/suppression)', () => {
-    const page = readFileSync(join(process.cwd(), 'src/app/admin/page.tsx'), 'utf8')
-    const start = page.indexOf('function PromotionsSection')
-    const end = page.indexOf('function FlagsSection', start)
-    const section = page.slice(start, end)
-    expect(section).not.toContain('onClick')
-    expect(section).not.toContain('setCampaignStatus')
-    expect(section).not.toContain('reallocate')
-    expect(section).not.toContain('restore')
-    expect(section).not.toContain('<Button')
-    // Colonnes minimum présentes (code, nom, statut, quota, confirmations, début, fin).
-    for (const col of ['cpPromoCode', 'cpPromoName', 'cpPromoStatus', 'cpPromoQuota', 'cpPromoConfirmed', 'cpPromoStartsAt', 'cpPromoEndsAt']) {
-      expect(section, col).toContain(col)
+  it('le cockpit /admin/promotions existe et appelle l’API canonique', () => {
+    const cockpit = readFileSync(join(process.cwd(), 'src/app/admin/promotions/page.tsx'), 'utf8')
+    expect(cockpit).toContain("'/api/admin/v1/promotions'")
+    expect(cockpit).toContain("t('cpPromotionsTitle')")
+  })
+
+  it('traductions obsolètes nettoyées dans les 7 locales', () => {
+    for (const locale of ['fr', 'en', 'es', 'pt', 'de', 'it', 'nl']) {
+      const data = JSON.parse(readFileSync(join(process.cwd(), `src/i18n/locales/${locale}.json`), 'utf8'))
+      expect(data.admin.cpPromotionsReadOnly, locale).toBeUndefined()
+      expect(data.admin.cpPromotionsTitle, locale).toBeTruthy()
+      expect(data.admin.cpPromotionsTitle.toLowerCase(), locale).not.toContain('lecture seule')
+      expect(data.admin.cpPromotionsTitle.toLowerCase(), locale).not.toContain('read-only')
+      expect(data.admin.cpPromotionsEmpty, locale).not.toContain('seedCampaign')
     }
   })
 })
@@ -243,7 +258,10 @@ describe('garde serveur /admin (layout)', () => {
     // Session absente → redirect ; non-admin authentifié → VRAI 403 (forbidden()).
     expect(src).toContain("auth.reason === 'no-session'")
     expect(src).toContain('forbidden()')
-    expect(src).toContain('<>{children}</>')
+    expect(src).toContain('{children}')
+    // La nav du layout expose le lien vers le cockpit promotions canonique.
+    expect(src).toContain("href=\"/admin/promotions\"")
+    expect(src).toContain('navPromotions')
     // Jamais de confiance dans le client : pas de localStorage ni de role depuis props.
     expect(src).not.toMatch(/localStorage\s*[.(]/)
   })
