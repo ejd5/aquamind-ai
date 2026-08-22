@@ -1721,3 +1721,26 @@ model AdminAgentProposal {
   @@index([status, createdAt])
   @@index([agent, createdAt])
 }
+
+// Annonce contextuelle — pilotée par l'humain uniquement (DRAFT → … → PUBLISHED).
+model AdminContentAnnouncement {
+  id               String    @id @default(cuid())
+  internalName     String
+  status           String    @default("DRAFT") // DRAFT | SCHEDULED | PUBLISHED | PAUSED | ARCHIVED
+  translations     String    // JSON 7 locales : { title, body } par locale
+  ctaTranslations  String?
+  ctaUrl           String?
+  targeting        String?
+  startAt          DateTime?
+  endAt            DateTime?
+  priority         Int       @default(0)
+  createdById      String?
+  updatedById      String?
+  approvedById     String?
+  approvedAt       DateTime?
+  version          Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([status])
+}

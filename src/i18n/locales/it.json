@@ -1878,7 +1878,19 @@
     "cpPromoName": "Nome",
     "cpPromoStartsAt": "Inizio",
     "cpPopupsEdit": "Modifica popup",
-    "cpHumanReviewRequired": "Revisione umana richiesta"
+    "cpHumanReviewRequired": "Revisione umana richiesta",
+    "cpAnnouncementsDesc": "Messaggi contestuali brevi, gestiti solo da umani (bozza → pubblicazione con motivo).",
+    "cpAnnouncementsCreate": "Nuovo annuncio",
+    "cpAnnouncementsEmpty": "Nessun annuncio. Crea una bozza: nulla viene pubblicato senza la tua azione esplicita.",
+    "cpSystemDesc": "Informazioni operative in sola lettura — nessun segreto, nessun valore ambiente grezzo.",
+    "cpSystemStatus": "Stato generale",
+    "cpSystemEnvironment": "Ambiente",
+    "cpSystemDatabase": "Database",
+    "cpSystemMigrations": "Migrazioni applicate",
+    "cpSystemAdminTables": "Tabelle del piano di controllo",
+    "cpSystemVersion": "Versione / commit",
+    "cpSystemRuntime": "Timestamp di esecuzione",
+    "cpSystemProviders": "Presenza configurazione"
   },
   "spa": {
     "title": "Spa & Bagno",

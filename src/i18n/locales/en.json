@@ -2000,7 +2000,19 @@
     "cpPromoName": "Name",
     "cpPromoStartsAt": "Starts at",
     "cpPopupsEdit": "Edit popup",
-    "cpHumanReviewRequired": "Human review required"
+    "cpHumanReviewRequired": "Human review required",
+    "cpAnnouncementsDesc": "Short contextual messages, operated by humans only (draft → publish with reason).",
+    "cpAnnouncementsCreate": "New announcement",
+    "cpAnnouncementsEmpty": "No announcements yet. Create a draft — nothing publishes without your explicit action.",
+    "cpSystemDesc": "Read-only operational information — no secrets, no raw environment values.",
+    "cpSystemStatus": "Overall status",
+    "cpSystemEnvironment": "Environment",
+    "cpSystemDatabase": "Database",
+    "cpSystemMigrations": "Migrations applied",
+    "cpSystemAdminTables": "Control Plane tables",
+    "cpSystemVersion": "Version / commit",
+    "cpSystemRuntime": "Runtime timestamp",
+    "cpSystemProviders": "Provider config presence"
   },
   "spa": {
     "title": "Spa & Bathing",

@@ -203,3 +203,62 @@ export const agentReviewSchema = z
 export type BannerPayload = z.infer<typeof bannerPayloadSchema>
 export type PopupPayload = z.infer<typeof popupPayloadSchema>
 export type Targeting = z.infer<typeof targetingSchema>
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ANNOUNCEMENTS (PR111) — annonces contextuelles
+   ──────────────────────────────────────────────────────────────────────────── */
+export const announcementTranslationsSchema = z
+  .object({
+    fr: z.object({ title: z.string().max(120), body: z.string().max(500) }),
+    en: z.object({ title: z.string().max(120), body: z.string().max(500) }),
+    es: z.object({ title: z.string().max(120), body: z.string().max(500) }),
+    pt: z.object({ title: z.string().max(120), body: z.string().max(500) }),
+    de: z.object({ title: z.string().max(120), body: z.string().max(500) }),
+    it: z.object({ title: z.string().max(120), body: z.string().max(500) }),
+    nl: z.object({ title: z.string().max(120), body: z.string().max(500) }),
+  })
+  .strict()
+
+export const announcementPayloadObject = z
+  .object({
+    internalName,
+    translations: announcementTranslationsSchema,
+    ctaTranslations: translationsJsonSchema.optional(),
+    ctaUrl: ctaUrlSchema.optional(),
+    targeting: targetingSchema.optional(),
+    startAt: z.coerce.date().optional(),
+    endAt: z.coerce.date().optional(),
+    priority: z.number().int().min(-10).max(100).default(0),
+  })
+  .strict()
+
+export const announcementPayloadSchema = announcementPayloadObject.superRefine((data, ctx) => {
+  consistentDates(data, (m) => ctx.addIssue({ code: 'custom', message: m, path: ['endAt'] }))
+})
+
+export const announcementPatchSchema = announcementPayloadObject
+  .partial()
+  .extend({
+    expectedVersion: z.number().int().nonnegative(),
+  })
+  .superRefine((data, ctx) => {
+    consistentDates(data, (m) => ctx.addIssue({ code: 'custom', message: m, path: ['endAt'] }))
+  })
+
+export const announcementPublishSchema = z
+  .object({
+    status: z.enum(['PUBLISHED', 'SCHEDULED', 'PAUSED', 'ARCHIVED']),
+    expectedVersion: z.number().int().nonnegative(),
+    reason: z.string().min(3).max(300),
+    startAt: z.coerce.date().optional(),
+    endAt: z.coerce.date().optional(),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    if (data.status === 'SCHEDULED' && !data.startAt) {
+      ctx.addIssue({ code: 'custom', message: 'SCHEDULED requires startAt', path: ['startAt'] })
+    }
+    consistentDates(data, (m) => ctx.addIssue({ code: 'custom', message: m, path: ['endAt'] }))
+  })
+
+export type AnnouncementPayload = z.infer<typeof announcementPayloadSchema>

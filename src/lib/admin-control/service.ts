@@ -22,6 +22,9 @@ import {
   popupPayloadSchema,
   popupPatchSchema,
   popupPublishSchema,
+  announcementPayloadSchema,
+  announcementPatchSchema,
+  announcementPublishSchema,
   type BannerPayload,
   type PopupPayload,
 } from './schemas'
@@ -539,4 +542,176 @@ export async function listAuditLogs(
     metadata: r.metadata ? JSON.parse(r.metadata) : null,
     createdAt: r.createdAt,
   }))
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ANNOUNCEMENTS (PR111) — mêmes garanties que bannières/popups
+   ──────────────────────────────────────────────────────────────────────────── */
+export interface AnnouncementView {
+  id: string
+  internalName: string
+  status: string
+  translations: Record<string, { title: string; body: string }>
+  ctaTranslations: Record<string, string> | null
+  ctaUrl: string | null
+  targeting: Record<string, unknown> | null
+  startAt: Date | null
+  endAt: Date | null
+  priority: number
+  version: number
+  approvedBy: string | null
+  approvedAt: Date | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+const announcementView = (a: { [key: string]: unknown }): AnnouncementView => ({
+  id: a.id as string,
+  internalName: a.internalName as string,
+  status: a.status as string,
+  translations: a.translations ? (JSON.parse(a.translations as string) as Record<string, { title: string; body: string }>) : {},
+  ctaTranslations: a.ctaTranslations ? (JSON.parse(a.ctaTranslations as string) as Record<string, string>) : null,
+  ctaUrl: a.ctaUrl as string | null,
+  targeting: a.targeting ? (JSON.parse(a.targeting as string) as Record<string, unknown>) : null,
+  startAt: a.startAt as Date | null,
+  endAt: a.endAt as Date | null,
+  priority: a.priority as number,
+  version: a.version as number,
+  approvedBy: a.approvedById as string | null,
+  approvedAt: a.approvedAt as Date | null,
+  createdAt: a.createdAt as Date,
+  updatedAt: a.updatedAt as Date,
+})
+
+export async function listAnnouncements(client: AdminDb = db) {
+  const rows = await client.adminContentAnnouncement.findMany({ orderBy: { updatedAt: 'desc' } })
+  return rows.map((r) => announcementView(r as unknown as { [key: string]: unknown }))
+}
+
+export async function createAnnouncementDraft(payload: z.input<typeof announcementPayloadSchema>, actor: Actor, client: AdminDb = db) {
+  const data = announcementPayloadSchema.parse(payload)
+  const row = await client.$transaction(async (tx) => {
+    const created = await tx.adminContentAnnouncement.create({
+      data: {
+        internalName: data.internalName,
+        status: 'DRAFT',
+        translations: JSON.stringify(data.translations),
+        ctaTranslations: data.ctaTranslations ? JSON.stringify(data.ctaTranslations) : null,
+        ctaUrl: data.ctaUrl ?? null,
+        targeting: data.targeting ? JSON.stringify(data.targeting) : null,
+        startAt: data.startAt ?? null,
+        endAt: data.endAt ?? null,
+        priority: data.priority,
+        createdById: actor.id,
+        updatedById: actor.id,
+        version: 0,
+      },
+    })
+    await audit(tx, actor, 'ANNOUNCEMENT_CREATED', 'AdminContentAnnouncement', created.id, null, {
+      internalName: created.internalName,
+      status: created.status,
+    })
+    return created
+  })
+  return announcementView(row as unknown as { [key: string]: unknown })
+}
+
+export async function updateAnnouncementDraft(
+  id: string,
+  payload: z.infer<typeof announcementPatchSchema>,
+  actor: Actor,
+  client: AdminDb = db
+) {
+  const data = announcementPatchSchema.parse(payload)
+  return client.$transaction(async (tx) => {
+    const existing = await tx.adminContentAnnouncement.findUnique({ where: { id } })
+    if (!existing) return { ok: false as const, error: 'not_found' }
+    if (!effectiveDatesValid(data, existing)) return { ok: false as const, error: 'invalid_dates' }
+
+    const result = await tx.adminContentAnnouncement.updateMany({
+      where: { id, version: data.expectedVersion, status: { not: 'ARCHIVED' } },
+      data: {
+        internalName: data.internalName ?? undefined,
+        translations: data.translations !== undefined ? JSON.stringify(data.translations) : undefined,
+        ctaTranslations: data.ctaTranslations !== undefined ? JSON.stringify(data.ctaTranslations) : undefined,
+        ctaUrl: data.ctaUrl !== undefined ? data.ctaUrl : undefined,
+        targeting: data.targeting !== undefined ? JSON.stringify(data.targeting) : undefined,
+        startAt: data.startAt !== undefined ? data.startAt : undefined,
+        endAt: data.endAt !== undefined ? data.endAt : undefined,
+        priority: data.priority ?? undefined,
+        updatedById: actor.id,
+        version: { increment: 1 },
+      },
+    })
+
+    if (result.count === 0) {
+      const fresh = await tx.adminContentAnnouncement.findUnique({ where: { id } })
+      if (!fresh) return { ok: false as const, error: 'not_found' }
+      if (fresh.status === 'ARCHIVED') return { ok: false as const, error: 'archived' }
+      return { ok: false as const, error: 'stale_version' }
+    }
+
+    const updated = await tx.adminContentAnnouncement.findUniqueOrThrow({ where: { id } })
+    await audit(tx, actor, 'ANNOUNCEMENT_UPDATED', 'AdminContentAnnouncement', id, { version: data.expectedVersion }, { version: updated.version, internalName: updated.internalName }, { fields: Object.keys(data).filter((k) => k !== 'expectedVersion') })
+    return { ok: true as const, announcement: announcementView(updated as unknown as { [key: string]: unknown }) }
+  })
+}
+
+function announcementPublishReadiness(a: { translations: string }): string | null {
+  const translations = JSON.parse(a.translations) as Record<string, { title?: string; body?: string }>
+  for (const l of ['fr', 'en', 'es', 'pt', 'de', 'it', 'nl']) {
+    const v = translations[l]
+    if (typeof v !== 'object' || v === null || typeof v.title !== 'string' || typeof v.body !== 'string') {
+      return 'locales_structure_required'
+    }
+  }
+  if (!translations.fr.title || !translations.fr.title.trim()) return 'fr_title_required'
+  if (!translations.fr.body || !translations.fr.body.trim()) return 'fr_body_required'
+  return null
+}
+
+export async function setAnnouncementStatus(
+  id: string,
+  payload: z.infer<typeof announcementPublishSchema>,
+  actor: Actor,
+  client: AdminDb = db
+) {
+  const data = announcementPublishSchema.parse(payload)
+  return client.$transaction(async (tx) => {
+    const existing = await tx.adminContentAnnouncement.findUnique({ where: { id } })
+    if (!existing) return { ok: false as const, error: 'not_found' }
+
+    if (data.status === 'PUBLISHED' || data.status === 'SCHEDULED') {
+      const readiness = announcementPublishReadiness(existing)
+      if (readiness) return { ok: false as const, error: readiness }
+    }
+    if (!effectiveDatesValid(data, existing)) return { ok: false as const, error: 'invalid_dates' }
+
+    const result = await tx.adminContentAnnouncement.updateMany({
+      where: {
+        id,
+        version: data.expectedVersion,
+        ...(data.status === 'ARCHIVED' ? {} : { status: { not: 'ARCHIVED' } }),
+      },
+      data: {
+        status: data.status,
+        ...(data.status === 'PUBLISHED' || data.status === 'SCHEDULED' ? { approvedById: actor.id, approvedAt: new Date() } : {}),
+        ...(data.startAt !== undefined ? { startAt: data.startAt } : {}),
+        ...(data.endAt !== undefined ? { endAt: data.endAt } : {}),
+        updatedById: actor.id,
+        version: { increment: 1 },
+      },
+    })
+
+    if (result.count === 0) {
+      const fresh = await tx.adminContentAnnouncement.findUnique({ where: { id } })
+      if (!fresh) return { ok: false as const, error: 'not_found' }
+      if (fresh.status === 'ARCHIVED' && data.status !== 'ARCHIVED') return { ok: false as const, error: 'archived' }
+      return { ok: false as const, error: 'stale_version' }
+    }
+
+    const updated = await tx.adminContentAnnouncement.findUniqueOrThrow({ where: { id } })
+    await audit(tx, actor, data.status === 'ARCHIVED' ? 'ANNOUNCEMENT_ARCHIVED' : 'ANNOUNCEMENT_STATUS_CHANGED', 'AdminContentAnnouncement', id, { status: existing.status, version: data.expectedVersion }, { status: updated.status, version: updated.version }, { reason: data.reason })
+    return { ok: true as const, announcement: announcementView(updated as unknown as { [key: string]: unknown }) }
+  })
 }
