@@ -118,17 +118,32 @@ export default function Home() {
 
   // Native app (Capacitor) → always MobileAppShell, no landing
   if (native) {
-    return <MobileAppShell onBackToLanding={backToLanding} />
+    return (
+      <>
+        <MarketingRuntime zone="APP" />
+        <MobileAppShell onBackToLanding={backToLanding} />
+      </>
+    )
   }
 
   // Mobile browser + app view → MobileAppShell
   if (mobile && view === 'app') {
-    return <MobileAppShell onBackToLanding={backToLanding} />
+    return (
+      <>
+        <MarketingRuntime zone="APP" />
+        <MobileAppShell onBackToLanding={backToLanding} />
+      </>
+    )
   }
 
   // Desktop + app view → desktop AppShell
   if (view === 'app') {
-    return <AppShell onBackToLanding={backToLanding} />
+    return (
+      <>
+        <MarketingRuntime zone="APP" />
+        <AppShell onBackToLanding={backToLanding} />
+      </>
+    )
   }
 
   // Default: landing page (desktop or mobile browser)
