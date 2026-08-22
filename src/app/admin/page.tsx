@@ -40,6 +40,8 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/hooks/use-toast'
 import { signOutWithBillingCleanup } from '@/lib/billing/sign-out'
+import { AnnouncementsSection } from '@/components/admin/announcements-section'
+import { SystemStatusSection } from '@/components/admin/system-status-section'
 
 type SectionId =
   | 'overview'
@@ -1236,16 +1238,14 @@ export default function AdminPage() {
           {section === 'overview' && <OverviewSection onNavigate={navigate} />}
           {section === 'banners' && <BannersSection />}
           {section === 'popups' && <PopupsSection />}
-          {section === 'announcements' && (
-            <PreparedPlaceholder title={t('cpAnnouncementsTitle')} desc={t('cpAnnouncementsComingSoon')} />
-          )}
+          {section === 'announcements' && <AnnouncementsSection />}
           {section === 'flags' && <FlagsSection />}
           {section === 'content' && <PreparedPlaceholder title={t('contentTitle')} desc={t('contentComingSoonFull')} />}
           {section === 'agentic' && <AgenticSection />}
           {section === 'approvals' && <AgenticSection filterStatus="NEEDS_REVIEW" />}
           {section === 'history' && <AgenticSection />}
           {section === 'audit' && <AuditSection />}
-          {section === 'system' && <PreparedPlaceholder title={t('cpSystemTitle')} desc={t('cpSystemComingSoon')} />}
+          {section === 'system' && <SystemStatusSection />}
         </main>
       </div>
 

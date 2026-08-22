@@ -1880,7 +1880,19 @@
     "cpPromoName": "Naam",
     "cpPromoStartsAt": "Start",
     "cpPopupsEdit": "Popup bewerken",
-    "cpHumanReviewRequired": "Menselijke beoordeling vereist"
+    "cpHumanReviewRequired": "Menselijke beoordeling vereist",
+    "cpAnnouncementsDesc": "Korte contextuele berichten, alleen door mensen beheerd (concept → publiceren met reden).",
+    "cpAnnouncementsCreate": "Nieuwe aankondiging",
+    "cpAnnouncementsEmpty": "Nog geen aankondigingen. Maak een concept — er wordt niets gepubliceerd zonder uw expliciete actie.",
+    "cpSystemDesc": "Alleen-lezen operationele informatie — geen geheimen, geen ruwe omgevingswaarden.",
+    "cpSystemStatus": "Algemene status",
+    "cpSystemEnvironment": "Omgeving",
+    "cpSystemDatabase": "Database",
+    "cpSystemMigrations": "Toegepaste migraties",
+    "cpSystemAdminTables": "Control plane-tabellen",
+    "cpSystemVersion": "Versie / commit",
+    "cpSystemRuntime": "Runtime-tijdstempel",
+    "cpSystemProviders": "Aanwezigheid configuratie"
   },
   "spa": {
     "title": "Spa & baden",

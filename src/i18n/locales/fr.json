@@ -2002,7 +2002,19 @@
     "cpPromoName": "Nom",
     "cpPromoStartsAt": "Début",
     "cpPopupsEdit": "Modifier le popup",
-    "cpHumanReviewRequired": "Validation humaine requise"
+    "cpHumanReviewRequired": "Validation humaine requise",
+    "cpAnnouncementsDesc": "Messages contextuels courts, pilotés uniquement par un humain (brouillon → publication avec raison).",
+    "cpAnnouncementsCreate": "Nouvelle annonce",
+    "cpAnnouncementsEmpty": "Aucune annonce. Créez un brouillon — rien ne sera publié sans votre action explicite.",
+    "cpSystemDesc": "Informations opérationnelles en lecture seule — aucun secret, aucune valeur d’environnement brute.",
+    "cpSystemStatus": "État global",
+    "cpSystemEnvironment": "Environnement",
+    "cpSystemDatabase": "Base de données",
+    "cpSystemMigrations": "Migrations appliquées",
+    "cpSystemAdminTables": "Tables Control Plane",
+    "cpSystemVersion": "Version / commit",
+    "cpSystemRuntime": "Horodatage runtime",
+    "cpSystemProviders": "Présence configuration"
   },
   "spa": {
     "title": "Spa & Baignade",

@@ -1880,7 +1880,19 @@
     "cpPromoName": "Name",
     "cpPromoStartsAt": "Start",
     "cpPopupsEdit": "Popup bearbeiten",
-    "cpHumanReviewRequired": "Menschliche Prüfung erforderlich"
+    "cpHumanReviewRequired": "Menschliche Prüfung erforderlich",
+    "cpAnnouncementsDesc": "Kurze kontextuelle Nachrichten, nur von Menschen bedient (Entwurf → Veröffentlichung mit Grund).",
+    "cpAnnouncementsCreate": "Neue Ankündigung",
+    "cpAnnouncementsEmpty": "Noch keine Ankündigungen. Erstellen Sie einen Entwurf — nichts wird ohne Ihre ausdrückliche Aktion veröffentlicht.",
+    "cpSystemDesc": "Schreibgeschützte Betriebsinformationen — keine Geheimnisse, keine rohen Umgebungsdaten.",
+    "cpSystemStatus": "Gesamtstatus",
+    "cpSystemEnvironment": "Umgebung",
+    "cpSystemDatabase": "Datenbank",
+    "cpSystemMigrations": "Angewandte Migrationen",
+    "cpSystemAdminTables": "Control-Plane-Tabellen",
+    "cpSystemVersion": "Version / Commit",
+    "cpSystemRuntime": "Laufzeit-Zeitstempel",
+    "cpSystemProviders": "Provider-Konfiguration"
   },
   "spa": {
     "title": "Spa & Baden",
