@@ -19,7 +19,10 @@ import { requireAdminFromDb } from '@/lib/admin-auth'
 
 vi.mock('@/lib/admin-auth', () => ({ requireAdminFromDb: vi.fn() }))
 
-const promotionsDbHolder = vi.hoisted(() => ({ promotionCampaign: { findMany: vi.fn() } }))
+const promotionsDbHolder = vi.hoisted(() => ({
+  promotionCampaign: { findMany: vi.fn() },
+  adminProductFlag: { findMany: vi.fn().mockResolvedValue([]) },
+}))
 vi.mock('@/lib/db', () => ({ db: promotionsDbHolder }))
 vi.mock('@/lib/admin-control/service', () => ({
   listBanners: vi.fn().mockResolvedValue([]),
@@ -139,14 +142,24 @@ describe('route audit + flags', () => {
     expect((await mod.GET(new NextRequest('http://localhost/api/admin/v1/audit'))).status).toBe(200)
   })
 
-  it('flags — lecture seule, aucune clé critique exposée', async () => {
+  it('flags — allowlist produit sûre uniquement, aucune clé critique', async () => {
     const mod = await import('@/app/api/admin/v1/flags/route')
     mockRequire({ authorized: true, userId: 'a' })
     const res = await mod.GET()
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.readOnly).toBe(true)
-    expect(body.flags.every((f: { key: string }) => !/STRIPE|SECRET|DATABASE/.test(f.key))).toBe(true)
+    expect(body.readOnly).toBe(false)
+    // Seules les clés sûres de l'allowlist sont exposées (env + override + effectif).
+    const keys = body.flags.map((f: { key: string }) => f.key)
+    expect(keys).toContain('NEXT_PUBLIC_ARQWELIA_LOT1_ENABLED')
+    expect(keys).toContain('AQWELIA_LAUNCH_OFFERS_ENABLED')
+    expect(keys.every((k: string) => !/STRIPE|SECRET|DATABASE|NEXTAUTH/.test(k))).toBe(true)
+    // Chaque entrée expose envValue/override/effective (jamais une valeur d'env brute).
+    for (const f of body.flags) {
+      expect(typeof f.envValue).toBe('boolean')
+      expect('override' in f).toBe(true)
+      expect(typeof f.effective).toBe('boolean')
+    }
   })
 })
 
