@@ -1748,3 +1748,34 @@ model AdminContentAnnouncement {
 
   @@index([status])
 }
+
+// Bloc de contenu marketing SÛR (allowlist explicite côté serveur) —
+// champs structurés, jamais de HTML brut, workflow DRAFT → APPROVED → PUBLISHED.
+model AdminContentBlock {
+  id            String   @id @default(cuid())
+  contentKey    String   @unique // clé allowlistée (ex: landing.hero.title)
+  status        String   @default("DRAFT") // DRAFT | APPROVED | PUBLISHED | ARCHIVED
+  translations  String   // JSON 7 locales : { title?, body }
+  updatedById   String?
+  approvedById  String?
+  approvedAt    DateTime?
+  version       Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status])
+}
+
+// Override DB d'un feature flag PRODUIT sûr (allowlist explicite).
+// L'ENV reste la source de vérité par défaut ; l'override est un calque
+// additif, jamais appliqué aux flags sécurité/paiement/auth/infra.
+model AdminProductFlag {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  enabled     Boolean  @default(false)
+  reason      String?
+  updatedById String?
+  version     Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

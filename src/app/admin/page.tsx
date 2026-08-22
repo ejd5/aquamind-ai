@@ -42,6 +42,8 @@ import { useToast } from '@/hooks/use-toast'
 import { signOutWithBillingCleanup } from '@/lib/billing/sign-out'
 import { AnnouncementsSection } from '@/components/admin/announcements-section'
 import { SystemStatusSection } from '@/components/admin/system-status-section'
+import { ContentSection } from '@/components/admin/content-section'
+import { FlagsSection } from '@/components/admin/flags-section'
 
 type SectionId =
   | 'overview'
@@ -898,52 +900,6 @@ function PopupEditor({
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   FEATURE FLAGS (READ ONLY, allowlist produit sûr)
-   ──────────────────────────────────────────────────────────────────────────── */
-function FlagsSection() {
-  const t = useTranslations('admin')
-  const [flags, setFlags] = useState<Array<{ key: string; value: boolean; descriptionKey: string }> | null>(null)
-
-  useEffect(() => {
-    fetch('/api/admin/v1/flags')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('ko'))))
-      .then((d) => setFlags(d.flags))
-      .catch(() => setFlags([]))
-  }, [])
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="font-display text-xl font-bold">{t('cpFlagsTitle')}</h2>
-        <p className="mt-1 text-xs text-muted-foreground">{t('cpFlagsReadOnly')}</p>
-      </div>
-      <div className="glass-card-lagon overflow-x-auto rounded-xl">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-border/60 text-[11px] uppercase tracking-wide text-muted-foreground">
-              <th className="px-4 py-2">{t('cpFlagsKey')}</th>
-              <th className="px-4 py-2">{t('cpFlagsValue')}</th>
-              <th className="px-4 py-2">{t('cpFlagsDesc')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {flags?.map((f) => (
-              <tr key={f.key} className="border-b border-border/40">
-                <td className="px-4 py-2 font-mono text-xs">{f.key}</td>
-                <td className="px-4 py-2">
-                  <Badge variant={f.value ? 'success' : 'secondary'}>{f.value ? 'ON' : 'OFF'}</Badge>
-                </td>
-                <td className="px-4 py-2 text-xs text-muted-foreground">{t(f.descriptionKey as never)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
    AGENTIC
    ──────────────────────────────────────────────────────────────────────────── */
 interface ProposalView {
@@ -1240,7 +1196,7 @@ export default function AdminPage() {
           {section === 'popups' && <PopupsSection />}
           {section === 'announcements' && <AnnouncementsSection />}
           {section === 'flags' && <FlagsSection />}
-          {section === 'content' && <PreparedPlaceholder title={t('contentTitle')} desc={t('contentComingSoonFull')} />}
+          {section === 'content' && <ContentSection />}
           {section === 'agentic' && <AgenticSection />}
           {section === 'approvals' && <AgenticSection filterStatus="NEEDS_REVIEW" />}
           {section === 'history' && <AgenticSection />}
