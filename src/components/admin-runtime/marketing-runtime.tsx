@@ -187,8 +187,6 @@ export function MarketingRuntime({ zone }: { zone: RuntimeZone }) {
 
   useEffect(() => {
     const controller = new AbortController()
-    setContent({ banner: null, popups: [] })
-    setActivePopup(null)
 
     fetch(`/api/content/runtime?zone=${encodeURIComponent(zone)}`, {
       method: 'GET',
@@ -227,7 +225,8 @@ export function MarketingRuntime({ zone }: { zone: RuntimeZone }) {
 
   useEffect(() => {
     if (popups.length === 0) return
-    showFirstForTrigger('ON_LOAD')
+    const timer = window.setTimeout(() => showFirstForTrigger('ON_LOAD'), 0)
+    return () => window.clearTimeout(timer)
   }, [popups, showFirstForTrigger])
 
   useEffect(() => {
