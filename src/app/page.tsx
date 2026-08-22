@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { LandingPage } from '@/components/landing/landing-page'
 import { AppShell } from '@/components/aquamind/app-shell'
 import { MobileAppShell } from '@/components/mobile/mobile-app-shell'
+import { MarketingRuntime } from '@/components/admin-runtime/marketing-runtime'
 import { isMobile, isNative } from '@/lib/platform'
 import { getAppEntryTarget, resolveInitialWebView } from '@/lib/entry-flow'
 
@@ -131,5 +132,10 @@ export default function Home() {
   }
 
   // Default: landing page (desktop or mobile browser)
-  return <LandingPage hasProfile={hasProfile} onEnterApp={enterApp} />
+  return (
+    <>
+      <MarketingRuntime zone="LANDING" />
+      <LandingPage hasProfile={hasProfile} onEnterApp={enterApp} />
+    </>
+  )
 }
