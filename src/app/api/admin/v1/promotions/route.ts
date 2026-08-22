@@ -15,7 +15,7 @@ import { db } from '@/lib/db'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const ADMIN_STATUSES = new Set(['DRAFT', 'SCHEDULED', 'ACTIVE', 'PAUSED', 'ENDED'])
+const ADMIN_STATUSES = new Set(['DRAFT', 'SCHEDULED', 'ACTIVE', 'PAUSED', 'EXHAUSTED', 'ENDED'])
 
 const TRANSITIONS: Record<string, Set<string>> = {
   DRAFT: new Set(['DRAFT', 'SCHEDULED', 'ACTIVE', 'PAUSED', 'ENDED']),
