@@ -1127,7 +1127,6 @@ export default function AdminPage() {
           <div className="flex items-center gap-2.5">
             <img src="/branding/aqwelia-icon-a.png" alt="" className="h-9 w-9 rounded-lg" />
             <span className="font-display text-lg font-bold">{t('overviewTitle')}</span>
-            <Badge variant="champagne" className="hidden sm:inline-flex">V1</Badge>
           </div>
           <div className="flex items-center gap-2">
             <a href="/" className="glass-pill rounded-full px-3 py-1.5 text-xs font-medium text-foreground/90 transition-colors hover:border-gold/40 hover:text-gold">
