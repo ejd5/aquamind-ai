@@ -14,6 +14,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import {
+  BarChart3,
   LayoutDashboard,
   Megaphone,
   PanelTop,
@@ -28,6 +29,7 @@ import {
   ScrollText,
   Activity,
   Sparkles,
+  Users,
   Plus,
   Trash2,
   Eye,
@@ -44,6 +46,7 @@ import { AnnouncementsSection } from '@/components/admin/announcements-section'
 import { SystemStatusSection } from '@/components/admin/system-status-section'
 import { ContentSection } from '@/components/admin/content-section'
 import { FlagsSection } from '@/components/admin/flags-section'
+import { UsersSection, AnalyticsSection } from '@/components/admin/business-sections'
 
 type SectionId =
   | 'overview'
@@ -56,6 +59,8 @@ type SectionId =
   | 'approvals'
   | 'history'
   | 'audit'
+  | 'users'
+  | 'analytics'
   | 'system'
 
 const LOCALES = ['fr', 'en', 'es', 'pt', 'de', 'it', 'nl'] as const
@@ -94,6 +99,8 @@ const NAV_GROUPS: NavGroup[] = [
   {
     labelKey: 'navSystem',
     items: [
+      { id: 'users', labelKey: 'navUsers', icon: Users },
+      { id: 'analytics', labelKey: 'navAnalytics', icon: BarChart3 },
       { id: 'audit', labelKey: 'navAudit', icon: ScrollText },
       { id: 'system', labelKey: 'navSystemStatus', icon: Activity },
     ],
@@ -1097,20 +1104,6 @@ function AuditSection() {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   PLACEHOLDERS PRÉPARÉS (V2)
-   ──────────────────────────────────────────────────────────────────────────── */
-function PreparedPlaceholder({ title, desc }: { title: string; desc: string }) {
-  return (
-    <div className="space-y-4">
-      <h2 className="font-display text-xl font-bold">{title}</h2>
-      <div className="rounded-xl border border-dashed border-border/60 p-8 text-center text-sm text-muted-foreground">
-        {desc}
-      </div>
-    </div>
-  )
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
    SHELL
    ──────────────────────────────────────────────────────────────────────────── */
 export default function AdminPage() {
@@ -1134,7 +1127,6 @@ export default function AdminPage() {
           <div className="flex items-center gap-2.5">
             <img src="/branding/aqwelia-icon-a.png" alt="" className="h-9 w-9 rounded-lg" />
             <span className="font-display text-lg font-bold">{t('overviewTitle')}</span>
-            <Badge variant="champagne" className="hidden sm:inline-flex">V1</Badge>
           </div>
           <div className="flex items-center gap-2">
             <a href="/" className="glass-pill rounded-full px-3 py-1.5 text-xs font-medium text-foreground/90 transition-colors hover:border-gold/40 hover:text-gold">
@@ -1200,6 +1192,8 @@ export default function AdminPage() {
           {section === 'agentic' && <AgenticSection />}
           {section === 'approvals' && <AgenticSection filterStatus="NEEDS_REVIEW" />}
           {section === 'history' && <AgenticSection />}
+          {section === 'users' && <UsersSection />}
+          {section === 'analytics' && <AnalyticsSection />}
           {section === 'audit' && <AuditSection />}
           {section === 'system' && <SystemStatusSection />}
         </main>
